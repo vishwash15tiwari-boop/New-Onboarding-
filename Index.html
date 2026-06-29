@@ -976,7 +976,7 @@ function renderOverview() {
   set('e-sla-breach-sub', e.slaBreachPct + '% breached');
   set('e-comp-rate', e.completionPct + '%');
   var ex = D.exceptions;
-  var exCount = ex ? ((ex.missingGST.total||0) + (ex.missingShipment.total||0) + (ex.highTAT.total||0) + (ex.duplicateGST.total||0)) : 0;
+  var exCount = ex ? (ex.duplicateGST.total||0) : 0;
   set('e-exceptions', fmt(exCount));
 
   // Comparison cards
@@ -1260,20 +1260,7 @@ function renderExceptions() {
   var ex = D.exceptions;
   if (!ex) return;
 
-  // Only exceptions on onboarded (COMPLETED) cases
   var defs = [
-    { title: 'Missing GSTIN', key: 'missingGST', total: ex.missingGST.total,
-      items: ex.missingGST.mp.concat(ex.missingGST.omp),
-      render: function(it) { return '<div class="exc-item-name">' + esc(it.name||'—') + '</div><div class="exc-item-meta">ID: ' + it.id + ' • ' + esc(it.category||'') + ' • ' + it.source + '</div>'; },
-      badge: 'red' },
-    { title: 'Completed — No Shipment', key: 'missingShipment', total: ex.missingShipment.total,
-      items: ex.missingShipment.items,
-      render: function(it) { return '<div class="exc-item-name">' + esc(it.name||'—') + '</div><div class="exc-item-meta">ID: ' + it.id + ' • Onboarded: ' + (it.onboardedDate||'—') + '</div>'; },
-      badge: 'warn' },
-    { title: 'High TAT (>5 days)', key: 'highTAT', total: ex.highTAT.total,
-      items: ex.highTAT.items,
-      render: function(it) { return '<div class="exc-item-name">' + esc(it.name||'—') + '</div><div class="exc-item-meta">TAT: ' + it.tat + 'd • ' + esc(it.category||'') + '</div>'; },
-      badge: 'red' },
     { title: 'Duplicate GSTIN', key: 'duplicateGST', total: ex.duplicateGST.total,
       items: ex.duplicateGST.items,
       render: function(it) { return '<div class="exc-item-name">' + esc(it.name||'—') + '</div><div class="exc-item-meta">GSTIN: ' + it.gstin + ' • Appears ' + it.count + 'x</div>'; },
