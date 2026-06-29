@@ -747,7 +747,7 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
 
   <!-- ── TAB: EXCEPTIONS ───────────────────────────────────── -->
   <div class="tab-panel" id="tab-exceptions">
-    <div class="section-title">Exception Centre</div>
+    <div class="section-title">Exception Centre <span class="badge">Onboarded Cases Only</span></div>
     <div class="exc-grid" id="exc-grid"></div>
   </div>
 
@@ -975,7 +975,9 @@ function renderOverview() {
   set('e-sla', e.slaOKPct + '%');
   set('e-sla-breach-sub', e.slaBreachPct + '% breached');
   set('e-comp-rate', e.completionPct + '%');
-  set('e-exceptions', fmt(e.exceptions));
+  var ex = D.exceptions;
+  var exCount = ex ? ((ex.missingGST.total||0) + (ex.missingShipment.total||0) + (ex.highTAT.total||0) + (ex.duplicateGST.total||0)) : 0;
+  set('e-exceptions', fmt(exCount));
 
   // Comparison cards
   set('cmp-mp-total', fmt(e.mpTotal));
@@ -1258,6 +1260,7 @@ function renderExceptions() {
   var ex = D.exceptions;
   if (!ex) return;
 
+  // Only exceptions on onboarded (COMPLETED) cases
   var defs = [
     { title: 'Missing GSTIN', key: 'missingGST', total: ex.missingGST.total,
       items: ex.missingGST.mp.concat(ex.missingGST.omp),
@@ -1267,26 +1270,13 @@ function renderExceptions() {
       items: ex.missingShipment.items,
       render: function(it) { return '<div class="exc-item-name">' + esc(it.name||'—') + '</div><div class="exc-item-meta">ID: ' + it.id + ' • Onboarded: ' + (it.onboardedDate||'—') + '</div>'; },
       badge: 'warn' },
-    { title: 'Long Pending (30+ days)', key: 'longPending', total: ex.longPending.total,
-      items: ex.longPending.mp.concat(ex.longPending.omp),
-      render: function(it) {
-        return '<div class="exc-item-name">' + esc(it.name||'—') + '</div><div class="exc-item-meta">' + (it.age ? 'Age: ' + it.age + 'd' : 'Doc: ' + it.docPct + '%') + ' • ' + it.source + '</div>';
-      }, badge: 'warn' },
     { title: 'High TAT (>5 days)', key: 'highTAT', total: ex.highTAT.total,
       items: ex.highTAT.items,
       render: function(it) { return '<div class="exc-item-name">' + esc(it.name||'—') + '</div><div class="exc-item-meta">TAT: ' + it.tat + 'd • ' + esc(it.category||'') + '</div>'; },
       badge: 'red' },
-    { title: 'Rejected Cases', key: 'rejected', total: ex.rejected.total,
-      items: ex.rejected.mp.concat(ex.rejected.omp),
-      render: function(it) { return '<div class="exc-item-name">' + esc(it.name||'—') + '</div><div class="exc-item-meta">ID: ' + it.id + ' • ' + esc(it.category||'') + ' • ' + it.source + '</div>'; },
-      badge: 'red' },
     { title: 'Duplicate GSTIN', key: 'duplicateGST', total: ex.duplicateGST.total,
       items: ex.duplicateGST.items,
       render: function(it) { return '<div class="exc-item-name">' + esc(it.name||'—') + '</div><div class="exc-item-meta">GSTIN: ' + it.gstin + ' • Appears ' + it.count + 'x</div>'; },
-      badge: 'warn' },
-    { title: 'Missing Key Documents', key: 'missingDocs', total: ex.missingDocs.total,
-      items: ex.missingDocs.items,
-      render: function(it) { return '<div class="exc-item-name">' + esc(it.name||'—') + '</div><div class="exc-item-meta">Doc: ' + it.docPct + '% • Missing: ' + (it.missingDocs||[]).join(', ') + '</div>'; },
       badge: 'warn' },
   ];
 
