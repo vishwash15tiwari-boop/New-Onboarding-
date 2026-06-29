@@ -376,7 +376,8 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <div class="kpi-grid kpi-grid-4" id="exec-kpis">
       <div class="kpi-card">          <div class="kpi-icon">📦</div><div class="kpi-label">Total Cases</div><div class="kpi-value" id="e-total">—</div><div class="kpi-sub">All Verticals</div></div>
       <div class="kpi-card green">    <div class="kpi-icon">✅</div><div class="kpi-label">Completed</div><div class="kpi-value" id="e-completed">—</div><div class="kpi-sub" id="e-completion-sub">—</div></div>
-      <div class="kpi-card amber">    <div class="kpi-icon">⏳</div><div class="kpi-label">Pending</div><div class="kpi-value" id="e-pending">—</div><div class="kpi-sub">Draft + In Review</div></div>
+      <div class="kpi-card amber">    <div class="kpi-icon">📝</div><div class="kpi-label">Draft</div><div class="kpi-value" id="e-draft">—</div><div class="kpi-sub">Not yet submitted</div></div>
+      <div class="kpi-card blue">     <div class="kpi-icon">🔍</div><div class="kpi-label">In Review</div><div class="kpi-value" id="e-in-review">—</div><div class="kpi-sub">Under evaluation</div></div>
       <div class="kpi-card red">      <div class="kpi-icon">❌</div><div class="kpi-label">Rejected</div><div class="kpi-value" id="e-rejected">—</div><div class="kpi-sub">Across verticals</div></div>
       <div class="kpi-card cyan">     <div class="kpi-icon">⏱</div><div class="kpi-label">Avg Onb. TAT</div><div class="kpi-value" id="e-avg-tat">—</div><div class="kpi-sub">Days (Marketplace)</div></div>
       <div class="kpi-card">          <div class="kpi-icon">🎯</div><div class="kpi-label">SLA Compliance</div><div class="kpi-value" id="e-sla">—</div><div class="kpi-sub" id="e-sla-breach-sub">—</div></div>
@@ -967,7 +968,8 @@ function renderOverview() {
   set('e-total', fmt(e.totalCases));
   set('e-completed', fmt(e.totalCompleted));
   set('e-completion-sub', e.completionPct + '% completion rate');
-  set('e-pending', fmt(e.totalPending));
+  set('e-draft',     fmt((mp.draft||0) + (omp.draft||0)));
+  set('e-in-review', fmt((mp.inReview||0) + (omp.inReview||0)));
   set('e-rejected', fmt(e.totalRejected));
   set('e-avg-tat', e.avgTAT + 'd');
   set('e-sla', e.slaOKPct + '%');
