@@ -146,7 +146,7 @@ select,input{font-family:inherit}
 .chart-wrap.short{height:165px}
 
 /* ===== Comparison ===== */
-.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px}
+.compare-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;margin-bottom:28px}
 .compare-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shadow-sm);transition:box-shadow .2s ease,border-color .2s ease}
 .compare-card:hover{box-shadow:var(--shadow);border-color:var(--border2)}
 .compare-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
@@ -155,6 +155,7 @@ select,input{font-family:inherit}
 .compare-source-badge{font-size:11px;padding:5px 12px;border-radius:20px;font-weight:600;letter-spacing:.2px}
 .badge-mp{background:rgba(91,124,250,.12);color:var(--blue2)}
 .badge-omp{background:rgba(16,185,129,.12);color:#0E9D6E}
+.badge-epr{background:rgba(242,107,98,.12);color:#C0392B}
 .progress-row{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .progress-label-row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--txt2);font-weight:500}
 .progress-bar-wrap{height:8px;background:var(--bg2);border-radius:6px;overflow:hidden}
@@ -305,6 +306,7 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
       <option value="All">All</option>
       <option value="Marketplace">Marketplace</option>
       <option value="OMP">Open Marketplace</option>
+      <option value="EPR">EPR</option>
     </select>
   </div>
   <div class="filter-sep"></div>
@@ -356,6 +358,7 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <button class="tab-btn active" onclick="switchTab('overview')">📊 Overview</button>
     <button class="tab-btn" onclick="switchTab('marketplace')">🏪 Marketplace</button>
     <button class="tab-btn" onclick="switchTab('omp')">🌐 Open Marketplace</button>
+    <button class="tab-btn" onclick="switchTab('epr')">♻️ EPR</button>
     <button class="tab-btn" onclick="switchTab('trends')">📈 Trends</button>
     <button class="tab-btn" onclick="switchTab('tat-sla')">⏱ TAT &amp; SLA</button>
     <button class="tab-btn" onclick="switchTab('exceptions')">⚠️ Exceptions</button>
@@ -446,6 +449,35 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
             <div><div class="kpi-label">Pipeline %</div><div class="kpi-value" style="font-size:18px" id="cmp-omp-pipeline">—</div></div>
             <div><div class="kpi-label">With GST</div><div class="kpi-value" style="font-size:18px" id="cmp-omp-gst">—</div></div>
             <div><div class="kpi-label">Rejected</div><div class="kpi-value" style="font-size:18px" id="cmp-omp-rejected">—</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- EPR -->
+      <div class="compare-card">
+        <div class="compare-header">
+          <div>
+            <div class="compare-label">EPR</div>
+            <div class="compare-count" id="cmp-epr-total">—</div>
+          </div>
+          <span class="compare-source-badge badge-epr">EPR</span>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>Completed</span><span id="cmp-epr-completed">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-epr-comp-bar" style="background:var(--green)"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>In Review</span><span id="cmp-epr-review">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-epr-rev-bar" style="background:var(--blue)"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>Draft</span><span id="cmp-epr-draft">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-epr-draft-bar" style="background:var(--amber)"></div></div>
+        </div>
+        <div class="mt-16">
+          <div class="kpi-grid kpi-grid-3">
+            <div><div class="kpi-label">Pipeline %</div><div class="kpi-value" style="font-size:18px" id="cmp-epr-pipeline">—</div></div>
+            <div><div class="kpi-label">With GST</div><div class="kpi-value" style="font-size:18px" id="cmp-epr-gst">—</div></div>
+            <div><div class="kpi-label">Rejected</div><div class="kpi-value" style="font-size:18px" id="cmp-epr-rejected">—</div></div>
           </div>
         </div>
       </div>
@@ -616,6 +648,23 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
     </div>
   </div>
 
+  <!-- ── TAB: EPR ──────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-epr">
+    <div class="section-title">EPR Module <span class="badge" id="epr-total-badge">—</span></div>
+    <div class="kpi-grid kpi-grid-5 mb-24">
+      <div class="kpi-card">        <div class="kpi-label">Total Cases</div><div class="kpi-value" id="epr-total">—</div><div class="kpi-sub">All EPR sellers</div></div>
+      <div class="kpi-card green">  <div class="kpi-label">Completed</div><div class="kpi-value" id="epr-completed">—</div><div class="kpi-sub" id="epr-comp-sub">—</div></div>
+      <div class="kpi-card blue">   <div class="kpi-label">In Review</div><div class="kpi-value" id="epr-review">—</div><div class="kpi-sub">Under evaluation</div></div>
+      <div class="kpi-card amber">  <div class="kpi-label">Draft</div><div class="kpi-value" id="epr-draft">—</div><div class="kpi-sub">Not submitted</div></div>
+      <div class="kpi-card red">    <div class="kpi-label">Rejected</div><div class="kpi-value" id="epr-rejected">—</div><div class="kpi-sub">Not approved</div></div>
+    </div>
+    <div class="chart-card" style="text-align:center;padding:48px">
+      <div style="font-size:32px;margin-bottom:12px">♻️</div>
+      <div style="font-size:15px;font-weight:600;color:var(--txt);margin-bottom:8px">EPR Data Coming Soon</div>
+      <div style="font-size:13px;color:var(--txt3)">Sheet integration will be wired once the data source is connected.</div>
+    </div>
+  </div>
+
   <!-- ── TAB: TRENDS ───────────────────────────────────────── -->
   <div class="tab-panel" id="tab-trends">
     <div class="section-title">Trend Analytics</div>
@@ -709,6 +758,7 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
         <option value="">All Sources</option>
         <option value="Marketplace">Marketplace</option>
         <option value="Open Marketplace">Open Marketplace</option>
+        <option value="EPR">EPR</option>
       </select>
       <select class="table-filter-sel" id="tbl-status" onchange="filterTable()">
         <option value="">All Statuses</option>
@@ -894,6 +944,7 @@ function renderAll() {
   renderOverview();
   renderMarketplace();
   renderOMP();
+  renderEPR();
   renderTrends();
   renderTATSLA();
   renderExceptions();
@@ -951,7 +1002,8 @@ function renderOverview() {
   set('cmp-omp-rejected', fmt(omp.rejected));
 
   // Overview Charts
-  mkDoughnut('ch-vertical-contrib', ['Marketplace', 'Open Marketplace'], [e.mpTotal, e.ompTotal], [COLORS.blue, COLORS.green]);
+  var eprTotal = (D.epr && D.epr.total) ? D.epr.total : 0;
+  mkDoughnut('ch-vertical-contrib', ['Marketplace', 'Open Marketplace', 'EPR'], [e.mpTotal, e.ompTotal, eprTotal], [COLORS.blue, COLORS.green, COLORS.red]);
 
   var allStatus = {
     COMPLETED: e.totalCompleted, PENDING: e.totalPending,
@@ -1088,6 +1140,33 @@ function renderOMP() {
     ds.map(function(d) { return d.pct; }),
     'Completion %',
     ds.map(function(d) { return d.pct >= 75 ? COLORS.green : d.pct >= 40 ? COLORS.amber : COLORS.red; }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EPR
+// ═══════════════════════════════════════════════════════════════
+function renderEPR() {
+  var epr = D.epr;
+  if (!epr) return;
+  document.getElementById('epr-total-badge').textContent = fmt(epr.total);
+  set('epr-total',     fmt(epr.total));
+  set('epr-completed', fmt(epr.completed));
+  set('epr-comp-sub',  (epr.completionPct || 0) + '% of total');
+  set('epr-review',    fmt(epr.inReview));
+  set('epr-draft',     fmt(epr.draft));
+  set('epr-rejected',  fmt(epr.rejected));
+  set('cmp-epr-total',     fmt(epr.total));
+  set('cmp-epr-completed', fmt(epr.completed));
+  set('cmp-epr-review',    fmt(epr.inReview));
+  set('cmp-epr-draft',     fmt(epr.draft));
+  set('cmp-epr-pipeline',  (epr.pipelinePct || 0) + '%');
+  set('cmp-epr-gst',       fmt(epr.withGST));
+  set('cmp-epr-rejected',  fmt(epr.rejected));
+  if (epr.total) {
+    bar('cmp-epr-comp-bar',  pct(epr.completed, epr.total));
+    bar('cmp-epr-rev-bar',   pct(epr.inReview,  epr.total));
+    bar('cmp-epr-draft-bar', pct(epr.draft,      epr.total));
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
