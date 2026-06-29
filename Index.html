@@ -762,6 +762,9 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
         <option value="Open Marketplace">Open Marketplace</option>
         <option value="EPR">EPR</option>
       </select>
+      <select class="table-filter-sel" id="tbl-category" onchange="filterTable()">
+        <option value="">All Categories</option>
+      </select>
       <select class="table-filter-sel" id="tbl-status" onchange="filterTable()">
         <option value="">All Statuses</option>
         <option>COMPLETED</option><option>DRAFT</option><option>IN_REVIEW</option><option>REJECTED</option>
@@ -1297,16 +1300,28 @@ function renderTable() {
   tableRows = D.table.rows || [];
   filteredRows = tableRows;
   currentPage = 1;
+
+  var catSel = document.getElementById('tbl-category');
+  var cur = catSel.value;
+  var cats = Array.from(new Set(tableRows.map(function(r) { return r.category||''; }).filter(Boolean))).sort();
+  catSel.innerHTML = '<option value="">All Categories</option>';
+  cats.forEach(function(c) {
+    var o = document.createElement('option'); o.value = c; o.textContent = c; catSel.appendChild(o);
+  });
+  catSel.value = cur;
+
   filterTable();
 }
 
 function filterTable() {
-  var q  = (document.getElementById('tbl-search').value || '').toLowerCase();
+  var q   = (document.getElementById('tbl-search').value || '').toLowerCase();
   var src = document.getElementById('tbl-source').value;
+  var cat = document.getElementById('tbl-category').value;
   var st  = document.getElementById('tbl-status').value;
 
   filteredRows = tableRows.filter(function(r) {
     if (src && r.source !== src) return false;
+    if (cat && r.category !== cat) return false;
     if (st  && r.status !== st) return false;
     if (q && !(r.name||'').toLowerCase().includes(q) &&
              !(r.gstin||'').toLowerCase().includes(q) &&
