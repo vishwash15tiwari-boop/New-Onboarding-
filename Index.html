@@ -227,6 +227,7 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .chip-reactivated{background:rgba(167,139,250,.18);color:#7C5CD6}
 .chip-mp{background:rgba(91,124,250,.1);color:var(--blue2)}
 .chip-omp{background:rgba(16,185,129,.1);color:#0E9D6E}
+.chip-epr{background:rgba(242,107,98,.1);color:#C0392B}
 .gst-ok{color:#0E9D6E;font-size:11px;font-weight:500}
 .gst-bad{color:#E0544B;font-size:11px;font-weight:500}
 .pagination{display:flex;align-items:center;gap:8px;margin-top:18px;justify-content:center}
@@ -927,7 +928,7 @@ function fillSelect(id, opts) {
 // ═══════════════════════════════════════════════════════════════
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(function(b, i) {
-    var tabs = ['overview','marketplace','omp','trends','tat-sla','exceptions','table'];
+    var tabs = ['overview','marketplace','omp','epr','trends','tat-sla','exceptions','table'];
     b.classList.toggle('active', tabs[i] === name);
   });
   document.querySelectorAll('.tab-panel').forEach(function(p) {
@@ -1366,7 +1367,7 @@ function renderTablePage() {
     return '<tr>'
       + '<td class="text-muted">' + esc(r.id) + '</td>'
       + '<td><strong>' + esc(r.name||'—') + '</strong></td>'
-      + '<td><span class="status-chip ' + (r.source === 'Marketplace' ? 'chip-mp' : 'chip-omp') + '">' + esc(r.source) + '</span></td>'
+      + '<td><span class="status-chip ' + (r.source === 'Marketplace' ? 'chip-mp' : r.source === 'EPR' ? 'chip-epr' : 'chip-omp') + '">' + esc(r.source) + '</span></td>'
       + '<td>' + esc(r.category||'—') + '</td>'
       + '<td class="text-muted">' + esc(r.vendorType||'—') + '</td>'
       + '<td>' + statusChip(r.status) + '</td>'
