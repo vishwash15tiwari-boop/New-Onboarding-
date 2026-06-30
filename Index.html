@@ -150,6 +150,9 @@ select,input{font-family:inherit}
 }
 .filter-select:hover,.filter-input:hover{border-color:var(--border2)}
 .filter-select:focus,.filter-input:focus{border-color:var(--blue);box-shadow:var(--ring)}
+.filter-select:disabled,.filter-input:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.period-na-tip{font-size:11px;color:var(--txt3);font-style:italic;white-space:nowrap;display:none}
+.period-na-tip.visible{display:inline}
 .filter-input{width:220px}
 .filter-input::placeholder{color:var(--txt3);font-weight:400}
 .filter-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
@@ -523,6 +526,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
       <option value="YTD">YTD</option>
       <option value="Custom">Custom</option>
     </select>
+    <span class="period-na-tip" id="period-na-tip">No dates in OMP</span>
     <div class="custom-dates" id="custom-dates">
       <input type="date" class="filter-select" id="f-start" onchange="applyFilters()">
       <input type="date" class="filter-select" id="f-end" onchange="applyFilters()">
@@ -1089,7 +1093,22 @@ function debounceApply() { clearTimeout(debTimer); debTimer = setTimeout(applyFi
 function applyFilters() { loadData(); }
 
 function onVerticalChange() {
-  // Reset dependent filters so stale MP/OMP/EPR-specific selections don't bleed across verticals
+  var vertical = v('f-vertical');
+  var periodSel = document.getElementById('f-period');
+  var tip = document.getElementById('period-na-tip');
+
+  if (vertical === 'OMP') {
+    // OMP has no date columns — period filter cannot apply, so disable and reset it
+    periodSel.value    = 'All';
+    periodSel.disabled = true;
+    if (tip) tip.classList.add('visible');
+    document.getElementById('custom-dates').classList.remove('visible');
+  } else {
+    periodSel.disabled = false;
+    if (tip) tip.classList.remove('visible');
+  }
+
+  // Reset dependent filters so stale cross-vertical selections don't produce zero results
   ['f-category', 'f-vendortype', 'f-status'].forEach(function(id) {
     document.getElementById(id).value = 'All';
   });
@@ -1100,6 +1119,10 @@ function clearFilters() {
   ['f-vertical','f-period','f-category','f-vendortype','f-status'].forEach(function(id) {
     document.getElementById(id).value = 'All';
   });
+  // Re-enable period in case OMP was active
+  document.getElementById('f-period').disabled = false;
+  var tip = document.getElementById('period-na-tip');
+  if (tip) tip.classList.remove('visible');
   document.getElementById('f-search').value = '';
   document.getElementById('f-start').value = '';
   document.getElementById('f-end').value = '';
