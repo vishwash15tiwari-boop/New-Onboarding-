@@ -506,7 +506,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 <div id="filters-bar">
   <div class="filter-group">
     <span class="filter-label">Vertical</span>
-    <select class="filter-select" id="f-vertical" onchange="applyFilters()">
+    <select class="filter-select" id="f-vertical" onchange="onVerticalChange()">
       <option value="All">All</option>
       <option value="Marketplace">Marketplace</option>
       <option value="OMP">Open Marketplace</option>
@@ -1087,6 +1087,14 @@ var debTimer;
 function debounceApply() { clearTimeout(debTimer); debTimer = setTimeout(applyFilters, 500); }
 
 function applyFilters() { loadData(); }
+
+function onVerticalChange() {
+  // Reset dependent filters so stale MP/OMP/EPR-specific selections don't bleed across verticals
+  ['f-category', 'f-vendortype', 'f-status'].forEach(function(id) {
+    document.getElementById(id).value = 'All';
+  });
+  loadData();
+}
 
 function clearFilters() {
   ['f-vertical','f-period','f-category','f-vendortype','f-status'].forEach(function(id) {

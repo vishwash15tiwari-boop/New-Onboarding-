@@ -53,7 +53,11 @@ function getDashboardData(filtersJson) {
       trends:        calcTrends(mpData, eprData),
       tat:           calcTAT(mpData),
       table:         buildTable(mpData, ompData, eprData),
-      filterOptions: buildFilterOptions(mpAll, ompAll, eprAll),
+      filterOptions: buildFilterOptions(
+        (!filters.vertical || filters.vertical === 'All' || filters.vertical === 'Marketplace') ? mpAll  : [],
+        (!filters.vertical || filters.vertical === 'All' || filters.vertical === 'OMP')         ? ompAll : [],
+        (!filters.vertical || filters.vertical === 'All' || filters.vertical === 'EPR')         ? eprAll : []
+      ),
     });
 
     try { cache.put(cacheKey, result, CONFIG.CACHE_TTL); } catch(e) {}
