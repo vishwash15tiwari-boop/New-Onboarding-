@@ -125,6 +125,8 @@ select,input{font-family:inherit}
 .kpi-card.cyan{--accent:var(--cyan)}
 .kpi-card.orange{--accent:var(--orange)}
 .kpi-card.blue{--accent:var(--blue)}
+.kpi-card.indigo{--accent:var(--blue2)}
+.kpi-card.lime{--accent:var(--lime)}
 .kpi-label{font-size:11px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
 .kpi-value{font-size:30px;font-weight:700;letter-spacing:-.8px;color:var(--txt);line-height:1;margin-bottom:6px;font-variant-numeric:tabular-nums}
 .kpi-sub{font-size:12px;color:var(--txt2);font-weight:450}
@@ -157,6 +159,9 @@ select,input{font-family:inherit}
 .badge-mp{background:rgba(0,113,188,.12);color:var(--blue)}
 .badge-omp{background:rgba(0,169,157,.12);color:#007B74}
 .badge-epr{background:rgba(247,147,30,.14);color:#C47000}
+.badge-afr{background:rgba(127,71,221,.12);color:#6330BF}
+.badge-ib{background:rgba(46,49,146,.12);color:#2E3192}
+.badge-rcom{background:rgba(136,168,13,.12);color:#5C740A}
 .progress-row{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .progress-label-row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--txt2);font-weight:500}
 .progress-bar-wrap{height:8px;background:var(--bg2);border-radius:6px;overflow:hidden}
@@ -229,6 +234,9 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .chip-mp{background:rgba(0,113,188,.1);color:var(--blue)}
 .chip-omp{background:rgba(0,169,157,.1);color:#007B74}
 .chip-epr{background:rgba(247,147,30,.12);color:#C47000}
+.chip-afr{background:rgba(127,71,221,.1);color:#6330BF}
+.chip-ib{background:rgba(46,49,146,.1);color:#2E3192}
+.chip-rcom{background:rgba(136,168,13,.1);color:#5C740A}
 .gst-ok{color:#1D7D2A;font-size:11px;font-weight:500}
 .gst-bad{color:#B81219;font-size:11px;font-weight:500}
 .pagination{display:flex;align-items:center;gap:8px;margin-top:18px;justify-content:center}
@@ -309,6 +317,9 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
       <option value="Marketplace">Marketplace</option>
       <option value="OMP">Open Marketplace</option>
       <option value="EPR">EPR</option>
+      <option value="AFR">AFR</option>
+      <option value="Institutional Business">Institutional Business</option>
+      <option value="Re-Commerce">Re-Commerce</option>
     </select>
   </div>
   <div class="filter-sep"></div>
@@ -361,6 +372,9 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <button class="tab-btn" onclick="switchTab('marketplace')">🏪 Marketplace</button>
     <button class="tab-btn" onclick="switchTab('omp')">🌐 Open Marketplace</button>
     <button class="tab-btn" onclick="switchTab('epr')">♻️ EPR</button>
+    <button class="tab-btn" onclick="switchTab('afr')">🏭 AFR</button>
+    <button class="tab-btn" onclick="switchTab('ib')">🏢 Institutional</button>
+    <button class="tab-btn" onclick="switchTab('rcom')">🔄 Re-Commerce</button>
     <button class="tab-btn" onclick="switchTab('trends')">📈 Trends</button>
     <button class="tab-btn" onclick="switchTab('tat-sla')">⏱ TAT &amp; SLA</button>
     <button class="tab-btn" onclick="switchTab('exceptions')">⚠️ Exceptions</button>
@@ -474,6 +488,93 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
             <div><div class="kpi-label">Pipeline %</div><div class="kpi-value" style="font-size:18px" id="cmp-epr-pipeline">—</div></div>
             <div><div class="kpi-label">With GST</div><div class="kpi-value" style="font-size:18px" id="cmp-epr-gst">—</div></div>
             <div><div class="kpi-label">Rejected</div><div class="kpi-value" style="font-size:18px" id="cmp-epr-rejected">—</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- AFR -->
+      <div class="compare-card">
+        <div class="compare-header">
+          <div>
+            <div class="compare-label">AFR</div>
+            <div class="compare-count" id="cmp-afr-total">—</div>
+          </div>
+          <span class="compare-source-badge badge-afr">AFR</span>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>Onboarded</span><span id="cmp-afr-completed">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-afr-comp-bar" style="background:var(--green)"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>In Review</span><span id="cmp-afr-review">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-afr-rev-bar" style="background:var(--blue)"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>Draft</span><span id="cmp-afr-draft">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-afr-draft-bar" style="background:var(--amber)"></div></div>
+        </div>
+        <div class="mt-16">
+          <div class="kpi-grid kpi-grid-3">
+            <div><div class="kpi-label">Pipeline %</div><div class="kpi-value" style="font-size:18px" id="cmp-afr-pipeline">—</div></div>
+            <div><div class="kpi-label">With GST</div><div class="kpi-value" style="font-size:18px" id="cmp-afr-gst">—</div></div>
+            <div><div class="kpi-label">Rejected</div><div class="kpi-value" style="font-size:18px" id="cmp-afr-rejected">—</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Institutional Business -->
+      <div class="compare-card">
+        <div class="compare-header">
+          <div>
+            <div class="compare-label">Institutional Business</div>
+            <div class="compare-count" id="cmp-ib-total">—</div>
+          </div>
+          <span class="compare-source-badge badge-ib">IB</span>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>Onboarded</span><span id="cmp-ib-completed">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-ib-comp-bar" style="background:var(--green)"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>In Review</span><span id="cmp-ib-review">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-ib-rev-bar" style="background:var(--blue)"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>Draft</span><span id="cmp-ib-draft">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-ib-draft-bar" style="background:var(--amber)"></div></div>
+        </div>
+        <div class="mt-16">
+          <div class="kpi-grid kpi-grid-3">
+            <div><div class="kpi-label">Pipeline %</div><div class="kpi-value" style="font-size:18px" id="cmp-ib-pipeline">—</div></div>
+            <div><div class="kpi-label">With GST</div><div class="kpi-value" style="font-size:18px" id="cmp-ib-gst">—</div></div>
+            <div><div class="kpi-label">Rejected</div><div class="kpi-value" style="font-size:18px" id="cmp-ib-rejected">—</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Re-Commerce -->
+      <div class="compare-card">
+        <div class="compare-header">
+          <div>
+            <div class="compare-label">Re-Commerce</div>
+            <div class="compare-count" id="cmp-rcom-total">—</div>
+          </div>
+          <span class="compare-source-badge badge-rcom">RCom</span>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>Onboarded</span><span id="cmp-rcom-completed">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-rcom-comp-bar" style="background:var(--green)"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>In Review</span><span id="cmp-rcom-review">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-rcom-rev-bar" style="background:var(--blue)"></div></div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label-row"><span>Draft</span><span id="cmp-rcom-draft">—</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-rcom-draft-bar" style="background:var(--amber)"></div></div>
+        </div>
+        <div class="mt-16">
+          <div class="kpi-grid kpi-grid-3">
+            <div><div class="kpi-label">Pipeline %</div><div class="kpi-value" style="font-size:18px" id="cmp-rcom-pipeline">—</div></div>
+            <div><div class="kpi-label">With GST</div><div class="kpi-value" style="font-size:18px" id="cmp-rcom-gst">—</div></div>
+            <div><div class="kpi-label">Rejected</div><div class="kpi-value" style="font-size:18px" id="cmp-rcom-rejected">—</div></div>
           </div>
         </div>
       </div>
@@ -661,6 +762,57 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
     </div>
   </div>
 
+  <!-- ── TAB: AFR ─────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-afr">
+    <div class="section-title">AFR Module <span class="badge" id="afr-total-badge">—</span></div>
+    <div class="kpi-grid kpi-grid-5 mb-24">
+      <div class="kpi-card">          <div class="kpi-label">Total Cases</div><div class="kpi-value" id="afr-total">—</div><div class="kpi-sub">All AFR sellers</div></div>
+      <div class="kpi-card green">    <div class="kpi-label">Onboarded</div><div class="kpi-value" id="afr-completed">—</div><div class="kpi-sub" id="afr-comp-sub">—</div></div>
+      <div class="kpi-card blue">     <div class="kpi-label">In Review</div><div class="kpi-value" id="afr-review">—</div><div class="kpi-sub">Under evaluation</div></div>
+      <div class="kpi-card amber">    <div class="kpi-label">Draft</div><div class="kpi-value" id="afr-draft">—</div><div class="kpi-sub">Not submitted</div></div>
+      <div class="kpi-card red">      <div class="kpi-label">Rejected</div><div class="kpi-value" id="afr-rejected">—</div><div class="kpi-sub">Not approved</div></div>
+    </div>
+    <div class="chart-card" style="text-align:center;padding:48px">
+      <div style="font-size:32px;margin-bottom:12px">🏭</div>
+      <div style="font-size:15px;font-weight:600;color:var(--txt);margin-bottom:8px">AFR Data Coming Soon</div>
+      <div style="font-size:13px;color:var(--txt3)">Sheet integration will be wired once the data source is connected.</div>
+    </div>
+  </div>
+
+  <!-- ── TAB: INSTITUTIONAL BUSINESS ──────────────────────── -->
+  <div class="tab-panel" id="tab-ib">
+    <div class="section-title">Institutional Business Module <span class="badge" id="ib-total-badge">—</span></div>
+    <div class="kpi-grid kpi-grid-5 mb-24">
+      <div class="kpi-card">          <div class="kpi-label">Total Cases</div><div class="kpi-value" id="ib-total">—</div><div class="kpi-sub">All IB sellers</div></div>
+      <div class="kpi-card green">    <div class="kpi-label">Onboarded</div><div class="kpi-value" id="ib-completed">—</div><div class="kpi-sub" id="ib-comp-sub">—</div></div>
+      <div class="kpi-card blue">     <div class="kpi-label">In Review</div><div class="kpi-value" id="ib-review">—</div><div class="kpi-sub">Under evaluation</div></div>
+      <div class="kpi-card amber">    <div class="kpi-label">Draft</div><div class="kpi-value" id="ib-draft">—</div><div class="kpi-sub">Not submitted</div></div>
+      <div class="kpi-card red">      <div class="kpi-label">Rejected</div><div class="kpi-value" id="ib-rejected">—</div><div class="kpi-sub">Not approved</div></div>
+    </div>
+    <div class="chart-card" style="text-align:center;padding:48px">
+      <div style="font-size:32px;margin-bottom:12px">🏢</div>
+      <div style="font-size:15px;font-weight:600;color:var(--txt);margin-bottom:8px">Institutional Business Data Coming Soon</div>
+      <div style="font-size:13px;color:var(--txt3)">Sheet integration will be wired once the data source is connected.</div>
+    </div>
+  </div>
+
+  <!-- ── TAB: RE-COMMERCE ──────────────────────────────────── -->
+  <div class="tab-panel" id="tab-rcom">
+    <div class="section-title">Re-Commerce Module <span class="badge" id="rcom-total-badge">—</span></div>
+    <div class="kpi-grid kpi-grid-5 mb-24">
+      <div class="kpi-card">          <div class="kpi-label">Total Cases</div><div class="kpi-value" id="rcom-total">—</div><div class="kpi-sub">All Re-Commerce sellers</div></div>
+      <div class="kpi-card green">    <div class="kpi-label">Onboarded</div><div class="kpi-value" id="rcom-completed">—</div><div class="kpi-sub" id="rcom-comp-sub">—</div></div>
+      <div class="kpi-card blue">     <div class="kpi-label">In Review</div><div class="kpi-value" id="rcom-review">—</div><div class="kpi-sub">Under evaluation</div></div>
+      <div class="kpi-card amber">    <div class="kpi-label">Draft</div><div class="kpi-value" id="rcom-draft">—</div><div class="kpi-sub">Not submitted</div></div>
+      <div class="kpi-card red">      <div class="kpi-label">Rejected</div><div class="kpi-value" id="rcom-rejected">—</div><div class="kpi-sub">Not approved</div></div>
+    </div>
+    <div class="chart-card" style="text-align:center;padding:48px">
+      <div style="font-size:32px;margin-bottom:12px">🔄</div>
+      <div style="font-size:15px;font-weight:600;color:var(--txt);margin-bottom:8px">Re-Commerce Data Coming Soon</div>
+      <div style="font-size:13px;color:var(--txt3)">Sheet integration will be wired once the data source is connected.</div>
+    </div>
+  </div>
+
   <!-- ── TAB: TRENDS ───────────────────────────────────────── -->
   <div class="tab-panel" id="tab-trends">
     <div class="section-title">Trend Analytics</div>
@@ -755,6 +907,9 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
         <option value="Marketplace">Marketplace</option>
         <option value="Open Marketplace">Open Marketplace</option>
         <option value="EPR">EPR</option>
+        <option value="AFR">AFR</option>
+        <option value="Institutional Business">Institutional Business</option>
+        <option value="Re-Commerce">Re-Commerce</option>
       </select>
       <select class="table-filter-sel" id="tbl-category" onchange="filterTable()">
         <option value="">All Categories</option>
@@ -1351,7 +1506,7 @@ function renderTablePage() {
     return '<tr>'
       + '<td class="text-muted">' + esc(r.id) + '</td>'
       + '<td><strong>' + esc(r.name||'—') + '</strong></td>'
-      + '<td><span class="status-chip ' + (r.source === 'Marketplace' ? 'chip-mp' : r.source === 'EPR' ? 'chip-epr' : 'chip-omp') + '">' + esc(r.source) + '</span></td>'
+      + '<td><span class="status-chip ' + (r.source === 'Marketplace' ? 'chip-mp' : r.source === 'EPR' ? 'chip-epr' : r.source === 'AFR' ? 'chip-afr' : r.source === 'Institutional Business' ? 'chip-ib' : r.source === 'Re-Commerce' ? 'chip-rcom' : 'chip-omp') + '">' + esc(r.source) + '</span></td>'
       + '<td>' + esc(r.category||'—') + '</td>'
       + '<td class="text-muted">' + esc(r.vendorType||'—') + '</td>'
       + '<td>' + statusChip(r.status) + '</td>'
