@@ -7,9 +7,6 @@ var CONFIG = {
   MARKETPLACE_SHEET_ID: '1AvZZtujyTbV_fUQ-azIeOnm5xxrujWum',
   OMP_SHEET_ID:         '10v3bhgKY1C2dadT2nchXD0uZQ3GImxvK',
   CACHE_TTL:      240,   // seconds (4 min — just inside 5-min cache window)
-  SLA_OK_MAX:     2,     // days — within SLA
-  SLA_WARN_MAX:   5,     // days — warning zone
-  LONG_PENDING_DAYS: 30, // days pending before flagged as exception
   MAX_TABLE_ROWS: 300,   // per source
 };
 
@@ -51,8 +48,6 @@ function getDashboardData(filtersJson) {
       omp:           calcOMPKPIs(ompData),
       trends:        calcTrends(mpData),
       tat:           calcTAT(mpData),
-      sla:           calcSLA(mpData),
-      exceptions:    detectExceptions(mpData, ompData),
       table:         buildTable(mpData, ompData),
       filterOptions: buildFilterOptions(mpAll, ompAll),
     });
@@ -265,10 +260,8 @@ function calcEnterpriseKPIs(mp, omp) {
                      + countFn(omp, function(r) { return r.status === 'DRAFT' || r.status === 'IN_REVIEW'; });
   var totalRejected  = count(mp, 'status', 'REJECTED') + count(omp, 'status', 'REJECTED');
   var totalLTV       = mp.reduce(function(s, r) { return s + (r.ltv || 0); }, 0);
-  var sla            = calcSLA(mp);
   var tats           = mp.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
   var avgTAT         = tats.length ? Math.round(avg(tats)) : 0;
-  var exceptions     = countExceptions(mp, omp);
 
   return {
     totalCases:     totalCases,
@@ -278,9 +271,6 @@ function calcEnterpriseKPIs(mp, omp) {
     totalLTV:       totalLTV,
     avgTAT:         avgTAT,
     completionPct:  pct(totalCompleted, totalCases),
-    slaOKPct:       sla.okPct,
-    slaBreachPct:   sla.breachPct,
-    exceptions:     exceptions,
     mpTotal:        mp.length,
     ompTotal:       omp.length,
     mpPct:          pct(mp.length, totalCases),
@@ -486,109 +476,6 @@ function calcTAT(data) {
     categoryTAT:  categoryTAT,
     vendorTAT:    vendorTAT,
   };
-}
-
-// ─────────────────────────────────────────────────────────────
-// SLA
-// ─────────────────────────────────────────────────────────────
-
-function calcSLA(data) {
-  var withTAT = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; });
-  var total   = withTAT.length;
-  if (!total) return { ok: 0, warn: 0, breach: 0, okPct: 0, warnPct: 0, breachPct: 0, avgDelay: 0 };
-
-  var ok     = countFn(withTAT, function(r) { return r.onbTAT <= CONFIG.SLA_OK_MAX; });
-  var warn   = countFn(withTAT, function(r) { return r.onbTAT > CONFIG.SLA_OK_MAX && r.onbTAT <= CONFIG.SLA_WARN_MAX; });
-  var breach = countFn(withTAT, function(r) { return r.onbTAT > CONFIG.SLA_WARN_MAX; });
-
-  var breachVals  = withTAT.filter(function(r) { return r.onbTAT > CONFIG.SLA_WARN_MAX; }).map(function(r) { return r.onbTAT; });
-  var avgDelay    = breachVals.length ? Math.round(avg(breachVals) - CONFIG.SLA_WARN_MAX) : 0;
-
-  return {
-    ok:       ok,
-    warn:     warn,
-    breach:   breach,
-    okPct:    pct(ok, total),
-    warnPct:  pct(warn, total),
-    breachPct:pct(breach, total),
-    avgDelay: avgDelay,
-    total:    total,
-  };
-}
-
-// ─────────────────────────────────────────────────────────────
-// EXCEPTION DETECTION
-// ─────────────────────────────────────────────────────────────
-
-function countExceptions(mp, omp) {
-  var n = 0;
-  n += mp.filter(function(r) { return !r.hasGST; }).length;
-  n += mp.filter(function(r) { return r.status === 'COMPLETED' && !r.hasShipment; }).length;
-  n += mp.filter(function(r) { return (r.status === 'DRAFT' || r.status === 'IN_REVIEW') && r.age > CONFIG.LONG_PENDING_DAYS; }).length;
-  n += omp.filter(function(r) { return !r.hasGST; }).length;
-  n += omp.filter(function(r) { return r.status === 'DRAFT' && r.docPct < 30; }).length;
-  return n;
-}
-
-function detectExceptions(mp, omp) {
-  var mpMissingGST = mp.filter(function(r) { return !r.hasGST; }).slice(0, 50).map(exRow);
-  var ompMissingGST = omp.filter(function(r) { return !r.hasGST; }).slice(0, 50).map(exRowOMP);
-
-  var missingShipment = mp.filter(function(r) { return r.status === 'COMPLETED' && !r.hasShipment; })
-    .slice(0, 50).map(function(r) {
-      return { id: r.id, name: r.name, category: r.category, vendorType: r.vendorType, onboardedDate: fmtDate(r.onboardedDate), source: 'Marketplace' };
-    });
-
-  var longPendingMP = mp.filter(function(r) {
-    return (r.status === 'DRAFT' || r.status === 'IN_REVIEW') && r.age > CONFIG.LONG_PENDING_DAYS;
-  }).slice(0, 50).map(function(r) {
-    return { id: r.id, name: r.name, category: r.category, status: r.status, age: r.age, source: 'Marketplace' };
-  });
-
-  var longPendingOMP = omp.filter(function(r) { return r.status === 'DRAFT' && r.docPct < 30; })
-    .slice(0, 50).map(function(r) {
-      return { id: r.id, name: r.name, category: r.category, docPct: r.docPct, source: 'Open Marketplace' };
-    });
-
-  var highTAT = mp.filter(function(r) { return r.onbTAT > CONFIG.SLA_WARN_MAX; })
-    .slice(0, 50).map(function(r) {
-      return { id: r.id, name: r.name, tat: r.onbTAT, category: r.category, source: 'Marketplace' };
-    }).sort(function(a, b) { return b.tat - a.tat; });
-
-  var rejectedMP  = mp.filter(function(r) { return r.status === 'REJECTED'; }).slice(0, 30).map(exRow);
-  var rejectedOMP = omp.filter(function(r) { return r.status === 'REJECTED'; }).slice(0, 30).map(exRowOMP);
-
-  // Duplicate GST in MP
-  var gstMap = {};
-  mp.forEach(function(r) { if (r.gstin) gstMap[r.gstin] = (gstMap[r.gstin] || 0) + 1; });
-  var dupGST = mp.filter(function(r) { return r.gstin && gstMap[r.gstin] > 1; })
-    .slice(0, 30).map(function(r) {
-      return { id: r.id, name: r.name, gstin: r.gstin, count: gstMap[r.gstin] };
-    });
-
-  // Missing key docs in OMP
-  var missingKeyDocs = omp.filter(function(r) {
-    return ['kyc_document', 'gst_certificate', 'aadhaar', 'owner_pan'].some(function(d) { return (r.docs[d] || 0) === 0; });
-  }).slice(0, 50).map(function(r) {
-    return { id: r.id, name: r.name, missingDocs: r.missingDocs.slice(0, 5), docPct: r.docPct };
-  });
-
-  return {
-    missingGST:     { mp: mpMissingGST, omp: ompMissingGST, total: mpMissingGST.length + ompMissingGST.length },
-    missingShipment:{ items: missingShipment, total: missingShipment.length },
-    longPending:    { mp: longPendingMP, omp: longPendingOMP, total: longPendingMP.length + longPendingOMP.length },
-    highTAT:        { items: highTAT, total: highTAT.length },
-    rejected:       { mp: rejectedMP, omp: rejectedOMP, total: rejectedMP.length + rejectedOMP.length },
-    duplicateGST:   { items: dupGST, total: dupGST.length },
-    missingDocs:    { items: missingKeyDocs, total: missingKeyDocs.length },
-  };
-}
-
-function exRow(r) {
-  return { id: r.id, name: r.name, category: r.category, vendorType: r.vendorType, status: r.status, source: 'Marketplace' };
-}
-function exRowOMP(r) {
-  return { id: r.id, name: r.name, category: r.category, vendorType: r.vendorType, status: r.status, source: 'Open Marketplace' };
 }
 
 // ─────────────────────────────────────────────────────────────

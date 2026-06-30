@@ -175,30 +175,7 @@ select,input{font-family:inherit}
 .doc-bar{height:100%;border-radius:6px;background:var(--green);transition:width .9s cubic-bezier(.4,0,.2,1)}
 .doc-pct{font-size:11.5px;color:var(--txt3);width:40px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
 
-/* ===== TAT & SLA ===== */
-.sla-ring-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
-.sla-ring{width:150px;height:150px;flex-shrink:0}
-.sla-legend{display:flex;flex-direction:column;gap:10px;flex:1;min-width:130px}
-.sla-legend-item{display:flex;align-items:center;gap:10px;font-size:12.5px}
-.sla-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.sla-legend-label{color:var(--txt2);font-weight:500}
-.sla-legend-count{margin-left:auto;font-weight:600;color:var(--txt);font-variant-numeric:tabular-nums}
-
-/* ===== Exceptions ===== */
-.exc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:18px;margin-bottom:28px}
-.exc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow-sm);transition:box-shadow .2s ease,border-color .2s ease}
-.exc-card:hover{box-shadow:var(--shadow);border-color:var(--border2)}
-.exc-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.exc-card-title{font-size:13.5px;font-weight:600;color:var(--txt);letter-spacing:-.1px}
-.exc-count-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(237,28,36,.12);color:#B81219;font-variant-numeric:tabular-nums}
-.exc-count-badge.warn{background:rgba(251,174,23,.14);color:#8A6200}
-.exc-list{max-height:210px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:0 -4px;padding:0 4px}
-.exc-item{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;transition:background .15s ease}
-.exc-item:hover{background:#EBF2E6}
-.exc-item-name{font-size:12.5px;color:var(--txt);font-weight:550;line-height:1.35}
-.exc-item-meta{font-size:11px;color:var(--txt3);margin-top:3px;line-height:1.3}
-.exc-item-badge{font-size:10px;padding:3px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0;background:#fff;border:1px solid var(--border2);color:var(--txt2);font-weight:500}
-.exc-empty{font-size:12.5px;color:var(--txt3);text-align:center;padding:24px;display:flex;align-items:center;justify-content:center;gap:6px}
+/* ===== TAT ===== */
 
 /* ===== Detail Table ===== */
 .table-toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
@@ -376,8 +353,7 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <button class="tab-btn" onclick="switchTab('ib')">🏢 Institutional</button>
     <button class="tab-btn" onclick="switchTab('rcom')">🔄 Re-Commerce</button>
     <button class="tab-btn" onclick="switchTab('trends')">📈 Trends</button>
-    <button class="tab-btn" onclick="switchTab('tat-sla')">⏱ TAT &amp; SLA</button>
-    <button class="tab-btn" onclick="switchTab('exceptions')">⚠️ Exceptions</button>
+    <button class="tab-btn" onclick="switchTab('tat-sla')">⏱ TAT</button>
     <button class="tab-btn" onclick="switchTab('table')">📋 Detailed Table</button>
   </div>
 
@@ -395,9 +371,7 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
       <div class="kpi-card blue">     <div class="kpi-icon">🔍</div><div class="kpi-label">In Review</div><div class="kpi-value" id="e-in-review">—</div><div class="kpi-sub">Under evaluation</div></div>
       <div class="kpi-card red">      <div class="kpi-icon">❌</div><div class="kpi-label">Rejected</div><div class="kpi-value" id="e-rejected">—</div><div class="kpi-sub">Across verticals</div></div>
       <div class="kpi-card cyan">     <div class="kpi-icon">⏱</div><div class="kpi-label">Avg Onb. TAT</div><div class="kpi-value" id="e-avg-tat">—</div><div class="kpi-sub">Days (Marketplace)</div></div>
-      <div class="kpi-card">          <div class="kpi-icon">🎯</div><div class="kpi-label">SLA Compliance</div><div class="kpi-value" id="e-sla">—</div><div class="kpi-sub" id="e-sla-breach-sub">—</div></div>
       <div class="kpi-card purple">   <div class="kpi-icon">📊</div><div class="kpi-label">Completion Rate</div><div class="kpi-value" id="e-comp-rate">—</div><div class="kpi-sub">Overall</div></div>
-      <div class="kpi-card orange" onclick="switchTab('exceptions')" style="cursor:pointer" title="Click to view exception details">   <div class="kpi-icon">🚨</div><div class="kpi-label">Exceptions</div><div class="kpi-value" id="e-exceptions">—</div><div class="kpi-sub">Needs attention · <span style="color:var(--orange);font-weight:600">View details →</span></div></div>
     </div>
 
     <!-- Business Vertical Comparison -->
@@ -837,9 +811,9 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
     </div>
   </div>
 
-  <!-- ── TAB: TAT & SLA ────────────────────────────────────── -->
+  <!-- ── TAB: TAT ─────────────────────────────────────────── -->
   <div class="tab-panel" id="tab-tat-sla">
-    <div class="section-title">TAT &amp; SLA Analysis</div>
+    <div class="section-title">TAT Analysis</div>
 
     <!-- TAT KPIs -->
     <div class="kpi-grid kpi-grid-5 mb-24">
@@ -850,28 +824,8 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
       <div class="kpi-card">         <div class="kpi-label">Sample Size</div><div class="kpi-value" id="tat-n">—</div><div class="kpi-sub">Sellers with TAT data</div></div>
     </div>
 
-    <!-- SLA KPIs -->
-    <div class="kpi-grid kpi-grid-5 mb-24">
-      <div class="kpi-card green">   <div class="kpi-label">Within SLA (0–2d)</div><div class="kpi-value" id="sla-ok">—</div><div class="kpi-sub" id="sla-ok-sub">—</div></div>
-      <div class="kpi-card amber">   <div class="kpi-label">Warning (3–5d)</div><div class="kpi-value" id="sla-warn">—</div><div class="kpi-sub" id="sla-warn-sub">—</div></div>
-      <div class="kpi-card red">     <div class="kpi-label">Breached (&gt;5d)</div><div class="kpi-value" id="sla-breach">—</div><div class="kpi-sub" id="sla-breach-sub">—</div></div>
-      <div class="kpi-card">         <div class="kpi-label">SLA Rate</div><div class="kpi-value" id="sla-rate">—</div><div class="kpi-sub">Within SLA %</div></div>
-      <div class="kpi-card red">     <div class="kpi-label">Avg Delay</div><div class="kpi-value" id="sla-avg-delay">—</div><div class="kpi-sub">Days over SLA</div></div>
-    </div>
-
     <!-- Charts -->
     <div class="chart-grid chart-grid-2 mb-24">
-      <div class="chart-card">
-        <div class="chart-card-title">SLA Compliance</div>
-        <div class="sla-ring-wrap" style="padding:12px 0">
-          <div class="sla-ring"><canvas id="ch-sla-ring"></canvas></div>
-          <div class="sla-legend" id="sla-legend">
-            <div class="sla-legend-item"><div class="sla-dot" style="background:var(--green)"></div><span class="sla-legend-label">Within SLA (0–2d)</span><span class="sla-legend-count" id="sla-leg-ok">—</span></div>
-            <div class="sla-legend-item"><div class="sla-dot" style="background:var(--amber)"></div><span class="sla-legend-label">Warning (3–5d)</span><span class="sla-legend-count" id="sla-leg-warn">—</span></div>
-            <div class="sla-legend-item"><div class="sla-dot" style="background:var(--red)"></div><span class="sla-legend-label">Breached (&gt;5d)</span><span class="sla-legend-count" id="sla-leg-breach">—</span></div>
-          </div>
-        </div>
-      </div>
       <div class="chart-card">
         <div class="chart-card-title">TAT Distribution</div>
         <div class="chart-wrap"><canvas id="ch-tat-dist2"></canvas></div>
@@ -889,12 +843,6 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
         <div class="chart-wrap tall"><canvas id="ch-vendor-tat"></canvas></div>
       </div>
     </div>
-  </div>
-
-  <!-- ── TAB: EXCEPTIONS ───────────────────────────────────── -->
-  <div class="tab-panel" id="tab-exceptions">
-    <div class="section-title">Exception Centre <span class="badge">Onboarded Cases Only</span></div>
-    <div class="exc-grid" id="exc-grid"></div>
   </div>
 
   <!-- ── TAB: TABLE ────────────────────────────────────────── -->
@@ -1081,7 +1029,7 @@ function fillSelect(id, opts) {
 // ═══════════════════════════════════════════════════════════════
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(function(b, i) {
-    var tabs = ['overview','marketplace','omp','epr','afr','ib','rcom','trends','tat-sla','exceptions','table'];
+    var tabs = ['overview','marketplace','omp','epr','afr','ib','rcom','trends','tat-sla','table'];
     b.classList.toggle('active', tabs[i] === name);
   });
   document.querySelectorAll('.tab-panel').forEach(function(p) {
@@ -1101,7 +1049,6 @@ function renderAll() {
   renderEPR();
   renderTrends();
   renderTATSLA();
-  renderExceptions();
   renderTable();
 }
 
@@ -1124,10 +1071,7 @@ function renderOverview() {
   set('e-in-review', fmt((mp.inReview||0) + (omp.inReview||0)));
   set('e-rejected', fmt(e.totalRejected));
   set('e-avg-tat', e.avgTAT + 'd');
-  set('e-sla', e.slaOKPct + '%');
-  set('e-sla-breach-sub', e.slaBreachPct + '% breached');
   set('e-comp-rate', e.completionPct + '%');
-  set('e-exceptions', fmt(e.exceptions || 0));
 
   // Comparison cards
   set('cmp-mp-total', fmt(e.mpTotal));
@@ -1348,7 +1292,7 @@ function renderTrends() {
 // TAT & SLA
 // ═══════════════════════════════════════════════════════════════
 function renderTATSLA() {
-  var tat = D.tat, sla = D.sla;
+  var tat = D.tat;
   if (!tat) return;
 
   set('tat-avg', tat.avg + 'd');
@@ -1356,25 +1300,6 @@ function renderTATSLA() {
   set('tat-max', tat.max !== undefined ? tat.max + 'd' : '—');
   set('tat-med', tat.median + 'd');
   set('tat-n', fmt(tat.totalWithTAT));
-
-  if (sla) {
-    set('sla-ok', fmt(sla.ok));
-    set('sla-ok-sub', sla.okPct + '% of records');
-    set('sla-warn', fmt(sla.warn));
-    set('sla-warn-sub', sla.warnPct + '%');
-    set('sla-breach', fmt(sla.breach));
-    set('sla-breach-sub', sla.breachPct + '%');
-    set('sla-rate', sla.okPct + '%');
-    set('sla-avg-delay', sla.avgDelay + 'd');
-    set('sla-leg-ok', fmt(sla.ok) + ' (' + sla.okPct + '%)');
-    set('sla-leg-warn', fmt(sla.warn) + ' (' + sla.warnPct + '%)');
-    set('sla-leg-breach', fmt(sla.breach) + ' (' + sla.breachPct + '%)');
-
-    mkDoughnut('ch-sla-ring',
-      ['Within SLA', 'Warning', 'Breached'],
-      [sla.ok, sla.warn, sla.breach],
-      [COLORS.green, COLORS.amber, COLORS.red]);
-  }
 
   if (tat.distribution) {
     mkBar('ch-tat-dist2',
@@ -1397,42 +1322,6 @@ function renderTATSLA() {
       tat.vendorTAT.map(function(x){return x.avg;}),
       'Avg TAT (days)', PALETTE);
   }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// EXCEPTIONS
-// ═══════════════════════════════════════════════════════════════
-function renderExceptions() {
-  var ex = D.exceptions;
-  if (!ex) return;
-
-  var defs = [
-    { title: 'Duplicate GSTIN', key: 'duplicateGST', total: ex.duplicateGST.total,
-      items: ex.duplicateGST.items,
-      render: function(it) { return '<div class="exc-item-name">' + esc(it.name||'—') + '</div><div class="exc-item-meta">GSTIN: ' + it.gstin + ' • Appears ' + it.count + 'x</div>'; },
-      badge: 'warn' },
-  ];
-
-  var html = '';
-  defs.forEach(function(d) {
-    var badgeClass = d.badge === 'red' ? 'exc-count-badge' : 'exc-count-badge warn';
-    html += '<div class="exc-card"><div class="exc-card-header"><span class="exc-card-title">' + d.title + '</span>';
-    html += '<span class="' + badgeClass + '">' + d.total + '</span></div>';
-    if (!d.items || !d.items.length) {
-      html += '<div class="exc-empty">✅ No issues found</div>';
-    } else {
-      html += '<div class="exc-list">';
-      d.items.slice(0, 20).forEach(function(it) {
-        html += '<div class="exc-item"><div>' + d.render(it) + '</div>';
-        html += '<span class="exc-item-badge">' + esc(it.source||it.status||'') + '</span></div>';
-      });
-      if (d.total > 20) html += '<div class="exc-item text-muted" style="font-size:11px;padding:4px 10px">+ ' + (d.total - 20) + ' more…</div>';
-      html += '</div>';
-    }
-    html += '</div>';
-  });
-
-  document.getElementById('exc-grid').innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════════════════
