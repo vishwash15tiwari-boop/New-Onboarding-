@@ -115,6 +115,8 @@ select,input{font-family:inherit}
 #btn-refresh.spinning .icon-refresh{animation:spin .6s linear infinite}
 .icon-refresh{display:inline-block;font-size:12px;line-height:1}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2.4s ease infinite}
+.live-pill{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:500;color:var(--txt3);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.live-pill b{color:var(--green);font-weight:600;letter-spacing:.05em}
 
 /* ===== Filters Bar ===== */
 #filters-bar{
@@ -493,6 +495,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   <div class="header-meta">
     <span class="status-dot"></span>
     <span class="last-updated" id="last-updated">Loading…</span>
+    <span class="live-pill"><b>LIVE</b> · <span id="refresh-countdown">—</span></span>
     <button id="btn-refresh" onclick="loadData()">
       <span class="icon-refresh">↻</span> Refresh
     </button>
@@ -990,14 +993,37 @@ var PALETTE = [COLORS.blue, COLORS.lime, COLORS.amber, COLORS.red, COLORS.purple
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
+var AUTO_REFRESH_SEC = 60;   // poll every 60 s for near-real-time updates
+var _refreshTimer    = null;
+var _countdownTimer  = null;
+var _nextAt          = 0;
+var _isFirstLoad     = true;
+
 document.addEventListener('DOMContentLoaded', function() {
   loadData();
-  setInterval(loadData, 5 * 60 * 1000); // auto-refresh every 5 min
 });
 
-function loadData() {
+function scheduleNextRefresh() {
+  clearTimeout(_refreshTimer);
+  clearInterval(_countdownTimer);
+  _nextAt = Date.now() + AUTO_REFRESH_SEC * 1000;
+
+  var el = document.getElementById('refresh-countdown');
+  _countdownTimer = setInterval(function() {
+    var rem = Math.max(0, Math.ceil((_nextAt - Date.now()) / 1000));
+    if (el) el.textContent = (rem >= 60 ? Math.floor(rem / 60) + 'm ' : '') + (rem % 60) + 's';
+  }, 1000);
+
+  _refreshTimer = setTimeout(function() { loadData(true); }, AUTO_REFRESH_SEC * 1000);
+}
+
+function loadData(silent) {
   var btn = document.getElementById('btn-refresh');
   btn.classList.add('spinning');
+  clearTimeout(_refreshTimer);
+  clearInterval(_countdownTimer);
+  var cd = document.getElementById('refresh-countdown');
+  if (cd) cd.textContent = '…';
 
   var filters = getFilters();
   google.script.run
@@ -1007,16 +1033,18 @@ function loadData() {
         if (D.success) {
           renderAll();
         } else {
-          showError(D.error);
+          if (!silent) showError(D.error);
         }
-      } catch(e) { showError('Parse error: ' + e.message); }
+      } catch(e) { if (!silent) showError('Parse error: ' + e.message); }
       btn.classList.remove('spinning');
-      hideLoading();
+      if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
+      scheduleNextRefresh();
     })
     .withFailureHandler(function(err) {
-      showError(err.message || 'Script error');
+      if (!silent) showError(err.message || 'Script error');
       btn.classList.remove('spinning');
-      hideLoading();
+      if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
+      scheduleNextRefresh();
     })
     .getDashboardData(JSON.stringify(filters));
 }
