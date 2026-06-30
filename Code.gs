@@ -1,13 +1,14 @@
 // ═══════════════════════════════════════════════════════════════
 // ENTERPRISE BUSINESS CONTROL TOWER — Apps Script Backend
-// Integrates Marketplace + Open Marketplace Sheets
+// Integrates Marketplace + Open Marketplace + EPR Sheets
 // ═══════════════════════════════════════════════════════════════
 
 var CONFIG = {
   MARKETPLACE_SHEET_ID: '1AvZZtujyTbV_fUQ-azIeOnm5xxrujWum',
   OMP_SHEET_ID:         '10v3bhgKY1C2dadT2nchXD0uZQ3GImxvK',
-  CACHE_TTL:      240,   // seconds (4 min — just inside 5-min cache window)
-  MAX_TABLE_ROWS: 300,   // per source
+  EPR_SHEET_ID:         '',   // set this when the EPR Google Sheet is ready
+  CACHE_TTL:      55,         // 55 s — must be < 60 s frontend poll so each auto-refresh gets fresh data
+  MAX_TABLE_ROWS: 300,        // per source
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -21,41 +22,44 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-// Called from the frontend via google.script.run
 function getDashboardData(filtersJson) {
   try {
-    var filters = filtersJson ? JSON.parse(filtersJson) : {};
-    var cacheKey = 'dash_' + JSON.stringify(filters);
+    var filters  = filtersJson ? JSON.parse(filtersJson) : {};
+    var cacheKey = 'dash_v3_' + JSON.stringify(filters);
     var cache    = CacheService.getScriptCache();
     var cached   = cache.get(cacheKey);
     if (cached) return cached;
 
-    var mpRaw   = readSheet(CONFIG.MARKETPLACE_SHEET_ID);
-    var ompRaw  = readSheet(CONFIG.OMP_SHEET_ID);
+    var mpRaw  = readSheet(CONFIG.MARKETPLACE_SHEET_ID);
+    var ompRaw = readSheet(CONFIG.OMP_SHEET_ID);
+    var eprRaw = CONFIG.EPR_SHEET_ID ? readSheet(CONFIG.EPR_SHEET_ID) : { headers: [], rows: [] };
 
-    var mpAll   = normalizeMarketplace(mpRaw);
-    var ompAll  = normalizeOMP(ompRaw);
+    var mpAll  = normalizeMarketplace(mpRaw);
+    var ompAll = normalizeOMP(ompRaw);
+    var eprAll = normalizeEPR(eprRaw);
 
     var mpData  = filterMarketplace(mpAll, filters);
     var ompData = filterOMP(ompAll, filters);
+    var eprData = filterEPR(eprAll, filters);
 
     var result = JSON.stringify({
       success:       true,
       lastUpdated:   new Date().toISOString(),
       filters:       filters,
-      enterprise:    calcEnterpriseKPIs(mpData, ompData),
+      enterprise:    calcEnterpriseKPIs(mpData, ompData, eprData),
       marketplace:   calcMarketplaceKPIs(mpData),
       omp:           calcOMPKPIs(ompData),
-      trends:        calcTrends(mpData),
+      epr:           calcEPRKPIs(eprData),
+      trends:        calcTrends(mpData, eprData),
       tat:           calcTAT(mpData),
-      table:         buildTable(mpData, ompData),
-      filterOptions: buildFilterOptions(mpAll, ompAll),
+      table:         buildTable(mpData, ompData, eprData),
+      filterOptions: buildFilterOptions(mpAll, ompAll, eprAll),
     });
 
     try { cache.put(cacheKey, result, CONFIG.CACHE_TTL); } catch(e) {}
     return result;
 
-  } catch (err) {
+  } catch(err) {
     return JSON.stringify({ success: false, error: err.message, stack: err.stack });
   }
 }
@@ -85,11 +89,10 @@ function readSheet(id) {
 
 // ─────────────────────────────────────────────────────────────
 // NORMALIZATION — MARKETPLACE
-// Columns: id, business_name, state, vendor_type, business_category,
-//          gstin_number, status, current_status, status_changed_on,
-//          created_date, review_submission_date, party_id,
-//          level1_rejected1..level4, onboarded_date,
-//          Firstshipmentdate, LifetimeValue
+// Columns (sheet): id, business_name, state, vendor_type,
+//   business_category, gstin_number, status, current_status,
+//   status_changed_on, created_date, review_submission_date,
+//   party_id, onboarded_date, Firstshipmentdate, LifetimeValue
 // ─────────────────────────────────────────────────────────────
 
 function normalizeMarketplace(raw) {
@@ -100,61 +103,52 @@ function normalizeMarketplace(raw) {
     var created   = parseDate(gv(row, idx, 'created_date'));
     var onboarded = parseDate(gv(row, idx, 'onboarded_date'));
     var shipment  = parseDate(gv(row, idx, 'firstshipmentdate'));
-    var status    = normStatus(gv(row, idx, 'status'));
-    var curStatus = normCurrentStatus(gv(row, idx, 'current_status'));
     var gstin     = String(gv(row, idx, 'gstin_number') || '').trim();
     var ltv       = parseNumber(gv(row, idx, 'lifetimevalue'));
-    var onbTAT    = dateDiffDays(created, onboarded);
-    var shipTAT   = dateDiffDays(onboarded, shipment);
-    var age       = dateDiffDays(created, now);
 
     return {
-      id:           String(gv(row, idx, 'id') || '').replace(/,/g, '').trim(),
-      name:         String(gv(row, idx, 'business_name') || '').trim(),
-      state:        String(gv(row, idx, 'state') || '').trim(),
-      vendorType:   String(gv(row, idx, 'vendor_type') || '').trim(),
-      category:     normCategory(gv(row, idx, 'business_category')),
-      gstin:        gstin,
-      status:       status,
-      currentStatus: curStatus,
+      id:             String(gv(row, idx, 'id') || '').replace(/,/g, '').trim(),
+      name:           String(gv(row, idx, 'business_name') || '').trim(),
+      state:          String(gv(row, idx, 'state') || '').trim(),
+      vendorType:     String(gv(row, idx, 'vendor_type') || '').trim(),
+      category:       normCategory(gv(row, idx, 'business_category')),
+      gstin:          gstin,
+      status:         normStatus(gv(row, idx, 'status')),
+      currentStatus:  normCurrentStatus(gv(row, idx, 'current_status')),
       statusChangedOn: parseDate(gv(row, idx, 'status_changed_on')),
-      createdDate:  created,
-      reviewDate:   parseDate(gv(row, idx, 'review_submission_date')),
-      onboardedDate: onboarded,
-      shipmentDate: shipment,
-      ltv:          ltv,
-      onbTAT:       onbTAT,
-      shipTAT:      shipTAT,
-      age:          age,
-      hasGST:       gstin.length > 5,
-      hasShipment:  !!shipment,
-      source:       'Marketplace',
+      createdDate:    created,
+      reviewDate:     parseDate(gv(row, idx, 'review_submission_date')),
+      onboardedDate:  onboarded,
+      shipmentDate:   shipment,
+      ltv:            ltv,
+      onbTAT:         dateDiffDays(created, onboarded),
+      shipTAT:        dateDiffDays(onboarded, shipment),
+      age:            dateDiffDays(created, now),
+      hasGST:         gstin.length > 5,
+      hasShipment:    !!shipment,
+      source:         'Marketplace',
     };
   }).filter(function(r) { return r.id || r.name; });
 }
 
 // ─────────────────────────────────────────────────────────────
 // NORMALIZATION — OPEN MARKETPLACE
-// Columns: id, gstin, business_name, status, vendor_type,
-//          business_category, additional_documents,
-//          proof_of_premises, electricity_bill, kyc_document,
-//          gst_portal_screenshot_bank_details, cancelled_cheque,
-//          msme_certificate, aadhaar, owner_pan, entity_pan,
-//          gst_certificate
+// Columns (sheet): id, gstin, business_name, status,
+//   vendor_type, business_category, + 11 document columns
 // ─────────────────────────────────────────────────────────────
 
 var OMP_DOC_FIELDS = [
-  { key: 'additional_documents',                  label: 'Additional Docs' },
-  { key: 'proof_of_premises',                     label: 'Proof of Premises' },
-  { key: 'electricity_bill',                      label: 'Electricity Bill' },
-  { key: 'kyc_document',                          label: 'KYC Document' },
-  { key: 'gst_portal_screenshot_bank_details',    label: 'GST Portal / Bank' },
-  { key: 'cancelled_cheque',                      label: 'Cancelled Cheque' },
-  { key: 'msme_certificate',                      label: 'MSME Certificate' },
-  { key: 'aadhaar',                               label: 'Aadhaar' },
-  { key: 'owner_pan',                             label: 'Owner PAN' },
-  { key: 'entity_pan',                            label: 'Entity PAN' },
-  { key: 'gst_certificate',                       label: 'GST Certificate' },
+  { key: 'additional_documents',               label: 'Additional Docs'   },
+  { key: 'proof_of_premises',                  label: 'Proof of Premises' },
+  { key: 'electricity_bill',                   label: 'Electricity Bill'  },
+  { key: 'kyc_document',                       label: 'KYC Document'      },
+  { key: 'gst_portal_screenshot_bank_details', label: 'GST Portal / Bank' },
+  { key: 'cancelled_cheque',                   label: 'Cancelled Cheque'  },
+  { key: 'msme_certificate',                   label: 'MSME Certificate'  },
+  { key: 'aadhaar',                            label: 'Aadhaar'           },
+  { key: 'owner_pan',                          label: 'Owner PAN'         },
+  { key: 'entity_pan',                         label: 'Entity PAN'        },
+  { key: 'gst_certificate',                    label: 'GST Certificate'   },
 ];
 
 function normalizeOMP(raw) {
@@ -162,34 +156,67 @@ function normalizeOMP(raw) {
 
   return raw.rows.map(function(row) {
     var gstin  = String(gv(row, idx, 'gstin') || '').trim();
-    var status = normStatus(gv(row, idx, 'status'));
     var docs   = {};
     var filled = 0;
 
     OMP_DOC_FIELDS.forEach(function(f) {
-      var v = parseInt(gv(row, idx, f.key) || 0, 10) || 0;
-      docs[f.key] = v;
-      if (v > 0) filled++;
+      var n = parseInt(gv(row, idx, f.key) || 0, 10) || 0;
+      docs[f.key] = n;
+      if (n > 0) filled++;
     });
 
-    var docPct = Math.round((filled / OMP_DOC_FIELDS.length) * 100);
-    var missingDocs = OMP_DOC_FIELDS.filter(function(f) { return (docs[f.key] || 0) === 0; })
-                                     .map(function(f) { return f.label; });
+    var docPct      = Math.round((filled / OMP_DOC_FIELDS.length) * 100);
+    var missingDocs = OMP_DOC_FIELDS
+      .filter(function(f) { return (docs[f.key] || 0) === 0; })
+      .map(function(f) { return f.label; });
 
     return {
-      id:           String(gv(row, idx, 'id') || '').replace(/,/g, '').trim(),
-      gstin:        gstin,
-      name:         String(gv(row, idx, 'business_name') || '').trim(),
-      status:       status,
-      vendorType:   String(gv(row, idx, 'vendor_type') || '').trim(),
-      category:     normCategory(gv(row, idx, 'business_category')),
-      docs:         docs,
-      docsFilled:   filled,
-      docsTotal:    OMP_DOC_FIELDS.length,
-      docPct:       docPct,
-      missingDocs:  missingDocs,
-      hasGST:       gstin.length > 5,
-      source:       'Open Marketplace',
+      id:          String(gv(row, idx, 'id') || '').replace(/,/g, '').trim(),
+      gstin:       gstin,
+      name:        String(gv(row, idx, 'business_name') || '').trim(),
+      status:      normStatus(gv(row, idx, 'status')),
+      vendorType:  String(gv(row, idx, 'vendor_type') || '').trim(),
+      category:    normCategory(gv(row, idx, 'business_category')),
+      docs:        docs,
+      docsFilled:  filled,
+      docsTotal:   OMP_DOC_FIELDS.length,
+      docPct:      docPct,
+      missingDocs: missingDocs,
+      hasGST:      gstin.length > 5,
+      source:      'Open Marketplace',
+    };
+  }).filter(function(r) { return r.id || r.name; });
+}
+
+// ─────────────────────────────────────────────────────────────
+// NORMALIZATION — EPR
+// Mirrors Marketplace layout; reads from EPR_SHEET_ID when set
+// ─────────────────────────────────────────────────────────────
+
+function normalizeEPR(raw) {
+  if (!raw || !raw.rows || raw.rows.length === 0) return [];
+  var idx = buildIndex(raw.headers);
+  var now = new Date();
+
+  return raw.rows.map(function(row) {
+    // accept both 'gstin' and 'gstin_number' column names
+    var gstin     = String(gv(row, idx, 'gstin') || gv(row, idx, 'gstin_number') || '').trim();
+    var created   = parseDate(gv(row, idx, 'created_date'));
+    var onboarded = parseDate(gv(row, idx, 'onboarded_date'));
+
+    return {
+      id:            String(gv(row, idx, 'id') || '').replace(/,/g, '').trim(),
+      name:          String(gv(row, idx, 'business_name') || '').trim(),
+      gstin:         gstin,
+      status:        normStatus(gv(row, idx, 'status')),
+      vendorType:    String(gv(row, idx, 'vendor_type') || '').trim(),
+      category:      normCategory(gv(row, idx, 'business_category')),
+      createdDate:   created,
+      onboardedDate: onboarded,
+      onbTAT:        dateDiffDays(created, onboarded),
+      age:           dateDiffDays(created, now),
+      hasGST:        gstin.length > 5,
+      source:        'EPR',
     };
   }).filter(function(r) { return r.id || r.name; });
 }
@@ -198,37 +225,48 @@ function normalizeOMP(raw) {
 // FILTERS
 // ─────────────────────────────────────────────────────────────
 
+function applyDateFilter(r, f) {
+  if (!f.period || f.period === 'All') return true;
+  var d = r.createdDate;
+  if (!d) return false;
+  var now = new Date();
+  var ps  = null;
+  var pe  = null;
+  if (f.period === 'Today') {
+    ps = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (f.period === 'MTD') {
+    ps = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else if (f.period === 'YTD') {
+    ps = new Date(now.getFullYear(), 0, 1);
+  } else if (f.period === 'Custom' && f.startDate && f.endDate) {
+    ps = new Date(f.startDate);
+    pe = new Date(f.endDate);
+    pe.setHours(23, 59, 59, 999);
+  }
+  if (ps && d < ps) return false;
+  if (pe && d > pe) return false;
+  return true;
+}
+
+function applyCommonFilters(r, f) {
+  if (f.category   && f.category   !== 'All' && r.category   !== f.category)   return false;
+  if (f.vendorType && f.vendorType !== 'All' && r.vendorType !== f.vendorType)  return false;
+  if (f.status     && f.status     !== 'All' && r.status     !== f.status)      return false;
+  if (f.search) {
+    var q = f.search.toLowerCase();
+    if (!(r.name  || '').toLowerCase().includes(q) &&
+        !(r.gstin || '').toLowerCase().includes(q) &&
+        !(r.id    || '').includes(q)) return false;
+  }
+  return true;
+}
+
 function filterMarketplace(data, f) {
   return data.filter(function(r) {
     if (f.vertical && f.vertical !== 'All' && f.vertical !== 'Marketplace') return false;
-    if (f.category && f.category !== 'All' && r.category !== f.category) return false;
-    if (f.vendorType && f.vendorType !== 'All' && r.vendorType !== f.vendorType) return false;
-    if (f.status && f.status !== 'All' && r.status !== f.status) return false;
     if (f.state && f.state !== 'All' && r.state !== f.state) return false;
-    if (f.search) {
-      var q = f.search.toLowerCase();
-      if (!(r.name || '').toLowerCase().includes(q) &&
-          !(r.gstin || '').toLowerCase().includes(q) &&
-          !(r.id || '').includes(q)) return false;
-    }
-    if (f.period && f.period !== 'All') {
-      var d = r.createdDate;
-      if (!d) return false;
-      var now = new Date();
-      var periodStart = null, periodEnd = null;
-      if (f.period === 'Today') {
-        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      } else if (f.period === 'MTD') {
-        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      } else if (f.period === 'YTD') {
-        periodStart = new Date(now.getFullYear(), 0, 1);
-      } else if (f.period === 'Custom' && f.startDate && f.endDate) {
-        periodStart = new Date(f.startDate);
-        periodEnd   = new Date(f.endDate);
-      }
-      if (periodStart && d < periodStart) return false;
-      if (periodEnd   && d > periodEnd)   return false;
-    }
+    if (!applyCommonFilters(r, f)) return false;
+    if (!applyDateFilter(r, f))    return false;
     return true;
   });
 }
@@ -236,15 +274,16 @@ function filterMarketplace(data, f) {
 function filterOMP(data, f) {
   return data.filter(function(r) {
     if (f.vertical && f.vertical !== 'All' && f.vertical !== 'OMP') return false;
-    if (f.category && f.category !== 'All' && r.category !== f.category) return false;
-    if (f.vendorType && f.vendorType !== 'All' && r.vendorType !== f.vendorType) return false;
-    if (f.status && f.status !== 'All' && r.status !== f.status) return false;
-    if (f.search) {
-      var q = f.search.toLowerCase();
-      if (!(r.name || '').toLowerCase().includes(q) &&
-          !(r.gstin || '').toLowerCase().includes(q) &&
-          !(r.id || '').includes(q)) return false;
-    }
+    if (!applyCommonFilters(r, f)) return false;
+    return true;
+  });
+}
+
+function filterEPR(data, f) {
+  return data.filter(function(r) {
+    if (f.vertical && f.vertical !== 'All' && f.vertical !== 'EPR') return false;
+    if (!applyCommonFilters(r, f)) return false;
+    if (!applyDateFilter(r, f))    return false;
     return true;
   });
 }
@@ -253,15 +292,14 @@ function filterOMP(data, f) {
 // KPI CALCULATIONS
 // ─────────────────────────────────────────────────────────────
 
-function calcEnterpriseKPIs(mp, omp) {
-  var totalCases     = mp.length + omp.length;
-  var totalCompleted = count(mp, 'status', 'COMPLETED') + count(omp, 'status', 'COMPLETED');
-  var totalPending   = countFn(mp, function(r) { return r.status === 'DRAFT' || r.status === 'IN_REVIEW'; })
-                     + countFn(omp, function(r) { return r.status === 'DRAFT' || r.status === 'IN_REVIEW'; });
-  var totalRejected  = count(mp, 'status', 'REJECTED') + count(omp, 'status', 'REJECTED');
-  var totalLTV       = mp.reduce(function(s, r) { return s + (r.ltv || 0); }, 0);
-  var tats           = mp.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
-  var avgTAT         = tats.length ? Math.round(avg(tats)) : 0;
+function calcEnterpriseKPIs(mp, omp, epr) {
+  var all           = mp.concat(omp).concat(epr);
+  var totalCases    = all.length;
+  var totalCompleted = count(all, 'status', 'COMPLETED');
+  var totalPending  = countFn(all, function(r) { return r.status === 'DRAFT' || r.status === 'IN_REVIEW'; });
+  var totalRejected = count(all, 'status', 'REJECTED');
+  var totalLTV      = mp.reduce(function(s, r) { return s + (r.ltv || 0); }, 0);
+  var tats          = mp.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
 
   return {
     totalCases:     totalCases,
@@ -269,41 +307,40 @@ function calcEnterpriseKPIs(mp, omp) {
     totalPending:   totalPending,
     totalRejected:  totalRejected,
     totalLTV:       totalLTV,
-    avgTAT:         avgTAT,
+    avgTAT:         tats.length ? Math.round(avg(tats)) : 0,
     completionPct:  pct(totalCompleted, totalCases),
     mpTotal:        mp.length,
     ompTotal:       omp.length,
-    mpPct:          pct(mp.length, totalCases),
+    eprTotal:       epr.length,
+    mpPct:          pct(mp.length,  totalCases),
     ompPct:         pct(omp.length, totalCases),
-    mpCompleted:    count(mp, 'status', 'COMPLETED'),
+    eprPct:         pct(epr.length, totalCases),
+    mpCompleted:    count(mp,  'status', 'COMPLETED'),
     ompCompleted:   count(omp, 'status', 'COMPLETED'),
+    eprCompleted:   count(epr, 'status', 'COMPLETED'),
   };
 }
 
 function calcMarketplaceKPIs(data) {
-  var total      = data.length;
-  var completed  = count(data, 'status', 'COMPLETED');
-  var draft      = count(data, 'status', 'DRAFT');
-  var inReview   = count(data, 'status', 'IN_REVIEW');
-  var rejected   = count(data, 'status', 'REJECTED');
-  var active     = countFn(data, function(r) { return r.currentStatus === 'ACTIVE' || r.currentStatus === 'REACTIVATED'; });
-  var churned    = count(data, 'currentStatus', 'CHURNED');
-  var deact      = count(data, 'currentStatus', 'DEACTIVATED');
-  var react      = count(data, 'currentStatus', 'REACTIVATED');
-  var withShip   = countFn(data, function(r) { return r.hasShipment; });
-  var noShip     = completed - withShip;
-  var missingGST = countFn(data, function(r) { return !r.hasGST; });
+  var total     = data.length;
+  var completed = count(data, 'status', 'COMPLETED');
+  var draft     = count(data, 'status', 'DRAFT');
+  var inReview  = count(data, 'status', 'IN_REVIEW');
+  var rejected  = count(data, 'status', 'REJECTED');
+  var active    = countFn(data, function(r) { return r.currentStatus === 'ACTIVE' || r.currentStatus === 'REACTIVATED'; });
+  var churned   = count(data, 'currentStatus', 'CHURNED');
+  var deact     = count(data, 'currentStatus', 'DEACTIVATED');
+  var react     = count(data, 'currentStatus', 'REACTIVATED');
+  var withShip  = countFn(data, function(r) { return r.hasShipment; });
+  var noShip    = Math.max(0, completed - withShip);
+  var misGST    = countFn(data, function(r) { return !r.hasGST; });
+  var ltv       = data.reduce(function(s, r) { return s + (r.ltv || 0); }, 0);
+  var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
 
-  var ltv        = data.reduce(function(s, r) { return s + (r.ltv || 0); }, 0);
-  var avgLTV     = total ? ltv / total : 0;
-
-  var tats       = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
-  var avgTAT     = tats.length ? Math.round(avg(tats)) : 0;
-
-  var now       = new Date();
-  var today0    = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  var mtd0      = new Date(now.getFullYear(), now.getMonth(), 1);
-  var ytd0      = new Date(now.getFullYear(), 0, 1);
+  var now    = new Date();
+  var today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var mtd0   = new Date(now.getFullYear(), now.getMonth(), 1);
+  var ytd0   = new Date(now.getFullYear(), 0, 1);
 
   return {
     total:        total,
@@ -317,30 +354,28 @@ function calcMarketplaceKPIs(data) {
     deactivated:  deact,
     reactivated:  react,
     withShipment: withShip,
-    noShipment:   noShip < 0 ? 0 : noShip,
-    missingGST:   missingGST,
+    noShipment:   noShip,
+    missingGST:   misGST,
     totalLTV:     ltv,
-    avgLTV:       avgLTV,
-    avgTAT:       avgTAT,
+    avgLTV:       total ? ltv / total : 0,
+    avgTAT:       tats.length ? Math.round(avg(tats)) : 0,
     completionPct: pct(completed, total),
     shipmentRate:  pct(withShip, completed),
     activeRate:    pct(active, completed),
-    // Date KPIs
-    createdToday: countFn(data, function(r) { return r.createdDate && r.createdDate >= today0; }),
-    createdMTD:   countFn(data, function(r) { return r.createdDate && r.createdDate >= mtd0; }),
-    createdYTD:   countFn(data, function(r) { return r.createdDate && r.createdDate >= ytd0; }),
-    onbToday:     countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= today0; }),
-    onbMTD:       countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= mtd0; }),
-    onbYTD:       countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= ytd0; }),
-    shipToday:    countFn(data, function(r) { return r.shipmentDate && r.shipmentDate >= today0; }),
-    shipMTD:      countFn(data, function(r) { return r.shipmentDate && r.shipmentDate >= mtd0; }),
-    shipYTD:      countFn(data, function(r) { return r.shipmentDate && r.shipmentDate >= ytd0; }),
-    // Splits
-    statusSplit:     objToArr(groupBy(data, 'status')),
-    curStatusSplit:  objToArr(groupBy(data, 'currentStatus')),
-    categorySplit:   objToArr(groupBy(data, 'category')),
-    vendorSplit:     objToArr(groupBy(data, 'vendorType')),
-    stateSplit:      objToArr(groupBy(data, 'state')).slice(0, 12),
+    createdToday:  countFn(data, function(r) { return r.createdDate   && r.createdDate   >= today0; }),
+    createdMTD:    countFn(data, function(r) { return r.createdDate   && r.createdDate   >= mtd0;   }),
+    createdYTD:    countFn(data, function(r) { return r.createdDate   && r.createdDate   >= ytd0;   }),
+    onbToday:      countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= today0; }),
+    onbMTD:        countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= mtd0;   }),
+    onbYTD:        countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= ytd0;   }),
+    shipToday:     countFn(data, function(r) { return r.shipmentDate  && r.shipmentDate  >= today0; }),
+    shipMTD:       countFn(data, function(r) { return r.shipmentDate  && r.shipmentDate  >= mtd0;   }),
+    shipYTD:       countFn(data, function(r) { return r.shipmentDate  && r.shipmentDate  >= ytd0;   }),
+    statusSplit:    objToArr(groupBy(data, 'status')),
+    curStatusSplit: objToArr(groupBy(data, 'currentStatus')),
+    categorySplit:  objToArr(groupBy(data, 'category')),
+    vendorSplit:    objToArr(groupBy(data, 'vendorType')),
+    stateSplit:     objToArr(groupBy(data, 'state')).slice(0, 12),
   };
 }
 
@@ -351,18 +386,11 @@ function calcOMPKPIs(data) {
   var inReview  = count(data, 'status', 'IN_REVIEW');
   var rejected  = count(data, 'status', 'REJECTED');
   var withGST   = countFn(data, function(r) { return r.hasGST; });
-
-  var avgDoc = total ? Math.round(data.reduce(function(s, r) { return s + r.docPct; }, 0) / total) : 0;
+  var avgDoc    = total ? Math.round(data.reduce(function(s, r) { return s + r.docPct; }, 0) / total) : 0;
 
   var docStats = OMP_DOC_FIELDS.map(function(f) {
     var submitted = countFn(data, function(r) { return (r.docs[f.key] || 0) > 0; });
-    return {
-      key:       f.key,
-      label:     f.label,
-      submitted: submitted,
-      missing:   total - submitted,
-      pct:       pct(submitted, total),
-    };
+    return { key: f.key, label: f.label, submitted: submitted, missing: total - submitted, pct: pct(submitted, total) };
   });
 
   return {
@@ -384,18 +412,44 @@ function calcOMPKPIs(data) {
   };
 }
 
+function calcEPRKPIs(data) {
+  var total     = data.length;
+  var completed = count(data, 'status', 'COMPLETED');
+  var draft     = count(data, 'status', 'DRAFT');
+  var inReview  = count(data, 'status', 'IN_REVIEW');
+  var rejected  = count(data, 'status', 'REJECTED');
+  var withGST   = countFn(data, function(r) { return r.hasGST; });
+
+  return {
+    total:         total,
+    completed:     completed,
+    draft:         draft,
+    inReview:      inReview,
+    rejected:      rejected,
+    pending:       draft + inReview,
+    withGST:       withGST,
+    missingGST:    total - withGST,
+    pipelinePct:   pct(draft + inReview, total),
+    completionPct: pct(completed, total),
+    statusSplit:   objToArr(groupBy(data, 'status')),
+    categorySplit: objToArr(groupBy(data, 'category')),
+    vendorSplit:   objToArr(groupBy(data, 'vendorType')),
+  };
+}
+
 // ─────────────────────────────────────────────────────────────
-// TRENDS
+// TRENDS  (MP + EPR where date data exists; OMP has no dates)
 // ─────────────────────────────────────────────────────────────
 
-function calcTrends(data) {
-  var now    = new Date();
+function calcTrends(mp, epr) {
+  var data = mp.concat(epr || []);
+  var now  = new Date();
   var months = [];
 
   for (var i = 11; i >= 0; i--) {
     var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     months.push({
-      label: d.toLocaleString('default', { month: 'short' }) + ' ' + String(d.getFullYear()).slice(2),
+      label: d.toLocaleString('default', { month: 'short' }) + ' \'' + String(d.getFullYear()).slice(2),
       year:  d.getFullYear(),
       month: d.getMonth(),
     });
@@ -404,9 +458,9 @@ function calcTrends(data) {
   var monthly = months.map(function(m) {
     return {
       label:     m.label,
-      created:   countFn(data, function(r) { return r.createdDate && r.createdDate.getFullYear() === m.year && r.createdDate.getMonth() === m.month; }),
+      created:   countFn(data, function(r) { return r.createdDate   && r.createdDate.getFullYear()   === m.year && r.createdDate.getMonth()   === m.month; }),
       onboarded: countFn(data, function(r) { return r.onboardedDate && r.onboardedDate.getFullYear() === m.year && r.onboardedDate.getMonth() === m.month; }),
-      shipped:   countFn(data, function(r) { return r.shipmentDate && r.shipmentDate.getFullYear() === m.year && r.shipmentDate.getMonth() === m.month; }),
+      shipped:   countFn(mp,   function(r) { return r.shipmentDate  && r.shipmentDate.getFullYear()  === m.year && r.shipmentDate.getMonth()  === m.month; }),
     };
   });
 
@@ -414,7 +468,7 @@ function calcTrends(data) {
   var yearly = years.map(function(y) {
     return {
       label:     String(y),
-      created:   countFn(data, function(r) { return r.createdDate && r.createdDate.getFullYear() === y; }),
+      created:   countFn(data, function(r) { return r.createdDate   && r.createdDate.getFullYear()   === y; }),
       onboarded: countFn(data, function(r) { return r.onboardedDate && r.onboardedDate.getFullYear() === y; }),
     };
   });
@@ -423,24 +477,22 @@ function calcTrends(data) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// TAT
+// TAT  (Marketplace onboarding TAT only)
 // ─────────────────────────────────────────────────────────────
 
 function calcTAT(data) {
   var withTAT = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; });
-  if (!withTAT.length) return { avg: 0, min: 0, max: 0, median: 0, distribution: [], categoryTAT: [], vendorTAT: [] };
+  if (!withTAT.length) return { avg: 0, min: 0, max: 0, median: 0, totalWithTAT: 0, distribution: [], categoryTAT: [], vendorTAT: [] };
 
   var vals = withTAT.map(function(r) { return r.onbTAT; }).sort(function(a, b) { return a - b; });
-  var mean = avg(vals);
-  var med  = vals[Math.floor(vals.length / 2)];
 
   var buckets = [
-    { label: '0–2 days',  min: 0,  max: 2 },
-    { label: '3–5 days',  min: 3,  max: 5 },
-    { label: '6–10 days', min: 6,  max: 10 },
-    { label: '11–20 days',min: 11, max: 20 },
-    { label: '21–30 days',min: 21, max: 30 },
-    { label: '31+ days',  min: 31, max: Infinity },
+    { label: '0–2 days',   min: 0,  max: 2          },
+    { label: '3–5 days',   min: 3,  max: 5          },
+    { label: '6–10 days',  min: 6,  max: 10         },
+    { label: '11–20 days', min: 11, max: 20         },
+    { label: '21–30 days', min: 21, max: 30         },
+    { label: '31+ days',   min: 31, max: Infinity   },
   ].map(function(b) {
     b.count = countFn(withTAT, function(r) { return r.onbTAT >= b.min && r.onbTAT <= b.max; });
     return b;
@@ -452,9 +504,9 @@ function calcTAT(data) {
     if (!catMap[k]) catMap[k] = [];
     catMap[k].push(r.onbTAT);
   });
-  var categoryTAT = Object.keys(catMap).map(function(k) {
-    return { category: k, avg: Math.round(avg(catMap[k])), count: catMap[k].length };
-  }).sort(function(a, b) { return b.avg - a.avg; });
+  var categoryTAT = Object.keys(catMap)
+    .map(function(k) { return { category: k, avg: Math.round(avg(catMap[k])), count: catMap[k].length }; })
+    .sort(function(a, b) { return b.avg - a.avg; });
 
   var vMap = {};
   withTAT.forEach(function(r) {
@@ -462,15 +514,16 @@ function calcTAT(data) {
     if (!vMap[k]) vMap[k] = [];
     vMap[k].push(r.onbTAT);
   });
-  var vendorTAT = Object.keys(vMap).map(function(k) {
-    return { vendorType: k, avg: Math.round(avg(vMap[k])), count: vMap[k].length };
-  }).sort(function(a, b) { return b.avg - a.avg; }).slice(0, 10);
+  var vendorTAT = Object.keys(vMap)
+    .map(function(k) { return { vendorType: k, avg: Math.round(avg(vMap[k])), count: vMap[k].length }; })
+    .sort(function(a, b) { return b.avg - a.avg; })
+    .slice(0, 10);
 
   return {
-    avg:          Math.round(mean),
+    avg:          Math.round(avg(vals)),
     min:          vals[0],
     max:          vals[vals.length - 1],
-    median:       Math.round(med),
+    median:       Math.round(vals[Math.floor(vals.length / 2)]),
     totalWithTAT: withTAT.length,
     distribution: buckets,
     categoryTAT:  categoryTAT,
@@ -482,7 +535,7 @@ function calcTAT(data) {
 // TABLE DATA
 // ─────────────────────────────────────────────────────────────
 
-function buildTable(mp, omp) {
+function buildTable(mp, omp, epr) {
   var mpRows = mp.slice(0, CONFIG.MAX_TABLE_ROWS).map(function(r) {
     return {
       id:          r.id,
@@ -527,11 +580,35 @@ function buildTable(mp, omp) {
     };
   });
 
+  var eprRows = epr.slice(0, CONFIG.MAX_TABLE_ROWS).map(function(r) {
+    return {
+      id:          r.id,
+      name:        r.name,
+      source:      'EPR',
+      category:    r.category,
+      vendorType:  r.vendorType,
+      status:      r.status,
+      curStatus:   '—',
+      gstin:       r.gstin || '—',
+      state:       '—',
+      createdDate: fmtDate(r.createdDate),
+      onbDate:     fmtDate(r.onboardedDate),
+      shipDate:    '—',
+      tat:         r.onbTAT !== null ? r.onbTAT : '—',
+      ltv:         '—',
+      hasGST:      r.hasGST,
+      hasShip:     false,
+      docPct:      '—',
+    };
+  });
+
+  var rows = mpRows.concat(ompRows).concat(eprRows);
   return {
-    rows:     mpRows.concat(ompRows),
+    rows:     rows,
     mpCount:  mpRows.length,
     ompCount: ompRows.length,
-    total:    mpRows.length + ompRows.length,
+    eprCount: eprRows.length,
+    total:    rows.length,
   };
 }
 
@@ -539,13 +616,20 @@ function buildTable(mp, omp) {
 // FILTER OPTIONS
 // ─────────────────────────────────────────────────────────────
 
-function buildFilterOptions(mp, omp) {
-  var all = mp.concat(omp);
+function buildFilterOptions(mp, omp, epr) {
+  var all = mp.concat(omp).concat(epr);
+
+  // Statuses: known order first, then any extras found in data
+  var known  = ['COMPLETED', 'IN_REVIEW', 'DRAFT', 'REJECTED'];
+  var inData = unique(all.map(function(r) { return r.status; }).filter(Boolean));
+  var statuses = known.filter(function(s) { return inData.indexOf(s) > -1; })
+                      .concat(inData.filter(function(s) { return known.indexOf(s) === -1; }));
+
   return {
-    categories: unique(all.map(function(r) { return r.category; })).filter(Boolean).sort(),
+    categories:  unique(all.map(function(r) { return r.category;   })).filter(Boolean).sort(),
     vendorTypes: unique(all.map(function(r) { return r.vendorType; })).filter(Boolean).sort(),
-    states:     unique(mp.map(function(r) { return r.state; })).filter(Boolean).sort(),
-    statuses:   ['COMPLETED', 'IN_REVIEW', 'DRAFT', 'REJECTED'],
+    states:      unique(mp.map(function(r)  { return r.state;      })).filter(Boolean).sort(),
+    statuses:    statuses,
   };
 }
 
@@ -564,49 +648,77 @@ function gv(row, idx, key) {
 }
 
 function parseDate(val) {
-  if (!val) return null;
+  if (val === null || val === undefined || val === '') return null;
   if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
-  var s = String(val).trim();
-  if (!s) return null;
-  // Google Sheets serial numbers come as numbers
-  if (!isNaN(Number(s)) && Number(s) > 1000) {
-    var excelDate = new Date((Number(s) - 25569) * 86400000); // Excel/GSheets epoch
-    if (!isNaN(excelDate.getTime())) return excelDate;
+  // GSheets serial number (Apps Script may not yet format as Date if cell is unformatted)
+  if (typeof val === 'number') {
+    if (val < 1) return null;
+    var d = new Date((val - 25569) * 86400000);
+    return isNaN(d.getTime()) ? null : d;
   }
-  // "Month Day, Year, H:MM am" format from GSheets
-  var d1 = new Date(s.replace(/,\s*\d+:\d+\s*(am|pm)/i, '').trim());
+  var s = String(val).trim();
+  if (!s || s === '—' || s === '-' || s === 'N/A') return null;
+  // Strip appended time: "Jun 30, 2025, 4:35 pm" → "Jun 30, 2025"
+  var noTime = s.replace(/,?\s+\d{1,2}:\d{2}(:\d{2})?(\s*(am|pm))?/i, '').trim();
+  var d1 = new Date(noTime);
   if (!isNaN(d1.getTime())) return d1;
   var d2 = new Date(s);
-  return (!isNaN(d2.getTime())) ? d2 : null;
+  return isNaN(d2.getTime()) ? null : d2;
 }
 
 function parseNumber(val) {
-  if (!val && val !== 0) return 0;
+  if (val === null || val === undefined || val === '') return 0;
   if (typeof val === 'number') return val;
   return parseFloat(String(val).replace(/,/g, '').replace(/[^0-9.\-]/g, '')) || 0;
 }
 
 function dateDiffDays(d1, d2) {
   if (!d1 || !d2) return null;
-  return Math.round((d2.getTime() - d1.getTime()) / 86400000);
+  var diff = Math.round((d2.getTime() - d1.getTime()) / 86400000);
+  return diff;
 }
 
 function normStatus(v) {
   var s = String(v || '').toUpperCase().trim().replace(/\s+/g, '_');
-  var map = { 'COMPLETE': 'COMPLETED', 'INREVIEW': 'IN_REVIEW', 'REVIEW': 'IN_REVIEW', 'IN_REVIEW': 'IN_REVIEW', 'ACTIVE': 'ACTIVE' };
-  return map[s] || s || 'UNKNOWN';
+  if (!s) return 'UNKNOWN';
+  var map = {
+    'COMPLETED':    'COMPLETED',
+    'COMPLETE':     'COMPLETED',
+    'ONBOARDED':    'COMPLETED',
+    'DRAFT':        'DRAFT',
+    'PENDING':      'DRAFT',
+    'NEW':          'DRAFT',
+    'IN_REVIEW':    'IN_REVIEW',
+    'INREVIEW':     'IN_REVIEW',
+    'REVIEW':       'IN_REVIEW',
+    'UNDER_REVIEW': 'IN_REVIEW',
+    'IN_PROGRESS':  'IN_REVIEW',
+    'REJECTED':     'REJECTED',
+    'REJECT':       'REJECTED',
+    'DECLINED':     'REJECTED',
+  };
+  return map[s] || s;
 }
 
 function normCurrentStatus(v) {
   var s = String(v || '').toUpperCase().trim().replace(/\s+/g, '_');
-  var map = { 'CHURN': 'CHURNED', 'INACTIVE': 'DEACTIVATED', 'DEACTIVATE': 'DEACTIVATED' };
-  return map[s] || s || 'UNKNOWN';
+  if (!s) return 'UNKNOWN';
+  var map = {
+    'ACTIVE':       'ACTIVE',
+    'CHURNED':      'CHURNED',
+    'CHURN':        'CHURNED',
+    'DEACTIVATED':  'DEACTIVATED',
+    'DEACTIVATE':   'DEACTIVATED',
+    'INACTIVE':     'DEACTIVATED',
+    'REACTIVATED':  'REACTIVATED',
+    'REACTIVATE':   'REACTIVATED',
+  };
+  return map[s] || s;
 }
 
 function normCategory(v) {
   var s = String(v || '').trim();
-  if (!s) return 'Others';
-  return s;
+  return s || 'Others';
 }
 
 function count(arr, field, val) {
@@ -623,19 +735,31 @@ function pct(n, d) {
 }
 function groupBy(arr, field) {
   var res = {};
-  arr.forEach(function(r) { var k = r[field] || 'Unknown'; res[k] = (res[k] || 0) + 1; });
+  arr.forEach(function(r) {
+    var k = r[field] || 'Unknown';
+    res[k] = (res[k] || 0) + 1;
+  });
   return res;
 }
 function objToArr(obj) {
-  return Object.keys(obj).map(function(k) { return { label: k, count: obj[k] }; })
-               .sort(function(a, b) { return b.count - a.count; });
+  return Object.keys(obj)
+    .map(function(k) { return { label: k, count: obj[k] }; })
+    .sort(function(a, b) { return b.count - a.count; });
 }
 function unique(arr) {
-  var seen = {}; return arr.filter(function(v) { if (seen[v]) return false; seen[v] = true; return true; });
+  var seen = Object.create(null);
+  return arr.filter(function(v) {
+    if (seen[v]) return false;
+    seen[v] = true;
+    return true;
+  });
 }
 function fmtDate(d) {
   if (!d) return '—';
-  return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
+  var dd = d.getDate();
+  var mm = d.getMonth() + 1;
+  var yy = d.getFullYear();
+  return (dd < 10 ? '0' : '') + dd + '/' + (mm < 10 ? '0' : '') + mm + '/' + yy;
 }
 function fmtCurrency(v) {
   if (!v) return '₹0';

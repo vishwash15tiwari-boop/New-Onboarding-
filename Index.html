@@ -1192,8 +1192,7 @@ function renderOverview() {
   set('cmp-omp-rejected', fmt(omp.rejected));
 
   // Overview Charts
-  var eprTotal = (D.epr && D.epr.total) ? D.epr.total : 0;
-  mkDoughnut('ch-vertical-contrib', ['Marketplace', 'Open Marketplace', 'EPR'], [e.mpTotal, e.ompTotal, eprTotal], [COLORS.blue, COLORS.green, COLORS.red]);
+  mkDoughnut('ch-vertical-contrib', ['Marketplace', 'Open Marketplace', 'EPR'], [e.mpTotal, e.ompTotal, e.eprTotal || 0], [COLORS.blue, COLORS.green, COLORS.red]);
 
   var allStatus = {
     COMPLETED: e.totalCompleted, PENDING: e.totalPending,
