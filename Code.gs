@@ -205,7 +205,7 @@ function normalizeOMP(raw) {
 
 function filterMarketplace(data, f) {
   return data.filter(function(r) {
-    if (f.vertical === 'OMP') return false;
+    if (f.vertical && f.vertical !== 'All' && f.vertical !== 'Marketplace') return false;
     if (f.category && f.category !== 'All' && r.category !== f.category) return false;
     if (f.vendorType && f.vendorType !== 'All' && r.vendorType !== f.vendorType) return false;
     if (f.status && f.status !== 'All' && r.status !== f.status) return false;
@@ -220,19 +220,19 @@ function filterMarketplace(data, f) {
       var d = r.createdDate;
       if (!d) return false;
       var now = new Date();
+      var periodStart = null, periodEnd = null;
       if (f.period === 'Today') {
-        var s = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        if (d < s) return false;
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       } else if (f.period === 'MTD') {
-        var s = new Date(now.getFullYear(), now.getMonth(), 1);
-        if (d < s) return false;
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
       } else if (f.period === 'YTD') {
-        var s = new Date(now.getFullYear(), 0, 1);
-        if (d < s) return false;
+        periodStart = new Date(now.getFullYear(), 0, 1);
       } else if (f.period === 'Custom' && f.startDate && f.endDate) {
-        var s = new Date(f.startDate), e = new Date(f.endDate);
-        if (d < s || d > e) return false;
+        periodStart = new Date(f.startDate);
+        periodEnd   = new Date(f.endDate);
       }
+      if (periodStart && d < periodStart) return false;
+      if (periodEnd   && d > periodEnd)   return false;
     }
     return true;
   });
@@ -240,7 +240,7 @@ function filterMarketplace(data, f) {
 
 function filterOMP(data, f) {
   return data.filter(function(r) {
-    if (f.vertical === 'Marketplace') return false;
+    if (f.vertical && f.vertical !== 'All' && f.vertical !== 'OMP') return false;
     if (f.category && f.category !== 'All' && r.category !== f.category) return false;
     if (f.vendorType && f.vendorType !== 'All' && r.vendorType !== f.vendorType) return false;
     if (f.status && f.status !== 'All' && r.status !== f.status) return false;
@@ -385,7 +385,7 @@ function calcOMPKPIs(data) {
     withGST:       withGST,
     missingGST:    total - withGST,
     avgDocPct:     avgDoc,
-    pipelinePct:   pct(completed, total),
+    pipelinePct:   pct(draft + inReview, total),
     completionPct: pct(completed, total),
     statusSplit:   objToArr(groupBy(data, 'status')),
     categorySplit: objToArr(groupBy(data, 'category')),
@@ -683,16 +683,14 @@ function parseDate(val) {
   if (!s) return null;
   // Google Sheets serial numbers come as numbers
   if (!isNaN(Number(s)) && Number(s) > 1000) {
-    var n = Number(s);
-    var d = new Date((n - 25569) * 86400000); // Excel epoch
-    if (!isNaN(d.getTime())) return d;
+    var excelDate = new Date((Number(s) - 25569) * 86400000); // Excel/GSheets epoch
+    if (!isNaN(excelDate.getTime())) return excelDate;
   }
-  // "Month Day, Year, H:MM am" format
-  var d = new Date(s.replace(/,\s*\d+:\d+\s*(am|pm)/i, '').trim());
-  if (!isNaN(d.getTime())) return d;
+  // "Month Day, Year, H:MM am" format from GSheets
+  var d1 = new Date(s.replace(/,\s*\d+:\d+\s*(am|pm)/i, '').trim());
+  if (!isNaN(d1.getTime())) return d1;
   var d2 = new Date(s);
-  if (!isNaN(d2.getTime())) return d2;
-  return null;
+  return (!isNaN(d2.getTime())) ? d2 : null;
 }
 
 function parseNumber(val) {

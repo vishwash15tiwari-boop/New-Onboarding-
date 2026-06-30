@@ -709,7 +709,7 @@ tbody td{padding:12px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <div class="kpi-grid kpi-grid-5 mb-24">
       <div class="kpi-card green">   <div class="kpi-label">With GST</div><div class="kpi-value" id="omp-gst">—</div><div class="kpi-sub">Valid GSTIN</div></div>
       <div class="kpi-card red">     <div class="kpi-label">Missing GST</div><div class="kpi-value" id="omp-no-gst">—</div><div class="kpi-sub">No GSTIN</div></div>
-      <div class="kpi-card purple">  <div class="kpi-label">Pipeline %</div><div class="kpi-value" id="omp-pipeline">—</div><div class="kpi-sub">Completion rate</div></div>
+      <div class="kpi-card purple">  <div class="kpi-label">Pipeline %</div><div class="kpi-value" id="omp-pipeline">—</div><div class="kpi-sub">Draft + In Review %</div></div>
       <div class="kpi-card cyan">    <div class="kpi-label">Avg Doc Completion</div><div class="kpi-value" id="omp-doc-avg">—</div><div class="kpi-sub">Document fill rate</div></div>
       <div class="kpi-card amber">   <div class="kpi-label">Pending</div><div class="kpi-value" id="omp-pending">—</div><div class="kpi-sub">Draft + In Review</div></div>
     </div>
@@ -1081,7 +1081,7 @@ function fillSelect(id, opts) {
 // ═══════════════════════════════════════════════════════════════
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(function(b, i) {
-    var tabs = ['overview','marketplace','omp','epr','trends','tat-sla','exceptions','table'];
+    var tabs = ['overview','marketplace','omp','epr','afr','ib','rcom','trends','tat-sla','exceptions','table'];
     b.classList.toggle('active', tabs[i] === name);
   });
   document.querySelectorAll('.tab-panel').forEach(function(p) {
@@ -1127,9 +1127,7 @@ function renderOverview() {
   set('e-sla', e.slaOKPct + '%');
   set('e-sla-breach-sub', e.slaBreachPct + '% breached');
   set('e-comp-rate', e.completionPct + '%');
-  var ex = D.exceptions;
-  var exCount = ex ? (ex.duplicateGST.total||0) : 0;
-  set('e-exceptions', fmt(exCount));
+  set('e-exceptions', fmt(e.exceptions || 0));
 
   // Comparison cards
   set('cmp-mp-total', fmt(e.mpTotal));
