@@ -722,32 +722,15 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
       <div class="kpi-card cyan">    <div class="kpi-label">Active Rate</div><div class="kpi-value" id="mp-active-rate">—</div><div class="kpi-sub">Of completed</div></div>
     </div>
 
-    <!-- Date KPIs -->
-    <div class="subsection-title">Date-Based KPIs</div>
-    <div class="chart-grid chart-grid-3 mb-24">
+    <!-- Date Activity Chart -->
+    <div class="subsection-title">Date-Based Activity</div>
+    <div class="chart-grid chart-grid-full mb-24">
       <div class="chart-card">
-        <div class="chart-card-title">Created</div>
-        <div class="metric-row mt-16">
-          <div class="metric-item"><div class="metric-val text-green" id="mp-today">—</div><div class="metric-lbl">Today</div></div>
-          <div class="metric-item"><div class="metric-val" id="mp-mtd">—</div><div class="metric-lbl">MTD</div></div>
-          <div class="metric-item"><div class="metric-val text-blue" id="mp-ytd">—</div><div class="metric-lbl">YTD</div></div>
+        <div class="chart-card-title">
+          Created · Onboarded · Shipped
+          <span style="font-size:11px;font-weight:400;color:var(--txt3)">Today / MTD / YTD</span>
         </div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Onboarded</div>
-        <div class="metric-row mt-16">
-          <div class="metric-item"><div class="metric-val text-green" id="mp-onb-today">—</div><div class="metric-lbl">Today</div></div>
-          <div class="metric-item"><div class="metric-val" id="mp-onb-mtd">—</div><div class="metric-lbl">MTD</div></div>
-          <div class="metric-item"><div class="metric-val text-blue" id="mp-onb-ytd">—</div><div class="metric-lbl">YTD</div></div>
-        </div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">First Shipment</div>
-        <div class="metric-row mt-16">
-          <div class="metric-item"><div class="metric-val text-green" id="mp-ship-today">—</div><div class="metric-lbl">Today</div></div>
-          <div class="metric-item"><div class="metric-val" id="mp-ship-mtd">—</div><div class="metric-lbl">MTD</div></div>
-          <div class="metric-item"><div class="metric-val text-blue" id="mp-ship-ytd">—</div><div class="metric-lbl">YTD</div></div>
-        </div>
+        <div class="chart-wrap"><canvas id="ch-mp-date-activity"></canvas></div>
       </div>
     </div>
 
@@ -1244,15 +1227,11 @@ function renderMarketplace() {
   set('mp-deactivated', fmt(mp.deactivated));
   set('mp-reactivated', fmt(mp.reactivated));
   set('mp-active-rate', mp.activeRate + '%');
-  set('mp-today', fmt(mp.createdToday));
-  set('mp-mtd', fmt(mp.createdMTD));
-  set('mp-ytd', fmt(mp.createdYTD));
-  set('mp-onb-today', fmt(mp.onbToday));
-  set('mp-onb-mtd', fmt(mp.onbMTD));
-  set('mp-onb-ytd', fmt(mp.onbYTD));
-  set('mp-ship-today', fmt(mp.shipToday));
-  set('mp-ship-mtd', fmt(mp.shipMTD));
-  set('mp-ship-ytd', fmt(mp.shipYTD));
+  mkGroupedBar('ch-mp-date-activity', ['Today', 'MTD', 'YTD'], [
+    { label: 'Created',   data: [mp.createdToday, mp.createdMTD, mp.createdYTD],  color: COLORS.blue },
+    { label: 'Onboarded', data: [mp.onbToday,     mp.onbMTD,     mp.onbYTD],      color: COLORS.green },
+    { label: 'Shipped',   data: [mp.shipToday,    mp.shipMTD,    mp.shipYTD],     color: COLORS.orange },
+  ]);
   set('mp-with-ship', fmt(mp.withShipment));
   set('mp-ship-sub', mp.shipmentRate + '% of completed');
   set('mp-no-ship', fmt(mp.noShipment));
