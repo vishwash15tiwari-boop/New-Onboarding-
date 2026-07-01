@@ -5,7 +5,7 @@
 
 var CONFIG = {
   MARKETPLACE_SHEET_ID: '1AvZZtujyTbV_fUQ-azIeOnm5xxrujWum',
-  OMP_SHEET_ID:         '10v3bhgKY1C2dadT2nchXD0uZQ3GImxvK',
+  OMP_SHEET_ID:         '1z_4LmDjK1aMgcCR0MOVQ595wr_A4--zN5gWoJVWR6kw',
   EPR_SHEET_ID:         '',   // set this when the EPR Google Sheet is ready
   CACHE_TTL:      55,         // 55 s — must be < 60 s frontend poll so each auto-refresh gets fresh data
   MAX_TABLE_ROWS: 300,        // per source
@@ -50,7 +50,7 @@ function getDashboardData(filtersJson) {
       marketplace:   calcMarketplaceKPIs(mpData),
       omp:           calcOMPKPIs(ompData),
       epr:           calcEPRKPIs(eprData),
-      trends:        calcTrends(mpData, eprData),
+      trends:        calcTrends(mpData, ompData, eprData),
       tat:           calcTAT(mpData),
       table:         buildTable(mpData, ompData, eprData),
       filterOptions: buildFilterOptions(
@@ -137,8 +137,16 @@ function normalizeMarketplace(raw) {
 
 // ─────────────────────────────────────────────────────────────
 // NORMALIZATION — OPEN MARKETPLACE
-// Columns (sheet): id, gstin, business_name, status,
-//   vendor_type, business_category, + 11 document columns
+// Columns (sheet): seller_id, seller_name, business_category,
+//   vendor_type, onboarding_status, onboarding_created_date,
+//   onboarding_updated_date, onboarded_date, onboarding_age_days,
+//   mobile, email, gstin, gstin_status, state, city,
+//   total_listings, total_orders, first_listing_date,
+//   first_order_date, days_to_first_listing, days_to_first_order,
+//   last_listing_date, last_order_date, listing_activation_status,
+//   transaction_activation_status, total_quantity, total_gmv,
+//   cancelled_orders, completed_orders, seller_rating, osv_consent,
+//   + 11 document columns
 // ─────────────────────────────────────────────────────────────
 
 var OMP_DOC_FIELDS = [
@@ -157,11 +165,14 @@ var OMP_DOC_FIELDS = [
 
 function normalizeOMP(raw) {
   var idx = buildIndex(raw.headers);
+  var now = new Date();
 
   return raw.rows.map(function(row) {
-    var gstin  = String(gv(row, idx, 'gstin') || '').trim();
-    var docs   = {};
-    var filled = 0;
+    var gstin     = String(gv(row, idx, 'gstin') || '').trim();
+    var created   = parseDate(gv(row, idx, 'onboarding_created_date'));
+    var onboarded = parseDate(gv(row, idx, 'onboarded_date'));
+    var docs      = {};
+    var filled    = 0;
 
     OMP_DOC_FIELDS.forEach(function(f) {
       var n = parseInt(gv(row, idx, f.key) || 0, 10) || 0;
@@ -174,20 +185,54 @@ function normalizeOMP(raw) {
       .filter(function(f) { return (docs[f.key] || 0) === 0; })
       .map(function(f) { return f.label; });
 
+    var listingStatus = String(gv(row, idx, 'listing_activation_status') || '').trim();
+    var txnStatus     = String(gv(row, idx, 'transaction_activation_status') || '').trim();
+    var rating        = parseNumber(gv(row, idx, 'seller_rating'));
+    var osvRaw        = String(gv(row, idx, 'osv_consent') || '').trim().toUpperCase();
+
     return {
-      id:          String(gv(row, idx, 'id') || '').replace(/,/g, '').trim(),
-      gstin:       gstin,
-      name:        String(gv(row, idx, 'business_name') || '').trim(),
-      status:      normStatus(gv(row, idx, 'status')),
-      vendorType:  String(gv(row, idx, 'vendor_type') || '').trim(),
-      category:    normCategory(gv(row, idx, 'business_category')),
-      docs:        docs,
-      docsFilled:  filled,
-      docsTotal:   OMP_DOC_FIELDS.length,
-      docPct:      docPct,
-      missingDocs: missingDocs,
-      hasGST:      gstin.length > 5,
-      source:      'Open Marketplace',
+      id:              String(gv(row, idx, 'seller_id') || '').replace(/,/g, '').trim(),
+      name:            String(gv(row, idx, 'seller_name') || '').trim(),
+      category:        normCategory(gv(row, idx, 'business_category')),
+      vendorType:      String(gv(row, idx, 'vendor_type') || '').trim(),
+      status:          normStatus(gv(row, idx, 'onboarding_status')),
+      createdDate:     created,
+      onboardedDate:   onboarded,
+      updatedDate:     parseDate(gv(row, idx, 'onboarding_updated_date')),
+      onbAgeDays:      parseNumber(gv(row, idx, 'onboarding_age_days')),
+      mobile:          String(gv(row, idx, 'mobile') || '').trim(),
+      email:           String(gv(row, idx, 'email') || '').trim(),
+      gstin:           gstin,
+      gstinStatus:     String(gv(row, idx, 'gstin_status') || '').trim(),
+      state:           String(gv(row, idx, 'state') || '').trim(),
+      city:            String(gv(row, idx, 'city') || '').trim(),
+      totalListings:   parseNumber(gv(row, idx, 'total_listings')),
+      totalOrders:     parseNumber(gv(row, idx, 'total_orders')),
+      totalQuantity:   parseNumber(gv(row, idx, 'total_quantity')),
+      totalGMV:        parseNumber(gv(row, idx, 'total_gmv')),
+      cancelledOrders: parseNumber(gv(row, idx, 'cancelled_orders')),
+      completedOrders: parseNumber(gv(row, idx, 'completed_orders')),
+      firstListingDate: parseDate(gv(row, idx, 'first_listing_date')),
+      firstOrderDate:   parseDate(gv(row, idx, 'first_order_date')),
+      lastListingDate:  parseDate(gv(row, idx, 'last_listing_date')),
+      lastOrderDate:    parseDate(gv(row, idx, 'last_order_date')),
+      daysToFirstListing: parseNumber(gv(row, idx, 'days_to_first_listing')),
+      daysToFirstOrder:   parseNumber(gv(row, idx, 'days_to_first_order')),
+      listingStatus:   listingStatus,
+      txnStatus:       txnStatus,
+      hasListing:      listingStatus.indexOf('ACTIVE') > -1,
+      hasTransacted:   txnStatus.indexOf('TRANSACTED') > -1 && txnStatus.indexOf('NOT') === -1,
+      sellerRating:    rating,
+      osvConsent:      osvRaw === 'CONSENT_ACCEPTED',
+      docs:            docs,
+      docsFilled:      filled,
+      docsTotal:       OMP_DOC_FIELDS.length,
+      docPct:          docPct,
+      missingDocs:     missingDocs,
+      hasGST:          gstin.length > 5,
+      onbTAT:          dateDiffDays(created, onboarded),
+      age:             dateDiffDays(created, now),
+      source:          'Open Marketplace',
     };
   }).filter(function(r) { return r.id || r.name; });
 }
@@ -278,7 +323,9 @@ function filterMarketplace(data, f) {
 function filterOMP(data, f) {
   return data.filter(function(r) {
     if (f.vertical && f.vertical !== 'All' && f.vertical !== 'OMP') return false;
+    if (f.state && f.state !== 'All' && r.state !== f.state) return false;
     if (!applyCommonFilters(r, f)) return false;
+    if (!applyDateFilter(r, f))    return false;
     return true;
   });
 }
@@ -303,7 +350,9 @@ function calcEnterpriseKPIs(mp, omp, epr) {
   var totalPending  = countFn(all, function(r) { return r.status === 'DRAFT' || r.status === 'IN_REVIEW'; });
   var totalRejected = count(all, 'status', 'REJECTED');
   var totalLTV      = mp.reduce(function(s, r) { return s + (r.ltv || 0); }, 0);
-  var tats          = mp.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
+  var ompGMV        = omp.reduce(function(s, r) { return s + (r.totalGMV || 0); }, 0);
+  var tatSrc        = mp.concat(omp).concat(epr);
+  var tats          = tatSrc.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
 
   return {
     totalCases:     totalCases,
@@ -311,6 +360,7 @@ function calcEnterpriseKPIs(mp, omp, epr) {
     totalPending:   totalPending,
     totalRejected:  totalRejected,
     totalLTV:       totalLTV,
+    ompGMV:         ompGMV,
     avgTAT:         tats.length ? Math.round(avg(tats)) : 0,
     completionPct:  pct(totalCompleted, totalCases),
     mpTotal:        mp.length,
@@ -384,13 +434,27 @@ function calcMarketplaceKPIs(data) {
 }
 
 function calcOMPKPIs(data) {
-  var total     = data.length;
-  var completed = count(data, 'status', 'COMPLETED');
-  var draft     = count(data, 'status', 'DRAFT');
-  var inReview  = count(data, 'status', 'IN_REVIEW');
-  var rejected  = count(data, 'status', 'REJECTED');
-  var withGST   = countFn(data, function(r) { return r.hasGST; });
-  var avgDoc    = total ? Math.round(data.reduce(function(s, r) { return s + r.docPct; }, 0) / total) : 0;
+  var total      = data.length;
+  var completed  = count(data, 'status', 'COMPLETED');
+  var draft      = count(data, 'status', 'DRAFT');
+  var inReview   = count(data, 'status', 'IN_REVIEW');
+  var rejected   = count(data, 'status', 'REJECTED');
+  var withGST    = countFn(data, function(r) { return r.hasGST; });
+  var avgDoc     = total ? Math.round(data.reduce(function(s, r) { return s + r.docPct; }, 0) / total) : 0;
+  var withListing   = countFn(data, function(r) { return r.hasListing; });
+  var withTransacted= countFn(data, function(r) { return r.hasTransacted; });
+  var withOSV    = countFn(data, function(r) { return r.osvConsent; });
+  var totalGMV   = data.reduce(function(s, r) { return s + (r.totalGMV || 0); }, 0);
+  var totalQty   = data.reduce(function(s, r) { return s + (r.totalQuantity || 0); }, 0);
+  var totalOrders= data.reduce(function(s, r) { return s + (r.totalOrders || 0); }, 0);
+  var rated      = data.filter(function(r) { return r.sellerRating > 0; });
+  var avgRating  = rated.length ? Math.round((rated.reduce(function(s, r) { return s + r.sellerRating; }, 0) / rated.length) * 10) / 10 : 0;
+  var tats       = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
+
+  var now    = new Date();
+  var today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var mtd0   = new Date(now.getFullYear(), now.getMonth(), 1);
+  var ytd0   = new Date(now.getFullYear(), 0, 1);
 
   var docStats = OMP_DOC_FIELDS.map(function(f) {
     var submitted = countFn(data, function(r) { return (r.docs[f.key] || 0) > 0; });
@@ -398,21 +462,38 @@ function calcOMPKPIs(data) {
   });
 
   return {
-    total:         total,
-    completed:     completed,
-    draft:         draft,
-    inReview:      inReview,
-    rejected:      rejected,
-    pending:       draft + inReview,
-    withGST:       withGST,
-    missingGST:    total - withGST,
-    avgDocPct:     avgDoc,
-    pipelinePct:   pct(draft + inReview, total),
-    completionPct: pct(completed, total),
-    statusSplit:   objToArr(groupBy(data, 'status')),
-    categorySplit: objToArr(groupBy(data, 'category')),
-    vendorSplit:   objToArr(groupBy(data, 'vendorType')),
-    docStats:      docStats,
+    total:            total,
+    completed:        completed,
+    draft:            draft,
+    inReview:         inReview,
+    rejected:         rejected,
+    pending:          draft + inReview,
+    withGST:          withGST,
+    missingGST:       total - withGST,
+    avgDocPct:        avgDoc,
+    pipelinePct:      pct(draft + inReview, total),
+    completionPct:    pct(completed, total),
+    withListing:      withListing,
+    withTransacted:   withTransacted,
+    withOSV:          withOSV,
+    totalGMV:         totalGMV,
+    totalQuantity:    totalQty,
+    totalOrders:      totalOrders,
+    avgRating:        avgRating,
+    avgTAT:           tats.length ? Math.round(avg(tats)) : 0,
+    listingRate:      pct(withListing, completed),
+    transactionRate:  pct(withTransacted, completed),
+    createdToday:     countFn(data, function(r) { return r.createdDate   && r.createdDate   >= today0; }),
+    createdMTD:       countFn(data, function(r) { return r.createdDate   && r.createdDate   >= mtd0;   }),
+    createdYTD:       countFn(data, function(r) { return r.createdDate   && r.createdDate   >= ytd0;   }),
+    onbToday:         countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= today0; }),
+    onbMTD:           countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= mtd0;   }),
+    onbYTD:           countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= ytd0;   }),
+    statusSplit:      objToArr(groupBy(data, 'status')),
+    categorySplit:    objToArr(groupBy(data, 'category')),
+    vendorSplit:      objToArr(groupBy(data, 'vendorType')),
+    stateSplit:       objToArr(groupBy(data, 'state')).slice(0, 12),
+    docStats:         docStats,
   };
 }
 
@@ -442,11 +523,11 @@ function calcEPRKPIs(data) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// TRENDS  (MP + EPR where date data exists; OMP has no dates)
+// TRENDS  (MP + OMP + EPR — all now carry date fields)
 // ─────────────────────────────────────────────────────────────
 
-function calcTrends(mp, epr) {
-  var data = mp.concat(epr || []);
+function calcTrends(mp, omp, epr) {
+  var data = mp.concat(omp || []).concat(epr || []);
   var now  = new Date();
   var months = [];
 
@@ -570,17 +651,22 @@ function buildTable(mp, omp, epr) {
       category:    r.category,
       vendorType:  r.vendorType,
       status:      r.status,
-      curStatus:   '—',
+      curStatus:   r.hasTransacted ? 'TRANSACTED' : (r.hasListing ? 'ACTIVE' : 'NOT ACTIVE'),
       gstin:       r.gstin || '—',
-      state:       '—',
-      createdDate: '—',
-      onbDate:     '—',
+      state:       r.state || '—',
+      city:        r.city  || '—',
+      createdDate: fmtDate(r.createdDate),
+      onbDate:     fmtDate(r.onboardedDate),
       shipDate:    '—',
-      tat:         '—',
-      ltv:         '—',
+      tat:         r.onbTAT !== null ? r.onbTAT : '—',
+      ltv:         r.totalGMV > 0 ? fmtCurrency(r.totalGMV) : '—',
       hasGST:      r.hasGST,
-      hasShip:     false,
+      hasShip:     r.hasTransacted,
       docPct:      r.docPct + '%',
+      totalListings: r.totalListings,
+      totalOrders:   r.totalOrders,
+      sellerRating:  r.sellerRating > 0 ? r.sellerRating : '—',
+      osvConsent:    r.osvConsent,
     };
   });
 
@@ -632,7 +718,7 @@ function buildFilterOptions(mp, omp, epr) {
   return {
     categories:  unique(all.map(function(r) { return r.category;   })).filter(Boolean).sort(),
     vendorTypes: unique(all.map(function(r) { return r.vendorType; })).filter(Boolean).sort(),
-    states:      unique(mp.map(function(r)  { return r.state;      })).filter(Boolean).sort(),
+    states:      unique(mp.concat(omp).map(function(r) { return r.state; })).filter(Boolean).sort(),
     statuses:    statuses,
   };
 }
