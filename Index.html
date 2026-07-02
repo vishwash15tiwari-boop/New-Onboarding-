@@ -118,15 +118,7 @@ select,input{font-family:inherit}
 .live-pill{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:500;color:var(--txt3);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .live-pill b{color:var(--green);font-weight:600;letter-spacing:.05em}
 
-/* ===== Filters Bar ===== */
-#filters-bar{
-  position:sticky;top:60px;z-index:190;
-  background:rgba(255,255,255,.95);
-  backdrop-filter:blur(16px);
-  -webkit-backdrop-filter:blur(16px);
-  padding:10px 32px;
-  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
-}
+/* ===== Filter Controls (vertical detail view) ===== */
 .filter-group{display:flex;align-items:center;gap:7px}
 .filter-label{font-size:11px;color:var(--txt3);font-weight:500;letter-spacing:.3px;white-space:nowrap}
 .filter-select,.filter-input{
@@ -151,17 +143,6 @@ select,input{font-family:inherit}
 .filter-select:focus,.filter-input:focus{border-color:var(--blue);box-shadow:var(--ring)}
 .filter-input{width:220px}
 .filter-input::placeholder{color:var(--txt3);font-weight:400}
-.filter-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
-.custom-dates{display:none;gap:6px}
-.custom-dates.visible{display:flex}
-.custom-dates input{width:138px}
-#btn-clear-filters{
-  padding:6px 12px;border-radius:var(--r2);
-  border:none;background:transparent;
-  color:var(--txt3);font-size:12px;font-weight:450;
-  white-space:nowrap;transition:all .15s ease;
-}
-#btn-clear-filters:hover{background:rgba(220,38,38,.08);color:var(--red)}
 
 /* ===== Main ===== */
 #main{max-width:1640px;margin:0 auto;padding:28px 32px}
@@ -364,7 +345,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   margin-bottom:24px;
   box-shadow:var(--shadow);
   animation:fadeUp .25s ease both;
-  scroll-margin-top:125px;   /* clear the sticky header + filter bar */
+  scroll-margin-top:72px;   /* clear the sticky header */
 }
 .vd-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:18px}
 .vd-title{font-size:15px;font-weight:650;color:var(--txt);letter-spacing:-.2px}
@@ -393,7 +374,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 }
 @media (max-width:760px){
   #header{padding:0 16px}
-  #filters-bar{padding:8px 16px;gap:8px}
   #main{padding:18px 16px}
   .compare-grid{grid-template-columns:1fr}
   .kpi-value{font-size:24px}
@@ -430,58 +410,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   </div>
 </header>
 
-<!-- Filters -->
-<div id="filters-bar">
-  <div class="filter-group">
-    <span class="filter-label">Vertical</span>
-    <select class="filter-select" id="f-vertical" onchange="onVerticalChange()">
-      <option value="All">All</option>
-      <option value="Marketplace">Marketplace</option>
-      <option value="OMP">Open Marketplace</option>
-      <option value="EPR">EPR</option>
-    </select>
-  </div>
-  <div class="filter-sep"></div>
-  <div class="filter-group">
-    <span class="filter-label">Period</span>
-    <select class="filter-select" id="f-period" onchange="onPeriodChange()">
-      <option value="All">All Time</option>
-      <option value="Today">Today</option>
-      <option value="MTD">MTD</option>
-      <option value="YTD">YTD</option>
-      <option value="Custom">Custom</option>
-    </select>
-    <div class="custom-dates" id="custom-dates">
-      <input type="date" class="filter-select" id="f-start" onchange="applyFilters()">
-      <input type="date" class="filter-select" id="f-end" onchange="applyFilters()">
-    </div>
-  </div>
-  <div class="filter-sep"></div>
-  <div class="filter-group">
-    <span class="filter-label">Category</span>
-    <select class="filter-select" id="f-category" onchange="applyFilters()">
-      <option value="All">All</option>
-    </select>
-  </div>
-  <div class="filter-group">
-    <span class="filter-label">Vendor Type</span>
-    <select class="filter-select" id="f-vendortype" onchange="applyFilters()">
-      <option value="All">All</option>
-    </select>
-  </div>
-  <div class="filter-group">
-    <span class="filter-label">Status</span>
-    <select class="filter-select" id="f-status" onchange="applyFilters()">
-      <option value="All">All</option>
-    </select>
-  </div>
-  <div class="filter-sep"></div>
-  <div class="filter-group">
-    <input type="text" class="filter-input" id="f-search" placeholder="🔍 Search name / GSTIN / ID…" oninput="debounceApply()">
-  </div>
-  <button id="btn-clear-filters" onclick="clearFilters()">✕ Clear</button>
-</div>
-
 <!-- Main -->
 <div id="main">
 
@@ -490,7 +418,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 
     <!-- Business Verticals -->
     <div class="section-title">
-      Business Verticals <span class="badge">6 verticals · click a card for details</span>
+      Business Verticals <span class="badge">6 verticals · click a card for details</span> <span class="badge" id="ov-period-badge">Period: All Time</span>
     </div>
     <div class="compare-grid" id="vert-grid"></div>
 
@@ -624,93 +552,27 @@ function showError(msg) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FILTERS
+// PERIOD STATE  (controlled from the vertical detail panel)
 // ═══════════════════════════════════════════════════════════════
+var currentPeriod = 'All';
+var customStart   = '';
+var customEnd     = '';
+
 function getFilters() {
-  return {
-    vertical:   v('f-vertical'),
-    period:     v('f-period'),
-    startDate:  v('f-start'),
-    endDate:    v('f-end'),
-    category:   v('f-category'),
-    vendorType: v('f-vendortype'),
-    status:     v('f-status'),
-    search:     v('f-search'),
-  };
-}
-function v(id) { return document.getElementById(id) ? document.getElementById(id).value : ''; }
-
-function onPeriodChange() {
-  var p = v('f-period');
-  document.getElementById('custom-dates').classList.toggle('visible', p === 'Custom');
-  applyFilters();
+  return { period: currentPeriod, startDate: customStart, endDate: customEnd };
 }
 
-var debTimer;
-function debounceApply() { clearTimeout(debTimer); debTimer = setTimeout(applyFilters, 500); }
-
-function applyFilters() { loadData(); }
-
-function onVerticalChange() {
-  // Reset dependent filters so stale MP/OMP/EPR-specific selections don't bleed across verticals
-  ['f-category', 'f-vendortype', 'f-status'].forEach(function(id) {
-    document.getElementById(id).value = 'All';
-  });
-  loadData();
-}
-
-function clearFilters() {
-  ['f-vertical','f-period','f-category','f-vendortype','f-status'].forEach(function(id) {
-    document.getElementById(id).value = 'All';
-  });
-  document.getElementById('f-search').value = '';
-  document.getElementById('f-start').value = '';
-  document.getElementById('f-end').value = '';
-  document.getElementById('custom-dates').classList.remove('visible');
-  loadData();
-}
-
-function populateFilterOptions() {
-  if (!D || !D.filterOptions) return;
-  var fo = D.filterOptions;
-  fillSelect('f-category', fo.categories);
-  fillSelect('f-vendortype', fo.vendorTypes);
-  fillSelect('f-status', fo.statuses, STATUS_LABELS);
-  populatePeriodOptions(fo.fiscalYears || []);
-}
-
-// Financial-year options come from the data itself (all FYs on record)
-function populatePeriodOptions(fys) {
-  var sel = document.getElementById('f-period');
-  if (!sel) return;
-  var cur  = sel.value || 'All';
-  var opts = [['All', 'All Time'], ['Today', 'Today'], ['MTD', 'MTD'], ['YTD', 'YTD']];
-  fys.forEach(function(fy) { opts.push([fy, fy.replace(/^FY/, 'FY ')]); });
-  opts.push(['Custom', 'Custom']);
-  sel.innerHTML = opts.map(function(o) {
-    return '<option value="' + o[0] + '">' + o[1] + '</option>';
-  }).join('');
-  sel.value = cur;
-  if (!sel.value) sel.value = 'All';
-}
-
-function fillSelect(id, opts, labels) {
-  var sel = document.getElementById(id);
-  var cur = sel.value;
-  sel.innerHTML = '<option value="All">All</option>';
-  (opts || []).forEach(function(o) {
-    var opt = document.createElement('option');
-    opt.value = o; opt.textContent = (labels && labels[o]) || o;
-    sel.appendChild(opt);
-  });
-  sel.value = cur;
+function periodLabel(p) {
+  if (!p || p === 'All') return 'All Time';
+  if (p === 'Today')     return 'Today';
+  if (p === 'Custom')    return (customStart || '…') + ' → ' + (customEnd || '…');
+  return p.replace(/^FY/, 'FY ');
 }
 
 // ═══════════════════════════════════════════════════════════════
 // RENDER ALL
 // ═══════════════════════════════════════════════════════════════
 function renderAll() {
-  populateFilterOptions();
   renderLastUpdated();
   renderOverview();
 }
@@ -724,38 +586,36 @@ function renderLastUpdated() {
 // OVERVIEW
 // ═══════════════════════════════════════════════════════════════
 function renderOverview() {
-  var e = D.enterprise, mp = D.marketplace, omp = D.omp;
+  var e = D.enterprise;
 
   document.getElementById('ov-total-badge').textContent = fmt(e.totalCases) + ' total';
-  set('e-total', fmt(e.totalCases));
+  set('ov-period-badge', 'Period: ' + periodLabel(currentPeriod));
+  set('e-total',     fmt(e.totalCases));
   set('e-completed', fmt(e.totalCompleted));
-  set('e-completion-sub', e.completionPct + '% completion rate');
+  set('e-completion-sub', (e.completionPct || 0) + '% completion rate');
   set('e-draft',     fmt(e.totalDraft || 0));
   set('e-in-review', fmt(e.totalInReview || 0));
-  set('e-rejected', fmt(e.totalRejected));
-  set('e-avg-tat', e.avgTAT + 'd');
-  set('e-comp-rate', e.completionPct + '%');
+  set('e-rejected',  fmt(e.totalRejected || 0));
+  set('e-avg-tat',   dOr(e.avgTAT, 'd'));
+  set('e-comp-rate', (e.completionPct || 0) + '%');
 
   renderVerticals();
   renderVertDetail();   // refresh open detail panel (no-op when none selected)
 
   // Overview Charts
-  mkDoughnut('ch-vertical-contrib', ['Marketplace', 'Open Marketplace', 'EPR'], [e.mpTotal, e.ompTotal, e.eprTotal || 0], [COLORS.blue, COLORS.green, COLORS.red]);
+  mkDoughnut('ch-vertical-contrib',
+    ['COP Marketplace', 'Open Marketplace', 'EPR'],
+    [e.mpTotal || 0, e.ompTotal || 0, e.eprTotal || 0],
+    [COLORS.blue, COLORS.green, COLORS.red]);
 
-  var allStatus = {
-    COMPLETED: e.totalCompleted, PENDING: e.totalPending,
-    REJECTED: e.totalRejected
-  };
-  mkDoughnut('ch-overall-status', Object.keys(allStatus), Object.values(allStatus), [COLORS.green, COLORS.amber, COLORS.red]);
+  mkDoughnut('ch-overall-status',
+    ['Onboarded', 'In Pipeline', 'Rejected'],
+    [e.totalCompleted || 0, e.totalPending || 0, e.totalRejected || 0],
+    [COLORS.green, COLORS.amber, COLORS.red]);
 
-  // Combined category (MP + OMP)
-  var catMap = {};
-  (mp.categorySplit||[]).forEach(function(x) { catMap[x.label] = (catMap[x.label]||0) + x.count; });
-  (omp.categorySplit||[]).forEach(function(x) { catMap[x.label] = (catMap[x.label]||0) + x.count; });
-  var catArr = Object.entries(catMap).sort(function(a,b) { return b[1]-a[1]; });
-  mkBar('ch-category-combined', catArr.map(function(x){return x[0];}), catArr.map(function(x){return x[1];}), 'Categories', COLORS.blue);
+  var cat = e.categorySplit || [];
+  mkBar('ch-category-combined', cat.map(l), cat.map(c), 'Cases', COLORS.blue);
 
-  // TAT distribution
   var td = D.tat;
   if (td && td.distribution) {
     mkBar('ch-tat-dist',
@@ -816,7 +676,7 @@ function renderVerticals() {
       + barRow('In Progress', v.draft,     dftP, 'var(--blue)')
       + '<div class="vert-stat-row">'
       +   '<span class="vert-stat-item">Pipeline <strong>' + (has ? (v.pipelinePct||0) + '%' : '—') + '</strong></span>'
-      +   '<span class="vert-stat-item">Avg TAT <strong>' + (has ? (v.avgTAT||0) + 'd' : '—') + '</strong></span>'
+      +   '<span class="vert-stat-item">Avg TAT <strong>' + (has ? dOr(v.avgTAT, 'd') : '—') + '</strong></span>'
       +   '<span class="vert-stat-item">Transacted <strong>' + txn + '</strong></span>'
       + '</div>'
       + '<div class="vert-stat-row">'
@@ -887,12 +747,12 @@ function renderVertDetail() {
     ['In Review',            fmt(v.inReview || 0)],
     ['In Progress',          fmt(v.draft || 0)],
     ['Rejected',             fmt(v.rejected || 0)],
-    ['Avg TAT',              (v.avgTAT || 0) + 'd'],
+    ['Avg TAT',              dOr(v.avgTAT, 'd')],
     ['In Pipeline',          fmt(v.pipeline || 0) + ' (' + (v.pipelinePct || 0) + '%)'],
     ['Onboarded (7d)',       fmt(v.completedThisWeek || 0)],
     ['Transacted',           txnVal],
-    ['Avg Days In Progress', (v.avgDraftDays || 0) + 'd'],
-    ['Avg Days @ Review',    (v.avgReviewDays || 0) + 'd'],
+    ['Avg Days In Progress', dOr(v.avgDraftDays, 'd')],
+    ['Avg Days @ Review',    dOr(v.avgReviewDays, 'd')],
     ['GST Active',           fmt(v.withGST || 0)],
     ['GST Inactive',         fmt(v.missingGST || 0)],
   ];
@@ -900,29 +760,37 @@ function renderVertDetail() {
 
   var useCat   = v.categorySplit && v.categorySplit.length > 1;
   var mixTitle = useCat ? 'Category Mix' : 'Vendor Type Mix';
+  var mix      = useCat ? (v.categorySplit || []) : (v.vendorSplit || []);
+  var mo       = v.monthly || [];
+  var hasTrend = mo.some(function(m) { return (m.created || 0) > 0 || (m.onboarded || 0) > 0; });
 
   var chartsHtml = has
     ? '<div class="chart-grid chart-grid-3 mt-16">'
       + '<div class="chart-card"><div class="chart-card-title">Status Distribution</div><div class="chart-wrap short"><canvas id="vd-ch-status"></canvas></div></div>'
-      + '<div class="chart-card"><div class="chart-card-title">' + mixTitle + '</div><div class="chart-wrap short"><canvas id="vd-ch-mix"></canvas></div></div>'
-      + '<div class="chart-card"><div class="chart-card-title">6-Month Trend</div><div class="chart-wrap short"><canvas id="vd-ch-trend"></canvas></div></div>'
+      + '<div class="chart-card"><div class="chart-card-title">' + mixTitle + '</div>'
+      +   (mix.length ? '<div class="chart-wrap short"><canvas id="vd-ch-mix"></canvas></div>' : '<div class="no-data">No data available</div>')
+      + '</div>'
+      + '<div class="chart-card"><div class="chart-card-title">6-Month Trend</div>'
+      +   (hasTrend ? '<div class="chart-wrap short"><canvas id="vd-ch-trend"></canvas></div>' : '<div class="no-data">No activity in the last 6 months</div>')
+      + '</div>'
       + '</div>'
     : '';
 
-  // Detail filters — same as the global bar, minus Vertical (the card IS the vertical)
+  // Detail filters — Period drives the backend query; the rest filter locally
   var rows = v.rows || [];
-  var periodSel  = document.getElementById('f-period');
-  var periodOpts = '';
-  if (periodSel) {
-    for (var i = 0; i < periodSel.options.length; i++) {
-      var o = periodSel.options[i];
-      if (o.value === 'Custom') continue;
-      periodOpts += '<option value="' + o.value + '"' + (periodSel.value === o.value ? ' selected' : '') + '>' + esc(o.text) + '</option>';
-    }
-  }
+  var periodPairs = [['All', 'All Time'], ['Today', 'Today']];
+  ((D && D.fiscalYears) || []).forEach(function(fy) { periodPairs.push([fy, fy.replace(/^FY/, 'FY ')]); });
+  periodPairs.push(['Custom', 'Custom']);
+  var periodOpts = periodPairs.map(function(o) {
+    return '<option value="' + o[0] + '"' + (currentPeriod === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+  }).join('');
+  var customHtml = currentPeriod === 'Custom'
+    ? '<input type="date" class="filter-select" id="vdf-start" value="' + esc(customStart) + '" onchange="vdfCustom()">'
+      + '<input type="date" class="filter-select" id="vdf-end" value="' + esc(customEnd) + '" onchange="vdfCustom()">'
+    : '';
   var filtersHtml = '<div class="vd-filters">'
     + '<div class="filter-group"><span class="filter-label">Period</span>'
-    +   '<select class="filter-select" id="vdf-period" onchange="vdfPeriod(this.value)">' + periodOpts + '</select></div>'
+    +   '<select class="filter-select" id="vdf-period" onchange="vdfPeriod(this.value)">' + periodOpts + '</select>' + customHtml + '</div>'
     + vdSelect('vdf-category', 'Category',    vdUnique(rows, 'category'),   vdF.category, null)
     + vdSelect('vdf-vendor',   'Vendor Type', vdUnique(rows, 'vendorType'), vdF.vendor,   null)
     + vdSelect('vdf-status',   'Status',      vdUnique(rows, 'status'),     vdF.status,   STATUS_LABELS)
@@ -955,17 +823,16 @@ function renderVertDetail() {
 
   panel.style.display = 'block';
 
+  ['vd-ch-status', 'vd-ch-mix', 'vd-ch-trend'].forEach(destroyChart);
   if (has) {
     mkDoughnut('vd-ch-status',
       ['Onboarded', 'In Progress', 'In Review', 'Rejected'],
       [v.completed || 0, v.draft || 0, v.inReview || 0, v.rejected || 0],
       [COLORS.green, COLORS.blue, COLORS.amber, COLORS.red]);
 
-    var mix = useCat ? v.categorySplit : (v.vendorSplit || []);
-    mkHBar('vd-ch-mix', mix.map(l), mix.map(c), 'Cases', COLORS.blue);
+    if (mix.length) mkHBar('vd-ch-mix', mix.map(l), mix.map(c), 'Cases', COLORS.blue);
 
-    var mo = v.monthly || [];
-    mkLine('vd-ch-trend', mo.map(l), [
+    if (hasTrend) mkLine('vd-ch-trend', mo.map(l), [
       { label: 'Created',   data: mo.map(function(m) { return m.created;   }), color: COLORS.blue  },
       { label: 'Onboarded', data: mo.map(function(m) { return m.onboarded; }), color: COLORS.green },
     ]);
@@ -1041,12 +908,26 @@ function vdfSearchDeb() {
   vdfDebTimer = setTimeout(renderVdTable, 300);
 }
 function vdfPeriod(val) {
-  var g = document.getElementById('f-period');
-  if (g) { g.value = val; onPeriodChange(); }
+  currentPeriod = val;
+  if (val === 'Custom') { renderVertDetail(); return; }   // show date inputs, wait for both
+  customStart = '';
+  customEnd   = '';
+  loadData();
+}
+function vdfCustom() {
+  var st = document.getElementById('vdf-start');
+  var en = document.getElementById('vdf-end');
+  customStart = st ? st.value : '';
+  customEnd   = en ? en.value : '';
+  if (customStart && customEnd) loadData();
 }
 function vdfClear() {
   vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
-  renderVertDetail();
+  var reload = currentPeriod !== 'All';
+  currentPeriod = 'All';
+  customStart   = '';
+  customEnd     = '';
+  if (reload) loadData(); else renderVertDetail();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1153,6 +1034,7 @@ function mkLine(id, labels, datasets) {
 // UTILITY
 // ═══════════════════════════════════════════════════════════════
 function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+function dOr(v, suffix) { return (v === null || v === undefined) ? '—' : v + (suffix || ''); }
 function fmt(n) { return Number(n || 0).toLocaleString('en-IN'); }
 function pct(a, b) { return b ? Math.round((a / b) * 100) : 0; }
 function l(x) { return x.label; }
