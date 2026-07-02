@@ -308,16 +308,18 @@ select,input{font-family:inherit}
 .chart-wrap.short{height:160px}
 
 /* ===== Comparison ===== */
-.compare-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-bottom:24px}
+.compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
 .compare-card{
   background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--r);
   padding:20px;
   box-shadow:var(--shadow-sm);
-  transition:box-shadow .18s ease,border-color .18s ease;
+  cursor:pointer;
+  transition:box-shadow .18s ease,border-color .18s ease,transform .18s ease;
 }
-.compare-card:hover{box-shadow:var(--shadow);border-color:var(--border2)}
+.compare-card:hover{box-shadow:var(--shadow);border-color:var(--border2);transform:translateY(-1px)}
+.compare-card.selected{border-color:var(--blue);box-shadow:var(--ring),var(--shadow)}
 .compare-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
 .compare-label{font-size:11px;font-weight:500;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px}
 .compare-count{font-size:26px;font-weight:700;color:var(--txt);letter-spacing:-.6px;margin-top:3px;font-variant-numeric:tabular-nums}
@@ -455,53 +457,38 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .trend-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt2);font-weight:450}
 .trend-dot{width:8px;height:8px;border-radius:50%}
 
-/* ===== Business Units ===== */
-.bu-header{display:flex;align-items:center;gap:12px;margin:24px 0 14px}
-.bu-num{width:32px;height:32px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
-.bu-title{font-weight:700;font-size:14px;letter-spacing:.6px;color:var(--txt);text-transform:uppercase}
-.vert-list{display:flex;flex-direction:column;gap:9px;margin-bottom:24px}
-.vert-card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-left:3px solid var(--border2);
-  border-radius:var(--r2);
-  padding:14px 20px;
-  display:flex;align-items:center;gap:18px;
-  box-shadow:var(--shadow-sm);
-  transition:box-shadow .18s,border-color .18s,border-left-color .18s;
-}
-.vert-card.live{border-left-color:var(--green)}
-.vert-card:hover{box-shadow:var(--shadow);border-color:var(--border2)}
-.vert-card.live:hover{border-left-color:var(--green)}
-.vert-code{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-.2px;min-width:90px;flex-shrink:0}
+/* ===== Vertical Cards ===== */
 .vert-sub{font-size:11.5px;color:var(--txt3);font-weight:400;margin-top:2px;letter-spacing:0}
-.vert-kpis{display:flex;gap:20px;align-items:center;flex-shrink:0;margin-left:auto}
-.vert-kpi{text-align:right}
-.vert-kpi-val{font-size:17px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1}
-.vert-kpi-lbl{font-size:10px;color:var(--txt3);font-weight:500;margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
-.vert-pct-pill{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.05px}
-.vert-pct-pill.green{background:rgba(22,163,74,.1);color:var(--green)}
-.vert-tag{font-size:10.5px;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.1px;background:var(--bg2);color:var(--txt3);border:1px solid var(--border)}
-.vert-tag.live{background:rgba(22,163,74,.08);color:var(--green);border-color:rgba(22,163,74,.2)}
-
-/* ===== Vertical Compare Cards ===== */
 .vert-stat-row{display:flex;justify-content:space-between;align-items:center;margin:10px 0 8px;font-size:11.5px;color:var(--txt3)}
 .vert-stat-item strong{color:var(--txt);font-weight:600}
-.vert-rej-footer{border-top:1px solid var(--border);padding-top:8px;font-size:11.5px;color:var(--txt3)}
+.vert-rej-footer{border-top:1px solid var(--border);padding-top:8px;font-size:11.5px;color:var(--txt3);display:flex;justify-content:space-between;align-items:center}
 .vert-rej-footer strong{color:var(--red);font-weight:600}
-.vert-expand-btn{display:block;width:100%;margin-top:10px;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--txt2);font-size:11px;font-weight:500;cursor:pointer;text-align:center;transition:all .14s}
-.vert-expand-btn:hover{background:var(--bg);border-color:var(--border2);color:var(--txt)}
-.vert-detail-panel{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
-.vert-detail-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:11.5px;color:var(--txt2)}
-.vert-detail-row+.vert-detail-row{border-top:1px solid var(--border)}
-.vert-detail-row span:last-child{font-weight:600;color:var(--txt)}
-.vert-detail-sec{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin:8px 0 4px}
-.vert-cat-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;color:var(--txt3)}
-.vert-cat-row span:last-child{font-weight:600;color:var(--txt2)}
+.vert-more{font-size:11px;color:var(--blue);font-weight:500;white-space:nowrap}
 .badge-afr{background:rgba(234,88,12,.07);color:#B54708;border:1px solid rgba(234,88,12,.15)}
 .badge-drs{background:rgba(8,145,178,.07);color:#0C7C8E;border:1px solid rgba(8,145,178,.15)}
 .badge-rec{background:rgba(22,163,74,.08);color:#166534;border:1px solid rgba(22,163,74,.2)}
 .badge-inf{background:rgba(124,58,237,.08);color:#6D28D9;border:1px solid rgba(124,58,237,.16)}
+
+/* ===== Vertical Detail Panel (opens on card click) ===== */
+#vert-detail{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:22px;
+  margin-bottom:24px;
+  box-shadow:var(--shadow);
+  animation:fadeUp .25s ease both;
+}
+.vd-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:18px}
+.vd-title{font-size:15px;font-weight:650;color:var(--txt);letter-spacing:-.2px}
+.vd-close{
+  margin-left:auto;padding:6px 13px;border-radius:var(--r2);
+  border:1px solid var(--border);background:var(--card);
+  color:var(--txt3);font-size:12px;font-weight:500;transition:all .14s;
+}
+.vd-close:hover{color:var(--red);border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.05)}
+.vd-table-wrap{max-height:420px;overflow:auto}
+.vd-note{font-size:11.5px;color:var(--txt3);margin-top:10px}
 
 /* ===== Utility ===== */
 .text-green{color:#166534} .text-red{color:#991B1B} .text-amber{color:#92400E}
@@ -511,6 +498,9 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .no-data{text-align:center;padding:48px;color:var(--txt3);font-size:13px}
 
 /* ===== Responsive ===== */
+@media (max-width:1100px){
+  .compare-grid{grid-template-columns:repeat(2,1fr)}
+}
 @media (max-width:760px){
   #header{padding:0 16px}
   #filters-bar{padding:8px 16px;gap:8px}
@@ -621,30 +611,18 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 
   <!-- ── TAB: OVERVIEW ──────────────────────────────────────── -->
   <div class="tab-panel active" id="tab-overview">
+
+    <!-- Business Verticals -->
     <div class="section-title">
-      Executive Summary <span class="badge" id="ov-total-badge">—</span>
-    </div>
-
-    <!-- Executive KPIs -->
-    <div class="kpi-grid kpi-grid-4" id="exec-kpis">
-      <div class="kpi-card">          <div class="kpi-icon">📦</div><div class="kpi-label">Total Cases</div><div class="kpi-value" id="e-total">—</div><div class="kpi-sub">All Verticals</div></div>
-      <div class="kpi-card green">    <div class="kpi-icon">✅</div><div class="kpi-label">Onboarded</div><div class="kpi-value" id="e-completed">—</div><div class="kpi-sub" id="e-completion-sub">—</div></div>
-      <div class="kpi-card amber">    <div class="kpi-icon">📝</div><div class="kpi-label">Draft</div><div class="kpi-value" id="e-draft">—</div><div class="kpi-sub">Not yet submitted</div></div>
-      <div class="kpi-card blue">     <div class="kpi-icon">🔍</div><div class="kpi-label">In Review</div><div class="kpi-value" id="e-in-review">—</div><div class="kpi-sub">Under evaluation</div></div>
-      <div class="kpi-card red">      <div class="kpi-icon">❌</div><div class="kpi-label">Rejected</div><div class="kpi-value" id="e-rejected">—</div><div class="kpi-sub">Across verticals</div></div>
-      <div class="kpi-card cyan">     <div class="kpi-icon">⏱</div><div class="kpi-label">Avg Onb. TAT</div><div class="kpi-value" id="e-avg-tat">—</div><div class="kpi-sub">Days (Marketplace)</div></div>
-      <div class="kpi-card purple">   <div class="kpi-icon">📊</div><div class="kpi-label">Completion Rate</div><div class="kpi-value" id="e-comp-rate">—</div><div class="kpi-sub">Overall</div></div>
-    </div>
-
-    <!-- Business Units -->
-    <div class="bu-header">
-      <div class="bu-num">02</div>
-      <div class="bu-title">Business Units</div>
-      <span class="badge" style="margin-left:8px">6 Verticals</span>
+      Business Verticals <span class="badge">6 verticals · click a card for details</span>
     </div>
     <div class="compare-grid" id="vert-grid"></div>
 
+    <!-- Vertical Detail (rendered on card click) -->
+    <div id="vert-detail" style="display:none"></div>
+
     <!-- Overview Charts -->
+    <div class="section-title">Overview Analytics</div>
     <div class="chart-grid chart-grid-2">
       <div class="chart-card">
         <div class="chart-card-title">Vertical Contribution</div>
@@ -662,6 +640,20 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
         <div class="chart-card-title">TAT Distribution (Marketplace)</div>
         <div class="chart-wrap"><canvas id="ch-tat-dist"></canvas></div>
       </div>
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="section-title" style="margin-top:4px">
+      Executive Summary <span class="badge" id="ov-total-badge">—</span>
+    </div>
+    <div class="kpi-grid kpi-grid-4" id="exec-kpis">
+      <div class="kpi-card">          <div class="kpi-icon">📦</div><div class="kpi-label">Total Cases</div><div class="kpi-value" id="e-total">—</div><div class="kpi-sub">All Verticals</div></div>
+      <div class="kpi-card green">    <div class="kpi-icon">✅</div><div class="kpi-label">Onboarded</div><div class="kpi-value" id="e-completed">—</div><div class="kpi-sub" id="e-completion-sub">—</div></div>
+      <div class="kpi-card amber">    <div class="kpi-icon">📝</div><div class="kpi-label">Draft</div><div class="kpi-value" id="e-draft">—</div><div class="kpi-sub">Not yet submitted</div></div>
+      <div class="kpi-card blue">     <div class="kpi-icon">🔍</div><div class="kpi-label">In Review</div><div class="kpi-value" id="e-in-review">—</div><div class="kpi-sub">Under evaluation</div></div>
+      <div class="kpi-card red">      <div class="kpi-icon">❌</div><div class="kpi-label">Rejected</div><div class="kpi-value" id="e-rejected">—</div><div class="kpi-sub">Across verticals</div></div>
+      <div class="kpi-card cyan">     <div class="kpi-icon">⏱</div><div class="kpi-label">Avg Onb. TAT</div><div class="kpi-value" id="e-avg-tat">—</div><div class="kpi-sub">Days (all sources)</div></div>
+      <div class="kpi-card purple">   <div class="kpi-icon">📊</div><div class="kpi-label">Completion Rate</div><div class="kpi-value" id="e-comp-rate">—</div><div class="kpi-sub">Overall</div></div>
     </div>
   </div>
 
@@ -1162,6 +1154,7 @@ function renderOverview() {
   set('e-comp-rate', e.completionPct + '%');
 
   renderVerticals();
+  renderVertDetail();   // refresh open detail panel (no-op when none selected)
 
   // Overview Charts
   mkDoughnut('ch-vertical-contrib', ['Marketplace', 'Open Marketplace', 'EPR'], [e.mpTotal, e.ompTotal, e.eprTotal || 0], [COLORS.blue, COLORS.green, COLORS.red]);
@@ -1177,7 +1170,7 @@ function renderOverview() {
   (mp.categorySplit||[]).forEach(function(x) { catMap[x.label] = (catMap[x.label]||0) + x.count; });
   (omp.categorySplit||[]).forEach(function(x) { catMap[x.label] = (catMap[x.label]||0) + x.count; });
   var catArr = Object.entries(catMap).sort(function(a,b) { return b[1]-a[1]; });
-  mkBar('ch-category-combined', catArr.map(function(x){return x[0];}), catArr.map(function(x){return x[1];}), 'Categories', PALETTE);
+  mkBar('ch-category-combined', catArr.map(function(x){return x[0];}), catArr.map(function(x){return x[1];}), 'Categories', COLORS.blue);
 
   // TAT distribution
   var td = D.tat;
@@ -1193,13 +1186,14 @@ function renderOverview() {
 // VERTICAL CARDS
 // ═══════════════════════════════════════════════════════════════
 var VERT_CFG = [
-  { key:'AFR',          name:'AFR',              sub:'Alternative Fuels & Resources',   code:'AFR', cls:'badge-afr' },
+  { key:'AFR',          name:'AFR',              sub:'Alternative Fuels & Resources',    code:'AFR', cls:'badge-afr' },
   { key:'DRS',          name:'DRS',              sub:'Deposit Refund System',            code:'DRS', cls:'badge-drs' },
   { key:'EPR',          name:'EPR',              sub:'Extended Producer Responsibility', code:'EPR', cls:'badge-epr' },
-  { key:'InfraBusiness',name:'Infra Business',   sub:'Metal & Institutional',            code:'INF', cls:'badge-inf' },
-  { key:'OMP',          name:'Open Marketplace', sub:'OMP Sellers',                     code:'OMP', cls:'badge-omp' },
-  { key:'Recommerce',   name:'Recommerce',       sub:'Re-Commerce',                     code:'REC', cls:'badge-rec' },
+  { key:'InfraBusiness',name:'Infra Business',   sub:'Metal & Institutional Business',   code:'INF', cls:'badge-inf' },
+  { key:'OMP',          name:'Open Marketplace', sub:'Open Marketplace Sellers',         code:'OMP', cls:'badge-omp' },
+  { key:'Recommerce',   name:'Recommerce',       sub:'Re-Commerce',                      code:'REC', cls:'badge-rec' },
 ];
+var selectedVert = null;
 
 function renderVerticals() {
   var verts = D.verticals;
@@ -1216,20 +1210,7 @@ function renderVerticals() {
     var dftP = has ? Math.round(((v.draft    ||0) / tot) * 100) : 0;
     var n    = function(x) { return has ? fmt(x || 0) : '—'; };
 
-    var catBlock = '';
-    if (has && v.categorySplit && v.categorySplit.length > 1) {
-      catBlock = '<div class="vert-detail-sec">Category Breakdown</div>'
-        + v.categorySplit.slice(0, 5).map(function(x) {
-            return '<div class="vert-cat-row"><span>' + esc(x.label) + '</span><span>' + x.count + '</span></div>';
-          }).join('');
-    }
-
-    var ompRows = cfg.key === 'OMP' && has
-      ? '<div class="vert-detail-row"><span>% Transacted</span><span>' + (v.pctTransacted||0) + '%</span></div>'
-        + '<div class="vert-detail-row"><span>% Ever Listed</span><span>' + (v.pctListed||0) + '%</span></div>'
-      : '';
-
-    return '<div class="compare-card">'
+    return '<div class="compare-card' + (selectedVert === cfg.key ? ' selected' : '') + '" onclick="openVertDetail(\'' + cfg.key + '\')">'
       + '<div class="compare-header">'
       +   '<div><div class="compare-label">' + esc(cfg.name) + '</div>'
       +   '<div class="compare-count">' + (has ? fmt(tot) : '—') + '</div></div>'
@@ -1252,32 +1233,126 @@ function renderVerticals() {
       + '</div>'
       + '<div class="vert-stat-row">'
       +   '<span class="vert-stat-item">Pipeline <strong>' + (has ? (v.pipelinePct||0) + '%' : '—') + '</strong></span>'
-      +   '<span class="vert-stat-item">With GST <strong>' + n(v.withGST) + '</strong></span>'
+      +   '<span class="vert-stat-item">Avg TAT <strong>' + (has ? (v.avgTAT||0) + 'd' : '—') + '</strong></span>'
+      +   '<span class="vert-stat-item">GST <strong>' + n(v.withGST) + '</strong></span>'
       + '</div>'
-      + '<div class="vert-rej-footer">Rejected: <strong>' + n(v.rejected) + '</strong></div>'
-      + (has
-        ? '<button class="vert-expand-btn" id="vc-' + cfg.key + '-btn" onclick="toggleVertDetail(\'' + cfg.key + '\')">▼ Details</button>'
-          + '<div class="vert-detail-panel" id="vc-' + cfg.key + '-det" style="display:none">'
-          +   '<div class="vert-detail-row"><span>In Pipeline</span><span>' + fmt(v.pipeline||0) + '</span></div>'
-          +   '<div class="vert-detail-row"><span>Completed This Week</span><span>' + fmt(v.completedThisWeek||0) + '</span></div>'
-          +   '<div class="vert-detail-row"><span>Avg Days at Draft</span><span>' + (v.avgDraftDays||0) + 'd</span></div>'
-          +   '<div class="vert-detail-row"><span>Avg Days at Review</span><span>' + (v.avgReviewDays||0) + 'd</span></div>'
-          +   ompRows
-          +   '<div class="vert-detail-row"><span>GSTIN Missing</span><span>' + fmt(v.missingGST||0) + '</span></div>'
-          +   catBlock
-          + '</div>'
-        : '')
+      + '<div class="vert-rej-footer"><span>Rejected: <strong>' + n(v.rejected) + '</strong></span>'
+      + '<span class="vert-more">' + (selectedVert === cfg.key ? 'Viewing ▾' : 'Details →') + '</span></div>'
       + '</div>';
   }).join('');
 }
 
-function toggleVertDetail(key) {
-  var det = document.getElementById('vc-' + key + '-det');
-  var btn = document.getElementById('vc-' + key + '-btn');
-  if (!det) return;
-  var open = det.style.display !== 'none';
-  det.style.display = open ? 'none' : 'block';
-  if (btn) btn.textContent = open ? '▼ Details' : '▲ Details';
+function openVertDetail(key) {
+  selectedVert = key;
+  renderVerticals();
+  renderVertDetail();
+  var panel = document.getElementById('vert-detail');
+  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeVertDetail() {
+  selectedVert = null;
+  ['vd-ch-status', 'vd-ch-mix', 'vd-ch-trend'].forEach(destroyChart);
+  var panel = document.getElementById('vert-detail');
+  if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+  renderVerticals();
+}
+
+function renderVertDetail() {
+  var panel = document.getElementById('vert-detail');
+  if (!panel || !selectedVert || !D || !D.verticals) return;
+  var cfg = VERT_CFG.filter(function(x) { return x.key === selectedVert; })[0];
+  var v   = D.verticals[selectedVert];
+  if (!cfg || !v) return;
+  var has = (v.total || 0) > 0;
+
+  var metrics = [
+    ['Total',             fmt(v.total || 0)],
+    ['Onboarded',         fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)'],
+    ['In Review',         fmt(v.inReview || 0)],
+    ['Draft',             fmt(v.draft || 0)],
+    ['Rejected',          fmt(v.rejected || 0)],
+    ['Avg TAT',           (v.avgTAT || 0) + 'd'],
+    ['In Pipeline',       fmt(v.pipeline || 0) + ' (' + (v.pipelinePct || 0) + '%)'],
+    ['Onboarded (7d)',    fmt(v.completedThisWeek || 0)],
+    ['Avg Days @ Draft',  (v.avgDraftDays || 0) + 'd'],
+    ['Avg Days @ Review', (v.avgReviewDays || 0) + 'd'],
+    ['With GST',          fmt(v.withGST || 0)],
+    ['GSTIN Missing',     fmt(v.missingGST || 0)],
+  ];
+  if (cfg.key === 'OMP') {
+    metrics.push(['% Ever Listed', (v.pctListed || 0) + '%']);
+    metrics.push(['% Transacted',  (v.pctTransacted || 0) + '%']);
+  }
+
+  var useCat   = v.categorySplit && v.categorySplit.length > 1;
+  var mixTitle = useCat ? 'Category Mix' : 'Vendor Type Mix';
+
+  var chartsHtml = has
+    ? '<div class="chart-grid chart-grid-3 mt-16">'
+      + '<div class="chart-card"><div class="chart-card-title">Status Distribution</div><div class="chart-wrap short"><canvas id="vd-ch-status"></canvas></div></div>'
+      + '<div class="chart-card"><div class="chart-card-title">' + mixTitle + '</div><div class="chart-wrap short"><canvas id="vd-ch-mix"></canvas></div></div>'
+      + '<div class="chart-card"><div class="chart-card-title">6-Month Trend</div><div class="chart-wrap short"><canvas id="vd-ch-trend"></canvas></div></div>'
+      + '</div>'
+    : '';
+
+  var rows = v.rows || [];
+  var tableHtml;
+  if (rows.length) {
+    tableHtml = '<div class="table-wrap vd-table-wrap mt-16"><table><thead><tr>'
+      + '<th>ID</th><th>Business Name</th><th>Category</th><th>Vendor Type</th><th>Status</th><th>GSTIN</th><th>State</th><th>Created</th><th>Onboarded</th><th>TAT</th>'
+      + '</tr></thead><tbody>'
+      + rows.map(function(r) {
+          return '<tr>'
+            + '<td class="text-muted">' + esc(r.id) + '</td>'
+            + '<td><strong>' + esc(r.name || '—') + '</strong></td>'
+            + '<td>' + esc(r.category || '—') + '</td>'
+            + '<td class="text-muted">' + esc(r.vendorType || '—') + '</td>'
+            + '<td>' + statusChip(r.status) + '</td>'
+            + '<td style="font-size:11px">' + (r.hasGST ? '<span class="gst-ok">✓ ' + esc(r.gstin) + '</span>' : '<span class="gst-bad">✗ Missing</span>') + '</td>'
+            + '<td class="text-muted">' + esc(r.state || '—') + '</td>'
+            + '<td class="text-muted">' + esc(r.createdDate) + '</td>'
+            + '<td class="text-muted">' + esc(r.onbDate) + '</td>'
+            + '<td>' + tatChip(r.tat) + '</td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table></div>'
+      + '<div class="vd-note">Showing ' + fmt(rows.length) + ' of ' + fmt(v.rowsTotal || rows.length) + ' records · latest first</div>';
+  } else {
+    tableHtml = '<div class="no-data">No records yet for this vertical</div>';
+  }
+
+  panel.innerHTML =
+    '<div class="vd-head">'
+    + '<span class="compare-source-badge ' + cfg.cls + '">' + cfg.code + '</span>'
+    + '<div><div class="vd-title">' + esc(cfg.name) + '</div><div class="vert-sub">' + esc(cfg.sub) + '</div></div>'
+    + '<button class="vd-close" onclick="closeVertDetail()">✕ Close</button>'
+    + '</div>'
+    + '<div class="metric-row">'
+    + metrics.map(function(m) {
+        return '<div class="metric-item"><span class="metric-val">' + m[1] + '</span><span class="metric-lbl">' + m[0] + '</span></div>';
+      }).join('')
+    + '</div>'
+    + chartsHtml
+    + tableHtml;
+
+  panel.style.display = 'block';
+
+  if (has) {
+    mkDoughnut('vd-ch-status',
+      ['Onboarded', 'Draft', 'In Review', 'Rejected'],
+      [v.completed || 0, v.draft || 0, v.inReview || 0, v.rejected || 0],
+      [COLORS.green, COLORS.blue, COLORS.amber, COLORS.red]);
+
+    var mix = useCat ? v.categorySplit : (v.vendorSplit || []);
+    mkHBar('vd-ch-mix', mix.map(l), mix.map(c), 'Cases', COLORS.blue);
+
+    var mo = v.monthly || [];
+    mkLine('vd-ch-trend', mo.map(l), [
+      { label: 'Created',   data: mo.map(function(m) { return m.created;   }), color: COLORS.blue  },
+      { label: 'Onboarded', data: mo.map(function(m) { return m.onboarded; }), color: COLORS.green },
+    ]);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1329,13 +1404,13 @@ function renderMarketplace() {
     [COLORS.green, COLORS.red, COLORS.purple, COLORS.cyan]);
 
   var cat = mp.categorySplit || [];
-  mkBar('ch-mp-category', cat.map(l), cat.map(c), 'Sellers', PALETTE);
+  mkBar('ch-mp-category', cat.map(l), cat.map(c), 'Sellers', COLORS.blue);
 
   var vnd = mp.vendorSplit || [];
-  mkHBar('ch-mp-vendor', vnd.slice(0,8).map(l), vnd.slice(0,8).map(c), 'Sellers', PALETTE);
+  mkHBar('ch-mp-vendor', vnd.slice(0,8).map(l), vnd.slice(0,8).map(c), 'Sellers', COLORS.blue);
 
   var st = mp.stateSplit || [];
-  mkHBar('ch-mp-states', st.map(l), st.map(c), 'Sellers', PALETTE);
+  mkHBar('ch-mp-states', st.map(l), st.map(c), 'Sellers', COLORS.blue);
 
   mkDoughnut('ch-mp-shipment',
     ['With Shipment', 'No Shipment'],
@@ -1372,7 +1447,7 @@ function renderOMP() {
   mkDoughnut('ch-omp-category', cat.map(l), cat.map(c), PALETTE);
 
   var vnd = omp.vendorSplit || [];
-  mkHBar('ch-omp-vendor', vnd.slice(0,8).map(l), vnd.slice(0,8).map(c), 'Sellers', PALETTE);
+  mkHBar('ch-omp-vendor', vnd.slice(0,8).map(l), vnd.slice(0,8).map(c), 'Sellers', COLORS.blue);
 
   mkDoughnut('ch-omp-gst', ['With GST', 'Missing GST'], [omp.withGST, omp.missingGST], [COLORS.green, COLORS.red]);
 
@@ -1426,7 +1501,7 @@ function renderEPR() {
   mkDoughnut('ch-epr-category', cat.map(l), cat.map(c), PALETTE);
 
   var ven = epr.vendorSplit || [];
-  mkBar('ch-epr-vendor', ven.map(l), ven.map(c), 'Sellers', PALETTE);
+  mkBar('ch-epr-vendor', ven.map(l), ven.map(c), 'Sellers', COLORS.blue);
 
   var sts = (epr.stateSplit || []).filter(function(x){ return x.label; });
   if (sts.length) mkHBar('ch-epr-states', sts.map(l), sts.map(c), 'Sellers', COLORS.blue);
@@ -1453,7 +1528,7 @@ function renderTrends() {
     { label: 'Onboarded', data: tr.yearly.map(function(y){ return y.onboarded; }), color: COLORS.lime },
   ]);
 
-  mkBar('ch-monthly-onb', labels, tr.monthly.map(function(m){ return m.onboarded; }), 'Onboarded', PALETTE);
+  mkBar('ch-monthly-onb', labels, tr.monthly.map(function(m){ return m.onboarded; }), 'Onboarded', COLORS.green);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1481,14 +1556,14 @@ function renderTATSLA() {
     mkHBar('ch-cat-tat',
       tat.categoryTAT.map(function(x){return x.category;}),
       tat.categoryTAT.map(function(x){return x.avg;}),
-      'Avg TAT (days)', PALETTE);
+      'Avg TAT (days)', COLORS.blue);
   }
 
   if (tat.vendorTAT) {
     mkHBar('ch-vendor-tat',
       tat.vendorTAT.map(function(x){return x.vendorType;}),
       tat.vendorTAT.map(function(x){return x.avg;}),
-      'Avg TAT (days)', PALETTE);
+      'Avg TAT (days)', COLORS.blue);
   }
 }
 
@@ -1615,18 +1690,23 @@ function exportCSV() {
 // ═══════════════════════════════════════════════════════════════
 // CHART HELPERS
 // ═══════════════════════════════════════════════════════════════
-var chartDefaults = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { labels: { color: '#5C6370', font: { size: 11, family: 'Inter' }, boxWidth: 12 } },
-    tooltip: { backgroundColor: '#FFFFFF', titleColor: '#0F1117', bodyColor: '#5C6370', borderColor: '#E8EAED', borderWidth: 1, padding: 10, cornerRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,.08)' },
-  },
-  scales: {
-    x: { ticks: { color: '#9BA3AF', font: { size: 11, family: 'Inter' } }, grid: { color: 'rgba(0,0,0,.04)' } },
-    y: { ticks: { color: '#9BA3AF', font: { size: 11, family: 'Inter' } }, grid: { color: 'rgba(0,0,0,.04)' } },
-  },
-};
+// Chart.js mutates the options object it is given (it writes resolved scale
+// types back into it), so every chart must get its OWN copy of the defaults —
+// a shared object breaks any chart whose axis layout differs from the first one.
+function mkDefaults() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#5C6370', font: { size: 11, family: 'Inter' }, boxWidth: 12 } },
+      tooltip: { backgroundColor: '#FFFFFF', titleColor: '#0F1117', bodyColor: '#5C6370', borderColor: '#E8EAED', borderWidth: 1, padding: 10, cornerRadius: 8 },
+    },
+    scales: {
+      x: { ticks: { color: '#9BA3AF', font: { size: 11, family: 'Inter' } }, grid: { color: 'rgba(0,0,0,.04)' } },
+      y: { ticks: { color: '#9BA3AF', font: { size: 11, family: 'Inter' } }, grid: { color: 'rgba(0,0,0,.04)' } },
+    },
+  };
+}
 
 function destroyChart(id) {
   if (charts[id]) { charts[id].destroy(); delete charts[id]; }
@@ -1657,11 +1737,15 @@ function mkBar(id, labels, data, dsLabel, colors) {
   destroyChart(id);
   var ctx = document.getElementById(id);
   if (!ctx) return;
-  var bgColors = Array.isArray(colors) && colors.length === data.length ? colors : PALETTE.slice(0, data.length);
+  var bgColors = Array.isArray(colors) && colors.length === data.length ? colors
+    : typeof colors === 'string' ? data.map(function() { return colors; })
+    : PALETTE.slice(0, data.length);
+  var opts = mkDefaults();
+  opts.plugins.legend = { display: false };
   charts[id] = new Chart(ctx, {
     type: 'bar',
     data: { labels: labels, datasets: [{ label: dsLabel, data: data, backgroundColor: bgColors, borderRadius: 4 }] },
-    options: Object.assign({}, chartDefaults, { plugins: Object.assign({}, chartDefaults.plugins, { legend: { display: false } }) }),
+    options: opts,
   });
 }
 
@@ -1669,14 +1753,16 @@ function mkHBar(id, labels, data, dsLabel, colors) {
   destroyChart(id);
   var ctx = document.getElementById(id);
   if (!ctx) return;
-  var bgColors = Array.isArray(colors) && colors.length === data.length ? colors : PALETTE.slice(0, data.length);
+  var bgColors = Array.isArray(colors) && colors.length === data.length ? colors
+    : typeof colors === 'string' ? data.map(function() { return colors; })
+    : PALETTE.slice(0, data.length);
+  var opts = mkDefaults();
+  opts.indexAxis = 'y';
+  opts.plugins.legend = { display: false };
   charts[id] = new Chart(ctx, {
     type: 'bar',
     data: { labels: labels, datasets: [{ label: dsLabel, data: data, backgroundColor: bgColors, borderRadius: 4 }] },
-    options: Object.assign({}, chartDefaults, {
-      indexAxis: 'y',
-      plugins: Object.assign({}, chartDefaults.plugins, { legend: { display: false } }),
-    }),
+    options: opts,
   });
 }
 
@@ -1697,7 +1783,7 @@ function mkLine(id, labels, datasets) {
         };
       }),
     },
-    options: chartDefaults,
+    options: mkDefaults(),
   });
 }
 
@@ -1713,7 +1799,7 @@ function mkGroupedBar(id, labels, datasets) {
         return { label: d.label, data: d.data, backgroundColor: d.color, borderRadius: 4 };
       }),
     },
-    options: chartDefaults,
+    options: mkDefaults(),
   });
 }
 

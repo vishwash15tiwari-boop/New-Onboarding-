@@ -11,6 +11,19 @@ var CONFIG = {
   MAX_TABLE_ROWS: 300,        // per source
 };
 
+// Business-vertical mapping for COP Seller Details (Marketplace) categories.
+// Metal + Institutional Business roll up under Infra Business per business rule.
+var VERTICAL_MAP = {
+  'Metal':                  'Infra Business',
+  'Institutional Business': 'Infra Business',
+  'IB':                     'Infra Business',
+  'Re-Commerce':            'Recommerce',
+  'Recommerce':             'Recommerce',
+  'AFR':                    'AFR',
+  'GOA DRS':                'DRS',
+  'DRS':                    'DRS',
+};
+
 // ─────────────────────────────────────────────────────────────
 // ENTRY POINTS
 // ─────────────────────────────────────────────────────────────
@@ -110,6 +123,7 @@ function normalizeMarketplace(raw) {
     var shipment  = parseDate(gv(row, idx, 'firstshipmentdate'));
     var gstin     = String(gv(row, idx, 'gstin_number') || '').trim();
     var ltv       = parseNumber(gv(row, idx, 'lifetimevalue'));
+    var cat       = normCategory(gv(row, idx, 'business_category'));
 
     var l1r1 = parseDate(gv(row, idx, 'level1_rejected1'));
     var l1r2 = parseDate(gv(row, idx, 'level1_rejected2'));
@@ -131,7 +145,8 @@ function normalizeMarketplace(raw) {
       name:           String(gv(row, idx, 'business_name') || '').trim(),
       state:          String(gv(row, idx, 'state') || '').trim(),
       vendorType:     String(gv(row, idx, 'vendor_type') || '').trim(),
-      category:       normCategory(gv(row, idx, 'business_category')),
+      category:       cat,
+      vertical:       VERTICAL_MAP[cat] || 'Marketplace',
       gstin:          gstin,
       partyId:        String(gv(row, idx, 'party_id') || '').trim(),
       status:         normStatus(gv(row, idx, 'status')),
@@ -283,6 +298,13 @@ function normalizeEPR(raw) {
 
     var created   = parseDate(gv(row, idx, 'created_date'));
     var onboarded = parseDate(gv(row, idx, 'onboarded_date'));
+    var reviewd   = parseDate(gv(row, idx, 'review_submission_date'));
+
+    // EPR created_date can be a bulk-import date later than the true onboarding
+    // date, which makes created→onboarded negative. Fall back to review→onboarded.
+    var tat = dateDiffDays(created, onboarded);
+    if (tat === null || tat < 0) tat = dateDiffDays(reviewd, onboarded);
+    if (tat !== null && tat < 0) tat = null;
 
     return {
       id:            String(gv(row, idx, 'id') || '').replace(/,/g, '').trim(),
@@ -299,10 +321,10 @@ function normalizeEPR(raw) {
       globalPartyId: String(gv(row, idx, 'global_party_id') || '').trim(),
       eInvoiceTag:   String(gv(row, idx, 'e_invoice_tag') || '').trim(),
       approvalLevels: String(gv(row, idx, 'approval_levels') || '').trim(),
-      reviewDate:    parseDate(gv(row, idx, 'review_submission_date')),
+      reviewDate:    reviewd,
       createdDate:   created,
       onboardedDate: onboarded,
-      onbTAT:        dateDiffDays(created, onboarded),
+      onbTAT:        tat,
       age:           dateDiffDays(created, now),
       hasGST:        gstin.length > 5,
       source:        'EPR',
@@ -596,9 +618,37 @@ function calcEPRKPIs(data) {
 // VERTICAL KPIs  (always uses full/unfiltered data)
 // ─────────────────────────────────────────────────────────────
 
+var VERTICAL_DETAIL_ROWS = 100;   // rows shipped per vertical for the click-through table
+
 function calcVerticalKPIs(mpAll, ompAll, eprAll) {
   var now     = new Date();
   var weekAgo = new Date(now.getTime() - 7 * 86400000);
+
+  var months = [];
+  for (var i = 5; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      label: d.toLocaleString('default', { month: 'short' }) + ' \'' + String(d.getFullYear()).slice(2),
+      year:  d.getFullYear(),
+      month: d.getMonth(),
+    });
+  }
+
+  function vertRow(r) {
+    return {
+      id:          r.id,
+      name:        r.name,
+      category:    r.category,
+      vendorType:  r.vendorType,
+      status:      r.status,
+      gstin:       r.gstin || '—',
+      hasGST:      r.hasGST,
+      state:       r.state || '—',
+      createdDate: fmtDate(r.createdDate),
+      onbDate:     fmtDate(r.onboardedDate),
+      tat:         (r.onbTAT !== null && r.onbTAT >= 0) ? r.onbTAT : '—',
+    };
+  }
 
   function vStats(data, isOMP) {
     var total     = data.length;
@@ -608,6 +658,7 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll) {
     var rejected  = count(data, 'status', 'REJECTED');
     var withGST   = countFn(data, function(r) { return r.hasGST; });
     var pipeline  = draft + inReview;
+    var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
 
     var completedThisWeek = countFn(data, function(r) {
       return r.onboardedDate && r.onboardedDate >= weekAgo;
@@ -626,6 +677,18 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll) {
     var withTransacted = isOMP ? countFn(data, function(r) { return r.hasTransacted; }) : 0;
     var withListing    = isOMP ? countFn(data, function(r) { return r.hasListing; }) : 0;
 
+    var monthly = months.map(function(m) {
+      return {
+        label:     m.label,
+        created:   countFn(data, function(r) { return r.createdDate   && r.createdDate.getFullYear()   === m.year && r.createdDate.getMonth()   === m.month; }),
+        onboarded: countFn(data, function(r) { return r.onboardedDate && r.onboardedDate.getFullYear() === m.year && r.onboardedDate.getMonth() === m.month; }),
+      };
+    });
+
+    var latestFirst = data.slice().sort(function(a, b) {
+      return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
+    });
+
     return {
       total:            total,
       completed:        completed,
@@ -638,21 +701,30 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll) {
       pipelinePct:      pct(pipeline, total),
       completionPct:    pct(completed, total),
       completedThisWeek: completedThisWeek,
+      avgTAT:           tats.length ? Math.round(avg(tats)) : 0,
       avgDraftDays:     draftAges.length  ? Math.round(avg(draftAges))  : 0,
       avgReviewDays:    reviewAges.length ? Math.round(avg(reviewAges)) : 0,
       pctTransacted:    pct(withTransacted, completed),
       pctListed:        pct(withListing, completed),
-      categorySplit:    objToArr(groupBy(data, 'category')).slice(0, 5),
+      categorySplit:    objToArr(groupBy(data, 'category')).slice(0, 6),
+      vendorSplit:      objToArr(groupBy(data, 'vendorType')).filter(function(x) { return x.label && x.label !== 'Unknown'; }).slice(0, 6),
+      monthly:          monthly,
+      rows:             latestFirst.slice(0, VERTICAL_DETAIL_ROWS).map(vertRow),
+      rowsTotal:        total,
     };
   }
 
+  function byVertical(name) {
+    return mpAll.filter(function(r) { return r.vertical === name; });
+  }
+
   return {
-    AFR:          vStats(mpAll.filter(function(r) { return r.category === 'AFR'; }),                                              false),
-    DRS:          vStats(mpAll.filter(function(r) { return r.category === 'GOA DRS'; }),                                          false),
-    EPR:          vStats(eprAll,                                                                                                   false),
-    InfraBusiness:vStats(mpAll.filter(function(r) { return r.category === 'Metal' || r.category === 'Institutional Business'; }), false),
-    OMP:          vStats(ompAll,                                                                                                   true),
-    Recommerce:   vStats(mpAll.filter(function(r) { return r.category === 'Re-Commerce'; }),                                      false),
+    AFR:           vStats(byVertical('AFR'),            false),
+    DRS:           vStats(byVertical('DRS'),            false),
+    EPR:           vStats(eprAll,                        false),
+    InfraBusiness: vStats(byVertical('Infra Business'), false),
+    OMP:           vStats(ompAll,                        true),
+    Recommerce:    vStats(byVertical('Recommerce'),     false),
   };
 }
 
@@ -760,6 +832,7 @@ function buildTable(mp, omp, epr) {
       id:          r.id,
       name:        r.name,
       source:      'Marketplace',
+      vertical:    r.vertical || 'Marketplace',
       category:    r.category,
       vendorType:  r.vendorType,
       status:      r.status,
@@ -769,7 +842,7 @@ function buildTable(mp, omp, epr) {
       createdDate: fmtDate(r.createdDate),
       onbDate:     fmtDate(r.onboardedDate),
       shipDate:    fmtDate(r.shipmentDate),
-      tat:         r.onbTAT !== null ? r.onbTAT : '—',
+      tat:         (r.onbTAT !== null && r.onbTAT >= 0) ? r.onbTAT : '—',
       ltv:         r.ltv > 0 ? fmtCurrency(r.ltv) : '—',
       hasGST:      r.hasGST,
       hasShip:     r.hasShipment,
@@ -782,6 +855,7 @@ function buildTable(mp, omp, epr) {
       id:          r.id,
       name:        r.name,
       source:      'Open Marketplace',
+      vertical:    'Open Marketplace',
       category:    r.category,
       vendorType:  r.vendorType,
       status:      r.status,
@@ -792,7 +866,7 @@ function buildTable(mp, omp, epr) {
       createdDate: fmtDate(r.createdDate),
       onbDate:     fmtDate(r.onboardedDate),
       shipDate:    '—',
-      tat:         r.onbTAT !== null ? r.onbTAT : '—',
+      tat:         (r.onbTAT !== null && r.onbTAT >= 0) ? r.onbTAT : '—',
       ltv:         r.totalGMV > 0 ? fmtCurrency(r.totalGMV) : '—',
       hasGST:      r.hasGST,
       hasShip:     r.hasTransacted,
@@ -809,6 +883,7 @@ function buildTable(mp, omp, epr) {
       id:          r.id,
       name:        r.name,
       source:      'EPR',
+      vertical:    'EPR',
       category:    r.category,
       vendorType:  r.vendorType,
       status:      r.status,
@@ -818,7 +893,7 @@ function buildTable(mp, omp, epr) {
       createdDate: fmtDate(r.createdDate),
       onbDate:     fmtDate(r.onboardedDate),
       shipDate:    '—',
-      tat:         r.onbTAT !== null ? r.onbTAT : '—',
+      tat:         (r.onbTAT !== null && r.onbTAT >= 0) ? r.onbTAT : '—',
       ltv:         '—',
       hasGST:      r.hasGST,
       hasShip:     false,
