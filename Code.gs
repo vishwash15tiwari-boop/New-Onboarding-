@@ -8,7 +8,6 @@ var CONFIG = {
   OMP_SHEET_ID:         '1z_4LmDjK1aMgcCR0MOVQ595wr_A4--zN5gWoJVWR6kw',
   EPR_SHEET_ID:         '1Mvkshz6Es3V37GYuXVMIq4L8ql3MCCuIxYjc77YEq5c',
   CACHE_TTL:      55,         // 55 s — must be < 60 s frontend poll so each auto-refresh gets fresh data
-  MAX_TABLE_ROWS: 300,        // per source
 };
 
 // Business-vertical mapping for COP Seller Details (Marketplace) categories.
@@ -24,6 +23,10 @@ var VERTICAL_MAP = {
   'DRS':                    'DRS',
 };
 
+// Open Marketplace is tracked from FY 26-27 (Apr 1, 2026) onward —
+// older OMP records are excluded from the whole dashboard.
+var OMP_DATA_START = new Date(2026, 3, 1);
+
 // ─────────────────────────────────────────────────────────────
 // ENTRY POINTS
 // ─────────────────────────────────────────────────────────────
@@ -38,7 +41,7 @@ function doGet(e) {
 function getDashboardData(filtersJson) {
   try {
     var filters  = filtersJson ? JSON.parse(filtersJson) : {};
-    var cacheKey = 'dash_v3_' + JSON.stringify(filters);
+    var cacheKey = 'dash_v4_' + JSON.stringify(filters);
     var cache    = CacheService.getScriptCache();
     var cached   = cache.get(cacheKey);
     if (cached) return cached;
@@ -48,12 +51,21 @@ function getDashboardData(filtersJson) {
     var eprRaw = CONFIG.EPR_SHEET_ID ? readSheet(CONFIG.EPR_SHEET_ID) : { headers: [], rows: [] };
 
     var mpAll  = normalizeMarketplace(mpRaw);
-    var ompAll = normalizeOMP(ompRaw);
+    var ompAll = normalizeOMP(ompRaw).filter(function(r) {
+      return !r.createdDate || r.createdDate >= OMP_DATA_START;
+    });
     var eprAll = normalizeEPR(eprRaw);
 
     var mpData  = filterMarketplace(mpAll, filters);
     var ompData = filterOMP(ompAll, filters);
     var eprData = filterEPR(eprAll, filters);
+
+    var filterOptions = buildFilterOptions(
+      (!filters.vertical || filters.vertical === 'All' || filters.vertical === 'Marketplace') ? mpAll  : [],
+      (!filters.vertical || filters.vertical === 'All' || filters.vertical === 'OMP')         ? ompAll : [],
+      (!filters.vertical || filters.vertical === 'All' || filters.vertical === 'EPR')         ? eprAll : []
+    );
+    filterOptions.fiscalYears = buildFiscalYears(mpAll.concat(ompAll).concat(eprAll));
 
     var result = JSON.stringify({
       success:       true,
@@ -63,15 +75,9 @@ function getDashboardData(filtersJson) {
       marketplace:   calcMarketplaceKPIs(mpData),
       omp:           calcOMPKPIs(ompData),
       epr:           calcEPRKPIs(eprData),
-      trends:        calcTrends(mpData, ompData, eprData),
       tat:           calcTAT(mpData),
-      table:         buildTable(mpData, ompData, eprData),
-      verticals:     calcVerticalKPIs(mpAll, ompAll, eprAll),
-      filterOptions: buildFilterOptions(
-        (!filters.vertical || filters.vertical === 'All' || filters.vertical === 'Marketplace') ? mpAll  : [],
-        (!filters.vertical || filters.vertical === 'All' || filters.vertical === 'OMP')         ? ompAll : [],
-        (!filters.vertical || filters.vertical === 'All' || filters.vertical === 'EPR')         ? eprAll : []
-      ),
+      verticals:     calcVerticalKPIs(mpAll, ompAll, eprAll, filters),
+      filterOptions: filterOptions,
     });
 
     try { cache.put(cacheKey, result, CONFIG.CACHE_TTL); } catch(e) {}
@@ -418,6 +424,8 @@ function calcEnterpriseKPIs(mp, omp, epr) {
   var totalCases    = all.length;
   var totalCompleted = count(all, 'status', 'COMPLETED');
   var totalPending  = countFn(all, function(r) { return r.status === 'DRAFT' || r.status === 'IN_REVIEW'; });
+  var totalDraft    = count(all, 'status', 'DRAFT');
+  var totalInReview = count(all, 'status', 'IN_REVIEW');
   var totalRejected = count(all, 'status', 'REJECTED');
   var totalLTV      = mp.reduce(function(s, r) { return s + (r.ltv || 0); }, 0);
   var ompGMV        = omp.reduce(function(s, r) { return s + (r.totalGMV || 0); }, 0);
@@ -428,6 +436,8 @@ function calcEnterpriseKPIs(mp, omp, epr) {
     totalCases:     totalCases,
     totalCompleted: totalCompleted,
     totalPending:   totalPending,
+    totalDraft:     totalDraft,
+    totalInReview:  totalInReview,
     totalRejected:  totalRejected,
     totalLTV:       totalLTV,
     ompGMV:         ompGMV,
@@ -615,12 +625,20 @@ function calcEPRKPIs(data) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// VERTICAL KPIs  (always uses full/unfiltered data)
+// VERTICAL KPIs — honours the Period filter (FY / MTD / …) only.
+// Category / status / search filters are NOT applied here so the
+// vertical definitions stay intact.
 // ─────────────────────────────────────────────────────────────
 
 var VERTICAL_DETAIL_ROWS = 100;   // rows shipped per vertical for the click-through table
 
-function calcVerticalKPIs(mpAll, ompAll, eprAll) {
+function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
+  var f = filters || {};
+  function inPeriod(arr) { return arr.filter(function(r) { return applyDateFilter(r, f); }); }
+  mpAll  = inPeriod(mpAll);
+  ompAll = inPeriod(ompAll);
+  eprAll = inPeriod(eprAll);
+
   var now     = new Date();
   var weekAgo = new Date(now.getTime() - 7 * 86400000);
 
@@ -729,45 +747,6 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// TRENDS  (MP + OMP + EPR — all now carry date fields)
-// ─────────────────────────────────────────────────────────────
-
-function calcTrends(mp, omp, epr) {
-  var data = mp.concat(omp || []).concat(epr || []);
-  var now  = new Date();
-  var months = [];
-
-  for (var i = 11; i >= 0; i--) {
-    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({
-      label: d.toLocaleString('default', { month: 'short' }) + ' \'' + String(d.getFullYear()).slice(2),
-      year:  d.getFullYear(),
-      month: d.getMonth(),
-    });
-  }
-
-  var monthly = months.map(function(m) {
-    return {
-      label:     m.label,
-      created:   countFn(data, function(r) { return r.createdDate   && r.createdDate.getFullYear()   === m.year && r.createdDate.getMonth()   === m.month; }),
-      onboarded: countFn(data, function(r) { return r.onboardedDate && r.onboardedDate.getFullYear() === m.year && r.onboardedDate.getMonth() === m.month; }),
-      shipped:   countFn(mp,   function(r) { return r.shipmentDate  && r.shipmentDate.getFullYear()  === m.year && r.shipmentDate.getMonth()  === m.month; }),
-    };
-  });
-
-  var years  = [now.getFullYear() - 2, now.getFullYear() - 1, now.getFullYear()];
-  var yearly = years.map(function(y) {
-    return {
-      label:     String(y),
-      created:   countFn(data, function(r) { return r.createdDate   && r.createdDate.getFullYear()   === y; }),
-      onboarded: countFn(data, function(r) { return r.onboardedDate && r.onboardedDate.getFullYear() === y; }),
-    };
-  });
-
-  return { monthly: monthly, yearly: yearly };
-}
-
-// ─────────────────────────────────────────────────────────────
 // TAT  (Marketplace onboarding TAT only)
 // ─────────────────────────────────────────────────────────────
 
@@ -819,95 +798,6 @@ function calcTAT(data) {
     distribution: buckets,
     categoryTAT:  categoryTAT,
     vendorTAT:    vendorTAT,
-  };
-}
-
-// ─────────────────────────────────────────────────────────────
-// TABLE DATA
-// ─────────────────────────────────────────────────────────────
-
-function buildTable(mp, omp, epr) {
-  var mpRows = mp.slice(0, CONFIG.MAX_TABLE_ROWS).map(function(r) {
-    return {
-      id:          r.id,
-      name:        r.name,
-      source:      'Marketplace',
-      vertical:    r.vertical || 'Marketplace',
-      category:    r.category,
-      vendorType:  r.vendorType,
-      status:      r.status,
-      curStatus:   r.currentStatus,
-      gstin:       r.gstin || '—',
-      state:       r.state || '—',
-      createdDate: fmtDate(r.createdDate),
-      onbDate:     fmtDate(r.onboardedDate),
-      shipDate:    fmtDate(r.shipmentDate),
-      tat:         (r.onbTAT !== null && r.onbTAT >= 0) ? r.onbTAT : '—',
-      ltv:         r.ltv > 0 ? fmtCurrency(r.ltv) : '—',
-      hasGST:      r.hasGST,
-      hasShip:     r.hasShipment,
-      docPct:      '—',
-    };
-  });
-
-  var ompRows = omp.slice(0, CONFIG.MAX_TABLE_ROWS).map(function(r) {
-    return {
-      id:          r.id,
-      name:        r.name,
-      source:      'Open Marketplace',
-      vertical:    'Open Marketplace',
-      category:    r.category,
-      vendorType:  r.vendorType,
-      status:      r.status,
-      curStatus:   r.hasTransacted ? 'TRANSACTED' : (r.hasListing ? 'ACTIVE' : 'NOT ACTIVE'),
-      gstin:       r.gstin || '—',
-      state:       r.state || '—',
-      city:        r.city  || '—',
-      createdDate: fmtDate(r.createdDate),
-      onbDate:     fmtDate(r.onboardedDate),
-      shipDate:    '—',
-      tat:         (r.onbTAT !== null && r.onbTAT >= 0) ? r.onbTAT : '—',
-      ltv:         r.totalGMV > 0 ? fmtCurrency(r.totalGMV) : '—',
-      hasGST:      r.hasGST,
-      hasShip:     r.hasTransacted,
-      docPct:      r.docPct + '%',
-      totalListings: r.totalListings,
-      totalOrders:   r.totalOrders,
-      sellerRating:  r.sellerRating > 0 ? r.sellerRating : '—',
-      osvConsent:    r.osvConsent,
-    };
-  });
-
-  var eprRows = epr.slice(0, CONFIG.MAX_TABLE_ROWS).map(function(r) {
-    return {
-      id:          r.id,
-      name:        r.name,
-      source:      'EPR',
-      vertical:    'EPR',
-      category:    r.category,
-      vendorType:  r.vendorType,
-      status:      r.status,
-      curStatus:   '—',
-      gstin:       r.gstin || '—',
-      state:       r.state || '—',
-      createdDate: fmtDate(r.createdDate),
-      onbDate:     fmtDate(r.onboardedDate),
-      shipDate:    '—',
-      tat:         (r.onbTAT !== null && r.onbTAT >= 0) ? r.onbTAT : '—',
-      ltv:         '—',
-      hasGST:      r.hasGST,
-      hasShip:     false,
-      docPct:      '—',
-    };
-  });
-
-  var rows = mpRows.concat(ompRows).concat(eprRows);
-  return {
-    rows:     rows,
-    mpCount:  mpRows.length,
-    ompCount: ompRows.length,
-    eprCount: eprRows.length,
-    total:    rows.length,
   };
 }
 
@@ -1053,16 +943,31 @@ function unique(arr) {
     return true;
   });
 }
+function fyStartYear(d) {
+  // Indian financial year: Apr 1 – Mar 31
+  return d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+}
+function buildFiscalYears(all) {
+  // All financial years present in the data, newest first (e.g. 'FY26-27')
+  var nowFY = fyStartYear(new Date());
+  var minFY = nowFY;
+  all.forEach(function(r) {
+    var d = r.createdDate || r.onboardedDate;
+    if (d) {
+      var y = fyStartYear(d);
+      if (y >= 2015 && y < minFY) minFY = y;
+    }
+  });
+  var list = [];
+  for (var y = nowFY; y >= minFY; y--) {
+    list.push('FY' + String(y).slice(2) + '-' + String(y + 1).slice(2));
+  }
+  return list;
+}
 function fmtDate(d) {
   if (!d) return '—';
   var dd = d.getDate();
   var mm = d.getMonth() + 1;
   var yy = d.getFullYear();
   return (dd < 10 ? '0' : '') + dd + '/' + (mm < 10 ? '0' : '') + mm + '/' + yy;
-}
-function fmtCurrency(v) {
-  if (!v) return '₹0';
-  if (v >= 10000000) return '₹' + (v / 10000000).toFixed(2) + ' Cr';
-  if (v >= 100000)   return '₹' + (v / 100000).toFixed(2) + ' L';
-  return '₹' + Math.round(v).toLocaleString('en-IN');
 }

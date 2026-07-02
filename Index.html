@@ -124,7 +124,6 @@ select,input{font-family:inherit}
   background:rgba(255,255,255,.95);
   backdrop-filter:blur(16px);
   -webkit-backdrop-filter:blur(16px);
-  border-bottom:1px solid var(--border);
   padding:10px 32px;
   display:flex;flex-wrap:wrap;gap:10px;align-items:center;
 }
@@ -166,39 +165,6 @@ select,input{font-family:inherit}
 
 /* ===== Main ===== */
 #main{max-width:1640px;margin:0 auto;padding:28px 32px}
-
-/* ===== Tab Nav ===== */
-.tab-nav{
-  display:inline-flex;gap:2px;
-  background:var(--bg2);
-  border:1px solid var(--border);
-  padding:4px;
-  border-radius:10px;
-  margin-bottom:28px;
-  overflow-x:auto;
-  max-width:100%;
-}
-.tab-btn{
-  padding:8px 15px;
-  border:none;
-  background:transparent;
-  color:var(--txt3);
-  font-size:12.5px;
-  font-weight:500;
-  border-radius:7px;
-  white-space:nowrap;
-  transition:all .14s ease;
-  letter-spacing:-.1px;
-}
-.tab-btn:hover{color:var(--txt2);background:rgba(0,0,0,.04)}
-.tab-btn.active{
-  color:var(--txt);
-  background:var(--card);
-  font-weight:600;
-  box-shadow:0 1px 3px rgba(0,0,0,.08),0 0 0 1px rgba(0,0,0,.04);
-}
-.tab-panel{display:none}
-.tab-panel.active{display:block;animation:fadeUp .3s ease both}
 
 /* ===== Section Titles ===== */
 .section-title{
@@ -332,54 +298,7 @@ select,input{font-family:inherit}
 .progress-bar-wrap{height:5px;background:var(--bg2);border-radius:4px;overflow:hidden}
 .progress-bar{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1)}
 
-/* ===== Doc Completion ===== */
-.doc-grid{display:grid;gap:10px}
-.doc-row{display:flex;align-items:center;gap:12px}
-.doc-name{font-size:12px;color:var(--txt2);width:160px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:450}
-.doc-bar-wrap{flex:1;height:5px;background:var(--bg2);border-radius:4px;overflow:hidden}
-.doc-bar{height:100%;border-radius:4px;background:var(--green);transition:width .8s cubic-bezier(.4,0,.2,1)}
-.doc-pct{font-size:11px;color:var(--txt3);width:36px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
-
 /* ===== Detail Table ===== */
-.table-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
-.table-search{
-  background:var(--card);
-  border:1px solid var(--border);
-  color:var(--txt);
-  padding:8px 13px;
-  border-radius:var(--r2);
-  font-size:12.5px;
-  outline:none;
-  width:230px;
-  transition:border-color .15s,box-shadow .15s;
-}
-.table-search::placeholder{color:var(--txt3);font-weight:400}
-.table-search:focus{border-color:var(--blue);box-shadow:var(--ring)}
-.table-spacer{flex:1}
-.btn-export{
-  padding:8px 16px;
-  border-radius:var(--r2);
-  border:1px solid var(--border);
-  background:var(--card);
-  color:var(--txt2);
-  font-size:12.5px;font-weight:500;
-  display:flex;align-items:center;gap:6px;
-  transition:all .15s ease;
-}
-.btn-export:hover{background:var(--bg2);border-color:var(--border2);color:var(--txt)}
-.table-filter-sel{
-  background:var(--card);
-  border:1px solid var(--border);
-  color:var(--txt2);
-  padding:8px 10px;
-  border-radius:var(--r2);
-  font-size:12.5px;
-  outline:none;
-  cursor:pointer;
-  transition:border-color .15s,box-shadow .15s;
-}
-.table-filter-sel:hover{border-color:var(--border2)}
-.table-filter-sel:focus{border-color:var(--blue);box-shadow:var(--ring)}
 .table-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);background:var(--card);box-shadow:var(--shadow-sm)}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
 thead th{
@@ -416,46 +335,13 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .chip-draft{background:#EFF6FF;color:#1D4ED8}
 .chip-review{background:#FFFBEB;color:#92400E}
 .chip-rejected{background:#FEF2F2;color:#991B1B}
-.chip-active{background:#F0FDF4;color:#166534}
-.chip-churned{background:#FEF2F2;color:#991B1B}
-.chip-deactivated{background:#F9FAFB;color:var(--txt2);border:1px solid var(--border)}
-.chip-reactivated{background:#F5F3FF;color:#5B21B6}
-.chip-mp{background:#EFF6FF;color:#1D4ED8}
-.chip-omp{background:#ECFEFF;color:#155E75}
-.chip-epr{background:#FFF7ED;color:#C2410C}
 .gst-ok{color:#166534;font-size:11px;font-weight:500}
 .gst-bad{color:#991B1B;font-size:11px;font-weight:500}
-.pagination{display:flex;align-items:center;gap:6px;margin-top:16px;justify-content:center}
-.page-btn{
-  padding:6px 11px;
-  border-radius:var(--r2);
-  border:1px solid var(--border);
-  background:var(--card);
-  color:var(--txt2);
-  font-size:12px;font-weight:500;
-  transition:all .14s ease;
-}
-.page-btn:hover{border-color:var(--blue);color:var(--blue);background:rgba(0,113,188,.04)}
-.page-btn.active{border-color:var(--blue);color:#fff;background:var(--blue);box-shadow:0 2px 8px -1px rgba(0,113,188,.38)}
-.page-info{font-size:12px;color:var(--txt3)}
-
 /* ===== Metric Row ===== */
 .metric-row{display:flex;flex-wrap:wrap;gap:28px;margin-bottom:14px}
 .metric-item{display:flex;flex-direction:column;gap:3px}
 .metric-val{font-size:22px;font-weight:700;color:var(--txt);letter-spacing:-.5px;font-variant-numeric:tabular-nums}
 .metric-lbl{font-size:10.5px;color:var(--txt3);font-weight:500;text-transform:uppercase;letter-spacing:.45px}
-
-/* ===== TAT Table ===== */
-.tat-table{width:100%;border-collapse:collapse;font-size:12.5px}
-.tat-table th{text-align:left;padding:9px 12px;color:var(--txt2);border-bottom:1px solid var(--border);font-weight:600;font-size:11.5px}
-.tat-table td{padding:9px 12px;color:var(--txt);border-bottom:1px solid var(--border)}
-.tat-table tr:last-child td{border-bottom:none}
-.tat-bar{height:5px;background:var(--blue);border-radius:3px;display:inline-block;vertical-align:middle;margin-right:6px;transition:width .6s ease}
-
-/* ===== Trend Legend ===== */
-.trend-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px}
-.trend-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt2);font-weight:450}
-.trend-dot{width:8px;height:8px;border-radius:50%}
 
 /* ===== Vertical Cards ===== */
 .vert-sub{font-size:11.5px;color:var(--txt3);font-weight:400;margin-top:2px;letter-spacing:0}
@@ -478,6 +364,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   margin-bottom:24px;
   box-shadow:var(--shadow);
   animation:fadeUp .25s ease both;
+  scroll-margin-top:125px;   /* clear the sticky header + filter bar */
 }
 .vd-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:18px}
 .vd-title{font-size:15px;font-weight:650;color:var(--txt);letter-spacing:-.2px}
@@ -559,9 +446,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
       <option value="Today">Today</option>
       <option value="MTD">MTD</option>
       <option value="YTD">YTD</option>
-      <option value="FY24-25">FY 24-25</option>
-      <option value="FY25-26">FY 25-26</option>
-      <option value="FY26-27">FY 26-27</option>
       <option value="Custom">Custom</option>
     </select>
     <div class="custom-dates" id="custom-dates">
@@ -598,19 +482,8 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 <!-- Main -->
 <div id="main">
 
-  <!-- Tab Nav -->
-  <div class="tab-nav" id="tab-nav">
-    <button class="tab-btn active" onclick="switchTab('overview')">📊 Overview</button>
-    <button class="tab-btn" onclick="switchTab('marketplace')">🏪 Marketplace</button>
-    <button class="tab-btn" onclick="switchTab('omp')">🌐 Open Marketplace</button>
-    <button class="tab-btn" onclick="switchTab('epr')">♻️ EPR</button>
-    <button class="tab-btn" onclick="switchTab('trends')">📈 Trends</button>
-    <button class="tab-btn" onclick="switchTab('tat-sla')">⏱ TAT</button>
-    <button class="tab-btn" onclick="switchTab('table')">📋 Detailed Table</button>
-  </div>
-
   <!-- ── TAB: OVERVIEW ──────────────────────────────────────── -->
-  <div class="tab-panel active" id="tab-overview">
+  <div id="tab-overview">
 
     <!-- Business Verticals -->
     <div class="section-title">
@@ -657,293 +530,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
     </div>
   </div>
 
-  <!-- ── TAB: MARKETPLACE ──────────────────────────────────── -->
-  <div class="tab-panel" id="tab-marketplace">
-    <div class="section-title">Marketplace Module <span class="badge" id="mp-total-badge">—</span></div>
-
-    <!-- MP KPIs -->
-    <div class="kpi-grid kpi-grid-5 mb-24" id="mp-kpis">
-      <div class="kpi-card green">   <div class="kpi-label">Onboarded</div><div class="kpi-value" id="mp-completed">—</div><div class="kpi-sub" id="mp-comp-sub">—</div></div>
-      <div class="kpi-card amber">   <div class="kpi-label">Draft</div><div class="kpi-value" id="mp-draft">—</div><div class="kpi-sub">Awaiting submission</div></div>
-      <div class="kpi-card blue">    <div class="kpi-label">In Review</div><div class="kpi-value" id="mp-review">—</div><div class="kpi-sub">Under evaluation</div></div>
-      <div class="kpi-card red">     <div class="kpi-label">Rejected</div><div class="kpi-value" id="mp-rejected">—</div><div class="kpi-sub">Not approved</div></div>
-      <div class="kpi-card">         <div class="kpi-label">Total Sellers</div><div class="kpi-value" id="mp-total">—</div><div class="kpi-sub">All statuses</div></div>
-    </div>
-
-    <!-- Lifecycle KPIs -->
-    <div class="subsection-title">Seller Lifecycle</div>
-    <div class="kpi-grid kpi-grid-5 mb-24">
-      <div class="kpi-card green">   <div class="kpi-label">Active</div><div class="kpi-value" id="mp-active">—</div><div class="kpi-sub">ACTIVE + REACTIVATED</div></div>
-      <div class="kpi-card red">     <div class="kpi-label">Churned</div><div class="kpi-value" id="mp-churned">—</div><div class="kpi-sub">Churned sellers</div></div>
-      <div class="kpi-card amber">   <div class="kpi-label">Deactivated</div><div class="kpi-value" id="mp-deactivated">—</div><div class="kpi-sub">Deactivated</div></div>
-      <div class="kpi-card purple">  <div class="kpi-label">Reactivated</div><div class="kpi-value" id="mp-reactivated">—</div><div class="kpi-sub">Came back</div></div>
-      <div class="kpi-card cyan">    <div class="kpi-label">Active Rate</div><div class="kpi-value" id="mp-active-rate">—</div><div class="kpi-sub">Of completed</div></div>
-    </div>
-
-    <!-- Date Activity Chart -->
-    <div class="subsection-title">Date-Based Activity</div>
-    <div class="chart-grid chart-grid-full mb-24">
-      <div class="chart-card">
-        <div class="chart-card-title">
-          Created · Onboarded · Shipped
-          <span style="font-size:11px;font-weight:400;color:var(--txt3)">Today / MTD / YTD</span>
-        </div>
-        <div class="chart-wrap"><canvas id="ch-mp-date-activity"></canvas></div>
-      </div>
-    </div>
-
-    <!-- Review Pipeline -->
-    <div class="subsection-title">Review Pipeline</div>
-    <div class="kpi-grid kpi-grid-5 mb-24">
-      <div class="kpi-card blue">  <div class="kpi-label">Stage 1 — Submitted</div><div class="kpi-value" id="mp-stage1">—</div><div class="kpi-sub">Awaiting L1 review</div></div>
-      <div class="kpi-card blue">  <div class="kpi-label">Stage 2 — L1 Done</div><div class="kpi-value" id="mp-stage2">—</div><div class="kpi-sub">Awaiting L2 review</div></div>
-      <div class="kpi-card blue">  <div class="kpi-label">Stage 3 — L2 Done</div><div class="kpi-value" id="mp-stage3">—</div><div class="kpi-sub">Awaiting L3 review</div></div>
-      <div class="kpi-card blue">  <div class="kpi-label">Stage 4 — L3 Done</div><div class="kpi-value" id="mp-stage4">—</div><div class="kpi-sub">Awaiting final L4</div></div>
-      <div class="kpi-card red">   <div class="kpi-label">Total Rejections</div><div class="kpi-value" id="mp-total-rej">—</div><div class="kpi-sub" id="mp-avg-rej-sub">—</div></div>
-    </div>
-
-    <!-- Shipment & LTV -->
-    <div class="subsection-title">Shipment &amp; Lifetime Value</div>
-    <div class="kpi-grid kpi-grid-5 mb-24">
-      <div class="kpi-card cyan">    <div class="kpi-label">With Shipment</div><div class="kpi-value" id="mp-with-ship">—</div><div class="kpi-sub" id="mp-ship-sub">—</div></div>
-      <div class="kpi-card red">     <div class="kpi-label">No Shipment</div><div class="kpi-value" id="mp-no-ship">—</div><div class="kpi-sub">Onboarded, no shipment</div></div>
-      <div class="kpi-card green">   <div class="kpi-label">Total LTV</div><div class="kpi-value" id="mp-total-ltv" style="font-size:20px">—</div><div class="kpi-sub">Combined</div></div>
-      <div class="kpi-card">         <div class="kpi-label">Avg LTV</div><div class="kpi-value" id="mp-avg-ltv" style="font-size:20px">—</div><div class="kpi-sub">Per seller</div></div>
-      <div class="kpi-card amber">   <div class="kpi-label">Missing GST</div><div class="kpi-value" id="mp-no-gst">—</div><div class="kpi-sub">No GSTIN</div></div>
-    </div>
-
-    <!-- MP Charts -->
-    <div class="chart-grid chart-grid-2">
-      <div class="chart-card">
-        <div class="chart-card-title">Status Distribution</div>
-        <div class="chart-wrap"><canvas id="ch-mp-status"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Current Lifecycle Status</div>
-        <div class="chart-wrap"><canvas id="ch-mp-curstatus"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Category Split</div>
-        <div class="chart-wrap"><canvas id="ch-mp-category"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Vendor Type Split</div>
-        <div class="chart-wrap"><canvas id="ch-mp-vendor"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Top States</div>
-        <div class="chart-wrap tall"><canvas id="ch-mp-states"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Shipment Analysis</div>
-        <div class="chart-wrap"><canvas id="ch-mp-shipment"></canvas></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── TAB: OPEN MARKETPLACE ─────────────────────────────── -->
-  <div class="tab-panel" id="tab-omp">
-    <div class="section-title">Open Marketplace Module <span class="badge" id="omp-total-badge">—</span></div>
-
-    <!-- OMP KPIs -->
-    <div class="kpi-grid kpi-grid-5 mb-24">
-      <div class="kpi-card">         <div class="kpi-label">Total Cases</div><div class="kpi-value" id="omp-total">—</div><div class="kpi-sub">All sellers</div></div>
-      <div class="kpi-card green">   <div class="kpi-label">Onboarded</div><div class="kpi-value" id="omp-completed">—</div><div class="kpi-sub" id="omp-comp-sub">—</div></div>
-      <div class="kpi-card blue">    <div class="kpi-label">In Review</div><div class="kpi-value" id="omp-review">—</div><div class="kpi-sub">Under evaluation</div></div>
-      <div class="kpi-card amber">   <div class="kpi-label">Draft</div><div class="kpi-value" id="omp-draft">—</div><div class="kpi-sub">Not submitted</div></div>
-      <div class="kpi-card red">     <div class="kpi-label">Rejected</div><div class="kpi-value" id="omp-rejected">—</div><div class="kpi-sub">Not approved</div></div>
-    </div>
-
-    <!-- OMP Secondary KPIs -->
-    <div class="kpi-grid kpi-grid-5 mb-24">
-      <div class="kpi-card green">   <div class="kpi-label">With GST</div><div class="kpi-value" id="omp-gst">—</div><div class="kpi-sub">Valid GSTIN</div></div>
-      <div class="kpi-card red">     <div class="kpi-label">Missing GST</div><div class="kpi-value" id="omp-no-gst">—</div><div class="kpi-sub">No GSTIN</div></div>
-      <div class="kpi-card purple">  <div class="kpi-label">Pipeline %</div><div class="kpi-value" id="omp-pipeline">—</div><div class="kpi-sub">Draft + In Review %</div></div>
-      <div class="kpi-card cyan">    <div class="kpi-label">Avg Doc Completion</div><div class="kpi-value" id="omp-doc-avg">—</div><div class="kpi-sub">Document fill rate</div></div>
-      <div class="kpi-card amber">   <div class="kpi-label">Pending</div><div class="kpi-value" id="omp-pending">—</div><div class="kpi-sub">Draft + In Review</div></div>
-    </div>
-
-    <!-- OMP Charts -->
-    <div class="chart-grid chart-grid-2 mb-24">
-      <div class="chart-card">
-        <div class="chart-card-title">Status Distribution</div>
-        <div class="chart-wrap"><canvas id="ch-omp-status"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Category Split</div>
-        <div class="chart-wrap"><canvas id="ch-omp-category"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Vendor Type Split</div>
-        <div class="chart-wrap"><canvas id="ch-omp-vendor"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">GST Status</div>
-        <div class="chart-wrap"><canvas id="ch-omp-gst"></canvas></div>
-      </div>
-    </div>
-
-    <!-- Document Completion -->
-    <div class="chart-card mb-24">
-      <div class="chart-card-title">Document Completion Rate (%)</div>
-      <div class="doc-grid" id="omp-doc-grid"></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-card-title">Document Submission Analysis</div>
-      <div class="chart-wrap tall"><canvas id="ch-omp-docs"></canvas></div>
-    </div>
-  </div>
-
-  <!-- ── TAB: EPR ──────────────────────────────────────────── -->
-  <div class="tab-panel" id="tab-epr">
-    <div class="section-title">EPR — Extended Producer Responsibility <span class="badge" id="epr-total-badge">—</span></div>
-
-    <!-- EPR KPIs -->
-    <div class="kpi-grid kpi-grid-5 mb-24">
-      <div class="kpi-card">        <div class="kpi-label">Total Cases</div><div class="kpi-value" id="epr-total">—</div><div class="kpi-sub">All EPR sellers</div></div>
-      <div class="kpi-card green">  <div class="kpi-label">Onboarded</div><div class="kpi-value" id="epr-completed">—</div><div class="kpi-sub" id="epr-comp-sub">—</div></div>
-      <div class="kpi-card blue">   <div class="kpi-label">In Review</div><div class="kpi-value" id="epr-review">—</div><div class="kpi-sub">Under evaluation</div></div>
-      <div class="kpi-card amber">  <div class="kpi-label">Draft</div><div class="kpi-value" id="epr-draft">—</div><div class="kpi-sub">Not submitted</div></div>
-      <div class="kpi-card red">    <div class="kpi-label">Rejected</div><div class="kpi-value" id="epr-rejected">—</div><div class="kpi-sub">Not approved</div></div>
-    </div>
-
-    <!-- EPR Additional KPIs -->
-    <div class="kpi-grid kpi-grid-5 mb-24">
-      <div class="kpi-card cyan">  <div class="kpi-label">Avg TAT</div><div class="kpi-value" id="epr-avg-tat">—</div><div class="kpi-sub">Days to onboard</div></div>
-      <div class="kpi-card">       <div class="kpi-label">With GST</div><div class="kpi-value" id="epr-with-gst">—</div><div class="kpi-sub">Valid GSTIN</div></div>
-      <div class="kpi-card amber">  <div class="kpi-label">Missing GST</div><div class="kpi-value" id="epr-no-gst">—</div><div class="kpi-sub">No GSTIN</div></div>
-      <div class="kpi-card green">  <div class="kpi-label">Onboarded MTD</div><div class="kpi-value" id="epr-onb-mtd">—</div><div class="kpi-sub">This month</div></div>
-      <div class="kpi-card">        <div class="kpi-label">Onboarded YTD</div><div class="kpi-value" id="epr-onb-ytd">—</div><div class="kpi-sub">This year</div></div>
-    </div>
-
-    <!-- EPR Charts -->
-    <div class="chart-grid chart-grid-2">
-      <div class="chart-card">
-        <div class="chart-card-title">Status Distribution</div>
-        <div class="chart-wrap"><canvas id="ch-epr-status"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Category Split</div>
-        <div class="chart-wrap"><canvas id="ch-epr-category"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Vendor Type Split</div>
-        <div class="chart-wrap"><canvas id="ch-epr-vendor"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Top States</div>
-        <div class="chart-wrap"><canvas id="ch-epr-states"></canvas></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── TAB: TRENDS ───────────────────────────────────────── -->
-  <div class="tab-panel" id="tab-trends">
-    <div class="section-title">Trend Analytics</div>
-    <div class="chart-card mb-24">
-      <div class="chart-card-title">Monthly Trend — Created vs Onboarded vs Shipped</div>
-      <div class="trend-legend" id="trend-legend">
-        <div class="trend-legend-item"><div class="trend-dot" style="background:var(--blue)"></div>Created</div>
-        <div class="trend-legend-item"><div class="trend-dot" style="background:var(--lime)"></div>Onboarded</div>
-        <div class="trend-legend-item"><div class="trend-dot" style="background:var(--orange)"></div>Shipped</div>
-      </div>
-      <div class="chart-wrap tall"><canvas id="ch-monthly-trend"></canvas></div>
-    </div>
-    <div class="chart-grid chart-grid-2">
-      <div class="chart-card">
-        <div class="chart-card-title">Yearly Trend — Created vs Onboarded</div>
-        <div class="chart-wrap tall"><canvas id="ch-yearly-trend"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Monthly Onboarding Volume</div>
-        <div class="chart-wrap tall"><canvas id="ch-monthly-onb"></canvas></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── TAB: TAT ─────────────────────────────────────────── -->
-  <div class="tab-panel" id="tab-tat-sla">
-    <div class="section-title">TAT Analysis</div>
-
-    <!-- TAT KPIs -->
-    <div class="kpi-grid kpi-grid-5 mb-24">
-      <div class="kpi-card">         <div class="kpi-label">Avg TAT</div><div class="kpi-value" id="tat-avg">—</div><div class="kpi-sub">Days</div></div>
-      <div class="kpi-card green">   <div class="kpi-label">Min TAT</div><div class="kpi-value" id="tat-min">—</div><div class="kpi-sub">Fastest</div></div>
-      <div class="kpi-card red">     <div class="kpi-label">Max TAT</div><div class="kpi-value" id="tat-max">—</div><div class="kpi-sub">Slowest</div></div>
-      <div class="kpi-card cyan">    <div class="kpi-label">Median TAT</div><div class="kpi-value" id="tat-med">—</div><div class="kpi-sub">50th percentile</div></div>
-      <div class="kpi-card">         <div class="kpi-label">Sample Size</div><div class="kpi-value" id="tat-n">—</div><div class="kpi-sub">Sellers with TAT data</div></div>
-    </div>
-
-    <!-- Charts -->
-    <div class="chart-grid chart-grid-2 mb-24">
-      <div class="chart-card">
-        <div class="chart-card-title">TAT Distribution</div>
-        <div class="chart-wrap"><canvas id="ch-tat-dist2"></canvas></div>
-      </div>
-    </div>
-
-    <!-- Category & Vendor TAT -->
-    <div class="chart-grid chart-grid-2">
-      <div class="chart-card">
-        <div class="chart-card-title">Average TAT by Category</div>
-        <div class="chart-wrap tall"><canvas id="ch-cat-tat"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Average TAT by Vendor Type</div>
-        <div class="chart-wrap tall"><canvas id="ch-vendor-tat"></canvas></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── TAB: TABLE ────────────────────────────────────────── -->
-  <div class="tab-panel" id="tab-table">
-    <div class="section-title">Detailed Records</div>
-    <div class="table-toolbar">
-      <input type="text" class="table-search" id="tbl-search" placeholder="🔍 Search…" oninput="filterTable()">
-      <select class="table-filter-sel" id="tbl-source" onchange="filterTable()">
-        <option value="">All Sources</option>
-        <option value="Marketplace">Marketplace</option>
-        <option value="Open Marketplace">Open Marketplace</option>
-        <option value="EPR">EPR</option>
-      </select>
-      <select class="table-filter-sel" id="tbl-category" onchange="filterTable()">
-        <option value="">All Categories</option>
-      </select>
-      <select class="table-filter-sel" id="tbl-status" onchange="filterTable()">
-        <option value="">All Statuses</option>
-        <option>COMPLETED</option><option>DRAFT</option><option>IN_REVIEW</option><option>REJECTED</option>
-      </select>
-      <div class="table-spacer"></div>
-      <span class="page-info" id="tbl-count">0 records</span>
-      <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
-    </div>
-    <div class="table-wrap">
-      <table id="detail-table">
-        <thead>
-          <tr>
-            <th onclick="sortTable('id')">ID</th>
-            <th onclick="sortTable('name')">Business Name</th>
-            <th onclick="sortTable('source')">Source</th>
-            <th onclick="sortTable('category')">Category</th>
-            <th onclick="sortTable('vendorType')">Vendor Type</th>
-            <th onclick="sortTable('status')">Status</th>
-            <th onclick="sortTable('curStatus')">Lifecycle</th>
-            <th onclick="sortTable('gstin')">GSTIN</th>
-            <th onclick="sortTable('state')">State</th>
-            <th onclick="sortTable('createdDate')">Created</th>
-            <th onclick="sortTable('onbDate')">Onboarded</th>
-            <th onclick="sortTable('shipDate')">Shipment</th>
-            <th onclick="sortTable('tat')">TAT</th>
-            <th onclick="sortTable('ltv')">LTV</th>
-            <th>Doc %</th>
-          </tr>
-        </thead>
-        <tbody id="tbl-body"></tbody>
-      </table>
-    </div>
-    <div class="pagination" id="pagination"></div>
-  </div>
-
 </div><!-- /main -->
 
 <script>
@@ -951,12 +537,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 // STATE
 // ═══════════════════════════════════════════════════════════════
 var D = null;          // full dashboard data
-var tableRows = [];    // all table rows
-var filteredRows = []; // after local table search/filter
-var sortField = '';
-var sortDir = 1;
-var currentPage = 1;
-var rowsPerPage = 50;
 var charts = {};       // Chart.js instances
 
 var COLORS = {
@@ -1090,6 +670,22 @@ function populateFilterOptions() {
   fillSelect('f-category', fo.categories);
   fillSelect('f-vendortype', fo.vendorTypes);
   fillSelect('f-status', fo.statuses);
+  populatePeriodOptions(fo.fiscalYears || []);
+}
+
+// Financial-year options come from the data itself (all FYs on record)
+function populatePeriodOptions(fys) {
+  var sel = document.getElementById('f-period');
+  if (!sel) return;
+  var cur  = sel.value || 'All';
+  var opts = [['All', 'All Time'], ['Today', 'Today'], ['MTD', 'MTD'], ['YTD', 'YTD']];
+  fys.forEach(function(fy) { opts.push([fy, fy.replace(/^FY/, 'FY ')]); });
+  opts.push(['Custom', 'Custom']);
+  sel.innerHTML = opts.map(function(o) {
+    return '<option value="' + o[0] + '">' + o[1] + '</option>';
+  }).join('');
+  sel.value = cur;
+  if (!sel.value) sel.value = 'All';
 }
 
 function fillSelect(id, opts) {
@@ -1105,31 +701,12 @@ function fillSelect(id, opts) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TAB NAVIGATION
-// ═══════════════════════════════════════════════════════════════
-function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach(function(b, i) {
-    var tabs = ['overview','marketplace','omp','epr','trends','tat-sla','table'];
-    b.classList.toggle('active', tabs[i] === name);
-  });
-  document.querySelectorAll('.tab-panel').forEach(function(p) {
-    p.classList.toggle('active', p.id === 'tab-' + name);
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════
 // RENDER ALL
 // ═══════════════════════════════════════════════════════════════
 function renderAll() {
   populateFilterOptions();
   renderLastUpdated();
   renderOverview();
-  renderMarketplace();
-  renderOMP();
-  renderEPR();
-  renderTrends();
-  renderTATSLA();
-  renderTable();
 }
 
 function renderLastUpdated() {
@@ -1147,8 +724,8 @@ function renderOverview() {
   set('e-total', fmt(e.totalCases));
   set('e-completed', fmt(e.totalCompleted));
   set('e-completion-sub', e.completionPct + '% completion rate');
-  set('e-draft',     fmt((mp.draft||0) + (omp.draft||0)));
-  set('e-in-review', fmt((mp.inReview||0) + (omp.inReview||0)));
+  set('e-draft',     fmt(e.totalDraft || 0));
+  set('e-in-review', fmt(e.totalInReview || 0));
   set('e-rejected', fmt(e.totalRejected));
   set('e-avg-tat', e.avgTAT + 'd');
   set('e-comp-rate', e.completionPct + '%');
@@ -1190,7 +767,7 @@ var VERT_CFG = [
   { key:'DRS',          name:'DRS',              sub:'Deposit Refund System',            code:'DRS', cls:'badge-drs' },
   { key:'EPR',          name:'EPR',              sub:'Extended Producer Responsibility', code:'EPR', cls:'badge-epr' },
   { key:'InfraBusiness',name:'Infra Business',   sub:'Metal & Institutional Business',   code:'INF', cls:'badge-inf' },
-  { key:'OMP',          name:'Open Marketplace', sub:'Open Marketplace Sellers',         code:'OMP', cls:'badge-omp' },
+  { key:'OMP',          name:'Open Marketplace', sub:'Sellers · data from FY 26-27',      code:'OMP', cls:'badge-omp' },
   { key:'Recommerce',   name:'Recommerce',       sub:'Re-Commerce',                      code:'REC', cls:'badge-rec' },
 ];
 var selectedVert = null;
@@ -1356,338 +933,6 @@ function renderVertDetail() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MARKETPLACE
-// ═══════════════════════════════════════════════════════════════
-function renderMarketplace() {
-  var mp = D.marketplace;
-  if (!mp) return;
-
-  document.getElementById('mp-total-badge').textContent = fmt(mp.total);
-  set('mp-total', fmt(mp.total));
-  set('mp-completed', fmt(mp.completed));
-  set('mp-comp-sub', mp.completionPct + '% of total');
-  set('mp-draft', fmt(mp.draft));
-  set('mp-review', fmt(mp.inReview));
-  set('mp-rejected', fmt(mp.rejected));
-  set('mp-active', fmt(mp.active));
-  set('mp-churned', fmt(mp.churned));
-  set('mp-deactivated', fmt(mp.deactivated));
-  set('mp-reactivated', fmt(mp.reactivated));
-  set('mp-active-rate', mp.activeRate + '%');
-  mkGroupedBar('ch-mp-date-activity', ['Today', 'MTD', 'YTD'], [
-    { label: 'Created',   data: [mp.createdToday, mp.createdMTD, mp.createdYTD],  color: COLORS.blue },
-    { label: 'Onboarded', data: [mp.onbToday,     mp.onbMTD,     mp.onbYTD],      color: COLORS.green },
-    { label: 'Shipped',   data: [mp.shipToday,    mp.shipMTD,    mp.shipYTD],     color: COLORS.orange },
-  ]);
-  var rs = mp.reviewStages || {};
-  set('mp-stage1', fmt(rs.stage1 || 0));
-  set('mp-stage2', fmt(rs.stage2 || 0));
-  set('mp-stage3', fmt(rs.stage3 || 0));
-  set('mp-stage4', fmt(rs.stage4 || 0));
-  set('mp-total-rej', fmt(mp.totalRejections || 0));
-  set('mp-avg-rej-sub', 'avg ' + (mp.avgRejections || 0) + ' per seller');
-  set('mp-with-ship', fmt(mp.withShipment));
-  set('mp-ship-sub', mp.shipmentRate + '% of completed');
-  set('mp-no-ship', fmt(mp.noShipment));
-  set('mp-total-ltv', fmtCur(mp.totalLTV));
-  set('mp-avg-ltv', fmtCur(mp.avgLTV));
-  set('mp-no-gst', fmt(mp.missingGST));
-
-  mkDoughnut('ch-mp-status',
-    ['Onboarded', 'Draft', 'In Review', 'Rejected'],
-    [mp.completed, mp.draft, mp.inReview, mp.rejected],
-    [COLORS.green, COLORS.blue, COLORS.amber, COLORS.red]);
-
-  mkDoughnut('ch-mp-curstatus',
-    ['Active', 'Churned', 'Deactivated', 'Reactivated'],
-    [mp.active, mp.churned, mp.deactivated, mp.reactivated],
-    [COLORS.green, COLORS.red, COLORS.purple, COLORS.cyan]);
-
-  var cat = mp.categorySplit || [];
-  mkBar('ch-mp-category', cat.map(l), cat.map(c), 'Sellers', COLORS.blue);
-
-  var vnd = mp.vendorSplit || [];
-  mkHBar('ch-mp-vendor', vnd.slice(0,8).map(l), vnd.slice(0,8).map(c), 'Sellers', COLORS.blue);
-
-  var st = mp.stateSplit || [];
-  mkHBar('ch-mp-states', st.map(l), st.map(c), 'Sellers', COLORS.blue);
-
-  mkDoughnut('ch-mp-shipment',
-    ['With Shipment', 'No Shipment'],
-    [mp.withShipment, mp.noShipment],
-    [COLORS.cyan, COLORS.red]);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// OPEN MARKETPLACE
-// ═══════════════════════════════════════════════════════════════
-function renderOMP() {
-  var omp = D.omp;
-  if (!omp) return;
-
-  document.getElementById('omp-total-badge').textContent = fmt(omp.total);
-  set('omp-total', fmt(omp.total));
-  set('omp-completed', fmt(omp.completed));
-  set('omp-comp-sub', omp.completionPct + '% of total');
-  set('omp-review', fmt(omp.inReview));
-  set('omp-draft', fmt(omp.draft));
-  set('omp-rejected', fmt(omp.rejected));
-  set('omp-gst', fmt(omp.withGST));
-  set('omp-no-gst', fmt(omp.missingGST));
-  set('omp-pipeline', omp.pipelinePct + '%');
-  set('omp-doc-avg', omp.avgDocPct + '%');
-  set('omp-pending', fmt(omp.pending));
-
-  mkDoughnut('ch-omp-status',
-    ['Onboarded', 'In Review', 'Draft', 'Rejected'],
-    [omp.completed, omp.inReview, omp.draft, omp.rejected],
-    [COLORS.green, COLORS.blue, COLORS.amber, COLORS.red]);
-
-  var cat = omp.categorySplit || [];
-  mkDoughnut('ch-omp-category', cat.map(l), cat.map(c), PALETTE);
-
-  var vnd = omp.vendorSplit || [];
-  mkHBar('ch-omp-vendor', vnd.slice(0,8).map(l), vnd.slice(0,8).map(c), 'Sellers', COLORS.blue);
-
-  mkDoughnut('ch-omp-gst', ['With GST', 'Missing GST'], [omp.withGST, omp.missingGST], [COLORS.green, COLORS.red]);
-
-  // Document completion grid
-  var docGrid = document.getElementById('omp-doc-grid');
-  docGrid.innerHTML = '';
-  (omp.docStats || []).forEach(function(d) {
-    var color = d.pct >= 75 ? COLORS.green : d.pct >= 40 ? COLORS.amber : COLORS.red;
-    docGrid.innerHTML += '<div class="doc-row">'
-      + '<span class="doc-name" title="' + d.label + '">' + d.label + '</span>'
-      + '<div class="doc-bar-wrap"><div class="doc-bar" style="width:' + d.pct + '%;background:' + color + '"></div></div>'
-      + '<span class="doc-pct">' + d.pct + '%</span>'
-      + '</div>';
-  });
-
-  // Document bar chart
-  var ds = omp.docStats || [];
-  mkHBar('ch-omp-docs',
-    ds.map(function(d) { return d.label; }),
-    ds.map(function(d) { return d.pct; }),
-    'Completion %',
-    ds.map(function(d) { return d.pct >= 75 ? COLORS.green : d.pct >= 40 ? COLORS.amber : COLORS.red; }));
-}
-
-// ═══════════════════════════════════════════════════════════════
-// EPR
-// ═══════════════════════════════════════════════════════════════
-function renderEPR() {
-  var epr = D.epr;
-  if (!epr) return;
-  document.getElementById('epr-total-badge').textContent = fmt(epr.total);
-  set('epr-total',     fmt(epr.total));
-  set('epr-completed', fmt(epr.completed));
-  set('epr-comp-sub',  (epr.completionPct || 0) + '% of total');
-  set('epr-review',    fmt(epr.inReview));
-  set('epr-draft',     fmt(epr.draft));
-  set('epr-rejected',  fmt(epr.rejected));
-  set('epr-avg-tat',   (epr.avgTAT || 0) + 'd');
-  set('epr-with-gst',  fmt(epr.withGST || 0));
-  set('epr-no-gst',    fmt(epr.missingGST || 0));
-  set('epr-onb-mtd',   fmt(epr.onbMTD || 0));
-  set('epr-onb-ytd',   fmt(epr.onbYTD || 0));
-
-  var st = epr.statusSplit || [];
-  mkDoughnut('ch-epr-status',
-    ['Onboarded', 'Draft', 'In Review', 'Rejected'],
-    [epr.completed, epr.draft, epr.inReview, epr.rejected],
-    [COLORS.green, COLORS.blue, COLORS.amber, COLORS.red]);
-
-  var cat = epr.categorySplit || [];
-  mkDoughnut('ch-epr-category', cat.map(l), cat.map(c), PALETTE);
-
-  var ven = epr.vendorSplit || [];
-  mkBar('ch-epr-vendor', ven.map(l), ven.map(c), 'Sellers', COLORS.blue);
-
-  var sts = (epr.stateSplit || []).filter(function(x){ return x.label; });
-  if (sts.length) mkHBar('ch-epr-states', sts.map(l), sts.map(c), 'Sellers', COLORS.blue);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TRENDS
-// ═══════════════════════════════════════════════════════════════
-function renderTrends() {
-  var tr = D.trends;
-  if (!tr) return;
-
-  var labels = (tr.monthly || []).map(function(m) { return m.label; });
-
-  mkLine('ch-monthly-trend', labels, [
-    { label: 'Created',   data: tr.monthly.map(function(m){ return m.created; }),   color: COLORS.blue },
-    { label: 'Onboarded', data: tr.monthly.map(function(m){ return m.onboarded; }), color: COLORS.lime },
-    { label: 'Shipped',   data: tr.monthly.map(function(m){ return m.shipped; }),   color: COLORS.orange },
-  ]);
-
-  var ylabels = (tr.yearly || []).map(function(y) { return y.label; });
-  mkGroupedBar('ch-yearly-trend', ylabels, [
-    { label: 'Created',   data: tr.yearly.map(function(y){ return y.created; }),   color: COLORS.blue },
-    { label: 'Onboarded', data: tr.yearly.map(function(y){ return y.onboarded; }), color: COLORS.lime },
-  ]);
-
-  mkBar('ch-monthly-onb', labels, tr.monthly.map(function(m){ return m.onboarded; }), 'Onboarded', COLORS.green);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TAT & SLA
-// ═══════════════════════════════════════════════════════════════
-function renderTATSLA() {
-  var tat = D.tat;
-  if (!tat) return;
-
-  set('tat-avg', tat.avg + 'd');
-  set('tat-min', tat.min !== undefined ? tat.min + 'd' : '—');
-  set('tat-max', tat.max !== undefined ? tat.max + 'd' : '—');
-  set('tat-med', tat.median + 'd');
-  set('tat-n', fmt(tat.totalWithTAT));
-
-  if (tat.distribution) {
-    mkBar('ch-tat-dist2',
-      tat.distribution.map(function(b){return b.label;}),
-      tat.distribution.map(function(b){return b.count;}),
-      'Cases',
-      [COLORS.green, COLORS.green, COLORS.amber, COLORS.amber, COLORS.red, COLORS.red]);
-  }
-
-  if (tat.categoryTAT) {
-    mkHBar('ch-cat-tat',
-      tat.categoryTAT.map(function(x){return x.category;}),
-      tat.categoryTAT.map(function(x){return x.avg;}),
-      'Avg TAT (days)', COLORS.blue);
-  }
-
-  if (tat.vendorTAT) {
-    mkHBar('ch-vendor-tat',
-      tat.vendorTAT.map(function(x){return x.vendorType;}),
-      tat.vendorTAT.map(function(x){return x.avg;}),
-      'Avg TAT (days)', COLORS.blue);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TABLE
-// ═══════════════════════════════════════════════════════════════
-function renderTable() {
-  if (!D.table) return;
-  tableRows = D.table.rows || [];
-  filteredRows = tableRows;
-  currentPage = 1;
-
-  var catSel = document.getElementById('tbl-category');
-  var cur = catSel.value;
-  var cats = Array.from(new Set(tableRows.map(function(r) { return r.category||''; }).filter(Boolean))).sort();
-  catSel.innerHTML = '<option value="">All Categories</option>';
-  cats.forEach(function(c) {
-    var o = document.createElement('option'); o.value = c; o.textContent = c; catSel.appendChild(o);
-  });
-  catSel.value = cur;
-
-  filterTable();
-}
-
-function filterTable() {
-  var q   = (document.getElementById('tbl-search').value || '').toLowerCase();
-  var src = document.getElementById('tbl-source').value;
-  var cat = document.getElementById('tbl-category').value;
-  var st  = document.getElementById('tbl-status').value;
-
-  filteredRows = tableRows.filter(function(r) {
-    if (src && r.source !== src) return false;
-    if (cat && r.category !== cat) return false;
-    if (st  && r.status !== st) return false;
-    if (q && !(r.name||'').toLowerCase().includes(q) &&
-             !(r.gstin||'').toLowerCase().includes(q) &&
-             !(r.id||'').toLowerCase().includes(q) &&
-             !(r.category||'').toLowerCase().includes(q)) return false;
-    return true;
-  });
-
-  currentPage = 1;
-  renderTablePage();
-}
-
-function sortTable(field) {
-  if (sortField === field) sortDir *= -1; else { sortField = field; sortDir = 1; }
-  filteredRows.sort(function(a, b) {
-    var av = a[field] || '', bv = b[field] || '';
-    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * sortDir;
-    return String(av).localeCompare(String(bv)) * sortDir;
-  });
-  document.querySelectorAll('thead th').forEach(function(th) {
-    th.classList.remove('sort-asc','sort-desc');
-    if (th.textContent.trim().toLowerCase().replace(/[^a-z]/g,'').includes(field.toLowerCase())) {
-      th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
-    }
-  });
-  renderTablePage();
-}
-
-function renderTablePage() {
-  var start = (currentPage - 1) * rowsPerPage;
-  var page  = filteredRows.slice(start, start + rowsPerPage);
-  var tbody = document.getElementById('tbl-body');
-
-  document.getElementById('tbl-count').textContent = fmt(filteredRows.length) + ' records';
-
-  tbody.innerHTML = page.map(function(r) {
-    return '<tr>'
-      + '<td class="text-muted">' + esc(r.id) + '</td>'
-      + '<td><strong>' + esc(r.name||'—') + '</strong></td>'
-      + '<td><span class="status-chip ' + (r.source === 'Marketplace' ? 'chip-mp' : r.source === 'EPR' ? 'chip-epr' : 'chip-omp') + '">' + esc(r.source) + '</span></td>'
-      + '<td>' + esc(r.category||'—') + '</td>'
-      + '<td class="text-muted">' + esc(r.vendorType||'—') + '</td>'
-      + '<td>' + statusChip(r.status) + '</td>'
-      + '<td>' + curStatusChip(r.curStatus) + '</td>'
-      + '<td class="text-muted" style="font-size:11px">' + (r.hasGST ? '<span class="gst-ok">✓ ' + esc(r.gstin) + '</span>' : '<span class="gst-bad">✗ Missing</span>') + '</td>'
-      + '<td class="text-muted">' + esc(r.state||'—') + '</td>'
-      + '<td class="text-muted">' + esc(r.createdDate) + '</td>'
-      + '<td class="text-muted">' + esc(r.onbDate) + '</td>'
-      + '<td class="text-muted">' + esc(r.shipDate) + '</td>'
-      + '<td>' + tatChip(r.tat) + '</td>'
-      + '<td class="text-green" style="font-size:11px">' + esc(r.ltv) + '</td>'
-      + '<td>' + docPctChip(r.docPct) + '</td>'
-      + '</tr>';
-  }).join('');
-
-  renderPagination();
-}
-
-function renderPagination() {
-  var totalPages = Math.ceil(filteredRows.length / rowsPerPage);
-  if (totalPages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
-  var html = '';
-  if (currentPage > 1) html += '<button class="page-btn" onclick="goPage(' + (currentPage-1) + ')">‹ Prev</button>';
-  var start = Math.max(1, currentPage - 2);
-  var end   = Math.min(totalPages, currentPage + 2);
-  if (start > 1) html += '<button class="page-btn" onclick="goPage(1)">1</button>' + (start > 2 ? '<span class="page-info">…</span>' : '');
-  for (var i = start; i <= end; i++) {
-    html += '<button class="page-btn' + (i === currentPage ? ' active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>';
-  }
-  if (end < totalPages) html += (end < totalPages - 1 ? '<span class="page-info">…</span>' : '') + '<button class="page-btn" onclick="goPage(' + totalPages + ')">' + totalPages + '</button>';
-  if (currentPage < totalPages) html += '<button class="page-btn" onclick="goPage(' + (currentPage+1) + ')">Next ›</button>';
-  document.getElementById('pagination').innerHTML = html;
-}
-
-function goPage(p) { currentPage = p; renderTablePage(); }
-
-function exportCSV() {
-  var headers = ['ID','Business Name','Source','Category','Vendor Type','Status','Lifecycle','GSTIN','State','Created','Onboarded','Shipment','TAT','LTV','Doc %'];
-  var rows = [headers].concat(filteredRows.map(function(r) {
-    return [r.id, r.name, r.source, r.category, r.vendorType, r.status, r.curStatus, r.gstin, r.state, r.createdDate, r.onbDate, r.shipDate, r.tat, r.ltv, r.docPct];
-  }));
-  var csv = rows.map(function(row) {
-    return row.map(function(v) { return '"' + String(v||'').replace(/"/g, '""') + '"'; }).join(',');
-  }).join('\n');
-  var blob = new Blob([csv], { type: 'text/csv' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a'); a.href = url; a.download = 'business-control-tower-' + new Date().toISOString().slice(0,10) + '.csv';
-  a.click(); URL.revokeObjectURL(url);
-}
-
-// ═══════════════════════════════════════════════════════════════
 // CHART HELPERS
 // ═══════════════════════════════════════════════════════════════
 // Chart.js mutates the options object it is given (it writes resolved scale
@@ -1787,35 +1032,12 @@ function mkLine(id, labels, datasets) {
   });
 }
 
-function mkGroupedBar(id, labels, datasets) {
-  destroyChart(id);
-  var ctx = document.getElementById(id);
-  if (!ctx) return;
-  charts[id] = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: datasets.map(function(d) {
-        return { label: d.label, data: d.data, backgroundColor: d.color, borderRadius: 4 };
-      }),
-    },
-    options: mkDefaults(),
-  });
-}
-
 // ═══════════════════════════════════════════════════════════════
 // UTILITY
 // ═══════════════════════════════════════════════════════════════
 function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
-function bar(id, pct) { var el = document.getElementById(id); if (el) el.style.width = Math.min(100, pct || 0) + '%'; }
 function fmt(n) { return Number(n || 0).toLocaleString('en-IN'); }
 function pct(a, b) { return b ? Math.round((a / b) * 100) : 0; }
-function fmtCur(v) {
-  v = v || 0;
-  if (v >= 10000000) return '₹' + (v/10000000).toFixed(2) + ' Cr';
-  if (v >= 100000)   return '₹' + (v/100000).toFixed(2) + ' L';
-  return '₹' + Math.round(v).toLocaleString('en-IN');
-}
 function l(x) { return x.label; }
 function c(x) { return x.count; }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1824,21 +1046,11 @@ function statusChip(s) {
   var cls = { COMPLETED: 'chip-completed', DRAFT: 'chip-draft', IN_REVIEW: 'chip-review', REJECTED: 'chip-rejected' };
   return '<span class="status-chip ' + (cls[s] || '') + '">' + esc(s||'—') + '</span>';
 }
-function curStatusChip(s) {
-  var cls = { ACTIVE: 'chip-active', CHURNED: 'chip-churned', DEACTIVATED: 'chip-deactivated', REACTIVATED: 'chip-reactivated' };
-  return s && s !== '—' ? '<span class="status-chip ' + (cls[s] || '') + '">' + esc(s) + '</span>' : '<span class="text-muted">—</span>';
-}
 function tatChip(t) {
   if (!t || t === '—') return '<span class="text-muted">—</span>';
   var n = parseInt(t);
   var cls = isNaN(n) ? '' : n <= 2 ? 'text-green' : n <= 5 ? 'text-amber' : 'text-red';
   return '<span class="' + cls + '">' + esc(t) + '</span>';
-}
-function docPctChip(d) {
-  if (!d || d === '—') return '<span class="text-muted">—</span>';
-  var n = parseInt(d);
-  var cls = isNaN(n) ? '' : n >= 75 ? 'text-green' : n >= 40 ? 'text-amber' : 'text-red';
-  return '<span class="' + cls + '">' + esc(d) + '</span>';
 }
 </script>
 </body>
