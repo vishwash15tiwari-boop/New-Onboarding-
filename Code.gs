@@ -53,6 +53,7 @@ function getDashboardData(filtersJson) {
       trends:        calcTrends(mpData, ompData, eprData),
       tat:           calcTAT(mpData),
       table:         buildTable(mpData, ompData, eprData),
+      verticals:     calcVerticalKPIs(mpAll, ompAll, eprAll),
       filterOptions: buildFilterOptions(
         (!filters.vertical || filters.vertical === 'All' || filters.vertical === 'Marketplace') ? mpAll  : [],
         (!filters.vertical || filters.vertical === 'All' || filters.vertical === 'OMP')         ? ompAll : [],
@@ -330,6 +331,14 @@ function applyDateFilter(r, f) {
     ps = new Date(f.startDate);
     pe = new Date(f.endDate);
     pe.setHours(23, 59, 59, 999);
+  } else if (String(f.period).indexOf('FY') === 0) {
+    // FY period format: "FY25-26" → Apr 1 2025 – Mar 31 2026
+    var m = String(f.period).match(/FY(\d{2})-(\d{2})/);
+    if (m) {
+      var fyStart = 2000 + parseInt(m[1], 10);
+      ps = new Date(fyStart, 3, 1);        // Apr 1
+      pe = new Date(fyStart + 1, 2, 31, 23, 59, 59, 999); // Mar 31
+    }
   }
   if (ps && d < ps) return false;
   if (pe && d > pe) return false;
@@ -580,6 +589,70 @@ function calcEPRKPIs(data) {
     vendorSplit:   objToArr(groupBy(data, 'vendorType')),
     segmentSplit:  objToArr(groupBy(data, 'segmentName')),
     stateSplit:    objToArr(groupBy(data, 'state')).filter(function(x){return x.label;}).slice(0, 12),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// VERTICAL KPIs  (always uses full/unfiltered data)
+// ─────────────────────────────────────────────────────────────
+
+function calcVerticalKPIs(mpAll, ompAll, eprAll) {
+  var now     = new Date();
+  var weekAgo = new Date(now.getTime() - 7 * 86400000);
+
+  function vStats(data, isOMP) {
+    var total     = data.length;
+    var completed = count(data, 'status', 'COMPLETED');
+    var draft     = count(data, 'status', 'DRAFT');
+    var inReview  = count(data, 'status', 'IN_REVIEW');
+    var rejected  = count(data, 'status', 'REJECTED');
+    var withGST   = countFn(data, function(r) { return r.hasGST; });
+    var pipeline  = draft + inReview;
+
+    var completedThisWeek = countFn(data, function(r) {
+      return r.onboardedDate && r.onboardedDate >= weekAgo;
+    });
+
+    var draftAges = data
+      .filter(function(r) { return r.status === 'DRAFT' && r.createdDate; })
+      .map(function(r)    { return dateDiffDays(r.createdDate, now); })
+      .filter(function(d) { return d !== null && d >= 0; });
+
+    var reviewAges = data
+      .filter(function(r) { return r.status === 'IN_REVIEW' && (r.reviewDate || r.createdDate); })
+      .map(function(r)    { return dateDiffDays(r.reviewDate || r.createdDate, now); })
+      .filter(function(d) { return d !== null && d >= 0; });
+
+    var withTransacted = isOMP ? countFn(data, function(r) { return r.hasTransacted; }) : 0;
+    var withListing    = isOMP ? countFn(data, function(r) { return r.hasListing; }) : 0;
+
+    return {
+      total:            total,
+      completed:        completed,
+      draft:            draft,
+      inReview:         inReview,
+      rejected:         rejected,
+      withGST:          withGST,
+      missingGST:       total - withGST,
+      pipeline:         pipeline,
+      pipelinePct:      pct(pipeline, total),
+      completionPct:    pct(completed, total),
+      completedThisWeek: completedThisWeek,
+      avgDraftDays:     draftAges.length  ? Math.round(avg(draftAges))  : 0,
+      avgReviewDays:    reviewAges.length ? Math.round(avg(reviewAges)) : 0,
+      pctTransacted:    pct(withTransacted, completed),
+      pctListed:        pct(withListing, completed),
+      categorySplit:    objToArr(groupBy(data, 'category')).slice(0, 5),
+    };
+  }
+
+  return {
+    AFR:          vStats(mpAll.filter(function(r) { return r.category === 'AFR'; }),                                              false),
+    DRS:          vStats(mpAll.filter(function(r) { return r.category === 'GOA DRS'; }),                                          false),
+    EPR:          vStats(eprAll,                                                                                                   false),
+    InfraBusiness:vStats(mpAll.filter(function(r) { return r.category === 'Metal' || r.category === 'Institutional Business'; }), false),
+    OMP:          vStats(ompAll,                                                                                                   true),
+    Recommerce:   vStats(mpAll.filter(function(r) { return r.category === 'Re-Commerce'; }),                                      false),
   };
 }
 

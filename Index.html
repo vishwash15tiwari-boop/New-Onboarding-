@@ -484,6 +484,25 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .vert-tag{font-size:10.5px;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.1px;background:var(--bg2);color:var(--txt3);border:1px solid var(--border)}
 .vert-tag.live{background:rgba(22,163,74,.08);color:var(--green);border-color:rgba(22,163,74,.2)}
 
+/* ===== Vertical Compare Cards ===== */
+.vert-stat-row{display:flex;justify-content:space-between;align-items:center;margin:10px 0 8px;font-size:11.5px;color:var(--txt3)}
+.vert-stat-item strong{color:var(--txt);font-weight:600}
+.vert-rej-footer{border-top:1px solid var(--border);padding-top:8px;font-size:11.5px;color:var(--txt3)}
+.vert-rej-footer strong{color:var(--red);font-weight:600}
+.vert-expand-btn{display:block;width:100%;margin-top:10px;padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--txt2);font-size:11px;font-weight:500;cursor:pointer;text-align:center;transition:all .14s}
+.vert-expand-btn:hover{background:var(--bg);border-color:var(--border2);color:var(--txt)}
+.vert-detail-panel{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.vert-detail-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:11.5px;color:var(--txt2)}
+.vert-detail-row+.vert-detail-row{border-top:1px solid var(--border)}
+.vert-detail-row span:last-child{font-weight:600;color:var(--txt)}
+.vert-detail-sec{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin:8px 0 4px}
+.vert-cat-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;color:var(--txt3)}
+.vert-cat-row span:last-child{font-weight:600;color:var(--txt2)}
+.badge-afr{background:rgba(234,88,12,.07);color:#B54708;border:1px solid rgba(234,88,12,.15)}
+.badge-drs{background:rgba(8,145,178,.07);color:#0C7C8E;border:1px solid rgba(8,145,178,.15)}
+.badge-rec{background:rgba(22,163,74,.08);color:#166534;border:1px solid rgba(22,163,74,.2)}
+.badge-inf{background:rgba(124,58,237,.08);color:#6D28D9;border:1px solid rgba(124,58,237,.16)}
+
 /* ===== Utility ===== */
 .text-green{color:#166534} .text-red{color:#991B1B} .text-amber{color:#92400E}
 .text-blue{color:var(--blue)} .text-muted{color:var(--txt3)}
@@ -550,6 +569,9 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
       <option value="Today">Today</option>
       <option value="MTD">MTD</option>
       <option value="YTD">YTD</option>
+      <option value="FY24-25">FY 24-25</option>
+      <option value="FY25-26">FY 25-26</option>
+      <option value="FY26-27">FY 26-27</option>
       <option value="Custom">Custom</option>
     </select>
     <div class="custom-dates" id="custom-dates">
@@ -620,82 +642,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
       <div class="bu-title">Business Units</div>
       <span class="badge" style="margin-left:8px">6 Verticals</span>
     </div>
-    <div class="vert-list">
-
-      <div class="vert-card">
-        <div>
-          <div class="vert-code">AFR</div>
-          <div class="vert-sub">Alternative Fuels &amp; Resources</div>
-        </div>
-        <div class="vert-kpis"><span class="vert-tag">Coming Soon</span></div>
-      </div>
-
-      <div class="vert-card">
-        <div>
-          <div class="vert-code">DRS</div>
-          <div class="vert-sub">Deposit Refund System</div>
-        </div>
-        <div class="vert-kpis"><span class="vert-tag">Coming Soon</span></div>
-      </div>
-
-      <div class="vert-card live" id="vert-epr-card">
-        <div>
-          <div class="vert-code">EPR</div>
-          <div class="vert-sub">Extended Producer Responsibility</div>
-        </div>
-        <div class="vert-kpis">
-          <div class="vert-kpi">
-            <div class="vert-kpi-val" id="vert-epr-total">—</div>
-            <div class="vert-kpi-lbl">Total</div>
-          </div>
-          <div class="vert-kpi">
-            <div class="vert-kpi-val" id="vert-epr-onboarded">—</div>
-            <div class="vert-kpi-lbl">Onboarded</div>
-          </div>
-          <span class="vert-tag live">Live</span>
-        </div>
-      </div>
-
-      <div class="vert-card">
-        <div>
-          <div class="vert-code">Infra Business</div>
-        </div>
-        <div class="vert-kpis"><span class="vert-tag">Coming Soon</span></div>
-      </div>
-
-      <div class="vert-card live" id="vert-omp-card">
-        <div>
-          <div class="vert-code">Open Marketplace</div>
-        </div>
-        <div class="vert-kpis">
-          <div class="vert-kpi">
-            <div class="vert-kpi-val" id="vert-omp-total">—</div>
-            <div class="vert-kpi-lbl">Total</div>
-          </div>
-          <div class="vert-kpi">
-            <div class="vert-kpi-val" id="vert-omp-onboarded">—</div>
-            <div class="vert-kpi-lbl">Onboarded</div>
-          </div>
-          <div class="vert-kpi">
-            <div class="vert-kpi-val" id="vert-omp-listed">—</div>
-            <div class="vert-kpi-lbl">Listed</div>
-          </div>
-          <div class="vert-kpi">
-            <div class="vert-kpi-val" id="vert-omp-transacted">—</div>
-            <div class="vert-kpi-lbl">Transacted</div>
-          </div>
-          <span class="vert-tag live">Live</span>
-        </div>
-      </div>
-
-      <div class="vert-card">
-        <div>
-          <div class="vert-code">Recommerce</div>
-        </div>
-        <div class="vert-kpis"><span class="vert-tag">Coming Soon</span></div>
-      </div>
-
-    </div>
+    <div class="compare-grid" id="vert-grid"></div>
 
     <!-- Overview Charts -->
     <div class="chart-grid chart-grid-2">
@@ -1214,13 +1161,7 @@ function renderOverview() {
   set('e-avg-tat', e.avgTAT + 'd');
   set('e-comp-rate', e.completionPct + '%');
 
-  // Business Units vertical cards — live data
-  set('vert-omp-total',      fmt(e.ompTotal));
-  set('vert-omp-onboarded',  fmt(e.ompCompleted));
-  set('vert-omp-listed',     fmt(omp.withListing   || 0));
-  set('vert-omp-transacted', fmt(omp.withTransacted || 0));
-  set('vert-epr-total',      fmt(e.eprTotal || 0));
-  set('vert-epr-onboarded',  fmt(e.eprCompleted || 0));
+  renderVerticals();
 
   // Overview Charts
   mkDoughnut('ch-vertical-contrib', ['Marketplace', 'Open Marketplace', 'EPR'], [e.mpTotal, e.ompTotal, e.eprTotal || 0], [COLORS.blue, COLORS.green, COLORS.red]);
@@ -1246,6 +1187,97 @@ function renderOverview() {
       td.distribution.map(function(b){return b.count;}),
       'Cases', [COLORS.blue, COLORS.green, COLORS.amber, COLORS.amber, COLORS.red, COLORS.red]);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VERTICAL CARDS
+// ═══════════════════════════════════════════════════════════════
+var VERT_CFG = [
+  { key:'AFR',          name:'AFR',              sub:'Alternative Fuels & Resources',   code:'AFR', cls:'badge-afr' },
+  { key:'DRS',          name:'DRS',              sub:'Deposit Refund System',            code:'DRS', cls:'badge-drs' },
+  { key:'EPR',          name:'EPR',              sub:'Extended Producer Responsibility', code:'EPR', cls:'badge-epr' },
+  { key:'InfraBusiness',name:'Infra Business',   sub:'Metal & Institutional',            code:'INF', cls:'badge-inf' },
+  { key:'OMP',          name:'Open Marketplace', sub:'OMP Sellers',                     code:'OMP', cls:'badge-omp' },
+  { key:'Recommerce',   name:'Recommerce',       sub:'Re-Commerce',                     code:'REC', cls:'badge-rec' },
+];
+
+function renderVerticals() {
+  var verts = D.verticals;
+  var grid  = document.getElementById('vert-grid');
+  if (!grid) return;
+  if (!verts) { grid.innerHTML = ''; return; }
+
+  grid.innerHTML = VERT_CFG.map(function(cfg) {
+    var v    = verts[cfg.key] || {};
+    var tot  = v.total || 0;
+    var has  = tot > 0;
+    var onbP = has ? Math.round(((v.completed||0) / tot) * 100) : 0;
+    var revP = has ? Math.round(((v.inReview ||0) / tot) * 100) : 0;
+    var dftP = has ? Math.round(((v.draft    ||0) / tot) * 100) : 0;
+    var n    = function(x) { return has ? fmt(x || 0) : '—'; };
+
+    var catBlock = '';
+    if (has && v.categorySplit && v.categorySplit.length > 1) {
+      catBlock = '<div class="vert-detail-sec">Category Breakdown</div>'
+        + v.categorySplit.slice(0, 5).map(function(x) {
+            return '<div class="vert-cat-row"><span>' + esc(x.label) + '</span><span>' + x.count + '</span></div>';
+          }).join('');
+    }
+
+    var ompRows = cfg.key === 'OMP' && has
+      ? '<div class="vert-detail-row"><span>% Transacted</span><span>' + (v.pctTransacted||0) + '%</span></div>'
+        + '<div class="vert-detail-row"><span>% Ever Listed</span><span>' + (v.pctListed||0) + '%</span></div>'
+      : '';
+
+    return '<div class="compare-card">'
+      + '<div class="compare-header">'
+      +   '<div><div class="compare-label">' + esc(cfg.name) + '</div>'
+      +   '<div class="compare-count">' + (has ? fmt(tot) : '—') + '</div></div>'
+      +   '<span class="compare-source-badge ' + cfg.cls + '">' + cfg.code + '</span>'
+      + '</div>'
+      + '<div class="progress-row">'
+      +   '<div class="progress-label-row"><span>Onboarded</span>'
+      +   '<span>' + (has ? n(v.completed) + ' (' + onbP + '%)' : '—') + '</span></div>'
+      +   '<div class="progress-bar-wrap"><div class="progress-bar" style="background:var(--green);width:' + onbP + '%"></div></div>'
+      + '</div>'
+      + '<div class="progress-row">'
+      +   '<div class="progress-label-row"><span>In Review</span>'
+      +   '<span>' + (has ? n(v.inReview) + ' (' + revP + '%)' : '—') + '</span></div>'
+      +   '<div class="progress-bar-wrap"><div class="progress-bar" style="background:var(--amber);width:' + revP + '%"></div></div>'
+      + '</div>'
+      + '<div class="progress-row">'
+      +   '<div class="progress-label-row"><span>Draft</span>'
+      +   '<span>' + (has ? n(v.draft) + ' (' + dftP + '%)' : '—') + '</span></div>'
+      +   '<div class="progress-bar-wrap"><div class="progress-bar" style="background:var(--blue);width:' + dftP + '%"></div></div>'
+      + '</div>'
+      + '<div class="vert-stat-row">'
+      +   '<span class="vert-stat-item">Pipeline <strong>' + (has ? (v.pipelinePct||0) + '%' : '—') + '</strong></span>'
+      +   '<span class="vert-stat-item">With GST <strong>' + n(v.withGST) + '</strong></span>'
+      + '</div>'
+      + '<div class="vert-rej-footer">Rejected: <strong>' + n(v.rejected) + '</strong></div>'
+      + (has
+        ? '<button class="vert-expand-btn" id="vc-' + cfg.key + '-btn" onclick="toggleVertDetail(\'' + cfg.key + '\')">▼ Details</button>'
+          + '<div class="vert-detail-panel" id="vc-' + cfg.key + '-det" style="display:none">'
+          +   '<div class="vert-detail-row"><span>In Pipeline</span><span>' + fmt(v.pipeline||0) + '</span></div>'
+          +   '<div class="vert-detail-row"><span>Completed This Week</span><span>' + fmt(v.completedThisWeek||0) + '</span></div>'
+          +   '<div class="vert-detail-row"><span>Avg Days at Draft</span><span>' + (v.avgDraftDays||0) + 'd</span></div>'
+          +   '<div class="vert-detail-row"><span>Avg Days at Review</span><span>' + (v.avgReviewDays||0) + 'd</span></div>'
+          +   ompRows
+          +   '<div class="vert-detail-row"><span>GSTIN Missing</span><span>' + fmt(v.missingGST||0) + '</span></div>'
+          +   catBlock
+          + '</div>'
+        : '')
+      + '</div>';
+  }).join('');
+}
+
+function toggleVertDetail(key) {
+  var det = document.getElementById('vc-' + key + '-det');
+  var btn = document.getElementById('vc-' + key + '-btn');
+  if (!det) return;
+  var open = det.style.display !== 'none';
+  det.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? '▼ Details' : '▲ Details';
 }
 
 // ═══════════════════════════════════════════════════════════════
