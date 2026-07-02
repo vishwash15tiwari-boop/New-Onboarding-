@@ -455,6 +455,35 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .trend-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt2);font-weight:450}
 .trend-dot{width:8px;height:8px;border-radius:50%}
 
+/* ===== Business Units ===== */
+.bu-header{display:flex;align-items:center;gap:12px;margin:24px 0 14px}
+.bu-num{width:32px;height:32px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.bu-title{font-weight:700;font-size:14px;letter-spacing:.6px;color:var(--txt);text-transform:uppercase}
+.vert-list{display:flex;flex-direction:column;gap:9px;margin-bottom:24px}
+.vert-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-left:3px solid var(--border2);
+  border-radius:var(--r2);
+  padding:14px 20px;
+  display:flex;align-items:center;gap:18px;
+  box-shadow:var(--shadow-sm);
+  transition:box-shadow .18s,border-color .18s,border-left-color .18s;
+}
+.vert-card.live{border-left-color:var(--green)}
+.vert-card:hover{box-shadow:var(--shadow);border-color:var(--border2)}
+.vert-card.live:hover{border-left-color:var(--green)}
+.vert-code{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-.2px;min-width:90px;flex-shrink:0}
+.vert-sub{font-size:11.5px;color:var(--txt3);font-weight:400;margin-top:2px;letter-spacing:0}
+.vert-kpis{display:flex;gap:20px;align-items:center;flex-shrink:0;margin-left:auto}
+.vert-kpi{text-align:right}
+.vert-kpi-val{font-size:17px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1}
+.vert-kpi-lbl{font-size:10px;color:var(--txt3);font-weight:500;margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+.vert-pct-pill{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.05px}
+.vert-pct-pill.green{background:rgba(22,163,74,.1);color:var(--green)}
+.vert-tag{font-size:10.5px;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.1px;background:var(--bg2);color:var(--txt3);border:1px solid var(--border)}
+.vert-tag.live{background:rgba(22,163,74,.08);color:var(--green);border-color:rgba(22,163,74,.2)}
+
 /* ===== Utility ===== */
 .text-green{color:#166534} .text-red{color:#991B1B} .text-amber{color:#92400E}
 .text-blue{color:var(--blue)} .text-muted{color:var(--txt3)}
@@ -585,97 +614,79 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
       <div class="kpi-card purple">   <div class="kpi-icon">📊</div><div class="kpi-label">Completion Rate</div><div class="kpi-value" id="e-comp-rate">—</div><div class="kpi-sub">Overall</div></div>
     </div>
 
-    <!-- Business Vertical Comparison -->
-    <div class="section-title mt-16">Business Vertical Comparison</div>
-    <div class="compare-grid">
-      <!-- Marketplace -->
-      <div class="compare-card">
-        <div class="compare-header">
-          <div>
-            <div class="compare-label">Marketplace</div>
-            <div class="compare-count" id="cmp-mp-total">—</div>
-          </div>
-          <span class="compare-source-badge badge-mp">MP</span>
-        </div>
-        <div class="progress-row">
-          <div class="progress-label-row"><span>Onboarded</span><span id="cmp-mp-completed">—</span></div>
-          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-mp-comp-bar" style="background:var(--green)"></div></div>
-        </div>
-        <div class="progress-row">
-          <div class="progress-label-row"><span>In Review</span><span id="cmp-mp-review">—</span></div>
-          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-mp-rev-bar" style="background:var(--blue)"></div></div>
-        </div>
-        <div class="progress-row">
-          <div class="progress-label-row"><span>Draft</span><span id="cmp-mp-draft">—</span></div>
-          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-mp-draft-bar" style="background:var(--amber)"></div></div>
-        </div>
-        <div class="mt-16">
-          <div class="kpi-grid kpi-grid-3">
-            <div><div class="kpi-label">Pipeline %</div><div class="kpi-value" style="font-size:18px" id="cmp-mp-pipeline">—</div></div>
-            <div><div class="kpi-label">With GST</div><div class="kpi-value" style="font-size:18px" id="cmp-mp-gst">—</div></div>
-            <div><div class="kpi-label">Rejected</div><div class="kpi-value" style="font-size:18px" id="cmp-mp-rejected">—</div></div>
-          </div>
-        </div>
-      </div>
-      <!-- OMP -->
-      <div class="compare-card">
-        <div class="compare-header">
-          <div>
-            <div class="compare-label">Open Marketplace</div>
-            <div class="compare-count" id="cmp-omp-total">—</div>
-          </div>
-          <span class="compare-source-badge badge-omp">OMP</span>
-        </div>
-        <div class="progress-row">
-          <div class="progress-label-row"><span>Onboarded</span><span id="cmp-omp-completed">—</span></div>
-          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-omp-comp-bar" style="background:var(--green)"></div></div>
-        </div>
-        <div class="progress-row">
-          <div class="progress-label-row"><span>In Review</span><span id="cmp-omp-review">—</span></div>
-          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-omp-rev-bar" style="background:var(--blue)"></div></div>
-        </div>
-        <div class="progress-row">
-          <div class="progress-label-row"><span>Draft</span><span id="cmp-omp-draft">—</span></div>
-          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-omp-draft-bar" style="background:var(--amber)"></div></div>
-        </div>
+    <!-- Business Units -->
+    <div class="bu-header">
+      <div class="bu-num">02</div>
+      <div class="bu-title">Business Units</div>
+      <span class="badge" style="margin-left:8px">6 Verticals</span>
+    </div>
+    <div class="vert-list">
 
-        <div class="mt-16">
-          <div class="kpi-grid kpi-grid-3">
-            <div><div class="kpi-label">Pipeline %</div><div class="kpi-value" style="font-size:18px" id="cmp-omp-pipeline">—</div></div>
-            <div><div class="kpi-label">With GST</div><div class="kpi-value" style="font-size:18px" id="cmp-omp-gst">—</div></div>
-            <div><div class="kpi-label">Rejected</div><div class="kpi-value" style="font-size:18px" id="cmp-omp-rejected">—</div></div>
-          </div>
+      <div class="vert-card">
+        <div>
+          <div class="vert-code">AFR</div>
+          <div class="vert-sub">Alternative Fuels &amp; Resources</div>
+        </div>
+        <div class="vert-kpis"><span class="vert-tag">Coming Soon</span></div>
+      </div>
+
+      <div class="vert-card">
+        <div>
+          <div class="vert-code">DRS</div>
+          <div class="vert-sub">Deposit Refund System</div>
+        </div>
+        <div class="vert-kpis"><span class="vert-tag">Coming Soon</span></div>
+      </div>
+
+      <div class="vert-card" id="vert-epr-card">
+        <div>
+          <div class="vert-code">EPR</div>
+          <div class="vert-sub">Extended Producer Responsibility</div>
+        </div>
+        <div class="vert-kpis" id="vert-epr-kpis">
+          <span class="vert-tag">No Data</span>
         </div>
       </div>
-      <!-- EPR -->
-      <div class="compare-card">
-        <div class="compare-header">
-          <div>
-            <div class="compare-label">EPR</div>
-            <div class="compare-count" id="cmp-epr-total">—</div>
+
+      <div class="vert-card">
+        <div>
+          <div class="vert-code">Infra Business</div>
+        </div>
+        <div class="vert-kpis"><span class="vert-tag">Coming Soon</span></div>
+      </div>
+
+      <div class="vert-card live" id="vert-omp-card">
+        <div>
+          <div class="vert-code">Open Marketplace</div>
+        </div>
+        <div class="vert-kpis">
+          <div class="vert-kpi">
+            <div class="vert-kpi-val" id="vert-omp-total">—</div>
+            <div class="vert-kpi-lbl">Total</div>
           </div>
-          <span class="compare-source-badge badge-epr">EPR</span>
-        </div>
-        <div class="progress-row">
-          <div class="progress-label-row"><span>Onboarded</span><span id="cmp-epr-completed">—</span></div>
-          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-epr-comp-bar" style="background:var(--green)"></div></div>
-        </div>
-        <div class="progress-row">
-          <div class="progress-label-row"><span>In Review</span><span id="cmp-epr-review">—</span></div>
-          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-epr-rev-bar" style="background:var(--blue)"></div></div>
-        </div>
-        <div class="progress-row">
-          <div class="progress-label-row"><span>Draft</span><span id="cmp-epr-draft">—</span></div>
-          <div class="progress-bar-wrap"><div class="progress-bar" id="cmp-epr-draft-bar" style="background:var(--amber)"></div></div>
-        </div>
-        <div class="mt-16">
-          <div class="kpi-grid kpi-grid-3">
-            <div><div class="kpi-label">Pipeline %</div><div class="kpi-value" style="font-size:18px" id="cmp-epr-pipeline">—</div></div>
-            <div><div class="kpi-label">With GST</div><div class="kpi-value" style="font-size:18px" id="cmp-epr-gst">—</div></div>
-            <div><div class="kpi-label">Rejected</div><div class="kpi-value" style="font-size:18px" id="cmp-epr-rejected">—</div></div>
+          <div class="vert-kpi">
+            <div class="vert-kpi-val" id="vert-omp-onboarded">—</div>
+            <div class="vert-kpi-lbl">Onboarded</div>
           </div>
+          <div class="vert-kpi">
+            <div class="vert-kpi-val" id="vert-omp-listed">—</div>
+            <div class="vert-kpi-lbl">Listed</div>
+          </div>
+          <div class="vert-kpi">
+            <div class="vert-kpi-val" id="vert-omp-transacted">—</div>
+            <div class="vert-kpi-lbl">Transacted</div>
+          </div>
+          <span class="vert-tag live">Live</span>
         </div>
       </div>
+
+      <div class="vert-card">
+        <div>
+          <div class="vert-code">Recommerce</div>
+        </div>
+        <div class="vert-kpis"><span class="vert-tag">Coming Soon</span></div>
+      </div>
+
     </div>
 
     <!-- Overview Charts -->
@@ -1159,28 +1170,11 @@ function renderOverview() {
   set('e-avg-tat', e.avgTAT + 'd');
   set('e-comp-rate', e.completionPct + '%');
 
-  // Comparison cards
-  set('cmp-mp-total', fmt(e.mpTotal));
-  set('cmp-mp-completed', fmt(e.mpCompleted) + ' (' + pct(e.mpCompleted, e.mpTotal) + '%)');
-  bar('cmp-mp-comp-bar', pct(e.mpCompleted, e.mpTotal));
-  set('cmp-mp-review', fmt(mp.inReview) + ' (' + pct(mp.inReview, e.mpTotal) + '%)');
-  bar('cmp-mp-rev-bar', pct(mp.inReview, e.mpTotal));
-  set('cmp-mp-draft', fmt(mp.draft) + ' (' + pct(mp.draft, e.mpTotal) + '%)');
-  bar('cmp-mp-draft-bar', pct(mp.draft, e.mpTotal));
-  set('cmp-mp-pipeline', pct((mp.inReview || 0) + (mp.draft || 0), e.mpTotal) + '%');
-  set('cmp-mp-gst', fmt(e.mpTotal - (mp.missingGST || 0)));
-  set('cmp-mp-rejected', fmt(mp.rejected));
-
-  set('cmp-omp-total', fmt(e.ompTotal));
-  set('cmp-omp-completed', fmt(e.ompCompleted) + ' (' + pct(e.ompCompleted, e.ompTotal) + '%)');
-  bar('cmp-omp-comp-bar', pct(e.ompCompleted, e.ompTotal));
-  set('cmp-omp-review', fmt(omp.inReview) + ' (' + pct(omp.inReview, e.ompTotal) + '%)');
-  bar('cmp-omp-rev-bar', pct(omp.inReview, e.ompTotal));
-  set('cmp-omp-draft', fmt(omp.draft) + ' (' + pct(omp.draft, e.ompTotal) + '%)');
-  bar('cmp-omp-draft-bar', pct(omp.draft, e.ompTotal));
-  set('cmp-omp-pipeline', omp.pipelinePct + '%');
-  set('cmp-omp-gst', fmt(omp.withGST));
-  set('cmp-omp-rejected', fmt(omp.rejected));
+  // Business Units vertical cards — OMP (live data)
+  set('vert-omp-total',      fmt(e.ompTotal));
+  set('vert-omp-onboarded',  fmt(e.ompCompleted));
+  set('vert-omp-listed',     fmt(omp.withListing   || 0));
+  set('vert-omp-transacted', fmt(omp.withTransacted || 0));
 
   // Overview Charts
   mkDoughnut('ch-vertical-contrib', ['Marketplace', 'Open Marketplace', 'EPR'], [e.mpTotal, e.ompTotal, e.eprTotal || 0], [COLORS.blue, COLORS.green, COLORS.red]);
