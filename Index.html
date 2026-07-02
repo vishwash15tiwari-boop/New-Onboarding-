@@ -638,13 +638,21 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
         <div class="vert-kpis"><span class="vert-tag">Coming Soon</span></div>
       </div>
 
-      <div class="vert-card" id="vert-epr-card">
+      <div class="vert-card live" id="vert-epr-card">
         <div>
           <div class="vert-code">EPR</div>
           <div class="vert-sub">Extended Producer Responsibility</div>
         </div>
-        <div class="vert-kpis" id="vert-epr-kpis">
-          <span class="vert-tag">No Data</span>
+        <div class="vert-kpis">
+          <div class="vert-kpi">
+            <div class="vert-kpi-val" id="vert-epr-total">—</div>
+            <div class="vert-kpi-lbl">Total</div>
+          </div>
+          <div class="vert-kpi">
+            <div class="vert-kpi-val" id="vert-epr-onboarded">—</div>
+            <div class="vert-kpi-lbl">Onboarded</div>
+          </div>
+          <span class="vert-tag live">Live</span>
         </div>
       </div>
 
@@ -745,6 +753,16 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
       </div>
     </div>
 
+    <!-- Review Pipeline -->
+    <div class="subsection-title">Review Pipeline</div>
+    <div class="kpi-grid kpi-grid-5 mb-24">
+      <div class="kpi-card blue">  <div class="kpi-label">Stage 1 — Submitted</div><div class="kpi-value" id="mp-stage1">—</div><div class="kpi-sub">Awaiting L1 review</div></div>
+      <div class="kpi-card blue">  <div class="kpi-label">Stage 2 — L1 Done</div><div class="kpi-value" id="mp-stage2">—</div><div class="kpi-sub">Awaiting L2 review</div></div>
+      <div class="kpi-card blue">  <div class="kpi-label">Stage 3 — L2 Done</div><div class="kpi-value" id="mp-stage3">—</div><div class="kpi-sub">Awaiting L3 review</div></div>
+      <div class="kpi-card blue">  <div class="kpi-label">Stage 4 — L3 Done</div><div class="kpi-value" id="mp-stage4">—</div><div class="kpi-sub">Awaiting final L4</div></div>
+      <div class="kpi-card red">   <div class="kpi-label">Total Rejections</div><div class="kpi-value" id="mp-total-rej">—</div><div class="kpi-sub" id="mp-avg-rej-sub">—</div></div>
+    </div>
+
     <!-- Shipment & LTV -->
     <div class="subsection-title">Shipment &amp; Lifetime Value</div>
     <div class="kpi-grid kpi-grid-5 mb-24">
@@ -839,7 +857,9 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 
   <!-- ── TAB: EPR ──────────────────────────────────────────── -->
   <div class="tab-panel" id="tab-epr">
-    <div class="section-title">EPR Module <span class="badge" id="epr-total-badge">—</span></div>
+    <div class="section-title">EPR — Extended Producer Responsibility <span class="badge" id="epr-total-badge">—</span></div>
+
+    <!-- EPR KPIs -->
     <div class="kpi-grid kpi-grid-5 mb-24">
       <div class="kpi-card">        <div class="kpi-label">Total Cases</div><div class="kpi-value" id="epr-total">—</div><div class="kpi-sub">All EPR sellers</div></div>
       <div class="kpi-card green">  <div class="kpi-label">Onboarded</div><div class="kpi-value" id="epr-completed">—</div><div class="kpi-sub" id="epr-comp-sub">—</div></div>
@@ -847,10 +867,34 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
       <div class="kpi-card amber">  <div class="kpi-label">Draft</div><div class="kpi-value" id="epr-draft">—</div><div class="kpi-sub">Not submitted</div></div>
       <div class="kpi-card red">    <div class="kpi-label">Rejected</div><div class="kpi-value" id="epr-rejected">—</div><div class="kpi-sub">Not approved</div></div>
     </div>
-    <div class="chart-card" style="text-align:center;padding:48px">
-      <div style="font-size:32px;margin-bottom:12px">♻️</div>
-      <div style="font-size:15px;font-weight:600;color:var(--txt);margin-bottom:8px">EPR Data Coming Soon</div>
-      <div style="font-size:13px;color:var(--txt3)">Sheet integration will be wired once the data source is connected.</div>
+
+    <!-- EPR Additional KPIs -->
+    <div class="kpi-grid kpi-grid-5 mb-24">
+      <div class="kpi-card cyan">  <div class="kpi-label">Avg TAT</div><div class="kpi-value" id="epr-avg-tat">—</div><div class="kpi-sub">Days to onboard</div></div>
+      <div class="kpi-card">       <div class="kpi-label">With GST</div><div class="kpi-value" id="epr-with-gst">—</div><div class="kpi-sub">Valid GSTIN</div></div>
+      <div class="kpi-card amber">  <div class="kpi-label">Missing GST</div><div class="kpi-value" id="epr-no-gst">—</div><div class="kpi-sub">No GSTIN</div></div>
+      <div class="kpi-card green">  <div class="kpi-label">Onboarded MTD</div><div class="kpi-value" id="epr-onb-mtd">—</div><div class="kpi-sub">This month</div></div>
+      <div class="kpi-card">        <div class="kpi-label">Onboarded YTD</div><div class="kpi-value" id="epr-onb-ytd">—</div><div class="kpi-sub">This year</div></div>
+    </div>
+
+    <!-- EPR Charts -->
+    <div class="chart-grid chart-grid-2">
+      <div class="chart-card">
+        <div class="chart-card-title">Status Distribution</div>
+        <div class="chart-wrap"><canvas id="ch-epr-status"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Category Split</div>
+        <div class="chart-wrap"><canvas id="ch-epr-category"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Vendor Type Split</div>
+        <div class="chart-wrap"><canvas id="ch-epr-vendor"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Top States</div>
+        <div class="chart-wrap"><canvas id="ch-epr-states"></canvas></div>
+      </div>
     </div>
   </div>
 
@@ -1170,11 +1214,13 @@ function renderOverview() {
   set('e-avg-tat', e.avgTAT + 'd');
   set('e-comp-rate', e.completionPct + '%');
 
-  // Business Units vertical cards — OMP (live data)
+  // Business Units vertical cards — live data
   set('vert-omp-total',      fmt(e.ompTotal));
   set('vert-omp-onboarded',  fmt(e.ompCompleted));
   set('vert-omp-listed',     fmt(omp.withListing   || 0));
   set('vert-omp-transacted', fmt(omp.withTransacted || 0));
+  set('vert-epr-total',      fmt(e.eprTotal || 0));
+  set('vert-epr-onboarded',  fmt(e.eprCompleted || 0));
 
   // Overview Charts
   mkDoughnut('ch-vertical-contrib', ['Marketplace', 'Open Marketplace', 'EPR'], [e.mpTotal, e.ompTotal, e.eprTotal || 0], [COLORS.blue, COLORS.green, COLORS.red]);
@@ -1226,6 +1272,13 @@ function renderMarketplace() {
     { label: 'Onboarded', data: [mp.onbToday,     mp.onbMTD,     mp.onbYTD],      color: COLORS.green },
     { label: 'Shipped',   data: [mp.shipToday,    mp.shipMTD,    mp.shipYTD],     color: COLORS.orange },
   ]);
+  var rs = mp.reviewStages || {};
+  set('mp-stage1', fmt(rs.stage1 || 0));
+  set('mp-stage2', fmt(rs.stage2 || 0));
+  set('mp-stage3', fmt(rs.stage3 || 0));
+  set('mp-stage4', fmt(rs.stage4 || 0));
+  set('mp-total-rej', fmt(mp.totalRejections || 0));
+  set('mp-avg-rej-sub', 'avg ' + (mp.avgRejections || 0) + ' per seller');
   set('mp-with-ship', fmt(mp.withShipment));
   set('mp-ship-sub', mp.shipmentRate + '% of completed');
   set('mp-no-ship', fmt(mp.noShipment));
@@ -1325,18 +1378,26 @@ function renderEPR() {
   set('epr-review',    fmt(epr.inReview));
   set('epr-draft',     fmt(epr.draft));
   set('epr-rejected',  fmt(epr.rejected));
-  set('cmp-epr-total',     fmt(epr.total));
-  set('cmp-epr-completed', fmt(epr.completed));
-  set('cmp-epr-review',    fmt(epr.inReview));
-  set('cmp-epr-draft',     fmt(epr.draft));
-  set('cmp-epr-pipeline',  (epr.pipelinePct || 0) + '%');
-  set('cmp-epr-gst',       fmt(epr.withGST));
-  set('cmp-epr-rejected',  fmt(epr.rejected));
-  if (epr.total) {
-    bar('cmp-epr-comp-bar',  pct(epr.completed, epr.total));
-    bar('cmp-epr-rev-bar',   pct(epr.inReview,  epr.total));
-    bar('cmp-epr-draft-bar', pct(epr.draft,      epr.total));
-  }
+  set('epr-avg-tat',   (epr.avgTAT || 0) + 'd');
+  set('epr-with-gst',  fmt(epr.withGST || 0));
+  set('epr-no-gst',    fmt(epr.missingGST || 0));
+  set('epr-onb-mtd',   fmt(epr.onbMTD || 0));
+  set('epr-onb-ytd',   fmt(epr.onbYTD || 0));
+
+  var st = epr.statusSplit || [];
+  mkDoughnut('ch-epr-status',
+    ['Onboarded', 'Draft', 'In Review', 'Rejected'],
+    [epr.completed, epr.draft, epr.inReview, epr.rejected],
+    [COLORS.green, COLORS.blue, COLORS.amber, COLORS.red]);
+
+  var cat = epr.categorySplit || [];
+  mkDoughnut('ch-epr-category', cat.map(l), cat.map(c), PALETTE);
+
+  var ven = epr.vendorSplit || [];
+  mkBar('ch-epr-vendor', ven.map(l), ven.map(c), 'Sellers', PALETTE);
+
+  var sts = (epr.stateSplit || []).filter(function(x){ return x.label; });
+  if (sts.length) mkHBar('ch-epr-states', sts.map(l), sts.map(c), 'Sellers', COLORS.blue);
 }
 
 // ═══════════════════════════════════════════════════════════════

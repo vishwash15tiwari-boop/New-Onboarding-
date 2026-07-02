@@ -6,7 +6,7 @@
 var CONFIG = {
   MARKETPLACE_SHEET_ID: '1AvZZtujyTbV_fUQ-azIeOnm5xxrujWum',
   OMP_SHEET_ID:         '1z_4LmDjK1aMgcCR0MOVQ595wr_A4--zN5gWoJVWR6kw',
-  EPR_SHEET_ID:         '',   // set this when the EPR Google Sheet is ready
+  EPR_SHEET_ID:         '1Mvkshz6Es3V37GYuXVMIq4L8ql3MCCuIxYjc77YEq5c',
   CACHE_TTL:      55,         // 55 s — must be < 60 s frontend poll so each auto-refresh gets fresh data
   MAX_TABLE_ROWS: 300,        // per source
 };
@@ -110,6 +110,21 @@ function normalizeMarketplace(raw) {
     var gstin     = String(gv(row, idx, 'gstin_number') || '').trim();
     var ltv       = parseNumber(gv(row, idx, 'lifetimevalue'));
 
+    var l1r1 = parseDate(gv(row, idx, 'level1_rejected1'));
+    var l1r2 = parseDate(gv(row, idx, 'level1_rejected2'));
+    var l1   = parseDate(gv(row, idx, 'level1'));
+    var l2r1 = parseDate(gv(row, idx, 'level2_rejected1'));
+    var l2r2 = parseDate(gv(row, idx, 'level2_rejected2'));
+    var l2   = parseDate(gv(row, idx, 'level2'));
+    var l3r1 = parseDate(gv(row, idx, 'level3_rejected1'));
+    var l3r2 = parseDate(gv(row, idx, 'level3_rejected2'));
+    var l3   = parseDate(gv(row, idx, 'level3'));
+    var l4r1 = parseDate(gv(row, idx, 'level4_rejected1'));
+    var l4r2 = parseDate(gv(row, idx, 'level4_rejected2'));
+    var l4   = parseDate(gv(row, idx, 'level4'));
+    var rejCount    = [l1r1,l1r2,l2r1,l2r2,l3r1,l3r2,l4r1,l4r2].filter(Boolean).length;
+    var reviewStage = l4 ? 4 : l3 ? 3 : l2 ? 2 : l1 ? 1 : 0;
+
     return {
       id:             String(gv(row, idx, 'id') || '').replace(/,/g, '').trim(),
       name:           String(gv(row, idx, 'business_name') || '').trim(),
@@ -117,6 +132,7 @@ function normalizeMarketplace(raw) {
       vendorType:     String(gv(row, idx, 'vendor_type') || '').trim(),
       category:       normCategory(gv(row, idx, 'business_category')),
       gstin:          gstin,
+      partyId:        String(gv(row, idx, 'party_id') || '').trim(),
       status:         normStatus(gv(row, idx, 'status')),
       currentStatus:  normCurrentStatus(gv(row, idx, 'current_status')),
       statusChangedOn: parseDate(gv(row, idx, 'status_changed_on')),
@@ -125,6 +141,12 @@ function normalizeMarketplace(raw) {
       onboardedDate:  onboarded,
       shipmentDate:   shipment,
       ltv:            ltv,
+      level1: l1, level1Rej1: l1r1, level1Rej2: l1r2,
+      level2: l2, level2Rej1: l2r1, level2Rej2: l2r2,
+      level3: l3, level3Rej1: l3r1, level3Rej2: l3r2,
+      level4: l4, level4Rej1: l4r1, level4Rej2: l4r2,
+      reviewStage:    reviewStage,
+      rejectionCount: rejCount,
       onbTAT:         dateDiffDays(created, onboarded),
       shipTAT:        dateDiffDays(onboarded, shipment),
       age:            dateDiffDays(created, now),
@@ -248,8 +270,16 @@ function normalizeEPR(raw) {
   var now = new Date();
 
   return raw.rows.map(function(row) {
-    // accept both 'gstin' and 'gstin_number' column names
-    var gstin     = String(gv(row, idx, 'gstin') || gv(row, idx, 'gstin_number') || '').trim();
+    var fieldsJson = {};
+    try {
+      var fj = String(gv(row, idx, 'fields_json') || '');
+      if (fj) fieldsJson = JSON.parse(fj);
+    } catch(e) {}
+
+    var co    = ((fieldsJson.service_provider_details || {}).company_details) || {};
+    var gstin = String(co.gstin_number || gv(row, idx, 'gstin_number') || gv(row, idx, 'gstin') || '').trim();
+    var state = String(co.state || '').trim();
+
     var created   = parseDate(gv(row, idx, 'created_date'));
     var onboarded = parseDate(gv(row, idx, 'onboarded_date'));
 
@@ -260,6 +290,15 @@ function normalizeEPR(raw) {
       status:        normStatus(gv(row, idx, 'status')),
       vendorType:    String(gv(row, idx, 'vendor_type') || '').trim(),
       category:      normCategory(gv(row, idx, 'business_category')),
+      state:         state,
+      email:         String(gv(row, idx, 'email') || '').trim(),
+      mobile:        String(gv(row, idx, 'mobile') || '').trim(),
+      segmentName:   String(gv(row, idx, 'segment_name') || '').trim(),
+      rejectReason:  String(gv(row, idx, 'reject_reason') || '').trim(),
+      globalPartyId: String(gv(row, idx, 'global_party_id') || '').trim(),
+      eInvoiceTag:   String(gv(row, idx, 'e_invoice_tag') || '').trim(),
+      approvalLevels: String(gv(row, idx, 'approval_levels') || '').trim(),
+      reviewDate:    parseDate(gv(row, idx, 'review_submission_date')),
       createdDate:   created,
       onboardedDate: onboarded,
       onbTAT:        dateDiffDays(created, onboarded),
@@ -390,6 +429,8 @@ function calcMarketplaceKPIs(data) {
   var misGST    = countFn(data, function(r) { return !r.hasGST; });
   var ltv       = data.reduce(function(s, r) { return s + (r.ltv || 0); }, 0);
   var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
+  var totalRej  = data.reduce(function(s, r) { return s + (r.rejectionCount || 0); }, 0);
+  var inRevData = data.filter(function(r) { return r.status === 'IN_REVIEW'; });
 
   var now    = new Date();
   var today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -416,6 +457,14 @@ function calcMarketplaceKPIs(data) {
     completionPct: pct(completed, total),
     shipmentRate:  pct(withShip, completed),
     activeRate:    pct(active, completed),
+    totalRejections: totalRej,
+    avgRejections:   total ? parseFloat((totalRej / total).toFixed(1)) : 0,
+    reviewStages: {
+      stage1: countFn(inRevData, function(r) { return r.reviewStage === 0; }),
+      stage2: countFn(inRevData, function(r) { return r.reviewStage === 1; }),
+      stage3: countFn(inRevData, function(r) { return r.reviewStage === 2; }),
+      stage4: countFn(inRevData, function(r) { return r.reviewStage === 3; }),
+    },
     createdToday:  countFn(data, function(r) { return r.createdDate   && r.createdDate   >= today0; }),
     createdMTD:    countFn(data, function(r) { return r.createdDate   && r.createdDate   >= mtd0;   }),
     createdYTD:    countFn(data, function(r) { return r.createdDate   && r.createdDate   >= ytd0;   }),
@@ -504,6 +553,12 @@ function calcEPRKPIs(data) {
   var inReview  = count(data, 'status', 'IN_REVIEW');
   var rejected  = count(data, 'status', 'REJECTED');
   var withGST   = countFn(data, function(r) { return r.hasGST; });
+  var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
+
+  var now    = new Date();
+  var today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var mtd0   = new Date(now.getFullYear(), now.getMonth(), 1);
+  var ytd0   = new Date(now.getFullYear(), 0, 1);
 
   return {
     total:         total,
@@ -516,9 +571,15 @@ function calcEPRKPIs(data) {
     missingGST:    total - withGST,
     pipelinePct:   pct(draft + inReview, total),
     completionPct: pct(completed, total),
+    avgTAT:        tats.length ? Math.round(avg(tats)) : 0,
+    onbToday:      countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= today0; }),
+    onbMTD:        countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= mtd0;   }),
+    onbYTD:        countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= ytd0;   }),
     statusSplit:   objToArr(groupBy(data, 'status')),
     categorySplit: objToArr(groupBy(data, 'category')),
     vendorSplit:   objToArr(groupBy(data, 'vendorType')),
+    segmentSplit:  objToArr(groupBy(data, 'segmentName')),
+    stateSplit:    objToArr(groupBy(data, 'state')).filter(function(x){return x.label;}).slice(0, 12),
   };
 }
 
@@ -680,7 +741,7 @@ function buildTable(mp, omp, epr) {
       status:      r.status,
       curStatus:   '—',
       gstin:       r.gstin || '—',
-      state:       '—',
+      state:       r.state || '—',
       createdDate: fmtDate(r.createdDate),
       onbDate:     fmtDate(r.onboardedDate),
       shipDate:    '—',
