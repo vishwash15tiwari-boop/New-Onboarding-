@@ -630,8 +630,6 @@ function calcEPRKPIs(data) {
 // vertical definitions stay intact.
 // ─────────────────────────────────────────────────────────────
 
-var VERTICAL_DETAIL_ROWS = 100;   // rows shipped per vertical for the click-through table
-
 function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
   var f = filters || {};
   function inPeriod(arr) { return arr.filter(function(r) { return applyDateFilter(r, f); }); }
@@ -668,7 +666,7 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
     };
   }
 
-  function vStats(data, isOMP) {
+  function vStats(data, mode) {
     var total     = data.length;
     var completed = count(data, 'status', 'COMPLETED');
     var draft     = count(data, 'status', 'DRAFT');
@@ -692,8 +690,12 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
       .map(function(r)    { return dateDiffDays(r.reviewDate || r.createdDate, now); })
       .filter(function(d) { return d !== null && d >= 0; });
 
-    var withTransacted = isOMP ? countFn(data, function(r) { return r.hasTransacted; }) : 0;
-    var withListing    = isOMP ? countFn(data, function(r) { return r.hasListing; }) : 0;
+    // Transaction signal per source: OMP = TRANSACTED activation status,
+    // Marketplace verticals = first shipment recorded, EPR = not applicable.
+    var transacted = mode === 'omp' ? countFn(data, function(r) { return r.hasTransacted; })
+                   : mode === 'mp'  ? countFn(data, function(r) { return r.hasShipment; })
+                   : null;
+    var withListing = mode === 'omp' ? countFn(data, function(r) { return r.hasListing; }) : 0;
 
     var monthly = months.map(function(m) {
       return {
@@ -722,12 +724,13 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
       avgTAT:           tats.length ? Math.round(avg(tats)) : 0,
       avgDraftDays:     draftAges.length  ? Math.round(avg(draftAges))  : 0,
       avgReviewDays:    reviewAges.length ? Math.round(avg(reviewAges)) : 0,
-      pctTransacted:    pct(withTransacted, completed),
+      transacted:       transacted,
+      pctTransacted:    transacted === null ? null : pct(transacted, completed),
       pctListed:        pct(withListing, completed),
       categorySplit:    objToArr(groupBy(data, 'category')).slice(0, 6),
       vendorSplit:      objToArr(groupBy(data, 'vendorType')).filter(function(x) { return x.label && x.label !== 'Unknown'; }).slice(0, 6),
       monthly:          monthly,
-      rows:             latestFirst.slice(0, VERTICAL_DETAIL_ROWS).map(vertRow),
+      rows:             latestFirst.map(vertRow),
       rowsTotal:        total,
     };
   }
@@ -737,12 +740,12 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
   }
 
   return {
-    AFR:           vStats(byVertical('AFR'),            false),
-    DRS:           vStats(byVertical('DRS'),            false),
-    EPR:           vStats(eprAll,                        false),
-    InfraBusiness: vStats(byVertical('Infra Business'), false),
-    OMP:           vStats(ompAll,                        true),
-    Recommerce:    vStats(byVertical('Recommerce'),     false),
+    AFR:           vStats(byVertical('AFR'),            'mp'),
+    DRS:           vStats(byVertical('DRS'),            'mp'),
+    EPR:           vStats(eprAll,                        'epr'),
+    InfraBusiness: vStats(byVertical('Infra Business'), 'mp'),
+    OMP:           vStats(ompAll,                        'omp'),
+    Recommerce:    vStats(byVertical('Recommerce'),     'mp'),
   };
 }
 

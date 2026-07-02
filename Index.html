@@ -375,6 +375,9 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 }
 .vd-close:hover{color:var(--red);border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.05)}
 .vd-table-wrap{max-height:420px;overflow:auto}
+.vd-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:18px}
+.vd-filters .filter-input{width:200px}
+.compare-total-sub{font-size:11px;color:var(--txt3);margin-top:3px}
 .vd-note{font-size:11.5px;color:var(--txt3);margin-top:10px}
 
 /* ===== Utility ===== */
@@ -522,7 +525,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <div class="kpi-grid kpi-grid-4" id="exec-kpis">
       <div class="kpi-card">          <div class="kpi-icon">📦</div><div class="kpi-label">Total Cases</div><div class="kpi-value" id="e-total">—</div><div class="kpi-sub">All Verticals</div></div>
       <div class="kpi-card green">    <div class="kpi-icon">✅</div><div class="kpi-label">Onboarded</div><div class="kpi-value" id="e-completed">—</div><div class="kpi-sub" id="e-completion-sub">—</div></div>
-      <div class="kpi-card amber">    <div class="kpi-icon">📝</div><div class="kpi-label">Draft</div><div class="kpi-value" id="e-draft">—</div><div class="kpi-sub">Not yet submitted</div></div>
+      <div class="kpi-card amber">    <div class="kpi-icon">📝</div><div class="kpi-label">In Progress</div><div class="kpi-value" id="e-draft">—</div><div class="kpi-sub">Not yet submitted</div></div>
       <div class="kpi-card blue">     <div class="kpi-icon">🔍</div><div class="kpi-label">In Review</div><div class="kpi-value" id="e-in-review">—</div><div class="kpi-sub">Under evaluation</div></div>
       <div class="kpi-card red">      <div class="kpi-icon">❌</div><div class="kpi-label">Rejected</div><div class="kpi-value" id="e-rejected">—</div><div class="kpi-sub">Across verticals</div></div>
       <div class="kpi-card cyan">     <div class="kpi-icon">⏱</div><div class="kpi-label">Avg Onb. TAT</div><div class="kpi-value" id="e-avg-tat">—</div><div class="kpi-sub">Days (all sources)</div></div>
@@ -546,6 +549,9 @@ var COLORS = {
   indigo: '#2E3192',
 };
 var PALETTE = [COLORS.blue, COLORS.lime, COLORS.amber, COLORS.red, COLORS.purple, COLORS.cyan, COLORS.orange, COLORS.green, COLORS.teal, COLORS.indigo];
+
+// Display names for raw pipeline statuses (values stay raw for filtering)
+var STATUS_LABELS = { COMPLETED: 'Onboarded', DRAFT: 'In Progress', IN_REVIEW: 'In Review', REJECTED: 'Rejected' };
 
 // ═══════════════════════════════════════════════════════════════
 // INIT
@@ -669,7 +675,7 @@ function populateFilterOptions() {
   var fo = D.filterOptions;
   fillSelect('f-category', fo.categories);
   fillSelect('f-vendortype', fo.vendorTypes);
-  fillSelect('f-status', fo.statuses);
+  fillSelect('f-status', fo.statuses, STATUS_LABELS);
   populatePeriodOptions(fo.fiscalYears || []);
 }
 
@@ -688,13 +694,13 @@ function populatePeriodOptions(fys) {
   if (!sel.value) sel.value = 'All';
 }
 
-function fillSelect(id, opts) {
+function fillSelect(id, opts, labels) {
   var sel = document.getElementById(id);
   var cur = sel.value;
   sel.innerHTML = '<option value="All">All</option>';
   (opts || []).forEach(function(o) {
     var opt = document.createElement('option');
-    opt.value = o; opt.textContent = o;
+    opt.value = o; opt.textContent = (labels && labels[o]) || o;
     sel.appendChild(opt);
   });
   sel.value = cur;
@@ -763,14 +769,16 @@ function renderOverview() {
 // VERTICAL CARDS
 // ═══════════════════════════════════════════════════════════════
 var VERT_CFG = [
-  { key:'AFR',          name:'AFR',              sub:'Alternative Fuels & Resources',    code:'AFR', cls:'badge-afr' },
-  { key:'DRS',          name:'DRS',              sub:'Deposit Refund System',            code:'DRS', cls:'badge-drs' },
-  { key:'EPR',          name:'EPR',              sub:'Extended Producer Responsibility', code:'EPR', cls:'badge-epr' },
-  { key:'InfraBusiness',name:'Infra Business',   sub:'Metal & Institutional Business',   code:'INF', cls:'badge-inf' },
-  { key:'OMP',          name:'Open Marketplace', sub:'Sellers · data from FY 26-27',      code:'OMP', cls:'badge-omp' },
-  { key:'Recommerce',   name:'Recommerce',       sub:'Re-Commerce',                      code:'REC', cls:'badge-rec' },
+  { key:'OMP',           name:'Open Marketplace', sub:'Sellers · data from FY 26-27',     code:'OMP', cls:'badge-omp' },
+  { key:'EPR',           name:'EPR',              sub:'Extended Producer Responsibility', code:'EPR', cls:'badge-epr' },
+  { key:'InfraBusiness', name:'Infra Business',   sub:'Metal & Institutional Business',   code:'INF', cls:'badge-inf' },
+  { key:'AFR',           name:'AFR',              sub:'Alternative Fuels & Resources',    code:'AFR', cls:'badge-afr' },
+  { key:'Recommerce',    name:'Re-Commerce',      sub:'Re-Commerce Sellers',              code:'REC', cls:'badge-rec' },
+  { key:'DRS',           name:'DRS',              sub:'Deposit Refund System',            code:'DRS', cls:'badge-drs' },
 ];
 var selectedVert = null;
+var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+var VD_MAX_RENDER = 200;   // rows rendered at once in the detail table
 
 function renderVerticals() {
   var verts = D.verticals;
@@ -786,32 +794,34 @@ function renderVerticals() {
     var revP = has ? Math.round(((v.inReview ||0) / tot) * 100) : 0;
     var dftP = has ? Math.round(((v.draft    ||0) / tot) * 100) : 0;
     var n    = function(x) { return has ? fmt(x || 0) : '—'; };
+    var txn  = (!has || v.transacted === null || v.transacted === undefined) ? '—' : fmt(v.transacted);
+
+    function barRow(label, val, p, color) {
+      return '<div class="progress-row">'
+        + '<div class="progress-label-row"><span>' + label + '</span>'
+        + '<span>' + (has ? n(val) + ' (' + p + '%)' : '—') + '</span></div>'
+        + '<div class="progress-bar-wrap"><div class="progress-bar" style="background:' + color + ';width:' + p + '%"></div></div>'
+        + '</div>';
+    }
 
     return '<div class="compare-card' + (selectedVert === cfg.key ? ' selected' : '') + '" onclick="openVertDetail(\'' + cfg.key + '\')">'
       + '<div class="compare-header">'
       +   '<div><div class="compare-label">' + esc(cfg.name) + '</div>'
-      +   '<div class="compare-count">' + (has ? fmt(tot) : '—') + '</div></div>'
+      +   '<div class="compare-count">' + (has ? fmt(v.completed || 0) : '—') + '</div>'
+      +   '<div class="compare-total-sub">Onboarded · of ' + fmt(tot) + ' total</div></div>'
       +   '<span class="compare-source-badge ' + cfg.cls + '">' + cfg.code + '</span>'
       + '</div>'
-      + '<div class="progress-row">'
-      +   '<div class="progress-label-row"><span>Onboarded</span>'
-      +   '<span>' + (has ? n(v.completed) + ' (' + onbP + '%)' : '—') + '</span></div>'
-      +   '<div class="progress-bar-wrap"><div class="progress-bar" style="background:var(--green);width:' + onbP + '%"></div></div>'
-      + '</div>'
-      + '<div class="progress-row">'
-      +   '<div class="progress-label-row"><span>In Review</span>'
-      +   '<span>' + (has ? n(v.inReview) + ' (' + revP + '%)' : '—') + '</span></div>'
-      +   '<div class="progress-bar-wrap"><div class="progress-bar" style="background:var(--amber);width:' + revP + '%"></div></div>'
-      + '</div>'
-      + '<div class="progress-row">'
-      +   '<div class="progress-label-row"><span>Draft</span>'
-      +   '<span>' + (has ? n(v.draft) + ' (' + dftP + '%)' : '—') + '</span></div>'
-      +   '<div class="progress-bar-wrap"><div class="progress-bar" style="background:var(--blue);width:' + dftP + '%"></div></div>'
-      + '</div>'
+      + barRow('Onboarded',   v.completed, onbP, 'var(--green)')
+      + barRow('In Review',   v.inReview,  revP, 'var(--amber)')
+      + barRow('In Progress', v.draft,     dftP, 'var(--blue)')
       + '<div class="vert-stat-row">'
       +   '<span class="vert-stat-item">Pipeline <strong>' + (has ? (v.pipelinePct||0) + '%' : '—') + '</strong></span>'
       +   '<span class="vert-stat-item">Avg TAT <strong>' + (has ? (v.avgTAT||0) + 'd' : '—') + '</strong></span>'
-      +   '<span class="vert-stat-item">GST <strong>' + n(v.withGST) + '</strong></span>'
+      +   '<span class="vert-stat-item">Transacted <strong>' + txn + '</strong></span>'
+      + '</div>'
+      + '<div class="vert-stat-row">'
+      +   '<span class="vert-stat-item">GST Active <strong class="text-green">' + n(v.withGST) + '</strong></span>'
+      +   '<span class="vert-stat-item">GST Inactive <strong class="text-red">' + n(v.missingGST) + '</strong></span>'
       + '</div>'
       + '<div class="vert-rej-footer"><span>Rejected: <strong>' + n(v.rejected) + '</strong></span>'
       + '<span class="vert-more">' + (selectedVert === cfg.key ? 'Viewing ▾' : 'Details →') + '</span></div>'
@@ -820,11 +830,14 @@ function renderVerticals() {
 }
 
 function openVertDetail(key) {
+  if (selectedVert !== key) {
+    vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+  }
   selectedVert = key;
   renderVerticals();
   renderVertDetail();
   var panel = document.getElementById('vert-detail');
-  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function closeVertDetail() {
@@ -835,6 +848,27 @@ function closeVertDetail() {
   renderVerticals();
 }
 
+function vdUnique(rows, field) {
+  var seen = {};
+  var out = [];
+  rows.forEach(function(r) {
+    var v = r[field];
+    if (v && v !== '—' && !seen[v]) { seen[v] = true; out.push(v); }
+  });
+  return out.sort();
+}
+
+function vdSelect(id, label, options, current, labels) {
+  var html = '<div class="filter-group"><span class="filter-label">' + label + '</span>'
+    + '<select class="filter-select" id="' + id + '" onchange="vdfChange()">'
+    + '<option value="All">All</option>';
+  options.forEach(function(o) {
+    html += '<option value="' + esc(o) + '"' + (current === o ? ' selected' : '') + '>'
+      + esc((labels && labels[o]) || o) + '</option>';
+  });
+  return html + '</select></div>';
+}
+
 function renderVertDetail() {
   var panel = document.getElementById('vert-detail');
   if (!panel || !selectedVert || !D || !D.verticals) return;
@@ -843,24 +877,26 @@ function renderVertDetail() {
   if (!cfg || !v) return;
   var has = (v.total || 0) > 0;
 
+  var txnVal = (v.transacted === null || v.transacted === undefined)
+    ? '—'
+    : fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)';
+
   var metrics = [
-    ['Total',             fmt(v.total || 0)],
-    ['Onboarded',         fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)'],
-    ['In Review',         fmt(v.inReview || 0)],
-    ['Draft',             fmt(v.draft || 0)],
-    ['Rejected',          fmt(v.rejected || 0)],
-    ['Avg TAT',           (v.avgTAT || 0) + 'd'],
-    ['In Pipeline',       fmt(v.pipeline || 0) + ' (' + (v.pipelinePct || 0) + '%)'],
-    ['Onboarded (7d)',    fmt(v.completedThisWeek || 0)],
-    ['Avg Days @ Draft',  (v.avgDraftDays || 0) + 'd'],
-    ['Avg Days @ Review', (v.avgReviewDays || 0) + 'd'],
-    ['With GST',          fmt(v.withGST || 0)],
-    ['GSTIN Missing',     fmt(v.missingGST || 0)],
+    ['Onboarded',            fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)'],
+    ['Total Cases',          fmt(v.total || 0)],
+    ['In Review',            fmt(v.inReview || 0)],
+    ['In Progress',          fmt(v.draft || 0)],
+    ['Rejected',             fmt(v.rejected || 0)],
+    ['Avg TAT',              (v.avgTAT || 0) + 'd'],
+    ['In Pipeline',          fmt(v.pipeline || 0) + ' (' + (v.pipelinePct || 0) + '%)'],
+    ['Onboarded (7d)',       fmt(v.completedThisWeek || 0)],
+    ['Transacted',           txnVal],
+    ['Avg Days In Progress', (v.avgDraftDays || 0) + 'd'],
+    ['Avg Days @ Review',    (v.avgReviewDays || 0) + 'd'],
+    ['GST Active',           fmt(v.withGST || 0)],
+    ['GST Inactive',         fmt(v.missingGST || 0)],
   ];
-  if (cfg.key === 'OMP') {
-    metrics.push(['% Ever Listed', (v.pctListed || 0) + '%']);
-    metrics.push(['% Transacted',  (v.pctTransacted || 0) + '%']);
-  }
+  if (cfg.key === 'OMP') metrics.push(['% Ever Listed', (v.pctListed || 0) + '%']);
 
   var useCat   = v.categorySplit && v.categorySplit.length > 1;
   var mixTitle = useCat ? 'Category Mix' : 'Vendor Type Mix';
@@ -873,31 +909,35 @@ function renderVertDetail() {
       + '</div>'
     : '';
 
+  // Detail filters — same as the global bar, minus Vertical (the card IS the vertical)
   var rows = v.rows || [];
-  var tableHtml;
-  if (rows.length) {
-    tableHtml = '<div class="table-wrap vd-table-wrap mt-16"><table><thead><tr>'
-      + '<th>ID</th><th>Business Name</th><th>Category</th><th>Vendor Type</th><th>Status</th><th>GSTIN</th><th>State</th><th>Created</th><th>Onboarded</th><th>TAT</th>'
-      + '</tr></thead><tbody>'
-      + rows.map(function(r) {
-          return '<tr>'
-            + '<td class="text-muted">' + esc(r.id) + '</td>'
-            + '<td><strong>' + esc(r.name || '—') + '</strong></td>'
-            + '<td>' + esc(r.category || '—') + '</td>'
-            + '<td class="text-muted">' + esc(r.vendorType || '—') + '</td>'
-            + '<td>' + statusChip(r.status) + '</td>'
-            + '<td style="font-size:11px">' + (r.hasGST ? '<span class="gst-ok">✓ ' + esc(r.gstin) + '</span>' : '<span class="gst-bad">✗ Missing</span>') + '</td>'
-            + '<td class="text-muted">' + esc(r.state || '—') + '</td>'
-            + '<td class="text-muted">' + esc(r.createdDate) + '</td>'
-            + '<td class="text-muted">' + esc(r.onbDate) + '</td>'
-            + '<td>' + tatChip(r.tat) + '</td>'
-            + '</tr>';
-        }).join('')
-      + '</tbody></table></div>'
-      + '<div class="vd-note">Showing ' + fmt(rows.length) + ' of ' + fmt(v.rowsTotal || rows.length) + ' records · latest first</div>';
-  } else {
-    tableHtml = '<div class="no-data">No records yet for this vertical</div>';
+  var periodSel  = document.getElementById('f-period');
+  var periodOpts = '';
+  if (periodSel) {
+    for (var i = 0; i < periodSel.options.length; i++) {
+      var o = periodSel.options[i];
+      if (o.value === 'Custom') continue;
+      periodOpts += '<option value="' + o.value + '"' + (periodSel.value === o.value ? ' selected' : '') + '>' + esc(o.text) + '</option>';
+    }
   }
+  var filtersHtml = '<div class="vd-filters">'
+    + '<div class="filter-group"><span class="filter-label">Period</span>'
+    +   '<select class="filter-select" id="vdf-period" onchange="vdfPeriod(this.value)">' + periodOpts + '</select></div>'
+    + vdSelect('vdf-category', 'Category',    vdUnique(rows, 'category'),   vdF.category, null)
+    + vdSelect('vdf-vendor',   'Vendor Type', vdUnique(rows, 'vendorType'), vdF.vendor,   null)
+    + vdSelect('vdf-status',   'Status',      vdUnique(rows, 'status'),     vdF.status,   STATUS_LABELS)
+    + vdSelect('vdf-gst',      'GST',         ['Active', 'Inactive'],       vdF.gst,      null)
+    + '<input type="text" class="filter-input" id="vdf-search" placeholder="🔍 Search name / GSTIN / ID…" value="' + esc(vdF.search) + '" oninput="vdfSearchDeb()">'
+    + '<button class="vd-close" onclick="vdfClear()">✕ Clear</button>'
+    + '</div>';
+
+  var tableHtml = rows.length
+    ? filtersHtml
+      + '<div class="table-wrap vd-table-wrap mt-16"><table><thead><tr>'
+      + '<th>ID</th><th>Business Name</th><th>Category</th><th>Vendor Type</th><th>Status</th><th>GSTIN</th><th>State</th><th>Created</th><th>Onboarded</th><th>TAT</th>'
+      + '</tr></thead><tbody id="vd-tbody"></tbody></table></div>'
+      + '<div class="vd-note" id="vd-note"></div>'
+    : '<div class="no-data">No records yet for this vertical</div>';
 
   panel.innerHTML =
     '<div class="vd-head">'
@@ -917,7 +957,7 @@ function renderVertDetail() {
 
   if (has) {
     mkDoughnut('vd-ch-status',
-      ['Onboarded', 'Draft', 'In Review', 'Rejected'],
+      ['Onboarded', 'In Progress', 'In Review', 'Rejected'],
       [v.completed || 0, v.draft || 0, v.inReview || 0, v.rejected || 0],
       [COLORS.green, COLORS.blue, COLORS.amber, COLORS.red]);
 
@@ -930,6 +970,83 @@ function renderVertDetail() {
       { label: 'Onboarded', data: mo.map(function(m) { return m.onboarded; }), color: COLORS.green },
     ]);
   }
+
+  renderVdTable();
+}
+
+function vdFilteredRows() {
+  if (!selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return [];
+  var rows = D.verticals[selectedVert].rows || [];
+  var q = (vdF.search || '').toLowerCase();
+  return rows.filter(function(r) {
+    if (vdF.category !== 'All' && r.category   !== vdF.category) return false;
+    if (vdF.vendor   !== 'All' && r.vendorType !== vdF.vendor)   return false;
+    if (vdF.status   !== 'All' && r.status     !== vdF.status)   return false;
+    if (vdF.gst === 'Active'   && !r.hasGST) return false;
+    if (vdF.gst === 'Inactive' &&  r.hasGST) return false;
+    if (q && (r.name  || '').toLowerCase().indexOf(q) === -1
+          && (r.gstin || '').toLowerCase().indexOf(q) === -1
+          && String(r.id || '').toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  });
+}
+
+function renderVdTable() {
+  var tbody = document.getElementById('vd-tbody');
+  var note  = document.getElementById('vd-note');
+  if (!tbody || !selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return;
+  var all      = D.verticals[selectedVert].rows || [];
+  var filtered = vdFilteredRows();
+  var shown    = filtered.slice(0, VD_MAX_RENDER);
+
+  tbody.innerHTML = shown.length
+    ? shown.map(function(r) {
+        return '<tr>'
+          + '<td class="text-muted">' + esc(r.id) + '</td>'
+          + '<td><strong>' + esc(r.name || '—') + '</strong></td>'
+          + '<td>' + esc(r.category || '—') + '</td>'
+          + '<td class="text-muted">' + esc(r.vendorType || '—') + '</td>'
+          + '<td>' + statusChip(r.status) + '</td>'
+          + '<td style="font-size:11px">' + (r.hasGST ? '<span class="gst-ok">✓ ' + esc(r.gstin) + '</span>' : '<span class="gst-bad">✗ Missing</span>') + '</td>'
+          + '<td class="text-muted">' + esc(r.state || '—') + '</td>'
+          + '<td class="text-muted">' + esc(r.createdDate) + '</td>'
+          + '<td class="text-muted">' + esc(r.onbDate) + '</td>'
+          + '<td>' + tatChip(r.tat) + '</td>'
+          + '</tr>';
+      }).join('')
+    : '<tr><td colspan="10" class="no-data">No records match the selected filters</td></tr>';
+
+  if (note) {
+    note.textContent = 'Showing ' + fmt(shown.length) + ' of ' + fmt(filtered.length)
+      + ' matching · ' + fmt(all.length) + ' total · latest first';
+  }
+}
+
+function vdVal(id) {
+  var el = document.getElementById(id);
+  return el ? el.value : 'All';
+}
+function vdfChange() {
+  vdF.category = vdVal('vdf-category');
+  vdF.vendor   = vdVal('vdf-vendor');
+  vdF.status   = vdVal('vdf-status');
+  vdF.gst      = vdVal('vdf-gst');
+  renderVdTable();
+}
+var vdfDebTimer;
+function vdfSearchDeb() {
+  var el = document.getElementById('vdf-search');
+  vdF.search = el ? el.value : '';
+  clearTimeout(vdfDebTimer);
+  vdfDebTimer = setTimeout(renderVdTable, 300);
+}
+function vdfPeriod(val) {
+  var g = document.getElementById('f-period');
+  if (g) { g.value = val; onPeriodChange(); }
+}
+function vdfClear() {
+  vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+  renderVertDetail();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1044,7 +1161,7 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 
 function statusChip(s) {
   var cls = { COMPLETED: 'chip-completed', DRAFT: 'chip-draft', IN_REVIEW: 'chip-review', REJECTED: 'chip-rejected' };
-  return '<span class="status-chip ' + (cls[s] || '') + '">' + esc(s||'—') + '</span>';
+  return '<span class="status-chip ' + (cls[s] || '') + '">' + esc(STATUS_LABELS[s] || s || '—') + '</span>';
 }
 function tatChip(t) {
   if (!t || t === '—') return '<span class="text-muted">—</span>';
