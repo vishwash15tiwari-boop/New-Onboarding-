@@ -23,6 +23,43 @@ var AUDIENCE_CFG = {
             idCol: 'buyer_id',  nameCol: 'buyer_name',  vendorCol: 'customer_type', onbCol: '' },
 };
 
+// The six business verticals, in display order. Rows are mapped into these by
+// mapToVertical(); every audience always shows all six.
+var VERTICALS = [
+  { key: 'OMP',           name: 'Open Marketplace', code: 'OMP', sub: 'Open Marketplace onboarding' },
+  { key: 'EPR',           name: 'EPR',              code: 'EPR', sub: 'Extended Producer Responsibility' },
+  { key: 'InfraBusiness', name: 'Infra Business',   code: 'INF', sub: 'Metal · Plastic · Institutional · Reverse' },
+  { key: 'AFR',           name: 'AFR',              code: 'AFR', sub: 'Alternative Fuels & Resources' },
+  { key: 'Recommerce',    name: 'Re-Commerce',      code: 'REC', sub: 'Re-Commerce · E-Waste' },
+  { key: 'DRS',           name: 'DRS',              code: 'DRS', sub: 'Deposit Refund System' },
+];
+
+// Categories (from the Marketplace business_vertical) that roll into Infra Business.
+var INFRA_CATS = { 'metal': 1, 'plastic': 1, 'institutional business': 1, 'reverse': 1, 'rewerse': 1 };
+function isEwaste(cat) { return cat === 'e-waste' || cat === 'ewaste' || cat === 'e waste'; }
+
+// Map a sheet row (business_vertical + business_category) to one of the six.
+//  · EPR / AFR / DRS / Re-Commerce  → taken from their own business_vertical
+//  · Marketplace                    → split by category:
+//        Metal/Plastic/Institutional/Reverse → Infra Business
+//        E-Waste                             → Re-Commerce
+//        anything else                       → Open Marketplace
+//  · any other vertical             → Open Marketplace (catch-all)
+function mapToVertical(businessVertical, category) {
+  var bv  = String(businessVertical || '').trim().toLowerCase();
+  var cat = String(category || '').trim().toLowerCase();
+  if (bv === 'epr') return 'EPR';
+  if (bv === 'afr') return 'AFR';
+  if (bv === 'drs' || bv === 'goa drs') return 'DRS';
+  if (bv === 're-commerce' || bv === 'recommerce' || bv === 're commerce') return 'Recommerce';
+  if (bv === 'marketplace') {
+    if (INFRA_CATS[cat]) return 'InfraBusiness';
+    if (isEwaste(cat))   return 'Recommerce';
+    return 'OMP';
+  }
+  return 'OMP';
+}
+
 // ─────────────────────────────────────────────────────────────
 // ENTRY POINTS
 // ─────────────────────────────────────────────────────────────
@@ -74,8 +111,17 @@ function readSheet(sheetId) {
 function normalizeRows(raw, cfg) {
   var idx = buildIndex(raw.headers);
   return raw.rows.map(function(row) {
-    var created   = parseDate(gv(row, idx, 'onboarding_created_date'));
+    var status   = normStatus(gv(row, idx, 'onboarding_status'));
+    var category = normCategory(gv(row, idx, 'business_category'));
+    var bizVert  = gv(row, idx, 'business_vertical');
+    var created  = parseDate(gv(row, idx, 'onboarding_created_date'));
+    // Onboarded timestamp for TAT: prefer onboarded_date; if blank, fall back to
+    // the last status update (onboarding_updated_date) for completed rows, so
+    // Avg TAT stays visible even when onboarded_date isn't populated.
     var onboarded = cfg.onbCol ? parseDate(gv(row, idx, cfg.onbCol)) : null;
+    if (!onboarded && status === 'COMPLETED') onboarded = parseDate(gv(row, idx, 'onboarding_updated_date'));
+    var tat = (status === 'COMPLETED' && created && onboarded) ? dateDiffDays(created, onboarded) : null;
+
     var gstin     = String(gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || '').toUpperCase();
     var txn       = String(gv(row, idx, 'transaction_activation_status') || '').toUpperCase().replace(/\s+/g, ' ').trim();
@@ -84,18 +130,19 @@ function normalizeRows(raw, cfg) {
       name:          String(gv(row, idx, cfg.nameCol) || '').trim(),
       state:         String(gv(row, idx, 'state') || '').trim(),
       vendorType:    String(gv(row, idx, cfg.vendorCol) || '').trim(),
-      category:      normCategory(gv(row, idx, 'business_category')),
-      vertical:      String(gv(row, idx, 'business_vertical') || '').trim() || 'Other',
+      category:      category,
+      vertical:      mapToVertical(bizVert, category),
       gstin:         gstin,
-      status:        normStatus(gv(row, idx, 'onboarding_status')),
+      status:        status,
       createdDate:   created,
       onboardedDate: onboarded,
       // gstin_status is authoritative ("GSTIN AVAILABLE" vs "GSTIN NOT AVAILABLE");
       // guard against "NOT AVAILABLE" containing the substring "AVAILABLE".
       hasGST:        gstStatus ? (gstStatus.indexOf('NOT') === -1 && gstStatus.indexOf('AVAILABLE') !== -1)
                                : isValidGSTIN(gstin),
+      hasTxn:        txn !== '',            // does this row carry a transaction signal at all?
       hasTransacted: txn === 'TRANSACTED',
-      onbTAT:        dateDiffDays(created, onboarded),
+      onbTAT:        tat,
     };
   }).filter(function(r) { return r.id || r.name; });
 }
@@ -108,13 +155,13 @@ function buildDashboard(audience, cfg, allRows, f) {
 
   var byVert = {};
   rows.forEach(function(r) { (byVert[r.vertical] = byVert[r.vertical] || []).push(r); });
-  var names = Object.keys(byVert).sort(function(a, b) { return byVert[b].length - byVert[a].length; });
 
-  var verticalConfig = names.map(function(name) {
-    return { key: slug(name), name: name, sub: cfg.label + ' · ' + name, code: codeFor(name) };
+  // Always emit all six verticals, in fixed order (empty ones render "No records").
+  var verticalConfig = VERTICALS.map(function(vc) {
+    return { key: vc.key, name: vc.name, sub: vc.sub, code: vc.code };
   });
   var verticals = {};
-  names.forEach(function(name) { verticals[slug(name)] = vStats(byVert[name]); });
+  VERTICALS.forEach(function(vc) { verticals[vc.key] = vStats(byVert[vc.key] || []); });
 
   return {
     success: true,
@@ -133,7 +180,9 @@ function vStats(data) {
   var completed = count(data, 'status', 'COMPLETED');
   var withGST   = countFn(data, function(r) { return r.hasGST; });
   var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
-  var transacted = countFn(data, function(r) { return r.hasTransacted; });
+  // Transacted is null (shown as "—") for a vertical whose rows carry no
+  // transaction signal at all (e.g. EPR); otherwise it's the TRANSACTED count.
+  var transacted = countFn(data, function(r) { return r.hasTxn; }) ? countFn(data, function(r) { return r.hasTransacted; }) : null;
 
   var catMap = {};
   data.forEach(function(r) {
@@ -161,7 +210,7 @@ function vStats(data) {
     completedThisWeek: countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= weekAgo; }),
     avgTAT: tats.length ? Math.round(avg(tats)) : null,
     transacted: transacted,
-    pctTransacted: pct(transacted, completed),
+    pctTransacted: transacted === null ? null : pct(transacted, completed),
     categories: categories,
     rows: latestFirst.map(vertRow),
     rowsTotal: total,
