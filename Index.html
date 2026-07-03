@@ -400,6 +400,37 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 #top-custom{align-items:center;gap:6px}
 .vd-note{font-size:11.5px;color:var(--txt3);margin-top:10px}
 
+/* ── Detail records view toggle (Board / Table) ── */
+.vd-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--card);flex-shrink:0}
+.vd-toggle-btn{font-family:inherit;font-size:11.5px;font-weight:600;padding:6px 13px;border:none;background:transparent;color:var(--txt3);cursor:pointer;transition:background .12s ease,color .12s ease;white-space:nowrap}
+.vd-toggle-btn.active{background:var(--blue);color:#FFF}
+.vd-toggle-btn:not(.active):hover{background:var(--card2);color:var(--txt)}
+
+/* ── Kanban board ── */
+.kb-wrap{overflow-x:auto;padding-bottom:4px}
+.kb-board{display:grid;grid-template-columns:repeat(4,minmax(190px,1fr));gap:12px;min-width:800px}
+.kb-col{background:var(--card2);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column}
+.kb-col-head{display:flex;align-items:center;gap:7px;padding:9px 12px;border-bottom:1px solid var(--border);border-radius:var(--r) var(--r) 0 0}
+.kb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.kb-col-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--txt2);white-space:nowrap}
+.kb-count{margin-left:auto;font-size:11px;font-weight:700;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1px 8px;color:var(--txt2);font-variant-numeric:tabular-nums}
+.kb-cards{padding:8px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:420px}
+.kb-card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--kb,var(--border2));border-radius:8px;padding:9px 10px;box-shadow:var(--shadow-sm);transition:box-shadow .12s ease,transform .12s ease}
+.kb-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.kb-card-name{font-size:12px;font-weight:600;color:var(--txt);line-height:1.35}
+.kb-card-meta{font-size:10.5px;color:var(--txt3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kb-card-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px}
+.kb-gst{font-size:9.5px;font-weight:600;padding:1.5px 7px;border-radius:8px;white-space:nowrap}
+.kb-gst.ok{background:#F0FDF4;color:#166534}
+.kb-gst.bad{background:#FEF2F2;color:#991B1B}
+.kb-age{font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kb-empty{font-size:11px;color:var(--txt3);text-align:center;padding:20px 8px}
+.kb-more{font-size:10.5px;color:var(--txt3);text-align:center;padding:2px 0 6px}
+.kb-col.draft    { --kb:#3B82F6 } .kb-col.draft    .kb-col-head{background:#EFF6FF} .kb-col.draft    .kb-dot{background:#3B82F6}
+.kb-col.review   { --kb:#D97706 } .kb-col.review   .kb-col-head{background:#FFFBEB} .kb-col.review   .kb-dot{background:#D97706}
+.kb-col.done     { --kb:#16A34A } .kb-col.done     .kb-col-head{background:#F0FDF4} .kb-col.done     .kb-dot{background:#16A34A}
+.kb-col.rejected { --kb:#DC2626 } .kb-col.rejected .kb-col-head{background:#FEF2F2} .kb-col.rejected .kb-dot{background:#DC2626}
+
 /* ===== Utility ===== */
 .text-green{color:#166534} .text-red{color:#991B1B} .text-amber{color:#92400E}
 .text-blue{color:var(--blue)} .text-muted{color:var(--txt3)}
@@ -716,6 +747,14 @@ var VERT_CFG = [
 var selectedVert = null;
 var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
 var VD_MAX_RENDER = 200;   // rows rendered at once in the detail table
+var KB_MAX_PER_COL = 50;   // cards rendered per Kanban column
+var vdView = 'board';      // records view in the detail panel: 'board' | 'table'
+var KB_COLS = [            // workflow order, left to right
+  { key: 'DRAFT',     cls: 'draft'    },
+  { key: 'IN_REVIEW', cls: 'review'   },
+  { key: 'COMPLETED', cls: 'done'     },
+  { key: 'REJECTED',  cls: 'rejected' },
+];
 
 // Card funnel: status-chip color pairs (light tint + dark ink)
 var FNL_STYLE = {
@@ -899,6 +938,10 @@ function renderVertDetail() {
   // Detail filters — local to this vertical's records (Period lives above the cards)
   var rows = v.rows || [];
   var filtersHtml = '<div class="vd-filters">'
+    + '<div class="vd-toggle">'
+    +   '<button class="vd-toggle-btn' + (vdView === 'board' ? ' active' : '') + '" onclick="vdSetView(\'board\')">▦ Board</button>'
+    +   '<button class="vd-toggle-btn' + (vdView === 'table' ? ' active' : '') + '" onclick="vdSetView(\'table\')">☰ Table</button>'
+    + '</div>'
     + vdSelect('vdf-category', 'Category',    vdUnique(rows, 'category'),   vdF.category, null)
     + vdSelect('vdf-vendor',   'Vendor Type', vdUnique(rows, 'vendorType'), vdF.vendor,   null)
     + vdSelect('vdf-status',   'Status',      vdUnique(rows, 'status'),     vdF.status,   STATUS_LABELS)
@@ -907,9 +950,10 @@ function renderVertDetail() {
     + '<button class="vd-close" onclick="vdfClear()">✕ Clear</button>'
     + '</div>';
 
-  var tableHtml = rows.length
+  var recordsHtml = rows.length
     ? filtersHtml
-      + '<div class="table-wrap vd-table-wrap mt-16"><table><thead><tr>'
+      + '<div class="kb-wrap mt-16" id="vd-board-view"><div class="kb-board" id="vd-board"></div></div>'
+      + '<div class="table-wrap vd-table-wrap mt-16" id="vd-table-view"><table><thead><tr>'
       + '<th>ID</th><th>Business Name</th><th>Category</th><th>Vendor Type</th><th>Status</th><th>GSTIN</th><th>State</th><th>Created</th><th>Onboarded</th><th>TAT</th>'
       + '</tr></thead><tbody id="vd-tbody"></tbody></table></div>'
       + '<div class="vd-note" id="vd-note"></div>'
@@ -927,11 +971,11 @@ function renderVertDetail() {
       }).join('')
     + '</div>'
     + funnelSection
-    + tableHtml;
+    + recordsHtml;
 
   panel.style.display = 'block';
 
-  renderVdTable();
+  renderVdRecords();
 }
 
 function vdFilteredRows() {
@@ -949,6 +993,86 @@ function vdFilteredRows() {
           && String(r.id || '').toLowerCase().indexOf(q) === -1) return false;
     return true;
   });
+}
+
+function vdSetView(view) {
+  if (vdView === view) return;
+  vdView = view;
+  renderVertDetail();
+}
+
+// Shows whichever records view is active and renders it from the filtered rows.
+function renderVdRecords() {
+  var boardEl = document.getElementById('vd-board-view');
+  var tableEl = document.getElementById('vd-table-view');
+  if (!boardEl || !tableEl) return;
+  var board = vdView === 'board';
+  boardEl.style.display = board ? '' : 'none';
+  tableEl.style.display = board ? 'none' : '';
+  if (board) renderVdBoard(); else renderVdTable();
+}
+
+function renderVdBoard() {
+  var host = document.getElementById('vd-board');
+  var note = document.getElementById('vd-note');
+  if (!host || !selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return;
+  var all      = D.verticals[selectedVert].rows || [];
+  var filtered = vdFilteredRows();
+
+  host.innerHTML = KB_COLS.map(function(col) {
+    var cases = filtered.filter(function(r) { return r.status === col.key; });
+    var shown = cases.slice(0, KB_MAX_PER_COL);
+    var extra = cases.length - shown.length;
+    return '<div class="kb-col ' + col.cls + '">'
+      + '<div class="kb-col-head"><span class="kb-dot"></span>'
+      + '<span class="kb-col-title">' + esc(STATUS_LABELS[col.key]) + '</span>'
+      + '<span class="kb-count">' + fmt(cases.length) + '</span></div>'
+      + '<div class="kb-cards">'
+      + (shown.length ? shown.map(kbCard).join('') : '<div class="kb-empty">No cases</div>')
+      + (extra > 0 ? '<div class="kb-more">+ ' + fmt(extra) + ' more — refine filters or switch to Table</div>' : '')
+      + '</div></div>';
+  }).join('');
+
+  if (note) {
+    note.textContent = 'Showing ' + fmt(filtered.length) + ' of ' + fmt(all.length)
+      + ' records, grouped by stage · latest first';
+  }
+}
+
+function kbCard(r) {
+  var meta = [r.category, r.vendorType].filter(function(x) { return x && x !== '—'; }).join(' · ');
+  return '<div class="kb-card">'
+    + '<div class="kb-card-name">' + esc(r.name || '—') + '</div>'
+    + '<div class="kb-card-meta">' + esc(r.id) + (meta ? ' · ' + esc(meta) : '') + '</div>'
+    + '<div class="kb-card-foot">'
+    + '<span class="kb-gst ' + (r.hasGST ? 'ok" title="' + esc(r.gstin) + '">✓ GST' : 'bad">✗ GST') + '</span>'
+    + kbAge(r)
+    + '</div></div>';
+}
+
+// Onboarded cards show the achieved TAT; open cards show how long they have been sitting.
+function kbAge(r) {
+  if (r.status === 'COMPLETED') {
+    var t = parseInt(r.tat);
+    if (isNaN(t)) return '<span class="kb-age text-muted">' + esc(r.onbDate || '—') + '</span>';
+    var cls = t <= 2 ? 'text-green' : t <= 5 ? 'text-amber' : 'text-red';
+    return '<span class="kb-age ' + cls + '" title="Onboarding TAT">' + t + 'd TAT</span>';
+  }
+  var d = parseDMY(r.createdDate);
+  if (!d) return '<span class="kb-age text-muted">—</span>';
+  var days = Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
+  if (r.status === 'REJECTED') {
+    return '<span class="kb-age text-muted" title="Days since created">' + days + 'd</span>';
+  }
+  var cls2 = days <= 3 ? 'text-muted' : days <= 7 ? 'text-amber' : 'text-red';
+  return '<span class="kb-age ' + cls2 + '" title="Days since created — created ' + esc(r.createdDate) + '">' + days + 'd waiting</span>';
+}
+
+function parseDMY(s) {
+  var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(s || '').trim());
+  if (!m) return null;
+  var d = new Date(+m[3], +m[2] - 1, +m[1]);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 function renderVdTable() {
@@ -991,14 +1115,14 @@ function vdfChange() {
   vdF.vendor   = vdVal('vdf-vendor');
   vdF.status   = vdVal('vdf-status');
   vdF.gst      = vdVal('vdf-gst');
-  renderVdTable();
+  renderVdRecords();
 }
 var vdfDebTimer;
 function vdfSearchDeb() {
   var el = document.getElementById('vdf-search');
   vdF.search = el ? el.value : '';
   clearTimeout(vdfDebTimer);
-  vdfDebTimer = setTimeout(renderVdTable, 300);
+  vdfDebTimer = setTimeout(renderVdRecords, 300);
 }
 function vdfClear() {
   vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
