@@ -197,7 +197,8 @@ function vStats(data) {
   var now = new Date(), weekAgo = new Date(now.getTime() - 7 * 86400000);
   var total     = data.length;
   var completed = count(data, 'status', 'COMPLETED');
-  var withGST   = countFn(data, function(r) { return r.hasGST; });
+  // GST Active/Inactive are counted over onboarded (completed) cases only.
+  var withGST   = countFn(data, function(r) { return r.status === 'COMPLETED' && r.hasGST; });
   var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS; }).map(function(r) { return r.onbTAT; });
   // Transacted is null (shown as "—") for a vertical whose rows carry no
   // transaction signal at all (e.g. EPR); otherwise it's the TRANSACTED count.
@@ -224,7 +225,7 @@ function vStats(data) {
     inReview: count(data, 'status', 'IN_REVIEW'),
     rejected: count(data, 'status', 'REJECTED'),
     withGST: withGST,
-    missingGST: total - withGST,
+    missingGST: completed - withGST,
     completionPct: pct(completed, total),
     completedThisWeek: countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= weekAgo; }),
     avgTAT: tats.length ? Math.round(avg(tats)) : null,
