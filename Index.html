@@ -233,11 +233,12 @@ select,input{font-family:inherit}
 
 .cc-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
 
-/* Stage detail cards under the bar (one per stage) */
-.cc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px}
-.cc-stat{background:var(--card2);border:1px solid var(--border);border-left-width:3px;border-radius:8px;padding:7px 9px;min-width:0}
-.cc-stat b{display:block;font-size:15px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1}
-.cc-stat span{display:block;font-size:8.5px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Onboarded-by-category cards (green accent = onboarded) */
+.cc-cap{font-size:9px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0 0 7px}
+.cc-cats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.cc-cat{flex:1 1 70px;max-width:132px;background:var(--card2);border:1px solid var(--border);border-left:3px solid var(--st-onboarded);border-radius:8px;padding:7px 9px;min-width:0}
+.cc-cat b{display:block;font-size:15px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1}
+.cc-cat span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:9px;color:var(--txt3);font-weight:600;margin-top:4px;line-height:1.2;min-height:2.2em}
 
 /* Footer stats */
 .cc-foot{display:flex;align-items:center;gap:14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--txt3)}
@@ -645,21 +646,23 @@ var STAGE = {
   rejected:   { fill: 'var(--st-rejected)',   lbl: 'Rejected' },
 };
 
-// The four current-status segments that partition Total.
-function stageSegs(v) {
-  return [
-    ['draft',     v.draft    || 0],
-    ['review',    v.inReview || 0],
-    ['onboarded', v.completed|| 0],
-    ['rejected',  v.rejected || 0],
-  ];
-}
-
-// Card: one small detail card per stage (count + label, stage-colour accent).
-function cardStats(v) {
-  return '<div class="cc-stats">' + stageSegs(v).map(function(s) {
-    return '<div class="cc-stat" style="border-left-color:' + STAGE[s[0]].fill + '">'
-      + '<b>' + fmt(s[1]) + '</b><span>' + STAGE[s[0]].lbl + '</span></div>';
+// Card: onboarded count per business category in this vertical (top categories,
+// remainder rolled into "Others"). Green accent ties them to the Onboarded hero.
+var CARD_CAT_MAX = 5;
+function cardCategories(v) {
+  var cats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; });
+  if (!cats.length) return '';
+  if (cats.length > CARD_CAT_MAX) {
+    var head = cats.slice(0, CARD_CAT_MAX - 1);
+    var others = cats.slice(CARD_CAT_MAX - 1).reduce(function(a, c) {
+      return { category: 'Others', onboarded: a.onboarded + (c.onboarded || 0), total: a.total + (c.total || 0) };
+    }, { category: 'Others', onboarded: 0, total: 0 });
+    head.push(others);
+    cats = head;
+  }
+  return '<div class="cc-cats">' + cats.map(function(c) {
+    return '<div class="cc-cat" title="' + esc(c.category) + ': ' + fmt(c.onboarded || 0) + ' onboarded of ' + fmt(c.total || 0) + '">'
+      + '<b>' + fmt(c.onboarded || 0) + '</b><span>' + esc(c.category) + '</span></div>';
   }).join('') + '</div>';
 }
 
@@ -783,7 +786,8 @@ function renderVerticals() {
       +   '<span class="cc-pill">' + (v.completionPct || 0) + '%</span>'
       + '</div>'
       + '<div class="cc-hero-lbl">Onboarded</div>'
-      + cardStats(v)
+      + '<div class="cc-cap">By category</div>'
+      + cardCategories(v)
       + '<div class="cc-foot">'
       +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
       +   '<div class="cc-foot-item"><b>' + gstPct + '%</b>GST Active</div>'

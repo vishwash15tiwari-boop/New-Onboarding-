@@ -467,6 +467,18 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
       return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
     });
 
+    // Onboarded (and total) counts per business category within this vertical,
+    // ranked by onboarded count — drives the per-category cards on each vertical.
+    var catMap = {};
+    data.forEach(function(r) {
+      var c = r.category || 'Others';
+      if (!catMap[c]) catMap[c] = { category: c, onboarded: 0, total: 0 };
+      catMap[c].total++;
+      if (r.status === 'COMPLETED') catMap[c].onboarded++;
+    });
+    var categories = Object.keys(catMap).map(function(k) { return catMap[k]; })
+      .sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });
+
     return {
       total:            total,
       completed:        completed,
@@ -480,6 +492,7 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
       avgTAT:           tats.length ? Math.round(avg(tats)) : null,
       transacted:       transacted,
       pctTransacted:    transacted === null ? null : pct(transacted, completed),
+      categories:       categories,
       rows:             latestFirst.map(vertRow),
       rowsTotal:        total,
     };
