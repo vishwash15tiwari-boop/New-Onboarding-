@@ -23,8 +23,8 @@ var AUDIENCE_CFG = {
             idCol: 'buyer_id',  nameCol: 'buyer_name',  vendorCol: 'customer_type', onbCol: '' },
 };
 
-// The six business verticals, in display order. Rows are mapped into these by
-// mapToVertical(); every audience always shows all six.
+// The seven business verticals, in display order. Rows are mapped into these by
+// mapToVertical(); every audience always shows all seven.
 var VERTICALS = [
   { key: 'OMP',           name: 'Open Marketplace', code: 'OMP', sub: 'Open Marketplace onboarding' },
   { key: 'EPR',           name: 'EPR',              code: 'EPR', sub: 'Extended Producer Responsibility' },
@@ -32,32 +32,40 @@ var VERTICALS = [
   { key: 'AFR',           name: 'AFR',              code: 'AFR', sub: 'Alternative Fuels & Resources' },
   { key: 'Recommerce',    name: 'Re-Commerce',      code: 'REC', sub: 'Re-Commerce · E-Waste' },
   { key: 'DRS',           name: 'DRS',              code: 'DRS', sub: 'Deposit Refund System' },
+  { key: 'Others',        name: 'Others',           code: 'OTH', sub: 'Other verticals & categories' },
 ];
 
 // Categories (from the Marketplace business_vertical) that roll into Infra Business.
 var INFRA_CATS = { 'metal': 1, 'plastic': 1, 'institutional business': 1, 'reverse': 1, 'rewerse': 1 };
 function isEwaste(cat) { return cat === 'e-waste' || cat === 'ewaste' || cat === 'e waste'; }
 
-// Map a sheet row (business_vertical + business_category) to one of the six.
-//  · EPR / AFR / DRS / Re-Commerce  → taken from their own business_vertical
-//  · Marketplace                    → split by category:
-//        Metal/Plastic/Institutional/Reverse → Infra Business
-//        E-Waste                             → Re-Commerce
-//        anything else                       → Open Marketplace
-//  · any other vertical             → Open Marketplace (catch-all)
+// Map a sheet row to one of the seven verticals. AFR / GOA DRS / Re-Commerce are
+// business_CATEGORY values under the Marketplace vertical; EPR and Open Marketplace
+// are business_VERTICAL values.
+//  · EPR              ← business_vertical 'EPR' (all of it)
+//  · Open Marketplace ← business_vertical 'Open Marketplace', categories Metal & Plastic
+//  · Marketplace vertical, by business_category:
+//        AFR                                          → AFR
+//        GOA DRS                                      → DRS
+//        Re-Commerce, E-Waste                         → Re-Commerce
+//        Metal, Plastic, Institutional Business, Reverse → Infra Business
+//        anything else                                → Others
+//  · everything else (Support, Sustainability Services, blank, …) → Others
 function mapToVertical(businessVertical, category) {
   var bv  = String(businessVertical || '').trim().toLowerCase();
   var cat = String(category || '').trim().toLowerCase();
   if (bv === 'epr') return 'EPR';
-  if (bv === 'afr') return 'AFR';
-  if (bv === 'drs' || bv === 'goa drs') return 'DRS';
-  if (bv === 're-commerce' || bv === 'recommerce' || bv === 're commerce') return 'Recommerce';
-  if (bv === 'marketplace') {
-    if (INFRA_CATS[cat]) return 'InfraBusiness';
-    if (isEwaste(cat))   return 'Recommerce';
-    return 'OMP';
+  if (bv === 'open marketplace' || bv === 'openmarketplace') {
+    return (cat === 'metal' || cat === 'plastic') ? 'OMP' : 'Others';
   }
-  return 'OMP';
+  if (bv === 'marketplace') {
+    if (cat === 'afr') return 'AFR';
+    if (cat === 'goa drs' || cat === 'drs') return 'DRS';
+    if (cat === 're-commerce' || cat === 'recommerce' || cat === 're commerce' || isEwaste(cat)) return 'Recommerce';
+    if (INFRA_CATS[cat]) return 'InfraBusiness';
+    return 'Others';
+  }
+  return 'Others';
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -115,11 +123,10 @@ function normalizeRows(raw, cfg) {
     var category = normCategory(gv(row, idx, 'business_category'));
     var bizVert  = gv(row, idx, 'business_vertical');
     var created  = parseDate(gv(row, idx, 'onboarding_created_date'));
-    // Onboarded timestamp for TAT: prefer onboarded_date; if blank, fall back to
-    // the last status update (onboarding_updated_date) for completed rows, so
-    // Avg TAT stays visible even when onboarded_date isn't populated.
     var onboarded = cfg.onbCol ? parseDate(gv(row, idx, cfg.onbCol)) : null;
-    if (!onboarded && status === 'COMPLETED') onboarded = parseDate(gv(row, idx, 'onboarding_updated_date'));
+    // TAT = whole days from created to onboarded, for completed rows that have an
+    // onboarded_date. dateDiffDays() compares calendar dates only, so same-day
+    // onboarding (created/onboarded differ only by timezone) reads 0, not negative.
     var tat = (status === 'COMPLETED' && created && onboarded) ? dateDiffDays(created, onboarded) : null;
 
     var gstin     = String(gv(row, idx, 'gstin') || '').trim();
@@ -136,9 +143,10 @@ function normalizeRows(raw, cfg) {
       status:        status,
       createdDate:   created,
       onboardedDate: onboarded,
-      // gstin_status is authoritative ("GSTIN AVAILABLE" vs "GSTIN NOT AVAILABLE");
-      // guard against "NOT AVAILABLE" containing the substring "AVAILABLE".
-      hasGST:        gstStatus ? (gstStatus.indexOf('NOT') === -1 && gstStatus.indexOf('AVAILABLE') !== -1)
+      // gstin_status is authoritative — real values are "GSTIN AVAILABLE" vs
+      // "MISSING GSTIN" (older sheets used "GSTIN NOT AVAILABLE"). GST is active
+      // only when AVAILABLE and not NOT/MISSING.
+      hasGST:        gstStatus ? (gstStatus.indexOf('AVAILABLE') !== -1 && gstStatus.indexOf('NOT') === -1 && gstStatus.indexOf('MISSING') === -1)
                                : isValidGSTIN(gstin),
       hasTxn:        txn !== '',            // does this row carry a transaction signal at all?
       hasTransacted: txn === 'TRANSACTED',
@@ -282,7 +290,12 @@ function parseDate(val) {
   var d2 = new Date(s);
   return isNaN(d2.getTime()) ? null : d2;
 }
-function dateDiffDays(d1, d2) { if (!d1 || !d2) return null; return Math.round((d2.getTime() - d1.getTime()) / 86400000); }
+function dateDiffDays(d1, d2) {
+  if (!d1 || !d2) return null;
+  var a = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
+  var b = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
+  return Math.round((b - a) / 86400000);
+}
 function isValidGSTIN(g) { return /^[0-9A-Z]{15}$/.test(String(g || '').trim().toUpperCase()); }
 
 function normStatus(v) {
