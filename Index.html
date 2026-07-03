@@ -237,11 +237,13 @@ select,input{font-family:inherit}
 .cc-seg:first-child{border-radius:5px 2px 2px 5px}
 .cc-seg:last-child{border-radius:2px 5px 5px 2px}
 
-/* Legend under the bar */
-.cc-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:12px}
-.cc-leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt2);white-space:nowrap}
 .cc-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
-.cc-leg b{color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* Stage detail cards under the bar (one per stage) */
+.cc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px}
+.cc-stat{background:var(--card2);border:1px solid var(--border);border-left-width:3px;border-radius:8px;padding:7px 9px;min-width:0}
+.cc-stat b{display:block;font-size:15px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1}
+.cc-stat span{display:block;font-size:8.5px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Footer stats */
 .cc-foot{display:flex;align-items:center;gap:14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--txt3)}
@@ -671,11 +673,11 @@ function cardBar(v) {
   }).join('') + '</div>';
 }
 
-// Card: compact legend with counts (dot + label + value).
-function cardLegend(v) {
-  return '<div class="cc-legend">' + stageSegs(v).map(function(s) {
-    return '<span class="cc-leg"><span class="cc-dot" style="background:' + STAGE[s[0]].fill + '"></span>'
-      + STAGE[s[0]].lbl + ' <b>' + fmt(s[1]) + '</b></span>';
+// Card: one small detail card per stage (count + label, stage-colour accent).
+function cardStats(v) {
+  return '<div class="cc-stats">' + stageSegs(v).map(function(s) {
+    return '<div class="cc-stat" style="border-left-color:' + STAGE[s[0]].fill + '">'
+      + '<b>' + fmt(s[1]) + '</b><span>' + STAGE[s[0]].lbl + '</span></div>';
   }).join('') + '</div>';
 }
 
@@ -800,7 +802,7 @@ function renderVerticals() {
       + '</div>'
       + '<div class="cc-hero-lbl">Onboarded</div>'
       + cardBar(v)
-      + cardLegend(v)
+      + cardStats(v)
       + '<div class="cc-foot">'
       +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
       +   '<div class="cc-foot-item"><b>' + gstPct + '%</b>GST Active</div>'
