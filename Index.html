@@ -6,49 +6,55 @@
 <title>Enterprise Business Control Tower</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 /* ===== Reset & Base ===== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  /* Surfaces */
-  --bg:      #F8F9FA;
-  --bg2:     #F1F3F5;
+  /* ── Surfaces — Notion warm-neutral ── */
+  --bg:      #F7F7F5;
+  --bg2:     #F0F0EC;
   --card:    #FFFFFF;
-  --card2:   #FAFAFA;
+  --card2:   #FAFAF9;
+  --hover:   #F4F4F1;
 
-  /* Borders — neutral gray, no green tint */
-  --border:  #E8EAED;
-  --border2: #CDD1D8;
+  /* ── Borders — hairline, warm neutral ── */
+  --border:  #EBEBE7;
+  --border2: #DFDFD9;
 
-  /* Typography */
-  --txt:     #0F1117;
-  --txt2:    #5C6370;
-  --txt3:    #9BA3AF;
+  /* ── Ink — Apple near-black, warm greys ── */
+  --txt:     #1D1D1F;
+  --txt2:    #55555C;
+  --txt3:    #8A8A90;
 
-  /* Brand */
+  /* ── Brand accent (Recykal) — UI chrome only ── */
   --blue:    #0071BC;
+  --blue-ink:#005E9E;
   --blue2:   #2E3192;
 
-  /* Status — used sparingly */
-  --green:   #16A34A;
-  --amber:   #D97706;
-  --red:     #DC2626;
-  --purple:  #7C3AED;
-  --cyan:    #0891B2;
-  --orange:  #EA580C;
-  --lime:    #65A30D;
+  /* ── Status ink (TAT / deltas) ── */
+  --green:   #12A150;
+  --amber:   #C77700;
+  --red:     #D64545;
 
-  /* Shadows — barely there */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.04), 0 1px 4px rgba(0,0,0,.03);
-  --shadow:    0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.04);
-  --ring:      0 0 0 3px rgba(0,113,188,.14);
+  /* ── Stage palette — ONE semantic set, used everywhere ──
+     (funnel bars · card distribution bar · kanban · chips) */
+  --st-total:      #9AA0A6;   --st-total-bg:     #F2F2F0;   --st-total-tx:     #55555C;
+  --st-draft:      #7B879B;   --st-draft-bg:     #F1F3F6;   --st-draft-tx:     #4C566A;
+  --st-review:     #2A78D6;   --st-review-bg:    #EAF2FC;   --st-review-tx:    #1A5DAA;
+  --st-onboarded:  #12A150;   --st-onboarded-bg: #E7F6EC;   --st-onboarded-tx: #0C7A3B;
+  --st-transacted: #147D80;   --st-transacted-bg:#E5F4F4;   --st-transacted-tx:#0E6265;
+  --st-rejected:   #D64545;   --st-rejected-bg:  #FBECEC;   --st-rejected-tx:  #B23636;
 
-  /* Geometry */
-  --r:   12px;
-  --r2:  8px;
+  /* ── Shadows — soft, Apple-quiet ── */
+  --shadow-sm: 0 1px 2px rgba(17,17,26,.04);
+  --shadow:    0 2px 8px rgba(17,17,26,.06), 0 1px 2px rgba(17,17,26,.04);
+  --shadow-lg: 0 12px 32px rgba(17,17,26,.10), 0 3px 8px rgba(17,17,26,.05);
+  --ring:      0 0 0 3px rgba(0,113,188,.16);
+
+  /* ── Geometry ── */
+  --r:   14px;
+  --r2:  9px;
 }
 
 html{
@@ -173,143 +179,95 @@ select,input{font-family:inherit}
   letter-spacing:.4px;
 }
 
-/* ===== KPI Grid ===== */
-.kpi-grid{display:grid;gap:12px;margin-bottom:24px}
-.kpi-grid-4{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
-.kpi-grid-5{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
-.kpi-grid-3{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
-.kpi-card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:var(--r);
-  padding:18px 20px 16px;
-  position:relative;
-  overflow:hidden;
-  transition:box-shadow .18s ease,border-color .18s ease;
-  box-shadow:var(--shadow-sm);
-}
-.kpi-card:hover{box-shadow:var(--shadow);border-color:var(--border2)}
-/* Subtle top accent strip replaces heavy left bar */
-.kpi-card::before{
-  content:'';
-  position:absolute;top:0;left:0;right:0;
-  height:2px;
-  border-radius:var(--r) var(--r) 0 0;
-  background:var(--accent,transparent);
-  opacity:.7;
-}
-.kpi-card.green{--accent:var(--green)}
-.kpi-card.amber{--accent:var(--amber)}
-.kpi-card.red{--accent:var(--red)}
-.kpi-card.purple{--accent:var(--purple)}
-.kpi-card.cyan{--accent:var(--cyan)}
-.kpi-card.orange{--accent:var(--orange)}
-.kpi-card.blue{--accent:var(--blue)}
-.kpi-card.indigo{--accent:var(--blue2)}
-.kpi-card.lime{--accent:var(--lime)}
-.kpi-label{
-  font-size:11px;color:var(--txt3);
-  font-weight:500;
-  letter-spacing:.35px;
-  text-transform:uppercase;
-  margin-bottom:8px;
-}
-.kpi-value{
-  font-size:28px;font-weight:700;
-  letter-spacing:-.8px;
-  color:var(--txt);
-  line-height:1;
-  margin-bottom:5px;
-  font-variant-numeric:tabular-nums;
-}
-.kpi-sub{font-size:11.5px;color:var(--txt3);font-weight:400;line-height:1.4}
-.kpi-badge{display:inline-block;font-size:10px;padding:2px 6px;border-radius:5px;font-weight:600;margin-top:5px}
-.kpi-badge.up{background:rgba(22,163,74,.1);color:#15803D}
-.kpi-badge.dn{background:rgba(220,38,38,.08);color:#B91C1C}
-.kpi-badge.neu{background:rgba(0,113,188,.08);color:var(--blue)}
-.kpi-icon{position:absolute;top:14px;right:14px;font-size:17px;opacity:.6}
-
-/* ===== Chart Cards ===== */
-.chart-grid{display:grid;gap:16px;margin-bottom:24px}
-.chart-grid-2{grid-template-columns:repeat(auto-fill,minmax(380px,1fr))}
-.chart-grid-full{grid-template-columns:1fr}
+/* ===== Section panel (detail funnel wrapper) ===== */
 .chart-card{
   background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--r);
-  padding:20px;
+  padding:20px 22px;
   box-shadow:var(--shadow-sm);
-  transition:box-shadow .18s ease,border-color .18s ease;
 }
-.chart-card:hover{box-shadow:var(--shadow);border-color:var(--border2)}
 .chart-card-title{
-  font-size:13px;font-weight:600;
-  color:var(--txt);
+  font-size:12px;font-weight:600;
+  color:var(--txt3);
   margin-bottom:16px;
   display:flex;justify-content:space-between;align-items:center;
-  letter-spacing:-.1px;
+  text-transform:uppercase;letter-spacing:.5px;
 }
-.chart-wrap{position:relative;height:220px}
-.chart-wrap.short{height:160px}
+.chart-card-title .muted-total{font-size:11px;font-weight:600;color:var(--txt3);text-transform:none;letter-spacing:0}
 
-/* ===== Comparison ===== */
-.compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+/* ===== Vertical Comparison Cards ===== */
+.compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
 .compare-card{
   background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--r);
-  padding:11px 14px 9px;
+  padding:16px 16px 13px;
   box-shadow:var(--shadow-sm);
   cursor:pointer;
-  transition:box-shadow .18s ease,border-color .18s ease,transform .18s ease;
+  transition:box-shadow .2s ease,border-color .2s ease,transform .2s ease;
 }
-.compare-card:hover{box-shadow:var(--shadow);border-color:var(--border2);transform:translateY(-1px)}
+.compare-card:hover{box-shadow:var(--shadow);border-color:var(--border2);transform:translateY(-2px)}
 .compare-card.selected{border-color:var(--blue);box-shadow:var(--ring),var(--shadow)}
-.compare-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
-.compare-label{font-size:14px;font-weight:700;color:var(--txt);letter-spacing:-.25px}
-.compare-count{margin-top:3px;display:flex;align-items:center;gap:7px}
-.compare-count-box{
-  display:inline-flex;align-items:center;
-  background:#F0FDF4;border:1px solid rgba(22,163,74,.32);
-  color:#166534;border-radius:7px;padding:1px 10px;
-  font-size:19px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums;
-}
-.compare-count-sub{font-size:10.5px;color:var(--txt3);font-weight:500;letter-spacing:0}
-.compare-source-badge{font-size:10.5px;padding:4px 10px;border-radius:20px;font-weight:600;letter-spacing:.1px}
-.badge-mp{background:rgba(0,113,188,.08);color:var(--blue);border:1px solid rgba(0,113,188,.16)}
-.badge-omp{background:rgba(8,145,178,.07);color:#0C7C8E;border:1px solid rgba(8,145,178,.15)}
-.badge-epr{background:rgba(234,88,12,.07);color:#B54708;border:1px solid rgba(234,88,12,.15)}
-/* ===== Card Mini-Funnel (fixed symmetric steps) ===== */
-.fnl{display:flex;flex-direction:column;align-items:center;gap:3px;margin:8px 0 2px}
-.fnl-box{
-  display:flex;justify-content:space-between;align-items:center;gap:8px;
-  height:20px;padding:0 10px;border-radius:5px;
-  font-size:10.5px;font-weight:600;overflow:hidden;white-space:nowrap;
-}
-.fnl-lbl{white-space:nowrap}
-.fnl-val{font-variant-numeric:tabular-nums;white-space:nowrap}
+.compare-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px}
+.compare-label{font-size:14.5px;font-weight:650;color:var(--txt);letter-spacing:-.2px;line-height:1.2}
+.compare-sub{font-size:11px;color:var(--txt3);font-weight:400;margin-top:2px}
 
-/* ===== Detail Funnel (trapezoid, numbered stages) ===== */
-.fun-wrap{display:grid;grid-template-columns:44px minmax(0,1fr) 250px;align-items:center;row-gap:6px;column-gap:20px;margin-top:14px}
-.fun-num{font-size:20px;font-weight:700;color:var(--txt3);text-align:right;font-variant-numeric:tabular-nums;letter-spacing:-.5px;opacity:.75}
-.fun-trap{
-  height:46px;margin:0 auto;
-  display:flex;align-items:center;justify-content:center;
-  color:#fff;font-size:12.5px;font-weight:600;letter-spacing:.15px;white-space:nowrap;
+/* Neutral, uniform vertical badge (identity comes from the name) */
+.compare-source-badge{
+  font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;
+  letter-spacing:.4px;white-space:nowrap;flex-shrink:0;
+  background:var(--bg2);color:var(--txt2);border:1px solid var(--border);
 }
-.fun-tip{height:22px;margin:0 auto;clip-path:polygon(0 0,100% 0,50% 100%)}
-.fun-d-title{font-size:12.5px;font-weight:700;letter-spacing:.1px}
-.fun-d-sub{font-size:11px;color:var(--txt3);margin-top:1px;line-height:1.35}
+
+/* Hero: onboarded count + completion pill */
+.cc-hero{display:flex;align-items:baseline;gap:9px;margin-bottom:2px}
+.cc-hero-num{font-size:30px;font-weight:700;color:var(--txt);letter-spacing:-1px;line-height:1}
+.cc-hero-of{font-size:12.5px;color:var(--txt3);font-weight:500}
+.cc-pill{
+  margin-left:auto;font-size:11.5px;font-weight:650;
+  padding:2px 9px;border-radius:20px;font-variant-numeric:tabular-nums;
+  background:var(--st-onboarded-bg);color:var(--st-onboarded-tx);
+}
+.cc-hero-lbl{font-size:11px;color:var(--txt3);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px}
+
+/* Segmented distribution bar (2px surface gaps between stages) */
+.cc-bar{display:flex;gap:2px;height:8px;border-radius:5px;overflow:hidden;background:var(--bg2);margin-bottom:10px}
+.cc-seg{height:100%;border-radius:2px;min-width:2px}
+.cc-seg:first-child{border-radius:5px 2px 2px 5px}
+.cc-seg:last-child{border-radius:2px 5px 5px 2px}
+
+/* Legend under the bar */
+.cc-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:12px}
+.cc-leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt2);white-space:nowrap}
+.cc-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.cc-leg b{color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* Footer stats */
+.cc-foot{display:flex;align-items:center;gap:14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--txt3)}
+.cc-foot-item{display:flex;flex-direction:column;gap:1px}
+.cc-foot-item b{font-size:12.5px;color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.1px}
+.cc-foot-more{margin-left:auto;font-size:11px;color:var(--blue);font-weight:600;white-space:nowrap}
+
+/* ===== Detail Funnel — clean horizontal meter bars ===== */
+.fun{display:flex;flex-direction:column;gap:2px}
+.fun-row{
+  display:grid;grid-template-columns:112px minmax(0,1fr) 108px;
+  align-items:center;column-gap:16px;padding:5px 0;
+}
+.fun-lbl{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:550;color:var(--txt);white-space:nowrap}
+.fun-lbl .cc-dot{width:8px;height:8px}
+.fun-track{height:12px;border-radius:6px;background:var(--bg2);overflow:hidden}
+.fun-fill{height:100%;border-radius:6px;min-width:3px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.fun-val{text-align:right;font-size:12.5px;color:var(--txt2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.fun-val b{color:var(--txt);font-weight:650;margin-right:5px}
+.fun-row.is-total .fun-lbl{font-weight:650}
 .fun-rej{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-top:12px;padding:8px 14px;border-radius:8px;
-  background:#FEF2F2;border:1px solid rgba(220,38,38,.25);
-  color:#991B1B;font-size:12px;font-weight:600;
+  display:grid;grid-template-columns:112px minmax(0,1fr) 108px;
+  align-items:center;column-gap:16px;
+  margin-top:8px;padding-top:10px;border-top:1px solid var(--border);
 }
-@media (max-width:980px){
-  .fun-wrap{grid-template-columns:32px 1fr}
-  .fun-det{display:none}
-}
+.fun-rej .fun-lbl{color:var(--st-rejected-tx);font-weight:600}
 
 /* ===== Detail Table ===== */
 .table-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);background:var(--card);box-shadow:var(--shadow-sm)}
@@ -344,12 +302,12 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   white-space:nowrap;
   letter-spacing:.1px;
 }
-.chip-completed{background:#F0FDF4;color:#166534}
-.chip-draft{background:#EFF6FF;color:#1D4ED8}
-.chip-review{background:#FFFBEB;color:#92400E}
-.chip-rejected{background:#FEF2F2;color:#991B1B}
-.gst-ok{color:#166534;font-size:11px;font-weight:500}
-.gst-bad{color:#991B1B;font-size:11px;font-weight:500}
+.chip-completed{background:var(--st-onboarded-bg);color:var(--st-onboarded-tx)}
+.chip-draft{background:var(--st-draft-bg);color:var(--st-draft-tx)}
+.chip-review{background:var(--st-review-bg);color:var(--st-review-tx)}
+.chip-rejected{background:var(--st-rejected-bg);color:var(--st-rejected-tx)}
+.gst-ok{color:var(--st-onboarded-tx);font-size:11px;font-weight:500}
+.gst-bad{color:var(--st-rejected-tx);font-size:11px;font-weight:500}
 /* ===== Detail KPI Mini-Cards ===== */
 .vd-kpis{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
 .vd-kpi{
@@ -362,18 +320,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 }
 .vd-kpi-val{font-size:15.5px;font-weight:700;color:var(--txt);letter-spacing:-.3px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .vd-kpi-lbl{font-size:9.5px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.35px;margin-top:2px;white-space:nowrap}
-
-/* ===== Vertical Cards ===== */
-.vert-sub{font-size:11.5px;color:var(--txt3);font-weight:400;margin-top:2px;letter-spacing:0}
-.vert-stat-row{display:flex;justify-content:space-between;align-items:center;margin:5px 0 3px;font-size:11px;color:var(--txt3)}
-.vert-stat-item strong{color:var(--txt);font-weight:600}
-.vert-rej-footer{border-top:1px solid var(--border);padding-top:5px;font-size:11px;color:var(--txt3);display:flex;justify-content:space-between;align-items:center}
-.vert-rej-footer strong{color:var(--red);font-weight:600}
-.vert-more{font-size:11px;color:var(--blue);font-weight:500;white-space:nowrap}
-.badge-afr{background:rgba(234,88,12,.07);color:#B54708;border:1px solid rgba(234,88,12,.15)}
-.badge-drs{background:rgba(8,145,178,.07);color:#0C7C8E;border:1px solid rgba(8,145,178,.15)}
-.badge-rec{background:rgba(22,163,74,.08);color:#166534;border:1px solid rgba(22,163,74,.2)}
-.badge-inf{background:rgba(124,58,237,.08);color:#6D28D9;border:1px solid rgba(124,58,237,.16)}
 
 /* ===== Vertical Detail Panel (opens on card click) ===== */
 #vert-detail{
@@ -421,18 +367,18 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .kb-card-meta{font-size:10.5px;color:var(--txt3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kb-card-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px}
 .kb-gst{font-size:9.5px;font-weight:600;padding:1.5px 7px;border-radius:8px;white-space:nowrap}
-.kb-gst.ok{background:#F0FDF4;color:#166534}
-.kb-gst.bad{background:#FEF2F2;color:#991B1B}
+.kb-gst.ok{background:var(--st-onboarded-bg);color:var(--st-onboarded-tx)}
+.kb-gst.bad{background:var(--st-rejected-bg);color:var(--st-rejected-tx)}
 .kb-age{font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 .kb-empty{font-size:11px;color:var(--txt3);text-align:center;padding:20px 8px}
 .kb-more{font-size:10.5px;color:var(--txt3);text-align:center;padding:2px 0 6px}
-.kb-col.draft    { --kb:#3B82F6 } .kb-col.draft    .kb-col-head{background:#EFF6FF} .kb-col.draft    .kb-dot{background:#3B82F6}
-.kb-col.review   { --kb:#D97706 } .kb-col.review   .kb-col-head{background:#FFFBEB} .kb-col.review   .kb-dot{background:#D97706}
-.kb-col.done     { --kb:#16A34A } .kb-col.done     .kb-col-head{background:#F0FDF4} .kb-col.done     .kb-dot{background:#16A34A}
-.kb-col.rejected { --kb:#DC2626 } .kb-col.rejected .kb-col-head{background:#FEF2F2} .kb-col.rejected .kb-dot{background:#DC2626}
+.kb-col.draft    { --kb:var(--st-draft) }     .kb-col.draft    .kb-col-head{background:var(--st-draft-bg)}     .kb-col.draft    .kb-dot{background:var(--st-draft)}
+.kb-col.review   { --kb:var(--st-review) }    .kb-col.review   .kb-col-head{background:var(--st-review-bg)}    .kb-col.review   .kb-dot{background:var(--st-review)}
+.kb-col.done     { --kb:var(--st-onboarded) } .kb-col.done     .kb-col-head{background:var(--st-onboarded-bg)} .kb-col.done     .kb-dot{background:var(--st-onboarded)}
+.kb-col.rejected { --kb:var(--st-rejected) }  .kb-col.rejected .kb-col-head{background:var(--st-rejected-bg)}  .kb-col.rejected .kb-dot{background:var(--st-rejected)}
 
 /* ===== Utility ===== */
-.text-green{color:#166534} .text-red{color:#991B1B} .text-amber{color:#92400E}
+.text-green{color:var(--st-onboarded-tx)} .text-red{color:var(--st-rejected-tx)} .text-amber{color:var(--amber)}
 .text-blue{color:var(--blue)} .text-muted{color:var(--txt3)}
 .mt-16{margin-top:16px} .mb-16{margin-bottom:16px} .mb-24{margin-bottom:24px}
 .flex{display:flex} .flex-wrap{flex-wrap:wrap} .gap-16{gap:16px} .items-center{align-items:center}
@@ -446,8 +392,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   #header{padding:0 16px}
   #main{padding:18px 16px}
   .compare-grid{grid-template-columns:1fr}
-  .kpi-value{font-size:24px}
-  .chart-grid-2{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -504,40 +448,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <!-- Vertical Detail (rendered on card click) -->
     <div id="vert-detail" style="display:none"></div>
 
-    <!-- Overview Charts -->
-    <div class="section-title">Overview Analytics</div>
-    <div class="chart-grid chart-grid-2">
-      <div class="chart-card">
-        <div class="chart-card-title">Vertical Contribution</div>
-        <div class="chart-wrap short"><canvas id="ch-vertical-contrib"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Overall Status Distribution</div>
-        <div class="chart-wrap short"><canvas id="ch-overall-status"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Category Split (Combined)</div>
-        <div class="chart-wrap"><canvas id="ch-category-combined"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">TAT Distribution (Marketplace)</div>
-        <div class="chart-wrap"><canvas id="ch-tat-dist"></canvas></div>
-      </div>
-    </div>
-
-    <!-- Executive Summary -->
-    <div class="section-title" style="margin-top:4px">
-      Executive Summary <span class="badge" id="ov-total-badge">—</span>
-    </div>
-    <div class="kpi-grid kpi-grid-4" id="exec-kpis">
-      <div class="kpi-card">          <div class="kpi-icon">📦</div><div class="kpi-label">Total Cases</div><div class="kpi-value" id="e-total">—</div><div class="kpi-sub">All Verticals</div></div>
-      <div class="kpi-card green">    <div class="kpi-icon">✅</div><div class="kpi-label">Onboarded</div><div class="kpi-value" id="e-completed">—</div><div class="kpi-sub" id="e-completion-sub">—</div></div>
-      <div class="kpi-card amber">    <div class="kpi-icon">📝</div><div class="kpi-label">Draft</div><div class="kpi-value" id="e-draft">—</div><div class="kpi-sub">Not yet submitted</div></div>
-      <div class="kpi-card blue">     <div class="kpi-icon">🔍</div><div class="kpi-label">In Review</div><div class="kpi-value" id="e-in-review">—</div><div class="kpi-sub">Under evaluation</div></div>
-      <div class="kpi-card red">      <div class="kpi-icon">❌</div><div class="kpi-label">Rejected</div><div class="kpi-value" id="e-rejected">—</div><div class="kpi-sub">Across verticals</div></div>
-      <div class="kpi-card cyan">     <div class="kpi-icon">⏱</div><div class="kpi-label">Avg Onb. TAT</div><div class="kpi-value" id="e-avg-tat">—</div><div class="kpi-sub">Days (all sources)</div></div>
-      <div class="kpi-card purple">   <div class="kpi-icon">📊</div><div class="kpi-label">Completion Rate</div><div class="kpi-value" id="e-comp-rate">—</div><div class="kpi-sub">Overall</div></div>
-    </div>
   </div>
 
 </div><!-- /main -->
@@ -547,15 +457,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 // STATE
 // ═══════════════════════════════════════════════════════════════
 var D = null;          // full dashboard data
-var charts = {};       // Chart.js instances
-
-var COLORS = {
-  blue:   '#0071BC', green:  '#16A34A', amber:  '#D97706',
-  red:    '#DC2626', purple: '#7C3AED', cyan:   '#0891B2',
-  orange: '#EA580C', lime:   '#65A30D', teal:   '#0D9488',
-  indigo: '#2E3192',
-};
-var PALETTE = [COLORS.blue, COLORS.lime, COLORS.amber, COLORS.red, COLORS.purple, COLORS.cyan, COLORS.orange, COLORS.green, COLORS.teal, COLORS.indigo];
 
 // Display names for raw pipeline statuses (values stay raw for filtering)
 var STATUS_LABELS = { COMPLETED: 'Onboarded', DRAFT: 'Draft', IN_REVIEW: 'In Review', REJECTED: 'Rejected' };
@@ -695,42 +596,8 @@ function renderLastUpdated() {
 // OVERVIEW
 // ═══════════════════════════════════════════════════════════════
 function renderOverview() {
-  var e = D.enterprise;
-
-  document.getElementById('ov-total-badge').textContent = fmt(e.totalCases) + ' total';
-  set('e-total',     fmt(e.totalCases));
-  set('e-completed', fmt(e.totalCompleted));
-  set('e-completion-sub', (e.completionPct || 0) + '% completion rate');
-  set('e-draft',     fmt(e.totalDraft || 0));
-  set('e-in-review', fmt(e.totalInReview || 0));
-  set('e-rejected',  fmt(e.totalRejected || 0));
-  set('e-avg-tat',   dOr(e.avgTAT, 'd'));
-  set('e-comp-rate', (e.completionPct || 0) + '%');
-
   renderVerticals();
   renderVertDetail();   // refresh open detail panel (no-op when none selected)
-
-  // Overview Charts
-  mkDoughnut('ch-vertical-contrib',
-    ['COP Marketplace', 'Open Marketplace', 'EPR'],
-    [e.mpTotal || 0, e.ompTotal || 0, e.eprTotal || 0],
-    [COLORS.blue, COLORS.green, COLORS.red]);
-
-  mkDoughnut('ch-overall-status',
-    ['Onboarded', 'In Pipeline', 'Rejected'],
-    [e.totalCompleted || 0, e.totalPending || 0, e.totalRejected || 0],
-    [COLORS.green, COLORS.amber, COLORS.red]);
-
-  var cat = e.categorySplit || [];
-  mkBar('ch-category-combined', cat.map(l), cat.map(c), 'Cases', COLORS.blue);
-
-  var td = D.tat;
-  if (td && td.distribution) {
-    mkBar('ch-tat-dist',
-      td.distribution.map(function(b){return b.label;}),
-      td.distribution.map(function(b){return b.count;}),
-      'Cases', [COLORS.blue, COLORS.green, COLORS.amber, COLORS.amber, COLORS.red, COLORS.red]);
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -756,80 +623,75 @@ var KB_COLS = [            // workflow order, left to right
   { key: 'REJECTED',  cls: 'rejected' },
 ];
 
-// Card funnel: status-chip color pairs (light tint + dark ink)
-var FNL_STYLE = {
-  total:     { bg: 'rgba(46,49,146,.07)', bd: 'rgba(46,49,146,.22)', tx: '#2E3192' },
-  draft:     { bg: '#EFF6FF',             bd: 'rgba(29,78,216,.25)', tx: '#1D4ED8' },
-  review:    { bg: '#FFFBEB',             bd: 'rgba(217,119,6,.30)', tx: '#92400E' },
-  onboarded: { bg: '#F0FDF4',             bd: 'rgba(22,163,74,.30)', tx: '#166534' },
-};
-// Detail funnel: solid dashboard hues, dark enough for white labels
-var FUNNEL_SOLID = {
-  total:      '#2E3192',
-  draft:      '#0071BC',
-  review:     '#92400E',
-  onboarded:  '#166534',
-  transacted: '#155E75',
+// ── Pipeline stage palette — mirrors the CSS --st-* tokens, one set everywhere ──
+var STAGE = {
+  total:      { fill: 'var(--st-total)',      lbl: 'Total Cases' },
+  draft:      { fill: 'var(--st-draft)',      lbl: 'Draft' },
+  review:     { fill: 'var(--st-review)',     lbl: 'In Review' },
+  onboarded:  { fill: 'var(--st-onboarded)',  lbl: 'Onboarded' },
+  transacted: { fill: 'var(--st-transacted)', lbl: 'Transacted' },
+  rejected:   { fill: 'var(--st-rejected)',   lbl: 'Rejected' },
 };
 
-// Card mini-funnel — fixed symmetric steps so every card aligns identically
-var CARD_FUNNEL_W = [100, 85, 70, 55];
-
-function funnelHtml(v) {
-  var tot = v.total || 0;
-  if (!tot) return '';
-  var p = function(n) { return Math.round(((n || 0) / tot) * 100); };
-  var rows = [
-    ['total',     'Total Cases', tot,             null],
-    ['draft',     'Draft',       v.draft || 0,    p(v.draft)],
-    ['review',    'In Review',   v.inReview || 0, p(v.inReview)],
-    ['onboarded', 'Onboarded',   v.completed || 0, p(v.completed)],
+// The four current-status segments that partition Total.
+function stageSegs(v) {
+  return [
+    ['draft',     v.draft    || 0],
+    ['review',    v.inReview || 0],
+    ['onboarded', v.completed|| 0],
+    ['rejected',  v.rejected || 0],
   ];
-  return '<div class="fnl">' + rows.map(function(r, i) {
-    var st = FNL_STYLE[r[0]];
-    return '<div class="fnl-box" style="width:' + CARD_FUNNEL_W[i] + '%;background:' + st.bg + ';border:1px solid ' + st.bd + ';color:' + st.tx + '">'
-      + '<span class="fnl-lbl">' + r[1] + '</span>'
-      + '<span class="fnl-val">' + fmt(r[2]) + (r[3] === null ? '' : ' (' + r[3] + '%)') + '</span></div>';
+}
+
+// Card: single segmented distribution bar (2px surface gaps between stages).
+function cardBar(v) {
+  var segs = stageSegs(v);
+  var tot  = segs.reduce(function(s, x) { return s + x[1]; }, 0) || 1;
+  return '<div class="cc-bar">' + segs.map(function(s) {
+    var w = (s[1] / tot) * 100;
+    if (w <= 0) return '';
+    return '<div class="cc-seg" style="width:' + w.toFixed(2) + '%;background:' + STAGE[s[0]].fill + '"'
+      + ' title="' + STAGE[s[0]].lbl + ': ' + fmt(s[1]) + '"></div>';
   }).join('') + '</div>';
 }
 
-// Detail funnel — numbered trapezoid stages narrowing to a tip, with a
-// per-stage explainer column; Rejected shown as a drop-out strip below.
+// Card: compact legend with counts (dot + label + value).
+function cardLegend(v) {
+  return '<div class="cc-legend">' + stageSegs(v).map(function(s) {
+    return '<span class="cc-leg"><span class="cc-dot" style="background:' + STAGE[s[0]].fill + '"></span>'
+      + STAGE[s[0]].lbl + ' <b>' + fmt(s[1]) + '</b></span>';
+  }).join('') + '</div>';
+}
+
+// Detail funnel — clean horizontal meter bars, each stage as a share of Total.
+// Rejected is shown as a drop-out row below a divider.
 function funnelBig(v, cfg) {
   var tot = v.total || 0;
   if (!tot) return '';
-  var p = function(n) { return Math.round(((n || 0) / tot) * 100); };
-  var txnDesc = cfg.key === 'OMP' ? 'Completed at least one transaction' : 'First shipment recorded';
+  var pc  = function(n) { return Math.round(((n || 0) / tot) * 100); };
+  var wid = function(n) { return ((n || 0) / tot) * 100; };
 
-  var stages = [
-    { k: 'total',     label: 'Total Cases', n: tot,              pc: null,           d: 'All cases in the selected period' },
-    { k: 'draft',     label: 'Draft',       n: v.draft || 0,     pc: p(v.draft),     d: 'Not yet submitted for review' },
-    { k: 'review',    label: 'In Review',   n: v.inReview || 0,  pc: p(v.inReview),  d: 'Under verification' },
-    { k: 'onboarded', label: 'Onboarded',   n: v.completed || 0, pc: p(v.completed), d: 'Approved & fully onboarded' },
+  var rows = [
+    { k: 'total',     n: tot,             isTotal: true },
+    { k: 'draft',     n: v.draft    || 0 },
+    { k: 'review',    n: v.inReview || 0 },
+    { k: 'onboarded', n: v.completed|| 0 },
   ];
   if (v.transacted !== null && v.transacted !== undefined) {
-    stages.push({ k: 'transacted', label: 'Transacted', n: v.transacted, pc: p(v.transacted), d: txnDesc });
+    rows.push({ k: 'transacted', n: v.transacted });
   }
 
-  var wTop = 100, wEnd = 38;
-  var step = (wTop - wEnd) / (stages.length - 1);
-  var html = '<div class="fun-wrap">';
-  stages.forEach(function(st, i) {
-    var w0    = wTop - step * i;
-    var inset = ((1 - (w0 - step) / w0) / 2) * 100;
-    var num   = '0' + (i + 1);
-    html += '<div class="fun-num">' + num + '</div>'
-      + '<div><div class="fun-trap" style="width:' + w0.toFixed(1) + '%;background:' + FUNNEL_SOLID[st.k]
-      +   ';clip-path:polygon(0 0,100% 0,' + (100 - inset).toFixed(1) + '% 100%,' + inset.toFixed(1) + '% 100%)">'
-      +   st.label + ' · ' + fmt(st.n) + (st.pc === null ? '' : ' (' + st.pc + '%)') + '</div></div>'
-      + '<div class="fun-det"><div class="fun-d-title" style="color:' + FUNNEL_SOLID[st.k] + '">' + st.label + '</div>'
-      +   '<div class="fun-d-sub">' + fmt(st.n) + (st.pc === null ? ' cases' : ' · ' + st.pc + '% of total') + ' — ' + st.d + '</div></div>';
-  });
-  var tipW = wTop - step * stages.length;
-  html += '<div></div><div><div class="fun-tip" style="width:' + Math.max(tipW, 10).toFixed(1) + '%;background:rgba(46,49,146,.18)"></div></div><div class="fun-det"></div>';
-  html += '</div>';
-  html += '<div class="fun-rej"><span>Rejected — not approved</span><span>' + fmt(v.rejected || 0) + ' (' + p(v.rejected) + '%)</span></div>';
-  return html;
+  function bar(k, n, isTotal, isRej) {
+    var st = STAGE[k];
+    return '<div class="' + (isRej ? 'fun-rej' : 'fun-row' + (isTotal ? ' is-total' : '')) + '">'
+      + '<div class="fun-lbl"><span class="cc-dot" style="background:' + st.fill + '"></span>' + st.lbl + '</div>'
+      + '<div class="fun-track"><div class="fun-fill" style="width:' + wid(n).toFixed(1) + '%;background:' + st.fill + '"></div></div>'
+      + '<div class="fun-val"><b>' + fmt(n) + '</b>' + (isTotal ? '100%' : pc(n) + '%') + '</div>'
+      + '</div>';
+  }
+
+  return '<div class="fun">' + rows.map(function(r) { return bar(r.k, r.n, r.isTotal, false); }).join('') + '</div>'
+    + bar('rejected', v.rejected || 0, false, true);
 }
 
 function renderVerticals() {
@@ -839,30 +701,40 @@ function renderVerticals() {
   if (!verts) { grid.innerHTML = ''; return; }
 
   grid.innerHTML = VERT_CFG.map(function(cfg) {
-    var v    = verts[cfg.key] || {};
-    var tot  = v.total || 0;
-    var has  = tot > 0;
-    var n    = function(x) { return has ? fmt(x || 0) : '—'; };
-    var txn  = (!has || v.transacted === null || v.transacted === undefined) ? '—' : fmt(v.transacted);
+    var v   = verts[cfg.key] || {};
+    var tot = v.total || 0;
+    var sel = selectedVert === cfg.key;
 
-    return '<div class="compare-card' + (selectedVert === cfg.key ? ' selected' : '') + '" onclick="openVertDetail(\'' + cfg.key + '\')">'
-      + '<div class="compare-header">'
-      +   '<div><div class="compare-label">' + esc(cfg.name) + '</div>'
-      +   '<div class="compare-count"><span class="compare-count-box">' + (has ? fmt(v.completed || 0) : '—') + '</span>'
-      +   '<span class="compare-count-sub">Onboarded · of ' + fmt(tot) + ' total</span></div></div>'
-      +   '<span class="compare-source-badge ' + cfg.cls + '">' + cfg.code + '</span>'
+    var head = '<div class="compare-header">'
+      + '<div><div class="compare-label">' + esc(cfg.name) + '</div>'
+      + '<div class="compare-sub">' + esc(cfg.sub) + '</div></div>'
+      + '<span class="compare-source-badge">' + cfg.code + '</span></div>';
+
+    if (tot <= 0) {
+      return '<div class="compare-card' + (sel ? ' selected' : '') + '" onclick="openVertDetail(\'' + cfg.key + '\')">'
+        + head + '<div class="no-data" style="padding:26px 0">No records in selected period</div></div>';
+    }
+
+    var gstTot = (v.withGST || 0) + (v.missingGST || 0);
+    var gstPct = gstTot ? Math.round((v.withGST || 0) / gstTot * 100) : 0;
+    var txn    = (v.transacted === null || v.transacted === undefined) ? '—' : fmt(v.transacted);
+
+    return '<div class="compare-card' + (sel ? ' selected' : '') + '" onclick="openVertDetail(\'' + cfg.key + '\')">'
+      + head
+      + '<div class="cc-hero">'
+      +   '<span class="cc-hero-num">' + fmt(v.completed || 0) + '</span>'
+      +   '<span class="cc-hero-of">of ' + fmt(tot) + '</span>'
+      +   '<span class="cc-pill">' + (v.completionPct || 0) + '%</span>'
       + '</div>'
-      + (has ? funnelHtml(v) : '<div class="no-data" style="padding:20px 0">No records in selected period</div>')
-      + '<div class="vert-stat-row">'
-      +   '<span class="vert-stat-item">Avg TAT <strong>' + (has ? dOr(v.avgTAT, 'd') : '—') + '</strong></span>'
-      +   '<span class="vert-stat-item">Transacted <strong>' + txn + '</strong></span>'
+      + '<div class="cc-hero-lbl">Onboarded</div>'
+      + cardBar(v)
+      + cardLegend(v)
+      + '<div class="cc-foot">'
+      +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
+      +   '<div class="cc-foot-item"><b>' + gstPct + '%</b>GST Active</div>'
+      +   '<div class="cc-foot-item"><b>' + txn + '</b>Transacted</div>'
+      +   '<span class="cc-foot-more">' + (sel ? 'Viewing ▾' : 'Details →') + '</span>'
       + '</div>'
-      + '<div class="vert-stat-row">'
-      +   '<span class="vert-stat-item">GST Active <strong class="text-green">' + n(v.withGST) + '</strong></span>'
-      +   '<span class="vert-stat-item">GST Inactive <strong class="text-red">' + n(v.missingGST) + '</strong></span>'
-      + '</div>'
-      + '<div class="vert-rej-footer"><span>Rejected: <strong>' + n(v.rejected) + '</strong></span>'
-      + '<span class="vert-more">' + (selectedVert === cfg.key ? 'Viewing ▾' : 'Click for Details →') + '</span></div>'
       + '</div>';
   }).join('');
 }
@@ -932,7 +804,9 @@ function renderVertDetail() {
   ];
 
   var funnelSection = has
-    ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel</div>' + funnelBig(v, cfg) + '</div>'
+    ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel'
+      + '<span class="muted-total">' + fmt(v.total || 0) + ' total · share of all cases</span></div>'
+      + funnelBig(v, cfg) + '</div>'
     : '';
 
   // Detail filters — local to this vertical's records (Period lives above the cards)
@@ -961,8 +835,8 @@ function renderVertDetail() {
 
   panel.innerHTML =
     '<div class="vd-head">'
-    + '<span class="compare-source-badge ' + cfg.cls + '">' + cfg.code + '</span>'
-    + '<div><div class="vd-title">' + esc(cfg.name) + '</div><div class="vert-sub">' + esc(cfg.sub) + '</div></div>'
+    + '<span class="compare-source-badge">' + cfg.code + '</span>'
+    + '<div><div class="vd-title">' + esc(cfg.name) + '</div><div class="compare-sub">' + esc(cfg.sub) + '</div></div>'
     + '<button class="vd-close" onclick="closeVertDetail()">✕ Close</button>'
     + '</div>'
     + '<div class="vd-kpis">'
@@ -1130,76 +1004,12 @@ function vdfClear() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CHART HELPERS
-// ═══════════════════════════════════════════════════════════════
-// Chart.js mutates the options object it is given (it writes resolved scale
-// types back into it), so every chart must get its OWN copy of the defaults —
-// a shared object breaks any chart whose axis layout differs from the first one.
-function mkDefaults() {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { labels: { color: '#5C6370', font: { size: 11, family: 'Inter' }, boxWidth: 12 } },
-      tooltip: { backgroundColor: '#FFFFFF', titleColor: '#0F1117', bodyColor: '#5C6370', borderColor: '#E8EAED', borderWidth: 1, padding: 10, cornerRadius: 8 },
-    },
-    scales: {
-      x: { ticks: { color: '#9BA3AF', font: { size: 11, family: 'Inter' } }, grid: { color: 'rgba(0,0,0,.04)' } },
-      y: { ticks: { color: '#9BA3AF', font: { size: 11, family: 'Inter' } }, grid: { color: 'rgba(0,0,0,.04)' } },
-    },
-  };
-}
-
-function destroyChart(id) {
-  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
-}
-
-function mkDoughnut(id, labels, data, colors) {
-  destroyChart(id);
-  var ctx = document.getElementById(id);
-  if (!ctx) return;
-  charts[id] = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: labels,
-      datasets: [{ data: data, backgroundColor: colors, borderColor: '#FFFFFF', borderWidth: 2, hoverOffset: 6 }],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: '62%',
-      plugins: {
-        legend: { position: 'right', labels: { color: '#5C6370', font: { size: 11, family: 'Inter' }, padding: 12, boxWidth: 10 } },
-        tooltip: { backgroundColor: '#FFFFFF', titleColor: '#0F1117', bodyColor: '#5C6370', borderColor: '#E8EAED', borderWidth: 1, padding: 10, cornerRadius: 8 },
-      },
-    },
-  });
-}
-
-function mkBar(id, labels, data, dsLabel, colors) {
-  destroyChart(id);
-  var ctx = document.getElementById(id);
-  if (!ctx) return;
-  var bgColors = Array.isArray(colors) && colors.length === data.length ? colors
-    : typeof colors === 'string' ? data.map(function() { return colors; })
-    : PALETTE.slice(0, data.length);
-  var opts = mkDefaults();
-  opts.plugins.legend = { display: false };
-  charts[id] = new Chart(ctx, {
-    type: 'bar',
-    data: { labels: labels, datasets: [{ label: dsLabel, data: data, backgroundColor: bgColors, borderRadius: 4 }] },
-    options: opts,
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════
 // UTILITY
 // ═══════════════════════════════════════════════════════════════
 function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
 function dOr(v, suffix) { return (v === null || v === undefined) ? '—' : v + (suffix || ''); }
 function fmt(n) { return Number(n || 0).toLocaleString('en-IN'); }
 function pct(a, b) { return b ? Math.round((a / b) * 100) : 0; }
-function l(x) { return x.label; }
-function c(x) { return x.count; }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function statusChip(s) {
