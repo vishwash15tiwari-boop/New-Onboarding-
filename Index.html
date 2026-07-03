@@ -850,8 +850,6 @@ function renderVerticals() {
         + head + '<div class="no-data" style="padding:26px 0">No records in selected period</div></div>';
     }
 
-    var gstTot = (v.withGST || 0) + (v.missingGST || 0);
-    var gstPct = gstTot ? Math.round((v.withGST || 0) / gstTot * 100) : 0;
     // Transacted only shown where the backend provides it (Open Marketplace).
     var txnItem = (v.transacted === null || v.transacted === undefined) ? ''
       : '<div class="cc-foot-item"><b>' + fmt(v.transacted) + '</b>Transacted</div>';
@@ -867,7 +865,6 @@ function renderVerticals() {
       + cardStats(v)
       + '<div class="cc-foot">'
       +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
-      +   '<div class="cc-foot-item"><b>' + gstPct + '%</b>GST Active</div>'
       +   txnItem
       +   '<span class="cc-foot-more">' + (sel ? 'Viewing ▾' : 'Click for Details →') + '</span>'
       + '</div>'
