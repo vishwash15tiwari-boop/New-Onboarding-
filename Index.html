@@ -547,9 +547,10 @@ function loadData(silent, force) {
       scheduleNextRefresh();
     })
     .catch(function(err) {
-      if (!silent) showError(sheetErr(reqAudience, err));
+      var msg = sheetErr(reqAudience, err);
+      if (_isFirstLoad) { _isFirstLoad = false; showError(msg, true); }  // keep visible until fixed
+      else if (!silent) showError(msg, false);
       if (btn) btn.classList.remove('spinning');
-      if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
       scheduleNextRefresh();
     });
 }
@@ -596,12 +597,12 @@ function switchAudience(a) {
 function hideLoading() {
   document.getElementById('loading-overlay').classList.add('hidden');
 }
-function showError(msg) {
+function showError(msg, persistent) {
   console.error(msg);
   var ov = document.getElementById('loading-overlay');
-  ov.querySelector('.loading-txt').textContent = '⚠ Error: ' + msg;
+  ov.querySelector('.loading-txt').textContent = '⚠ ' + msg;
   ov.classList.remove('hidden');
-  setTimeout(function() { ov.classList.add('hidden'); }, 5000);
+  if (!persistent) setTimeout(function() { ov.classList.add('hidden'); }, 6000);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -676,8 +677,10 @@ function renderLastUpdated() {
 // it to { headers, rows }. A test hook (window.__mockSheet) short-circuits it.
 function fetchSheetRows(sheetId) {
   if (window.__mockSheet) return Promise.resolve(window.__mockSheet(sheetId));
-  var url = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&headers=1';
-  return fetch(url, { credentials: 'omit' }).then(function(r) {
+  // Cache-buster + no-store so every poll pulls the sheet's current contents.
+  var url = 'https://docs.google.com/spreadsheets/d/' + sheetId
+          + '/gviz/tq?tqx=out:json&headers=1&_=' + Date.now();
+  return fetch(url, { credentials: 'omit', cache: 'no-store' }).then(function(r) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return r.text();
   }).then(parseGviz);
@@ -740,7 +743,10 @@ function normalizeRows(parsed, audience) {
       status:        normStatus(gv(row, idx, 'onboarding_status')),
       createdDate:   created,
       onboardedDate: onboarded,
-      hasGST:        gstStatus.indexOf('AVAILABLE') !== -1 || isValidGSTIN(gstin),
+      // gstin_status is authoritative ("GSTIN AVAILABLE" vs "GSTIN NOT AVAILABLE");
+      // NB: guard against "NOT AVAILABLE" containing the substring "AVAILABLE".
+      hasGST:        gstStatus ? (gstStatus.indexOf('NOT') === -1 && gstStatus.indexOf('AVAILABLE') !== -1)
+                               : isValidGSTIN(gstin),
       hasTransacted: txn === 'TRANSACTED',
       onbTAT:        dateDiffDays(created, onboarded),
     };
