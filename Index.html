@@ -269,17 +269,17 @@ select,input{font-family:inherit}
 }
 .fun-rej .fun-lbl{color:var(--st-rejected-tx);font-weight:600}
 
-/* Split: meter bars (left) + 3D conversion funnel (right) */
-.fun-split{display:flex;gap:28px;align-items:center}
+/* Split: meter bars (left 50%) + 3D funnel (right 50%) */
+.fun-split{display:flex;gap:24px;align-items:center}
 .fun-bars{flex:1;min-width:0}
-.fun-3d{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding-left:8px;border-left:1px solid var(--border)}
-.fun-3d-svg{display:block;overflow:visible}
-.fun-3d-cap{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
-.f3d-val{fill:#fff;font-size:13px;font-weight:700;paint-order:stroke;stroke:rgba(17,17,26,.34);stroke-width:2.6px;stroke-linejoin:round}
-.f3d-sub{fill:#fff;font-size:8.5px;font-weight:600;letter-spacing:.2px;paint-order:stroke;stroke:rgba(17,17,26,.30);stroke-width:2px;stroke-linejoin:round}
+.fun-3d{flex:1;min-width:0;display:flex;justify-content:center;align-items:center;padding-left:16px;border-left:1px solid var(--border)}
+.fun-3d-svg{display:block;overflow:visible;width:100%;max-width:340px}
+.f3d-val{fill:#fff;font-size:12.5px;font-weight:700;paint-order:stroke;stroke:rgba(17,17,26,.36);stroke-width:2.6px;stroke-linejoin:round}
+.f3d-lbl{fill:var(--txt);font-size:11px;font-weight:600}
+.f3d-lead{stroke:var(--border2);stroke-width:1}
 @media (max-width:900px){
   .fun-split{flex-direction:column;align-items:stretch;gap:18px}
-  .fun-3d{border-left:none;padding-left:0;border-top:1px solid var(--border);padding-top:16px}
+  .fun-3d{flex:none;border-left:none;padding-left:0;border-top:1px solid var(--border);padding-top:16px}
 }
 
 /* ===== Detail Table ===== */
@@ -699,7 +699,7 @@ function funnelBig(v, cfg) {
     return '<div class="' + (isRej ? 'fun-rej' : 'fun-row' + (isTotal ? ' is-total' : '')) + '">'
       + '<div class="fun-lbl"><span class="cc-dot" style="background:' + st.fill + '"></span>' + st.lbl + '</div>'
       + '<div class="fun-track"><div class="fun-fill" style="width:' + wid(n).toFixed(1) + '%;background:' + st.fill + '"></div></div>'
-      + '<div class="fun-val"><b>' + fmt(n) + '</b>' + (isTotal ? '100%' : pc(n) + '%') + '</div>'
+      + '<div class="fun-val"><b>' + fmt(n) + '</b>(' + (isTotal ? 100 : pc(n)) + '%)</div>'
       + '</div>';
   }
 
@@ -708,31 +708,37 @@ function funnelBig(v, cfg) {
 
   return '<div class="fun-split">'
     + '<div class="fun-bars">' + barsHtml + '</div>'
-    + '<div class="fun-3d">' + funnel3D(v) + '<div class="fun-3d-cap">Conversion</div></div>'
+    + '<div class="fun-3d">' + funnel3D(v) + '</div>'
     + '</div>';
 }
 
-// Small 3D conversion funnel — the honest monotonically-narrowing path
-// (Total → Onboarded → Transacted). Stacked trapezoid bands with elliptical
-// rims and a cylindrical sheen; value + share labelled inside each band.
+// Small 3D funnel mirroring all pipeline stages (Total · Draft · In Review ·
+// Onboarded · Transacted). Each stage is a stacked 3D band, width proportional
+// to its share of Total, with elliptical rims and a cylindrical sheen. The
+// count sits inside each band; the stage it represents is labelled beside it.
 function funnel3D(v) {
   var tot = v.total || 0;
   if (!tot) return '';
   var tiers = [
     { k: 'total',     n: tot },
-    { k: 'onboarded', n: v.completed || 0 },
+    { k: 'draft',     n: v.draft    || 0 },
+    { k: 'review',    n: v.inReview || 0 },
+    { k: 'onboarded', n: v.completed|| 0 },
   ];
   if (v.transacted !== null && v.transacted !== undefined) {
     tiers.push({ k: 'transacted', n: v.transacted });
   }
 
-  var W = 250, cx = 125, topW = 206, minW = 74, tierH = 46, gap = 6, ry = 8;
-  var scale = function(n) { return Math.min(topW, Math.max(minW, topW * ((n || 0) / tot))); };
+  var W = 300, FW = 168, leftPad = 8;
+  var cx    = leftPad + FW / 2;      // funnel centre (left-shifted; labels on right)
+  var xLbl  = leftPad + FW + 22;     // aligned label column
+  var bandH = 32, gap = 8, ry = 6;
   var yTop  = ry + 5;
-  var H = yTop + tiers.length * tierH + (tiers.length - 1) * gap + ry + 10;
+  var H = yTop + tiers.length * bandH + (tiers.length - 1) * gap + ry + 8;
+  var scale = function(n) { return Math.min(FW, Math.max(30, FW * ((n || 0) / tot))); };
 
-  var svg = '<svg class="fun-3d-svg" viewBox="0 0 ' + W + ' ' + H.toFixed(0) + '" width="' + W + '" height="' + H.toFixed(0)
-    + '" role="img" aria-label="3D conversion funnel: Total to Onboarded to Transacted">'
+  var svg = '<svg class="fun-3d-svg" viewBox="0 0 ' + W + ' ' + H.toFixed(0) + '"'
+    + ' role="img" aria-label="3D onboarding funnel by stage">'
     + '<defs><linearGradient id="f3d-cyl" x1="0" y1="0" x2="1" y2="0">'
     +   '<stop offset="0" stop-color="#fff" stop-opacity=".32"/>'
     +   '<stop offset=".40" stop-color="#fff" stop-opacity="0"/>'
@@ -742,26 +748,23 @@ function funnel3D(v) {
 
   var labels = '';
   tiers.forEach(function(t, i) {
-    var next = tiers[i + 1];
-    var wT = scale(t.n);
-    var wB = next ? scale(next.n) : wT * 0.74;
-    var y0 = yTop + i * (tierH + gap);
-    var y1 = y0 + tierH;
+    var w  = scale(t.n);
+    var wB = w * 0.88;                // gentle self-taper for the 3D funnel look
+    var y0 = yTop + i * (bandH + gap);
+    var y1 = y0 + bandH;
+    var midY = (y0 + y1) / 2;
     var col = STAGE[t.k].fill;
-    var trap = 'M' + (cx - wT / 2) + ' ' + y0 + ' L' + (cx + wT / 2) + ' ' + y0
+    var trap = 'M' + (cx - w / 2) + ' ' + y0 + ' L' + (cx + w / 2) + ' ' + y0
              + ' L' + (cx + wB / 2) + ' ' + y1 + ' L' + (cx - wB / 2) + ' ' + y1 + ' Z';
     svg += '<path d="' + trap + '" fill="' + col + '"/>'
-         + '<ellipse cx="' + cx + '" cy="' + y0 + '" rx="' + (wT / 2).toFixed(1) + '" ry="' + ry + '" fill="' + col + '"/>'
-         + '<ellipse cx="' + cx + '" cy="' + y0 + '" rx="' + (wT / 2).toFixed(1) + '" ry="' + ry + '" fill="#fff" opacity=".26"/>'
-         + '<path d="' + trap + '" fill="url(#f3d-cyl)"/>';
-    if (!next) {
-      svg += '<ellipse cx="' + cx + '" cy="' + y1 + '" rx="' + (wB / 2).toFixed(1) + '" ry="' + (ry * 0.78).toFixed(1) + '" fill="' + col + '"/>'
-           + '<ellipse cx="' + cx + '" cy="' + y1 + '" rx="' + (wB / 2).toFixed(1) + '" ry="' + (ry * 0.78).toFixed(1) + '" fill="#000" opacity=".14"/>';
-    }
-    var midY = (y0 + y1) / 2;
-    labels += '<text x="' + cx + '" y="' + (midY - 2).toFixed(0) + '" text-anchor="middle" class="f3d-val">' + fmt(t.n) + '</text>'
-            + '<text x="' + cx + '" y="' + (midY + 11).toFixed(0) + '" text-anchor="middle" class="f3d-sub">'
-            + Math.round((t.n / tot) * 100) + '%</text>';
+         + '<ellipse cx="' + cx + '" cy="' + y0 + '" rx="' + (w / 2).toFixed(1) + '" ry="' + ry + '" fill="' + col + '"/>'
+         + '<ellipse cx="' + cx + '" cy="' + y0 + '" rx="' + (w / 2).toFixed(1) + '" ry="' + ry + '" fill="#fff" opacity=".26"/>'
+         + '<path d="' + trap + '" fill="url(#f3d-cyl)"/>'
+         + '<ellipse cx="' + cx + '" cy="' + y1 + '" rx="' + (wB / 2).toFixed(1) + '" ry="' + (ry * 0.8).toFixed(1) + '" fill="' + col + '"/>'
+         + '<ellipse cx="' + cx + '" cy="' + y1 + '" rx="' + (wB / 2).toFixed(1) + '" ry="' + (ry * 0.8).toFixed(1) + '" fill="#000" opacity=".12"/>';
+    labels += '<line class="f3d-lead" x1="' + (cx + w / 2 + 3).toFixed(1) + '" y1="' + midY + '" x2="' + (xLbl - 6) + '" y2="' + midY + '"/>'
+            + '<text x="' + cx + '" y="' + (midY + 4).toFixed(0) + '" text-anchor="middle" class="f3d-val">' + fmt(t.n) + '</text>'
+            + '<text x="' + xLbl + '" y="' + (midY + 4).toFixed(0) + '" class="f3d-lbl">' + STAGE[t.k].lbl + '</text>';
   });
 
   return svg + labels + '</svg>';
