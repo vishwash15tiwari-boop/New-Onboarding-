@@ -231,12 +231,6 @@ select,input{font-family:inherit}
 }
 .cc-hero-lbl{font-size:11px;color:var(--txt3);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px}
 
-/* Segmented distribution bar (2px surface gaps between stages) */
-.cc-bar{display:flex;gap:2px;height:8px;border-radius:5px;overflow:hidden;background:var(--bg2);margin-bottom:10px}
-.cc-seg{height:100%;border-radius:2px;min-width:2px}
-.cc-seg:first-child{border-radius:5px 2px 2px 5px}
-.cc-seg:last-child{border-radius:2px 5px 5px 2px}
-
 .cc-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
 
 /* Stage detail cards under the bar (one per stage) */
@@ -661,18 +655,6 @@ function stageSegs(v) {
   ];
 }
 
-// Card: single segmented distribution bar (2px surface gaps between stages).
-function cardBar(v) {
-  var segs = stageSegs(v);
-  var tot  = segs.reduce(function(s, x) { return s + x[1]; }, 0) || 1;
-  return '<div class="cc-bar">' + segs.map(function(s) {
-    var w = (s[1] / tot) * 100;
-    if (w <= 0) return '';
-    return '<div class="cc-seg" style="width:' + w.toFixed(2) + '%;background:' + STAGE[s[0]].fill + '"'
-      + ' title="' + STAGE[s[0]].lbl + ': ' + fmt(s[1]) + '"></div>';
-  }).join('') + '</div>';
-}
-
 // Card: one small detail card per stage (count + label, stage-colour accent).
 function cardStats(v) {
   return '<div class="cc-stats">' + stageSegs(v).map(function(s) {
@@ -801,7 +783,6 @@ function renderVerticals() {
       +   '<span class="cc-pill">' + (v.completionPct || 0) + '%</span>'
       + '</div>'
       + '<div class="cc-hero-lbl">Onboarded</div>'
-      + cardBar(v)
       + cardStats(v)
       + '<div class="cc-foot">'
       +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
