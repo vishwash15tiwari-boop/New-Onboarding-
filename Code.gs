@@ -19,9 +19,15 @@ var CONFIG = {
 var AUDIENCE_CFG = {
   seller: { sheetId: CONFIG.SELLER_SHEET_ID, label: 'Sellers',
             idCol: 'seller_id', nameCol: 'seller_name', vendorCol: 'vendor_type', onbCol: 'onboarded_date' },
+  // Buyers sheet has no onboarded_date, so TAT uses onboarding_updated_date
+  // (the last status change) as the onboarding-complete proxy.
   buyer:  { sheetId: CONFIG.BUYER_SHEET_ID,  label: 'Buyers',
-            idCol: 'buyer_id',  nameCol: 'buyer_name',  vendorCol: 'customer_type', onbCol: '' },
+            idCol: 'buyer_id',  nameCol: 'buyer_name',  vendorCol: 'customer_type', onbCol: 'onboarding_updated_date' },
 };
+
+// TAT beyond this many days is treated as data noise (bulk re-import timestamps)
+// and excluded from the Avg TAT so a few outliers don't skew it.
+var TAT_MAX_DAYS = 365;
 
 // The seven business verticals, in display order. Rows are mapped into these by
 // mapToVertical(); every audience always shows all seven.
@@ -187,7 +193,7 @@ function vStats(data) {
   var total     = data.length;
   var completed = count(data, 'status', 'COMPLETED');
   var withGST   = countFn(data, function(r) { return r.hasGST; });
-  var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
+  var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS; }).map(function(r) { return r.onbTAT; });
   // Transacted is null (shown as "—") for a vertical whose rows carry no
   // transaction signal at all (e.g. EPR); otherwise it's the TRANSACTED count.
   var transacted = countFn(data, function(r) { return r.hasTxn; }) ? countFn(data, function(r) { return r.hasTransacted; }) : null;
