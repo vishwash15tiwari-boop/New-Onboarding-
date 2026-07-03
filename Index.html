@@ -267,7 +267,13 @@ select,input{font-family:inherit}
 .compare-card.selected{border-color:var(--blue);box-shadow:var(--ring),var(--shadow)}
 .compare-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
 .compare-label{font-size:14px;font-weight:700;color:var(--txt);letter-spacing:-.25px}
-.compare-count{font-size:21px;font-weight:700;color:var(--txt);letter-spacing:-.5px;margin-top:1px;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:6px}
+.compare-count{margin-top:3px;display:flex;align-items:center;gap:7px}
+.compare-count-box{
+  display:inline-flex;align-items:center;
+  background:#F0FDF4;border:1px solid rgba(22,163,74,.32);
+  color:#166534;border-radius:7px;padding:1px 10px;
+  font-size:19px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums;
+}
 .compare-count-sub{font-size:10.5px;color:var(--txt3);font-weight:500;letter-spacing:0}
 .compare-source-badge{font-size:10.5px;padding:4px 10px;border-radius:20px;font-weight:600;letter-spacing:.1px}
 .badge-mp{background:rgba(0,113,188,.08);color:var(--blue);border:1px solid rgba(0,113,188,.16)}
@@ -344,11 +350,18 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .chip-rejected{background:#FEF2F2;color:#991B1B}
 .gst-ok{color:#166534;font-size:11px;font-weight:500}
 .gst-bad{color:#991B1B;font-size:11px;font-weight:500}
-/* ===== Metric Row ===== */
-.metric-row{display:flex;flex-wrap:wrap;gap:22px;margin-bottom:14px}
-.metric-item{display:flex;flex-direction:column;gap:3px}
-.metric-val{font-size:22px;font-weight:700;color:var(--txt);letter-spacing:-.5px;font-variant-numeric:tabular-nums}
-.metric-lbl{font-size:10.5px;color:var(--txt3);font-weight:500;text-transform:uppercase;letter-spacing:.45px}
+/* ===== Detail KPI Mini-Cards ===== */
+.vd-kpis{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+.vd-kpi{
+  flex:1;min-width:88px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:8px 10px 7px;
+  box-shadow:var(--shadow-sm);
+}
+.vd-kpi-val{font-size:15.5px;font-weight:700;color:var(--txt);letter-spacing:-.3px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.vd-kpi-lbl{font-size:9.5px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.35px;margin-top:2px;white-space:nowrap}
 
 /* ===== Vertical Cards ===== */
 .vert-sub{font-size:11.5px;color:var(--txt3);font-weight:400;margin-top:2px;letter-spacing:0}
@@ -796,7 +809,7 @@ function renderVerticals() {
     return '<div class="compare-card' + (selectedVert === cfg.key ? ' selected' : '') + '" onclick="openVertDetail(\'' + cfg.key + '\')">'
       + '<div class="compare-header">'
       +   '<div><div class="compare-label">' + esc(cfg.name) + '</div>'
-      +   '<div class="compare-count">' + (has ? fmt(v.completed || 0) : '—')
+      +   '<div class="compare-count"><span class="compare-count-box">' + (has ? fmt(v.completed || 0) : '—') + '</span>'
       +   '<span class="compare-count-sub">Onboarded · of ' + fmt(tot) + ' total</span></div></div>'
       +   '<span class="compare-source-badge ' + cfg.cls + '">' + cfg.code + '</span>'
       + '</div>'
@@ -908,9 +921,9 @@ function renderVertDetail() {
     + '<div><div class="vd-title">' + esc(cfg.name) + '</div><div class="vert-sub">' + esc(cfg.sub) + '</div></div>'
     + '<button class="vd-close" onclick="closeVertDetail()">✕ Close</button>'
     + '</div>'
-    + '<div class="metric-row">'
+    + '<div class="vd-kpis">'
     + metrics.map(function(m) {
-        return '<div class="metric-item"><span class="metric-val">' + m[1] + '</span><span class="metric-lbl">' + m[0] + '</span></div>';
+        return '<div class="vd-kpi"><div class="vd-kpi-val">' + m[1] + '</div><div class="vd-kpi-lbl">' + m[0] + '</div></div>';
       }).join('')
     + '</div>'
     + funnelSection
