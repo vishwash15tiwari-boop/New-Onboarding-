@@ -170,6 +170,11 @@ select,input{font-family:inherit}
   border:1px solid var(--border);
   letter-spacing:.1px;
 }
+/* Sellers / Buyers audience switcher (segmented control) */
+.aud-tabs{display:inline-flex;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px;vertical-align:middle}
+.aud-tab{font-family:inherit;font-size:12.5px;font-weight:600;padding:5px 18px;border:none;background:transparent;color:var(--txt2);cursor:pointer;border-radius:7px;transition:background .15s ease,color .15s ease,box-shadow .15s ease;white-space:nowrap;letter-spacing:.1px}
+.aud-tab.active{background:var(--card);color:var(--txt);box-shadow:var(--shadow-sm)}
+.aud-tab:not(.active):hover{color:var(--txt)}
 .subsection-title{
   font-size:12.5px;font-weight:600;
   color:var(--txt2);
@@ -445,7 +450,11 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 
     <!-- Business Verticals -->
     <div class="section-title" style="flex-wrap:wrap">
-      Business Verticals <span class="badge">6 verticals · click a card for details</span>
+      Business Verticals
+      <div class="aud-tabs" role="tablist" aria-label="Audience">
+        <button class="aud-tab active" id="aud-seller" role="tab" onclick="switchAudience('seller')">Sellers</button>
+        <button class="aud-tab" id="aud-buyer" role="tab" onclick="switchAudience('buyer')">Buyers</button>
+      </div>
       <span style="flex:1"></span>
       <span class="filter-label">Period</span>
       <select class="filter-select" id="top-period" onchange="onPeriodSelect(this.value)">
@@ -469,7 +478,13 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 // ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
-var D = null;          // full dashboard data
+var D = null;          // full dashboard data for the active audience
+
+// Sellers / Buyers are two independent datasets (each from its own sheet).
+// The active one is fetched with an `audience` filter and cached here so
+// switching tabs is instant after the first load.
+var currentAudience = 'seller';
+var DATASETS = { seller: null, buyer: null };
 
 // Display names for raw pipeline statuses (values stay raw for filtering)
 var STATUS_LABELS = { COMPLETED: 'Onboarded', DRAFT: 'Draft', IN_REVIEW: 'In Review', REJECTED: 'Rejected' };
@@ -509,15 +524,17 @@ function loadData(silent) {
   var cd = document.getElementById('refresh-countdown');
   if (cd) cd.textContent = '…';
 
-  var filters = getFilters();
+  var filters     = getFilters();
+  var reqAudience = currentAudience;   // guard against a tab switch mid-request
   google.script.run
     .withSuccessHandler(function(res) {
       try {
-        D = JSON.parse(res);
-        if (D.success) {
-          renderAll();
+        var data = JSON.parse(res);
+        if (data.success) {
+          DATASETS[reqAudience] = data;
+          if (reqAudience === currentAudience) { D = data; renderAll(); }
         } else {
-          if (!silent) showError(D.error);
+          if (!silent) showError(data.error);
         }
       } catch(e) { if (!silent) showError('Parse error: ' + e.message); }
       btn.classList.remove('spinning');
@@ -531,6 +548,33 @@ function loadData(silent) {
       scheduleNextRefresh();
     })
     .getDashboardData(JSON.stringify(filters));
+}
+
+// ── Audience (Sellers / Buyers) ──────────────────────────────────
+function renderAudienceTabs() {
+  var s = document.getElementById('aud-seller');
+  var b = document.getElementById('aud-buyer');
+  if (s) s.classList.toggle('active', currentAudience === 'seller');
+  if (b) b.classList.toggle('active', currentAudience === 'buyer');
+}
+
+function switchAudience(a) {
+  if (a === currentAudience) return;
+  currentAudience = a;
+  selectedVert = null;                       // close any open detail panel
+  var panel = document.getElementById('vert-detail');
+  if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+  renderAudienceTabs();
+
+  if (DATASETS[a]) {                          // cached — switch instantly
+    D = DATASETS[a];
+    renderAll();
+  } else {                                    // first visit — fetch it
+    D = null;
+    var grid = document.getElementById('vert-grid');
+    if (grid) grid.innerHTML = '<div class="no-data" style="grid-column:1/-1">Loading ' + (a === 'buyer' ? 'Buyers' : 'Sellers') + '…</div>';
+    loadData();
+  }
 }
 
 function hideLoading() {
@@ -552,7 +596,7 @@ var customStart   = '';
 var customEnd     = '';
 
 function getFilters() {
-  return { period: currentPeriod, startDate: customStart, endDate: customEnd };
+  return { audience: currentAudience, period: currentPeriod, startDate: customStart, endDate: customEnd };
 }
 
 // Period select above the cards — options come from the data (fiscalYears)
@@ -595,6 +639,7 @@ function onCustomDates() {
 // RENDER ALL
 // ═══════════════════════════════════════════════════════════════
 function renderAll() {
+  renderAudienceTabs();
   renderPeriodControl();
   renderLastUpdated();
   renderOverview();
@@ -616,14 +661,22 @@ function renderOverview() {
 // ═══════════════════════════════════════════════════════════════
 // VERTICAL CARDS
 // ═══════════════════════════════════════════════════════════════
+// Default (Sellers) vertical layout. Each audience/dataset may ship its own
+// `verticalConfig` from the backend; when present it drives the cards instead,
+// so Buyers can define an entirely different set of verticals.
 var VERT_CFG = [
-  { key:'OMP',           name:'Open Marketplace', sub:'Sellers · data from FY 26-27',     code:'OMP', cls:'badge-omp' },
-  { key:'EPR',           name:'EPR',              sub:'Extended Producer Responsibility', code:'EPR', cls:'badge-epr' },
-  { key:'InfraBusiness', name:'Infra Business',   sub:'Metal · Institutional · Plastic · Reverse', code:'INF', cls:'badge-inf' },
-  { key:'AFR',           name:'AFR',              sub:'Alternative Fuels & Resources',    code:'AFR', cls:'badge-afr' },
-  { key:'Recommerce',    name:'Re-Commerce',      sub:'Re-Commerce Sellers',              code:'REC', cls:'badge-rec' },
-  { key:'DRS',           name:'DRS',              sub:'Deposit Refund System',            code:'DRS', cls:'badge-drs' },
+  { key:'OMP',           name:'Open Marketplace', sub:'Sellers · data from FY 26-27',     code:'OMP' },
+  { key:'EPR',           name:'EPR',              sub:'Extended Producer Responsibility', code:'EPR' },
+  { key:'InfraBusiness', name:'Infra Business',   sub:'Metal · Institutional · Plastic · Reverse', code:'INF' },
+  { key:'AFR',           name:'AFR',              sub:'Alternative Fuels & Resources',    code:'AFR' },
+  { key:'Recommerce',    name:'Re-Commerce',      sub:'Re-Commerce Sellers',              code:'REC' },
+  { key:'DRS',           name:'DRS',              sub:'Deposit Refund System',            code:'DRS' },
 ];
+
+// Active vertical layout: backend-supplied config for this audience, else default.
+function getVertCfg() {
+  return (D && D.verticalConfig && D.verticalConfig.length) ? D.verticalConfig : VERT_CFG;
+}
 var selectedVert = null;
 var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
 var VD_MAX_RENDER = 200;   // rows rendered at once in the detail table
@@ -759,7 +812,7 @@ function renderVerticals() {
   if (!grid) return;
   if (!verts) { grid.innerHTML = ''; return; }
 
-  grid.innerHTML = VERT_CFG.map(function(cfg) {
+  grid.innerHTML = getVertCfg().map(function(cfg) {
     var v   = verts[cfg.key] || {};
     var tot = v.total || 0;
     var sel = selectedVert === cfg.key;
@@ -840,7 +893,7 @@ function vdSelect(id, label, options, current, labels) {
 function renderVertDetail() {
   var panel = document.getElementById('vert-detail');
   if (!panel || !selectedVert || !D || !D.verticals) return;
-  var cfg = VERT_CFG.filter(function(x) { return x.key === selectedVert; })[0];
+  var cfg = getVertCfg().filter(function(x) { return x.key === selectedVert; })[0];
   var v   = D.verticals[selectedVert];
   if (!cfg || !v) return;
   var has = (v.total || 0) > 0;
