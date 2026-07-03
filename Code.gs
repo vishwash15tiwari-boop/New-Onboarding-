@@ -418,16 +418,6 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
   var now     = new Date();
   var weekAgo = new Date(now.getTime() - 7 * 86400000);
 
-  var months = [];
-  for (var i = 5; i >= 0; i--) {
-    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({
-      label: d.toLocaleString('default', { month: 'short' }) + ' \'' + String(d.getFullYear()).slice(2),
-      year:  d.getFullYear(),
-      month: d.getMonth(),
-    });
-  }
-
   function vertRow(r) {
     return {
       id:          r.id,
@@ -451,7 +441,6 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
     var inReview  = count(data, 'status', 'IN_REVIEW');
     var rejected  = count(data, 'status', 'REJECTED');
     var withGST   = countFn(data, function(r) { return r.hasGST; });
-    var pipeline  = draft + inReview;
     var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
 
     var completedThisWeek = countFn(data, function(r) {
@@ -463,14 +452,6 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
     var transacted = mode === 'omp' ? countFn(data, function(r) { return r.hasTransacted; })
                    : mode === 'mp'  ? countFn(data, function(r) { return r.hasShipment; })
                    : null;
-
-    var monthly = months.map(function(m) {
-      return {
-        label:     m.label,
-        created:   countFn(data, function(r) { return r.createdDate   && r.createdDate.getFullYear()   === m.year && r.createdDate.getMonth()   === m.month; }),
-        onboarded: countFn(data, function(r) { return r.onboardedDate && r.onboardedDate.getFullYear() === m.year && r.onboardedDate.getMonth() === m.month; }),
-      };
-    });
 
     var latestFirst = data.slice().sort(function(a, b) {
       return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
@@ -484,16 +465,11 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
       rejected:         rejected,
       withGST:          withGST,
       missingGST:       total - withGST,
-      pipeline:         pipeline,
-      pipelinePct:      pct(pipeline, total),
       completionPct:    pct(completed, total),
       completedThisWeek: completedThisWeek,
       avgTAT:           tats.length ? Math.round(avg(tats)) : null,
       transacted:       transacted,
       pctTransacted:    transacted === null ? null : pct(transacted, completed),
-      categorySplit:    objToArr(groupBy(data, 'category')).slice(0, 6),
-      vendorSplit:      objToArr(groupBy(data, 'vendorType')).filter(function(x) { return x.label && x.label !== 'Unknown'; }).slice(0, 6),
-      monthly:          monthly,
       rows:             latestFirst.map(vertRow),
       rowsTotal:        total,
     };

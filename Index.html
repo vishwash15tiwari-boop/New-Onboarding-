@@ -232,7 +232,6 @@ select,input{font-family:inherit}
 /* ===== Chart Cards ===== */
 .chart-grid{display:grid;gap:16px;margin-bottom:24px}
 .chart-grid-2{grid-template-columns:repeat(auto-fill,minmax(380px,1fr))}
-.chart-grid-3{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 .chart-grid-full{grid-template-columns:1fr}
 .chart-card{
   background:var(--card);
@@ -251,33 +250,40 @@ select,input{font-family:inherit}
   letter-spacing:-.1px;
 }
 .chart-wrap{position:relative;height:220px}
-.chart-wrap.tall{height:280px}
 .chart-wrap.short{height:160px}
 
 /* ===== Comparison ===== */
-.compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
 .compare-card{
   background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--r);
-  padding:20px;
+  padding:15px 17px 13px;
   box-shadow:var(--shadow-sm);
   cursor:pointer;
   transition:box-shadow .18s ease,border-color .18s ease,transform .18s ease;
 }
 .compare-card:hover{box-shadow:var(--shadow);border-color:var(--border2);transform:translateY(-1px)}
 .compare-card.selected{border-color:var(--blue);box-shadow:var(--ring),var(--shadow)}
-.compare-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.compare-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
 .compare-label{font-size:14.5px;font-weight:700;color:var(--txt);letter-spacing:-.25px}
-.compare-count{font-size:26px;font-weight:700;color:var(--txt);letter-spacing:-.6px;margin-top:3px;font-variant-numeric:tabular-nums}
+.compare-count{font-size:23px;font-weight:700;color:var(--txt);letter-spacing:-.5px;margin-top:2px;font-variant-numeric:tabular-nums}
 .compare-source-badge{font-size:10.5px;padding:4px 10px;border-radius:20px;font-weight:600;letter-spacing:.1px}
 .badge-mp{background:rgba(0,113,188,.08);color:var(--blue);border:1px solid rgba(0,113,188,.16)}
 .badge-omp{background:rgba(8,145,178,.07);color:#0C7C8E;border:1px solid rgba(8,145,178,.15)}
 .badge-epr{background:rgba(234,88,12,.07);color:#B54708;border:1px solid rgba(234,88,12,.15)}
-.progress-row{display:flex;flex-direction:column;gap:6px;margin-bottom:11px}
-.progress-label-row{display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);font-weight:450}
-.progress-bar-wrap{height:5px;background:var(--bg2);border-radius:4px;overflow:hidden}
-.progress-bar{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+/* ===== Funnel ===== */
+.fnl{display:flex;flex-direction:column;align-items:center;gap:5px;margin:12px 0 4px}
+.fnl-box{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  height:25px;padding:0 11px;border-radius:6px;
+  font-size:11px;font-weight:600;overflow:hidden;white-space:nowrap;
+  transition:width .5s cubic-bezier(.4,0,.2,1);
+}
+.fnl-lbl{white-space:nowrap}
+.fnl-val{font-variant-numeric:tabular-nums;white-space:nowrap}
+.fnl-lg{gap:6px;margin:8px 0 2px}
+.fnl-lg .fnl-box{height:34px;font-size:12.5px;padding:0 16px;border-radius:8px}
 
 /* ===== Detail Table ===== */
 .table-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);background:var(--card);box-shadow:var(--shadow-sm)}
@@ -326,9 +332,9 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 
 /* ===== Vertical Cards ===== */
 .vert-sub{font-size:11.5px;color:var(--txt3);font-weight:400;margin-top:2px;letter-spacing:0}
-.vert-stat-row{display:flex;justify-content:space-between;align-items:center;margin:10px 0 8px;font-size:11.5px;color:var(--txt3)}
+.vert-stat-row{display:flex;justify-content:space-between;align-items:center;margin:8px 0 6px;font-size:11.5px;color:var(--txt3)}
 .vert-stat-item strong{color:var(--txt);font-weight:600}
-.vert-rej-footer{border-top:1px solid var(--border);padding-top:8px;font-size:11.5px;color:var(--txt3);display:flex;justify-content:space-between;align-items:center}
+.vert-rej-footer{border-top:1px solid var(--border);padding-top:7px;font-size:11.5px;color:var(--txt3);display:flex;justify-content:space-between;align-items:center}
 .vert-rej-footer strong{color:var(--red);font-weight:600}
 .vert-more{font-size:11px;color:var(--blue);font-weight:500;white-space:nowrap}
 .badge-afr{background:rgba(234,88,12,.07);color:#B54708;border:1px solid rgba(234,88,12,.15)}
@@ -378,7 +384,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   #main{padding:18px 16px}
   .compare-grid{grid-template-columns:1fr}
   .kpi-value{font-size:24px}
-  .chart-grid-2,.chart-grid-3{grid-template-columns:1fr}
+  .chart-grid-2{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -679,6 +685,46 @@ var selectedVert = null;
 var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
 var VD_MAX_RENDER = 200;   // rows rendered at once in the detail table
 
+// Funnel boxes reuse the status-chip color pairs (light tint + dark ink)
+var FNL_STYLE = {
+  total:      { bg: 'rgba(46,49,146,.07)', bd: 'rgba(46,49,146,.22)', tx: '#2E3192' },
+  draft:      { bg: '#EFF6FF',             bd: 'rgba(29,78,216,.25)', tx: '#1D4ED8' },
+  review:     { bg: '#FFFBEB',             bd: 'rgba(217,119,6,.30)', tx: '#92400E' },
+  onboarded:  { bg: '#F0FDF4',             bd: 'rgba(22,163,74,.30)', tx: '#166534' },
+  transacted: { bg: '#ECFEFF',             bd: 'rgba(8,145,178,.30)', tx: '#155E75' },
+  rejected:   { bg: '#FEF2F2',             bd: 'rgba(220,38,38,.30)', tx: '#991B1B' },
+};
+
+function fnlBox(kind, label, count, pctOf, minW) {
+  var st = FNL_STYLE[kind];
+  var w  = pctOf === null ? 100 : Math.max(minW, pctOf);
+  var val = fmt(count || 0) + (pctOf === null ? '' : ' (' + pctOf + '%)');
+  return '<div class="fnl-box" style="width:' + w + '%;background:' + st.bg + ';border:1px solid ' + st.bd + ';color:' + st.tx + '">'
+    + '<span class="fnl-lbl">' + label + '</span><span class="fnl-val">' + val + '</span></div>';
+}
+
+// Snapshot funnel: Total → Draft → In Review → Onboarded (+ Transacted /
+// Rejected in the large detail variant). Widths ∝ share of total with a
+// floor so the numbers always stay readable.
+function funnelHtml(v, large) {
+  var tot = v.total || 0;
+  if (!tot) return '';
+  var p    = function(n) { return Math.round(((n || 0) / tot) * 100); };
+  var minW = large ? 26 : 44;
+  var h = '<div class="fnl' + (large ? ' fnl-lg' : '') + '">'
+    + fnlBox('total',     'Total Cases', tot,         null,            minW)
+    + fnlBox('draft',     'Draft',       v.draft,     p(v.draft),      minW)
+    + fnlBox('review',    'In Review',   v.inReview,  p(v.inReview),   minW)
+    + fnlBox('onboarded', 'Onboarded',   v.completed, p(v.completed),  minW);
+  if (large) {
+    if (v.transacted !== null && v.transacted !== undefined) {
+      h += fnlBox('transacted', 'Transacted', v.transacted, p(v.transacted), minW);
+    }
+    h += fnlBox('rejected', 'Rejected', v.rejected, p(v.rejected), minW);
+  }
+  return h + '</div>';
+}
+
 function renderVerticals() {
   var verts = D.verticals;
   var grid  = document.getElementById('vert-grid');
@@ -689,19 +735,8 @@ function renderVerticals() {
     var v    = verts[cfg.key] || {};
     var tot  = v.total || 0;
     var has  = tot > 0;
-    var onbP = has ? Math.round(((v.completed||0) / tot) * 100) : 0;
-    var revP = has ? Math.round(((v.inReview ||0) / tot) * 100) : 0;
-    var dftP = has ? Math.round(((v.draft    ||0) / tot) * 100) : 0;
     var n    = function(x) { return has ? fmt(x || 0) : '—'; };
     var txn  = (!has || v.transacted === null || v.transacted === undefined) ? '—' : fmt(v.transacted);
-
-    function barRow(label, val, p, color) {
-      return '<div class="progress-row">'
-        + '<div class="progress-label-row"><span>' + label + '</span>'
-        + '<span>' + (has ? n(val) + ' (' + p + '%)' : '—') + '</span></div>'
-        + '<div class="progress-bar-wrap"><div class="progress-bar" style="background:' + color + ';width:' + p + '%"></div></div>'
-        + '</div>';
-    }
 
     return '<div class="compare-card' + (selectedVert === cfg.key ? ' selected' : '') + '" onclick="openVertDetail(\'' + cfg.key + '\')">'
       + '<div class="compare-header">'
@@ -710,11 +745,8 @@ function renderVerticals() {
       +   '<div class="compare-total-sub">Onboarded · of ' + fmt(tot) + ' total</div></div>'
       +   '<span class="compare-source-badge ' + cfg.cls + '">' + cfg.code + '</span>'
       + '</div>'
-      + barRow('Onboarded',   v.completed, onbP, 'var(--green)')
-      + barRow('In Review',   v.inReview,  revP, 'var(--amber)')
-      + barRow('Draft',       v.draft,     dftP, 'var(--blue)')
+      + (has ? funnelHtml(v, false) : '<div class="no-data" style="padding:20px 0">No records in selected period</div>')
       + '<div class="vert-stat-row">'
-      +   '<span class="vert-stat-item">Pipeline <strong>' + (has ? (v.pipelinePct||0) + '%' : '—') + '</strong></span>'
       +   '<span class="vert-stat-item">Avg TAT <strong>' + (has ? dOr(v.avgTAT, 'd') : '—') + '</strong></span>'
       +   '<span class="vert-stat-item">Transacted <strong>' + txn + '</strong></span>'
       + '</div>'
@@ -741,7 +773,6 @@ function openVertDetail(key) {
 
 function closeVertDetail() {
   selectedVert = null;
-  ['vd-ch-status', 'vd-ch-mix', 'vd-ch-trend'].forEach(destroyChart);
   var panel = document.getElementById('vert-detail');
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
   renderVerticals();
@@ -793,22 +824,8 @@ function renderVertDetail() {
     ['GST Inactive',   fmt(v.missingGST || 0)],
   ];
 
-  var useCat   = v.categorySplit && v.categorySplit.length > 1;
-  var mixTitle = useCat ? 'Category Mix' : 'Vendor Type Mix';
-  var mix      = useCat ? (v.categorySplit || []) : (v.vendorSplit || []);
-  var mo       = v.monthly || [];
-  var hasTrend = mo.some(function(m) { return (m.created || 0) > 0 || (m.onboarded || 0) > 0; });
-
-  var chartsHtml = has
-    ? '<div class="chart-grid chart-grid-3 mt-16">'
-      + '<div class="chart-card"><div class="chart-card-title">Status Distribution</div><div class="chart-wrap short"><canvas id="vd-ch-status"></canvas></div></div>'
-      + '<div class="chart-card"><div class="chart-card-title">' + mixTitle + '</div>'
-      +   (mix.length ? '<div class="chart-wrap short"><canvas id="vd-ch-mix"></canvas></div>' : '<div class="no-data">No data available</div>')
-      + '</div>'
-      + '<div class="chart-card"><div class="chart-card-title">6-Month Trend</div>'
-      +   (hasTrend ? '<div class="chart-wrap short"><canvas id="vd-ch-trend"></canvas></div>' : '<div class="no-data">No activity in the last 6 months</div>')
-      + '</div>'
-      + '</div>'
+  var funnelSection = has
+    ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel</div>' + funnelHtml(v, true) + '</div>'
     : '';
 
   // Detail filters — local to this vertical's records (Period lives above the cards)
@@ -841,25 +858,10 @@ function renderVertDetail() {
         return '<div class="metric-item"><span class="metric-val">' + m[1] + '</span><span class="metric-lbl">' + m[0] + '</span></div>';
       }).join('')
     + '</div>'
-    + chartsHtml
+    + funnelSection
     + tableHtml;
 
   panel.style.display = 'block';
-
-  ['vd-ch-status', 'vd-ch-mix', 'vd-ch-trend'].forEach(destroyChart);
-  if (has) {
-    mkDoughnut('vd-ch-status',
-      ['Onboarded', 'Draft', 'In Review', 'Rejected'],
-      [v.completed || 0, v.draft || 0, v.inReview || 0, v.rejected || 0],
-      [COLORS.green, COLORS.blue, COLORS.amber, COLORS.red]);
-
-    if (mix.length) mkHBar('vd-ch-mix', mix.map(l), mix.map(c), 'Cases', COLORS.blue);
-
-    if (hasTrend) mkLine('vd-ch-trend', mo.map(l), [
-      { label: 'Created',   data: mo.map(function(m) { return m.created;   }), color: COLORS.blue  },
-      { label: 'Onboarded', data: mo.map(function(m) { return m.onboarded; }), color: COLORS.green },
-    ]);
-  }
 
   renderVdTable();
 }
@@ -994,44 +996,6 @@ function mkBar(id, labels, data, dsLabel, colors) {
     type: 'bar',
     data: { labels: labels, datasets: [{ label: dsLabel, data: data, backgroundColor: bgColors, borderRadius: 4 }] },
     options: opts,
-  });
-}
-
-function mkHBar(id, labels, data, dsLabel, colors) {
-  destroyChart(id);
-  var ctx = document.getElementById(id);
-  if (!ctx) return;
-  var bgColors = Array.isArray(colors) && colors.length === data.length ? colors
-    : typeof colors === 'string' ? data.map(function() { return colors; })
-    : PALETTE.slice(0, data.length);
-  var opts = mkDefaults();
-  opts.indexAxis = 'y';
-  opts.plugins.legend = { display: false };
-  charts[id] = new Chart(ctx, {
-    type: 'bar',
-    data: { labels: labels, datasets: [{ label: dsLabel, data: data, backgroundColor: bgColors, borderRadius: 4 }] },
-    options: opts,
-  });
-}
-
-function mkLine(id, labels, datasets) {
-  destroyChart(id);
-  var ctx = document.getElementById(id);
-  if (!ctx) return;
-  charts[id] = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: datasets.map(function(d) {
-        return {
-          label: d.label, data: d.data,
-          borderColor: d.color, backgroundColor: d.color + '22',
-          tension: 0.4, fill: true, pointRadius: 3, pointHoverRadius: 5,
-          borderWidth: 2,
-        };
-      }),
-    },
-    options: mkDefaults(),
   });
 }
 
