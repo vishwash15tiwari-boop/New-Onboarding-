@@ -743,23 +743,30 @@ function cardCategories(v, max) {
   }).join('') + '</div>';
 }
 
-// Detail funnel — clean horizontal meter bars, each stage as a share of Total.
-// Rejected is shown as a drop-out row below a divider.
+// Shared funnel order — the meter bars and the 3D funnel render this exact
+// sequence: Total Cases, then Onboarded, then the remaining stages by
+// descending count (so the funnel narrows properly).
+function funnelTiers(v) {
+  var rest = [
+    { k: 'draft',  n: v.draft    || 0 },
+    { k: 'review', n: v.inReview || 0 },
+  ];
+  if (v.transacted !== null && v.transacted !== undefined) {
+    rest.push({ k: 'transacted', n: v.transacted });
+  }
+  rest.sort(function(a, b) { return b.n - a.n; });
+  return [{ k: 'total', n: v.total || 0, isTotal: true }, { k: 'onboarded', n: v.completed || 0 }].concat(rest);
+}
+
+// Detail funnel — clean horizontal meter bars, each stage as a share of Total,
+// in the same sequence as the 3D funnel. Rejected is a drop-out row below.
 function funnelBig(v, cfg) {
   var tot = v.total || 0;
   if (!tot) return '';
   var pc  = function(n) { return Math.round(((n || 0) / tot) * 100); };
   var wid = function(n) { return ((n || 0) / tot) * 100; };
 
-  var rows = [
-    { k: 'total',     n: tot,             isTotal: true },
-    { k: 'draft',     n: v.draft    || 0 },
-    { k: 'review',    n: v.inReview || 0 },
-    { k: 'onboarded', n: v.completed|| 0 },
-  ];
-  if (v.transacted !== null && v.transacted !== undefined) {
-    rows.push({ k: 'transacted', n: v.transacted });
-  }
+  var rows = funnelTiers(v);
 
   function bar(k, n, isTotal, isRej) {
     var st = STAGE[k];
@@ -786,15 +793,7 @@ function funnelBig(v, cfg) {
 function funnel3D(v) {
   var tot = v.total || 0;
   if (!tot) return '';
-  var rest = [
-    { k: 'draft',  n: v.draft    || 0 },
-    { k: 'review', n: v.inReview || 0 },
-  ];
-  if (v.transacted !== null && v.transacted !== undefined) {
-    rest.push({ k: 'transacted', n: v.transacted });
-  }
-  rest.sort(function(a, b) { return b.n - a.n; });
-  var tiers = [{ k: 'total', n: tot }, { k: 'onboarded', n: v.completed || 0 }].concat(rest);
+  var tiers = funnelTiers(v);
 
   var BA = 178, cx = 89, FW = 166, ry = 6, y0 = 6, bandH = 28, y1 = y0 + bandH, vbH = 40;
   var scale = function(n) { return Math.min(FW, Math.max(28, FW * ((n || 0) / tot))); };
@@ -853,7 +852,9 @@ function renderVerticals() {
 
     var gstTot = (v.withGST || 0) + (v.missingGST || 0);
     var gstPct = gstTot ? Math.round((v.withGST || 0) / gstTot * 100) : 0;
-    var txn    = (v.transacted === null || v.transacted === undefined) ? '—' : fmt(v.transacted);
+    // Transacted only shown where the backend provides it (Open Marketplace).
+    var txnItem = (v.transacted === null || v.transacted === undefined) ? ''
+      : '<div class="cc-foot-item"><b>' + fmt(v.transacted) + '</b>Transacted</div>';
 
     return '<div class="compare-card' + (sel ? ' selected' : '') + '" onclick="openVertDetail(\'' + cfg.key + '\')">'
       + head
@@ -867,7 +868,7 @@ function renderVerticals() {
       + '<div class="cc-foot">'
       +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
       +   '<div class="cc-foot-item"><b>' + gstPct + '%</b>GST Active</div>'
-      +   '<div class="cc-foot-item"><b>' + txn + '</b>Transacted</div>'
+      +   txnItem
       +   '<span class="cc-foot-more">' + (sel ? 'Viewing ▾' : 'Click for Details →') + '</span>'
       + '</div>'
       + '</div>';
@@ -921,9 +922,7 @@ function renderVertDetail() {
   if (!cfg || !v) return;
   var has = (v.total || 0) > 0;
 
-  var txnVal = (v.transacted === null || v.transacted === undefined)
-    ? '—'
-    : fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)';
+  var hasTxn = !(v.transacted === null || v.transacted === undefined);
 
   var metrics = [
     ['Total Cases',    fmt(v.total || 0)],
@@ -933,10 +932,11 @@ function renderVertDetail() {
     ['Rejected',       fmt(v.rejected || 0)],
     ['Avg TAT',        dOr(v.avgTAT, 'd')],
     ['Onboarded (7d)', fmt(v.completedThisWeek || 0)],
-    ['Transacted',     txnVal],
-    ['GST Active',     fmt(v.withGST || 0)],
-    ['GST Inactive',   fmt(v.missingGST || 0)],
   ];
+  // Transacted only for Open Marketplace (backend sends it null elsewhere).
+  if (hasTxn) metrics.push(['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)']);
+  metrics.push(['GST Active',   fmt(v.withGST || 0)]);
+  metrics.push(['GST Inactive', fmt(v.missingGST || 0)]);
 
   var funnelSection = has
     ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel'

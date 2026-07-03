@@ -175,7 +175,12 @@ function buildDashboard(audience, cfg, allRows, f) {
     return { key: vc.key, name: vc.name, sub: vc.sub, code: vc.code };
   });
   var verticals = {};
-  VERTICALS.forEach(function(vc) { verticals[vc.key] = vStats(byVert[vc.key] || []); });
+  VERTICALS.forEach(function(vc) {
+    var s = vStats(byVert[vc.key] || []);
+    // Transacted is only meaningful for Open Marketplace; hide it elsewhere.
+    if (vc.key !== 'OMP') { s.transacted = null; s.pctTransacted = null; }
+    verticals[vc.key] = s;
+  });
 
   return {
     success: true,
