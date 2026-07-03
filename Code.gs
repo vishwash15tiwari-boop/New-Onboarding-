@@ -11,17 +11,27 @@ var CONFIG = {
 };
 
 // Business-vertical mapping for COP Seller Details (Marketplace) categories.
-// Metal + Institutional Business roll up under Infra Business per business rule.
+// Metal, Institutional Business, Plastic & Reverse roll up under Infra Business
+// per business rule. Keys are lower-cased so the lookup is case-insensitive.
 var VERTICAL_MAP = {
-  'Metal':                  'Infra Business',
-  'Institutional Business': 'Infra Business',
-  'IB':                     'Infra Business',
-  'Re-Commerce':            'Recommerce',
-  'Recommerce':             'Recommerce',
-  'AFR':                    'AFR',
-  'GOA DRS':                'DRS',
-  'DRS':                    'DRS',
+  'metal':                  'Infra Business',
+  'institutional business': 'Infra Business',
+  'ib':                     'Infra Business',
+  'plastic':                'Infra Business',
+  'reverse':                'Infra Business',
+  'rewerse':                'Infra Business',   // tolerate the alternate spelling
+  're-commerce':            'Recommerce',
+  'recommerce':             'Recommerce',
+  'afr':                    'AFR',
+  'goa drs':                'DRS',
+  'drs':                    'DRS',
 };
+
+// Case-insensitive category → vertical lookup; anything unmapped stays under
+// the generic Marketplace bucket.
+function mapVertical(cat) {
+  return VERTICAL_MAP[String(cat || '').trim().toLowerCase()] || 'Marketplace';
+}
 
 // Open Marketplace is tracked from FY 26-27 (Apr 1, 2026) onward —
 // older OMP records are excluded from the whole dashboard.
@@ -142,7 +152,7 @@ function normalizeMarketplace(raw) {
       state:          String(gv(row, idx, 'state') || '').trim(),
       vendorType:     String(gv(row, idx, 'vendor_type') || '').trim(),
       category:       cat,
-      vertical:       VERTICAL_MAP[cat] || 'Marketplace',
+      vertical:       mapVertical(cat),
       gstin:          gstin,
       partyId:        String(gv(row, idx, 'party_id') || '').trim(),
       status:         normStatus(gv(row, idx, 'status')),
