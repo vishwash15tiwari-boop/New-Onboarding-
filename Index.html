@@ -268,7 +268,7 @@ select,input{font-family:inherit}
 .compare-card:hover{box-shadow:var(--shadow);border-color:var(--border2);transform:translateY(-1px)}
 .compare-card.selected{border-color:var(--blue);box-shadow:var(--ring),var(--shadow)}
 .compare-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
-.compare-label{font-size:11px;font-weight:500;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px}
+.compare-label{font-size:14.5px;font-weight:700;color:var(--txt);letter-spacing:-.25px}
 .compare-count{font-size:26px;font-weight:700;color:var(--txt);letter-spacing:-.6px;margin-top:3px;font-variant-numeric:tabular-nums}
 .compare-source-badge{font-size:10.5px;padding:4px 10px;border-radius:20px;font-weight:600;letter-spacing:.1px}
 .badge-mp{background:rgba(0,113,188,.08);color:var(--blue);border:1px solid rgba(0,113,188,.16)}
@@ -319,7 +319,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .gst-ok{color:#166534;font-size:11px;font-weight:500}
 .gst-bad{color:#991B1B;font-size:11px;font-weight:500}
 /* ===== Metric Row ===== */
-.metric-row{display:flex;flex-wrap:wrap;gap:28px;margin-bottom:14px}
+.metric-row{display:flex;flex-wrap:wrap;gap:22px;margin-bottom:14px}
 .metric-item{display:flex;flex-direction:column;gap:3px}
 .metric-val{font-size:22px;font-weight:700;color:var(--txt);letter-spacing:-.5px;font-variant-numeric:tabular-nums}
 .metric-lbl{font-size:10.5px;color:var(--txt3);font-weight:500;text-transform:uppercase;letter-spacing:.45px}
@@ -358,6 +358,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .vd-table-wrap{max-height:420px;overflow:auto}
 .vd-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:18px}
 .vd-filters .filter-input{width:200px}
+#top-custom{align-items:center;gap:6px}
 .compare-total-sub{font-size:11px;color:var(--txt3);margin-top:3px}
 .vd-note{font-size:11.5px;color:var(--txt3);margin-top:10px}
 
@@ -417,8 +418,17 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   <div id="tab-overview">
 
     <!-- Business Verticals -->
-    <div class="section-title">
-      Business Verticals <span class="badge">6 verticals · click a card for details</span> <span class="badge" id="ov-period-badge">Period: All Time</span>
+    <div class="section-title" style="flex-wrap:wrap">
+      Business Verticals <span class="badge">6 verticals · click a card for details</span>
+      <span style="flex:1"></span>
+      <span class="filter-label">Period</span>
+      <select class="filter-select" id="top-period" onchange="onPeriodSelect(this.value)">
+        <option value="All">All Time</option>
+      </select>
+      <span id="top-custom" style="display:none">
+        <input type="date" class="filter-select" id="top-start" onchange="onCustomDates()">
+        <input type="date" class="filter-select" id="top-end" onchange="onCustomDates()">
+      </span>
     </div>
     <div class="compare-grid" id="vert-grid"></div>
 
@@ -453,7 +463,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <div class="kpi-grid kpi-grid-4" id="exec-kpis">
       <div class="kpi-card">          <div class="kpi-icon">📦</div><div class="kpi-label">Total Cases</div><div class="kpi-value" id="e-total">—</div><div class="kpi-sub">All Verticals</div></div>
       <div class="kpi-card green">    <div class="kpi-icon">✅</div><div class="kpi-label">Onboarded</div><div class="kpi-value" id="e-completed">—</div><div class="kpi-sub" id="e-completion-sub">—</div></div>
-      <div class="kpi-card amber">    <div class="kpi-icon">📝</div><div class="kpi-label">In Progress</div><div class="kpi-value" id="e-draft">—</div><div class="kpi-sub">Not yet submitted</div></div>
+      <div class="kpi-card amber">    <div class="kpi-icon">📝</div><div class="kpi-label">Draft</div><div class="kpi-value" id="e-draft">—</div><div class="kpi-sub">Not yet submitted</div></div>
       <div class="kpi-card blue">     <div class="kpi-icon">🔍</div><div class="kpi-label">In Review</div><div class="kpi-value" id="e-in-review">—</div><div class="kpi-sub">Under evaluation</div></div>
       <div class="kpi-card red">      <div class="kpi-icon">❌</div><div class="kpi-label">Rejected</div><div class="kpi-value" id="e-rejected">—</div><div class="kpi-sub">Across verticals</div></div>
       <div class="kpi-card cyan">     <div class="kpi-icon">⏱</div><div class="kpi-label">Avg Onb. TAT</div><div class="kpi-value" id="e-avg-tat">—</div><div class="kpi-sub">Days (all sources)</div></div>
@@ -479,7 +489,7 @@ var COLORS = {
 var PALETTE = [COLORS.blue, COLORS.lime, COLORS.amber, COLORS.red, COLORS.purple, COLORS.cyan, COLORS.orange, COLORS.green, COLORS.teal, COLORS.indigo];
 
 // Display names for raw pipeline statuses (values stay raw for filtering)
-var STATUS_LABELS = { COMPLETED: 'Onboarded', DRAFT: 'In Progress', IN_REVIEW: 'In Review', REJECTED: 'Rejected' };
+var STATUS_LABELS = { COMPLETED: 'Onboarded', DRAFT: 'Draft', IN_REVIEW: 'In Review', REJECTED: 'Rejected' };
 
 // ═══════════════════════════════════════════════════════════════
 // INIT
@@ -562,17 +572,47 @@ function getFilters() {
   return { period: currentPeriod, startDate: customStart, endDate: customEnd };
 }
 
-function periodLabel(p) {
-  if (!p || p === 'All') return 'All Time';
-  if (p === 'Today')     return 'Today';
-  if (p === 'Custom')    return (customStart || '…') + ' → ' + (customEnd || '…');
-  return p.replace(/^FY/, 'FY ');
+// Period select above the cards — options come from the data (fiscalYears)
+function renderPeriodControl() {
+  var sel = document.getElementById('top-period');
+  if (!sel) return;
+  var pairs = [['All', 'All Time'], ['Today', 'Today']];
+  ((D && D.fiscalYears) || []).forEach(function(fy) { pairs.push([fy, fy.replace(/^FY/, 'FY ')]); });
+  pairs.push(['Custom', 'Custom']);
+  sel.innerHTML = pairs.map(function(o) {
+    return '<option value="' + o[0] + '">' + o[1] + '</option>';
+  }).join('');
+  sel.value = currentPeriod;
+  if (!sel.value) { sel.value = 'All'; currentPeriod = 'All'; }
+  var cu = document.getElementById('top-custom');
+  if (cu) cu.style.display = currentPeriod === 'Custom' ? 'inline-flex' : 'none';
+  var st = document.getElementById('top-start');
+  var en = document.getElementById('top-end');
+  if (st) st.value = customStart;
+  if (en) en.value = customEnd;
+}
+
+function onPeriodSelect(val) {
+  currentPeriod = val;
+  if (val === 'Custom') { renderPeriodControl(); return; }   // wait for both dates
+  customStart = '';
+  customEnd   = '';
+  loadData();
+}
+
+function onCustomDates() {
+  var st = document.getElementById('top-start');
+  var en = document.getElementById('top-end');
+  customStart = st ? st.value : '';
+  customEnd   = en ? en.value : '';
+  if (customStart && customEnd) loadData();
 }
 
 // ═══════════════════════════════════════════════════════════════
 // RENDER ALL
 // ═══════════════════════════════════════════════════════════════
 function renderAll() {
+  renderPeriodControl();
   renderLastUpdated();
   renderOverview();
 }
@@ -589,7 +629,6 @@ function renderOverview() {
   var e = D.enterprise;
 
   document.getElementById('ov-total-badge').textContent = fmt(e.totalCases) + ' total';
-  set('ov-period-badge', 'Period: ' + periodLabel(currentPeriod));
   set('e-total',     fmt(e.totalCases));
   set('e-completed', fmt(e.totalCompleted));
   set('e-completion-sub', (e.completionPct || 0) + '% completion rate');
@@ -673,7 +712,7 @@ function renderVerticals() {
       + '</div>'
       + barRow('Onboarded',   v.completed, onbP, 'var(--green)')
       + barRow('In Review',   v.inReview,  revP, 'var(--amber)')
-      + barRow('In Progress', v.draft,     dftP, 'var(--blue)')
+      + barRow('Draft',       v.draft,     dftP, 'var(--blue)')
       + '<div class="vert-stat-row">'
       +   '<span class="vert-stat-item">Pipeline <strong>' + (has ? (v.pipelinePct||0) + '%' : '—') + '</strong></span>'
       +   '<span class="vert-stat-item">Avg TAT <strong>' + (has ? dOr(v.avgTAT, 'd') : '—') + '</strong></span>'
@@ -684,7 +723,7 @@ function renderVerticals() {
       +   '<span class="vert-stat-item">GST Inactive <strong class="text-red">' + n(v.missingGST) + '</strong></span>'
       + '</div>'
       + '<div class="vert-rej-footer"><span>Rejected: <strong>' + n(v.rejected) + '</strong></span>'
-      + '<span class="vert-more">' + (selectedVert === cfg.key ? 'Viewing ▾' : 'Details →') + '</span></div>'
+      + '<span class="vert-more">' + (selectedVert === cfg.key ? 'Viewing ▾' : 'Click for Details →') + '</span></div>'
       + '</div>';
   }).join('');
 }
@@ -742,21 +781,17 @@ function renderVertDetail() {
     : fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)';
 
   var metrics = [
-    ['Onboarded',            fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)'],
-    ['Total Cases',          fmt(v.total || 0)],
-    ['In Review',            fmt(v.inReview || 0)],
-    ['In Progress',          fmt(v.draft || 0)],
-    ['Rejected',             fmt(v.rejected || 0)],
-    ['Avg TAT',              dOr(v.avgTAT, 'd')],
-    ['In Pipeline',          fmt(v.pipeline || 0) + ' (' + (v.pipelinePct || 0) + '%)'],
-    ['Onboarded (7d)',       fmt(v.completedThisWeek || 0)],
-    ['Transacted',           txnVal],
-    ['Avg Days In Progress', dOr(v.avgDraftDays, 'd')],
-    ['Avg Days @ Review',    dOr(v.avgReviewDays, 'd')],
-    ['GST Active',           fmt(v.withGST || 0)],
-    ['GST Inactive',         fmt(v.missingGST || 0)],
+    ['Total Cases',    fmt(v.total || 0)],
+    ['Onboarded',      fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)'],
+    ['In Review',      fmt(v.inReview || 0)],
+    ['Draft',          fmt(v.draft || 0)],
+    ['Rejected',       fmt(v.rejected || 0)],
+    ['Avg TAT',        dOr(v.avgTAT, 'd')],
+    ['Onboarded (7d)', fmt(v.completedThisWeek || 0)],
+    ['Transacted',     txnVal],
+    ['GST Active',     fmt(v.withGST || 0)],
+    ['GST Inactive',   fmt(v.missingGST || 0)],
   ];
-  if (cfg.key === 'OMP') metrics.push(['% Ever Listed', (v.pctListed || 0) + '%']);
 
   var useCat   = v.categorySplit && v.categorySplit.length > 1;
   var mixTitle = useCat ? 'Category Mix' : 'Vendor Type Mix';
@@ -776,21 +811,9 @@ function renderVertDetail() {
       + '</div>'
     : '';
 
-  // Detail filters — Period drives the backend query; the rest filter locally
+  // Detail filters — local to this vertical's records (Period lives above the cards)
   var rows = v.rows || [];
-  var periodPairs = [['All', 'All Time'], ['Today', 'Today']];
-  ((D && D.fiscalYears) || []).forEach(function(fy) { periodPairs.push([fy, fy.replace(/^FY/, 'FY ')]); });
-  periodPairs.push(['Custom', 'Custom']);
-  var periodOpts = periodPairs.map(function(o) {
-    return '<option value="' + o[0] + '"' + (currentPeriod === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
-  }).join('');
-  var customHtml = currentPeriod === 'Custom'
-    ? '<input type="date" class="filter-select" id="vdf-start" value="' + esc(customStart) + '" onchange="vdfCustom()">'
-      + '<input type="date" class="filter-select" id="vdf-end" value="' + esc(customEnd) + '" onchange="vdfCustom()">'
-    : '';
   var filtersHtml = '<div class="vd-filters">'
-    + '<div class="filter-group"><span class="filter-label">Period</span>'
-    +   '<select class="filter-select" id="vdf-period" onchange="vdfPeriod(this.value)">' + periodOpts + '</select>' + customHtml + '</div>'
     + vdSelect('vdf-category', 'Category',    vdUnique(rows, 'category'),   vdF.category, null)
     + vdSelect('vdf-vendor',   'Vendor Type', vdUnique(rows, 'vendorType'), vdF.vendor,   null)
     + vdSelect('vdf-status',   'Status',      vdUnique(rows, 'status'),     vdF.status,   STATUS_LABELS)
@@ -826,7 +849,7 @@ function renderVertDetail() {
   ['vd-ch-status', 'vd-ch-mix', 'vd-ch-trend'].forEach(destroyChart);
   if (has) {
     mkDoughnut('vd-ch-status',
-      ['Onboarded', 'In Progress', 'In Review', 'Rejected'],
+      ['Onboarded', 'Draft', 'In Review', 'Rejected'],
       [v.completed || 0, v.draft || 0, v.inReview || 0, v.rejected || 0],
       [COLORS.green, COLORS.blue, COLORS.amber, COLORS.red]);
 
@@ -907,27 +930,9 @@ function vdfSearchDeb() {
   clearTimeout(vdfDebTimer);
   vdfDebTimer = setTimeout(renderVdTable, 300);
 }
-function vdfPeriod(val) {
-  currentPeriod = val;
-  if (val === 'Custom') { renderVertDetail(); return; }   // show date inputs, wait for both
-  customStart = '';
-  customEnd   = '';
-  loadData();
-}
-function vdfCustom() {
-  var st = document.getElementById('vdf-start');
-  var en = document.getElementById('vdf-end');
-  customStart = st ? st.value : '';
-  customEnd   = en ? en.value : '';
-  if (customStart && customEnd) loadData();
-}
 function vdfClear() {
   vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
-  var reload = currentPeriod !== 'All';
-  currentPeriod = 'All';
-  customStart   = '';
-  customEnd     = '';
-  if (reload) loadData(); else renderVertDetail();
+  renderVertDetail();
 }
 
 // ═══════════════════════════════════════════════════════════════

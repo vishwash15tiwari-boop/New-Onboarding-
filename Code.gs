@@ -458,22 +458,11 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
       return r.onboardedDate && r.onboardedDate >= weekAgo;
     });
 
-    var draftAges = data
-      .filter(function(r) { return r.status === 'DRAFT' && r.createdDate; })
-      .map(function(r)    { return dateDiffDays(r.createdDate, now); })
-      .filter(function(d) { return d !== null && d >= 0; });
-
-    var reviewAges = data
-      .filter(function(r) { return r.status === 'IN_REVIEW' && (r.reviewDate || r.createdDate); })
-      .map(function(r)    { return dateDiffDays(r.reviewDate || r.createdDate, now); })
-      .filter(function(d) { return d !== null && d >= 0; });
-
     // Transaction signal per source: OMP = TRANSACTED activation status,
     // Marketplace verticals = first shipment recorded, EPR = not applicable.
     var transacted = mode === 'omp' ? countFn(data, function(r) { return r.hasTransacted; })
                    : mode === 'mp'  ? countFn(data, function(r) { return r.hasShipment; })
                    : null;
-    var withListing = mode === 'omp' ? countFn(data, function(r) { return r.hasListing; }) : 0;
 
     var monthly = months.map(function(m) {
       return {
@@ -500,11 +489,8 @@ function calcVerticalKPIs(mpAll, ompAll, eprAll, filters) {
       completionPct:    pct(completed, total),
       completedThisWeek: completedThisWeek,
       avgTAT:           tats.length ? Math.round(avg(tats)) : null,
-      avgDraftDays:     draftAges.length  ? Math.round(avg(draftAges))  : null,
-      avgReviewDays:    reviewAges.length ? Math.round(avg(reviewAges)) : null,
       transacted:       transacted,
       pctTransacted:    transacted === null ? null : pct(transacted, completed),
-      pctListed:        pct(withListing, completed),
       categorySplit:    objToArr(groupBy(data, 'category')).slice(0, 6),
       vendorSplit:      objToArr(groupBy(data, 'vendorType')).filter(function(x) { return x.label && x.label !== 'Unknown'; }).slice(0, 6),
       monthly:          monthly,
