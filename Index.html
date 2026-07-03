@@ -436,7 +436,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <span class="status-dot"></span>
     <span class="last-updated" id="last-updated">Loading…</span>
     <span class="live-pill"><b>LIVE</b> · <span id="refresh-countdown">—</span></span>
-    <button id="btn-refresh" onclick="loadData()">
+    <button id="btn-refresh" onclick="loadData(false, true)">
       <span class="icon-refresh">↻</span> Refresh
     </button>
   </div>
@@ -480,11 +480,17 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 // ═══════════════════════════════════════════════════════════════
 var D = null;          // full dashboard data for the active audience
 
-// Sellers / Buyers are two independent datasets (each from its own sheet).
-// The active one is fetched with an `audience` filter and cached here so
-// switching tabs is instant after the first load.
+// Sellers / Buyers are two independent datasets, each read live from its own
+// Google Sheet directly by the browser (no backend). All dashboard content is
+// derived from the sheet columns — nothing is hard-coded.
 var currentAudience = 'seller';
-var DATASETS = { seller: null, buyer: null };
+var SHEETS = {
+  seller: { id: '1qaG_GMvUrC7LJbKBma8-S3x2N6Ua4vDkUC5ZRx3znho',
+            idCol: 'seller_id', nameCol: 'seller_name', vendorCol: 'vendor_type', onbCol: 'onboarded_date' },
+  buyer:  { id: '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI',
+            idCol: 'buyer_id',  nameCol: 'buyer_name',  vendorCol: 'customer_type', onbCol: '' },
+};
+var RAW = { seller: null, buyer: null };   // cached normalized rows + fiscal years per audience
 
 // Display names for raw pipeline statuses (values stay raw for filtering)
 var STATUS_LABELS = { COMPLETED: 'Onboarded', DRAFT: 'Draft', IN_REVIEW: 'In Review', REJECTED: 'Rejected' };
@@ -513,41 +519,46 @@ function scheduleNextRefresh() {
     if (el) el.textContent = (rem >= 60 ? Math.floor(rem / 60) + 'm ' : '') + (rem % 60) + 's';
   }, 1000);
 
-  _refreshTimer = setTimeout(function() { loadData(true); }, AUTO_REFRESH_SEC * 1000);
+  _refreshTimer = setTimeout(function() { loadData(true, true); }, AUTO_REFRESH_SEC * 1000);
 }
 
-function loadData(silent) {
+// Load the active audience: fetch + normalize its sheet (unless cached / forced),
+// then build the dashboard for the current period. `force` re-reads the sheet.
+function loadData(silent, force) {
   var btn = document.getElementById('btn-refresh');
-  btn.classList.add('spinning');
+  if (btn) btn.classList.add('spinning');
   clearTimeout(_refreshTimer);
   clearInterval(_countdownTimer);
   var cd = document.getElementById('refresh-countdown');
   if (cd) cd.textContent = '…';
 
-  var filters     = getFilters();
   var reqAudience = currentAudience;   // guard against a tab switch mid-request
-  google.script.run
-    .withSuccessHandler(function(res) {
-      try {
-        var data = JSON.parse(res);
-        if (data.success) {
-          DATASETS[reqAudience] = data;
-          if (reqAudience === currentAudience) { D = data; renderAll(); }
-        } else {
-          if (!silent) showError(data.error);
-        }
-      } catch(e) { if (!silent) showError('Parse error: ' + e.message); }
-      btn.classList.remove('spinning');
+  ensureRaw(reqAudience, force)
+    .then(function() {
+      if (reqAudience === currentAudience) rebuild();
+      if (btn) btn.classList.remove('spinning');
       if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
       scheduleNextRefresh();
     })
-    .withFailureHandler(function(err) {
-      if (!silent) showError(err.message || 'Script error');
-      btn.classList.remove('spinning');
+    .catch(function(err) {
+      if (!silent) showError(sheetErr(reqAudience, err));
+      if (btn) btn.classList.remove('spinning');
       if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
       scheduleNextRefresh();
-    })
-    .getDashboardData(JSON.stringify(filters));
+    });
+}
+
+// Recompute the dashboard object for the active audience + period, then render.
+function rebuild() {
+  var raw = RAW[currentAudience];
+  if (!raw) return;
+  D = buildDashboard(currentAudience, raw, currentPeriod, customStart, customEnd);
+  renderAll();
+}
+
+function sheetErr(aud, err) {
+  return 'Couldn’t read the ' + (aud === 'buyer' ? 'Buyers' : 'Sellers') + ' sheet. '
+    + 'Make sure it is shared as “Anyone with the link → Viewer”. (' + (err && err.message ? err.message : err) + ')';
 }
 
 // ── Audience (Sellers / Buyers) ──────────────────────────────────
@@ -566,9 +577,8 @@ function switchAudience(a) {
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
   renderAudienceTabs();
 
-  if (DATASETS[a]) {                          // cached — switch instantly
-    D = DATASETS[a];
-    renderAll();
+  if (RAW[a]) {                               // cached — rebuild instantly
+    rebuild();
   } else {                                    // first visit — fetch it
     D = null;
     var grid = document.getElementById('vert-grid');
@@ -624,7 +634,7 @@ function onPeriodSelect(val) {
   if (val === 'Custom') { renderPeriodControl(); return; }   // wait for both dates
   customStart = '';
   customEnd   = '';
-  loadData();
+  RAW[currentAudience] ? rebuild() : loadData();             // period filters cached rows
 }
 
 function onCustomDates() {
@@ -632,7 +642,7 @@ function onCustomDates() {
   var en = document.getElementById('top-end');
   customStart = st ? st.value : '';
   customEnd   = en ? en.value : '';
-  if (customStart && customEnd) loadData();
+  if (customStart && customEnd) { RAW[currentAudience] ? rebuild() : loadData(); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -648,6 +658,251 @@ function renderAll() {
 function renderLastUpdated() {
   var d = new Date(D.lastUpdated);
   document.getElementById('last-updated').textContent = 'Updated: ' + d.toLocaleTimeString('en-IN');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA LAYER — reads each sheet live in the browser, normalizes rows,
+// and computes the whole dashboard (verticals, funnel, categories …).
+// Everything is derived from the sheet columns; nothing is hard-coded.
+// ═══════════════════════════════════════════════════════════════
+
+// Fetch a published sheet via the Google Visualization endpoint and normalize
+// it to { headers, rows }. A test hook (window.__mockSheet) short-circuits it.
+function fetchSheetRows(sheetId) {
+  if (window.__mockSheet) return Promise.resolve(window.__mockSheet(sheetId));
+  var url = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&headers=1';
+  return fetch(url, { credentials: 'omit' }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.text();
+  }).then(parseGviz);
+}
+
+// gviz response: /*O_o*/ google.visualization.Query.setResponse({ … });
+function parseGviz(text) {
+  var a = text.indexOf('{'), b = text.lastIndexOf('}');
+  if (a < 0 || b < 0) throw new Error('Unexpected sheet response');
+  var obj = JSON.parse(text.substring(a, b + 1));
+  if (obj.status === 'error') {
+    throw new Error((obj.errors && obj.errors[0] && (obj.errors[0].detailed_message || obj.errors[0].message)) || 'Sheet query error');
+  }
+  var table = obj.table || {};
+  var cols  = table.cols || [];
+  var headers = cols.map(function(c) { return normHeader(c.label || c.id || ''); });
+  var rows = (table.rows || []).map(function(row) {
+    return (row.c || []).map(function(cell) { return cell ? cell.v : null; });
+  });
+  // If gviz didn't detect a header row, promote the first data row.
+  if (headers.every(function(h) { return !h; }) && rows.length) {
+    headers = rows[0].map(normHeader);
+    rows = rows.slice(1);
+  }
+  return { headers: headers, rows: rows };
+}
+
+function normHeader(h) {
+  return String(h == null ? '' : h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+}
+
+// Fetch + normalize the audience's sheet once (cached in RAW), unless forced.
+function ensureRaw(audience, force) {
+  if (RAW[audience] && !force) return Promise.resolve(RAW[audience]);
+  return fetchSheetRows(SHEETS[audience].id).then(function(parsed) {
+    var norm = normalizeRows(parsed, audience);
+    RAW[audience] = { rows: norm, fiscalYears: buildFiscalYears(norm) };
+    return RAW[audience];
+  });
+}
+
+// Map a raw sheet row to the common record shape the dashboard renders from.
+function normalizeRows(parsed, audience) {
+  var cfg = SHEETS[audience];
+  var idx = buildIndex(parsed.headers);
+  return parsed.rows.map(function(row) {
+    var created   = parseDate(gv(row, idx, 'onboarding_created_date'));
+    var onboarded = cfg.onbCol ? parseDate(gv(row, idx, cfg.onbCol)) : null;
+    var gstin     = String(gv(row, idx, 'gstin') || '').trim();
+    var gstStatus = String(gv(row, idx, 'gstin_status') || '').toUpperCase();
+    var txn       = String(gv(row, idx, 'transaction_activation_status') || '').toUpperCase().replace(/\s+/g, ' ').trim();
+    return {
+      id:            String(gv(row, idx, cfg.idCol) || '').replace(/,/g, '').trim(),
+      name:          String(gv(row, idx, cfg.nameCol) || '').trim(),
+      state:         String(gv(row, idx, 'state') || '').trim(),
+      vendorType:    String(gv(row, idx, cfg.vendorCol) || '').trim(),
+      category:      normCategory(gv(row, idx, 'business_category')),
+      vertical:      String(gv(row, idx, 'business_vertical') || '').trim() || 'Other',
+      gstin:         gstin,
+      status:        normStatus(gv(row, idx, 'onboarding_status')),
+      createdDate:   created,
+      onboardedDate: onboarded,
+      hasGST:        gstStatus.indexOf('AVAILABLE') !== -1 || isValidGSTIN(gstin),
+      hasTransacted: txn === 'TRANSACTED',
+      onbTAT:        dateDiffDays(created, onboarded),
+    };
+  }).filter(function(r) { return r.id || r.name; });
+}
+
+// Build the dashboard object for an audience + period from cached rows.
+function buildDashboard(audience, raw, period, cStart, cEnd) {
+  var f = { period: period, startDate: cStart, endDate: cEnd };
+  var rows = raw.rows.filter(function(r) { return applyDateFilter(r, f); });
+
+  var byVert = {};
+  rows.forEach(function(r) { (byVert[r.vertical] = byVert[r.vertical] || []).push(r); });
+  var names = Object.keys(byVert).sort(function(a, b) { return byVert[b].length - byVert[a].length; });
+
+  var verticalConfig = names.map(function(name) {
+    return { key: slug(name), name: name, sub: audienceLabel(audience) + ' · ' + name, code: codeFor(name) };
+  });
+  var verticals = {};
+  names.forEach(function(name) { verticals[slug(name)] = vStats(byVert[name]); });
+
+  return {
+    success: true,
+    lastUpdated: new Date().toISOString(),
+    audience: audience,
+    verticalConfig: verticalConfig,
+    verticals: verticals,
+    fiscalYears: raw.fiscalYears,
+  };
+}
+
+// Per-vertical KPIs (mirrors the old backend vStats, plus category breakdown).
+function vStats(data) {
+  var now = new Date(), weekAgo = new Date(now.getTime() - 7 * 86400000);
+  var total     = data.length;
+  var completed = count(data, 'status', 'COMPLETED');
+  var withGST   = countFn(data, function(r) { return r.hasGST; });
+  var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0; }).map(function(r) { return r.onbTAT; });
+  var transacted = countFn(data, function(r) { return r.hasTransacted; });
+
+  var catMap = {};
+  data.forEach(function(r) {
+    var c = r.category || 'Others';
+    if (!catMap[c]) catMap[c] = { category: c, onboarded: 0, total: 0 };
+    catMap[c].total++;
+    if (r.status === 'COMPLETED') catMap[c].onboarded++;
+  });
+  var categories = Object.keys(catMap).map(function(k) { return catMap[k]; })
+    .sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });
+
+  var latestFirst = data.slice().sort(function(a, b) {
+    return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
+  });
+
+  return {
+    total: total,
+    completed: completed,
+    draft: count(data, 'status', 'DRAFT'),
+    inReview: count(data, 'status', 'IN_REVIEW'),
+    rejected: count(data, 'status', 'REJECTED'),
+    withGST: withGST,
+    missingGST: total - withGST,
+    completionPct: pct(completed, total),
+    completedThisWeek: countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= weekAgo; }),
+    avgTAT: tats.length ? Math.round(avg(tats)) : null,
+    transacted: transacted,
+    pctTransacted: pct(transacted, completed),
+    categories: categories,
+    rows: latestFirst.map(vertRow),
+    rowsTotal: total,
+  };
+}
+
+function vertRow(r) {
+  return {
+    id: r.id, name: r.name, category: r.category, vendorType: r.vendorType,
+    status: r.status, gstin: r.gstin, hasGST: r.hasGST, state: r.state,
+    createdDate: fmtDate(r.createdDate), onbDate: fmtDate(r.onboardedDate),
+    tat: (r.onbTAT === null ? '—' : r.onbTAT),
+  };
+}
+
+// ── Date / period helpers ──
+function applyDateFilter(r, f) {
+  if (!f || !f.period || f.period === 'All') return true;
+  var d = r.createdDate;
+  if (!d) return false;
+  var now = new Date(), ps = null, pe = null;
+  if (f.period === 'Today') {
+    ps = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (f.period === 'Custom' && f.startDate && f.endDate) {
+    ps = parseYMD(f.startDate, false);
+    pe = parseYMD(f.endDate, true);
+  } else if (String(f.period).indexOf('FY') === 0) {
+    var m = String(f.period).match(/FY(\d{2})-(\d{2})/);
+    if (m) { var y = 2000 + parseInt(m[1], 10); ps = new Date(y, 3, 1); pe = new Date(y + 1, 2, 31, 23, 59, 59, 999); }
+  }
+  if (ps && d < ps) return false;
+  if (pe && d > pe) return false;
+  return true;
+}
+function parseYMD(s, endOfDay) {
+  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(s || '').trim());
+  if (!m) return null;
+  return endOfDay ? new Date(+m[1], +m[2] - 1, +m[3], 23, 59, 59, 999) : new Date(+m[1], +m[2] - 1, +m[3]);
+}
+function fyStartYear(d) { return d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1; }
+function buildFiscalYears(all) {
+  var nowFY = fyStartYear(new Date()), minFY = nowFY;
+  all.forEach(function(r) {
+    var d = r.createdDate || r.onboardedDate;
+    if (d) { var y = fyStartYear(d); if (y >= 2015 && y < minFY) minFY = y; }
+  });
+  var list = [];
+  for (var y = nowFY; y >= minFY; y--) list.push('FY' + String(y).slice(2) + '-' + String(y + 1).slice(2));
+  return list;
+}
+
+// ── Field parsers / normalizers (ported from the Apps Script backend) ──
+function buildIndex(headers) { var idx = {}; headers.forEach(function(h, i) { idx[h] = i; }); return idx; }
+function gv(row, idx, key) { return (idx[key] !== undefined) ? row[idx[key]] : ''; }
+
+function parseDate(val) {
+  if (val === null || val === undefined || val === '') return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  if (typeof val === 'number') { if (val < 1) return null; var dn = new Date((val - 25569) * 86400000); return isNaN(dn.getTime()) ? null : dn; }
+  var s = String(val).trim();
+  if (!s || s === '—' || s === '-' || s === 'N/A') return null;
+  // gviz date literal: Date(year, month0, day[, h, m, s])
+  var g = /^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/.exec(s);
+  if (g) return new Date(+g[1], +g[2], +g[3], +(g[4] || 0), +(g[5] || 0), +(g[6] || 0));
+  var noTime = s.replace(/,?\s+\d{1,2}:\d{2}(:\d{2})?(\s*(am|pm))?/i, '').trim();
+  var d1 = new Date(noTime);
+  if (!isNaN(d1.getTime())) return d1;
+  var d2 = new Date(s);
+  return isNaN(d2.getTime()) ? null : d2;
+}
+function dateDiffDays(d1, d2) { if (!d1 || !d2) return null; return Math.round((d2.getTime() - d1.getTime()) / 86400000); }
+function isValidGSTIN(g) { return /^[0-9A-Z]{15}$/.test(String(g || '').trim().toUpperCase()); }
+
+function normStatus(v) {
+  var s = String(v || '').toUpperCase().trim().replace(/\s+/g, '_');
+  if (!s) return 'UNKNOWN';
+  var map = {
+    COMPLETED: 'COMPLETED', COMPLETE: 'COMPLETED', ONBOARDED: 'COMPLETED', ACTIVE: 'COMPLETED',
+    DRAFT: 'DRAFT', PENDING: 'DRAFT', NEW: 'DRAFT', INITIATED: 'DRAFT', INCOMPLETE: 'DRAFT',
+    IN_REVIEW: 'IN_REVIEW', INREVIEW: 'IN_REVIEW', REVIEW: 'IN_REVIEW', UNDER_REVIEW: 'IN_REVIEW', IN_PROGRESS: 'IN_REVIEW', SUBMITTED: 'IN_REVIEW',
+    REJECTED: 'REJECTED', REJECT: 'REJECTED', DECLINED: 'REJECTED',
+  };
+  return map[s] || s;
+}
+function normCategory(v) { var s = String(v || '').trim(); return s || 'Others'; }
+
+function count(arr, field, val) { return arr.filter(function(r) { return r[field] === val; }).length; }
+function countFn(arr, fn) { return arr.filter(fn).length; }
+function avg(arr) { return arr.length ? arr.reduce(function(a, b) { return a + b; }, 0) / arr.length : 0; }
+function fmtDate(d) {
+  if (!d) return '—';
+  var dd = d.getDate(), mm = d.getMonth() + 1, yy = d.getFullYear();
+  return (dd < 10 ? '0' : '') + dd + '/' + (mm < 10 ? '0' : '') + mm + '/' + yy;
+}
+function slug(s) { return String(s).replace(/[^A-Za-z0-9]+/g, '') || 'V'; }
+function audienceLabel(a) { return a === 'buyer' ? 'Buyers' : 'Sellers'; }
+function codeFor(name) {
+  var s = String(name || '').trim();
+  var words = s.split(/[\s/&-]+/).filter(Boolean);
+  if (words.length > 1) return words.map(function(w) { return w.charAt(0); }).join('').slice(0, 4).toUpperCase();
+  return s.slice(0, 3).toUpperCase();
 }
 
 // ═══════════════════════════════════════════════════════════════
