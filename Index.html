@@ -252,9 +252,11 @@ select,input{font-family:inherit}
 .cc-cat span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:9px;color:var(--txt3);font-weight:600;margin-top:4px;line-height:1.2;min-height:2.2em}
 
 /* Footer stats */
-.cc-foot{display:flex;align-items:center;gap:14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--txt3)}
+.cc-foot{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--txt3)}
 .cc-foot-item{display:flex;flex-direction:column;gap:1px}
 .cc-foot-item b{font-size:12.5px;color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.1px}
+.cc-gst-active b{color:var(--st-onboarded)}
+.cc-gst-inactive b{color:var(--st-rejected)}
 .cc-foot-more{margin-left:auto;font-size:11px;color:var(--blue);font-weight:600;white-space:nowrap}
 
 /* ===== Detail Funnel — clean horizontal meter bars ===== */
@@ -866,6 +868,8 @@ function renderVerticals() {
       + '<div class="cc-foot">'
       +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
       +   txnItem
+      +   '<div class="cc-foot-item cc-gst-active"><b>' + fmt(v.withGST || 0) + '</b>GST Active</div>'
+      +   '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST || 0) + '</b>GST Inactive</div>'
       +   '<span class="cc-foot-more">' + (sel ? 'Viewing ▾' : 'Click for Details →') + '</span>'
       + '</div>'
       + '</div>';
