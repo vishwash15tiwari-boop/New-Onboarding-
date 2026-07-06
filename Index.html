@@ -932,11 +932,9 @@ function renderVertDetail() {
   ];
   // Transacted only for Open Marketplace (backend sends it null elsewhere).
   if (hasTxn) metrics.push(['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)']);
-  // GST Active/Inactive (over onboarded cases) — hidden for Open Marketplace & EPR.
-  if (selectedVert !== 'OMP' && selectedVert !== 'EPR') {
-    metrics.push(['GST Active',   fmt(v.withGST || 0)]);
-    metrics.push(['GST Inactive', fmt(v.missingGST || 0)]);
-  }
+  // GST Active/Inactive (over onboarded cases).
+  metrics.push(['GST Active',   fmt(v.withGST || 0)]);
+  metrics.push(['GST Inactive', fmt(v.missingGST || 0)]);
 
   var funnelSection = has
     ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel'
