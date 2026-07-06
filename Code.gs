@@ -19,11 +19,11 @@ var CONFIG = {
 
 // Per-audience column mapping (the two sheets name a few fields differently).
 var AUDIENCE_CFG = {
-  seller: { sheetId: CONFIG.SELLER_SHEET_ID, label: 'Sellers',
+  seller: { audience: 'seller', sheetId: CONFIG.SELLER_SHEET_ID, label: 'Sellers',
             idCol: 'seller_id', nameCol: 'seller_name', vendorCol: 'vendor_type', onbCol: 'onboarded_date' },
   // Buyers sheet has no onboarded_date, so TAT uses onboarding_updated_date
   // (the last status change) as the onboarding-complete proxy.
-  buyer:  { sheetId: CONFIG.BUYER_SHEET_ID,  label: 'Buyers',
+  buyer:  { audience: 'buyer', sheetId: CONFIG.BUYER_SHEET_ID,  label: 'Buyers',
             idCol: 'buyer_id',  nameCol: 'buyer_name',  vendorCol: 'customer_type', onbCol: 'onboarding_updated_date' },
 };
 
@@ -59,7 +59,9 @@ function isEwaste(cat) { return cat === 'e-waste' || cat === 'ewaste' || cat ===
 //        Metal, Plastic, Institutional Business, Reverse → Infra Business
 //        anything else                                → Others
 //  · everything else (Support, Sustainability Services, blank, …) → Others
-function mapToVertical(businessVertical, category) {
+// audience = 'seller'|'buyer'. For buyers, E-Waste under Marketplace belongs to
+// Others (e-waste buyers are traders/retailers, not Re-Commerce participants).
+function mapToVertical(businessVertical, category, audience) {
   var bv  = String(businessVertical || '').trim().toLowerCase();
   var cat = String(category || '').trim().toLowerCase();
   if (bv === 'epr') return 'EPR';
@@ -69,7 +71,8 @@ function mapToVertical(businessVertical, category) {
   if (bv === 'marketplace') {
     if (cat === 'afr') return 'AFR';
     if (cat === 'goa drs' || cat === 'drs') return 'DRS';
-    if (cat === 're-commerce' || cat === 'recommerce' || cat === 're commerce' || isEwaste(cat)) return 'Recommerce';
+    if (cat === 're-commerce' || cat === 'recommerce' || cat === 're commerce') return 'Recommerce';
+    if (audience !== 'buyer' && isEwaste(cat)) return 'Recommerce';
     if (INFRA_CATS[cat]) return 'InfraBusiness';
     return 'Others';
   }
@@ -92,7 +95,7 @@ function getDashboardData(filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'dash_v8_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cacheKey = 'dash_v9_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -146,7 +149,7 @@ function normalizeRows(raw, cfg) {
       state:         String(gv(row, idx, 'state') || '').trim(),
       vendorType:    String(gv(row, idx, cfg.vendorCol) || '').trim(),
       category:      category,
-      vertical:      mapToVertical(bizVert, category),
+      vertical:      mapToVertical(bizVert, category, cfg.audience),
       gstin:         gstin,
       status:        status,
       createdDate:   created,
@@ -229,20 +232,20 @@ function buildDashboard(audience, cfg, allRows, f) {
     verticals[vc.key] = s;
   });
 
-  // The dedicated GST sheets are seller-side document-check data only.
-  // For the buyer audience, vStats already computes GST from the buyer sheet directly.
+  // OMP dedicated sheet is seller-only (buyer OMP has accurate GSTIN data in the buyer sheet).
   if (audience === 'seller') {
     try {
       var ompGST = readOMPGSTStats();
       verticals['OMP'].withGST    = ompGST.withGST;
       verticals['OMP'].missingGST = ompGST.missingGST;
     } catch (e) {}
-    try {
-      var eprGST = readEPRGSTStats();
-      verticals['EPR'].withGST    = eprGST.withGST;
-      verticals['EPR'].missingGST = eprGST.missingGST;
-    } catch (e) {}
   }
+  // EPR dedicated sheet applies to both audiences — buyer sheet has no EPR GST data.
+  try {
+    var eprGST = readEPRGSTStats();
+    verticals['EPR'].withGST    = eprGST.withGST;
+    verticals['EPR'].missingGST = eprGST.missingGST;
+  } catch (e) {}
 
   return {
     success: true,
