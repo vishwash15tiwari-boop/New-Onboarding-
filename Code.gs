@@ -92,7 +92,7 @@ function getDashboardData(filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'dash_v7_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cacheKey = 'dash_v8_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -229,18 +229,20 @@ function buildDashboard(audience, cfg, allRows, f) {
     verticals[vc.key] = s;
   });
 
-  // Override withGST/missingGST for OMP and EPR using the dedicated GST sheets,
-  // which contain the authoritative document-check data for those verticals.
-  try {
-    var ompGST = readOMPGSTStats();
-    verticals['OMP'].withGST    = ompGST.withGST;
-    verticals['OMP'].missingGST = ompGST.missingGST;
-  } catch (e) {}
-  try {
-    var eprGST = readEPRGSTStats();
-    verticals['EPR'].withGST    = eprGST.withGST;
-    verticals['EPR'].missingGST = eprGST.missingGST;
-  } catch (e) {}
+  // The dedicated GST sheets are seller-side document-check data only.
+  // For the buyer audience, vStats already computes GST from the buyer sheet directly.
+  if (audience === 'seller') {
+    try {
+      var ompGST = readOMPGSTStats();
+      verticals['OMP'].withGST    = ompGST.withGST;
+      verticals['OMP'].missingGST = ompGST.missingGST;
+    } catch (e) {}
+    try {
+      var eprGST = readEPRGSTStats();
+      verticals['EPR'].withGST    = eprGST.withGST;
+      verticals['EPR'].missingGST = eprGST.missingGST;
+    } catch (e) {}
+  }
 
   return {
     success: true,
