@@ -47,18 +47,16 @@ var VERTICALS = [
 var INFRA_CATS = { 'metal': 1, 'plastic': 1, 'institutional business': 1, 'reverse': 1, 'rewerse': 1 };
 function isEwaste(cat) { return cat === 'e-waste' || cat === 'ewaste' || cat === 'e waste'; }
 
-// Map a sheet row to one of the seven verticals. AFR / GOA DRS / Re-Commerce are
-// business_CATEGORY values under the Marketplace vertical; EPR and Open Marketplace
-// are business_VERTICAL values.
+// Map a sheet row to one of the seven verticals.
 //  · EPR              ← business_vertical 'EPR' (all of it)
-//  · Open Marketplace ← business_vertical 'Open Marketplace', categories Metal & Plastic
+//  · Open Marketplace ← business_vertical 'Open Marketplace', categories Metal & Plastic → OMP
 //  · Marketplace vertical, by business_category:
 //        AFR                                          → AFR
 //        GOA DRS                                      → DRS
-//        Re-Commerce, E-Waste                         → Re-Commerce
-//        Metal, Plastic, Institutional Business, Reverse → Infra Business
+//        Re-Commerce, E-Waste (sellers only)          → Recommerce
+//        Metal, Plastic, Institutional Business, Reverse → InfraBusiness
 //        anything else                                → Others
-//  · everything else (Support, Sustainability Services, blank, …) → Others
+//  · everything else (Sustainability Services, blank, …) → Others
 // audience = 'seller'|'buyer'. For buyers, E-Waste under Marketplace belongs to
 // Others (e-waste buyers are traders/retailers, not Re-Commerce participants).
 function mapToVertical(businessVertical, category, audience) {
@@ -95,7 +93,7 @@ function getDashboardData(filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'dash_v9_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cacheKey = 'dash_v10_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
