@@ -31,12 +31,13 @@ var AUDIENCE_CFG = {
 // and excluded from the Avg TAT so a few outliers don't skew it.
 var TAT_MAX_DAYS = 365;
 
-// The seven business verticals, in display order. Rows are mapped into these by
-// mapToVertical(); every audience always shows all seven.
+// The eight business verticals, in display order. Rows are mapped into these by
+// mapToVertical() + date-based migration in normalizeRows.
 var VERTICALS = [
   { key: 'OMP',           name: 'Open Marketplace', code: 'OMP', sub: 'Open Marketplace onboarding' },
   { key: 'EPR',           name: 'EPR',              code: 'EPR', sub: 'Extended Producer Responsibility' },
-  { key: 'InfraBusiness', name: 'Infra Business',   code: 'INF', sub: 'Metal · Plastic · Institutional · Reverse' },
+  { key: 'Marketplace',   name: 'Marketplace',      code: 'MKT', sub: 'Metal · Plastic · Institutional · Reverse (Pre FY 26-27)' },
+  { key: 'InfraBusiness', name: 'Infra Business',   code: 'INF', sub: 'Metal · Plastic · Institutional · Reverse (FY 26-27+)' },
   { key: 'AFR',           name: 'AFR',              code: 'AFR', sub: 'Alternative Fuels & Resources' },
   { key: 'Recommerce',    name: 'Re-Commerce',      code: 'REC', sub: 'Re-Commerce · E-Waste' },
   { key: 'DRS',           name: 'DRS',              code: 'DRS', sub: 'Deposit Refund System' },
@@ -47,19 +48,20 @@ var VERTICALS = [
 var INFRA_CATS = { 'metal': 1, 'plastic': 1, 'institutional business': 1, 'reverse': 1, 'rewerse': 1 };
 function isEwaste(cat) { return cat === 'e-waste' || cat === 'ewaste' || cat === 'e waste'; }
 
-// From FY 26-27 (April 1, 2026), Open Marketplace infra rows migrate to InfraBusiness.
-// Pre-FY26-27 rows stay in the OMP vertical for historical reporting.
-var OMP_TO_INFRA_DATE = new Date(2026, 3, 1); // April 1, 2026
+// Marketplace infra rows (Metal/Plastic/Institutional/Reverse) split at FY 26-27:
+//   created < April 1 2026  → 'Marketplace' card (historical)
+//   created >= April 1 2026 → 'InfraBusiness' card (current)
+var MKT_SPLIT_DATE = new Date(2026, 3, 1); // April 1, 2026
 
-// Map a sheet row to one of the seven verticals (date-unaware — caller applies migration).
+// Map a sheet row to one of the eight verticals (date-unaware for Marketplace infra —
+// normalizeRows applies the FY 26-27 split after this call).
 //  · EPR              ← business_vertical 'EPR' (all of it)
-//  · Open Marketplace ← business_vertical 'Open Marketplace', any INFRA_CATS category → OMP
-//                       (normalizeRows migrates rows on/after April 1 2026 → InfraBusiness)
+//  · Open Marketplace ← business_vertical 'Open Marketplace', Metal or Plastic → OMP (unchanged)
 //  · Marketplace vertical, by business_category:
 //        AFR                                          → AFR
 //        GOA DRS                                      → DRS
 //        Re-Commerce, E-Waste (sellers only)          → Recommerce
-//        Metal, Plastic, Institutional Business, Reverse → InfraBusiness
+//        Metal, Plastic, Institutional Business, Reverse → InfraBusiness (then split by date)
 //        anything else                                → Others
 //  · everything else (Sustainability Services, blank, …) → Others
 // audience = 'seller'|'buyer'. For buyers, E-Waste under Marketplace belongs to
@@ -69,7 +71,7 @@ function mapToVertical(businessVertical, category, audience) {
   var cat = String(category || '').trim().toLowerCase();
   if (bv === 'epr') return 'EPR';
   if (bv === 'open marketplace' || bv === 'openmarketplace') {
-    return INFRA_CATS[cat] ? 'OMP' : 'Others';
+    return (cat === 'metal' || cat === 'plastic') ? 'OMP' : 'Others';
   }
   if (bv === 'marketplace') {
     if (cat === 'afr') return 'AFR';
@@ -98,7 +100,7 @@ function getDashboardData(filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'dash_v11_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cacheKey = 'dash_v12_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -147,9 +149,11 @@ function normalizeRows(raw, cfg) {
     var gstStatus = String(gv(row, idx, 'gstin_status') || '').toUpperCase();
     var txn       = String(gv(row, idx, 'transaction_activation_status') || '').toUpperCase().replace(/\s+/g, ' ').trim();
     var vertical = mapToVertical(bizVert, category, cfg.audience);
-    // Open Marketplace infra rows created on/after April 1 2026 graduate to InfraBusiness.
-    if (vertical === 'OMP' && created && created >= OMP_TO_INFRA_DATE) {
-      vertical = 'InfraBusiness';
+    // Marketplace infra rows: before April 1 2026 → 'Marketplace' card (historical);
+    // from April 1 2026 → 'InfraBusiness' (default from mapToVertical).
+    if (vertical === 'InfraBusiness' && String(bizVert || '').trim().toLowerCase() === 'marketplace'
+        && created && created < MKT_SPLIT_DATE) {
+      vertical = 'Marketplace';
     }
     return {
       id:            String(gv(row, idx, cfg.idCol) || '').replace(/,/g, '').trim(),
