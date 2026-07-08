@@ -127,6 +127,10 @@ select,input{font-family:inherit}
 /* ===== Filter Controls (vertical detail view) ===== */
 .filter-group{display:flex;align-items:center;gap:7px}
 .filter-label{font-size:11px;color:var(--txt3);font-weight:500;letter-spacing:.3px;white-space:nowrap}
+.qf-chips{display:inline-flex;gap:4px;align-items:center}
+.qf-chip{font-family:inherit;font-size:12px;font-weight:600;padding:4px 13px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;background:transparent;color:var(--txt2);transition:background .15s,border-color .15s,color .15s;white-space:nowrap;line-height:1.4}
+.qf-chip.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.qf-chip:not(.active):hover{border-color:var(--border2);color:var(--txt)}
 .filter-select,.filter-input{
   background:var(--card);
   border:1px solid var(--border);
@@ -464,6 +468,11 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
         <button class="aud-tab" id="aud-buyer" role="tab" onclick="switchAudience('buyer')">Buyers</button>
       </div>
       <span style="flex:1"></span>
+      <div class="qf-chips" id="qf-chips">
+        <button class="qf-chip" data-qf="Today"     onclick="onPeriodSelect('Today')">Daily</button>
+        <button class="qf-chip" data-qf="ThisWeek"  onclick="onPeriodSelect('ThisWeek')">Weekly</button>
+        <button class="qf-chip" data-qf="ThisMonth" onclick="onPeriodSelect('ThisMonth')">Monthly</button>
+      </div>
       <span class="filter-label">Period</span>
       <select class="filter-select" id="top-period" onchange="onPeriodSelect(this.value)">
         <option value="All">All Time</option>
@@ -604,8 +613,16 @@ function getFilters() {
   return { audience: currentAudience, period: currentPeriod, startDate: customStart, endDate: customEnd };
 }
 
+// Sync the Daily/Weekly/Monthly chip active state to currentPeriod.
+function renderQFChips() {
+  document.querySelectorAll('#qf-chips .qf-chip').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.qf === currentPeriod);
+  });
+}
+
 // Period select above the cards — options come from the data (fiscalYears)
 function renderPeriodControl() {
+  renderQFChips();
   var sel = document.getElementById('top-period');
   if (!sel) return;
   var pairs = [
