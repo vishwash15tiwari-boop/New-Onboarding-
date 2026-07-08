@@ -499,7 +499,7 @@ var STATUS_LABELS = { COMPLETED: 'Onboarded', DRAFT: 'Draft', IN_REVIEW: 'In Rev
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
-var AUTO_REFRESH_SEC = 60;   // poll every 60 s for near-real-time updates
+var AUTO_REFRESH_SEC = 300;  // poll every 5 min — matches the 5-min backend cache TTL
 var _refreshTimer    = null;
 var _countdownTimer  = null;
 var _nextAt          = 0;
@@ -608,9 +608,14 @@ function getFilters() {
 function renderPeriodControl() {
   var sel = document.getElementById('top-period');
   if (!sel) return;
-  var pairs = [['All', 'All Time'], ['Today', 'Today']];
+  var pairs = [
+    ['All',       'All Time'],
+    ['Today',     'Daily (Today)'],
+    ['ThisWeek',  'Weekly (This Week)'],
+    ['ThisMonth', 'Monthly (This Month)'],
+  ];
   ((D && D.fiscalYears) || []).forEach(function(fy) { pairs.push([fy, fy.replace(/^FY/, 'FY ')]); });
-  pairs.push(['Custom', 'Custom']);
+  pairs.push(['Custom', 'Custom Range']);
   sel.innerHTML = pairs.map(function(o) {
     return '<option value="' + o[0] + '">' + o[1] + '</option>';
   }).join('');

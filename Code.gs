@@ -14,7 +14,7 @@ var CONFIG = {
   BUYER_SHEET_ID:   '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI',
   OMP_GST_SHEET_ID: '1dE-qV2wrPeFJ3HLWxPkTq8cL-xfCJEF8',
   EPR_GST_SHEET_ID: '1Mvkshz6Es3V37GYuXVMIq4L8ql3MCCuIxYjc77YEq5c',
-  CACHE_TTL: 55,   // seconds — < the 60 s frontend poll so each refresh is fresh
+  CACHE_TTL: 300,  // seconds — 5-minute cache; Refresh within a window is instant
 };
 
 // Per-audience column mapping (the two sheets name a few fields differently).
@@ -47,9 +47,14 @@ var VERTICALS = [
 var INFRA_CATS = { 'metal': 1, 'plastic': 1, 'institutional business': 1, 'reverse': 1, 'rewerse': 1 };
 function isEwaste(cat) { return cat === 'e-waste' || cat === 'ewaste' || cat === 'e waste'; }
 
-// Map a sheet row to one of the seven verticals.
+// From FY 26-27 (April 1, 2026), Open Marketplace infra rows migrate to InfraBusiness.
+// Pre-FY26-27 rows stay in the OMP vertical for historical reporting.
+var OMP_TO_INFRA_DATE = new Date(2026, 3, 1); // April 1, 2026
+
+// Map a sheet row to one of the seven verticals (date-unaware — caller applies migration).
 //  · EPR              ← business_vertical 'EPR' (all of it)
-//  · Open Marketplace ← business_vertical 'Open Marketplace', categories Metal & Plastic → OMP
+//  · Open Marketplace ← business_vertical 'Open Marketplace', any INFRA_CATS category → OMP
+//                       (normalizeRows migrates rows on/after April 1 2026 → InfraBusiness)
 //  · Marketplace vertical, by business_category:
 //        AFR                                          → AFR
 //        GOA DRS                                      → DRS
@@ -64,7 +69,7 @@ function mapToVertical(businessVertical, category, audience) {
   var cat = String(category || '').trim().toLowerCase();
   if (bv === 'epr') return 'EPR';
   if (bv === 'open marketplace' || bv === 'openmarketplace') {
-    return (cat === 'metal' || cat === 'plastic') ? 'OMP' : 'Others';
+    return INFRA_CATS[cat] ? 'OMP' : 'Others';
   }
   if (bv === 'marketplace') {
     if (cat === 'afr') return 'AFR';
@@ -93,7 +98,7 @@ function getDashboardData(filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'dash_v10_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cacheKey = 'dash_v11_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -141,13 +146,18 @@ function normalizeRows(raw, cfg) {
     var gstin     = String(gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || '').toUpperCase();
     var txn       = String(gv(row, idx, 'transaction_activation_status') || '').toUpperCase().replace(/\s+/g, ' ').trim();
+    var vertical = mapToVertical(bizVert, category, cfg.audience);
+    // Open Marketplace infra rows created on/after April 1 2026 graduate to InfraBusiness.
+    if (vertical === 'OMP' && created && created >= OMP_TO_INFRA_DATE) {
+      vertical = 'InfraBusiness';
+    }
     return {
       id:            String(gv(row, idx, cfg.idCol) || '').replace(/,/g, '').trim(),
       name:          String(gv(row, idx, cfg.nameCol) || '').trim(),
       state:         String(gv(row, idx, 'state') || '').trim(),
       vendorType:    String(gv(row, idx, cfg.vendorCol) || '').trim(),
       category:      category,
-      vertical:      mapToVertical(bizVert, category, cfg.audience),
+      vertical:      vertical,
       gstin:         gstin,
       status:        status,
       createdDate:   created,
@@ -171,6 +181,9 @@ function normalizeRows(raw, cfg) {
 // Reads the OMP documents-check sheet and returns {withGST, missingGST}
 // counting only COMPLETED rows. GST active = valid GSTIN in the 'gstin' column.
 function readOMPGSTStats() {
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get('omp_gst_v11');
+  if (hit) return JSON.parse(hit);
   var raw = readSheet(CONFIG.OMP_GST_SHEET_ID);
   var idx = buildIndex(raw.headers);
   var completed = raw.rows.filter(function(row) {
@@ -180,13 +193,18 @@ function readOMPGSTStats() {
     var g = String(gv(row, idx, 'gstin') || '').replace(/,/g, '').trim();
     return isValidGSTIN(g);
   }).length;
-  return { withGST: withGST, missingGST: completed.length - withGST };
+  var result = { withGST: withGST, missingGST: completed.length - withGST };
+  try { cache.put('omp_gst_v11', JSON.stringify(result), 600); } catch (e) {}
+  return result;
 }
 
 // Reads the EPR documents-check sheet and returns {withGST, missingGST}
 // counting only COMPLETED rows. GST active = gstin_status 'Active' found
 // inside the nested fields_json, or a valid GSTIN number in brand_details.
 function readEPRGSTStats() {
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get('epr_gst_v11');
+  if (hit) return JSON.parse(hit);
   var raw = readSheet(CONFIG.EPR_GST_SHEET_ID);
   var idx = buildIndex(raw.headers);
   var completed = raw.rows.filter(function(row) {
@@ -206,7 +224,9 @@ function readEPRGSTStats() {
     } catch (e) {}
     return false;
   }).length;
-  return { withGST: withGST, missingGST: completed.length - withGST };
+  var result = { withGST: withGST, missingGST: completed.length - withGST };
+  try { cache.put('epr_gst_v11', JSON.stringify(result), 600); } catch (e) {}
+  return result;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -230,8 +250,9 @@ function buildDashboard(audience, cfg, allRows, f) {
     verticals[vc.key] = s;
   });
 
-  // OMP dedicated sheet is seller-only (buyer OMP has accurate GSTIN data in the buyer sheet).
-  if (audience === 'seller') {
+  // OMP GST sheet override: seller-only, and only for All-time view (the dedicated
+  // sheet has no date dimension, so period-filtered views use main-sheet GST data).
+  if (audience === 'seller' && (!f || !f.period || f.period === 'All')) {
     try {
       var ompGST = readOMPGSTStats();
       verticals['OMP'].withGST    = ompGST.withGST;
@@ -319,6 +340,14 @@ function applyDateFilter(r, f) {
   var now = new Date(), ps = null, pe = null;
   if (f.period === 'Today') {
     ps = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  } else if (f.period === 'ThisWeek') {
+    var dow = now.getDay(), daysToMon = (dow === 0) ? 6 : (dow - 1);
+    ps = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysToMon);
+    pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  } else if (f.period === 'ThisMonth') {
+    ps = new Date(now.getFullYear(), now.getMonth(), 1);
+    pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   } else if (f.period === 'Custom' && f.startDate && f.endDate) {
     ps = parseYMD(f.startDate, false);
     pe = parseYMD(f.endDate, true);
