@@ -351,21 +351,31 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .vd-kpi-val{font-size:15.5px;font-weight:700;color:var(--txt);letter-spacing:-.3px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .vd-kpi-lbl{font-size:9.5px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.35px;margin-top:2px;white-space:nowrap}
 
-/* ===== Vertical Detail Panel (opens on card click) ===== */
+/* ===== Vertical Detail — Full-Page Overlay ===== */
+@keyframes slideInRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
 #vert-detail{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:var(--r);
-  padding:22px;
-  margin-bottom:24px;
-  box-shadow:var(--shadow);
-  animation:fadeUp .25s ease both;
-  scroll-margin-top:62px;   /* clear the sticky header */
+  position:fixed;
+  inset:0;
+  z-index:400;
+  background:var(--bg);
+  overflow-y:auto;
+  animation:slideInRight .22s cubic-bezier(.22,.8,.36,1) both;
 }
-.vd-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:18px}
-.vd-title{font-size:15px;font-weight:650;color:var(--txt);letter-spacing:-.2px}
+.vd-page-inner{max-width:1200px;margin:0 auto;padding:24px 32px 48px}
+.vd-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.vd-title{font-size:18px;font-weight:700;color:var(--txt);letter-spacing:-.3px}
+.vd-back{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 16px;border-radius:var(--r2);
+  border:1px solid var(--border);background:var(--card);
+  color:var(--txt2);font-size:13px;font-weight:600;transition:all .14s;
+  flex-shrink:0;
+}
+.vd-back::before{content:'←';font-size:15px;line-height:1}
+.vd-back:hover{color:var(--blue);border-color:var(--blue);background:rgba(0,113,188,.05)}
+/* reuse vd-close class for the filter clear button */
 .vd-close{
-  margin-left:auto;padding:6px 13px;border-radius:var(--r2);
+  padding:6px 13px;border-radius:var(--r2);
   border:1px solid var(--border);background:var(--card);
   color:var(--txt3);font-size:12px;font-weight:500;transition:all .14s;
 }
@@ -484,12 +494,12 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
     </div>
     <div class="compare-grid" id="vert-grid"></div>
 
-    <!-- Vertical Detail (rendered on card click) -->
-    <div id="vert-detail" style="display:none"></div>
-
   </div>
 
 </div><!-- /main -->
+
+<!-- Vertical Detail — full-page overlay (outside main layout) -->
+<div id="vert-detail" style="display:none"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -516,6 +526,10 @@ var _isFirstLoad     = true;
 
 document.addEventListener('DOMContentLoaded', function() {
   loadData();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && selectedVert) closeVertDetail();
 });
 
 function scheduleNextRefresh() {
@@ -582,6 +596,7 @@ function switchAudience(a) {
   if (a === currentAudience) return;
   currentAudience = a;
   selectedVert = null;                       // close any open detail panel
+  document.body.style.overflow = '';
   var panel = document.getElementById('vert-detail');
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
   renderAudienceTabs();
@@ -906,12 +921,14 @@ function openVertDetail(key) {
   selectedVert = key;
   renderVerticals();
   renderVertDetail();
+  document.body.style.overflow = 'hidden';
   var panel = document.getElementById('vert-detail');
-  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (panel) panel.scrollTop = 0;
 }
 
 function closeVertDetail() {
   selectedVert = null;
+  document.body.style.overflow = '';
   var panel = document.getElementById('vert-detail');
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
   renderVerticals();
@@ -997,11 +1014,11 @@ function renderVertDetail() {
     ? '<div class="cc-cap vd-cat-cap">Onboarded by category</div>' + cardCategories(v, 12)
     : '';
 
-  panel.innerHTML =
-    '<div class="vd-head">'
+  panel.innerHTML = '<div class="vd-page-inner">'
+    + '<div class="vd-head">'
+    + '<button class="vd-back" onclick="closeVertDetail()">Back</button>'
     + '<span class="compare-source-badge">' + cfg.code + '</span>'
     + '<div><div class="vd-title">' + esc(cfg.name) + '</div><div class="compare-sub">' + esc(cfg.sub) + '</div></div>'
-    + '<button class="vd-close" onclick="closeVertDetail()">✕ Close</button>'
     + '</div>'
     + catSection
     + '<div class="vd-kpis">'
@@ -1010,7 +1027,8 @@ function renderVertDetail() {
       }).join('')
     + '</div>'
     + funnelSection
-    + recordsHtml;
+    + recordsHtml
+    + '</div>';
 
   panel.style.display = 'block';
 
@@ -1037,7 +1055,11 @@ function vdFilteredRows() {
 function vdSetView(view) {
   if (vdView === view) return;
   vdView = view;
-  renderVertDetail();
+  // Update toggle button active states without rebuilding the full page
+  document.querySelectorAll('.vd-toggle-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.textContent.toLowerCase().indexOf(view === 'board' ? 'board' : 'table') !== -1);
+  });
+  renderVdRecords();
 }
 
 // Shows whichever records view is active and renders it from the filtered rows.
@@ -1165,7 +1187,12 @@ function vdfSearchDeb() {
 }
 function vdfClear() {
   vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
-  renderVertDetail();
+  // Reset dropdown values in-place without rebuilding the full overlay
+  ['vdf-category','vdf-vendor','vdf-status','vdf-gst'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = 'All';
+  });
+  var s = document.getElementById('vdf-search'); if (s) s.value = '';
+  renderVdRecords();
 }
 
 // ═══════════════════════════════════════════════════════════════
