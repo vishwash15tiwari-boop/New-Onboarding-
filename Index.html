@@ -990,8 +990,8 @@ function renderVerticals() {
       + '<div class="cc-foot">'
       +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
       +   txnItem
-      +   '<div class="cc-foot-item cc-gst-active"><b>' + fmt(v.withGST || 0) + '</b>GST Active</div>'
-      +   '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST || 0) + '</b>GST Inactive</div>'
+      +   (v.withGST   != null ? '<div class="cc-foot-item cc-gst-active"><b>'   + fmt(v.withGST)   + '</b>GST Active</div>'   : '')
+      +   (v.missingGST != null ? '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST) + '</b>GST Inactive</div>' : '')
       +   '<span class="cc-foot-more">' + (sel ? 'Viewing ▾' : 'Click for Details →') + '</span>'
       + '</div>'
       + '</div>';
@@ -1092,9 +1092,9 @@ function renderVertDetail() {
     ['Rejected',       fmt(v.rejected || 0)],
     ['Avg TAT',        dOr(v.avgTAT, 'd')],
     ['Onboarded (7d)', fmt(v.completedThisWeek || 0)],
-    ['GST Active',     fmt(v.withGST || 0)],
-    ['GST Inactive',   fmt(v.missingGST || 0)],
-  ];
+    v.withGST    != null ? ['GST Active',   fmt(v.withGST)]   : null,
+    v.missingGST != null ? ['GST Inactive', fmt(v.missingGST)] : null,
+  ].filter(Boolean);
 
   var funnelSection = has
     ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel'
