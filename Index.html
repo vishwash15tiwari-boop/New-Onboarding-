@@ -692,16 +692,17 @@ function renderLastUpdated() {
   var el  = document.getElementById('last-updated');
   var dot = document.querySelector('.status-dot');
 
-  if (D.dataSource === 'metabase') {
-    // Show Metabase sync time when live data is active
+  var isLive = D.dataSource === 'metabase_live' || D.dataSource === 'metabase_sync' || D.dataSource === 'metabase';
+  if (isLive) {
+    var liveLabel = D.dataSource === 'metabase_live' ? '⚡ Metabase Live' : '⚡ Metabase Sync';
     var syncLabel = '';
     if (D.mbSyncedAt) {
       var sd = new Date(D.mbSyncedAt);
-      syncLabel = ' · Metabase ' + sd.toLocaleTimeString('en-IN');
+      syncLabel = ' · ' + sd.toLocaleTimeString('en-IN');
     }
     el.innerHTML = 'Updated: ' + d.toLocaleTimeString('en-IN')
       + ' <span style="display:inline-flex;align-items:center;gap:4px;background:#e7f6ec;color:#0c7a3b;border:1px solid #c3e8d0;border-radius:12px;padding:1px 8px;font-size:10.5px;font-weight:600;margin-left:4px;white-space:nowrap">'
-      + '⚡ Metabase Live' + syncLabel + '</span>';
+      + liveLabel + syncLabel + '</span>';
     if (dot) { dot.style.background = 'var(--green)'; }
   } else {
     el.textContent = 'Updated: ' + d.toLocaleTimeString('en-IN');

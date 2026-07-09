@@ -18,6 +18,13 @@ var CONFIG = {
   // When the Metabase sync has populated the local sheet, it is used instead of
   // the external spreadsheet — giving the dashboard near-real-time data.
   // Falls back to the external sheet ID transparently if the local sheet is absent.
+  // Direct Metabase card IDs per audience sheet.
+  // readSheet() calls fetchMBCard_() (Metabase.gs) on every cache miss so the
+  // dashboard gets live data without needing a background sync trigger.
+  MB_CARDS: {
+    '1qaG_GMvUrC7LJbKBma8-S3x2N6Ua4vDkUC5ZRx3znho': 5712,  // Seller Info
+    '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI': 5711,  // Buyer from Inspection
+  },
   MB_LOCAL_SHEETS: {
     '1qaG_GMvUrC7LJbKBma8-S3x2N6Ua4vDkUC5ZRx3znho': '_mb_sellers',
     '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI': '_mb_buyers',
@@ -120,15 +127,12 @@ function getDashboardData(filtersJson) {
     var dash = buildDashboard(audience, cfg, rows, f);
 
     // Annotate data source so the frontend can show "Live (Metabase)" vs "Sheets"
-    var localName = CONFIG.MB_LOCAL_SHEETS && CONFIG.MB_LOCAL_SHEETS[cfg.sheetId];
-    if (localName) {
-      try {
-        var localSheet = SpreadsheetApp.openById(CONFIG.MB_TARGET_SS_ID).getSheetByName(localName);
-        if (localSheet && localSheet.getLastRow() > 1) {
-          dash.dataSource = 'metabase';
-          try { dash.mbSyncedAt = getMBSyncTime(localName); } catch (e2) {}
-        }
-      } catch (e) {}
+    dash.dataSource = raw.source || 'sheets';
+    if (raw.source === 'metabase_live') {
+      dash.mbSyncedAt = new Date().toISOString();
+    } else if (raw.source === 'metabase_sync') {
+      var localName = CONFIG.MB_LOCAL_SHEETS[cfg.sheetId];
+      try { dash.mbSyncedAt = getMBSyncTime(localName); } catch (e) {}
     }
 
     var out = JSON.stringify(dash);
@@ -146,19 +150,46 @@ function getDashboardData(filtersJson) {
 // Priority: local Metabase-synced sheet (populated by Metabase.gs every 5 min)
 //           → external Google Sheet by ID (original fallback).
 // Both paths normalise headers the same way so normalizeRows() is unaffected.
+// Priority order:
+//   1. Direct Metabase API fetch — live data, no trigger required.
+//      Uses fetchMBCard_() from Metabase.gs (same Apps Script project).
+//      Requires MB_EMAIL + MB_PASSWORD in Script Properties.
+//   2. Local Metabase-synced sheet — written every 5 min by Metabase.gs trigger.
+//      Used as hot fallback if the Metabase API is temporarily unreachable.
+//   3. Original external Google Spreadsheet — last-resort fallback.
 function readSheet(sheetId) {
+  // 1. Direct Metabase fetch
+  var cardId = CONFIG.MB_CARDS && CONFIG.MB_CARDS[sheetId];
+  if (cardId) {
+    try {
+      var mbData = fetchMBCard_(cardId);
+      if (mbData && mbData.headers.length && mbData.rows.length) {
+        mbData.source = 'metabase_live';
+        return mbData;
+      }
+    } catch (e) {
+      Logger.log('Metabase direct fetch skipped (card ' + cardId + '): ' + e.message);
+    }
+  }
+
+  // 2. Local synced sheet
   var localName = CONFIG.MB_LOCAL_SHEETS && CONFIG.MB_LOCAL_SHEETS[sheetId];
   if (localName) {
     try {
       var ss    = SpreadsheetApp.openById(CONFIG.MB_TARGET_SS_ID);
       var local = ss.getSheetByName(localName);
       if (local && local.getLastRow() > 1) {
-        return readSheetObj_(local);
+        var d = readSheetObj_(local);
+        d.source = 'metabase_sync';
+        return d;
       }
-    } catch (e) { /* local sheet unavailable — fall through */ }
+    } catch (e) { /* fall through */ }
   }
-  // Fallback: original external spreadsheet
-  return readSheetObj_(SpreadsheetApp.openById(sheetId).getSheets()[0]);
+
+  // 3. Original external spreadsheet
+  var fallback = readSheetObj_(SpreadsheetApp.openById(sheetId).getSheets()[0]);
+  fallback.source = 'sheets';
+  return fallback;
 }
 
 function readSheetObj_(sheet) {
