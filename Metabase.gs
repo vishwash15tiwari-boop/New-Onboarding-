@@ -110,6 +110,7 @@ function fetchMBCard_(cardId) {
       contentType:        'application/json',
       payload:            JSON.stringify({}),
       muteHttpExceptions: true,
+      deadline:           20,   // seconds — fail fast rather than hanging the caller
     });
   }
 

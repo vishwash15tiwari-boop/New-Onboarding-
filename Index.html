@@ -524,8 +524,33 @@ var _countdownTimer  = null;
 var _nextAt          = 0;
 var _isFirstLoad     = true;
 
+// localStorage key prefix — bump the version suffix when the data shape changes
+// so stale entries from an old schema are silently ignored.
+var STORE_PFX = 'ebt_v2_';
+
+// Stale-while-revalidate: if we have a previous response in localStorage, paint
+// it immediately so the user sees real data with zero wait, then fetch fresh data
+// silently in the background. Perceived load time drops to ~0 ms on return visits.
 document.addEventListener('DOMContentLoaded', function() {
-  loadData();
+  var restored = false;
+  try {
+    var stored = localStorage.getItem(STORE_PFX + currentAudience);
+    if (stored) {
+      var parsed = JSON.parse(stored);
+      if (parsed && parsed.success) {
+        D = parsed;
+        _isFirstLoad = false;   // loading overlay already unnecessary
+        hideLoading();
+        renderAll();
+        var lu = document.getElementById('last-updated');
+        if (lu) lu.textContent = 'Refreshing…';
+        restored = true;
+      }
+    }
+  } catch (e) {}
+
+  // Always follow up with a backend fetch; silent if stale data was shown
+  loadData(restored);
 });
 
 document.addEventListener('keydown', function(e) {
@@ -573,6 +598,8 @@ function loadData(silent) {
       try {
         var data = JSON.parse(res);
         if (data.success) {
+          // Persist for instant display on next page load
+          try { localStorage.setItem(STORE_PFX + reqAudience, res); } catch (e) {}
           if (reqAudience === currentAudience) { D = data; renderAll(); }
           done();
         } else {
@@ -600,10 +627,30 @@ function switchAudience(a) {
   var panel = document.getElementById('vert-detail');
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
   renderAudienceTabs();
-  D = null;
-  var grid = document.getElementById('vert-grid');
-  if (grid) grid.innerHTML = '<div class="no-data" style="grid-column:1/-1">Loading ' + (a === 'buyer' ? 'Buyers' : 'Sellers') + '…</div>';
-  loadData();
+
+  // Show cached data for this audience immediately while the backend refreshes
+  var swrDone = false;
+  try {
+    var stored = localStorage.getItem(STORE_PFX + a);
+    if (stored) {
+      var parsed = JSON.parse(stored);
+      if (parsed && parsed.success) {
+        D = parsed;
+        renderAll();
+        var lu = document.getElementById('last-updated');
+        if (lu) lu.textContent = 'Refreshing…';
+        swrDone = true;
+      }
+    }
+  } catch (e) {}
+
+  if (!swrDone) {
+    D = null;
+    var grid = document.getElementById('vert-grid');
+    if (grid) grid.innerHTML = '<div class="no-data" style="grid-column:1/-1">Loading ' + (a === 'buyer' ? 'Buyers' : 'Sellers') + '…</div>';
+  }
+
+  loadData(swrDone);  // silent if stale data already shown
 }
 
 function hideLoading() {

@@ -143,29 +143,17 @@ function getDashboardData(filtersJson) {
 // ─────────────────────────────────────────────────────────────
 // DATA READ + NORMALIZATION
 // ─────────────────────────────────────────────────────────────
-// All data comes from THIS spreadsheet (the one bound to this script).
-// Priority:
-//   1. Metabase API direct fetch — live, called on every 5-min cache miss.
-//   2. _mb_sellers / _mb_buyers hidden sheets in this spreadsheet
-//      (written by the optional Metabase.gs background trigger).
+// Priority (fastest to slowest):
+//   1. _mb_* hidden sheets in this spreadsheet — pure in-process read, ~100 ms.
+//      Written every 5 min by the Metabase.gs trigger; same freshness as the cache.
+//   2. External Google Sheet by ID — ~1-2 s (openById + read); used until trigger runs.
+//   3. Metabase API direct fetch — ~3-8 s HTTP round-trip; last resort only.
 function readData(audience) {
-  var cardId    = CONFIG.MB_CARDS[audience];
-  var localName = CONFIG.MB_LOCAL_SHEETS[audience];
+  var localName  = CONFIG.MB_LOCAL_SHEETS[audience];
+  var fallbackId = AUDIENCE_CFG[audience] && AUDIENCE_CFG[audience].sheetId;
+  var cardId     = CONFIG.MB_CARDS[audience];
 
-  // 1. Direct Metabase fetch
-  if (cardId) {
-    try {
-      var mbData = fetchMBCard_(cardId);
-      if (mbData && mbData.headers.length && mbData.rows.length) {
-        mbData.source = 'metabase_live';
-        return mbData;
-      }
-    } catch (e) {
-      Logger.log('Metabase direct fetch skipped (card ' + cardId + '): ' + e.message);
-    }
-  }
-
-  // 2. Local synced sheet in this spreadsheet
+  // 1. Local synced sheet — no HTTP, fastest path
   if (localName) {
     try {
       var local = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(localName);
@@ -177,14 +165,24 @@ function readData(audience) {
     } catch (e) { /* fall through */ }
   }
 
-  // 3. Last-resort: external Google Sheet (ensures dashboard always loads)
-  var fallbackId = AUDIENCE_CFG[audience] && AUDIENCE_CFG[audience].sheetId;
+  // 2. External Google Sheet fallback
   if (fallbackId) {
     try {
       var fb = readSheetObj_(SpreadsheetApp.openById(fallbackId).getSheets()[0]);
       fb.source = 'sheets';
       return fb;
     } catch (e) { Logger.log('Fallback sheet read failed: ' + e.message); }
+  }
+
+  // 3. Metabase direct — only when nothing else is available
+  if (cardId) {
+    try {
+      var mbData = fetchMBCard_(cardId);
+      if (mbData && mbData.headers.length && mbData.rows.length) {
+        mbData.source = 'metabase_live';
+        return mbData;
+      }
+    } catch (e) { Logger.log('Metabase direct fetch failed: ' + e.message); }
   }
 
   return { headers: [], rows: [], source: 'empty' };
