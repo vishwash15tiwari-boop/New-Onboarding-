@@ -264,7 +264,7 @@ function normalizeRows(raw, cfg) {
     // onboarding (created/onboarded differ only by timezone) reads 0, not negative.
     var tat = (status === 'COMPLETED' && created && onboarded) ? dateDiffDays(created, onboarded) : null;
 
-    var gstin     = String(gv(row, idx, 'gstin') || '').trim();
+    var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || '').toUpperCase();
     var txnRaw    = gv(row, idx, 'transaction_activation_status')
                  || gv(row, idx, 'transaction_status')
