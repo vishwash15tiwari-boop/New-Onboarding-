@@ -602,10 +602,14 @@ function loadData(silent) {
           try { localStorage.setItem(STORE_PFX + reqAudience, res); } catch (e) {}
           if (reqAudience === currentAudience) {
             D = data;
-            // Vertical rows are period-specific; invalidate and reload if a panel is open.
-            vertRows = [];
-            vertRowsLoading = false;
-            if (selectedVert) loadVertRows(selectedVert);
+            // Reload vertical rows only when the period key changed (e.g. user switched period).
+            // Silent auto-refreshes keep the same period, so existing vertRows remain valid.
+            var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+            if (selectedVert && _vertRowsPKey !== newPKey) {
+              vertRows = [];
+              vertRowsLoading = false;
+              loadVertRows(selectedVert);
+            }
             renderAll();
           }
           done();
@@ -632,6 +636,8 @@ function switchAudience(a) {
   selectedVert = null;                       // close any open detail panel
   vertRows = [];
   vertRowsLoading = false;
+  _vertRowsPKey = null;
+  ++_vertRowsGen;
   document.body.style.overflow = '';
   var panel = document.getElementById('vert-detail');
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
@@ -798,6 +804,8 @@ function getVertCfg() {
 var selectedVert = null;
 var vertRows = [];          // lazily loaded rows for the open vertical
 var vertRowsLoading = false;
+var _vertRowsGen = 0;       // incremented on each loadVertRows call; stale callbacks are discarded
+var _vertRowsPKey = null;   // period key when vertRows were last fetched; used to detect stale rows
 var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
 var VD_MAX_RENDER = 200;   // rows rendered at once in the detail table
 var KB_MAX_PER_COL = 50;   // cards rendered per Kanban column
@@ -995,6 +1003,8 @@ function openVertDetail(key) {
     vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
     vertRows = [];
     vertRowsLoading = true;  // show "Loading records…" until rows arrive
+    _vertRowsPKey = null;
+    ++_vertRowsGen;
   }
   selectedVert = key;
   renderVerticals();
@@ -1007,20 +1017,27 @@ function openVertDetail(key) {
 
 function loadVertRows(key) {
   vertRowsLoading = true;
+  var myGen = ++_vertRowsGen;
   var f = { audience: currentAudience, period: currentPeriod };
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
   google.script.run
     .withSuccessHandler(function(res) {
+      if (myGen !== _vertRowsGen) return;  // a newer request superseded this one
       vertRowsLoading = false;
       try {
         var data = JSON.parse(res);
         if (data.success && data.vertKey === selectedVert) {
           vertRows = data.rows || [];
+          _vertRowsPKey = myPKey;
           renderVertDetail();
         }
       } catch (e) {}
     })
-    .withFailureHandler(function() { vertRowsLoading = false; })
+    .withFailureHandler(function() {
+      if (myGen !== _vertRowsGen) return;
+      vertRowsLoading = false;
+    })
     .getVerticalRows(key, JSON.stringify(f));
 }
 
@@ -1028,6 +1045,8 @@ function closeVertDetail() {
   selectedVert = null;
   vertRows = [];
   vertRowsLoading = false;
+  _vertRowsPKey = null;
+  ++_vertRowsGen;
   document.body.style.overflow = '';
   var panel = document.getElementById('vert-detail');
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }

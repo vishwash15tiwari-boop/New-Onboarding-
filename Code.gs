@@ -115,13 +115,32 @@ function getDashboardData(filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'dash_v15_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cacheKey  = 'dash_v15_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     var raw  = readData(audience);
     var rows = normalizeRows(raw, cfg);
+
+    // Pre-populate per-vertical row caches from this single data read so
+    // getVerticalRows() always gets a cache hit and never re-reads the source.
+    var filtered = rows.filter(function(r) { return applyDateFilter(r, f); });
+    VERTICALS.forEach(function(vc) {
+      var vrows = filtered.filter(function(r) { return r.vertical === vc.key; })
+        .sort(function(a, b) {
+          return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
+        });
+      try {
+        cache.put(
+          'vrows_v1_' + audience + '_' + vc.key + '_' + periodKey,
+          JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) }),
+          CONFIG.CACHE_TTL
+        );
+      } catch (e) { /* vertical exceeds 100KB — getVerticalRows falls back to direct read */ }
+    });
+
     var dash = buildDashboard(audience, cfg, rows, f);
 
     // Annotate data source so the frontend can show "Live (Metabase)" vs "Sheets"
@@ -234,7 +253,7 @@ function readSheetObj_(sheet) {
 // Map each sheet row to the common record shape the dashboard renders from.
 function normalizeRows(raw, cfg) {
   var idx = buildIndex(raw.headers);
-  return raw.rows.map(function(row) {
+  var normalized = raw.rows.map(function(row) {
     var status   = normStatus(gv(row, idx, 'onboarding_status'));
     var category = normCategory(gv(row, idx, 'business_category'));
     var bizVert  = gv(row, idx, 'business_vertical');
@@ -301,6 +320,15 @@ function normalizeRows(raw, cfg) {
       onbTAT:        tat,
     };
   }).filter(function(r) { return r.id || r.name; });
+  // Deduplicate by ID — Metabase card queries can emit the same record multiple times
+  // when the underlying question involves joins (e.g. seller with multiple transactions).
+  var seen = {};
+  return normalized.filter(function(r) {
+    if (!r.id) return true;
+    if (seen[r.id]) return false;
+    seen[r.id] = true;
+    return true;
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
