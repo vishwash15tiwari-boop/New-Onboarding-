@@ -109,7 +109,7 @@ function getDashboardData(filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'dash_v12_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cacheKey = 'dash_v13_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -189,6 +189,25 @@ function normalizeRows(raw, cfg) {
     var gstin     = String(gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || '').toUpperCase();
     var txn       = String(gv(row, idx, 'transaction_activation_status') || '').toUpperCase().replace(/\s+/g, ' ').trim();
+
+    // Transaction value — try several common column name variants
+    var txnValRaw = gv(row, idx, 'transaction_value')
+                 || gv(row, idx, 'txn_value')
+                 || gv(row, idx, 'total_transaction_value')
+                 || gv(row, idx, 'gmv')
+                 || gv(row, idx, 'transaction_amount')
+                 || gv(row, idx, 'first_transaction_value')
+                 || gv(row, idx, 'order_value')
+                 || '';
+    var txnVal = (txnValRaw !== '' && txnValRaw !== null)
+      ? (parseFloat(String(txnValRaw).replace(/,/g, '')) || null)
+      : null;
+    var txnDate = parseDate(
+      gv(row, idx, 'first_transaction_date') ||
+      gv(row, idx, 'transaction_date')       ||
+      gv(row, idx, 'first_txn_date')         || ''
+    );
+
     var vertical = mapToVertical(bizVert, category, cfg.audience);
     // Marketplace infra rows: before April 1 2026 → 'Marketplace' card (historical);
     // from April 1 2026 → 'InfraBusiness' (default from mapToVertical).
@@ -212,8 +231,10 @@ function normalizeRows(raw, cfg) {
       // only when AVAILABLE and not NOT/MISSING.
       hasGST:        gstStatus ? (gstStatus.indexOf('AVAILABLE') !== -1 && gstStatus.indexOf('NOT') === -1 && gstStatus.indexOf('MISSING') === -1)
                                : isValidGSTIN(gstin),
-      hasTxn:        txn !== '',            // does this row carry a transaction signal at all?
+      hasTxn:        txn !== '',
       hasTransacted: txn === 'TRANSACTED',
+      txnValue:      txnVal,
+      txnDate:       txnDate,
       onbTAT:        tat,
     };
   }).filter(function(r) { return r.id || r.name; });
@@ -333,6 +354,16 @@ function vStats(data) {
   // transaction signal at all (e.g. EPR); otherwise it's the TRANSACTED count.
   var transacted = countFn(data, function(r) { return r.hasTxn; }) ? countFn(data, function(r) { return r.hasTransacted; }) : null;
 
+  // Sum transaction values when any row carries the field.
+  var txnValSum = 0, hasTxnValData = false;
+  data.forEach(function(r) {
+    if (r.txnValue !== null && r.txnValue !== undefined) {
+      hasTxnValData = true;
+      txnValSum += r.txnValue;
+    }
+  });
+  var totalTxnValue = hasTxnValData ? txnValSum : null;
+
   var catMap = {};
   data.forEach(function(r) {
     var c = r.category || 'Others';
@@ -360,6 +391,7 @@ function vStats(data) {
     avgTAT: tats.length ? Math.round(avg(tats)) : null,
     transacted: transacted,
     pctTransacted: transacted === null ? null : pct(transacted, completed),
+    totalTxnValue: totalTxnValue,
     categories: categories,
     rows: latestFirst.map(vertRow),
     rowsTotal: total,
@@ -372,6 +404,10 @@ function vertRow(r) {
     status: r.status, gstin: r.gstin, hasGST: r.hasGST, state: r.state,
     createdDate: fmtDate(r.createdDate), onbDate: fmtDate(r.onboardedDate),
     tat: (r.onbTAT === null ? '—' : r.onbTAT),
+    hasTxn:       r.hasTxn,
+    hasTransacted: r.hasTransacted,
+    txnValue:     r.txnValue !== null && r.txnValue !== undefined ? r.txnValue : null,
+    txnDate:      fmtDate(r.txnDate),
   };
 }
 

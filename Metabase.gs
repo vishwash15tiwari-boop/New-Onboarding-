@@ -195,7 +195,7 @@ function bustDashboardCache_() {
 
   ['seller', 'buyer'].forEach(function(aud) {
     periods.forEach(function(p) {
-      keys.push('dash_v12_' + aud + '_' + JSON.stringify([p, '', '']));
+      keys.push('dash_v13_' + aud + '_' + JSON.stringify([p, '', '']));
     });
   });
 
