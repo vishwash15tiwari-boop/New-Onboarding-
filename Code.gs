@@ -10,10 +10,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 var CONFIG = {
-  SELLER_SHEET_ID:  '1qaG_GMvUrC7LJbKBma8-S3x2N6Ua4vDkUC5ZRx3znho',
-  BUYER_SHEET_ID:   '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI',
-  OMP_GST_SHEET_ID: '1dE-qV2wrPeFJ3HLWxPkTq8cL-xfCJEF8',
-  EPR_GST_SHEET_ID: '1Mvkshz6Es3V37GYuXVMIq4L8ql3MCCuIxYjc77YEq5c',
+  SELLER_SHEET_ID: '1qaG_GMvUrC7LJbKBma8-S3x2N6Ua4vDkUC5ZRx3znho',
+  BUYER_SHEET_ID:  '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI',
   CACHE_TTL: 300,  // seconds — 5-minute cache; matches Metabase sync frequency
 
   // Maps each external sheet ID to the local sheet name written by Metabase.gs.
@@ -109,7 +107,7 @@ function getDashboardData(filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'dash_v13_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cacheKey = 'dash_v14_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -244,57 +242,6 @@ function normalizeRows(raw, cfg) {
 // SUPPLEMENTARY GST SHEET READERS
 // ─────────────────────────────────────────────────────────────
 
-// Reads the OMP documents-check sheet and returns {withGST, missingGST}
-// counting only COMPLETED rows. GST active = valid GSTIN in the 'gstin' column.
-function readOMPGSTStats() {
-  var cache = CacheService.getScriptCache();
-  var hit = cache.get('omp_gst_v11');
-  if (hit) return JSON.parse(hit);
-  var raw = readSheet(CONFIG.OMP_GST_SHEET_ID);
-  var idx = buildIndex(raw.headers);
-  var completed = raw.rows.filter(function(row) {
-    return normStatus(gv(row, idx, 'status')) === 'COMPLETED';
-  });
-  var withGST = completed.filter(function(row) {
-    var g = String(gv(row, idx, 'gstin') || '').replace(/,/g, '').trim();
-    return isValidGSTIN(g);
-  }).length;
-  var result = { withGST: withGST, missingGST: completed.length - withGST };
-  try { cache.put('omp_gst_v11', JSON.stringify(result), 600); } catch (e) {}
-  return result;
-}
-
-// Reads the EPR documents-check sheet and returns {withGST, missingGST}
-// counting only COMPLETED rows. GST active = gstin_status 'Active' found
-// inside the nested fields_json, or a valid GSTIN number in brand_details.
-function readEPRGSTStats() {
-  var cache = CacheService.getScriptCache();
-  var hit = cache.get('epr_gst_v11');
-  if (hit) return JSON.parse(hit);
-  var raw = readSheet(CONFIG.EPR_GST_SHEET_ID);
-  var idx = buildIndex(raw.headers);
-  var completed = raw.rows.filter(function(row) {
-    return normStatus(gv(row, idx, 'status')) === 'COMPLETED';
-  });
-  var withGST = completed.filter(function(row) {
-    var fjRaw = String(gv(row, idx, 'fields_json') || '').trim();
-    if (!fjRaw) return false;
-    try {
-      var fj = JSON.parse(fjRaw);
-      var rd = fj.recycler_details && fj.recycler_details.company_details;
-      if (rd && String(rd.gstin_status || '').toLowerCase() === 'active') return true;
-      var sp = fj.service_provider_details && fj.service_provider_details.company_details;
-      if (sp && String(sp.gstin_status || '').toLowerCase() === 'active') return true;
-      var bd = fj.brand_details && fj.brand_details.brand_details;
-      if (bd && isValidGSTIN(String(bd.gstin_number || ''))) return true;
-    } catch (e) {}
-    return false;
-  }).length;
-  var result = { withGST: withGST, missingGST: completed.length - withGST };
-  try { cache.put('epr_gst_v11', JSON.stringify(result), 600); } catch (e) {}
-  return result;
-}
-
 // ─────────────────────────────────────────────────────────────
 // DASHBOARD ASSEMBLY
 // ─────────────────────────────────────────────────────────────
@@ -315,22 +262,6 @@ function buildDashboard(audience, cfg, allRows, f) {
     if (vc.key !== 'OMP') { s.transacted = null; s.pctTransacted = null; }
     verticals[vc.key] = s;
   });
-
-  // OMP GST sheet override: seller-only, and only for All-time view (the dedicated
-  // sheet has no date dimension, so period-filtered views use main-sheet GST data).
-  if (audience === 'seller' && (!f || !f.period || f.period === 'All')) {
-    try {
-      var ompGST = readOMPGSTStats();
-      verticals['OMP'].withGST    = ompGST.withGST;
-      verticals['OMP'].missingGST = ompGST.missingGST;
-    } catch (e) {}
-  }
-  // EPR dedicated sheet applies to both audiences — buyer sheet has no EPR GST data.
-  try {
-    var eprGST = readEPRGSTStats();
-    verticals['EPR'].withGST    = eprGST.withGST;
-    verticals['EPR'].missingGST = eprGST.missingGST;
-  } catch (e) {}
 
   return {
     success: true,
