@@ -26,14 +26,19 @@ var CONFIG = {
     seller: '_mb_sellers',
     buyer:  '_mb_buyers',
   },
+
+  // Last-resort fallback sheet IDs — used only when Metabase is unavailable
+  // and no local synced sheets exist yet.  Dashboard always loads with real data.
+  SELLER_SHEET_ID: '1qaG_GMvUrC7LJbKBma8-S3x2N6Ua4vDkUC5ZRx3znho',
+  BUYER_SHEET_ID:  '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI',
 };
 
-// Per-audience column mapping (the two Metabase cards name a few fields differently).
+// Per-audience column mapping (field names differ slightly between Metabase cards and the fallback sheets).
 var AUDIENCE_CFG = {
-  seller: { audience: 'seller', label: 'Sellers',
+  seller: { audience: 'seller', sheetId: CONFIG.SELLER_SHEET_ID, label: 'Sellers',
             idCol: 'seller_id', nameCol: 'seller_name', vendorCol: 'vendor_type', onbCol: 'onboarded_date' },
   // Buyer card has no onboarded_date; TAT uses onboarding_updated_date (last status change).
-  buyer:  { audience: 'buyer',  label: 'Buyers',
+  buyer:  { audience: 'buyer',  sheetId: CONFIG.BUYER_SHEET_ID,  label: 'Buyers',
             idCol: 'buyer_id',  nameCol: 'buyer_name',  vendorCol: 'customer_type', onbCol: 'onboarding_updated_date' },
 };
 
@@ -170,6 +175,16 @@ function readData(audience) {
         return d;
       }
     } catch (e) { /* fall through */ }
+  }
+
+  // 3. Last-resort: external Google Sheet (ensures dashboard always loads)
+  var fallbackId = AUDIENCE_CFG[audience] && AUDIENCE_CFG[audience].sheetId;
+  if (fallbackId) {
+    try {
+      var fb = readSheetObj_(SpreadsheetApp.openById(fallbackId).getSheets()[0]);
+      fb.source = 'sheets';
+      return fb;
+    } catch (e) { Logger.log('Fallback sheet read failed: ' + e.message); }
   }
 
   return { headers: [], rows: [], source: 'empty' };
