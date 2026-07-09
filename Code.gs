@@ -353,13 +353,6 @@ function buildDashboard(audience, cfg, allRows, f) {
     verticals[vc.key] = vStats(byVert[vc.key] || []);
   });
 
-  // EPR buyers are compliance-tracked entities, not GST-trading partners.
-  // Null out GST fields so the frontend suppresses "GST Active / Missing" for this vertical.
-  if (audience === 'buyer' && verticals['EPR']) {
-    verticals['EPR'].withGST   = null;
-    verticals['EPR'].missingGST = null;
-  }
-
   return {
     success: true,
     lastUpdated: new Date().toISOString(),
