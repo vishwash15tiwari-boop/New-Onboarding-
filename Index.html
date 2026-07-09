@@ -980,25 +980,19 @@ function renderVertDetail() {
   if (!cfg || !v) return;
   var has = (v.total || 0) > 0;
 
-  var hasTxn = !(v.transacted === null || v.transacted === undefined);
-
   var metrics = [
     ['Total Cases',    fmt(v.total || 0)],
     ['Onboarded',      fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)'],
+    ['Transacted',     fmt(v.transacted || 0) + ' (' + (v.pctTransacted || 0) + '%)'],
+    ['Txn Value',      fmtINR(v.totalTxnValue)],
     ['In Review',      fmt(v.inReview || 0)],
     ['Draft',          fmt(v.draft || 0)],
     ['Rejected',       fmt(v.rejected || 0)],
     ['Avg TAT',        dOr(v.avgTAT, 'd')],
     ['Onboarded (7d)', fmt(v.completedThisWeek || 0)],
+    ['GST Active',     fmt(v.withGST || 0)],
+    ['GST Inactive',   fmt(v.missingGST || 0)],
   ];
-  // Transacted + Transaction Value — shown when any rows carry transaction data.
-  if (hasTxn) metrics.push(['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)']);
-  if (v.totalTxnValue !== null && v.totalTxnValue !== undefined) {
-    metrics.push(['Txn Value (Total)', fmtINR(v.totalTxnValue)]);
-  }
-  // GST Active/Inactive (over onboarded cases).
-  metrics.push(['GST Active',   fmt(v.withGST || 0)]);
-  metrics.push(['GST Inactive', fmt(v.missingGST || 0)]);
 
   var funnelSection = has
     ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel'
@@ -1123,14 +1117,12 @@ function renderVdBoard() {
 function kbCard(r) {
   var meta = [r.category, r.vendorType].filter(function(x) { return x && x !== '—'; }).join(' · ');
   var txnChip = '';
-  if (r.hasTxn) {
-    if (r.hasTransacted) {
-      var valStr = r.txnValue !== null ? ' · ' + fmtINR(r.txnValue) : '';
-      txnChip = '<span class="kb-gst ok" style="background:var(--st-transacted-bg);color:var(--st-transacted-tx);border-color:transparent"'
-        + ' title="Transacted' + (valStr ? ' · Value: ' + fmtINR(r.txnValue) : '') + '">⚡ Txn' + (valStr ? valStr : '') + '</span>';
-    } else {
-      txnChip = '<span class="kb-gst bad" style="background:var(--bg2);color:var(--txt3);border-color:transparent" title="Not yet transacted">— Txn</span>';
-    }
+  if (r.hasTransacted) {
+    var valStr = r.txnValue !== null ? ' · ' + fmtINR(r.txnValue) : '';
+    txnChip = '<span class="kb-gst ok" style="background:var(--st-transacted-bg);color:var(--st-transacted-tx);border-color:transparent"'
+      + ' title="Transacted' + (r.txnValue !== null ? ' · ₹' + r.txnValue : '') + '">⚡ Txn' + valStr + '</span>';
+  } else if (r.status === 'COMPLETED') {
+    txnChip = '<span class="kb-gst bad" style="background:var(--bg2);color:var(--txt3);border-color:transparent" title="Onboarded but not yet transacted">— Txn</span>';
   }
   return '<div class="kb-card">'
     + '<div class="kb-card-name">' + esc(r.name || '—') + '</div>'
@@ -1178,14 +1170,14 @@ function renderVdTable() {
   tbody.innerHTML = shown.length
     ? shown.map(function(r) {
         var txnCell;
-        if (!r.hasTxn) {
-          txnCell = '<span class="text-muted">—</span>';
-        } else if (r.hasTransacted) {
-          var val  = r.txnValue !== null ? '<br><span style="font-size:11px;color:var(--green);font-weight:600">' + fmtINR(r.txnValue) + '</span>' : '';
+        if (r.hasTransacted) {
+          var val  = r.txnValue !== null ? '<br><span style="font-size:11px;color:var(--st-transacted-tx);font-weight:600">' + fmtINR(r.txnValue) + '</span>' : '';
           var date = r.txnDate && r.txnDate !== '—' ? '<br><span style="font-size:10px;color:var(--txt3)">' + esc(r.txnDate) + '</span>' : '';
           txnCell  = '<span class="gst-ok">✓ Transacted</span>' + val + date;
-        } else {
+        } else if (r.status === 'COMPLETED') {
           txnCell = '<span style="color:var(--txt3);font-size:11.5px;font-weight:500">— Not yet</span>';
+        } else {
+          txnCell = '<span class="text-muted">—</span>';
         }
         return '<tr>'
           + '<td class="text-muted">' + esc(r.id) + '</td>'

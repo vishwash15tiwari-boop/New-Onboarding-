@@ -107,7 +107,7 @@ function getDashboardData(filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'dash_v14_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cacheKey = 'dash_v15_' + audience + '_' + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -186,7 +186,11 @@ function normalizeRows(raw, cfg) {
 
     var gstin     = String(gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || '').toUpperCase();
-    var txn       = String(gv(row, idx, 'transaction_activation_status') || '').toUpperCase().replace(/\s+/g, ' ').trim();
+    var txnRaw    = gv(row, idx, 'transaction_activation_status')
+                 || gv(row, idx, 'transaction_status')
+                 || gv(row, idx, 'txn_status')
+                 || '';
+    var txn = String(txnRaw).toUpperCase().replace(/\s+/g, ' ').trim();
 
     // Transaction value — try several common column name variants
     var txnValRaw = gv(row, idx, 'transaction_value')
@@ -230,7 +234,7 @@ function normalizeRows(raw, cfg) {
       hasGST:        gstStatus ? (gstStatus.indexOf('AVAILABLE') !== -1 && gstStatus.indexOf('NOT') === -1 && gstStatus.indexOf('MISSING') === -1)
                                : isValidGSTIN(gstin),
       hasTxn:        txn !== '',
-      hasTransacted: txn === 'TRANSACTED',
+      hasTransacted: ({ 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 })[txn] === 1,
       txnValue:      txnVal,
       txnDate:       txnDate,
       onbTAT:        tat,
@@ -257,10 +261,7 @@ function buildDashboard(audience, cfg, allRows, f) {
   });
   var verticals = {};
   VERTICALS.forEach(function(vc) {
-    var s = vStats(byVert[vc.key] || []);
-    // Transacted is only meaningful for Open Marketplace; hide it elsewhere.
-    if (vc.key !== 'OMP') { s.transacted = null; s.pctTransacted = null; }
-    verticals[vc.key] = s;
+    verticals[vc.key] = vStats(byVert[vc.key] || []);
   });
 
   return {
