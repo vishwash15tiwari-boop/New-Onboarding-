@@ -1012,7 +1012,7 @@ function openVertDetail(key) {
   document.body.style.overflow = 'hidden';
   var panel = document.getElementById('vert-detail');
   if (panel) panel.scrollTop = 0;
-  if (vertRows.length === 0) loadVertRows(key);
+  if (vertRows.length === 0 && !vertRowsLoading) loadVertRows(key);
 }
 
 function loadVertRows(key) {
@@ -1085,8 +1085,8 @@ function renderVertDetail() {
   var metrics = [
     ['Total Cases',    fmt(v.total || 0)],
     ['Onboarded',      fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)'],
-    ['Transacted',     fmt(v.transacted || 0) + ' (' + (v.pctTransacted || 0) + '%)'],
-    ['Txn Value',      fmtINR(v.totalTxnValue)],
+    v.transacted != null ? ['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)'] : null,
+    v.totalTxnValue != null ? ['Txn Value', fmtINR(v.totalTxnValue)] : null,
     ['In Review',      fmt(v.inReview || 0)],
     ['Draft',          fmt(v.draft || 0)],
     ['Rejected',       fmt(v.rejected || 0)],
@@ -1112,7 +1112,7 @@ function renderVertDetail() {
     + vdSelect('vdf-category', 'Category',    vdUnique(rows, 'category'),   vdF.category, null)
     + vdSelect('vdf-vendor',   'Vendor Type', vdUnique(rows, 'vendorType'), vdF.vendor,   null)
     + vdSelect('vdf-status',   'Status',      vdUnique(rows, 'status'),     vdF.status,   STATUS_LABELS)
-    + vdSelect('vdf-gst',      'GST',         ['Active', 'Inactive'],       vdF.gst,      null)
+    + (selectedVert === 'EPR' && currentAudience === 'buyer' ? '' : vdSelect('vdf-gst', 'GST', ['Active', 'Inactive'], vdF.gst, null))
     + '<input type="text" class="filter-input" id="vdf-search" placeholder="🔍 Search name / GSTIN / ID…" value="' + esc(vdF.search) + '" oninput="vdfSearchDeb()">'
     + '<button class="vd-close" onclick="vdfClear()">✕ Clear</button>'
     + '</div>';
@@ -1235,7 +1235,7 @@ function kbCard(r) {
     + '<div class="kb-card-name">' + esc(r.name || '—') + '</div>'
     + '<div class="kb-card-meta">' + esc(r.id) + (meta ? ' · ' + esc(meta) : '') + '</div>'
     + '<div class="kb-card-foot">'
-    + '<span class="kb-gst ' + (r.hasGST ? 'ok" title="' + esc(r.gstin) + '">✓ GST' : 'bad">✗ GST') + '</span>'
+    + (selectedVert === 'EPR' && currentAudience === 'buyer' ? '' : '<span class="kb-gst ' + (r.hasGST ? 'ok" title="' + esc(r.gstin) + '">✓ GST' : 'bad">✗ GST') + '</span>')
     + txnChip
     + kbAge(r)
     + '</div></div>';
@@ -1292,7 +1292,7 @@ function renderVdTable() {
           + '<td>' + esc(r.category || '—') + '</td>'
           + '<td class="text-muted">' + esc(r.vendorType || '—') + '</td>'
           + '<td>' + statusChip(r.status) + '</td>'
-          + '<td style="font-size:11px">' + (r.hasGST ? '<span class="gst-ok">✓ ' + esc(r.gstin) + '</span>' : '<span class="gst-bad">✗ Missing</span>') + '</td>'
+          + '<td style="font-size:11px">' + (selectedVert === 'EPR' && currentAudience === 'buyer' ? '<span class="text-muted">—</span>' : (r.hasGST ? '<span class="gst-ok">✓ ' + esc(r.gstin) + '</span>' : '<span class="gst-bad">✗ Missing</span>')) + '</td>'
           + '<td class="text-muted">' + esc(r.state || '—') + '</td>'
           + '<td class="text-muted">' + esc(r.createdDate) + '</td>'
           + '<td class="text-muted">' + esc(r.onbDate) + '</td>'
