@@ -116,7 +116,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v15_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v16_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -134,7 +134,7 @@ function getDashboardData(filtersJson) {
         });
       try {
         cache.put(
-          'vrows_v1_' + audience + '_' + vc.key + '_' + periodKey,
+          'vrows_v2_' + audience + '_' + vc.key + '_' + periodKey,
           JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) }),
           CONFIG.CACHE_TTL
         );
@@ -168,7 +168,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v1_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v2_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -265,7 +265,7 @@ function normalizeRows(raw, cfg) {
     var tat = (status === 'COMPLETED' && created && onboarded) ? dateDiffDays(created, onboarded) : null;
 
     var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
-    var gstStatus = String(gv(row, idx, 'gstin_status') || '').toUpperCase();
+    var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
     var txnRaw    = gv(row, idx, 'transaction_activation_status')
                  || gv(row, idx, 'transaction_status')
                  || gv(row, idx, 'txn_status')
@@ -308,11 +308,16 @@ function normalizeRows(raw, cfg) {
       status:        status,
       createdDate:   created,
       onboardedDate: onboarded,
-      // gstin_status is authoritative — real values are "GSTIN AVAILABLE" vs
-      // "MISSING GSTIN" (older sheets used "GSTIN NOT AVAILABLE"). GST is active
-      // only when AVAILABLE and not NOT/MISSING.
-      hasGST:        gstStatus ? (gstStatus.indexOf('AVAILABLE') !== -1 && gstStatus.indexOf('NOT') === -1 && gstStatus.indexOf('MISSING') === -1)
-                               : isValidGSTIN(gstin),
+      // gstStatus is authoritative when present.  Positive signals: AVAILABLE or ACTIVE
+      // (catches "GSTIN AVAILABLE", "ACTIVE", "GST ACTIVE").  Negative qualifiers that
+      // override a positive: NOT, MISSING, INACTIVE (catches "NOT AVAILABLE",
+      // "INACTIVE", "GST INACTIVE", "MISSING GSTIN").  Falls back to GSTIN format
+      // validation when the column is absent (e.g. raw 15-char GSTIN in gst_number).
+      hasGST: gstStatus
+        ? ((gstStatus.indexOf('AVAILABLE') !== -1 || gstStatus.indexOf('ACTIVE') !== -1 ||
+            gstStatus === 'YES' || gstStatus === 'Y' || gstStatus === 'REGISTERED' || gstStatus === 'VALID')
+           && gstStatus.indexOf('NOT') === -1 && gstStatus.indexOf('MISSING') === -1 && gstStatus.indexOf('INACTIVE') === -1)
+        : isValidGSTIN(gstin),
       hasTxn:        txn !== '',
       hasTransacted: ({ 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 })[txn] === 1,
       txnValue:      txnVal,
