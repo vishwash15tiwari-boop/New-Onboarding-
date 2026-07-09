@@ -999,12 +999,13 @@ function renderVerticals() {
 }
 
 function openVertDetail(key) {
-  if (selectedVert !== key) {
+  var isNew = (selectedVert !== key);
+  if (isNew) {
     vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
     vertRows = [];
-    vertRowsLoading = true;  // show "Loading records…" until rows arrive
+    vertRowsLoading = true;  // show "Loading records…" on initial render
     _vertRowsPKey = null;
-    ++_vertRowsGen;
+    ++_vertRowsGen;           // cancel any in-flight request for the old vertical
   }
   selectedVert = key;
   renderVerticals();
@@ -1012,7 +1013,8 @@ function openVertDetail(key) {
   document.body.style.overflow = 'hidden';
   var panel = document.getElementById('vert-detail');
   if (panel) panel.scrollTop = 0;
-  if (vertRows.length === 0 && !vertRowsLoading) loadVertRows(key);
+  // Always trigger load on new vertical; also re-fetch if rows are empty and idle
+  if (isNew || (vertRows.length === 0 && !vertRowsLoading)) loadVertRows(key);
 }
 
 function loadVertRows(key) {
@@ -1037,6 +1039,7 @@ function loadVertRows(key) {
     .withFailureHandler(function() {
       if (myGen !== _vertRowsGen) return;
       vertRowsLoading = false;
+      renderVertDetail();   // unblock the panel — show "No records yet" instead of infinite spinner
     })
     .getVerticalRows(key, JSON.stringify(f));
 }
