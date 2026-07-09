@@ -22,6 +22,9 @@ var CONFIG = {
     '1qaG_GMvUrC7LJbKBma8-S3x2N6Ua4vDkUC5ZRx3znho': '_mb_sellers',
     '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI': '_mb_buyers',
   },
+  // Spreadsheet where Metabase.gs writes the _mb_* hidden sheets.
+  // Must match MB_TARGET_SS_ID in Metabase.gs.
+  MB_TARGET_SS_ID: '10RJ1D1GXh-f_7a5M3YMAEt8jDQ7X6jQm2-krTNOBts8',
 };
 
 // Per-audience column mapping (the two sheets name a few fields differently).
@@ -120,7 +123,7 @@ function getDashboardData(filtersJson) {
     var localName = CONFIG.MB_LOCAL_SHEETS && CONFIG.MB_LOCAL_SHEETS[cfg.sheetId];
     if (localName) {
       try {
-        var localSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(localName);
+        var localSheet = SpreadsheetApp.openById(CONFIG.MB_TARGET_SS_ID).getSheetByName(localName);
         if (localSheet && localSheet.getLastRow() > 1) {
           dash.dataSource = 'metabase';
           try { dash.mbSyncedAt = getMBSyncTime(localName); } catch (e2) {}
@@ -147,7 +150,7 @@ function readSheet(sheetId) {
   var localName = CONFIG.MB_LOCAL_SHEETS && CONFIG.MB_LOCAL_SHEETS[sheetId];
   if (localName) {
     try {
-      var ss    = SpreadsheetApp.getActiveSpreadsheet();
+      var ss    = SpreadsheetApp.openById(CONFIG.MB_TARGET_SS_ID);
       var local = ss.getSheetByName(localName);
       if (local && local.getLastRow() > 1) {
         return readSheetObj_(local);

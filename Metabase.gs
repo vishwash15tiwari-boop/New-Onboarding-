@@ -35,6 +35,11 @@ var MB_SHEETS = {
 
 var MB_HOST = 'https://meta.recykal.com';
 
+// Target spreadsheet where Metabase data is written.
+// Metabase.gs opens this by ID so the hidden _mb_* sheets land here,
+// not in whatever spreadsheet happens to be "active" at sync time.
+var MB_TARGET_SS_ID = '10RJ1D1GXh-f_7a5M3YMAEt8jDQ7X6jQm2-krTNOBts8';
+
 // Session token is cached in Script Properties for up to 12 h so
 // every sync call does not re-authenticate.
 var MB_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
@@ -154,7 +159,7 @@ function writeMBSheet_(data, sheetName) {
   // Reassemble as 2-D array: header row + data rows
   var payload = [data.headers].concat(data.rows);
 
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var ss    = SpreadsheetApp.openById(MB_TARGET_SS_ID);
   var sheet = ss.getSheetByName(sheetName);
 
   if (!sheet) {
