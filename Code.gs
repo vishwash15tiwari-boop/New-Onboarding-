@@ -14,7 +14,16 @@ var CONFIG = {
   BUYER_SHEET_ID:   '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI',
   OMP_GST_SHEET_ID: '1dE-qV2wrPeFJ3HLWxPkTq8cL-xfCJEF8',
   EPR_GST_SHEET_ID: '1Mvkshz6Es3V37GYuXVMIq4L8ql3MCCuIxYjc77YEq5c',
-  CACHE_TTL: 300,  // seconds — 5-minute cache; Refresh within a window is instant
+  CACHE_TTL: 300,  // seconds — 5-minute cache; matches Metabase sync frequency
+
+  // Maps each external sheet ID to the local sheet name written by Metabase.gs.
+  // When the Metabase sync has populated the local sheet, it is used instead of
+  // the external spreadsheet — giving the dashboard near-real-time data.
+  // Falls back to the external sheet ID transparently if the local sheet is absent.
+  MB_LOCAL_SHEETS: {
+    '1qaG_GMvUrC7LJbKBma8-S3x2N6Ua4vDkUC5ZRx3znho': '_mb_sellers',
+    '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI': '_mb_buyers',
+  },
 };
 
 // Per-audience column mapping (the two sheets name a few fields differently).
@@ -107,7 +116,21 @@ function getDashboardData(filtersJson) {
 
     var raw  = readSheet(cfg.sheetId);
     var rows = normalizeRows(raw, cfg);
-    var out  = JSON.stringify(buildDashboard(audience, cfg, rows, f));
+    var dash = buildDashboard(audience, cfg, rows, f);
+
+    // Annotate data source so the frontend can show "Live (Metabase)" vs "Sheets"
+    var localName = CONFIG.MB_LOCAL_SHEETS && CONFIG.MB_LOCAL_SHEETS[cfg.sheetId];
+    if (localName) {
+      try {
+        var localSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(localName);
+        if (localSheet && localSheet.getLastRow() > 1) {
+          dash.dataSource = 'metabase';
+          try { dash.mbSyncedAt = getMBSyncTime(localName); } catch (e2) {}
+        }
+      } catch (e) {}
+    }
+
+    var out = JSON.stringify(dash);
     try { cache.put(cacheKey, out, CONFIG.CACHE_TTL); } catch (e) {}
     return out;
   } catch (err) {
@@ -118,9 +141,27 @@ function getDashboardData(filtersJson) {
 // ─────────────────────────────────────────────────────────────
 // SHEET READ + NORMALIZATION
 // ─────────────────────────────────────────────────────────────
+// Reads data for a given sheet ID.
+// Priority: local Metabase-synced sheet (populated by Metabase.gs every 5 min)
+//           → external Google Sheet by ID (original fallback).
+// Both paths normalise headers the same way so normalizeRows() is unaffected.
 function readSheet(sheetId) {
-  var sheet = SpreadsheetApp.openById(sheetId).getSheets()[0];
-  var vals  = sheet.getDataRange().getValues();
+  var localName = CONFIG.MB_LOCAL_SHEETS && CONFIG.MB_LOCAL_SHEETS[sheetId];
+  if (localName) {
+    try {
+      var ss    = SpreadsheetApp.getActiveSpreadsheet();
+      var local = ss.getSheetByName(localName);
+      if (local && local.getLastRow() > 1) {
+        return readSheetObj_(local);
+      }
+    } catch (e) { /* local sheet unavailable — fall through */ }
+  }
+  // Fallback: original external spreadsheet
+  return readSheetObj_(SpreadsheetApp.openById(sheetId).getSheets()[0]);
+}
+
+function readSheetObj_(sheet) {
+  var vals = sheet.getDataRange().getValues();
   if (!vals.length) return { headers: [], rows: [] };
   var headers = vals[0].map(function(h) {
     return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
