@@ -75,7 +75,7 @@ var MKT_SPLIT_DATE = new Date(2026, 3, 1); // April 1, 2026
 //  · Marketplace vertical, by business_category:
 //        AFR                                          → AFR
 //        GOA DRS                                      → DRS
-//        Re-Commerce, E-Waste (sellers only)          → Recommerce
+//        Re-Commerce, E-Waste                         → Recommerce
 //        Metal, Plastic, Institutional Business, Reverse → InfraBusiness (then split by date)
 //        anything else                                → Others
 //  · everything else (Sustainability Services, blank, …) → Others
@@ -115,7 +115,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v16_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v17_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -133,7 +133,7 @@ function getDashboardData(filtersJson) {
         });
       try {
         cache.put(
-          'vrows_v2_' + audience + '_' + vc.key + '_' + periodKey,
+          'vrows_v3_' + audience + '_' + vc.key + '_' + periodKey,
           JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) }),
           CONFIG.CACHE_TTL
         );
@@ -167,7 +167,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v2_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v3_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
