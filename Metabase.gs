@@ -194,9 +194,14 @@ function bustDashboardCache_() {
     periods.push('FY' + String(y).slice(2) + '-' + String(y + 1).slice(2));
   }
 
+  var vertKeys = ['OMP', 'EPR', 'Marketplace', 'InfraBusiness', 'AFR', 'Recommerce', 'DRS', 'Others'];
+
   ['seller', 'buyer'].forEach(function(aud) {
     periods.forEach(function(p) {
       keys.push('dash_v15_' + aud + '_' + JSON.stringify([p, '', '']));
+      vertKeys.forEach(function(vk) {
+        keys.push('vrows_v1_' + aud + '_' + vk + '_' + JSON.stringify([p, '', '']));
+      });
     });
   });
 
@@ -237,6 +242,12 @@ function syncAllOnboarding() {
   try { syncBuyers();  } catch (e) { Logger.log('❌ Buyers error: '  + e.message); }
   try { syncDetail();  } catch (e) { Logger.log('❌ Detail error: '  + e.message); }
   bustDashboardCache_();
+  // Pre-warm both audience caches so the next user request is always a cache hit.
+  try {
+    getDashboardData(JSON.stringify({ audience: 'seller', period: 'All' }));
+    getDashboardData(JSON.stringify({ audience: 'buyer',  period: 'All' }));
+    Logger.log('  Cache pre-warmed (seller + buyer).');
+  } catch (e) { Logger.log('  Cache pre-warm failed: ' + e.message); }
   Logger.log('═══ Metabase sync complete — ' + new Date().toISOString() + ' ═══');
 }
 

@@ -140,6 +140,37 @@ function getDashboardData(filtersJson) {
   }
 }
 
+// On-demand row fetch for a single vertical's detail panel.
+// Kept separate so the main getDashboardData response stays small
+// enough for Script Cache (100KB limit per value).
+function getVerticalRows(vertKey, filtersJson) {
+  try {
+    var f = filtersJson ? JSON.parse(filtersJson) : {};
+    var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
+    var cfg = AUDIENCE_CFG[audience];
+
+    var cacheKey = 'vrows_v1_' + audience + '_' + vertKey + '_'
+      + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cache = CacheService.getScriptCache();
+    var hit = cache.get(cacheKey);
+    if (hit) return hit;
+
+    var raw  = readData(audience);
+    var all  = normalizeRows(raw, cfg);
+    var vrows = all.filter(function(r) {
+      return r.vertical === vertKey && applyDateFilter(r, f);
+    }).sort(function(a, b) {
+      return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
+    });
+
+    var out = JSON.stringify({ success: true, vertKey: vertKey, rows: vrows.map(vertRow) });
+    try { cache.put(cacheKey, out, CONFIG.CACHE_TTL); } catch (e) {}
+    return out;
+  } catch (err) {
+    return JSON.stringify({ success: false, error: (err && err.message) ? err.message : String(err) });
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // DATA READ + NORMALIZATION
 // ─────────────────────────────────────────────────────────────
@@ -336,10 +367,6 @@ function vStats(data) {
   var categories = Object.keys(catMap).map(function(k) { return catMap[k]; })
     .sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });
 
-  var latestFirst = data.slice().sort(function(a, b) {
-    return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
-  });
-
   return {
     total: total,
     completed: completed,
@@ -355,7 +382,6 @@ function vStats(data) {
     pctTransacted: transacted === null ? null : pct(transacted, completed),
     totalTxnValue: totalTxnValue,
     categories: categories,
-    rows: latestFirst.map(vertRow),
     rowsTotal: total,
   };
 }

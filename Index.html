@@ -600,7 +600,14 @@ function loadData(silent) {
         if (data.success) {
           // Persist for instant display on next page load
           try { localStorage.setItem(STORE_PFX + reqAudience, res); } catch (e) {}
-          if (reqAudience === currentAudience) { D = data; renderAll(); }
+          if (reqAudience === currentAudience) {
+            D = data;
+            // Vertical rows are period-specific; invalidate and reload if a panel is open.
+            vertRows = [];
+            vertRowsLoading = false;
+            if (selectedVert) loadVertRows(selectedVert);
+            renderAll();
+          }
           done();
         } else {
           fail(data.error || 'No data returned.');
@@ -623,6 +630,8 @@ function switchAudience(a) {
   if (a === currentAudience) return;
   currentAudience = a;
   selectedVert = null;                       // close any open detail panel
+  vertRows = [];
+  vertRowsLoading = false;
   document.body.style.overflow = '';
   var panel = document.getElementById('vert-detail');
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
@@ -787,6 +796,8 @@ function getVertCfg() {
   return (D && D.verticalConfig && D.verticalConfig.length) ? D.verticalConfig : VERT_CFG;
 }
 var selectedVert = null;
+var vertRows = [];          // lazily loaded rows for the open vertical
+var vertRowsLoading = false;
 var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
 var VD_MAX_RENDER = 200;   // rows rendered at once in the detail table
 var KB_MAX_PER_COL = 50;   // cards rendered per Kanban column
@@ -982,6 +993,8 @@ function renderVerticals() {
 function openVertDetail(key) {
   if (selectedVert !== key) {
     vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+    vertRows = [];
+    vertRowsLoading = true;  // show "Loading records…" until rows arrive
   }
   selectedVert = key;
   renderVerticals();
@@ -989,10 +1002,32 @@ function openVertDetail(key) {
   document.body.style.overflow = 'hidden';
   var panel = document.getElementById('vert-detail');
   if (panel) panel.scrollTop = 0;
+  if (vertRows.length === 0) loadVertRows(key);
+}
+
+function loadVertRows(key) {
+  vertRowsLoading = true;
+  var f = { audience: currentAudience, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      vertRowsLoading = false;
+      try {
+        var data = JSON.parse(res);
+        if (data.success && data.vertKey === selectedVert) {
+          vertRows = data.rows || [];
+          renderVertDetail();
+        }
+      } catch (e) {}
+    })
+    .withFailureHandler(function() { vertRowsLoading = false; })
+    .getVerticalRows(key, JSON.stringify(f));
 }
 
 function closeVertDetail() {
   selectedVert = null;
+  vertRows = [];
+  vertRowsLoading = false;
   document.body.style.overflow = '';
   var panel = document.getElementById('vert-detail');
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
@@ -1049,7 +1084,7 @@ function renderVertDetail() {
     : '';
 
   // Detail filters — local to this vertical's records (Period lives above the cards)
-  var rows = v.rows || [];
+  var rows = vertRows;
   var filtersHtml = '<div class="vd-filters">'
     + '<div class="vd-toggle">'
     +   '<button class="vd-toggle-btn' + (vdView === 'board' ? ' active' : '') + '" onclick="vdSetView(\'board\')">▦ Board</button>'
@@ -1063,14 +1098,19 @@ function renderVertDetail() {
     + '<button class="vd-close" onclick="vdfClear()">✕ Clear</button>'
     + '</div>';
 
-  var recordsHtml = rows.length
-    ? filtersHtml
+  var recordsHtml;
+  if (vertRowsLoading) {
+    recordsHtml = '<div class="no-data" style="padding:32px 0">Loading records…</div>';
+  } else if (rows.length) {
+    recordsHtml = filtersHtml
       + '<div class="kb-wrap mt-16" id="vd-board-view"><div class="kb-board" id="vd-board"></div></div>'
       + '<div class="table-wrap vd-table-wrap mt-16" id="vd-table-view"><table><thead><tr>'
       + '<th>ID</th><th>Business Name</th><th>Category</th><th>Vendor Type</th><th>Status</th><th>GSTIN</th><th>State</th><th>Created</th><th>Onboarded</th><th>TAT</th><th>Transaction</th>'
       + '</tr></thead><tbody id="vd-tbody"></tbody></table></div>'
-      + '<div class="vd-note" id="vd-note"></div>'
-    : '<div class="no-data">No records yet for this vertical</div>';
+      + '<div class="vd-note" id="vd-note"></div>';
+  } else {
+    recordsHtml = '<div class="no-data">No records yet for this vertical</div>';
+  }
 
   var catSection = has && (v.categories && v.categories.length)
     ? '<div class="cc-cap vd-cat-cap">Onboarded by category</div>' + cardCategories(v, 12)
@@ -1099,7 +1139,7 @@ function renderVertDetail() {
 
 function vdFilteredRows() {
   if (!selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return [];
-  var rows = D.verticals[selectedVert].rows || [];
+  var rows = vertRows;
   var q = (vdF.search || '').toLowerCase();
   return rows.filter(function(r) {
     if (vdF.category !== 'All' && r.category   !== vdF.category) return false;
@@ -1139,7 +1179,7 @@ function renderVdBoard() {
   var host = document.getElementById('vd-board');
   var note = document.getElementById('vd-note');
   if (!host || !selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return;
-  var all      = D.verticals[selectedVert].rows || [];
+  var all      = vertRows;
   var filtered = vdFilteredRows();
 
   host.innerHTML = KB_COLS.map(function(col) {
@@ -1211,7 +1251,7 @@ function renderVdTable() {
   var tbody = document.getElementById('vd-tbody');
   var note  = document.getElementById('vd-note');
   if (!tbody || !selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return;
-  var all      = D.verticals[selectedVert].rows || [];
+  var all      = vertRows;
   var filtered = vdFilteredRows();
   var shown    = filtered.slice(0, VD_MAX_RENDER);
 
