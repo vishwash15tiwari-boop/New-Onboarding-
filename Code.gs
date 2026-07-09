@@ -79,8 +79,7 @@ var MKT_SPLIT_DATE = new Date(2026, 3, 1); // April 1, 2026
 //        Metal, Plastic, Institutional Business, Reverse → InfraBusiness (then split by date)
 //        anything else                                → Others
 //  · everything else (Sustainability Services, blank, …) → Others
-// audience = 'seller'|'buyer'. For buyers, E-Waste under Marketplace belongs to
-// Others (e-waste buyers are traders/retailers, not Re-Commerce participants).
+// audience = 'seller'|'buyer'. E-Waste under Marketplace maps to Recommerce for both.
 function mapToVertical(businessVertical, category, audience) {
   var bv  = String(businessVertical || '').trim().toLowerCase();
   var cat = String(category || '').trim().toLowerCase();
@@ -92,7 +91,7 @@ function mapToVertical(businessVertical, category, audience) {
     if (cat === 'afr') return 'AFR';
     if (cat === 'goa drs' || cat === 'drs') return 'DRS';
     if (cat === 're-commerce' || cat === 'recommerce' || cat === 're commerce') return 'Recommerce';
-    if (audience !== 'buyer' && isEwaste(cat)) return 'Recommerce';
+    if (isEwaste(cat)) return 'Recommerce';
     if (INFRA_CATS[cat]) return 'InfraBusiness';
     return 'Others';
   }
