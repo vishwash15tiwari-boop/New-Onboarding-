@@ -198,9 +198,9 @@ function bustDashboardCache_() {
 
   ['seller', 'buyer'].forEach(function(aud) {
     periods.forEach(function(p) {
-      keys.push('dash_v17_' + aud + '_' + JSON.stringify([p, '', '']));
+      keys.push('dash_v18_' + aud + '_' + JSON.stringify([p, '', '']));
       vertKeys.forEach(function(vk) {
-        keys.push('vrows_v3_' + aud + '_' + vk + '_' + JSON.stringify([p, '', '']));
+        keys.push('vrows_v4_' + aud + '_' + vk + '_' + JSON.stringify([p, '', '']));
       });
     });
   });

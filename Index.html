@@ -608,6 +608,7 @@ function loadData(silent) {
             if (selectedVert && _vertRowsPKey !== newPKey) {
               vertRows = [];
               vertRowsLoading = false;
+              vertRowsError = null;
               loadVertRows(selectedVert);
             }
             renderAll();
@@ -636,6 +637,7 @@ function switchAudience(a) {
   selectedVert = null;                       // close any open detail panel
   vertRows = [];
   vertRowsLoading = false;
+  vertRowsError = null;
   _vertRowsPKey = null;
   ++_vertRowsGen;
   document.body.style.overflow = '';
@@ -804,9 +806,11 @@ function getVertCfg() {
 var selectedVert = null;
 var vertRows = [];          // lazily loaded rows for the open vertical
 var vertRowsLoading = false;
+var vertRowsError = null;   // backend error message when the last row fetch failed
 var _vertRowsGen = 0;       // incremented on each loadVertRows call; stale callbacks are discarded
 var _vertRowsPKey = null;   // period key when vertRows were last fetched; used to detect stale rows
 var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+var vdSort = { key: '', dir: 1 };   // detail table sort state (dir: 1 asc, -1 desc)
 var VD_MAX_RENDER = 200;   // rows rendered at once in the detail table
 var KB_MAX_PER_COL = 50;   // cards rendered per Kanban column
 var vdView = 'board';      // records view in the detail panel: 'board' | 'table'
@@ -1002,8 +1006,10 @@ function openVertDetail(key) {
   var isNew = (selectedVert !== key);
   if (isNew) {
     vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+    vdSort = { key: '', dir: 1 };
     vertRows = [];
     vertRowsLoading = true;  // show "Loading records…" on initial render
+    vertRowsError = null;
     _vertRowsPKey = null;
     ++_vertRowsGen;           // cancel any in-flight request for the old vertical
   }
@@ -1019,6 +1025,7 @@ function openVertDetail(key) {
 
 function loadVertRows(key) {
   vertRowsLoading = true;
+  vertRowsError = null;
   var myGen = ++_vertRowsGen;
   var f = { audience: currentAudience, period: currentPeriod };
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
@@ -1032,22 +1039,35 @@ function loadVertRows(key) {
         if (data.success && data.vertKey === selectedVert) {
           vertRows = data.rows || [];
           _vertRowsPKey = myPKey;
-          renderVertDetail();
+        } else if (!data.success) {
+          vertRowsError = data.error || 'The server could not load records for this vertical.';
         }
-      } catch (e) {}
+      } catch (e) {
+        vertRowsError = 'Could not read the server response: ' + e.message;
+      }
+      renderVertDetail();   // always re-render — never leave the panel stuck on the spinner
     })
-    .withFailureHandler(function() {
+    .withFailureHandler(function(err) {
       if (myGen !== _vertRowsGen) return;
       vertRowsLoading = false;
-      renderVertDetail();   // unblock the panel — show "No records yet" instead of infinite spinner
+      vertRowsError = (err && err.message) ? err.message : 'Server error while loading records.';
+      renderVertDetail();
     })
     .getVerticalRows(key, JSON.stringify(f));
+}
+
+// Retry button in the detail panel's error state.
+function vdRetryRows() {
+  if (!selectedVert) return;
+  loadVertRows(selectedVert);
+  renderVertDetail();   // show the loading state immediately
 }
 
 function closeVertDetail() {
   selectedVert = null;
   vertRows = [];
   vertRowsLoading = false;
+  vertRowsError = null;
   _vertRowsPKey = null;
   ++_vertRowsGen;
   document.body.style.overflow = '';
@@ -1123,11 +1143,24 @@ function renderVertDetail() {
   var recordsHtml;
   if (vertRowsLoading) {
     recordsHtml = '<div class="no-data" style="padding:32px 0">Loading records…</div>';
+  } else if (vertRowsError) {
+    recordsHtml = '<div class="no-data" style="padding:32px 0">'
+      + '<div style="color:var(--red);font-weight:600;margin-bottom:6px">⚠ Could not load records</div>'
+      + '<div style="margin-bottom:14px">' + esc(vertRowsError) + '</div>'
+      + '<button onclick="vdRetryRows()" style="padding:7px 20px;border-radius:9px;border:1px solid var(--blue);background:var(--blue);color:#fff;font-size:13px;font-weight:600">↻ Retry</button>'
+      + '</div>';
   } else if (rows.length) {
+    var cols = [
+      ['id', 'ID'], ['name', 'Business Name'], ['category', 'Category'], ['vendorType', 'Vendor Type'],
+      ['status', 'Status'], ['gstin', 'GSTIN'], ['state', 'State'], ['createdDate', 'Created'],
+      ['onbDate', 'Onboarded'], ['tat', 'TAT'], ['txn', 'Transaction'],
+    ];
     recordsHtml = filtersHtml
       + '<div class="kb-wrap mt-16" id="vd-board-view"><div class="kb-board" id="vd-board"></div></div>'
       + '<div class="table-wrap vd-table-wrap mt-16" id="vd-table-view"><table><thead><tr>'
-      + '<th>ID</th><th>Business Name</th><th>Category</th><th>Vendor Type</th><th>Status</th><th>GSTIN</th><th>State</th><th>Created</th><th>Onboarded</th><th>TAT</th><th>Transaction</th>'
+      + cols.map(function(c) {
+          return '<th data-key="' + c[0] + '" onclick="vdSortBy(\'' + c[0] + '\')" title="Sort by ' + esc(c[1]) + '">' + c[1] + '</th>';
+        }).join('')
       + '</tr></thead><tbody id="vd-tbody"></tbody></table></div>'
       + '<div class="vd-note" id="vd-note"></div>';
   } else {
@@ -1203,9 +1236,11 @@ function renderVdBoard() {
   if (!host || !selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return;
   var all      = vertRows;
   var filtered = vdFilteredRows();
+  var placed   = 0;   // rows that actually appear in one of the four stage columns
 
   host.innerHTML = KB_COLS.map(function(col) {
     var cases = filtered.filter(function(r) { return r.status === col.key; });
+    placed += cases.length;
     var shown = cases.slice(0, KB_MAX_PER_COL);
     var extra = cases.length - shown.length;
     return '<div class="kb-col ' + col.cls + '">'
@@ -1219,8 +1254,10 @@ function renderVdBoard() {
   }).join('');
 
   if (note) {
-    note.textContent = 'Showing ' + fmt(filtered.length) + ' of ' + fmt(all.length)
-      + ' records, grouped by stage · latest first';
+    var other = filtered.length - placed;
+    note.textContent = 'Showing ' + fmt(placed) + ' of ' + fmt(all.length)
+      + ' records, grouped by stage · latest first'
+      + (other > 0 ? ' · ' + fmt(other) + ' with other statuses — see Table view' : '');
   }
 }
 
@@ -1269,13 +1306,56 @@ function parseDMY(s) {
   return isNaN(d.getTime()) ? null : d;
 }
 
+// Column sort — clicking a header sorts by that column; a second click reverses it.
+function vdSortBy(key) {
+  if (vdSort.key === key) vdSort.dir = -vdSort.dir;
+  else vdSort = { key: key, dir: 1 };
+  renderVdRecords();
+}
+
+// Comparable value for a row under a given column key.
+function vdSortVal(r, key) {
+  if (key === 'tat') {
+    var n = parseInt(r.tat, 10);
+    return isNaN(n) ? -1 : n;                       // rows without a TAT sort first (asc)
+  }
+  if (key === 'createdDate' || key === 'onbDate') {
+    var d = parseDMY(r[key]);
+    return d ? d.getTime() : 0;                     // undated rows sort first (asc)
+  }
+  if (key === 'txn') {
+    // Transacted (by value) > onboarded-but-not-transacted > not applicable
+    if (r.hasTransacted) return 1 + (r.txnValue || 0);
+    return r.status === 'COMPLETED' ? 0 : -1;
+  }
+  if (key === 'gstin') return (r.hasGST ? '1' : '0') + String(r.gstin || '').toLowerCase();
+  return String(r[key] || '').toLowerCase();
+}
+
+function vdSortedRows(filtered) {
+  if (!vdSort.key) return filtered;
+  var key = vdSort.key, dir = vdSort.dir;
+  return filtered.slice().sort(function(a, b) {
+    var va = vdSortVal(a, key), vb = vdSortVal(b, key);
+    if (va < vb) return -dir;
+    if (va > vb) return dir;
+    return 0;
+  });
+}
+
 function renderVdTable() {
   var tbody = document.getElementById('vd-tbody');
   var note  = document.getElementById('vd-note');
   if (!tbody || !selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return;
   var all      = vertRows;
-  var filtered = vdFilteredRows();
+  var filtered = vdSortedRows(vdFilteredRows());
   var shown    = filtered.slice(0, VD_MAX_RENDER);
+
+  // Sync the ↑/↓ indicator on the column headers with the active sort.
+  document.querySelectorAll('#vd-table-view thead th').forEach(function(th) {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.key === vdSort.key) th.classList.add(vdSort.dir === 1 ? 'sort-asc' : 'sort-desc');
+  });
 
   tbody.innerHTML = shown.length
     ? shown.map(function(r) {
@@ -1307,7 +1387,8 @@ function renderVdTable() {
 
   if (note) {
     note.textContent = 'Showing ' + fmt(shown.length) + ' of ' + fmt(filtered.length)
-      + ' matching · ' + fmt(all.length) + ' total · latest first';
+      + ' matching · ' + fmt(all.length) + ' total · '
+      + (vdSort.key ? 'sorted by ' + vdSort.key + (vdSort.dir === 1 ? ' ↑' : ' ↓') : 'latest first');
   }
 }
 
@@ -1361,10 +1442,12 @@ function statusChip(s) {
   return '<span class="status-chip ' + (cls[s] || '') + '">' + esc(STATUS_LABELS[s] || s || '—') + '</span>';
 }
 function tatChip(t) {
-  if (!t || t === '—') return '<span class="text-muted">—</span>';
-  var n = parseInt(t);
-  var cls = isNaN(n) ? '' : n <= 2 ? 'text-green' : n <= 5 ? 'text-amber' : 'text-red';
-  return '<span class="' + cls + '">' + esc(t) + '</span>';
+  // 0 is a valid TAT (same-day onboarding) — only null/undefined/'—' mean "no TAT".
+  if (t === null || t === undefined || t === '' || t === '—') return '<span class="text-muted">—</span>';
+  var n = parseInt(t, 10);
+  if (isNaN(n)) return '<span class="text-muted">' + esc(t) + '</span>';
+  var cls = n <= 2 ? 'text-green' : n <= 5 ? 'text-amber' : 'text-red';
+  return '<span class="' + cls + '">' + n + 'd</span>';
 }
 </script>
 </body>

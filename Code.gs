@@ -13,8 +13,10 @@ var CONFIG = {
   CACHE_TTL: 300,  // seconds — 5-minute cache; matches Metabase sync frequency
 
   // Metabase card IDs — keyed by audience.
-  // readData() calls fetchMBCard_() (Metabase.gs) directly on every cache miss.
-  // No background trigger required; requires MB credentials in Script Properties.
+  // readData() prefers the _mb_* sheets synced by the Metabase.gs trigger; when
+  // those are absent it calls fetchMBCard_() (Metabase.gs) directly, so the
+  // dashboard is live even before the first sync. Requires MB credentials in
+  // Script Properties (setupMetabaseCredentials in Metabase.gs).
   MB_CARDS: {
     seller: 5712,  // Seller Info
     buyer:  5711,  // Buyer from Inspection
@@ -115,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v17_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v18_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -133,7 +135,7 @@ function getDashboardData(filtersJson) {
         });
       try {
         cache.put(
-          'vrows_v3_' + audience + '_' + vc.key + '_' + periodKey,
+          'vrows_v4_' + audience + '_' + vc.key + '_' + periodKey,
           JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) }),
           CONFIG.CACHE_TTL
         );
@@ -167,7 +169,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v3_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v4_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -192,11 +194,13 @@ function getVerticalRows(vertKey, filtersJson) {
 // ─────────────────────────────────────────────────────────────
 // DATA READ + NORMALIZATION
 // ─────────────────────────────────────────────────────────────
-// Priority (fastest to slowest):
+// Priority (freshest live data first):
 //   1. _mb_* hidden sheets in this spreadsheet — pure in-process read, ~100 ms.
 //      Written every 5 min by the Metabase.gs trigger; same freshness as the cache.
-//   2. External Google Sheet by ID — ~1-2 s (openById + read); used until trigger runs.
-//   3. Metabase API direct fetch — ~3-8 s HTTP round-trip; last resort only.
+//   2. Metabase API direct fetch — ~3-8 s HTTP round-trip; keeps the dashboard
+//      connected to live backend data before the first trigger sync has run.
+//   3. External Google Sheet by ID — last-resort static fallback so the
+//      dashboard still renders when Metabase is unreachable.
 function readData(audience) {
   var localName  = CONFIG.MB_LOCAL_SHEETS[audience];
   var fallbackId = AUDIENCE_CFG[audience] && AUDIENCE_CFG[audience].sheetId;
@@ -214,16 +218,7 @@ function readData(audience) {
     } catch (e) { /* fall through */ }
   }
 
-  // 2. External Google Sheet fallback
-  if (fallbackId) {
-    try {
-      var fb = readSheetObj_(SpreadsheetApp.openById(fallbackId).getSheets()[0]);
-      fb.source = 'sheets';
-      return fb;
-    } catch (e) { Logger.log('Fallback sheet read failed: ' + e.message); }
-  }
-
-  // 3. Metabase direct — only when nothing else is available
+  // 2. Metabase direct — live backend data when the local sync hasn't run yet
   if (cardId) {
     try {
       var mbData = fetchMBCard_(cardId);
@@ -232,6 +227,15 @@ function readData(audience) {
         return mbData;
       }
     } catch (e) { Logger.log('Metabase direct fetch failed: ' + e.message); }
+  }
+
+  // 3. External Google Sheet — static fallback, only when Metabase is unavailable
+  if (fallbackId) {
+    try {
+      var fb = readSheetObj_(SpreadsheetApp.openById(fallbackId).getSheets()[0]);
+      fb.source = 'sheets';
+      return fb;
+    } catch (e) { Logger.log('Fallback sheet read failed: ' + e.message); }
   }
 
   return { headers: [], rows: [], source: 'empty' };
@@ -334,10 +338,6 @@ function normalizeRows(raw, cfg) {
     return true;
   });
 }
-
-// ─────────────────────────────────────────────────────────────
-// SUPPLEMENTARY GST SHEET READERS
-// ─────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────
 // DASHBOARD ASSEMBLY
