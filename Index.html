@@ -3,62 +3,129 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Enterprise Business Control Tower</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+// Theme boot — before first paint so there is no flash. Brand guideline themes:
+// saved choice wins; otherwise follow the OS. toggleTheme() persists the switch.
+(function(){
+  var t;
+  try { t = localStorage.getItem('ebt_theme'); } catch(e){}
+  if (t !== 'dark' && t !== 'light') {
+    t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <style>
 /* ===== Reset & Base ===== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
+/* ── Recykal brand tokens (Brand Guidelines: Poppins + primary palette) ──
+   Bright Blue #005DFF · Midnight #024C8A · Purple #8460D4 · Blue #567DE8
+   Bright Green #1DC797 · Dark Green #049769 · Duke #0000AF · Fern #3E7D44
+   Stage palette validated (CVD + contrast) for light & dark surfaces. */
 :root{
-  /* ── Surfaces — Notion warm-neutral ── */
-  --bg:      #F7F7F5;
-  --bg2:     #F0F0EC;
+  color-scheme:light;
+
+  /* ── Surfaces — cool porcelain, generous whitespace ── */
+  --bg:      #F8FAFC;
+  --bg2:     #EFF3F7;
   --card:    #FFFFFF;
-  --card2:   #FAFAF9;
-  --hover:   #F4F4F1;
+  --card2:   #FAFBFD;
+  --hover:   #F2F6FA;
 
-  /* ── Borders — hairline, warm neutral ── */
-  --border:  #EBEBE7;
-  --border2: #DFDFD9;
+  /* ── Borders — hairline ── */
+  --border:  #E8ECF1;
+  --border2: #D9DFE7;
 
-  /* ── Ink — Apple near-black, warm greys ── */
-  --txt:     #1D1D1F;
-  --txt2:    #55555C;
-  --txt3:    #8A8A90;
+  /* ── Ink ── */
+  --txt:     #0F1720;
+  --txt2:    #4E5A67;
+  --txt3:    #808A94;
 
-  /* ── Brand accent (Recykal) — UI chrome only ── */
-  --blue:    #0071BC;
-  --blue-ink:#005E9E;
-  --blue2:   #2E3192;
+  /* ── Brand accents ── */
+  --blue:      #005DFF;   /* Bright Blue — primary interactive accent */
+  --blue-ink:  #0047D4;
+  --blue2:     #024C8A;   /* Midnight Blue */
+  --accent-soft: rgba(0,93,255,.07);
 
   /* ── Status ink (TAT / deltas) ── */
-  --green:   #12A150;
+  --green:   #049769;     /* Dark Green */
   --amber:   #C77700;
   --red:     #D64545;
 
-  /* ── Stage palette — ONE semantic set, used everywhere ──
-     (funnel bars · card distribution bar · kanban · chips) */
-  --st-total:      #9AA0A6;   --st-total-bg:     #F2F2F0;   --st-total-tx:     #55555C;
-  --st-draft:      #7B879B;   --st-draft-bg:     #F1F3F6;   --st-draft-tx:     #4C566A;
-  --st-review:     #2A78D6;   --st-review-bg:    #EAF2FC;   --st-review-tx:    #1A5DAA;
-  --st-onboarded:  #12A150;   --st-onboarded-bg: #E7F6EC;   --st-onboarded-tx: #0C7A3B;
-  --st-transacted: #147D80;   --st-transacted-bg:#E5F4F4;   --st-transacted-tx:#0E6265;
+  /* ── Stage palette — ONE semantic set everywhere (validated) ── */
+  --st-total:      #9AA0A6;   --st-total-bg:     #F1F2F3;   --st-total-tx:     #575C63;
+  --st-draft:      #0E63AB;   --st-draft-bg:     #EAF2FB;   --st-draft-tx:     #0B4E8A;
+  --st-review:     #567DE8;   --st-review-bg:    #EDF1FE;   --st-review-tx:    #3050C8;
+  --st-onboarded:  #1DC797;   --st-onboarded-bg: #E3F8F1;   --st-onboarded-tx: #037556;
+  --st-transacted: #3E7D44;   --st-transacted-bg:#EAF3EA;   --st-transacted-tx:#33673A;
   --st-rejected:   #D64545;   --st-rejected-bg:  #FBECEC;   --st-rejected-tx:  #B23636;
 
-  /* ── Shadows — soft, Apple-quiet ── */
-  --shadow-sm: 0 1px 2px rgba(17,17,26,.04);
-  --shadow:    0 2px 8px rgba(17,17,26,.06), 0 1px 2px rgba(17,17,26,.04);
-  --shadow-lg: 0 12px 32px rgba(17,17,26,.10), 0 3px 8px rgba(17,17,26,.05);
-  --ring:      0 0 0 3px rgba(0,113,188,.16);
+  /* ── Elevation — layered, soft ── */
+  --shadow-sm: 0 1px 2px rgba(15,23,32,.04);
+  --shadow:    0 2px 6px rgba(15,23,32,.05), 0 8px 24px rgba(15,23,32,.05);
+  --shadow-lg: 0 4px 12px rgba(15,23,32,.07), 0 24px 56px rgba(15,23,32,.10);
+  --ring:      0 0 0 3px rgba(0,93,255,.18);
 
-  /* ── Geometry ── */
-  --r:   14px;
-  --r2:  9px;
+  /* ── Geometry & motion ── */
+  --r:    16px;
+  --r2:   10px;
+  --pill: 999px;
+  --ease: cubic-bezier(.22,.8,.36,1);
+
+  /* ── Ambient page wash (brand blue + green, whisper-quiet) ── */
+  --wash: radial-gradient(1100px 420px at 12% -8%, rgba(0,93,255,.055), transparent 60%),
+          radial-gradient(900px 380px at 88% -10%, rgba(29,199,151,.05), transparent 60%);
+}
+
+:root[data-theme="dark"]{
+  color-scheme:dark;
+
+  --bg:      #0F1216;
+  --bg2:     #141920;
+  --card:    #191F27;
+  --card2:   #1E252E;
+  --hover:   #222A34;
+
+  --border:  #262E39;
+  --border2: #333D4A;
+
+  --txt:     #F2F5F8;
+  --txt2:    #A9B2BD;
+  --txt3:    #717C88;
+
+  --blue:      #4D8DFF;
+  --blue-ink:  #79A9FF;
+  --blue2:     #6FA5DE;
+  --accent-soft: rgba(77,141,255,.10);
+
+  --green:   #22C79A;
+  --amber:   #E09A2F;
+  --red:     #E06767;
+
+  --st-total:      #7A828C;   --st-total-bg:     rgba(122,130,140,.14);  --st-total-tx:     #AEB6BF;
+  --st-draft:      #2578C2;   --st-draft-bg:     rgba(37,120,194,.15);   --st-draft-tx:     #7FB5E8;
+  --st-review:     #567DE8;   --st-review-bg:    rgba(86,125,232,.15);   --st-review-tx:    #A3B6F2;
+  --st-onboarded:  #0FAA80;   --st-onboarded-bg: rgba(15,170,128,.15);   --st-onboarded-tx: #4CD6AC;
+  --st-transacted: #4E9455;   --st-transacted-bg:rgba(78,148,85,.17);    --st-transacted-tx:#93C599;
+  --st-rejected:   #D64545;   --st-rejected-bg:  rgba(214,69,69,.14);    --st-rejected-tx:  #E89090;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.25);
+  --shadow:    0 2px 6px rgba(0,0,0,.30), 0 8px 24px rgba(0,0,0,.28);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,.35), 0 24px 56px rgba(0,0,0,.45);
+  --ring:      0 0 0 3px rgba(77,141,255,.28);
+
+  --wash: radial-gradient(1100px 420px at 12% -8%, rgba(0,93,255,.10), transparent 60%),
+          radial-gradient(900px 380px at 88% -10%, rgba(29,199,151,.07), transparent 60%);
 }
 
 html{
-  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-family:'Poppins',system-ui,-apple-system,sans-serif;
   background:var(--bg);
   color:var(--txt);
   font-size:14px;
@@ -67,70 +134,111 @@ html{
   -moz-osx-font-smoothing:grayscale;
   text-rendering:optimizeLegibility;
 }
-body{min-height:100vh;background:var(--bg)}
+body{min-height:100vh;background:var(--bg);background-image:var(--wash);background-repeat:no-repeat;transition:background-color .3s var(--ease)}
 a{color:var(--blue);text-decoration:none}
-button{cursor:pointer;font-family:inherit}
+button{cursor:pointer;font-family:inherit;color:inherit}
 select,input{font-family:inherit}
-::selection{background:rgba(0,113,188,.14)}
+::selection{background:rgba(0,93,255,.16)}
+
+/* ── Accessibility: visible keyboard focus, everywhere ── */
+:focus{outline:none}
+:focus-visible{outline:none;box-shadow:var(--ring);border-radius:var(--r2)}
+.compare-card:focus-visible{box-shadow:var(--ring),var(--shadow)}
+
+/* ── Reduced motion: honour the OS switch ── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+  html{scroll-behavior:auto}
+}
 
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar{width:8px;height:8px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:8px;border:2px solid transparent;background-clip:content-box}
-::-webkit-scrollbar-thumb:hover{background:#9CA3AF;background-clip:content-box}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--txt3);background-clip:content-box}
 
-/* ===== Loading Overlay ===== */
-#loading-overlay{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px;transition:opacity .4s ease}
-#loading-overlay.hidden{opacity:0;pointer-events:none}
-.spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s cubic-bezier(.5,.1,.5,.9) infinite}
+/* ===== Loading Overlay — sophisticated, brand-quiet ===== */
+#loading-overlay{position:fixed;inset:0;background:var(--bg);background-image:var(--wash);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;transition:opacity .45s var(--ease),visibility 0s linear .45s}
+#loading-overlay.hidden{opacity:0;pointer-events:none;visibility:hidden}
+#loading-overlay.hidden .spinner{animation-play-state:paused}
+.spinner{width:34px;height:34px;border:2.5px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s cubic-bezier(.5,.1,.5,.9) infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-txt{color:var(--txt3);font-size:13px;font-weight:500;letter-spacing:.1px}
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.loading-txt{color:var(--txt3);font-size:13px;font-weight:500;letter-spacing:.2px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 
-/* ===== Header ===== */
+/* ── Skeleton loading — shimmer placeholders while data arrives ── */
+.sk{position:relative;overflow:hidden;border-radius:var(--r);background:var(--card);border:1px solid var(--border);min-height:280px}
+.sk::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(100deg,transparent 32%,var(--hover) 50%,transparent 68%);
+  background-size:200% 100%;animation:shimmer 1.5s linear infinite}
+.sk-line{position:relative;overflow:hidden;height:13px;border-radius:6px;background:var(--bg2);margin:10px 0}
+.sk-line::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 32%,var(--card) 50%,transparent 68%);background-size:200% 100%;animation:shimmer 1.5s linear infinite}
+
+/* ===== Header — glass, transparent → solid on scroll ===== */
 #header{
   position:sticky;top:0;z-index:200;
-  background:rgba(255,255,255,.92);
+  background:transparent;
+  border-bottom:1px solid transparent;
+  padding:0 32px;
+  height:56px;
+  display:flex;align-items:center;gap:16px;
+  transition:background-color .3s var(--ease),border-color .3s var(--ease),box-shadow .3s var(--ease);
+}
+#header.scrolled{
+  background:color-mix(in srgb, var(--card) 88%, transparent);
   backdrop-filter:blur(20px) saturate(160%);
   -webkit-backdrop-filter:blur(20px) saturate(160%);
-  border-bottom:1px solid var(--border);
-  padding:0 32px;
-  height:52px;
-  display:flex;align-items:center;gap:16px;
+  border-bottom-color:var(--border);
+  box-shadow:var(--shadow-sm);
 }
+@supports not (background: color-mix(in srgb, red 50%, blue)){
+  #header.scrolled{background:var(--card)}
+}
+/* Theme toggle — pill icon button */
+#btn-theme{
+  width:34px;height:34px;border-radius:var(--pill);
+  border:1px solid var(--border);background:var(--card);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;line-height:1;color:var(--txt2);
+  transition:transform .18s var(--ease),border-color .18s,background .18s;
+}
+#btn-theme:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+#btn-theme:active{transform:scale(.94)}
 .logo-wrap{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.logo-text{font-weight:650;font-size:14.5px;letter-spacing:-.3px;color:var(--txt)}
-.logo-sub{font-size:11px;color:var(--txt3);font-weight:400;margin-top:1px;letter-spacing:.05px}
+.logo-text{font-weight:700;font-size:14.5px;letter-spacing:-.2px;color:var(--txt)}
+.logo-sub{font-size:10.5px;color:var(--txt3);font-weight:400;margin-top:1px;letter-spacing:.05px}
 .header-spacer{flex:1}
 .header-meta{display:flex;align-items:center;gap:12px}
 .last-updated{font-size:11.5px;color:var(--txt3);white-space:nowrap;font-variant-numeric:tabular-nums}
 #btn-refresh{
-  padding:7px 14px;
-  border-radius:var(--r2);
+  padding:7px 18px;
+  border-radius:var(--pill);
   border:1px solid var(--border);
   background:var(--card);
   color:var(--txt2);
   font-size:12.5px;
   font-weight:500;
   display:flex;align-items:center;gap:6px;
-  transition:all .15s ease;
+  transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s,color .18s,background .18s;
 }
-#btn-refresh:hover{background:var(--card2);border-color:var(--border2);color:var(--txt)}
-#btn-refresh:active{transform:scale(.98)}
+#btn-refresh:hover{background:var(--card2);border-color:var(--border2);color:var(--txt);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+#btn-refresh:active{transform:scale(.97)}
 #btn-refresh.spinning .icon-refresh{animation:spin .6s linear infinite}
 .icon-refresh{display:inline-block;font-size:12px;line-height:1}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2.4s ease infinite}
-.live-pill{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:500;color:var(--txt3);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.live-pill{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:500;color:var(--txt3);background:var(--bg2);border:1px solid var(--border);border-radius:var(--pill);padding:3px 11px;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .live-pill b{color:var(--green);font-weight:600;letter-spacing:.05em}
 
 /* ===== Filter Controls (vertical detail view) ===== */
 .filter-group{display:flex;align-items:center;gap:7px}
 .filter-label{font-size:11px;color:var(--txt3);font-weight:500;letter-spacing:.3px;white-space:nowrap}
 .qf-chips{display:inline-flex;gap:4px;align-items:center}
-.qf-chip{font-family:inherit;font-size:12px;font-weight:600;padding:4px 13px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;background:transparent;color:var(--txt2);transition:background .15s,border-color .15s,color .15s;white-space:nowrap;line-height:1.4}
+.qf-chip{font-family:inherit;font-size:12px;font-weight:600;padding:4px 14px;border:1.5px solid var(--border);border-radius:var(--pill);cursor:pointer;background:transparent;color:var(--txt2);transition:background .18s var(--ease),border-color .18s,color .18s,transform .18s var(--ease),box-shadow .18s;white-space:nowrap;line-height:1.4}
 .qf-chip.active{background:var(--blue);border-color:var(--blue);color:#fff}
-.qf-chip:not(.active):hover{border-color:var(--border2);color:var(--txt)}
+.qf-chip:not(.active):hover{border-color:var(--border2);color:var(--txt);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.qf-chip:active{transform:scale(.96)}
 .filter-select,.filter-input{
   background:var(--card);
   border:1px solid var(--border);
@@ -155,15 +263,15 @@ select,input{font-family:inherit}
 .filter-input::placeholder{color:var(--txt3);font-weight:400}
 
 /* ===== Main ===== */
-#main{max-width:1640px;margin:0 auto;padding:10px 32px 28px}
+#main{max-width:1640px;margin:0 auto;padding:18px 32px 48px}
 
-/* ===== Section Titles ===== */
+/* ===== Section Titles — large, bold, strong hierarchy ===== */
 .section-title{
-  font-size:16px;font-weight:650;
-  letter-spacing:-.4px;
+  font-size:21px;font-weight:700;
+  letter-spacing:-.5px;
   color:var(--txt);
-  margin-bottom:8px;
-  display:flex;align-items:center;gap:8px;
+  margin:6px 0 16px;
+  display:flex;align-items:center;gap:12px;
 }
 .section-title .badge{
   font-size:11px;font-weight:500;
@@ -205,19 +313,22 @@ select,input{font-family:inherit}
 }
 .chart-card-title .muted-total{font-size:11px;font-weight:600;color:var(--txt3);text-transform:none;letter-spacing:0}
 
-/* ===== Vertical Comparison Cards ===== */
-.compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+/* ===== Vertical Comparison Cards — soft elevation, whole card clickable ===== */
+.compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px}
 .compare-card{
   background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--r);
-  padding:16px 16px 13px;
+  padding:18px 18px 14px;
   box-shadow:var(--shadow-sm);
   cursor:pointer;
-  transition:box-shadow .2s ease,border-color .2s ease,transform .2s ease;
+  transition:box-shadow .25s var(--ease),border-color .25s var(--ease),transform .25s var(--ease);
 }
-.compare-card:hover{box-shadow:var(--shadow);border-color:var(--border2);transform:translateY(-2px)}
+.compare-card:hover{box-shadow:var(--shadow-lg);border-color:var(--border2);transform:translateY(-3px)}
+.compare-card:active{transform:translateY(-1px) scale(.995)}
 .compare-card.selected{border-color:var(--blue);box-shadow:var(--ring),var(--shadow)}
+/* Entrance — staggered fade-up on first paint of a dataset */
+.compare-grid.animate .compare-card{opacity:0;animation:fadeUp .5s var(--ease) forwards;animation-delay:calc(var(--i,0)*45ms)}
 .compare-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px}
 .compare-label{font-size:14.5px;font-weight:650;color:var(--txt);letter-spacing:-.2px;line-height:1.2}
 .compare-sub{font-size:11px;color:var(--txt3);font-weight:400;margin-top:2px}
@@ -231,7 +342,7 @@ select,input{font-family:inherit}
 
 /* Hero: onboarded count + completion pill */
 .cc-hero{display:flex;align-items:baseline;gap:9px;margin-bottom:2px}
-.cc-hero-num{font-size:30px;font-weight:700;color:var(--txt);letter-spacing:-1px;line-height:1}
+.cc-hero-num{font-size:34px;font-weight:800;color:var(--txt);letter-spacing:-1.2px;line-height:1;font-variant-numeric:tabular-nums}
 .cc-hero-of{font-size:12.5px;color:var(--txt3);font-weight:500}
 .cc-pill{
   margin-left:auto;font-size:11.5px;font-weight:650;
@@ -320,9 +431,9 @@ thead th:hover{color:var(--txt);background:var(--bg2)}
 thead th.sort-asc::after{content:' ↑';color:var(--blue)}
 thead th.sort-desc::after{content:' ↓';color:var(--blue)}
 tbody tr{border-bottom:1px solid var(--border);transition:background .12s ease}
-tbody tr:nth-child(even){background:#FAFAFA}
+tbody tr:nth-child(even){background:var(--card2)}
 tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:rgba(0,113,188,.03)}
+tbody tr:hover{background:var(--accent-soft)}
 tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:nowrap;font-weight:400}
 .status-chip{
   display:inline-block;
@@ -349,36 +460,48 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   box-shadow:var(--shadow-sm);
 }
 .vd-kpi-val{font-size:15.5px;font-weight:700;color:var(--txt);letter-spacing:-.3px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.vd-kpi-lbl{font-size:9.5px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.35px;margin-top:2px;white-space:nowrap}
+.vd-kpi-lbl{font-size:9.5px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.35px;margin-top:2px;line-height:1.35}
 
 /* ===== Vertical Detail — Full-Page Overlay ===== */
-@keyframes slideInRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
 #vert-detail{
   position:fixed;
   inset:0;
   z-index:400;
   background:var(--bg);
+  background-image:var(--wash);
+  background-repeat:no-repeat;
   overflow-y:auto;
-  animation:slideInRight .22s cubic-bezier(.22,.8,.36,1) both;
+  animation:slideInRight .28s var(--ease) both;
 }
 .vd-page-inner{max-width:1200px;margin:0 auto;padding:24px 32px 48px}
 .vd-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)}
 .vd-title{font-size:18px;font-weight:700;color:var(--txt);letter-spacing:-.3px}
 .vd-back{
   display:inline-flex;align-items:center;gap:6px;
-  padding:7px 16px;border-radius:var(--r2);
+  padding:7px 18px;border-radius:var(--pill);
   border:1px solid var(--border);background:var(--card);
-  color:var(--txt2);font-size:13px;font-weight:600;transition:all .14s;
+  color:var(--txt2);font-size:13px;font-weight:600;
+  transition:color .18s,border-color .18s,background .18s,transform .18s var(--ease),box-shadow .18s;
   flex-shrink:0;
 }
 .vd-back::before{content:'←';font-size:15px;line-height:1}
-.vd-back:hover{color:var(--blue);border-color:var(--blue);background:rgba(0,113,188,.05)}
+.vd-back:hover{color:var(--blue);border-color:var(--blue);background:var(--accent-soft);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.vd-back:active{transform:scale(.97)}
 /* reuse vd-close class for the filter clear button */
 .vd-close{
-  padding:6px 13px;border-radius:var(--r2);
+  padding:6px 15px;border-radius:var(--pill);
   border:1px solid var(--border);background:var(--card);
   color:var(--txt3);font-size:12px;font-weight:500;transition:all .14s;
 }
+/* Retry — primary pill in the error state */
+.vd-retry{
+  padding:8px 24px;border-radius:var(--pill);border:1px solid var(--blue);
+  background:var(--blue);color:#fff;font-size:13px;font-weight:600;
+  transition:transform .18s var(--ease),box-shadow .18s,filter .18s;
+}
+.vd-retry:hover{transform:translateY(-1px);box-shadow:var(--shadow);filter:brightness(1.06)}
+.vd-retry:active{transform:scale(.97)}
 .vd-close:hover{color:var(--red);border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.05)}
 .vd-table-wrap{max-height:420px;overflow:auto}
 .vd-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:18px}
@@ -423,6 +546,8 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .mt-16{margin-top:16px} .mb-16{margin-bottom:16px} .mb-24{margin-bottom:24px}
 .flex{display:flex} .flex-wrap{flex-wrap:wrap} .gap-16{gap:16px} .items-center{align-items:center}
 .no-data{text-align:center;padding:48px;color:var(--txt3);font-size:13px}
+.no-data::before{content:'◌';display:block;font-size:22px;opacity:.45;margin-bottom:8px}
+.no-data.plain::before{content:none}
 
 /* ===== Responsive ===== */
 @media (max-width:1100px){
@@ -461,6 +586,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <button id="btn-refresh" onclick="loadData()">
       <span class="icon-refresh">↻</span> Refresh
     </button>
+    <button id="btn-theme" onclick="toggleTheme()" title="Switch theme" aria-label="Switch light / dark theme">◐</button>
   </div>
 </header>
 
@@ -556,6 +682,49 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && selectedVert) closeVertDetail();
 });
+
+// ── Theme (light / dark) — persists; boot script in <head> applies before paint ──
+function toggleTheme() {
+  var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('ebt_theme', next); } catch (e) {}
+}
+
+// ── Motion: respect the OS reduced-motion switch for JS-driven animation ──
+function motionOK() {
+  return !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+// ── Glass header: transparent at top → solid + hairline once scrolled ──
+(function() {
+  var hdr = document.getElementById('header'), ticking = false;
+  function apply() { hdr.classList.toggle('scrolled', window.scrollY > 8); ticking = false; }
+  window.addEventListener('scroll', function() {
+    if (!ticking) { ticking = true; requestAnimationFrame(apply); }
+  }, { passive: true });
+  apply();
+})();
+
+// ── Animated number counters — count up only when a value actually changes ──
+var _counterPrev = {};   // id → last shown value, so silent refreshes don't re-run
+function animateCounters(scope) {
+  var els = (scope || document).querySelectorAll('[data-count]');
+  els.forEach(function(el) {
+    var id     = el.getAttribute('data-count-id') || '';
+    var target = parseInt(el.getAttribute('data-count'), 10) || 0;
+    var prev   = (id && _counterPrev[id] !== undefined) ? _counterPrev[id] : null;
+    if (id) _counterPrev[id] = target;
+    if (!motionOK() || prev === target) { el.textContent = fmt(target); return; }
+    var from  = (prev === null) ? 0 : prev;
+    var t0    = performance.now(), dur = 650;
+    (function tick(now) {
+      var p = Math.min(1, (now - t0) / dur);
+      var e = 1 - Math.pow(1 - p, 3);   // ease-out cubic
+      el.textContent = fmt(Math.round(from + (target - from) * e));
+      if (p < 1) requestAnimationFrame(tick);
+    })(t0);
+  });
+}
 
 function scheduleNextRefresh() {
   clearTimeout(_refreshTimer);
@@ -664,7 +833,12 @@ function switchAudience(a) {
   if (!swrDone) {
     D = null;
     var grid = document.getElementById('vert-grid');
-    if (grid) grid.innerHTML = '<div class="no-data" style="grid-column:1/-1">Loading ' + (a === 'buyer' ? 'Buyers' : 'Sellers') + '…</div>';
+    if (grid) {
+      grid.classList.remove('animate');
+      var sk = '';
+      for (var i = 0; i < 8; i++) sk += '<div class="sk"></div>';
+      grid.innerHTML = sk;
+    }
   }
 
   loadData(swrDone);  // silent if stale data already shown
@@ -765,7 +939,7 @@ function renderLastUpdated() {
       syncLabel = ' · ' + sd.toLocaleTimeString('en-IN');
     }
     el.innerHTML = 'Updated: ' + d.toLocaleTimeString('en-IN')
-      + ' <span style="display:inline-flex;align-items:center;gap:4px;background:#e7f6ec;color:#0c7a3b;border:1px solid #c3e8d0;border-radius:12px;padding:1px 8px;font-size:10.5px;font-weight:600;margin-left:4px;white-space:nowrap">'
+      + ' <span style="display:inline-flex;align-items:center;gap:4px;background:var(--st-onboarded-bg);color:var(--st-onboarded-tx);border:1px solid var(--border);border-radius:999px;padding:1px 9px;font-size:10.5px;font-weight:600;margin-left:4px;white-space:nowrap">'
       + liveLabel + syncLabel + '</span>';
     if (dot) { dot.style.background = 'var(--green)'; }
   } else {
@@ -957,16 +1131,22 @@ function funnel3D(v) {
   return out + '</div>';
 }
 
+var _gridAnimKey = null;   // dataset identity — stagger cards only when it changes
 function renderVerticals() {
   var verts = D.verticals;
   var grid  = document.getElementById('vert-grid');
   if (!grid) return;
   if (!verts) { grid.innerHTML = ''; return; }
 
+  var idx = 0;
   grid.innerHTML = getVertCfg().map(function(cfg) {
     var v   = verts[cfg.key] || {};
     var tot = v.total || 0;
     var sel = selectedVert === cfg.key;
+    var attrs = ' style="--i:' + (idx++) + '" tabindex="0" role="button"'
+      + ' aria-label="' + esc(cfg.name) + ' details"'
+      + ' onclick="openVertDetail(\'' + cfg.key + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openVertDetail(\'' + cfg.key + '\')}"';
 
     var head = '<div class="compare-header">'
       + '<div><div class="compare-label">' + esc(cfg.name) + '</div>'
@@ -974,7 +1154,7 @@ function renderVerticals() {
       + '<span class="compare-source-badge">' + cfg.code + '</span></div>';
 
     if (tot <= 0) {
-      return '<div class="compare-card' + (sel ? ' selected' : '') + '" onclick="openVertDetail(\'' + cfg.key + '\')">'
+      return '<div class="compare-card' + (sel ? ' selected' : '') + '"' + attrs + '>'
         + head + '<div class="no-data" style="padding:26px 0">No records in selected period</div></div>';
     }
 
@@ -982,10 +1162,10 @@ function renderVerticals() {
     var txnItem = (v.transacted === null || v.transacted === undefined) ? ''
       : '<div class="cc-foot-item"><b>' + fmt(v.transacted) + '</b>Transacted</div>';
 
-    return '<div class="compare-card' + (sel ? ' selected' : '') + '" onclick="openVertDetail(\'' + cfg.key + '\')">'
+    return '<div class="compare-card' + (sel ? ' selected' : '') + '"' + attrs + '>'
       + head
       + '<div class="cc-hero">'
-      +   '<span class="cc-hero-num">' + fmt(v.completed || 0) + '</span>'
+      +   '<span class="cc-hero-num" data-count="' + (v.completed || 0) + '" data-count-id="' + currentAudience + ':' + cfg.key + '">' + fmt(v.completed || 0) + '</span>'
       +   '<span class="cc-hero-of">of ' + fmt(tot) + '</span>'
       +   '<span class="cc-pill">' + (v.completionPct || 0) + '%</span>'
       + '</div>'
@@ -1000,6 +1180,21 @@ function renderVerticals() {
       + '</div>'
       + '</div>';
   }).join('');
+
+  // Staggered entrance only when the dataset changes (first paint, audience or
+  // period switch) — silent auto-refreshes must not replay the animation.
+  var animKey = currentAudience + '|' + currentPeriod + '|' + customStart + '|' + customEnd;
+  if (_gridAnimKey !== animKey && motionOK()) {
+    _gridAnimKey = animKey;
+    grid.classList.remove('animate');
+    void grid.offsetWidth;   // restart CSS animations
+    grid.classList.add('animate');
+    // Release the animation class once the stagger completes so cards return
+    // to plain static rendering (no lingering composited layers).
+    clearTimeout(grid._animT);
+    grid._animT = setTimeout(function() { grid.classList.remove('animate'); }, 1100);
+  }
+  animateCounters(grid);
 }
 
 function openVertDetail(key) {
@@ -1142,12 +1337,19 @@ function renderVertDetail() {
 
   var recordsHtml;
   if (vertRowsLoading) {
-    recordsHtml = '<div class="no-data" style="padding:32px 0">Loading records…</div>';
+    // Sophisticated loading — shimmer rows instead of a bare message
+    recordsHtml = '<div style="padding:26px 2px 8px">'
+      + '<div class="sk-line" style="width:38%"></div>'
+      + '<div class="sk-line" style="width:86%"></div>'
+      + '<div class="sk-line" style="width:74%"></div>'
+      + '<div class="sk-line" style="width:80%"></div>'
+      + '<div class="no-data plain" style="padding:14px 0 0">Loading records…</div>'
+      + '</div>';
   } else if (vertRowsError) {
-    recordsHtml = '<div class="no-data" style="padding:32px 0">'
+    recordsHtml = '<div class="no-data plain" style="padding:32px 0">'
       + '<div style="color:var(--red);font-weight:600;margin-bottom:6px">⚠ Could not load records</div>'
       + '<div style="margin-bottom:14px">' + esc(vertRowsError) + '</div>'
-      + '<button onclick="vdRetryRows()" style="padding:7px 20px;border-radius:9px;border:1px solid var(--blue);background:var(--blue);color:#fff;font-size:13px;font-weight:600">↻ Retry</button>'
+      + '<button class="vd-retry" onclick="vdRetryRows()">↻ Retry</button>'
       + '</div>';
   } else if (rows.length) {
     var cols = [
