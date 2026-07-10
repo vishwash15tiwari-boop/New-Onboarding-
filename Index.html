@@ -319,6 +319,9 @@ select,input{font-family:inherit}
 .cc-cat{flex:1 1 70px;max-width:132px;background:var(--card2);border:1px solid var(--border);border-left:3px solid var(--st-onboarded);border-radius:8px;padding:7px 9px;min-width:0}
 .cc-cat b{display:block;font-size:15px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1}
 .cc-cat span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:9px;color:var(--txt3);font-weight:600;margin-top:4px;line-height:1.2;min-height:2.2em}
+.cc-cat-click{cursor:pointer;transition:box-shadow .14s,transform .14s,border-color .14s}
+.cc-cat-click:hover{box-shadow:var(--shadow);transform:translateY(-2px);border-left-color:var(--vc,var(--st-onboarded))}
+.cc-cat-click:active{transform:scale(.97)}
 
 /* Footer stats */
 .cc-foot{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--txt3)}
@@ -1092,17 +1095,16 @@ function cardCategories(v, max) {
     head.push(others);
     cats = head;
   }
-  var maxOnb   = Math.max.apply(null, cats.map(function(c) { return c.onboarded || 0; }));
-  var grandOnb = cats.reduce(function(a, c) { return a + (c.onboarded || 0); }, 0);
-  return '<div class="catbar-wrap">' + cats.map(function(c) {
-    var n       = c.onboarded || 0;
-    var tot     = c.total     || 0;
-    var barW    = maxOnb   > 0 ? Math.round((n / maxOnb)   * 100) : 0;
-    var share   = grandOnb > 0 ? Math.round((n / grandOnb) * 100) : 0;
-    return '<div class="catbar-row" title="' + esc(c.category) + ': ' + fmt(n) + ' onboarded of ' + fmt(tot) + ' total">'
-      + '<div class="catbar-lbl">' + esc(c.category) + '</div>'
-      + '<div class="catbar-track"><div class="catbar-fill" style="width:' + barW + '%"></div></div>'
-      + '<div class="catbar-stat"><b>' + fmt(n) + ' <span style="font-weight:400;color:var(--txt3);font-size:10px">/ ' + fmt(tot) + '</span></b><em>' + share + '%</em></div>'
+  return '<div class="cc-cats">' + cats.map(function(c) {
+    var n   = c.onboarded || 0;
+    var tot = c.total     || 0;
+    var catEsc = esc(c.category);
+    var catJs  = c.category.replace(/'/g, "\\'");
+    return '<div class="cc-cat cc-cat-click" role="button" tabindex="0"'
+      + ' title="' + catEsc + ': ' + fmt(n) + ' onboarded of ' + fmt(tot) + ' · click to view records"'
+      + ' onclick="filterByCategory(\'' + catJs + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();filterByCategory(\'' + catJs + '\')}">'
+      + '<b>' + fmt(n) + '</b><span>' + catEsc + '</span>'
       + '</div>';
   }).join('') + '</div>';
 }
@@ -1433,10 +1435,7 @@ function renderVertDetail() {
   }
 
   var catSection = has && (v.categories && v.categories.length)
-    ? '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 20px 10px;margin-bottom:18px;box-shadow:var(--shadow-sm)">'
-    + '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);margin-bottom:12px">Onboarded by Category</div>'
-    + cardCategories(v, 12)
-    + '</div>'
+    ? '<div class="cc-cap vd-cat-cap">Onboarded by Category</div>' + cardCategories(v, 12)
     : '';
 
   panel.style.cssText = 'display:block;' + vcVars(selectedVert);   // signature colour for badge + accents
@@ -1762,6 +1761,30 @@ function vdfSearchDeb() {
   clearTimeout(vdfDebTimer);
   vdfDebTimer = setTimeout(renderVdRecords, 300);
 }
+// Called when a category card is clicked — filters the records section to
+// that category and scrolls the records into view.
+function filterByCategory(cat) {
+  vdF.category = cat;
+  var el = document.getElementById('vdf-category');
+  if (el) {
+    // Try to find an exact matching option; if missing, add it temporarily.
+    var found = false;
+    for (var i = 0; i < el.options.length; i++) {
+      if (el.options[i].value === cat) { el.value = cat; found = true; break; }
+    }
+    if (!found) {
+      var opt = document.createElement('option');
+      opt.value = opt.text = cat;
+      el.appendChild(opt);
+      el.value = cat;
+    }
+  }
+  renderVdRecords();
+  // Scroll to the records area so the filtered list is immediately visible.
+  var target = document.getElementById('vd-board-view') || document.getElementById('vd-table-view');
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function vdfClear() {
   vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
   // Reset dropdown values in-place without rebuilding the full overlay
