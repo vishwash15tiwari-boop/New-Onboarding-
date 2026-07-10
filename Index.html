@@ -117,7 +117,6 @@ select,input{font-family:inherit}
 .loading-txt{color:var(--txt3);font-size:13px;font-weight:500;letter-spacing:.2px}
 @keyframes riseIn{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes barGrow{from{width:0}}
 @keyframes ringIn{from{stroke-dasharray:0 999}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 @keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
@@ -369,43 +368,23 @@ select,input{font-family:inherit}
 .cc-gst-inactive b{color:var(--st-rejected)}
 .cc-foot-more{margin-left:auto;font-size:11px;color:var(--vc-ink,var(--blue));font-weight:600;white-space:nowrap}
 
-/* ===== Detail Funnel — clean horizontal meter bars ===== */
-.fun{display:flex;flex-direction:column;gap:2px}
-.fun-row{
-  display:grid;grid-template-columns:112px minmax(0,1fr) 108px;
-  align-items:center;column-gap:16px;padding:5px 0;
-}
-.fun-lbl{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:550;color:var(--txt);white-space:nowrap}
-.fun-lbl .cc-dot{width:8px;height:8px}
-.fun-track{height:12px;border-radius:6px;background:var(--bg2);overflow:hidden}
-.fun-fill{height:100%;border-radius:6px;min-width:3px;transition:width .5s cubic-bezier(.4,0,.2,1)}
-.fun-val{text-align:right;font-size:12.5px;color:var(--txt2);font-variant-numeric:tabular-nums;white-space:nowrap}
-.fun-val b{color:var(--txt);font-weight:650;margin-right:5px}
-.fun-row.is-total .fun-lbl{font-weight:650}
-.fun-rej{
-  display:grid;grid-template-columns:112px minmax(0,1fr) 108px;
-  align-items:center;column-gap:16px;
-  margin-top:8px;padding-top:10px;border-top:1px solid var(--border);
-}
-.fun-rej .fun-lbl{color:var(--st-rejected-tx);font-weight:600}
+/* ===== Detail Funnel — Activity rings (left) + 3D funnel (right) ===== */
+.fun-rings{flex:1.1;min-width:0;display:flex;align-items:center;justify-content:center;gap:26px;flex-wrap:wrap}
+.fring{transition:stroke-width .3s var(--ease-out)}
+.fring:hover{stroke-width:17}
+#vert-detail.vd-anim .fring{animation:ringIn 1.1s var(--ease-out) both}
+.fring-leg{flex:0 1 240px;min-width:200px}
+.fring-leg-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.fring-leg-row:last-child{border-bottom:none}
+.fring-leg-row .cc-dot{width:11px;height:11px;border-radius:3px}
+.fring-leg-lbl{flex:1;font-size:12.5px;font-weight:600;color:var(--txt2);white-space:nowrap}
+.fring-leg-row.is-hero .fring-leg-lbl{font-weight:700;color:var(--txt)}
+.fring-leg-val{font-size:13.5px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+.fring-leg-row.is-hero .fring-leg-val{font-size:15px}
+.fring-leg-pct{font-size:11px;color:var(--txt3);min-width:44px;text-align:right}
 
-/* Per-category funnel grid */
-.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:12px}
-.cat-block{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow-sm);overflow:hidden}
-.cat-block-hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-.cat-block-name{font-size:12.5px;font-weight:700;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cat-block-tot{font-size:11px;color:var(--txt3);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0}
-.mf-track{height:8px;border-radius:4px;background:var(--bg2);overflow:hidden}
-.mf-row{display:grid;grid-template-columns:80px minmax(0,1fr) 60px;align-items:center;column-gap:8px;padding:3px 0}
-.mf-lbl{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mf-val{text-align:right;font-size:10.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
-.mf-val em{font-style:normal;font-size:9.5px;font-weight:400;color:var(--txt3);margin-left:2px}
-.mf-rej{display:grid;grid-template-columns:80px minmax(0,1fr) 60px;align-items:center;column-gap:8px;padding:4px 0;margin-top:6px;padding-top:8px;border-top:1px solid var(--border)}
-.mf-rej .mf-lbl{color:var(--st-rejected-tx)}
-
-/* Split: meter bars (left 50%) + 3D funnel (right 50%) */
+/* Split: activity rings (left) + 3D funnel (right) */
 .fun-split{display:flex;gap:24px;align-items:center}
-.fun-bars{flex:1;min-width:0}
 .fun-3d{flex:1;min-width:0;display:flex;justify-content:center;align-items:center;padding-left:16px;border-left:1px solid var(--border)}
 /* Row-based funnel: a centred 3D band + a small detail card, per stage */
 .f3d{display:flex;flex-direction:column;gap:5px;width:100%;max-width:410px}
@@ -503,7 +482,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 #vert-detail.vd-anim .vd-page-inner>*:nth-child(n+8){animation-delay:285ms}
 #vert-detail.vd-anim .cc-cat{animation:riseIn .55s var(--ease-out) both;animation-delay:calc(var(--kd,0)*1ms + 40ms)}
 #vert-detail.vd-anim .vd-kpi{animation:riseIn .55s var(--ease-out) both;animation-delay:calc(var(--kd,0)*1ms + 150ms)}
-#vert-detail.vd-anim .fun-fill{animation:barGrow .9s var(--ease-out) .3s both}
 .vd-page-inner{max-width:1200px;margin:0 auto;padding:24px 32px 48px}
 .vd-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)}
 .vd-title{font-size:18px;font-weight:700;color:var(--txt);letter-spacing:-.3px}
@@ -624,22 +602,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 /* Make table rows clickable */
 .vd-tr{cursor:pointer;transition:background .1s}
 .vd-tr:hover{background:var(--card2)}
-
-/* ===== Category Bar Chart ===== */
-.catbar-wrap{margin-bottom:4px}
-.catbar-row{
-  display:grid;grid-template-columns:110px 1fr 90px;
-  align-items:center;gap:10px;padding:7px 0;
-  border-bottom:1px solid var(--border);
-}
-.catbar-row:last-child{border-bottom:none}
-.catbar-lbl{font-size:11.5px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.catbar-track{height:8px;border-radius:4px;background:var(--bg2);overflow:hidden}
-.catbar-fill{height:100%;border-radius:4px;background:var(--vc,var(--blue));transition:width .45s var(--ease)}
-.catbar-stat{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-.catbar-stat b{font-size:12.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.2px}
-.catbar-stat small{font-size:9px;color:var(--txt3);font-weight:500}
-.catbar-stat em{font-style:normal;font-size:9.5px;font-weight:700;color:var(--vc,var(--blue));background:var(--vc-soft,var(--accent-soft));border-radius:3px;padding:1px 5px}
 
 /* ===== Utility ===== */
 .text-green{color:var(--st-onboarded-tx)} .text-red{color:var(--st-rejected-tx)} .text-amber{color:var(--amber)}
@@ -1198,72 +1160,72 @@ function funnelTiers(v) {
   return [{ k: 'total', n: v.total || 0, isTotal: true }, { k: 'onboarded', n: v.completed || 0 }].concat(rest);
 }
 
-// Detail funnel — clean horizontal meter bars, each stage as a share of Total,
-// in the same sequence as the 3D funnel. Rejected is a drop-out row below.
+// Detail funnel — Apple Activity-style concentric rings. One ring per stage,
+// sweep proportional to its share of Total (12 o'clock, clockwise); Total sits
+// in the centre. The legend carries the exact counts, so precision never
+// depends on reading arc lengths. Ring order matches the 3D funnel.
 function funnelBig(v, cfg) {
   var tot = v.total || 0;
   if (!tot) return '';
-  var pc  = function(n) { return Math.round(((n || 0) / tot) * 100); };
-  var wid = function(n) { return ((n || 0) / tot) * 100; };
 
-  var rows = funnelTiers(v);
+  // Outermost → innermost: Onboarded, then the rest of the pipeline by
+  // descending count (same as funnelTiers), Rejected always innermost.
+  var tiers = funnelTiers(v).filter(function(t) { return !t.isTotal; });
+  tiers.push({ k: 'rejected', n: v.rejected || 0 });
 
-  function bar(k, n, isTotal, isRej) {
-    var st = STAGE[k];
-    return '<div class="' + (isRej ? 'fun-rej' : 'fun-row' + (isTotal ? ' is-total' : '')) + '">'
-      + '<div class="fun-lbl"><span class="cc-dot" style="background:' + st.fill + '"></span>' + st.lbl + '</div>'
-      + '<div class="fun-track"><div class="fun-fill" style="width:' + wid(n).toFixed(1) + '%;background:' + st.fill + '"></div></div>'
-      + '<div class="fun-val"><b>' + fmt(n) + '</b>(' + (isTotal ? 100 : pc(n)) + '%)</div>'
-      + '</div>';
-  }
+  var S = 260, c0 = S / 2;            // svg size / centre
+  var R0 = 112, RW = 14, RGAP = 4;    // outer radius, ring width, ring gap
 
-  var barsHtml = '<div class="fun">' + rows.map(function(r) { return bar(r.k, r.n, r.isTotal, false); }).join('') + '</div>'
-    + bar('rejected', v.rejected || 0, false, true);
+  var rings = tiers.map(function(t, i) {
+    var r = R0 - i * (RW + RGAP);
+    if (r < 24) return '';            // never collide with the centre label
+    var C = 2 * Math.PI * r;
+    var frac = Math.max(0, Math.min(1, (t.n || 0) / tot));
+    var st = STAGE[t.k];
+    var track = '<circle cx="' + c0 + '" cy="' + c0 + '" r="' + r + '" fill="none"'
+      + ' stroke="var(--bg2)" stroke-width="' + RW + '"/>';
+    if (!frac) return track;
+    // Floor tiny arcs at one ring-width so they read as arcs, never dots;
+    // the legend + tooltip carry the exact value.
+    var dash = Math.max(frac * C, RW);
+    var arc = '<circle class="fring" cx="' + c0 + '" cy="' + c0 + '" r="' + r + '" fill="none"'
+      + ' stroke="' + st.fill + '" stroke-width="' + RW + '" stroke-linecap="round"'
+      + ' stroke-dasharray="' + dash.toFixed(2) + ' ' + C.toFixed(2) + '"'
+      + ' transform="rotate(-90 ' + c0 + ' ' + c0 + ')"'
+      + ' style="animation-delay:' + (120 + i * 110) + 'ms"'
+      + '><title>' + st.lbl + ' — ' + fmt(t.n) + ' (' + Math.round(frac * 100) + '%)</title></circle>';
+    return track + arc;
+  }).join('');
+
+  var centre = '<g class="donut-ctr">'
+    + '<text x="' + c0 + '" y="' + (c0 - 2) + '" text-anchor="middle" font-family="Poppins,sans-serif"'
+    + ' font-size="23" font-weight="800" fill="var(--txt)">' + fmt(tot) + '</text>'
+    + '<text x="' + c0 + '" y="' + (c0 + 13) + '" text-anchor="middle" font-family="Poppins,sans-serif"'
+    + ' font-size="8" font-weight="600" fill="var(--txt3)" letter-spacing="0.5">TOTAL CASES</text>'
+    + '</g>';
+
+  var svg = '<svg width="' + S + '" height="' + S + '" viewBox="0 0 ' + S + ' ' + S + '"'
+    + ' style="flex-shrink:0;display:block" role="img" aria-label="Onboarding funnel rings">'
+    + rings + centre + '</svg>';
+
+  var legend = '<div class="fring-leg">'
+    + [{ k: 'total', n: tot }].concat(tiers).map(function(t) {
+        var st   = STAGE[t.k];
+        var pc   = Math.round(((t.n || 0) / tot) * 100);
+        var hero = t.k === 'onboarded';
+        return '<div class="fring-leg-row' + (hero ? ' is-hero' : '') + '">'
+          + '<span class="cc-dot" style="background:' + st.fill + '"></span>'
+          + '<span class="fring-leg-lbl">' + st.lbl + '</span>'
+          + '<span class="fring-leg-val" style="color:' + st.fill + '">' + fmt(t.n) + '</span>'
+          + '<span class="fring-leg-pct">(' + pc + '%)</span>'
+          + '</div>';
+      }).join('')
+    + '</div>';
 
   return '<div class="fun-split">'
-    + '<div class="fun-bars">' + barsHtml + '</div>'
+    + '<div class="fun-rings">' + svg + legend + '</div>'
     + '<div class="fun-3d">' + funnel3D(v) + '</div>'
     + '</div>';
-}
-
-// Per-category funnel grid — same stages as funnelBig, one compact block per
-// category. Falls back to the aggregate funnel if no categories exist.
-function catFunnels(v) {
-  var cats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; });
-  if (!cats.length) return funnelBig(v, null);
-
-  return '<div class="cat-grid">' + cats.map(function(c) {
-    var ctot = c.total || 0;
-    if (!ctot) return '';
-    var pc  = function(n) { return Math.round(((n || 0) / ctot) * 100); };
-    var wid = function(n) { return ((n || 0) / ctot) * 100; };
-
-    function mbar(k, n, isRej) {
-      var st = STAGE[k];
-      return '<div class="' + (isRej ? 'mf-rej' : 'mf-row') + '">'
-        + '<div class="mf-lbl"><span class="cc-dot" style="background:' + st.fill + '"></span>' + st.lbl + '</div>'
-        + '<div class="mf-track"><div class="fun-fill" style="width:' + wid(n).toFixed(1) + '%;background:' + st.fill + '"></div></div>'
-        + '<div class="mf-val">' + fmt(n) + '<em>' + pc(n) + '%</em></div>'
-        + '</div>';
-    }
-
-    var rows = [
-      mbar('total',     ctot),
-      mbar('onboarded', c.onboarded || 0),
-      mbar('draft',     c.draft     || 0),
-      mbar('review',    c.inReview  || 0),
-    ];
-    if (c.hasTxn) rows.push(mbar('transacted', c.transacted || 0));
-
-    return '<div class="cat-block">'
-      + '<div class="cat-block-hd">'
-      +   '<span class="cat-block-name">' + esc(c.category) + '</span>'
-      +   '<span class="cat-block-tot">' + fmt(ctot) + ' total</span>'
-      + '</div>'
-      + rows.join('')
-      + mbar('rejected', c.rejected || 0, true)
-      + '</div>';
-  }).filter(Boolean).join('') + '</div>';
 }
 
 // Small 3D funnel. Sequence: Total Cases, then Onboarded, then the remaining
