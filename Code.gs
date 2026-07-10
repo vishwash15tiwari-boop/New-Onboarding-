@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v19_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v20_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -135,7 +135,7 @@ function getDashboardData(filtersJson) {
         });
       try {
         cache.put(
-          'vrows_v5_' + audience + '_' + vc.key + '_' + periodKey,
+          'vrows_v6_' + audience + '_' + vc.key + '_' + periodKey,
           JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) }),
           CONFIG.CACHE_TTL
         );
@@ -169,7 +169,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v5_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v6_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -275,15 +275,11 @@ function normalizeRows(raw, cfg) {
                  || '';
     var txn = String(txnRaw).toUpperCase().replace(/\s+/g, ' ').trim();
 
-    // Transaction value — try several common column name variants
-    var txnValRaw = gv(row, idx, 'transaction_value')
-                 || gv(row, idx, 'txn_value')
-                 || gv(row, idx, 'total_transaction_value')
-                 || gv(row, idx, 'gmv')
-                 || gv(row, idx, 'transaction_amount')
-                 || gv(row, idx, 'first_transaction_value')
-                 || gv(row, idx, 'order_value')
-                 || '';
+    // Transaction value — use first column that exists in the data (preserves 0).
+    var txnValRaw = firstDef_(row, idx, [
+      'transaction_value', 'txn_value', 'total_transaction_value', 'gmv',
+      'transaction_amount', 'first_transaction_value', 'order_value'
+    ]);
     var _txnN = (txnValRaw !== '' && txnValRaw !== null)
       ? parseFloat(String(txnValRaw).replace(/,/g, ''))
       : NaN;
@@ -494,6 +490,14 @@ function buildFiscalYears(all) {
 // ─────────────────────────────────────────────────────────────
 function buildIndex(headers) { var idx = {}; headers.forEach(function(h, i) { idx[h] = i; }); return idx; }
 function gv(row, idx, key) { return (idx[key] !== undefined) ? row[idx[key]] : ''; }
+// Returns the value from the first column key that actually exists in idx.
+// Unlike || chaining, this preserves 0 and other falsy-but-valid cell values.
+function firstDef_(row, idx, keys) {
+  for (var i = 0; i < keys.length; i++) {
+    if (idx[keys[i]] !== undefined) return row[idx[keys[i]]];
+  }
+  return '';
+}
 
 function parseDate(val) {
   if (val === null || val === undefined || val === '') return null;
