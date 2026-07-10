@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v18_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v19_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -135,7 +135,7 @@ function getDashboardData(filtersJson) {
         });
       try {
         cache.put(
-          'vrows_v4_' + audience + '_' + vc.key + '_' + periodKey,
+          'vrows_v5_' + audience + '_' + vc.key + '_' + periodKey,
           JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) }),
           CONFIG.CACHE_TTL
         );
@@ -169,7 +169,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v4_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v5_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -275,23 +275,34 @@ function normalizeRows(raw, cfg) {
                  || '';
     var txn = String(txnRaw).toUpperCase().replace(/\s+/g, ' ').trim();
 
-    // Transaction value — try several common column name variants
+    // Transaction value (GMV) — try several common column name variants.
     var txnValRaw = gv(row, idx, 'transaction_value')
                  || gv(row, idx, 'txn_value')
                  || gv(row, idx, 'total_transaction_value')
                  || gv(row, idx, 'gmv')
+                 || gv(row, idx, 'total_gmv')
+                 || gv(row, idx, 'gmv_value')
                  || gv(row, idx, 'transaction_amount')
                  || gv(row, idx, 'first_transaction_value')
                  || gv(row, idx, 'order_value')
                  || '';
-    var txnVal = (txnValRaw !== '' && txnValRaw !== null)
-      ? (parseFloat(String(txnValRaw).replace(/,/g, '')) || null)
-      : null;
+    // Strip thousands separators and currency symbols ("₹1,23,456" → 123456).
+    var txnVal = null;
+    if (txnValRaw !== '' && txnValRaw !== null && txnValRaw !== undefined) {
+      var parsedVal = parseFloat(String(txnValRaw).replace(/[^0-9.\-]/g, ''));
+      if (!isNaN(parsedVal)) txnVal = parsedVal;
+    }
     var txnDate = parseDate(
       gv(row, idx, 'first_transaction_date') ||
       gv(row, idx, 'transaction_date')       ||
       gv(row, idx, 'first_txn_date')         || ''
     );
+
+    // Transacted = explicit positive status OR a positive transaction value:
+    // GMV only exists once a transaction has happened, so GMV > 0 is itself
+    // proof of a transaction even when no status column is present.
+    var txnStatusPositive = ({ 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 })[txn] === 1;
+    var transacted = txnStatusPositive || (txnVal !== null && txnVal > 0);
 
     var vertical = mapToVertical(bizVert, category, cfg.audience);
     // Marketplace infra rows: before April 1 2026 → 'Marketplace' card (historical);
@@ -321,8 +332,10 @@ function normalizeRows(raw, cfg) {
             gstStatus === 'YES' || gstStatus === 'Y' || gstStatus === 'REGISTERED' || gstStatus === 'VALID')
            && gstStatus.indexOf('NOT') === -1 && gstStatus.indexOf('MISSING') === -1 && gstStatus.indexOf('INACTIVE') === -1)
         : isValidGSTIN(gstin),
-      hasTxn:        txn !== '',
-      hasTransacted: ({ 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 })[txn] === 1,
+      // A row "carries a transaction signal" when it has a status value OR a
+      // transaction value column — either one makes the Transacted stat meaningful.
+      hasTxn:        txn !== '' || txnVal !== null,
+      hasTransacted: transacted,
       txnValue:      txnVal,
       txnDate:       txnDate,
       onbTAT:        tat,
