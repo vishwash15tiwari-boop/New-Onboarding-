@@ -500,6 +500,70 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .kb-col.review   { --kb:var(--st-review) }    .kb-col.review   .kb-col-head{background:var(--st-review-bg)}    .kb-col.review   .kb-dot{background:var(--st-review)}
 .kb-col.done     { --kb:var(--st-onboarded) } .kb-col.done     .kb-col-head{background:var(--st-onboarded-bg)} .kb-col.done     .kb-dot{background:var(--st-onboarded)}
 .kb-col.rejected { --kb:var(--st-rejected) }  .kb-col.rejected .kb-col-head{background:var(--st-rejected-bg)}  .kb-col.rejected .kb-dot{background:var(--st-rejected)}
+.kb-card{cursor:pointer}
+
+/* ===== Record Detail Modal ===== */
+@keyframes rmUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+#rec-modal{position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;padding:20px}
+.rm-bd{position:absolute;inset:0;background:rgba(10,18,38,.54);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.rm-pn{
+  position:relative;z-index:1;background:var(--card);border:1px solid var(--border);
+  border-radius:20px;box-shadow:0 32px 80px rgba(0,0,0,.22),0 2px 10px rgba(0,0,0,.10);
+  width:100%;max-width:500px;max-height:88vh;overflow-y:auto;
+  animation:rmUp .22s var(--ease) both;
+}
+.rm-x{
+  position:sticky;top:0;float:right;clear:right;
+  margin:14px 14px 0 0;
+  width:28px;height:28px;border-radius:50%;
+  border:1px solid var(--border);background:var(--card);
+  color:var(--txt3);font-size:14px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .14s;z-index:1;
+}
+.rm-x:hover{background:var(--bg2);color:var(--txt)}
+.rm-hd{padding:20px 24px 16px;border-bottom:1px solid var(--border)}
+.rm-name{font-size:17px;font-weight:700;color:var(--txt);letter-spacing:-.35px;line-height:1.3;padding-right:40px}
+.rm-id{font-size:11px;color:var(--txt3);font-weight:600;font-variant-numeric:tabular-nums;margin:4px 0 10px}
+.rm-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rm-sec{padding:14px 24px;border-bottom:1px solid var(--border)}
+.rm-sec:last-child{border-bottom:none;padding-bottom:22px}
+.rm-sec-ttl{font-size:9px;color:var(--txt3);font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.rm-g{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px}
+.rm-f{min-width:0}
+.rm-fl{font-size:9px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.rm-fv{font-size:13px;color:var(--txt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rm-fv.mu{color:var(--txt3);font-weight:500}
+.rm-fv.mo{font-family:'Courier New',monospace;font-size:11.5px;letter-spacing:.4px}
+.rm-txn{display:flex;align-items:flex-start;gap:12px;border-radius:12px;padding:12px 14px}
+.rm-txn.yes{background:var(--st-transacted-bg);border:1px solid rgba(62,125,68,.3)}
+.rm-txn.no {background:var(--bg2);border:1px solid var(--border)}
+.rm-txn-ic{font-size:20px;line-height:1;flex-shrink:0;margin-top:1px}
+.rm-txn-lbl{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.rm-txn.yes .rm-txn-lbl{color:var(--st-transacted-tx)}
+.rm-txn.no  .rm-txn-lbl{color:var(--txt3)}
+.rm-txn-amt{font-size:20px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums;color:var(--st-transacted-tx);margin:3px 0 1px}
+.rm-txn-dt {font-size:10.5px;color:var(--txt3)}
+.rm-txn.no  .rm-txn-sub{font-size:12px;color:var(--txt3);margin-top:3px}
+/* Make table rows clickable */
+.vd-tr{cursor:pointer;transition:background .1s}
+.vd-tr:hover{background:var(--card2)}
+
+/* ===== Category Bar Chart ===== */
+.catbar-wrap{margin-bottom:4px}
+.catbar-row{
+  display:grid;grid-template-columns:110px 1fr 90px;
+  align-items:center;gap:10px;padding:7px 0;
+  border-bottom:1px solid var(--border);
+}
+.catbar-row:last-child{border-bottom:none}
+.catbar-lbl{font-size:11.5px;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.catbar-track{height:8px;border-radius:4px;background:var(--bg2);overflow:hidden}
+.catbar-fill{height:100%;border-radius:4px;background:var(--vc,var(--blue));transition:width .45s var(--ease)}
+.catbar-stat{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.catbar-stat b{font-size:12.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+.catbar-stat small{font-size:9px;color:var(--txt3);font-weight:500}
+.catbar-stat em{font-style:normal;font-size:9.5px;font-weight:700;color:var(--vc,var(--blue));background:var(--vc-soft,var(--accent-soft));border-radius:3px;padding:1px 5px}
 
 /* ===== Utility ===== */
 .text-green{color:var(--st-onboarded-tx)} .text-red{color:var(--st-rejected-tx)} .text-amber{color:var(--amber)}
@@ -587,6 +651,12 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 <!-- Vertical Detail — full-page overlay (outside main layout) -->
 <div id="vert-detail" style="display:none"></div>
 
+<!-- Record Detail Modal — click any board card or table row to open -->
+<div id="rec-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Record details">
+  <div class="rm-bd" onclick="closeRecModal()"></div>
+  <div class="rm-pn" id="rm-pn"></div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
 // STATE
@@ -606,6 +676,8 @@ var STATUS_LABELS = { COMPLETED: 'Onboarded', DRAFT: 'Draft', IN_REVIEW: 'In Rev
 // ═══════════════════════════════════════════════════════════════
 var AUTO_REFRESH_SEC = 300;  // poll every 5 min — matches the 5-min backend cache TTL
 var _refreshTimer    = null;
+var _rmD = {};  // key→row map for the record detail modal
+var _rmI = 0;   // auto-increment key, reset each board/table render
 var _countdownTimer  = null;
 var _nextAt          = 0;
 var _isFirstLoad     = true;
@@ -1020,9 +1092,18 @@ function cardCategories(v, max) {
     head.push(others);
     cats = head;
   }
-  return '<div class="cc-cats">' + cats.map(function(c) {
-    return '<div class="cc-cat" title="' + esc(c.category) + ': ' + fmt(c.onboarded || 0) + ' onboarded of ' + fmt(c.total || 0) + '">'
-      + '<b>' + fmt(c.onboarded || 0) + '</b><span>' + esc(c.category) + '</span></div>';
+  var maxOnb   = Math.max.apply(null, cats.map(function(c) { return c.onboarded || 0; }));
+  var grandOnb = cats.reduce(function(a, c) { return a + (c.onboarded || 0); }, 0);
+  return '<div class="catbar-wrap">' + cats.map(function(c) {
+    var n       = c.onboarded || 0;
+    var tot     = c.total     || 0;
+    var barW    = maxOnb   > 0 ? Math.round((n / maxOnb)   * 100) : 0;
+    var share   = grandOnb > 0 ? Math.round((n / grandOnb) * 100) : 0;
+    return '<div class="catbar-row" title="' + esc(c.category) + ': ' + fmt(n) + ' onboarded of ' + fmt(tot) + ' total">'
+      + '<div class="catbar-lbl">' + esc(c.category) + '</div>'
+      + '<div class="catbar-track"><div class="catbar-fill" style="width:' + barW + '%"></div></div>'
+      + '<div class="catbar-stat"><b>' + fmt(n) + ' <span style="font-weight:400;color:var(--txt3);font-size:10px">/ ' + fmt(tot) + '</span></b><em>' + share + '%</em></div>'
+      + '</div>';
   }).join('') + '</div>';
 }
 
@@ -1352,7 +1433,10 @@ function renderVertDetail() {
   }
 
   var catSection = has && (v.categories && v.categories.length)
-    ? '<div class="cc-cap vd-cat-cap">Onboarded by category</div>' + cardCategories(v, 12)
+    ? '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 20px 10px;margin-bottom:18px;box-shadow:var(--shadow-sm)">'
+    + '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);margin-bottom:12px">Onboarded by Category</div>'
+    + cardCategories(v, 12)
+    + '</div>'
     : '';
 
   panel.style.cssText = 'display:block;' + vcVars(selectedVert);   // signature colour for badge + accents
@@ -1419,6 +1503,7 @@ function renderVdBoard() {
   var host = document.getElementById('vd-board');
   var note = document.getElementById('vd-note');
   if (!host || !selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return;
+  _rmD = {}; _rmI = 0;   // fresh lookup for the modal
   var all      = vertRows;
   var filtered = vdFilteredRows();
   var placed   = 0;   // rows that actually appear in one of the four stage columns
@@ -1447,6 +1532,8 @@ function renderVdBoard() {
 }
 
 function kbCard(r) {
+  var key  = ++_rmI;
+  _rmD[key] = r;
   var meta = [r.category, r.vendorType].filter(function(x) { return x && x !== '—'; }).join(' · ');
   var txnChip = '';
   if (r.hasTransacted) {
@@ -1456,7 +1543,8 @@ function kbCard(r) {
   } else if (r.status === 'COMPLETED') {
     txnChip = '<span class="kb-gst bad" style="background:var(--bg2);color:var(--txt3);border-color:transparent" title="Onboarded but not yet transacted">— Txn</span>';
   }
-  return '<div class="kb-card">'
+  return '<div class="kb-card" onclick="openRecModal(' + key + ')" role="button" tabindex="0"'
+    + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openRecModal(' + key + ')}">'
     + '<div class="kb-card-name">' + esc(r.name || '—') + '</div>'
     + '<div class="kb-card-meta">' + esc(r.id) + (meta ? ' · ' + esc(meta) : '') + '</div>'
     + '<div class="kb-card-foot">'
@@ -1532,6 +1620,7 @@ function renderVdTable() {
   var tbody = document.getElementById('vd-tbody');
   var note  = document.getElementById('vd-note');
   if (!tbody || !selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return;
+  _rmD = {}; _rmI = 0;   // fresh lookup for the modal
   var all      = vertRows;
   var filtered = vdSortedRows(vdFilteredRows());
   var shown    = filtered.slice(0, VD_MAX_RENDER);
@@ -1544,6 +1633,8 @@ function renderVdTable() {
 
   tbody.innerHTML = shown.length
     ? shown.map(function(r) {
+        var key = ++_rmI;
+        _rmD[key] = r;
         var txnCell;
         if (r.hasTransacted) {
           var val  = r.txnValue !== null ? '<br><span style="font-size:11px;color:var(--st-transacted-tx);font-weight:600">' + fmtINR(r.txnValue) + '</span>' : '';
@@ -1554,7 +1645,7 @@ function renderVdTable() {
         } else {
           txnCell = '<span class="text-muted">—</span>';
         }
-        return '<tr>'
+        return '<tr class="vd-tr" onclick="openRecModal(' + key + ')" title="View details">'
           + '<td class="text-muted">' + esc(r.id) + '</td>'
           + '<td><strong>' + esc(r.name || '—') + '</strong></td>'
           + '<td>' + esc(r.category || '—') + '</td>'
@@ -1576,6 +1667,82 @@ function renderVdTable() {
       + (vdSort.key ? 'sorted by ' + vdSort.key + (vdSort.dir === 1 ? ' ↑' : ' ↓') : 'latest first');
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// RECORD DETAIL MODAL
+// ═══════════════════════════════════════════════════════════════
+function openRecModal(key) {
+  var r = _rmD[key];
+  if (!r) return;
+  var pn = document.getElementById('rm-pn');
+  if (!pn) return;
+
+  var gstChip = r.hasGST
+    ? '<span class="kb-gst ok" style="font-size:10px;padding:2px 9px">✓ GST Active</span>'
+    : '<span class="kb-gst bad" style="font-size:10px;padding:2px 9px">✗ GST Missing</span>';
+
+  var txnSec = '';
+  if (r.hasTxn) {
+    if (r.hasTransacted) {
+      var amt  = r.txnValue !== null ? '<div class="rm-txn-amt">' + fmtINR(r.txnValue) + '</div>' : '';
+      var dt   = r.txnDate && r.txnDate !== '—' ? '<div class="rm-txn-dt">First transaction: ' + esc(r.txnDate) + '</div>' : '';
+      txnSec = '<div class="rm-sec"><div class="rm-sec-ttl">Transaction</div>'
+        + '<div class="rm-txn yes"><div class="rm-txn-ic">⚡</div>'
+        + '<div><div class="rm-txn-lbl">Transacted</div>' + amt + dt + '</div></div></div>';
+    } else {
+      txnSec = '<div class="rm-sec"><div class="rm-sec-ttl">Transaction</div>'
+        + '<div class="rm-txn no"><div class="rm-txn-ic" style="opacity:.35;font-size:17px">○</div>'
+        + '<div><div class="rm-txn-lbl">Not yet transacted</div>'
+        + '<div class="rm-txn no rm-txn-sub">Onboarded — awaiting first transaction</div></div></div></div>';
+    }
+  }
+
+  var gstSec = r.gstin ? '<div class="rm-sec"><div class="rm-sec-ttl">GST Registration</div>'
+    + '<div class="rm-fv mo">' + esc(r.gstin) + '</div></div>' : '';
+
+  pn.innerHTML = '<button class="rm-x" onclick="closeRecModal()" aria-label="Close">✕</button>'
+    + '<div class="rm-hd">'
+    +   '<div class="rm-name">' + esc(r.name || '—') + '</div>'
+    +   '<div class="rm-id">ID: ' + esc(r.id || '—') + '</div>'
+    +   '<div class="rm-chips">' + statusChip(r.status) + gstChip + '</div>'
+    + '</div>'
+    + '<div class="rm-sec"><div class="rm-sec-ttl">Details</div>'
+    +   '<div class="rm-g">'
+    +     '<div class="rm-f"><div class="rm-fl">Category</div><div class="rm-fv">' + esc(r.category || '—') + '</div></div>'
+    +     '<div class="rm-f"><div class="rm-fl">Vendor Type</div><div class="rm-fv">' + esc(r.vendorType || '—') + '</div></div>'
+    +     '<div class="rm-f"><div class="rm-fl">State</div><div class="rm-fv">' + esc(r.state || '—') + '</div></div>'
+    +     '<div class="rm-f"><div class="rm-fl">Created</div><div class="rm-fv mu">' + esc(r.createdDate || '—') + '</div></div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="rm-sec"><div class="rm-sec-ttl">Onboarding</div>'
+    +   '<div class="rm-g">'
+    +     '<div class="rm-f"><div class="rm-fl">Onboarded Date</div><div class="rm-fv mu">' + esc(r.onbDate || '—') + '</div></div>'
+    +     '<div class="rm-f"><div class="rm-fl">TAT (days)</div><div class="rm-fv">' + tatChip(r.tat) + '</div></div>'
+    +   '</div>'
+    + '</div>'
+    + txnSec
+    + gstSec;
+
+  document.getElementById('rec-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeRecModal() {
+  var m = document.getElementById('rec-modal');
+  if (m) m.style.display = 'none';
+  if (!document.getElementById('vert-detail') || document.getElementById('vert-detail').style.display === 'none') {
+    document.body.style.overflow = '';
+  }
+}
+
+// Escape key closes the record modal (or the detail panel if no modal open).
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  var m = document.getElementById('rec-modal');
+  if (m && m.style.display !== 'none') { closeRecModal(); return; }
+  var vd = document.getElementById('vert-detail');
+  if (vd && vd.style.display !== 'none') closeVertDetail();
+});
 
 function vdVal(id) {
   var el = document.getElementById(id);
