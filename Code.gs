@@ -284,9 +284,10 @@ function normalizeRows(raw, cfg) {
                  || gv(row, idx, 'first_transaction_value')
                  || gv(row, idx, 'order_value')
                  || '';
-    var txnVal = (txnValRaw !== '' && txnValRaw !== null)
-      ? (parseFloat(String(txnValRaw).replace(/,/g, '')) || null)
-      : null;
+    var _txnN = (txnValRaw !== '' && txnValRaw !== null)
+      ? parseFloat(String(txnValRaw).replace(/,/g, ''))
+      : NaN;
+    var txnVal = isNaN(_txnN) ? null : _txnN; // preserve 0 — parseFloat('0')||null would lose it
     var txnDate = parseDate(
       gv(row, idx, 'first_transaction_date') ||
       gv(row, idx, 'transaction_date')       ||
@@ -328,8 +329,13 @@ function normalizeRows(raw, cfg) {
       onbTAT:        tat,
     };
   }).filter(function(r) { return r.id || r.name; });
-  // Deduplicate by ID — Metabase card queries can emit the same record multiple times
-  // when the underlying question involves joins (e.g. seller with multiple transactions).
+  // Deduplicate by ID — Metabase can emit the same entity multiple times when joins
+  // produce multiple transaction rows. Sort so hasTransacted=true rows come first so
+  // the dedup keeps the transacted version; break ties by txnValue descending.
+  normalized.sort(function(a, b) {
+    return (b.hasTransacted ? 1 : 0) - (a.hasTransacted ? 1 : 0)
+        || (b.txnValue || 0) - (a.txnValue || 0);
+  });
   var seen = {};
   return normalized.filter(function(r) {
     if (!r.id) return true;
@@ -377,7 +383,8 @@ function vStats(data) {
   var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS; }).map(function(r) { return r.onbTAT; });
   // Transacted is null (shown as "—") for a vertical whose rows carry no
   // transaction signal at all (e.g. EPR); otherwise it's the TRANSACTED count.
-  var transacted = countFn(data, function(r) { return r.hasTxn; }) ? countFn(data, function(r) { return r.hasTransacted; }) : null;
+  var hasTxnData = data.some(function(r) { return r.hasTxn; });
+  var transacted = hasTxnData ? countFn(data, function(r) { return r.hasTransacted; }) : null;
 
   // Sum transaction values when any row carries the field.
   var txnValSum = 0, hasTxnValData = false;

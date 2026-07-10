@@ -526,7 +526,7 @@ var _isFirstLoad     = true;
 
 // localStorage key prefix — bump the version suffix when the data shape changes
 // so stale entries from an old schema are silently ignored.
-var STORE_PFX = 'ebt_v2_';
+var STORE_PFX = 'ebt_v3_';
 
 // Stale-while-revalidate: if we have a previous response in localStorage, paint
 // it immediately so the user sees real data with zero wait, then fetch fresh data
@@ -1109,7 +1109,7 @@ function renderVertDetail() {
     ['Total Cases',    fmt(v.total || 0)],
     ['Onboarded',      fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)'],
     v.transacted != null ? ['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)'] : null,
-    v.totalTxnValue != null ? ['Txn Value', fmtINR(v.totalTxnValue)] : null,
+    v.transacted != null ? ['Txn Value',  fmtINR(v.totalTxnValue)]  : null,
     ['In Review',      fmt(v.inReview || 0)],
     ['Draft',          fmt(v.draft || 0)],
     ['Rejected',       fmt(v.rejected || 0)],
