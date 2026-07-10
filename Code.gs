@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v20_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v21_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -135,7 +135,7 @@ function getDashboardData(filtersJson) {
         });
       try {
         cache.put(
-          'vrows_v6_' + audience + '_' + vc.key + '_' + periodKey,
+          'vrows_v7_' + audience + '_' + vc.key + '_' + periodKey,
           JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) }),
           CONFIG.CACHE_TTL
         );
@@ -169,7 +169,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v6_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v7_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -270,16 +270,32 @@ function normalizeRows(raw, cfg) {
     var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
     var txnRaw    = gv(row, idx, 'transaction_activation_status')
+                 || gv(row, idx, 'transacted')
+                 || gv(row, idx, 'is_transacted')
                  || gv(row, idx, 'transaction_status')
                  || gv(row, idx, 'txn_status')
                  || '';
     var txn = String(txnRaw).toUpperCase().replace(/\s+/g, ' ').trim();
 
-    // Transaction value — use first column that exists in the data (preserves 0).
-    var txnValRaw = firstDef_(row, idx, [
-      'transaction_value', 'txn_value', 'total_transaction_value', 'gmv',
-      'transaction_amount', 'first_transaction_value', 'order_value'
-    ]);
+    // Transaction value — exact matches first, then fuzzy scan for any column whose
+    // name contains 'gmv' or '(transaction|txn|order)_(value|amount)'.
+    var txnValRaw = (function() {
+      var exact = ['transaction_value', 'txn_value', 'total_transaction_value',
+                   'gmv', 'transaction_amount', 'first_transaction_value', 'order_value'];
+      for (var _i = 0; _i < exact.length; _i++) {
+        if (idx[exact[_i]] !== undefined) return row[idx[exact[_i]]];
+      }
+      var hkeys = Object.keys(idx);
+      for (var _j = 0; _j < hkeys.length; _j++) {
+        if (hkeys[_j].indexOf('gmv') !== -1) return row[idx[hkeys[_j]]];
+      }
+      for (var _k = 0; _k < hkeys.length; _k++) {
+        var _h = hkeys[_k];
+        if ((_h.indexOf('transaction') !== -1 || _h.indexOf('txn') !== -1 || _h.indexOf('order') !== -1)
+            && (_h.indexOf('value') !== -1 || _h.indexOf('amount') !== -1)) return row[idx[_h]];
+      }
+      return '';
+    }());
     var _txnN = (txnValRaw !== '' && txnValRaw !== null)
       ? parseFloat(String(txnValRaw).replace(/,/g, ''))
       : NaN;
@@ -290,7 +306,9 @@ function normalizeRows(raw, cfg) {
     var txnDate = parseDate(
       gv(row, idx, 'first_transaction_date') ||
       gv(row, idx, 'transaction_date')       ||
-      gv(row, idx, 'first_txn_date')         || ''
+      gv(row, idx, 'first_txn_date')         ||
+      gv(row, idx, 'txn_date')               ||
+      gv(row, idx, 'activation_date')        || ''
     );
 
     var vertical = mapToVertical(bizVert, category, cfg.audience);
@@ -321,10 +339,14 @@ function normalizeRows(raw, cfg) {
             gstStatus === 'YES' || gstStatus === 'Y' || gstStatus === 'REGISTERED' || gstStatus === 'VALID')
            && gstStatus.indexOf('NOT') === -1 && gstStatus.indexOf('MISSING') === -1 && gstStatus.indexOf('INACTIVE') === -1)
         : isValidGSTIN(gstin),
-      // Vertical tracks transactions if a status signal exists OR any GMV figure is present.
-      hasTxn:        txn !== '' || txnVal !== null,
-      // Transacted if the status says so, OR (authoritative) a positive GMV exists.
-      hasTransacted: (({ 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 })[txn] === 1) || gmvTransacted,
+      // Vertical tracks transactions if any signal exists: status col, GMV, or a transaction date.
+      hasTxn:        txn !== '' || txnVal !== null || txnDate !== null,
+      // Transacted if the status says so, OR positive GMV exists, OR a transaction date is present.
+      hasTransacted: (({ 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1,
+                         'ACTIVE': 1, 'TRANSACTED YES': 1, 'COMPLETED': 1, 'SUCCESS': 1,
+                         'ENABLED': 1, 'ACTIVATED': 1, 'CONFIRMED': 1 })[txn] === 1)
+                  || gmvTransacted
+                  || txnDate !== null,
       txnValue:      txnVal,
       txnDate:       txnDate,
       onbTAT:        tat,
