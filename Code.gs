@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v18_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v19_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -135,7 +135,7 @@ function getDashboardData(filtersJson) {
         });
       try {
         cache.put(
-          'vrows_v4_' + audience + '_' + vc.key + '_' + periodKey,
+          'vrows_v5_' + audience + '_' + vc.key + '_' + periodKey,
           JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) }),
           CONFIG.CACHE_TTL
         );
@@ -169,7 +169,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v4_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v5_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -288,6 +288,9 @@ function normalizeRows(raw, cfg) {
       ? parseFloat(String(txnValRaw).replace(/,/g, ''))
       : NaN;
     var txnVal = isNaN(_txnN) ? null : _txnN; // preserve 0 — parseFloat('0')||null would lose it
+    // GMV present & positive ⇒ a transaction has happened, regardless of what the
+    // status column says (or if it's missing). This is the authoritative signal.
+    var gmvTransacted = txnVal !== null && txnVal > 0;
     var txnDate = parseDate(
       gv(row, idx, 'first_transaction_date') ||
       gv(row, idx, 'transaction_date')       ||
@@ -322,8 +325,10 @@ function normalizeRows(raw, cfg) {
             gstStatus === 'YES' || gstStatus === 'Y' || gstStatus === 'REGISTERED' || gstStatus === 'VALID')
            && gstStatus.indexOf('NOT') === -1 && gstStatus.indexOf('MISSING') === -1 && gstStatus.indexOf('INACTIVE') === -1)
         : isValidGSTIN(gstin),
-      hasTxn:        txn !== '',
-      hasTransacted: ({ 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 })[txn] === 1,
+      // Vertical tracks transactions if a status signal exists OR any GMV figure is present.
+      hasTxn:        txn !== '' || txnVal !== null,
+      // Transacted if the status says so, OR (authoritative) a positive GMV exists.
+      hasTransacted: (({ 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 })[txn] === 1) || gmvTransacted,
       txnValue:      txnVal,
       txnDate:       txnDate,
       onbTAT:        tat,
