@@ -3,23 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="light">
 <title>Enterprise Business Control Tower</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script>
-// Theme boot — before first paint so there is no flash. Brand guideline themes:
-// saved choice wins; otherwise follow the OS. toggleTheme() persists the switch.
-(function(){
-  var t;
-  try { t = localStorage.getItem('ebt_theme'); } catch(e){}
-  if (t !== 'dark' && t !== 'light') {
-    t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-  }
-  document.documentElement.setAttribute('data-theme', t);
-})();
-</script>
 <style>
 /* ===== Reset & Base ===== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -78,50 +66,10 @@
   --pill: 999px;
   --ease: cubic-bezier(.22,.8,.36,1);
 
-  /* ── Ambient page wash (brand blue + green, whisper-quiet) ── */
-  --wash: radial-gradient(1100px 420px at 12% -8%, rgba(0,93,255,.055), transparent 60%),
-          radial-gradient(900px 380px at 88% -10%, rgba(29,199,151,.05), transparent 60%);
-}
-
-:root[data-theme="dark"]{
-  color-scheme:dark;
-
-  --bg:      #0F1216;
-  --bg2:     #141920;
-  --card:    #191F27;
-  --card2:   #1E252E;
-  --hover:   #222A34;
-
-  --border:  #262E39;
-  --border2: #333D4A;
-
-  --txt:     #F2F5F8;
-  --txt2:    #A9B2BD;
-  --txt3:    #717C88;
-
-  --blue:      #4D8DFF;
-  --blue-ink:  #79A9FF;
-  --blue2:     #6FA5DE;
-  --accent-soft: rgba(77,141,255,.10);
-
-  --green:   #22C79A;
-  --amber:   #E09A2F;
-  --red:     #E06767;
-
-  --st-total:      #7A828C;   --st-total-bg:     rgba(122,130,140,.14);  --st-total-tx:     #AEB6BF;
-  --st-draft:      #2578C2;   --st-draft-bg:     rgba(37,120,194,.15);   --st-draft-tx:     #7FB5E8;
-  --st-review:     #567DE8;   --st-review-bg:    rgba(86,125,232,.15);   --st-review-tx:    #A3B6F2;
-  --st-onboarded:  #0FAA80;   --st-onboarded-bg: rgba(15,170,128,.15);   --st-onboarded-tx: #4CD6AC;
-  --st-transacted: #4E9455;   --st-transacted-bg:rgba(78,148,85,.17);    --st-transacted-tx:#93C599;
-  --st-rejected:   #D64545;   --st-rejected-bg:  rgba(214,69,69,.14);    --st-rejected-tx:  #E89090;
-
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.25);
-  --shadow:    0 2px 6px rgba(0,0,0,.30), 0 8px 24px rgba(0,0,0,.28);
-  --shadow-lg: 0 4px 12px rgba(0,0,0,.35), 0 24px 56px rgba(0,0,0,.45);
-  --ring:      0 0 0 3px rgba(77,141,255,.28);
-
-  --wash: radial-gradient(1100px 420px at 12% -8%, rgba(0,93,255,.10), transparent 60%),
-          radial-gradient(900px 380px at 88% -10%, rgba(29,199,151,.07), transparent 60%);
+  /* ── Ambient page wash — colourful yet airy: blue, green, a hint of purple ── */
+  --wash: radial-gradient(1150px 460px at 10% -10%, rgba(0,93,255,.08), transparent 62%),
+          radial-gradient(950px 420px at 90% -12%, rgba(29,199,151,.075), transparent 62%),
+          radial-gradient(760px 360px at 55% -16%, rgba(132,96,212,.05), transparent 60%);
 }
 
 html{
@@ -196,16 +144,6 @@ select,input{font-family:inherit}
 @supports not (background: color-mix(in srgb, red 50%, blue)){
   #header.scrolled{background:var(--card)}
 }
-/* Theme toggle — pill icon button */
-#btn-theme{
-  width:34px;height:34px;border-radius:var(--pill);
-  border:1px solid var(--border);background:var(--card);
-  display:flex;align-items:center;justify-content:center;
-  font-size:15px;line-height:1;color:var(--txt2);
-  transition:transform .18s var(--ease),border-color .18s,background .18s;
-}
-#btn-theme:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
-#btn-theme:active{transform:scale(.94)}
 .logo-wrap{display:flex;align-items:center;gap:10px;flex-shrink:0}
 .logo-text{font-weight:700;font-size:14.5px;letter-spacing:-.2px;color:var(--txt)}
 .logo-sub{font-size:10.5px;color:var(--txt3);font-weight:400;margin-top:1px;letter-spacing:.05px}
@@ -265,13 +203,17 @@ select,input{font-family:inherit}
 /* ===== Main ===== */
 #main{max-width:1640px;margin:0 auto;padding:18px 32px 48px}
 
-/* ===== Section Titles — large, bold, strong hierarchy ===== */
+/* ===== Section Titles — large, bold, brand-gradient accent ===== */
 .section-title{
   font-size:21px;font-weight:700;
   letter-spacing:-.5px;
   color:var(--txt);
   margin:6px 0 16px;
   display:flex;align-items:center;gap:12px;
+}
+.section-title::before{
+  content:'';width:26px;height:6px;border-radius:3px;flex-shrink:0;
+  background:linear-gradient(90deg,#005DFF,#1DC797);
 }
 .section-title .badge{
   font-size:11px;font-weight:500;
@@ -283,9 +225,9 @@ select,input{font-family:inherit}
   letter-spacing:.1px;
 }
 /* Sellers / Buyers audience switcher (segmented control) */
-.aud-tabs{display:inline-flex;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px;vertical-align:middle}
-.aud-tab{font-family:inherit;font-size:12.5px;font-weight:600;padding:5px 18px;border:none;background:transparent;color:var(--txt2);cursor:pointer;border-radius:7px;transition:background .15s ease,color .15s ease,box-shadow .15s ease;white-space:nowrap;letter-spacing:.1px}
-.aud-tab.active{background:var(--card);color:var(--txt);box-shadow:var(--shadow-sm)}
+.aud-tabs{display:inline-flex;background:var(--bg2);border:1px solid var(--border);border-radius:var(--pill);padding:3px;gap:2px;vertical-align:middle}
+.aud-tab{font-family:inherit;font-size:12.5px;font-weight:600;padding:5px 20px;border:none;background:transparent;color:var(--txt2);cursor:pointer;border-radius:var(--pill);transition:background .18s var(--ease),color .18s ease,box-shadow .18s ease;white-space:nowrap;letter-spacing:.1px}
+.aud-tab.active{background:linear-gradient(135deg,#005DFF,#2E71F0);color:#fff;box-shadow:0 2px 8px rgba(0,93,255,.28)}
 .aud-tab:not(.active):hover{color:var(--txt)}
 .subsection-title{
   font-size:12.5px;font-weight:600;
@@ -316,6 +258,7 @@ select,input{font-family:inherit}
 /* ===== Vertical Comparison Cards — soft elevation, whole card clickable ===== */
 .compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px}
 .compare-card{
+  position:relative;overflow:hidden;
   background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--r);
@@ -324,20 +267,31 @@ select,input{font-family:inherit}
   cursor:pointer;
   transition:box-shadow .25s var(--ease),border-color .25s var(--ease),transform .25s var(--ease);
 }
-.compare-card:hover{box-shadow:var(--shadow-lg);border-color:var(--border2);transform:translateY(-3px)}
+/* Signature colour per vertical (--vc set inline): a soft wash falling from the
+   top edge plus a 3px colour crown — colourful identity, clean white body. */
+.compare-card::before{
+  content:'';position:absolute;inset:0 0 auto 0;height:92px;pointer-events:none;
+  background:linear-gradient(180deg,var(--vc-soft,transparent),transparent);
+}
+.compare-card::after{
+  content:'';position:absolute;inset:0 0 auto 0;height:3px;pointer-events:none;
+  background:linear-gradient(90deg,var(--vc,var(--border2)),var(--vc-fade,var(--border)));
+}
+.compare-card>*{position:relative}
+.compare-card:hover{box-shadow:var(--shadow-lg);border-color:var(--vc-line,var(--border2));transform:translateY(-3px)}
 .compare-card:active{transform:translateY(-1px) scale(.995)}
-.compare-card.selected{border-color:var(--blue);box-shadow:var(--ring),var(--shadow)}
+.compare-card.selected{border-color:var(--vc,var(--blue));box-shadow:var(--ring),var(--shadow)}
 /* Entrance — staggered fade-up on first paint of a dataset */
 .compare-grid.animate .compare-card{opacity:0;animation:fadeUp .5s var(--ease) forwards;animation-delay:calc(var(--i,0)*45ms)}
 .compare-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px}
 .compare-label{font-size:14.5px;font-weight:650;color:var(--txt);letter-spacing:-.2px;line-height:1.2}
 .compare-sub{font-size:11px;color:var(--txt3);font-weight:400;margin-top:2px}
 
-/* Neutral, uniform vertical badge (identity comes from the name) */
+/* Vertical badge — wears the vertical's signature colour */
 .compare-source-badge{
-  font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;
-  letter-spacing:.4px;white-space:nowrap;flex-shrink:0;
-  background:var(--bg2);color:var(--txt2);border:1px solid var(--border);
+  font-size:10px;padding:3px 9px;border-radius:var(--pill);font-weight:700;
+  letter-spacing:.5px;white-space:nowrap;flex-shrink:0;
+  background:var(--vc-soft,var(--bg2));color:var(--vc-ink,var(--txt2));border:1px solid var(--vc-line,var(--border));
 }
 
 /* Hero: onboarded count + completion pill */
@@ -355,9 +309,9 @@ select,input{font-family:inherit}
 
 /* Stage detail cards on the vertical card (Draft / In Review / Onboarded / Rejected) */
 .cc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px}
-.cc-stat{background:var(--card2);border:1px solid var(--border);border-left-width:3px;border-radius:8px;padding:7px 9px;min-width:0}
+.cc-stat{background:var(--st-bg,var(--card2));border:1px solid var(--border);border-left:3px solid var(--st-c,var(--border2));border-radius:8px;padding:7px 9px;min-width:0}
 .cc-stat b{display:block;font-size:15px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1}
-.cc-stat span{display:block;font-size:8.5px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-stat span{display:block;font-size:8.5px;color:var(--st-tx,var(--txt3));font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Onboarded-by-category cards (green accent = onboarded) */
 .cc-cap{font-size:9px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0 0 7px}
@@ -372,7 +326,7 @@ select,input{font-family:inherit}
 .cc-foot-item b{font-size:12.5px;color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.1px}
 .cc-gst-active b{color:var(--st-onboarded)}
 .cc-gst-inactive b{color:var(--st-rejected)}
-.cc-foot-more{margin-left:auto;font-size:11px;color:var(--blue);font-weight:600;white-space:nowrap}
+.cc-foot-more{margin-left:auto;font-size:11px;color:var(--vc-ink,var(--blue));font-weight:600;white-space:nowrap}
 
 /* ===== Detail Funnel — clean horizontal meter bars ===== */
 .fun{display:flex;flex-direction:column;gap:2px}
@@ -452,13 +406,20 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 /* ===== Detail KPI Mini-Cards ===== */
 .vd-kpis{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
 .vd-kpi{
-  flex:1;min-width:88px;
+  flex:1;min-width:92px;
   background:var(--card);
   border:1px solid var(--border);
+  border-left:3px solid var(--border2);
   border-radius:8px;
   padding:8px 10px 7px;
   box-shadow:var(--shadow-sm);
 }
+/* Semantic colour per KPI — soft stage tint + accent edge */
+.vd-kpi.k-draft     {background:var(--st-draft-bg);     border-left-color:var(--st-draft)}
+.vd-kpi.k-review    {background:var(--st-review-bg);    border-left-color:var(--st-review)}
+.vd-kpi.k-onboarded {background:var(--st-onboarded-bg); border-left-color:var(--st-onboarded)}
+.vd-kpi.k-transacted{background:var(--st-transacted-bg);border-left-color:var(--st-transacted)}
+.vd-kpi.k-rejected  {background:var(--st-rejected-bg);  border-left-color:var(--st-rejected)}
 .vd-kpi-val{font-size:15.5px;font-weight:700;color:var(--txt);letter-spacing:-.3px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .vd-kpi-lbl{font-size:9.5px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.35px;margin-top:2px;line-height:1.35}
 
@@ -586,7 +547,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <button id="btn-refresh" onclick="loadData()">
       <span class="icon-refresh">↻</span> Refresh
     </button>
-    <button id="btn-theme" onclick="toggleTheme()" title="Switch theme" aria-label="Switch light / dark theme">◐</button>
   </div>
 </header>
 
@@ -682,13 +642,6 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && selectedVert) closeVertDetail();
 });
-
-// ── Theme (light / dark) — persists; boot script in <head> applies before paint ──
-function toggleTheme() {
-  var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  try { localStorage.setItem('ebt_theme', next); } catch (e) {}
-}
 
 // ── Motion: respect the OS reduced-motion switch for JS-driven animation ──
 function motionOK() {
@@ -977,6 +930,33 @@ var VERT_CFG = [
 function getVertCfg() {
   return (D && D.verticalConfig && D.verticalConfig.length) ? D.verticalConfig : VERT_CFG;
 }
+
+// ── Signature colour per vertical — the eight Recykal primary-palette hues.
+//    c = accent · ink = darker text-safe variant of the same hue.
+var VERT_COLORS = {
+  OMP:           { c: '#005DFF', ink: '#0047D4' },   // Bright Blue
+  EPR:           { c: '#8460D4', ink: '#6A44BC' },   // Medium Purple
+  Marketplace:   { c: '#024C8A', ink: '#024C8A' },   // Midnight Blue
+  InfraBusiness: { c: '#0000AF', ink: '#0000AF' },   // Duke Blue
+  AFR:           { c: '#3E7D44', ink: '#33673A' },   // Fern Green
+  Recommerce:    { c: '#1DC797', ink: '#049769' },   // Bright Green (Dark Green ink)
+  DRS:           { c: '#567DE8', ink: '#3050C8' },   // Blue
+  Others:        { c: '#64748B', ink: '#4E5A67' },   // neutral slate
+};
+function hexRGBA(hex, a) {
+  var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  if (!m) return 'rgba(0,0,0,' + a + ')';
+  var n = parseInt(m[1], 16);
+  return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+// Inline CSS-variable pack for a vertical's signature colour.
+function vcVars(key) {
+  var vc = VERT_COLORS[key] || VERT_COLORS.Others;
+  return '--vc:' + vc.c + ';--vc-ink:' + vc.ink
+    + ';--vc-soft:' + hexRGBA(vc.c, .09)
+    + ';--vc-line:' + hexRGBA(vc.c, .30)
+    + ';--vc-fade:' + hexRGBA(vc.c, .25) + ';';
+}
 var selectedVert = null;
 var vertRows = [];          // lazily loaded rows for the open vertical
 var vertRowsLoading = false;
@@ -997,12 +977,12 @@ var KB_COLS = [            // workflow order, left to right
 
 // ── Pipeline stage palette — mirrors the CSS --st-* tokens, one set everywhere ──
 var STAGE = {
-  total:      { fill: 'var(--st-total)',      lbl: 'Total Cases' },
-  draft:      { fill: 'var(--st-draft)',      lbl: 'Draft' },
-  review:     { fill: 'var(--st-review)',     lbl: 'In Review' },
-  onboarded:  { fill: 'var(--st-onboarded)',  lbl: 'Onboarded' },
-  transacted: { fill: 'var(--st-transacted)', lbl: 'Transacted' },
-  rejected:   { fill: 'var(--st-rejected)',   lbl: 'Rejected' },
+  total:      { fill: 'var(--st-total)',      bg: 'var(--st-total-bg)',      tx: 'var(--st-total-tx)',      lbl: 'Total Cases' },
+  draft:      { fill: 'var(--st-draft)',      bg: 'var(--st-draft-bg)',      tx: 'var(--st-draft-tx)',      lbl: 'Draft' },
+  review:     { fill: 'var(--st-review)',     bg: 'var(--st-review-bg)',     tx: 'var(--st-review-tx)',     lbl: 'In Review' },
+  onboarded:  { fill: 'var(--st-onboarded)',  bg: 'var(--st-onboarded-bg)',  tx: 'var(--st-onboarded-tx)',  lbl: 'Onboarded' },
+  transacted: { fill: 'var(--st-transacted)', bg: 'var(--st-transacted-bg)', tx: 'var(--st-transacted-tx)', lbl: 'Transacted' },
+  rejected:   { fill: 'var(--st-rejected)',   bg: 'var(--st-rejected-bg)',   tx: 'var(--st-rejected-tx)',   lbl: 'Rejected' },
 };
 
 // The four current-status segments that partition Total.
@@ -1019,8 +999,9 @@ function stageSegs(v) {
 // Onboarded / Rejected), each with its stage-colour accent.
 function cardStats(v) {
   return '<div class="cc-stats">' + stageSegs(v).map(function(s) {
-    return '<div class="cc-stat" style="border-left-color:' + STAGE[s[0]].fill + '">'
-      + '<b>' + fmt(s[1]) + '</b><span>' + STAGE[s[0]].lbl + '</span></div>';
+    var st = STAGE[s[0]];
+    return '<div class="cc-stat" style="--st-c:' + st.fill + ';--st-bg:' + st.bg + ';--st-tx:' + st.tx + '">'
+      + '<b>' + fmt(s[1]) + '</b><span>' + st.lbl + '</span></div>';
   }).join('') + '</div>';
 }
 
@@ -1143,7 +1124,7 @@ function renderVerticals() {
     var v   = verts[cfg.key] || {};
     var tot = v.total || 0;
     var sel = selectedVert === cfg.key;
-    var attrs = ' style="--i:' + (idx++) + '" tabindex="0" role="button"'
+    var attrs = ' style="--i:' + (idx++) + ';' + vcVars(cfg.key) + '" tabindex="0" role="button"'
       + ' aria-label="' + esc(cfg.name) + ' details"'
       + ' onclick="openVertDetail(\'' + cfg.key + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openVertDetail(\'' + cfg.key + '\')}"';
@@ -1300,18 +1281,19 @@ function renderVertDetail() {
   if (!cfg || !v) return;
   var has = (v.total || 0) > 0;
 
+  // [label, value, semantic stage class] — the class tints the KPI tile
   var metrics = [
-    ['Total Cases',    fmt(v.total || 0)],
-    ['Onboarded',      fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)'],
-    v.transacted != null ? ['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)'] : null,
-    v.transacted != null ? ['Txn Value',  fmtINR(v.totalTxnValue)]  : null,
-    ['In Review',      fmt(v.inReview || 0)],
-    ['Draft',          fmt(v.draft || 0)],
-    ['Rejected',       fmt(v.rejected || 0)],
-    ['Avg TAT',        dOr(v.avgTAT, 'd')],
-    ['Onboarded (7d)', fmt(v.completedThisWeek || 0)],
-    v.withGST    != null ? ['GST Active',   fmt(v.withGST)]   : null,
-    v.missingGST != null ? ['GST Inactive', fmt(v.missingGST)] : null,
+    ['Total Cases',    fmt(v.total || 0),                                              ''],
+    ['Onboarded',      fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)',   'k-onboarded'],
+    v.transacted != null ? ['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)', 'k-transacted'] : null,
+    v.transacted != null ? ['Txn Value',  fmtINR(v.totalTxnValue), 'k-transacted'] : null,
+    ['In Review',      fmt(v.inReview || 0),                                           'k-review'],
+    ['Draft',          fmt(v.draft || 0),                                              'k-draft'],
+    ['Rejected',       fmt(v.rejected || 0),                                           'k-rejected'],
+    ['Avg TAT',        dOr(v.avgTAT, 'd'),                                             ''],
+    ['Onboarded (7d)', fmt(v.completedThisWeek || 0),                                  'k-onboarded'],
+    v.withGST    != null ? ['GST Active',   fmt(v.withGST),   'k-onboarded'] : null,
+    v.missingGST != null ? ['GST Inactive', fmt(v.missingGST), 'k-rejected'] : null,
   ].filter(Boolean);
 
   var funnelSection = has
@@ -1373,6 +1355,7 @@ function renderVertDetail() {
     ? '<div class="cc-cap vd-cat-cap">Onboarded by category</div>' + cardCategories(v, 12)
     : '';
 
+  panel.style.cssText = 'display:block;' + vcVars(selectedVert);   // signature colour for badge + accents
   panel.innerHTML = '<div class="vd-page-inner">'
     + '<div class="vd-head">'
     + '<button class="vd-back" onclick="closeVertDetail()">Back</button>'
@@ -1382,7 +1365,7 @@ function renderVertDetail() {
     + catSection
     + '<div class="vd-kpis">'
     + metrics.map(function(m) {
-        return '<div class="vd-kpi"><div class="vd-kpi-val">' + m[1] + '</div><div class="vd-kpi-lbl">' + m[0] + '</div></div>';
+        return '<div class="vd-kpi' + (m[2] ? ' ' + m[2] : '') + '"><div class="vd-kpi-val">' + m[1] + '</div><div class="vd-kpi-lbl">' + m[0] + '</div></div>';
       }).join('')
     + '</div>'
     + funnelSection
