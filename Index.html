@@ -344,6 +344,7 @@ select,input{font-family:inherit}
 .cc-cat-click:hover{box-shadow:var(--shadow-lg,var(--shadow));transform:translateY(-3px)}
 .cc-cat-click:active{transform:scale(.97)}
 #cat-detail-wrap{animation:rmUp .2s var(--ease) both}
+.cc-cat-hint{display:block;font-size:9.5px;font-weight:600;color:var(--vc,var(--blue));margin-top:7px;font-style:normal;letter-spacing:.2px;opacity:.85}
 
 /* Footer stats */
 .cc-foot{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--txt3)}
@@ -1141,6 +1142,7 @@ function cardCategories(v, max) {
       + ' onclick="filterByCategory(\'' + catJs + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();filterByCategory(\'' + catJs + '\')}">'
       + '<b>' + fmt(n) + '</b><span>' + catEsc + '</span>'
+      + '<em class="cc-cat-hint">Click for details →</em>'
       + '</div>';
   }).join('') + '</div>';
 }
@@ -1845,31 +1847,73 @@ function vdfSearchDeb() {
 function renderCatDetailCard(c) {
   var ctot = c.total || 0;
   if (!ctot) return '';
-  var pc  = function(n) { return Math.round(((n || 0) / ctot) * 100); };
-  var wid = function(n) { return ((n || 0) / ctot) * 100; };
 
-  function bar(k, n, isRej) {
-    var st = STAGE[k];
-    return '<div class="' + (isRej ? 'fun-rej' : 'fun-row' + (k === 'total' ? ' is-total' : '')) + '">'
-      + '<div class="fun-lbl"><span class="cc-dot" style="background:' + st.fill + '"></span>' + st.lbl + '</div>'
-      + '<div class="fun-track"><div class="fun-fill" style="width:' + wid(n).toFixed(1) + '%;background:' + st.fill + '"></div></div>'
-      + '<div class="fun-val"><b>' + fmt(n) + '</b>(' + (k === 'total' ? 100 : pc(n)) + '%)</div>'
-      + '</div>';
-  }
+  // Build segment list: Onboarded first, then Draft, In Review, Transacted (if any), Rejected.
+  var segs = [
+    { key: 'onboarded', n: c.onboarded || 0 },
+    { key: 'draft',     n: c.draft     || 0 },
+    { key: 'review',    n: c.inReview  || 0 },
+    { key: 'rejected',  n: c.rejected  || 0 },
+  ];
+  if (c.hasTxn) segs.splice(3, 0, { key: 'transacted', n: c.transacted || 0 });
+  segs = segs.filter(function(s) { return s.n > 0; });
 
-  var rows = [bar('total', ctot), bar('onboarded', c.onboarded || 0),
-              bar('draft', c.draft || 0), bar('review', c.inReview || 0)];
-  if (c.hasTxn) rows.push(bar('transacted', c.transacted || 0));
+  // SVG donut chart — each segment is a circle with stroke-dasharray.
+  // Segments start at 12 o'clock (−90°) and accumulate clockwise.
+  var R = 54, SW = 18, cx = 68, cy = 68;
+  var C = 2 * Math.PI * R;
+  var GAP = 2.5; // arc-length gap between segments for visual separation
+  var cumFrac = 0;
+
+  var rings = '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '"'
+    + ' fill="none" stroke="var(--bg2)" stroke-width="' + SW + '"/>'
+    + segs.map(function(s) {
+        var frac = s.n / ctot;
+        var dash = Math.max(0, frac * C - GAP);
+        var gap  = C - dash;
+        var rot  = cumFrac * 360 - 90;
+        cumFrac += frac;
+        return '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '"'
+          + ' fill="none" stroke="' + STAGE[s.key].fill + '" stroke-width="' + SW + '"'
+          + ' stroke-dasharray="' + dash.toFixed(2) + ' ' + gap.toFixed(2) + '"'
+          + ' transform="rotate(' + rot.toFixed(2) + ' ' + cx + ' ' + cy + ')"'
+          + '/>';
+      }).join('');
+
+  // Center text: total count + label
+  var centerTxt = '<text x="' + cx + '" y="63" text-anchor="middle"'
+    + ' font-family="Poppins,sans-serif" font-size="26" font-weight="800" fill="var(--txt)">' + fmt(ctot) + '</text>'
+    + '<text x="' + cx + '" y="78" text-anchor="middle"'
+    + ' font-family="Poppins,sans-serif" font-size="9.5" font-weight="600" fill="var(--txt3)" letter-spacing="0.4">TOTAL CASES</text>';
+
+  // SVG viewBox sized to donut: outer radius = R + SW/2 = 54+9 = 63; center at 68 → total = 68+63 = 131 → use 136
+  var svg = '<svg width="136" height="136" viewBox="0 0 136 136" style="flex-shrink:0;display:block">'
+    + rings + centerTxt + '</svg>';
+
+  // Legend: each row shows colour swatch, stage label, count, percentage
+  var leg = '<div style="flex:1;min-width:150px">'
+    + segs.map(function(s, i) {
+        var st = STAGE[s.key];
+        var pc = Math.round((s.n / ctot) * 100);
+        var isPrimary = s.key === 'onboarded';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:' + (i === 0 ? '4' : '7') + 'px 0 7px;border-bottom:1px solid var(--border)">'
+          + '<span style="width:11px;height:11px;border-radius:2px;flex-shrink:0;background:' + st.fill + '"></span>'
+          + '<span style="flex:1;font-size:12.5px;font-weight:' + (isPrimary ? '700' : '600') + ';color:var(--txt' + (isPrimary ? '' : '2') + ')">' + st.lbl + '</span>'
+          + '<span style="font-size:' + (isPrimary ? '15' : '13.5') + 'px;font-weight:800;color:' + st.fill + ';font-variant-numeric:tabular-nums">' + fmt(s.n) + '</span>'
+          + '<span style="font-size:11px;color:var(--txt3);min-width:32px;text-align:right">' + pc + '%</span>'
+          + '</div>';
+      }).join('')
+    + '</div>';
 
   return '<div class="chart-card mt-16" style="border-left:4px solid var(--vc,var(--st-onboarded))">'
-    + '<div class="chart-card-title" style="justify-content:space-between">'
-    +   '<span>' + esc(c.category) + ' — Breakdown'
-    +     '<span class="muted-total">' + fmt(ctot) + ' total · ' + fmt(c.onboarded || 0) + ' onboarded</span>'
-    +   '</span>'
-    +   '<button onclick="filterByCategory(\'All\')" style="background:none;border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--txt3);padding:2px 8px;cursor:pointer;font-family:inherit">✕ Clear</button>'
+    + '<div class="chart-card-title">'
+    +   '<span style="font-size:13.5px;font-weight:700;color:var(--txt);text-transform:none;letter-spacing:0">' + esc(c.category) + '</span>'
+    +   '<span class="muted-total" style="margin-left:8px">— Category Breakdown</span>'
+    +   '<button onclick="filterByCategory(\'All\')" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--txt3);padding:2px 10px;cursor:pointer;font-family:inherit;text-transform:none;letter-spacing:0">✕ Clear</button>'
     + '</div>'
-    + '<div class="fun">' + rows.join('') + '</div>'
-    + bar('rejected', c.rejected || 0, true)
+    + '<div style="display:flex;gap:28px;align-items:center;flex-wrap:wrap">'
+    +   svg + leg
+    + '</div>'
     + '</div>';
 }
 
