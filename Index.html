@@ -64,7 +64,10 @@
   --r:    16px;
   --r2:   10px;
   --pill: 999px;
-  --ease: cubic-bezier(.22,.8,.36,1);
+  --ease:        cubic-bezier(.22,.8,.36,1);
+  --ease-out:    cubic-bezier(.16,1,.3,1);     /* expo decelerate — hovers & entrances */
+  --ease-sheet:  cubic-bezier(.32,.72,0,1);    /* iOS sheet — overlays & modals */
+  --ease-spring: cubic-bezier(.34,1.35,.62,1); /* gentle overshoot — micro-presses */
 
   /* ── Ambient page wash — colourful yet airy: blue, green, a hint of purple ── */
   --wash: radial-gradient(1150px 460px at 10% -10%, rgba(0,93,255,.08), transparent 62%),
@@ -112,7 +115,10 @@ select,input{font-family:inherit}
 .spinner{width:34px;height:34px;border:2.5px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s cubic-bezier(.5,.1,.5,.9) infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-txt{color:var(--txt3);font-size:13px;font-weight:500;letter-spacing:.2px}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes barGrow{from{width:0}}
+@keyframes ringIn{from{stroke-dasharray:0 999}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 @keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 
@@ -265,7 +271,7 @@ select,input{font-family:inherit}
   padding:18px 18px 14px;
   box-shadow:var(--shadow-sm);
   cursor:pointer;
-  transition:box-shadow .25s var(--ease),border-color .25s var(--ease),transform .25s var(--ease);
+  transition:box-shadow .5s var(--ease-out),border-color .3s var(--ease),transform .5s var(--ease-out);
 }
 /* Signature colour per vertical (--vc set inline): a soft wash falling from the
    top edge plus a 3px colour crown — colourful identity, clean white body. */
@@ -278,11 +284,11 @@ select,input{font-family:inherit}
   background:linear-gradient(90deg,var(--vc,var(--border2)),var(--vc-fade,var(--border)));
 }
 .compare-card>*{position:relative}
-.compare-card:hover{box-shadow:var(--shadow-lg);border-color:var(--vc-line,var(--border2));transform:translateY(-3px)}
-.compare-card:active{transform:translateY(-1px) scale(.995)}
+.compare-card:hover{box-shadow:var(--shadow-lg);border-color:var(--vc-line,var(--border2));transform:translateY(-5px)}
+.compare-card:active{transform:translateY(-1px) scale(.985);transition-duration:.15s}
 .compare-card.selected{border-color:var(--vc,var(--blue));box-shadow:var(--ring),var(--shadow)}
-/* Entrance — staggered fade-up on first paint of a dataset */
-.compare-grid.animate .compare-card{opacity:0;animation:fadeUp .5s var(--ease) forwards;animation-delay:calc(var(--i,0)*45ms)}
+/* Entrance — staggered rise-and-settle on first paint of a dataset */
+.compare-grid.animate .compare-card{opacity:0;animation:riseIn .65s var(--ease-out) forwards;animation-delay:calc(var(--i,0)*55ms)}
 .compare-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px}
 .compare-label{font-size:14.5px;font-weight:650;color:var(--txt);letter-spacing:-.2px;line-height:1.2}
 .compare-sub{font-size:11px;color:var(--txt3);font-weight:400;margin-top:2px}
@@ -340,11 +346,20 @@ select,input{font-family:inherit}
   margin-top:5px;line-height:1.3;
   text-transform:uppercase;letter-spacing:.3px;
 }
-.cc-cat-click{cursor:pointer;transition:box-shadow .15s,transform .15s}
-.cc-cat-click:hover{box-shadow:var(--shadow-lg,var(--shadow));transform:translateY(-3px)}
-.cc-cat-click:active{transform:scale(.97)}
-#cat-detail-wrap{animation:rmUp .2s var(--ease) both;margin-top:16px;margin-bottom:32px}
-.cc-cat-hint{display:block;font-size:9.5px;font-weight:600;color:var(--vc,var(--blue));margin-top:7px;font-style:normal;letter-spacing:.2px;opacity:.85}
+.cc-cat-click{cursor:pointer;transition:transform .45s var(--ease-out),box-shadow .45s var(--ease-out),border-color .25s var(--ease)}
+.cc-cat-click:hover{box-shadow:var(--shadow-lg,var(--shadow));transform:translateY(-4px)}
+.cc-cat-click:active{transform:translateY(-1px) scale(.97);transition-duration:.15s}
+#cat-detail-wrap{animation:riseIn .55s var(--ease-sheet) both;margin-top:16px;margin-bottom:32px}
+#cat-detail-wrap.no-anim,#cat-detail-wrap.no-anim *{animation:none!important}
+.cc-cat-hint{display:block;font-size:9.5px;font-weight:600;color:var(--vc,var(--blue));margin-top:7px;font-style:normal;letter-spacing:.2px;opacity:.85;transition:transform .35s var(--ease-out)}
+.cc-cat-click:hover .cc-cat-hint{transform:translateX(3px)}
+
+/* Donut breakdown — Apple-ring sweep on reveal, hover pop per segment */
+.donut-seg{transition:stroke-width .3s var(--ease-out)}
+.donut-seg:hover{stroke-width:21}
+#cat-detail-wrap:not(.no-anim) .donut-seg{animation:ringIn .9s var(--ease-out) both}
+#cat-detail-wrap:not(.no-anim) .donut-ctr{animation:fadeIn .55s var(--ease-out) .35s both}
+#cat-detail-wrap:not(.no-anim) .donut-leg-row{animation:riseIn .5s var(--ease-out) both}
 
 /* Footer stats */
 .cc-foot{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--txt3)}
@@ -452,7 +467,9 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   border-radius:12px;
   padding:20px 22px 18px;
   box-shadow:var(--shadow-sm);
+  transition:transform .35s var(--ease-out),box-shadow .35s var(--ease-out);
 }
+.vd-kpi:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
 /* Semantic colour per KPI — soft stage tint + accent edge */
 .vd-kpi.k-draft     {background:var(--st-draft-bg);     border-left-color:var(--st-draft)}
 .vd-kpi.k-review    {background:var(--st-review-bg);    border-left-color:var(--st-review)}
@@ -463,7 +480,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .vd-kpi-lbl{font-size:10px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-top:6px;line-height:1.4}
 
 /* ===== Vertical Detail — Full-Page Overlay ===== */
-@keyframes slideInRight{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
+@keyframes sheetIn{from{opacity:0;transform:translateY(30px) scale(.99)}to{opacity:1;transform:none}}
 #vert-detail{
   position:fixed;
   inset:0;
@@ -472,8 +489,21 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   background-image:var(--wash);
   background-repeat:no-repeat;
   overflow-y:auto;
-  animation:slideInRight .28s var(--ease) both;
+  animation:sheetIn .55s var(--ease-sheet) both;
 }
+/* Entrance choreography — .vd-anim is added on open and removed ~1s later,
+   so silent data refreshes re-render without replaying the cascade. */
+#vert-detail.vd-anim .vd-page-inner>*:not(.vd-kpis):not(.cc-cats){animation:riseIn .6s var(--ease-out) both}
+#vert-detail.vd-anim .vd-page-inner>*:nth-child(2){animation-delay:45ms}
+#vert-detail.vd-anim .vd-page-inner>*:nth-child(3){animation-delay:85ms}
+#vert-detail.vd-anim .vd-page-inner>*:nth-child(4){animation-delay:125ms}
+#vert-detail.vd-anim .vd-page-inner>*:nth-child(5){animation-delay:165ms}
+#vert-detail.vd-anim .vd-page-inner>*:nth-child(6){animation-delay:205ms}
+#vert-detail.vd-anim .vd-page-inner>*:nth-child(7){animation-delay:245ms}
+#vert-detail.vd-anim .vd-page-inner>*:nth-child(n+8){animation-delay:285ms}
+#vert-detail.vd-anim .cc-cat{animation:riseIn .55s var(--ease-out) both;animation-delay:calc(var(--kd,0)*1ms + 40ms)}
+#vert-detail.vd-anim .vd-kpi{animation:riseIn .55s var(--ease-out) both;animation-delay:calc(var(--kd,0)*1ms + 150ms)}
+#vert-detail.vd-anim .fun-fill{animation:barGrow .9s var(--ease-out) .3s both}
 .vd-page-inner{max-width:1200px;margin:0 auto;padding:24px 32px 48px}
 .vd-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)}
 .vd-title{font-size:18px;font-weight:700;color:var(--txt);letter-spacing:-.3px}
@@ -514,6 +544,12 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .vd-toggle-btn{font-family:inherit;font-size:11.5px;font-weight:600;padding:6px 13px;border:none;background:transparent;color:var(--txt3);cursor:pointer;transition:background .12s ease,color .12s ease;white-space:nowrap}
 .vd-toggle-btn.active{background:var(--blue);color:#FFF}
 .vd-toggle-btn:not(.active):hover{background:var(--card2);color:var(--txt)}
+/* Micro-presses — springy release, Apple-style */
+.vd-toggle-btn{transition:background .12s ease,color .12s ease,transform .25s var(--ease-spring)}
+.vd-toggle-btn:active{transform:scale(.94)}
+.vd-close:active{transform:scale(.96)}
+.aud-tab{transition:background .18s var(--ease),color .18s ease,box-shadow .18s ease,transform .25s var(--ease-spring)}
+.aud-tab:active{transform:scale(.96)}
 
 /* ── Kanban board ── */
 .kb-wrap{overflow-x:auto;padding-bottom:4px}
@@ -524,8 +560,9 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .kb-col-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--txt2);white-space:nowrap}
 .kb-count{margin-left:auto;font-size:11px;font-weight:700;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1px 8px;color:var(--txt2);font-variant-numeric:tabular-nums}
 .kb-cards{padding:8px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:420px}
-.kb-card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--kb,var(--border2));border-radius:8px;padding:9px 10px;box-shadow:var(--shadow-sm);transition:box-shadow .12s ease,transform .12s ease}
-.kb-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.kb-card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--kb,var(--border2));border-radius:8px;padding:9px 10px;box-shadow:var(--shadow-sm);transition:box-shadow .35s var(--ease-out),transform .35s var(--ease-out)}
+.kb-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.kb-card:active{transform:scale(.98);transition-duration:.12s}
 .kb-card-name{font-size:12px;font-weight:600;color:var(--txt);line-height:1.35}
 .kb-card-meta{font-size:10.5px;color:var(--txt3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kb-card-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px}
@@ -542,14 +579,14 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .kb-card{cursor:pointer}
 
 /* ===== Record Detail Modal ===== */
-@keyframes rmUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes rmUp{from{opacity:0;transform:translateY(26px) scale(.96)}to{opacity:1;transform:none}}
 #rec-modal{position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;padding:20px}
-.rm-bd{position:absolute;inset:0;background:rgba(10,18,38,.54);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.rm-bd{position:absolute;inset:0;background:rgba(10,18,38,.54);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);animation:fadeIn .35s var(--ease) both}
 .rm-pn{
   position:relative;z-index:1;background:var(--card);border:1px solid var(--border);
   border-radius:20px;box-shadow:0 32px 80px rgba(0,0,0,.22),0 2px 10px rgba(0,0,0,.10);
   width:100%;max-width:500px;max-height:88vh;overflow-y:auto;
-  animation:rmUp .22s var(--ease) both;
+  animation:rmUp .5s var(--ease-sheet) both;
 }
 .rm-x{
   position:sticky;top:0;float:right;clear:right;
@@ -1131,12 +1168,12 @@ function cardCategories(v, max) {
     head.push(others);
     cats = head;
   }
-  return '<div class="cc-cats">' + cats.map(function(c) {
+  return '<div class="cc-cats">' + cats.map(function(c, ci) {
     var n   = c.onboarded || 0;
     var tot = c.total     || 0;
     var catEsc = esc(c.category);
     var catJs  = c.category.replace(/'/g, "\\'");
-    return '<div class="cc-cat cc-cat-click" role="button" tabindex="0"'
+    return '<div class="cc-cat cc-cat-click" role="button" tabindex="0" style="--kd:' + (ci * 40) + '"'
       + ' title="' + catEsc + ': ' + fmt(n) + ' onboarded of ' + fmt(tot) + ' · click to view records"'
       + ' onclick="filterByCategory(\'' + catJs + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();filterByCategory(\'' + catJs + '\')}">'
@@ -1354,7 +1391,14 @@ function openVertDetail(key) {
   renderVertDetail();
   document.body.style.overflow = 'hidden';
   var panel = document.getElementById('vert-detail');
-  if (panel) panel.scrollTop = 0;
+  if (panel) {
+    panel.scrollTop = 0;
+    // Entrance choreography — cascade plays once per open, then the class is
+    // removed so silent data refreshes re-render without replaying it.
+    panel.classList.add('vd-anim');
+    clearTimeout(panel._vdAnimT);
+    panel._vdAnimT = setTimeout(function() { panel.classList.remove('vd-anim'); }, 1000);
+  }
   // Always trigger load on new vertical; also re-fetch if rows are empty and idle
   if (isNew || (vertRows.length === 0 && !vertRowsLoading)) loadVertRows(key);
 }
@@ -1525,8 +1569,8 @@ function renderVertDetail() {
     + catSection
     + '<div id="cat-detail-wrap" style="display:none"></div>'
     + '<div class="vd-kpis">'
-    + metrics.map(function(m) {
-        return '<div class="vd-kpi' + (m[2] ? ' ' + m[2] : '') + '"><div class="vd-kpi-val">' + m[1] + '</div><div class="vd-kpi-lbl">' + m[0] + '</div></div>';
+    + metrics.map(function(m, mi) {
+        return '<div class="vd-kpi' + (m[2] ? ' ' + m[2] : '') + '" style="--kd:' + (mi * 35) + '"><div class="vd-kpi-val">' + m[1] + '</div><div class="vd-kpi-lbl">' + m[0] + '</div></div>';
       }).join('')
     + '</div>'
     + funnelSection
@@ -1534,6 +1578,9 @@ function renderVertDetail() {
     + '</div>';
 
   panel.style.display = 'block';
+
+  // Keep an open category breakdown alive across re-renders (quiet = no replay).
+  if (vdF.category && vdF.category !== 'All') showCatDetail(vdF.category, true);
 
   renderVdRecords();
 }
@@ -1866,24 +1913,28 @@ function renderCatDetailCard(c) {
 
   var rings = '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '"'
     + ' fill="none" stroke="var(--bg2)" stroke-width="' + SW + '"/>'
-    + segs.map(function(s) {
+    + segs.map(function(s, si) {
         var frac = s.n / ctot;
         var dash = Math.max(0, frac * C - GAP);
         var gap  = C - dash;
         var rot  = cumFrac * 360 - 90;
         cumFrac += frac;
-        return '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '"'
-          + ' fill="none" stroke="' + STAGE[s.key].fill + '" stroke-width="' + SW + '"'
+        var st = STAGE[s.key];
+        return '<circle class="donut-seg" cx="' + cx + '" cy="' + cy + '" r="' + R + '"'
+          + ' fill="none" stroke="' + st.fill + '" stroke-width="' + SW + '"'
           + ' stroke-dasharray="' + dash.toFixed(2) + ' ' + gap.toFixed(2) + '"'
           + ' transform="rotate(' + rot.toFixed(2) + ' ' + cx + ' ' + cy + ')"'
-          + '/>';
+          + ' style="animation-delay:' + (140 + si * 110) + 'ms"'
+          + '><title>' + st.lbl + ' — ' + fmt(s.n) + ' (' + Math.round(frac * 100) + '%)</title></circle>';
       }).join('');
 
-  // Center text: total count + label
-  var centerTxt = '<text x="' + cx + '" y="63" text-anchor="middle"'
+  // Center text: total count + label (fades in after the rings sweep)
+  var centerTxt = '<g class="donut-ctr">'
+    + '<text x="' + cx + '" y="63" text-anchor="middle"'
     + ' font-family="Poppins,sans-serif" font-size="26" font-weight="800" fill="var(--txt)">' + fmt(ctot) + '</text>'
     + '<text x="' + cx + '" y="78" text-anchor="middle"'
-    + ' font-family="Poppins,sans-serif" font-size="9.5" font-weight="600" fill="var(--txt3)" letter-spacing="0.4">TOTAL CASES</text>';
+    + ' font-family="Poppins,sans-serif" font-size="9.5" font-weight="600" fill="var(--txt3)" letter-spacing="0.4">TOTAL CASES</text>'
+    + '</g>';
 
   // SVG viewBox sized to donut: outer radius = R + SW/2 = 54+9 = 63; center at 68 → total = 68+63 = 131 → use 136
   var svg = '<svg width="136" height="136" viewBox="0 0 136 136" style="flex-shrink:0;display:block">'
@@ -1895,7 +1946,7 @@ function renderCatDetailCard(c) {
         var st = STAGE[s.key];
         var pc = Math.round((s.n / ctot) * 100);
         var isPrimary = s.key === 'onboarded';
-        return '<div style="display:flex;align-items:center;gap:10px;padding:' + (i === 0 ? '4' : '7') + 'px 0 7px;border-bottom:1px solid var(--border)">'
+        return '<div class="donut-leg-row" style="display:flex;align-items:center;gap:10px;padding:' + (i === 0 ? '4' : '7') + 'px 0 7px;border-bottom:1px solid var(--border);animation-delay:' + (180 + i * 70) + 'ms">'
           + '<span style="width:11px;height:11px;border-radius:2px;flex-shrink:0;background:' + st.fill + '"></span>'
           + '<span style="flex:1;font-size:12.5px;font-weight:' + (isPrimary ? '700' : '600') + ';color:var(--txt' + (isPrimary ? '' : '2') + ')">' + st.lbl + '</span>'
           + '<span style="font-size:' + (isPrimary ? '15' : '13.5') + 'px;font-weight:800;color:' + st.fill + ';font-variant-numeric:tabular-nums">' + fmt(s.n) + '</span>'
@@ -1916,9 +1967,11 @@ function renderCatDetailCard(c) {
     + '</div>';
 }
 
-function showCatDetail(catName) {
+function showCatDetail(catName, quiet) {
   var wrap = document.getElementById('cat-detail-wrap');
   if (!wrap) return;
+  // quiet — re-inject without replaying animations (silent refresh path)
+  if (quiet) { wrap.classList.add('no-anim'); } else { wrap.classList.remove('no-anim'); }
   if (!catName || catName === 'All') {
     wrap.style.display = 'none';
     wrap.innerHTML = '';
