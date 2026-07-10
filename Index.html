@@ -343,6 +343,7 @@ select,input{font-family:inherit}
 .cc-cat-click{cursor:pointer;transition:box-shadow .15s,transform .15s}
 .cc-cat-click:hover{box-shadow:var(--shadow-lg,var(--shadow));transform:translateY(-3px)}
 .cc-cat-click:active{transform:scale(.97)}
+#cat-detail-wrap{animation:rmUp .2s var(--ease) both}
 
 /* Footer stats */
 .cc-foot{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--txt3)}
@@ -1455,9 +1456,9 @@ function renderVertDetail() {
   ].filter(Boolean);
 
   var funnelSection = has
-    ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel by Category'
-      + '<span class="muted-total">' + fmt(v.total || 0) + ' total cases</span></div>'
-      + catFunnels(v) + '</div>'
+    ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel'
+      + '<span class="muted-total">' + fmt(v.total || 0) + ' total · share of all cases</span></div>'
+      + funnelBig(v, cfg) + '</div>'
     : '';
 
   // Detail filters — local to this vertical's records (Period lives above the cards)
@@ -1521,6 +1522,7 @@ function renderVertDetail() {
     + '<div><div class="vd-title">' + esc(cfg.name) + '</div><div class="compare-sub">' + esc(cfg.sub) + '</div></div>'
     + '</div>'
     + catSection
+    + '<div id="cat-detail-wrap" style="display:none"></div>'
     + '<div class="vd-kpis">'
     + metrics.map(function(m) {
         return '<div class="vd-kpi' + (m[2] ? ' ' + m[2] : '') + '"><div class="vd-kpi-val">' + m[1] + '</div><div class="vd-kpi-lbl">' + m[0] + '</div></div>';
@@ -1838,11 +1840,62 @@ function vdfSearchDeb() {
 }
 // Called when a category card is clicked — filters the records section to
 // that category and scrolls the records into view.
+// Show a funnel breakdown card for a single category, in the same bar-chart
+// style as the aggregate funnel. Called by filterByCategory().
+function renderCatDetailCard(c) {
+  var ctot = c.total || 0;
+  if (!ctot) return '';
+  var pc  = function(n) { return Math.round(((n || 0) / ctot) * 100); };
+  var wid = function(n) { return ((n || 0) / ctot) * 100; };
+
+  function bar(k, n, isRej) {
+    var st = STAGE[k];
+    return '<div class="' + (isRej ? 'fun-rej' : 'fun-row' + (k === 'total' ? ' is-total' : '')) + '">'
+      + '<div class="fun-lbl"><span class="cc-dot" style="background:' + st.fill + '"></span>' + st.lbl + '</div>'
+      + '<div class="fun-track"><div class="fun-fill" style="width:' + wid(n).toFixed(1) + '%;background:' + st.fill + '"></div></div>'
+      + '<div class="fun-val"><b>' + fmt(n) + '</b>(' + (k === 'total' ? 100 : pc(n)) + '%)</div>'
+      + '</div>';
+  }
+
+  var rows = [bar('total', ctot), bar('onboarded', c.onboarded || 0),
+              bar('draft', c.draft || 0), bar('review', c.inReview || 0)];
+  if (c.hasTxn) rows.push(bar('transacted', c.transacted || 0));
+
+  return '<div class="chart-card mt-16" style="border-left:4px solid var(--vc,var(--st-onboarded))">'
+    + '<div class="chart-card-title" style="justify-content:space-between">'
+    +   '<span>' + esc(c.category) + ' — Breakdown'
+    +     '<span class="muted-total">' + fmt(ctot) + ' total · ' + fmt(c.onboarded || 0) + ' onboarded</span>'
+    +   '</span>'
+    +   '<button onclick="filterByCategory(\'All\')" style="background:none;border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--txt3);padding:2px 8px;cursor:pointer;font-family:inherit">✕ Clear</button>'
+    + '</div>'
+    + '<div class="fun">' + rows.join('') + '</div>'
+    + bar('rejected', c.rejected || 0, true)
+    + '</div>';
+}
+
+function showCatDetail(catName) {
+  var wrap = document.getElementById('cat-detail-wrap');
+  if (!wrap) return;
+  if (!catName || catName === 'All') {
+    wrap.style.display = 'none';
+    wrap.innerHTML = '';
+    return;
+  }
+  var v = D && D.verticals && selectedVert && D.verticals[selectedVert];
+  var cats = (v && v.categories) || [];
+  var c = null;
+  for (var i = 0; i < cats.length; i++) {
+    if (cats[i].category === catName) { c = cats[i]; break; }
+  }
+  if (!c || !c.total) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+  wrap.innerHTML = renderCatDetailCard(c);
+  wrap.style.display = 'block';
+}
+
 function filterByCategory(cat) {
   vdF.category = cat;
   var el = document.getElementById('vdf-category');
   if (el) {
-    // Try to find an exact matching option; if missing, add it temporarily.
     var found = false;
     for (var i = 0; i < el.options.length; i++) {
       if (el.options[i].value === cat) { el.value = cat; found = true; break; }
@@ -1854,19 +1907,23 @@ function filterByCategory(cat) {
       el.value = cat;
     }
   }
+  showCatDetail(cat);
   renderVdRecords();
-  // Scroll to the records area so the filtered list is immediately visible.
-  var target = document.getElementById('vd-board-view') || document.getElementById('vd-table-view');
+  // Scroll to the category detail card if visible, otherwise to the records.
+  var target = document.getElementById('cat-detail-wrap');
+  if (!target || target.style.display === 'none') {
+    target = document.getElementById('vd-board-view') || document.getElementById('vd-table-view');
+  }
   if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function vdfClear() {
   vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
-  // Reset dropdown values in-place without rebuilding the full overlay
   ['vdf-category','vdf-vendor','vdf-status','vdf-gst'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.value = 'All';
   });
   var s = document.getElementById('vdf-search'); if (s) s.value = '';
+  showCatDetail('All');
   renderVdRecords();
 }
 
