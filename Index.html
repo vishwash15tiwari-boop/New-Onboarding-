@@ -372,6 +372,20 @@ select,input{font-family:inherit}
 }
 .fun-rej .fun-lbl{color:var(--st-rejected-tx);font-weight:600}
 
+/* Per-category funnel grid */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:12px}
+.cat-block{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow-sm);overflow:hidden}
+.cat-block-hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.cat-block-name{font-size:12.5px;font-weight:700;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-block-tot{font-size:11px;color:var(--txt3);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0}
+.mf-track{height:8px;border-radius:4px;background:var(--bg2);overflow:hidden}
+.mf-row{display:grid;grid-template-columns:80px minmax(0,1fr) 60px;align-items:center;column-gap:8px;padding:3px 0}
+.mf-lbl{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mf-val{text-align:right;font-size:10.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mf-val em{font-style:normal;font-size:9.5px;font-weight:400;color:var(--txt3);margin-left:2px}
+.mf-rej{display:grid;grid-template-columns:80px minmax(0,1fr) 60px;align-items:center;column-gap:8px;padding:4px 0;margin-top:6px;padding-top:8px;border-top:1px solid var(--border)}
+.mf-rej .mf-lbl{color:var(--st-rejected-tx)}
+
 /* Split: meter bars (left 50%) + 3D funnel (right 50%) */
 .fun-split{display:flex;gap:24px;align-items:center}
 .fun-bars{flex:1;min-width:0}
@@ -708,7 +722,7 @@ var _isFirstLoad     = true;
 
 // localStorage key prefix — bump the version suffix when the data shape changes
 // so stale entries from an old schema are silently ignored.
-var STORE_PFX = 'ebt_v5_';
+var STORE_PFX = 'ebt_v6_';
 
 // Stale-while-revalidate: if we have a previous response in localStorage, paint
 // it immediately so the user sees real data with zero wait, then fetch fresh data
@@ -1173,6 +1187,46 @@ function funnelBig(v, cfg) {
     + '</div>';
 }
 
+// Per-category funnel grid — same stages as funnelBig, one compact block per
+// category. Falls back to the aggregate funnel if no categories exist.
+function catFunnels(v) {
+  var cats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; });
+  if (!cats.length) return funnelBig(v, null);
+
+  return '<div class="cat-grid">' + cats.map(function(c) {
+    var ctot = c.total || 0;
+    if (!ctot) return '';
+    var pc  = function(n) { return Math.round(((n || 0) / ctot) * 100); };
+    var wid = function(n) { return ((n || 0) / ctot) * 100; };
+
+    function mbar(k, n, isRej) {
+      var st = STAGE[k];
+      return '<div class="' + (isRej ? 'mf-rej' : 'mf-row') + '">'
+        + '<div class="mf-lbl"><span class="cc-dot" style="background:' + st.fill + '"></span>' + st.lbl + '</div>'
+        + '<div class="mf-track"><div class="fun-fill" style="width:' + wid(n).toFixed(1) + '%;background:' + st.fill + '"></div></div>'
+        + '<div class="mf-val">' + fmt(n) + '<em>' + pc(n) + '%</em></div>'
+        + '</div>';
+    }
+
+    var rows = [
+      mbar('total',     ctot),
+      mbar('onboarded', c.onboarded || 0),
+      mbar('draft',     c.draft     || 0),
+      mbar('review',    c.inReview  || 0),
+    ];
+    if (c.hasTxn) rows.push(mbar('transacted', c.transacted || 0));
+
+    return '<div class="cat-block">'
+      + '<div class="cat-block-hd">'
+      +   '<span class="cat-block-name">' + esc(c.category) + '</span>'
+      +   '<span class="cat-block-tot">' + fmt(ctot) + ' total</span>'
+      + '</div>'
+      + rows.join('')
+      + mbar('rejected', c.rejected || 0, true)
+      + '</div>';
+  }).filter(Boolean).join('') + '</div>';
+}
+
 // Small 3D funnel. Sequence: Total Cases, then Onboarded, then the remaining
 // stages by descending count (so the funnel narrows properly). Each stage is a
 // row: a centred 3D band (width ∝ its share of Total) beside a small detail
@@ -1401,9 +1455,9 @@ function renderVertDetail() {
   ].filter(Boolean);
 
   var funnelSection = has
-    ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel'
-      + '<span class="muted-total">' + fmt(v.total || 0) + ' total · share of all cases</span></div>'
-      + funnelBig(v, cfg) + '</div>'
+    ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel by Category'
+      + '<span class="muted-total">' + fmt(v.total || 0) + ' total cases</span></div>'
+      + catFunnels(v) + '</div>'
     : '';
 
   // Detail filters — local to this vertical's records (Period lives above the cards)

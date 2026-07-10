@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v21_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v22_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -422,9 +422,19 @@ function vStats(data) {
   var catMap = {};
   data.forEach(function(r) {
     var c = r.category || 'Others';
-    if (!catMap[c]) catMap[c] = { category: c, onboarded: 0, total: 0 };
-    catMap[c].total++;
-    if (r.status === 'COMPLETED') catMap[c].onboarded++;
+    if (!catMap[c]) catMap[c] = {
+      category: c, total: 0, onboarded: 0,
+      draft: 0, inReview: 0, rejected: 0,
+      transacted: 0, hasTxn: false,
+    };
+    var cs = catMap[c];
+    cs.total++;
+    if (r.status === 'COMPLETED')  cs.onboarded++;
+    if (r.status === 'DRAFT')      cs.draft++;
+    if (r.status === 'IN_REVIEW')  cs.inReview++;
+    if (r.status === 'REJECTED')   cs.rejected++;
+    if (r.hasTxn)                  cs.hasTxn = true;
+    if (r.hasTransacted)           cs.transacted++;
   });
   var categories = Object.keys(catMap).map(function(k) { return catMap[k]; })
     .sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });

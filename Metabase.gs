@@ -198,7 +198,7 @@ function bustDashboardCache_() {
 
   ['seller', 'buyer'].forEach(function(aud) {
     periods.forEach(function(p) {
-      keys.push('dash_v21_' + aud + '_' + JSON.stringify([p, '', '']));
+      keys.push('dash_v22_' + aud + '_' + JSON.stringify([p, '', '']));
       vertKeys.forEach(function(vk) {
         keys.push('vrows_v7_' + aud + '_' + vk + '_' + JSON.stringify([p, '', '']));
       });
