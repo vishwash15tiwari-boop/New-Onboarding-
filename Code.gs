@@ -127,19 +127,16 @@ function getDashboardData(filtersJson) {
 
     // Pre-populate per-vertical row caches from this single data read so
     // getVerticalRows() always gets a cache hit and never re-reads the source.
+    // Collected into one putAll() call (single CacheService RPC vs 9 sequential puts).
     var filtered = rows.filter(function(r) { return applyDateFilter(r, f); });
+    var batchCache = {};
     VERTICALS.forEach(function(vc) {
       var vrows = filtered.filter(function(r) { return r.vertical === vc.key; })
         .sort(function(a, b) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
-      try {
-        cache.put(
-          'vrows_v8_' + audience + '_' + vc.key + '_' + periodKey,
-          JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) }),
-          CONFIG.CACHE_TTL
-        );
-      } catch (e) { /* vertical exceeds 100KB — getVerticalRows falls back to direct read */ }
+      var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
+      if (v.length <= 100000) batchCache['vrows_v8_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var dash = buildDashboard(audience, cfg, rows, f);
@@ -153,7 +150,11 @@ function getDashboardData(filtersJson) {
     }
 
     var out = JSON.stringify(dash);
-    try { cache.put(cacheKey, out, CONFIG.CACHE_TTL); } catch (e) {}
+    if (out.length <= 100000) batchCache[cacheKey] = out;
+    // Single RPC to write all vertical + dashboard caches at once
+    try { cache.putAll(batchCache, CONFIG.CACHE_TTL); } catch (e) {}
+    // Fallback: ensure the dashboard key is cached even if batch failed or was oversized
+    if (!batchCache[cacheKey]) try { cache.put(cacheKey, out, CONFIG.CACHE_TTL); } catch (e) {}
     return out;
   } catch (err) {
     return JSON.stringify({ success: false, error: (err && err.message) ? err.message : String(err) });

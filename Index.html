@@ -716,6 +716,8 @@ var AUTO_REFRESH_SEC = 300;  // poll every 5 min — matches the 5-min backend c
 var _refreshTimer    = null;
 var _rmD = {};  // key→row map for the record detail modal
 var _rmI = 0;   // auto-increment key, reset each board/table render
+var _prefetchedAuds  = {};  // tracks which audiences have been prefetched into localStorage
+var _lastDashHash    = {};  // per-audience response hash — skip re-render when unchanged
 var _countdownTimer  = null;
 var _nextAt          = 0;
 var _isFirstLoad     = true;
@@ -833,17 +835,39 @@ function loadData(silent) {
           // Persist for instant display on next page load
           try { localStorage.setItem(STORE_PFX + reqAudience, res); } catch (e) {}
           if (reqAudience === currentAudience) {
+            // Skip full re-render when data hasn't changed (silent auto-refresh, same data)
+            var hash = res.length + '|' + res.slice(0, 200);
+            var unchanged = (_lastDashHash[reqAudience] === hash);
+            _lastDashHash[reqAudience] = hash;
+
             D = data;
-            // Reload vertical rows only when the period key changed (e.g. user switched period).
-            // Silent auto-refreshes keep the same period, so existing vertRows remain valid.
-            var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
-            if (selectedVert && _vertRowsPKey !== newPKey) {
-              vertRows = [];
-              vertRowsLoading = false;
-              vertRowsError = null;
-              loadVertRows(selectedVert);
+            if (!unchanged) {
+              // Reload vertical rows only when the period key changed
+              var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+              if (selectedVert && _vertRowsPKey !== newPKey) {
+                vertRows = [];
+                vertRowsLoading = false;
+                vertRowsError = null;
+                loadVertRows(selectedVert);
+              }
+              renderAll();
             }
-            renderAll();
+          }
+          // Silently prefetch the other audience so tab switches are always instant
+          var other = reqAudience === 'seller' ? 'buyer' : 'seller';
+          if (!_prefetchedAuds[other]) {
+            _prefetchedAuds[other] = true;
+            var otherF = { audience: other, period: currentPeriod };
+            if (currentPeriod === 'Custom') { otherF.startDate = customStart; otherF.endDate = customEnd; }
+            google.script.run
+              .withSuccessHandler(function(r2) {
+                try {
+                  var d2 = JSON.parse(r2);
+                  if (d2.success) try { localStorage.setItem(STORE_PFX + other, r2); } catch (e) {}
+                } catch (e) {}
+              })
+              .withFailureHandler(function() {})
+              .getDashboardData(JSON.stringify(otherF));
           }
           done();
         } else {
@@ -967,6 +991,7 @@ function onPeriodSelect(val) {
   if (val === 'Custom') { renderPeriodControl(); return; }   // wait for both dates
   customStart = '';
   customEnd   = '';
+  _prefetchedAuds = {};  // period changed — re-prefetch other audience with new period
   loadData();
 }
 
@@ -1366,12 +1391,29 @@ function openVertDetail(key) {
 }
 
 function loadVertRows(key) {
-  vertRowsLoading = true;
-  vertRowsError = null;
   var myGen = ++_vertRowsGen;
   var f = { audience: currentAudience, period: currentPeriod };
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
   var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var lsVKey = STORE_PFX + 'vr_' + currentAudience + '_' + key;
+
+  // SWR: serve cached rows immediately so the panel is never blank
+  var swrDone = false;
+  try {
+    var sv = JSON.parse(localStorage.getItem(lsVKey) || 'null');
+    if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
+      vertRows = sv.rows;
+      _vertRowsPKey = myPKey;
+      vertRowsLoading = false;
+      vertRowsError = null;
+      renderVertDetail();
+      swrDone = true;
+    }
+  } catch (e) {}
+
+  // Always refresh from the server — spinner only shown when there's no SWR data
+  if (!swrDone) { vertRowsLoading = true; vertRowsError = null; }
+
   google.script.run
     .withSuccessHandler(function(res) {
       if (myGen !== _vertRowsGen) return;  // a newer request superseded this one
@@ -1381,18 +1423,20 @@ function loadVertRows(key) {
         if (data.success && data.vertKey === selectedVert) {
           vertRows = data.rows || [];
           _vertRowsPKey = myPKey;
-        } else if (!data.success) {
+          // Persist so the next open is instant
+          try { localStorage.setItem(lsVKey, JSON.stringify({ pKey: myPKey, rows: data.rows || [] })); } catch (e) {}
+        } else if (!data.success && !swrDone) {
           vertRowsError = data.error || 'The server could not load records for this vertical.';
         }
       } catch (e) {
-        vertRowsError = 'Could not read the server response: ' + e.message;
+        if (!swrDone) vertRowsError = 'Could not read the server response: ' + e.message;
       }
       renderVertDetail();   // always re-render — never leave the panel stuck on the spinner
     })
     .withFailureHandler(function(err) {
       if (myGen !== _vertRowsGen) return;
       vertRowsLoading = false;
-      vertRowsError = (err && err.message) ? err.message : 'Server error while loading records.';
+      if (!swrDone) vertRowsError = (err && err.message) ? err.message : 'Server error while loading records.';
       renderVertDetail();
     })
     .getVerticalRows(key, JSON.stringify(f));
