@@ -545,3 +545,217 @@ function codeFor(name) {
   if (words.length > 1) return words.map(function(w) { return w.charAt(0); }).join('').slice(0, 4).toUpperCase();
   return s.slice(0, 3).toUpperCase();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// GST PAYABLES — Vendor Payables Register
+// ───────────────────────────────────────────────────────────────
+// A second, independent dataset surfaced through its own dashboard tab.
+// The first tab ("Vendor Payables") of the GST Payables spreadsheet is
+// read server-side by ID (the deploying account's access — the sheet can
+// stay private) and aggregated into a payables control view: outstanding
+// KPIs, aging-by-financial-year, GST-registration mix, vertical exposure,
+// compliance rates, and the full vendor register.
+//
+// Column names are resolved through a variant table (gpField_) so the
+// dashboard keeps working even if headers differ slightly from what the
+// sheet ships today. Run diagnoseGSTPayables() in the Apps Script editor
+// to print the sheet's actual headers and confirm the mapping.
+// ═══════════════════════════════════════════════════════════════
+var GST_PAYABLES = {
+  SHEET_ID: '1rhr8Omd99OrN3c1h1uu6VvTa-aolAmRY58p19NDlz54',
+  CACHE_TTL: 300,   // 5-minute cache, same cadence as the onboarding views
+};
+
+// Candidate header names (normalized: lowercased, spaces→_, symbols stripped)
+// for each logical field. First match in the sheet wins.
+var GST_FIELDS = {
+  name:      ['vendor', 'vendor_name', 'party', 'party_name', 'supplier', 'supplier_name', 'name', 'legal_name', 'trade_name', 'company', 'company_name'],
+  gstNo:     ['gst_no', 'gstin', 'gst_number', 'gstno', 'gst', 'gstin_no', 'gst_in'],
+  gstStatus: ['gst_status', 'gstin_status', 'registration_status', 'gst_registration_status', 'status', 'gst_state_status'],
+  vertical:  ['vertical', 'business_vertical', 'category', 'business_category', 'bu', 'business_unit', 'segment'],
+  msme:      ['msme', 'msme_status', 'msme_category', 'msme_type', 'msme_classification', 'msme_registration'],
+  total:     ['total_balance', 'total_outstanding', 'outstanding', 'total_payable', 'closing_balance', 'net_balance', 'total_due', 'grand_total', 'payable', 'balance', 'total'],
+  material:  ['material_balance', 'material', 'goods_balance', 'goods_component', 'material_outstanding', 'material_value', 'material_amount', 'basic_balance', 'basic_amount', 'taxable_value'],
+  gst:       ['gst_balance', 'gst_component', 'tax_balance', 'tax_component', 'gst_amount', 'gst_value', 'gst_outstanding', 'gst_payable', 'tax_amount', 'tax_value'],
+  fy:        ['financial_year', 'fy', 'year', 'invoice_fy', 'ageing_year', 'aging_year', 'fin_year', 'fy_year', 'financial_yr', 'invoice_year'],
+  sda:       ['sda_signed', 'sda', 'sda_status'],
+  ledger:    ['ledger_reconciled', 'ledger_reconciliation', 'ledger', 'reconciled', 'reconciliation', 'ledger_status'],
+  osv:       ['osv_positive', 'osv', 'osv_status'],
+  itcClosed: ['itc_closed', 'itc_status', 'itc', 'itc_closure', 'itc_reversal'],
+  itcCheck:  ['itc_check', 'itc_eligible', 'itc_eligibility', 'itc_available', 'itc_flag'],
+  state:     ['state', 'gst_state', 'location', 'region'],
+};
+
+// First header name from `variants` that exists in the sheet, or null.
+function gpField_(idx, variants) {
+  for (var i = 0; i < variants.length; i++) {
+    if (idx[variants[i]] !== undefined) return variants[i];
+  }
+  return null;
+}
+function gpVal_(row, idx, variants) {
+  var key = gpField_(idx, variants);
+  return key ? row[idx[key]] : '';
+}
+
+// Parse a money/number cell: strips ₹, commas, spaces, any non-numeric noise.
+function gpNum_(v) {
+  if (v === null || v === undefined || v === '') return 0;
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+// Interpret a compliance cell as a yes/no flag.
+function gpBool_(v) {
+  var s = String(v || '').trim().toLowerCase();
+  if (!s) return false;
+  return ({ 'yes': 1, 'y': 1, 'true': 1, '1': 1, 'done': 1, 'closed': 1, 'signed': 1,
+            'positive': 1, 'reconciled': 1, 'active': 1, 'complete': 1, 'completed': 1,
+            'ok': 1, 'cleared': 1, 'yes ': 1, '✓': 1, 'true ': 1 })[s] === 1;
+}
+
+// Normalize any financial-year notation to "FY YY-YY" (e.g. "2021-22",
+// "2021-2022", "FY21-22", "21-22" → "FY 21-22").
+function gpNormFY_(v) {
+  if (v instanceof Date) { var yy = fyStartYear(v); return 'FY ' + String(yy).slice(2) + '-' + String(yy + 1).slice(2); }
+  var s = String(v || '').trim();
+  if (!s) return '';
+  var m = s.match(/(\d{2,4})\s*[-\/]\s*(\d{2,4})/);
+  if (m) return 'FY ' + m[1].slice(-2) + '-' + m[2].slice(-2);
+  var y = s.match(/(\d{4})/);
+  if (y) { var yr = parseInt(y[1], 10); return 'FY ' + String(yr).slice(2) + '-' + String(yr + 1).slice(2); }
+  return s;
+}
+
+// Read + normalize the vendor rows from the GST Payables sheet.
+function gpReadVendors_() {
+  var sheet = SpreadsheetApp.openById(GST_PAYABLES.SHEET_ID).getSheets()[0];
+  var raw = readSheetObj_(sheet);
+  var idx = buildIndex(raw.headers);
+  return raw.rows.map(function(row) {
+    var total = gpNum_(gpVal_(row, idx, GST_FIELDS.total));
+    var hasMat = gpField_(idx, GST_FIELDS.material) !== null;
+    var hasGst = gpField_(idx, GST_FIELDS.gst) !== null;
+    var mat = hasMat ? gpNum_(gpVal_(row, idx, GST_FIELDS.material)) : null;
+    var gst = hasGst ? gpNum_(gpVal_(row, idx, GST_FIELDS.gst)) : null;
+    // Fill the missing component when only one of the two is present.
+    if (mat === null && gst !== null) mat = total - gst;
+    if (gst === null && mat !== null) gst = total - mat;
+    if (!total && (mat || gst)) total = (mat || 0) + (gst || 0);
+    return {
+      name:      String(gpVal_(row, idx, GST_FIELDS.name) || '').trim(),
+      gstNo:     String(gpVal_(row, idx, GST_FIELDS.gstNo) || '').trim(),
+      gstStatus: String(gpVal_(row, idx, GST_FIELDS.gstStatus) || '').trim() || 'Unknown',
+      vertical:  String(gpVal_(row, idx, GST_FIELDS.vertical) || '').trim() || 'Others',
+      msme:      String(gpVal_(row, idx, GST_FIELDS.msme) || '').trim() || 'Not Registered',
+      state:     String(gpVal_(row, idx, GST_FIELDS.state) || '').trim(),
+      total:     total,
+      material:  mat || 0,
+      gst:       gst || 0,
+      fy:        gpNormFY_(gpVal_(row, idx, GST_FIELDS.fy)),
+      sda:       gpBool_(gpVal_(row, idx, GST_FIELDS.sda)),
+      ledger:    gpBool_(gpVal_(row, idx, GST_FIELDS.ledger)),
+      osv:       gpBool_(gpVal_(row, idx, GST_FIELDS.osv)),
+      itcClosed: gpBool_(gpVal_(row, idx, GST_FIELDS.itcClosed)),
+      itcCheck:  String(gpVal_(row, idx, GST_FIELDS.itcCheck) || '').trim(),
+    };
+  }).filter(function(r) { return r.name || r.gstNo; });
+}
+
+// Entry point — aggregated GST Payables dashboard for the requested FY filter.
+function getGSTPayablesData(filtersJson) {
+  try {
+    var f = filtersJson ? JSON.parse(filtersJson) : {};
+    var year = f.year || 'All';
+
+    var cacheKey = 'gstpay_v1_' + JSON.stringify([year]);
+    var cache = CacheService.getScriptCache();
+    var hit = cache.get(cacheKey);
+    if (hit) return hit;
+
+    var all = gpReadVendors_();
+
+    // Aging profile is computed across ALL rows so the FY chart always shows the
+    // full timeline regardless of which year is selected for the rest of the view.
+    var agingMap = {};
+    all.forEach(function(r) { if (r.fy) agingMap[r.fy] = (agingMap[r.fy] || 0) + r.total; });
+    var fyList = Object.keys(agingMap).sort();
+
+    // Everything else respects the active year filter.
+    var rows = (year === 'All') ? all : all.filter(function(r) { return r.fy === year; });
+
+    var totalOut = 0, matSum = 0, gstSum = 0;
+    var statusMap = {}, vertMap = {}, msmeMap = {};
+    var comp = { sda: 0, ledger: 0, osv: 0, itcClosed: 0 };
+    rows.forEach(function(r) {
+      totalOut += r.total; matSum += r.material; gstSum += r.gst;
+      statusMap[r.gstStatus] = (statusMap[r.gstStatus] || 0) + 1;
+      vertMap[r.vertical]    = (vertMap[r.vertical] || 0) + r.total;
+      msmeMap[r.msme]        = (msmeMap[r.msme] || 0) + 1;
+      if (r.sda) comp.sda++;
+      if (r.ledger) comp.ledger++;
+      if (r.osv) comp.osv++;
+      if (r.itcClosed) comp.itcClosed++;
+    });
+    var n = rows.length;
+
+    function toList(map, key) {
+      return Object.keys(map).map(function(k) { var o = { label: k }; o[key] = map[k]; return o; })
+        .sort(function(a, b) { return b[key] - a[key]; });
+    }
+
+    var out = {
+      success: true,
+      lastUpdated: new Date().toISOString(),
+      year: year,
+      fyList: fyList,
+      vendorCount: n,
+      totalOutstanding: totalOut,
+      materialBalance: matSum,
+      gstBalance: gstSum,
+      materialShare: totalOut ? Math.round(matSum / totalOut * 100) : 0,
+      gstShare:      totalOut ? Math.round(gstSum / totalOut * 100) : 0,
+      aging:      fyList.map(function(fy) { return { fy: fy, value: agingMap[fy] }; }),
+      gstStatus:  toList(statusMap, 'count'),
+      verticals:  toList(vertMap, 'value'),
+      msme:       toList(msmeMap, 'count'),
+      compliance: [
+        { label: 'SDA Signed',        count: comp.sda,       pct: pct(comp.sda, n) },
+        { label: 'Ledger Reconciled', count: comp.ledger,    pct: pct(comp.ledger, n) },
+        { label: 'OSV Positive',      count: comp.osv,       pct: pct(comp.osv, n) },
+        { label: 'ITC Closed',        count: comp.itcClosed, pct: pct(comp.itcClosed, n) },
+      ],
+      rows: rows.sort(function(a, b) { return b.total - a.total; }),
+    };
+
+    var s = JSON.stringify(out);
+    try { cache.put(cacheKey, s, GST_PAYABLES.CACHE_TTL); } catch (e) { /* >100KB — recompute next time */ }
+    return s;
+  } catch (err) {
+    return JSON.stringify({ success: false, error: (err && err.message) ? err.message : String(err) });
+  }
+}
+
+// Diagnostic — run from the Apps Script editor to print the sheet's real
+// headers and a sample row, so the GST_FIELDS mapping can be verified.
+function diagnoseGSTPayables() {
+  try {
+    var ss = SpreadsheetApp.openById(GST_PAYABLES.SHEET_ID);
+    var sheet = ss.getSheets()[0];
+    var raw = readSheetObj_(sheet);
+    var idx = buildIndex(raw.headers);
+    Logger.log('Spreadsheet: ' + ss.getName());
+    Logger.log('First tab:   ' + sheet.getName());
+    Logger.log('Data rows:   ' + raw.rows.length);
+    Logger.log('Headers (' + raw.headers.length + '): ' + raw.headers.join(' | '));
+    Logger.log('── Resolved field mapping ──');
+    Object.keys(GST_FIELDS).forEach(function(k) {
+      Logger.log('  ' + k + ' → ' + (gpField_(idx, GST_FIELDS[k]) || '‹unmapped›'));
+    });
+    if (raw.rows.length) Logger.log('Sample row: ' + JSON.stringify(raw.rows[0]));
+  } catch (e) {
+    Logger.log('❌ diagnoseGSTPayables failed: ' + e.message
+      + '\n(If this is a permissions error, share the sheet with the deploying account.)');
+  }
+}
