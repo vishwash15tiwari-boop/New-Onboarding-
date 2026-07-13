@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v22_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v23_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -135,7 +135,7 @@ function getDashboardData(filtersJson) {
         });
       try {
         cache.put(
-          'vrows_v7_' + audience + '_' + vc.key + '_' + periodKey,
+          'vrows_v8_' + audience + '_' + vc.key + '_' + periodKey,
           JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) }),
           CONFIG.CACHE_TTL
         );
@@ -169,7 +169,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v7_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v8_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -483,11 +483,12 @@ function applyDateFilter(r, f) {
     ps = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   } else if (f.period === 'ThisWeek') {
-    var dow = now.getDay(), daysToMon = (dow === 0) ? 6 : (dow - 1);
-    ps = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysToMon);
+    // T-7: rolling last 7 days
+    ps = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
     pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   } else if (f.period === 'ThisMonth') {
-    ps = new Date(now.getFullYear(), now.getMonth(), 1);
+    // T-30: rolling last 30 days
+    ps = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
     pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   } else if (f.period === 'Custom' && f.startDate && f.endDate) {
     ps = parseYMD(f.startDate, false);

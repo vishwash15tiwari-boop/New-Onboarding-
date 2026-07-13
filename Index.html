@@ -722,7 +722,7 @@ var _isFirstLoad     = true;
 
 // localStorage key prefix — bump the version suffix when the data shape changes
 // so stale entries from an old schema are silently ignored.
-var STORE_PFX = 'ebt_v6_';
+var STORE_PFX = 'ebt_v7_';
 
 // Stale-while-revalidate: if we have a previous response in localStorage, paint
 // it immediately so the user sees real data with zero wait, then fetch fresh data
@@ -944,8 +944,8 @@ function renderPeriodControl() {
   var pairs = [
     ['All',       'All Time'],
     ['Today',     'Daily (Today)'],
-    ['ThisWeek',  'Weekly (This Week)'],
-    ['ThisMonth', 'Monthly (This Month)'],
+    ['ThisWeek',  'Weekly (Last 7 Days)'],
+    ['ThisMonth', 'Monthly (Last 30 Days)'],
   ];
   ((D && D.fiscalYears) || []).forEach(function(fy) { pairs.push([fy, fy.replace(/^FY/, 'FY ')]); });
   pairs.push(['Custom', 'Custom Range']);
