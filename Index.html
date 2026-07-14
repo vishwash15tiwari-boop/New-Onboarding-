@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light">
 <title>Enterprise Business Control Tower</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -795,125 +795,25 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 }
 </style>
 
-<!-- ════════════════════════════════════════════════════════════════════
-     DARK EDITORIAL THEME  —  D.E. Shaw visual language
-     Overrides the primary stylesheet above with a dark surface system,
-     editorial typography scale, and scroll-reveal animation primitives.
-     All business-logic CSS (kanban, modal, chart geometry) is inherited
-     from the primary block above and only the surface/colour tokens are
-     replaced here.
-     ════════════════════════════════════════════════════════════════════ -->
-<style id="dark-theme">
+<style id="story-theme">
 /* ── Dark design tokens — cascade over the light :root block ── */
-:root{
-  color-scheme:dark;
-
-  /* Surfaces */
-  --bg:    #07090F;
-  --bg2:   #0C1018;
-  --card:  #101520;
-  --card2: #141C2C;
-  --hover: #1B2438;
-
-  /* Borders — luminous hairlines on near-black */
-  --border:  rgba(255,255,255,.07);
-  --border2: rgba(255,255,255,.13);
-
-  /* Ink */
-  --txt:  #E8EEFF;
-  --txt2: #8292B0;
-  --txt3: #48567A;
-
-  /* Brand accent — Bright Blue lightened for dark surface */
-  --blue:       #5B95FF;
-  --blue-ink:   #4477E8;
-  --blue2:      #2B5FA5;
-  --accent-soft:rgba(91,149,255,.10);
-
-  /* Status */
-  --green: #10B981;
-  --amber: #F59E0B;
-  --red:   #F87171;
-
-  /* Stage palette — each validated at ≥ 4.5:1 on #101520 */
-  --st-total:      #64748B; --st-total-bg:     rgba(100,116,139,.12); --st-total-tx:     #94A3B8;
-  --st-draft:      #60A5FA; --st-draft-bg:     rgba(96,165,250,.11);  --st-draft-tx:     #93C5FD;
-  --st-review:     #818CF8; --st-review-bg:    rgba(129,140,248,.11); --st-review-tx:    #A5B4FC;
-  --st-onboarded:  #34D399; --st-onboarded-bg: rgba(52,211,153,.11);  --st-onboarded-tx: #6EE7B7;
-  --st-transacted: #4ADE80; --st-transacted-bg:rgba(74,222,128,.11);  --st-transacted-tx:#86EFAC;
-  --st-rejected:   #F87171; --st-rejected-bg:  rgba(248,113,113,.11); --st-rejected-tx:  #FCA5A5;
-
-  /* Elevation — deeper shadows on dark */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.5);
-  --shadow:    0 4px 20px rgba(0,0,0,.55),0 1px 4px rgba(0,0,0,.35);
-  --shadow-lg: 0 8px 40px rgba(0,0,0,.65),0 2px 8px rgba(0,0,0,.4);
-  --ring:      0 0 0 3px rgba(91,149,255,.22);
-
-  /* No ambient wash on dark — clean surface */
-  --wash: none;
-}
-
-/* ── Base ── */
-html{color-scheme:dark}
-body{background-image:none}
-
-/* ── Scrollbar ── */
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.10);border-radius:4px;border:none}
-::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.20)}
-
-/* ── Loading ── */
-.loading-txt{letter-spacing:.9px;text-transform:uppercase;font-size:10.5px}
-
-/* ── Header — minimal dark glass ── */
-#header{padding:0 40px;height:52px}
-#header.scrolled{
-  background:rgba(7,9,15,.88);
-  backdrop-filter:blur(28px) saturate(130%);
-  -webkit-backdrop-filter:blur(28px) saturate(130%);
-  border-bottom-color:var(--border);
-  box-shadow:none;
-}
-@supports not (background:color-mix(in srgb,red 50%,blue)){
-  #header.scrolled{background:rgba(7,9,15,.93)}
-}
-.logo-text{font-size:12px;letter-spacing:1px;text-transform:uppercase}
-.logo-sub{font-size:9px;letter-spacing:.25px}
-#btn-refresh{
-  background:rgba(255,255,255,.04);
-  border-color:var(--border2);
-  color:var(--txt2);
-}
-#btn-refresh:hover{background:rgba(255,255,255,.08);box-shadow:none;transform:none}
-
-/* ─────────────────────────────────────────────────────────────
-   SCROLL REVEAL — fade + rise as sections enter the viewport.
-   Identical motion language to D.E. Shaw.  The IntersectionObserver
-   below adds .visible on the element's first crossing.
-   ───────────────────────────────────────────────────────────── */
+/* ── Scroll-reveal: fade + rise on viewport entry ── */
 .reveal{
   opacity:0;
-  transform:translateY(22px);
-  transition:opacity .95s var(--ease-out),transform .95s var(--ease-out);
+  transform:translateY(20px);
+  transition:opacity .7s var(--ease-out),transform .7s var(--ease-out);
 }
 .reveal.visible{opacity:1;transform:none}
 
-/* ── Main ── */
-#main{padding:0 40px 80px}
-
-/* ─────────────────────────────────────────────────────────────
-   SECTION TITLE — D.E. Shaw editorial: 10px tracked all-caps
-   label followed by a full-width hairline, generous top padding.
-   ───────────────────────────────────────────────────────────── */
+/* ── Section title bar ── */
 .section-title{
   font-size:10px;
   font-weight:700;
   letter-spacing:2px;
   color:var(--txt3);
   text-transform:uppercase;
-  padding:60px 0 20px;
-  margin:0 0 44px;
+  padding:48px 0 16px;
+  margin:0 0 32px;
   border-bottom:1px solid var(--border);
   background:none;
   border-radius:0;
@@ -921,154 +821,196 @@ body{background-image:none}
 .section-title::before{display:none}
 .section-title .badge{display:none}
 
-/* ── Audience segmented control ── */
-.aud-tabs{background:rgba(255,255,255,.03);border-color:var(--border)}
-.aud-tab.active{background:rgba(91,149,255,.14);color:var(--blue);box-shadow:none}
-.aud-tab:not(.active):hover{color:var(--txt2)}
-
-/* Period chips */
-.qf-chip.active{background:rgba(91,149,255,.13);border-color:rgba(91,149,255,.45);color:var(--blue)}
-.qf-chip:not(.active):hover{border-color:var(--border2);color:var(--txt2);transform:none;box-shadow:none}
-
-/* ─────────────────────────────────────────────────────────────
-   VERTICAL COMPARE GRID — editorial rule-based layout.
-   Cards are separated by a 1-px gap filled with --border colour,
-   creating a seamless museum-grid effect instead of floating tiles.
-   ───────────────────────────────────────────────────────────── */
-.compare-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:1px;
-  margin-bottom:0;
-  background:var(--border);
-  border:1px solid var(--border);
-  border-radius:14px;
-  overflow:hidden;
-}
-.compare-card{
-  background:var(--card);
-  border:none;
-  border-radius:0;
-  box-shadow:none;
-  padding:32px 26px 24px;
-}
-/* Signature colour wash: full-card gradient, reveals on hover */
-.compare-card::before{
-  background:linear-gradient(135deg,var(--vc-soft,transparent) 0%,transparent 55%);
-  height:100%;inset:0;
-  border-radius:0;
-  opacity:0;
-  transition:opacity .5s var(--ease-out);
-}
-/* 2 px accent line at the top — always visible, not just on hover */
-.compare-card::after{
-  height:2px;inset:0 0 auto;
-  border-radius:0;
-  opacity:.55;
-}
-.compare-card:hover{background:var(--card2);box-shadow:none;transform:none;border-color:transparent}
-.compare-card:hover::before{opacity:1}
-.compare-card:hover::after{opacity:.85}
-.compare-card:active{background:var(--hover);transform:none}
-.compare-card.selected{background:var(--card2);border-color:transparent;box-shadow:none}
-.compare-card.selected::before{opacity:1}
-.compare-header{margin-bottom:18px}
-.compare-label{font-size:13px;font-weight:650;letter-spacing:.1px}
-.compare-source-badge{
-  background:rgba(255,255,255,.05);
-  border-color:var(--border);
+/* ── Story separator ── */
+.story-sep{
+  text-align:center;
+  padding:44px 0 28px;
   color:var(--txt3);
-  letter-spacing:.7px;
+  font-size:11px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+.story-sep span{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:8px 20px;
+  animation:sepPulse 2.4s ease-in-out infinite;
+}
+@keyframes sepPulse{
+  0%,100%{opacity:.55}
+  50%{opacity:1}
 }
 
-/* ─────────────────────────────────────────────────────────────
-   HERO NUMBER — editorial scale, the dominant element per card.
-   44 px / weight-800 mirrors D.E. Shaw's impactful stat tiles.
-   ───────────────────────────────────────────────────────────── */
-.cc-hero-num{
-  font-size:46px;
-  font-weight:800;
-  letter-spacing:-2.5px;
+/* ── Per-vertical story section ── */
+.vert-section{
+  position:relative;
+  margin:0 0 88px;
+  padding:52px 0 0;
+  border-top:2px solid var(--border);
+  scroll-margin-top:72px;
+}
+.vert-section::before{
+  content:'';
+  position:absolute;
+  top:-2px;left:0;
+  width:72px;height:2px;
+  background:var(--vc,var(--blue));
+  border-radius:2px;
+}
+
+/* Section header: title left, hero number right */
+.vs-hdr{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:24px;
+  margin-bottom:36px;
+  flex-wrap:wrap;
+}
+.vs-title-wrap{flex:1 1 200px}
+.vs-badge{
+  display:inline-flex;
+  align-items:center;
+  font-size:9.5px;
+  font-weight:600;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+  color:var(--txt3);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:2px 8px;
+  margin-bottom:10px;
+}
+.vs-title{
+  font-size:26px;
+  font-weight:700;
+  letter-spacing:-.4px;
   color:var(--txt);
+  line-height:1.15;
+  margin-bottom:14px;
 }
-.cc-hero-of{font-size:11.5px;color:var(--txt3)}
-.cc-pill{background:rgba(52,211,153,.14);color:var(--st-onboarded-tx)}
-.cc-hero-lbl{font-size:9px;letter-spacing:.8px}
-.cc-foot-more{font-size:9.5px;color:var(--txt3);font-weight:500}
+.vs-rec-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:9px 20px;
+  border:1.5px solid var(--vc,var(--blue));
+  border-radius:999px;
+  background:transparent;
+  color:var(--vc,var(--blue));
+  font:600 12px/1 'Poppins',sans-serif;
+  cursor:pointer;
+  transition:background .18s,box-shadow .18s;
+}
+.vs-rec-btn:hover{
+  background:var(--vc-soft,rgba(0,93,255,.07));
+  box-shadow:0 0 0 3px var(--vc-soft,rgba(0,93,255,.07));
+}
+.vs-hero-stat{flex-shrink:0;text-align:right}
+.vs-hero-count{
+  font-size:60px;
+  font-weight:800;
+  letter-spacing:-3px;
+  color:var(--vc,var(--blue));
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.vs-hero-lbl{
+  font-size:9.5px;
+  font-weight:600;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--txt3);
+  margin-top:6px;
+}
 
-/* Stage stat mini-cards inside a vertical card */
-.cc-stat{background:rgba(255,255,255,.03);border-color:var(--border)}
-.cc-stat b{font-size:15px;letter-spacing:-.4px}
-
-/* Category tiles inside a vertical card */
-.cc-cat{background:rgba(255,255,255,.03);border-color:var(--border)}
-.cc-cat b{font-size:26px;letter-spacing:-.7px}
-.cc-cat-click:hover{background:rgba(255,255,255,.06);box-shadow:none;transform:translateY(-3px)}
-
-/* ── Chart card ── */
-.chart-card{box-shadow:none}
-
-/* ── Detail KPI tiles ── */
-.vd-kpi{background:rgba(255,255,255,.03);border-color:var(--border);box-shadow:none}
-.vd-kpi:hover{background:rgba(255,255,255,.06);box-shadow:none;transform:translateY(-2px)}
-.vd-kpi-val{font-size:22px}
-
-/* ── Vert detail full-page overlay ── */
-#vert-detail{background-image:none}
-.vd-back{background:rgba(255,255,255,.04);border-color:var(--border)}
-.vd-back:hover{background:rgba(91,149,255,.09);border-color:var(--blue);box-shadow:none}
-.vd-close{background:rgba(255,255,255,.04);border-color:var(--border)}
-.vd-toggle{background:rgba(255,255,255,.03)}
-.vd-toggle-btn.active{background:rgba(91,149,255,.14);color:var(--blue)}
-.vd-toggle-btn:not(.active):hover{background:rgba(255,255,255,.05)}
-
-/* 3D funnel */
-.f3d-card{background:rgba(255,255,255,.03);box-shadow:none}
-
-/* ── Kanban ── */
-.kb-col{background:rgba(255,255,255,.02)}
-.kb-col.draft    .kb-col-head{background:rgba(96,165,250,.07)}
-.kb-col.review   .kb-col-head{background:rgba(129,140,248,.07)}
-.kb-col.done     .kb-col-head{background:rgba(52,211,153,.07)}
-.kb-col.rejected .kb-col-head{background:rgba(248,113,113,.07)}
-.kb-card{background:var(--card);box-shadow:none}
-.kb-card:hover{background:var(--hover);box-shadow:none;transform:translateY(-2px)}
-.kb-count{background:rgba(255,255,255,.06)}
-
-/* ── Table ── */
-thead th{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px}
-tbody tr:nth-child(even){background:rgba(255,255,255,.013)}
-tbody tr:hover{background:var(--hover)}
-
-/* ── Record modal ── */
-.rm-bd{background:rgba(0,0,0,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.rm-pn{
+/* KPI row */
+.vs-kpis{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:10px;
+  margin-bottom:40px;
+}
+.vs-kpi{
   background:var(--card);
-  border:1px solid var(--border2);
-  box-shadow:0 40px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.06);
-  border-radius:16px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px;
+  opacity:0;
+  transform:translateY(10px);
+  transition:opacity .45s var(--ease-out),transform .45s var(--ease-out);
+  transition-delay:calc(var(--ki,0) * 55ms);
 }
-.rm-x{background:rgba(255,255,255,.06)}
-.rm-x:hover{background:rgba(255,255,255,.12)}
-.rm-txn.yes{border-color:rgba(74,222,128,.16)}
-.rm-txn.no{background:rgba(255,255,255,.03)}
+.vs-kpi.kpi-in{opacity:1;transform:none}
+.vs-kpi-val{
+  font-size:19px;
+  font-weight:700;
+  letter-spacing:-.4px;
+  color:var(--txt);
+  margin-bottom:5px;
+}
+.vs-kpi-lbl{
+  font-size:9.5px;
+  font-weight:500;
+  letter-spacing:.5px;
+  color:var(--txt3);
+  text-transform:uppercase;
+}
 
-/* ── Skeleton on dark ── */
-.sk{background:var(--card)}
-.sk::after{background:linear-gradient(100deg,transparent 32%,var(--card2) 50%,transparent 68%);background-size:200% 100%}
+/* Funnel inside story section — rings already animated by JS; section reveal is the entrance */
+.vs-funnel{margin-bottom:40px}
+.vert-section .fring{animation:none !important}
 
-/* ── Select options need explicit dark bg (UA default is white) ── */
-.filter-select option,
-select option{background:var(--card);color:var(--txt)}
+/* Category grid */
+.vs-cats{margin-bottom:40px}
+.vs-cap{
+  font-size:9.5px;
+  font-weight:600;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--txt3);
+  margin-bottom:14px;
+}
+.vs-cat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:10px;
+}
+.vs-cat-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px;
+  opacity:0;
+  transform:translateY(8px);
+  transition:opacity .38s var(--ease-out),transform .38s var(--ease-out);
+  transition-delay:calc(var(--ri,0) * 45ms);
+}
+.vs-cat-card.cat-in{opacity:1;transform:none}
+.vs-cat-card b{font-size:21px;font-weight:700;letter-spacing:-.5px;color:var(--txt);display:block}
+.vs-cat-name{font-size:10.5px;color:var(--txt2);margin-top:4px}
 
-/* ── Responsive ── */
+/* Flash ring when scrolled-to */
+@keyframes vsFlash{
+  0%  {box-shadow:0 0 0 0   var(--vc-soft,rgba(0,93,255,.18))}
+  40% {box-shadow:0 0 0 12px var(--vc-soft,rgba(0,93,255,.0))}
+  100%{box-shadow:none}
+}
+.vert-section.flash{animation:vsFlash .9s var(--ease-out)}
+
+/* Responsive */
 @media(max-width:1100px){.compare-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){
   #main{padding:0 20px 60px}
   #header{padding:0 20px}
-  .section-title{padding-top:36px}
+  .section-title{padding-top:32px}
   .compare-grid{grid-template-columns:1fr}
   .vd-page-inner{padding:20px 20px 48px}
+  .vs-hero-count{font-size:44px;letter-spacing:-2px}
+  .vs-title{font-size:20px}
 }
 </style>
 </head>
@@ -1138,6 +1080,8 @@ select option{background:var(--card);color:var(--txt)}
   <!-- ── VIEW: ONBOARDING ── -->
   <div id="tab-overview">
     <div class="compare-grid" id="vert-grid"></div>
+    <div class="story-sep" id="story-sep" style="display:none"><span>↓ Scroll to explore each vertical</span></div>
+    <div id="vert-story"></div>
   </div>
 
   <!-- ── VIEW: GST PAYABLES ── -->
@@ -1563,6 +1507,7 @@ function renderLastUpdated() {
 // ═══════════════════════════════════════════════════════════════
 function renderOverview() {
   renderVerticals();
+  renderVertStory();
   renderVertDetail();   // refresh open detail panel (no-op when none selected)
 }
 
@@ -1832,8 +1777,8 @@ function renderVerticals() {
     var sel = selectedVert === cfg.key;
     var attrs = ' style="--i:' + (idx++) + ';' + vcVars(cfg.key) + '" tabindex="0" role="button"'
       + ' aria-label="' + esc(cfg.name) + ' details"'
-      + ' onclick="openVertDetail(\'' + cfg.key + '\')"'
-      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openVertDetail(\'' + cfg.key + '\')}"';
+      + ' onclick="scrollToVert(\'' + cfg.key + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();scrollToVert(\'' + cfg.key + '\')}"';
 
     var head = '<div class="compare-header">'
       + '<div><div class="compare-label">' + esc(cfg.name) + '</div>'
@@ -1867,7 +1812,7 @@ function renderVerticals() {
       +   gmvItem
       +   (v.withGST   != null ? '<div class="cc-foot-item cc-gst-active"><b>'   + fmt(v.withGST)   + '</b>GST Active</div>'   : '')
       +   (v.missingGST != null ? '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST) + '</b>GST Inactive</div>' : '')
-      +   '<span class="cc-foot-more">' + (sel ? 'Viewing ▾' : 'Click for Details →') + '</span>'
+      +   '<span class="cc-foot-more">Scroll to details ↓</span>'
       + '</div>'
       + '</div>';
   }).join('');
@@ -1986,6 +1931,127 @@ function closeVertDetail() {
   var panel = document.getElementById('vert-detail');
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
   renderVerticals();
+}
+
+// Scroll to a vertical's inline story section, flashing it on arrival.
+function scrollToVert(key) {
+  var el = document.getElementById('vs-' + key);
+  if (!el) { renderVertStory(); el = document.getElementById('vs-' + key); }
+  if (!el) return;
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Render all verticals as full inline editorial sections below the compare grid.
+function renderVertStory() {
+  if (currentView !== 'onboarding' || !D || !D.verticals) return;
+  var container = document.getElementById('vert-story');
+  var sep       = document.getElementById('story-sep');
+  if (!container) return;
+
+  var verts    = D.verticals;
+  var cfgList  = getVertCfg();
+  var hasAny   = cfgList.some(function(c) { return (verts[c.key] || {}).total > 0; });
+
+  if (sep) sep.style.display = hasAny ? '' : 'none';
+  if (!hasAny) { container.innerHTML = ''; return; }
+
+  container.innerHTML = cfgList.map(function(cfg) {
+    var v   = verts[cfg.key] || {};
+    var tot = v.total || 0;
+    if (!tot) return '';
+
+    var vcStyle = 'style="' + vcVars(cfg.key) + '"';
+
+    // KPI tiles
+    var metricsArr = [
+      ['Total Cases',    fmt(v.total || 0)],
+      ['Onboarded',      fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)'],
+      v.transacted != null ? ['Transacted', fmt(v.transacted)] : null,
+      v.totalTxnValue != null ? ['Txn Value', fmtINR(v.totalTxnValue)] : null,
+      ['In Review',      fmt(v.inReview  || 0)],
+      ['Draft',          fmt(v.draft     || 0)],
+      ['Rejected',       fmt(v.rejected  || 0)],
+      ['Avg TAT',        dOr(v.avgTAT, 'd')],
+      ['Onboarded (7d)', fmt(v.completedThisWeek || 0)],
+      v.withGST    != null ? ['GST Active',   fmt(v.withGST)]   : null,
+      v.missingGST != null ? ['GST Inactive', fmt(v.missingGST)] : null,
+    ].filter(Boolean);
+
+    var kpiHtml = '<div class="vs-kpis">'
+      + metricsArr.map(function(m, i) {
+          return '<div class="vs-kpi" style="--ki:' + i + '">'
+            + '<div class="vs-kpi-val">' + m[1] + '</div>'
+            + '<div class="vs-kpi-lbl">' + m[0] + '</div>'
+            + '</div>';
+        }).join('')
+      + '</div>';
+
+    // Funnel chart (reuses existing funnelBig)
+    var funnelHtml = '<div class="vs-funnel chart-card">'
+      + '<div class="chart-card-title">Onboarding Funnel'
+      + '<span class="muted-total">' + fmt(tot) + ' total · share of all cases</span></div>'
+      + funnelBig(v, cfg)
+      + '</div>';
+
+    // Category grid
+    var catHtml = '';
+    if (v.categories && v.categories.length) {
+      var cats = v.categories.filter(function(c) { return (c.total || 0) > 0; }).slice(0, 8);
+      if (cats.length) {
+        catHtml = '<div class="vs-cats">'
+          + '<div class="vs-cap">Onboarded by Category</div>'
+          + '<div class="vs-cat-grid">'
+          + cats.map(function(c, ri) {
+              return '<div class="vs-cat-card" style="--ri:' + ri + '">'
+                + '<b>' + fmt(c.total) + '</b>'
+                + '<div class="vs-cat-name">' + esc(c.name) + '</div>'
+                + '</div>';
+            }).join('')
+          + '</div></div>';
+      }
+    }
+
+    return '<section class="vert-section reveal" id="vs-' + cfg.key + '" ' + vcStyle + '>'
+      + '<div class="vs-hdr">'
+      + '<div class="vs-title-wrap">'
+      + '<div class="vs-badge">' + cfg.code + '</div>'
+      + '<div class="vs-title">' + esc(cfg.name) + '</div>'
+      + '<button class="vs-rec-btn" onclick="openVertDetail(\'' + cfg.key + '\')" type="button">'
+      + 'View Records →'
+      + '</button>'
+      + '</div>'
+      + '<div class="vs-hero-stat">'
+      + '<div class="vs-hero-count">' + fmt(v.completed || 0) + '</div>'
+      + '<div class="vs-hero-lbl">Onboarded of ' + fmt(tot) + '</div>'
+      + '</div>'
+      + '</div>'
+      + kpiHtml
+      + funnelHtml
+      + catHtml
+      + '</section>';
+  }).join('');
+
+  // Animate KPI tiles and category cards as their section scrolls in.
+  requestAnimationFrame(function() {
+    if (!motionOK()) {
+      container.querySelectorAll('.vs-kpi,.vs-cat-card').forEach(function(el) {
+        el.classList.add('kpi-in','cat-in');
+      });
+      return;
+    }
+    var kpiObs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (!e.isIntersecting) return;
+        var delay = (parseInt(e.target.style.getPropertyValue('--ki') || e.target.style.getPropertyValue('--ri') || '0', 10) || 0);
+        setTimeout(function() { e.target.classList.add('kpi-in','cat-in'); }, delay * 55);
+        kpiObs.unobserve(e.target);
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -24px 0px' });
+    container.querySelectorAll('.vs-kpi,.vs-cat-card').forEach(function(el) { kpiObs.observe(el); });
+  });
 }
 
 function vdUnique(rows, field) {
