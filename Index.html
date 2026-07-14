@@ -3603,8 +3603,16 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 function fmtINR(v) {
   if (v === null || v === undefined || isNaN(parseFloat(v))) return '—';
   v = parseFloat(v);
-  if (v >= 1e7)  return '₹' + (v / 1e7).toFixed(2)  + ' Cr';
-  if (v >= 1e5)  return '₹' + (v / 1e5).toFixed(2)  + ' L';
+  if (v >= 1e7) {
+    var cr = v / 1e7;
+    // Large Crore values (≥100 Cr) get Indian grouping and no decimals: "₹35,793 Cr"
+    // Smaller Crore values keep 2 decimal places: "₹87.75 Cr"
+    var s = cr >= 100
+      ? cr.toLocaleString('en-IN', { maximumFractionDigits: 0 })
+      : cr.toFixed(2);
+    return '₹' + s + ' Cr';
+  }
+  if (v >= 1e5) return '₹' + (v / 1e5).toFixed(2) + ' L';
   if (v >= 1000) return '₹' + (v / 1000).toFixed(1) + ' K';
   return '₹' + Math.round(v).toLocaleString('en-IN');
 }

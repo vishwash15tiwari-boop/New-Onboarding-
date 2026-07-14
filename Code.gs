@@ -298,7 +298,7 @@ function normalizeRows(raw, cfg) {
       return '';
     }());
     var _txnN = (txnValRaw !== '' && txnValRaw !== null && txnValRaw !== undefined)
-      ? parseFloat(String(txnValRaw).replace(/[^0-9.\-]/g, ''))
+      ? parseFloat(String(txnValRaw).replace(/[₹$€£¥,\s]/g, ''))
       : NaN;
     var txnVal = isNaN(_txnN) ? null : _txnN; // preserve 0 — parseFloat('0')||null would lose it
     // GMV present & positive ⇒ a transaction has happened, regardless of what the
