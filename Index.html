@@ -885,10 +885,14 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 /* Header: vertical name as pipeline title */
 .cc-hdr2{display:flex;align-items:center;gap:8px;margin-bottom:14px}
 .cc-name2{font-size:11px;font-weight:700;color:var(--txt2);letter-spacing:.8px;text-transform:uppercase;flex:1;min-width:0}
-/* Seller / Buyer audience badge in card header */
-.cc-aud-badge{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 8px;border-radius:4px;flex-shrink:0;white-space:nowrap}
-.cc-aud-seller{background:var(--st-onboarded-bg,#edfaf5);color:var(--st-onboarded,#1DC797)}
-.cc-aud-buyer{background:#EEF2FF;color:#4F46E5}
+/* Vertical group header — spans both grid columns above each Seller/Buyer pair */
+.cc-vert-hdr{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:20px 4px 10px;border-bottom:2px solid var(--border);margin-bottom:4px}
+.cc-vert-hdr:first-child{padding-top:4px}
+.cc-vert-name{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:.5px;text-transform:uppercase}
+/* Seller / Buyer pipeline label inside each card */
+.cc-pipe-lbl{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 10px;border-radius:5px;white-space:nowrap}
+.cc-pipe-lbl-seller{background:var(--st-onboarded-bg,#edfaf5);color:var(--st-onboarded,#1DC797)}
+.cc-pipe-lbl-buyer{background:#EEF2FF;color:#4F46E5}
 
 /* ── 3-box pipeline (Draft | In Review | Completed) ── */
 .cc-pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
@@ -2048,32 +2052,36 @@ function renderVerticals() {
 
   var idx = 0;
 
-  // Builds a standalone compare-card for one audience (seller or buyer)
-  function buildCard(cfg, v, audLabel) {
+  // Build a full detail card for one pipeline (Seller or Buyer)
+  function buildCard(cfg, v, pipelineLabel) {
     var tot = v.total || 0;
-    var audClass = audLabel === 'Seller' ? 'cc-aud-seller' : 'cc-aud-buyer';
+    var lblCls = pipelineLabel === 'Seller Pipeline' ? 'cc-pipe-lbl-seller' : 'cc-pipe-lbl-buyer';
     var attrs = ' style="--i:' + (idx++) + ';' + vcVars(cfg.key) + '" tabindex="0" role="button"'
-      + ' aria-label="' + esc(cfg.name) + ' ' + audLabel + ' pipeline details"'
+      + ' aria-label="' + esc(cfg.name) + ' ' + esc(pipelineLabel) + ' details"'
       + ' onclick="scrollToVert(\'' + cfg.key + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();scrollToVert(\'' + cfg.key + '\')}"';
 
-    var hdr = '<div class="cc-hdr2">'
-      + '<span class="compare-source-badge">' + cfg.code + '</span>'
-      + '<span class="cc-name2">' + esc(cfg.name) + '</span>'
-      + '<span class="cc-aud-badge ' + audClass + '">' + audLabel + '</span>'
-      + '</div>';
+    var hdr = '<div class="cc-hdr2"><span class="cc-pipe-lbl ' + lblCls + '">' + pipelineLabel + '</span></div>';
 
     if (tot <= 0) {
       return '<div class="compare-card"' + attrs + '>'
         + hdr + '<div class="no-data" style="padding:24px 0">No data</div></div>';
     }
 
-    var pipe = '<div class="cc-pipe">'
-      + '<div class="cc-pipe-box cc-pipe-draft"><b>'  + fmt(v.draft     || 0) + '</b><span>Draft</span></div>'
-      + '<div class="cc-pipe-box cc-pipe-review"><b>' + fmt(v.inReview  || 0) + '</b><span>In Review</span></div>'
-      + '<div class="cc-pipe-box cc-pipe-onb"><b>'   + fmt(v.completed || 0) + '</b><span>Completed</span></div>'
+    // Hero: big onboarded number + subtitle
+    var hero = '<div class="cc-onb-hero">'
+      + '<span class="cc-onb-num">' + fmt(v.completed || 0) + '</span>'
+      + '<span class="cc-onb-sub">of ' + fmt(tot) + ' · Onboarded</span>'
       + '</div>';
 
+    // Pipeline stat rows: Draft / In Review / Rejected
+    var pipeStats = '<div class="cc-pipe-stats">'
+      + '<div class="cc-pipe-stat ps-draft"><span class="cc-pipe-stat-lbl">Draft</span><span class="cc-pipe-stat-val">' + fmt(v.draft || 0) + '</span></div>'
+      + '<div class="cc-pipe-stat ps-review"><span class="cc-pipe-stat-lbl">In Review</span><span class="cc-pipe-stat-val">' + fmt(v.inReview || 0) + '</span></div>'
+      + '<div class="cc-pipe-stat ps-reject"><span class="cc-pipe-stat-lbl">Rejected</span><span class="cc-pipe-stat-val">' + fmt(v.rejected || 0) + '</span></div>'
+      + '</div>';
+
+    // Category rows: top 3
     var topCats = (v.categories || []).filter(function(c){ return (c.total||0) > 0; }).slice(0, 3);
     var catRows = topCats.length
       ? '<div class="cc-cat-rows">'
@@ -2088,36 +2096,59 @@ function renderVerticals() {
               + '</div>';
           }).join('')
         + '</div>'
-      : '';
+      : '<div class="cc-cat-rows"></div>';
 
-    var statsRows = [];
-    if (v.avgTAT != null) statsRows.push(['Avg TAT', v.avgTAT + 'd', '']);
-    if (v.pctTransacted != null) statsRows.push(['% Transacted', v.pctTransacted + '%', '']);
-    if ((v.missingGST || 0) > 0) statsRows.push(['GSTIN missing', fmt(v.missingGST), 'cc-hs-warn']);
-    var stats = statsRows.length
-      ? '<div class="cc-hs-rows">'
-        + statsRows.map(function(r) {
-            return '<div class="cc-hs-row' + (r[2] ? ' ' + r[2] : '') + '">'
-              + '<span class="cc-hs-lbl">' + r[0] + '</span>'
-              + '<span class="cc-hs-val">' + r[1] + '</span>'
-              + '</div>';
-          }).join('')
-        + '</div>'
-      : '';
+    // FY breakdown table: up to 2 most-recent FYs side-by-side
+    var fys = (v.fyBreakdown || []).slice(0, 2);
+    var statsList = '';
+    if (fys.length) {
+      function fyDataRow(label, valFn, badCls) {
+        var cells = fys.map(valFn);
+        if (cells.every(function(c){ return c === null || c === undefined || c === '—'; })) return '';
+        return '<div class="cc-fy-row' + (badCls ? ' ' + badCls : '') + '">'
+          + '<span class="cc-fy-lbl">' + label + '</span>'
+          + cells.map(function(c){ return '<span class="cc-fy-col">' + (c != null ? c : '—') + '</span>'; }).join('')
+          + '</div>';
+      }
+      var hasMissingGST = fys.some(function(f) { return (f.missingGST || 0) > 0; });
+      var fyRows = [
+        fyDataRow('Avg TAT',       function(f){ return f.avgTAT       != null ? f.avgTAT + 'd'           : null; }, ''),
+        fyDataRow('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, ''),
+        fyDataRow('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, ''),
+        fyDataRow('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, ''),
+        fyDataRow('GSTIN missing', function(f){ return f.missingGST    != null ? fmt(f.missingGST)       : null; }, hasMissingGST ? 'cc-fy-bad' : ''),
+      ].filter(Boolean).join('');
+
+      if (fyRows) {
+        var fyHdr = '<div class="cc-fy-row cc-fy-hdr">'
+          + '<span class="cc-fy-lbl"></span>'
+          + fys.map(function(f){ return '<span class="cc-fy-col">' + esc(f.fy) + '</span>'; }).join('')
+          + '</div>';
+        statsList = '<div class="cc-fy-wrap">'
+          + fyHdr + fyRows
+          + '<div style="display:flex;justify-content:flex-end;padding:7px 0 2px">'
+          +   '<span style="font-size:11px;font-weight:600;color:var(--vc-ink,var(--blue));letter-spacing:-.1px">Details ↓</span>'
+          + '</div>'
+          + '</div>';
+      }
+    }
 
     return '<div class="compare-card"' + attrs + '>'
-      + hdr + pipe + catRows + stats
-      + '<div style="display:flex;justify-content:flex-end;padding:6px 0 2px">'
-      +   '<span style="font-size:11px;font-weight:600;color:var(--vc-ink,var(--blue));letter-spacing:-.1px">Details ↓</span>'
-      + '</div>'
+      + hdr + hero + pipeStats + catRows + statsList
       + '</div>';
   }
 
-  // Each vertical emits TWO cards (seller + buyer); the 2-column grid places them side by side
+  // Emit: group header (spans 2 cols) + Seller card + Buyer card per vertical
   grid.innerHTML = getVertCfg().map(function(cfg) {
     var vs = (DS.verticals || {})[cfg.key] || {};
     var vb = (DB && DB.verticals || {})[cfg.key] || {};
-    return buildCard(cfg, vs, 'Seller') + buildCard(cfg, vb, 'Buyer');
+    var groupHdr = '<div class="cc-vert-hdr">'
+      + '<span class="compare-source-badge">' + cfg.code + '</span>'
+      + '<span class="cc-vert-name">' + esc(cfg.name) + '</span>'
+      + '</div>';
+    return groupHdr
+      + buildCard(cfg, vs, 'Seller Pipeline')
+      + buildCard(cfg, vb, 'Buyer Pipeline');
   }).join('');
 
   var animKey = 'combined|' + currentPeriod + '|' + customStart + '|' + customEnd;
