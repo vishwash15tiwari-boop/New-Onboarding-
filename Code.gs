@@ -526,7 +526,8 @@ function vStats(data) {
       missingGST:    fyWithGST !== null ? fyCompleted - fyWithGST : null,
       avgTAT:        fyTats.length ? Math.round(avg(fyTats)) : null,
     };
-  }).sort(function(a, b) { return b.fyStart - a.fyStart; });
+  }).filter(function(f) { return f.fyStart >= 2015; })
+    .sort(function(a, b) { return b.fyStart - a.fyStart; });
 
   return {
     total: total,

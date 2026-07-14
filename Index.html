@@ -1424,6 +1424,7 @@ document.addEventListener('DOMContentLoaded', function() {
         D  = parsed;
         D.verticals      = DS.verticals || {};
         D.verticalConfig = parsed.verticalConfig || [];
+        D.fiscalYears    = parsed.fiscalYears    || [];
         _isFirstLoad = false;
         hideLoading();
         renderAll();
@@ -1538,12 +1539,14 @@ function loadData(silent) {
     D  = _sData || _bData || {};
     D.verticals      = DS.verticals;
     D.verticalConfig = (_sData && _sData.verticalConfig) || (_bData && _bData.verticalConfig) || [];
+    D.fiscalYears    = (_sData && _sData.fiscalYears)    || (_bData && _bData.fiscalYears)    || [];
 
-    // Cache combined shape
+    // Cache combined shape (include fiscalYears so period dropdown works on restore)
     try {
       localStorage.setItem(STORE_PFX + 'combined', JSON.stringify({
         success: true, lastUpdated: D.lastUpdated, dataSource: D.dataSource,
-        verticalConfig: D.verticalConfig, seller: DS, buyer: DB,
+        verticalConfig: D.verticalConfig, fiscalYears: D.fiscalYears,
+        seller: DS, buyer: DB,
       }));
     } catch (e) {}
 
@@ -1702,6 +1705,7 @@ function renderPeriodControl() {
 
 function onPeriodSelect(val) {
   currentPeriod = val;
+  renderQFChips();  // immediate visual feedback on click
   if (val === 'Custom') { renderPeriodControl(); return; }   // wait for both dates
   customStart = '';
   customEnd   = '';
@@ -2102,8 +2106,8 @@ function renderVerticals() {
         + '</div>'
       : '<div class="cc-cat-rows"></div>';
 
-    // FY breakdown table: all available FYs, newest first
-    var fys = (v.fyBreakdown || []);
+    // FY breakdown table: all available FYs from 2015 onwards, newest first
+    var fys = (v.fyBreakdown || []).filter(function(f) { return !f.fyStart || f.fyStart >= 2015; });
     var statsList = '';
     if (fys.length) {
       function fyTr(label, valFn, badCls) {
