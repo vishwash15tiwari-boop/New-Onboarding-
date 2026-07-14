@@ -679,11 +679,16 @@ function gpOpenSheet_() {
 }
 
 // Read + normalize the vendor rows from the GST Payables sheet.
+// Returns the vendors plus diagnostics (tab name, raw row count, headers,
+// resolved field mapping) so the UI can distinguish a truly empty sheet from
+// a header-mapping miss, and surface the real column names for verification.
 function gpReadVendors_() {
   var sheet = gpOpenSheet_();
   var raw = readSheetObj_(sheet);
   var idx = buildIndex(raw.headers);
-  return raw.rows.map(function(row) {
+  var mapping = {};
+  Object.keys(GST_FIELDS).forEach(function(k) { mapping[k] = gpField_(idx, GST_FIELDS[k]) || null; });
+  var vendors = raw.rows.map(function(row) {
     var total = gpNum_(gpVal_(row, idx, GST_FIELDS.total));
     var hasMat = gpField_(idx, GST_FIELDS.material) !== null;
     var hasGst = gpField_(idx, GST_FIELDS.gst) !== null;
@@ -710,7 +715,11 @@ function gpReadVendors_() {
       itcClosed: gpBool_(gpVal_(row, idx, GST_FIELDS.itcClosed)),
       itcCheck:  String(gpVal_(row, idx, GST_FIELDS.itcCheck) || '').trim(),
     };
-  }).filter(function(r) { return r.name || r.gstNo; });
+  // Keep a row if it has an identity (name/GST) OR a positive balance — so a
+  // header-mapping miss on the name/GST columns can't silently hide populated
+  // rows that clearly carry payables data.
+  }).filter(function(r) { return r.name || r.gstNo || r.total > 0; });
+  return { vendors: vendors, headers: raw.headers, rawRowCount: raw.rows.length, tab: sheet.getName(), mapping: mapping };
 }
 
 // Entry point — aggregated GST Payables dashboard for the requested FY filter.
@@ -719,12 +728,13 @@ function getGSTPayablesData(filtersJson) {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var year = f.year || 'All';
 
-    var cacheKey = 'gstpay_v1_' + JSON.stringify([year]);
+    var cacheKey = 'gstpay_v2_' + JSON.stringify([year]);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
-    var all = gpReadVendors_();
+    var read = gpReadVendors_();
+    var all = read.vendors;
 
     // Aging profile is computed across ALL rows so the FY chart always shows the
     // full timeline regardless of which year is selected for the rest of the view.
@@ -778,6 +788,10 @@ function getGSTPayablesData(filtersJson) {
         { label: 'ITC Closed',        count: comp.itcClosed, pct: pct(comp.itcClosed, n) },
       ],
       rows: rows.sort(function(a, b) { return b.total - a.total; }),
+      // Diagnostics — lets the UI (and you) see the tab read, how many raw rows
+      // it held, the actual column headers, and how each mapped. Column names
+      // only; no row data leaks here.
+      debug: { tab: read.tab, rawRows: read.rawRowCount, headers: read.headers, mapping: read.mapping },
     };
 
     var s = JSON.stringify(out);
