@@ -303,11 +303,6 @@ select,input{font-family:inherit}
 .cc-hero{display:flex;align-items:baseline;gap:9px;margin-bottom:2px}
 .cc-hero-num{font-size:34px;font-weight:800;color:var(--txt);letter-spacing:-1.2px;line-height:1;font-variant-numeric:tabular-nums}
 .cc-hero-of{font-size:12.5px;color:var(--txt3);font-weight:500}
-.cc-pill{
-  margin-left:auto;font-size:11.5px;font-weight:650;
-  padding:2px 9px;border-radius:20px;font-variant-numeric:tabular-nums;
-  background:var(--st-onboarded-bg);color:var(--st-onboarded-tx);
-}
 .cc-hero-lbl{font-size:11px;color:var(--txt3);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px}
 
 .cc-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
@@ -859,24 +854,27 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .cc-hdr2{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .cc-name2{font-size:14px;font-weight:700;color:var(--txt);letter-spacing:-.15px;flex:1 1 100px}
 
-/* ── Pipeline stage boxes (3 across: Draft / In Review / Onboarded) ── */
-.cc-pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
-.cc-pipe-box{
-  border-radius:9px;padding:10px 8px;text-align:center;
-  transition:transform .2s var(--ease-out);
+/* ── Onboarded hero number ── */
+.cc-onb-hero{
+  display:flex;align-items:baseline;gap:8px;
+  padding:12px 14px;margin-bottom:10px;
+  background:var(--st-onboarded-bg);
+  border-radius:11px;border-left:3px solid var(--st-onboarded);
 }
-.cc-pipe-box:hover{transform:scale(1.04)}
-.cc-pipe-box b{display:block;font-size:23px;font-weight:800;letter-spacing:-.8px;font-variant-numeric:tabular-nums;line-height:1}
-.cc-pipe-box s{display:block;font-size:8.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-top:4px;font-style:normal}
-.cc-pipe-draft{background:var(--st-draft-bg)}
-.cc-pipe-draft b{color:var(--st-draft)}
-.cc-pipe-draft s{color:var(--st-draft-tx)}
-.cc-pipe-review{background:var(--st-review-bg)}
-.cc-pipe-review b{color:var(--st-review)}
-.cc-pipe-review s{color:var(--st-review-tx)}
-.cc-pipe-onb{background:var(--st-onboarded-bg)}
-.cc-pipe-onb b{color:var(--st-onboarded)}
-.cc-pipe-onb s{color:var(--st-onboarded-tx)}
+.cc-onb-num{font-size:34px;font-weight:800;letter-spacing:-1.2px;font-variant-numeric:tabular-nums;line-height:1;color:var(--st-onboarded)}
+.cc-onb-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--st-onboarded);opacity:.75}
+
+/* ── Mini secondary row: Draft · In Review · Rejected ── */
+.cc-pipe-mini{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.cc-pipe-mini-item{
+  display:flex;align-items:center;gap:5px;
+  padding:4px 9px;border-radius:20px;
+  font-size:11.5px;font-weight:600;
+}
+.cc-pipe-mini-item b{font-weight:700;font-variant-numeric:tabular-nums}
+.cc-mini-draft{background:var(--st-draft-bg);color:var(--st-draft)}
+.cc-mini-review{background:var(--st-review-bg);color:var(--st-review)}
+.cc-mini-rej{background:var(--st-rejected-bg,#fef2f2);color:var(--st-rejected,#B03030)}
 
 /* ── Compact category rows ── */
 .cc-cat-rows{margin:0 0 10px;display:flex;flex-direction:column;gap:4px}
@@ -1784,11 +1782,10 @@ function renderVerticals() {
       + ' onclick="scrollToVert(\'' + cfg.key + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();scrollToVert(\'' + cfg.key + '\')}"';
 
-    // Card header: badge + name + completion pill
+    // Card header: badge + name (no % pill)
     var hdr = '<div class="cc-hdr2">'
       + '<span class="compare-source-badge">' + cfg.code + '</span>'
       + '<span class="cc-name2">' + esc(cfg.name) + '</span>'
-      + (tot > 0 ? '<span class="cc-pill">' + (v.completionPct || 0) + '%</span>' : '')
       + '</div>';
 
     if (tot <= 0) {
@@ -1796,12 +1793,18 @@ function renderVerticals() {
         + hdr + '<div class="no-data" style="padding:24px 0">No records in selected period</div></div>';
     }
 
-    // Three pipeline stage boxes
-    var pipe = '<div class="cc-pipe">'
-      + '<div class="cc-pipe-box cc-pipe-draft"><b>' + fmt(v.draft || 0) + '</b><span>Draft</span></div>'
-      + '<div class="cc-pipe-box cc-pipe-review"><b>' + fmt(v.inReview || 0) + '</b><span>In Review</span></div>'
-      + '<div class="cc-pipe-box cc-pipe-onb"><b>' + fmt(v.completed || 0) + '</b><span>Onboarded</span></div>'
+    // Hero: Onboarded count (prominent)
+    var heroHtml = '<div class="cc-onb-hero">'
+      + '<span class="cc-onb-num">' + fmt(v.completed || 0) + '</span>'
+      + '<span class="cc-onb-lbl">Onboarded</span>'
       + '</div>';
+
+    // Mini secondary row: Draft · In Review · Rejected
+    var miniParts = [];
+    if ((v.draft    || 0) > 0) miniParts.push('<span class="cc-pipe-mini-item cc-mini-draft"><b>' + fmt(v.draft)    + '</b>Draft</span>');
+    if ((v.inReview || 0) > 0) miniParts.push('<span class="cc-pipe-mini-item cc-mini-review"><b>' + fmt(v.inReview) + '</b>In Review</span>');
+    if ((v.rejected || 0) > 0) miniParts.push('<span class="cc-pipe-mini-item cc-mini-rej"><b>'   + fmt(v.rejected) + '</b>Rejected</span>');
+    var pipe = miniParts.length ? '<div class="cc-pipe-mini">' + miniParts.join('') + '</div>' : '';
 
     // Top 3 categories as compact rows
     var topCats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; }).slice(0, 3);
@@ -1831,12 +1834,14 @@ function renderVerticals() {
 
     return '<div class="compare-card"' + attrs + '>'
       + hdr
+      + heroHtml
       + pipe
       + catRows
       + '<div class="cc-foot">'
       +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
       +   txnItem + gmvItem + agingItem
-      +   (v.missingGST != null ? '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST) + '</b>GST Missing</div>' : '')
+      +   (v.withGST    != null ? '<div class="cc-foot-item cc-gst-active"><b>'   + fmt(v.withGST)    + '</b>GST Active</div>'   : '')
+      +   (v.missingGST != null ? '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST) + '</b>GST Missing</div>'  : '')
       +   '<span class="cc-foot-more" style="color:var(--vc-ink,var(--blue))">Details ↓</span>'
       + '</div>'
       + '</div>';
