@@ -904,6 +904,21 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .cc-pipe-onb b{color:var(--st-onboarded)}
 .cc-pipe-onb span{color:var(--st-onboarded-tx)}
 
+/* ── Onboarded hero: big clean number, no box or border ── */
+.cc-onb-hero{text-align:center;padding:16px 0 12px;border-bottom:1px solid var(--border);margin-bottom:0}
+.cc-onb-num{display:block;font-size:44px;font-weight:800;color:var(--st-onboarded,#1DC797);letter-spacing:-2px;line-height:1;font-variant-numeric:tabular-nums}
+.cc-onb-sub{display:block;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-top:6px}
+
+/* ── Pipeline stats as label:count rows (replaces the 3-box grid) ── */
+.cc-pipe-stats{display:flex;flex-direction:column;margin-bottom:10px}
+.cc-pipe-stat{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)}
+.cc-pipe-stat:last-child{border-bottom:none}
+.cc-pipe-stat-lbl{font-size:11px;font-weight:500;color:var(--txt3)}
+.cc-pipe-stat-val{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+.cc-pipe-stat.ps-draft   .cc-pipe-stat-val{color:var(--txt2)}
+.cc-pipe-stat.ps-review  .cc-pipe-stat-val{color:var(--st-review)}
+.cc-pipe-stat.ps-reject  .cc-pipe-stat-val{color:var(--st-rejected)}
+
 /* ── Category rows: badge + "X done · Y draft · Z review" ── */
 .cc-cat-rows{flex:1;display:flex;flex-direction:column;gap:4px;margin:0 0 10px}
 .cc-cat-row{display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:7px;background:var(--bg2);border:1px solid var(--border)}
@@ -2045,11 +2060,15 @@ function renderVerticals() {
         + hdr + '<div class="no-data" style="padding:24px 0">No records in selected period</div></div>';
     }
 
-    // 3 pipeline boxes: Draft | In Review | Completed
-    var pipe = '<div class="cc-pipe">'
-      + '<div class="cc-pipe-box cc-pipe-draft"><b>' + fmt(v.draft    || 0) + '</b><span>Draft</span></div>'
-      + '<div class="cc-pipe-box cc-pipe-review"><b>' + fmt(v.inReview || 0) + '</b><span>In Review</span></div>'
-      + '<div class="cc-pipe-box cc-pipe-onb"><b>'   + fmt(v.completed|| 0) + '</b><span>Onboarded</span></div>'
+    // Onboarded hero number + pipeline stats rows
+    var pipe = '<div class="cc-onb-hero">'
+      + '<span class="cc-onb-num">' + fmt(v.completed || 0) + '</span>'
+      + '<span class="cc-onb-sub">of ' + fmt(tot) + ' · Onboarded</span>'
+      + '</div>'
+      + '<div class="cc-pipe-stats">'
+      + '<div class="cc-pipe-stat ps-draft"><span class="cc-pipe-stat-lbl">Draft</span><span class="cc-pipe-stat-val">' + fmt(v.draft || 0) + '</span></div>'
+      + '<div class="cc-pipe-stat ps-review"><span class="cc-pipe-stat-lbl">In Review</span><span class="cc-pipe-stat-val">' + fmt(v.inReview || 0) + '</span></div>'
+      + '<div class="cc-pipe-stat ps-reject"><span class="cc-pipe-stat-lbl">Rejected</span><span class="cc-pipe-stat-val">' + fmt(v.rejected || 0) + '</span></div>'
       + '</div>';
 
     // Category rows: badge label + "X done · Y draft · Z review"
