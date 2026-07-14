@@ -836,7 +836,7 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
    ══════════════════════════════════════════════════ */
 .compare-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  grid-template-columns:repeat(auto-fill,minmax(360px,1fr));
   gap:16px;
   margin-bottom:0;
   align-items:stretch;
@@ -865,42 +865,52 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 /* Card entrance stagger */
 .compare-grid.animate .compare-card{opacity:0;animation:riseIn .6s var(--ease-out) forwards;animation-delay:calc(var(--i,0)*60ms)}
 
-/* ── Card: flex column so footer always anchors to the bottom ── */
+/* ── Card: flex column ── */
 .compare-card{display:flex;flex-direction:column}
 
-/* Card header: badge + name */
+/* Header: vertical name as pipeline title */
 .cc-hdr2{display:flex;align-items:center;gap:8px;margin-bottom:14px}
-.cc-name2{font-size:13.5px;font-weight:700;color:var(--txt);letter-spacing:-.15px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-name2{font-size:11px;font-weight:700;color:var(--txt2);letter-spacing:.8px;text-transform:uppercase;flex:1;min-width:0}
 
-/* ── Onboarded hero ── */
-.cc-onb-hero{margin-bottom:14px}
-.cc-onb-num{font-size:40px;font-weight:800;letter-spacing:-1.5px;font-variant-numeric:tabular-nums;line-height:1;color:var(--vc,var(--st-onboarded));display:block}
-.cc-onb-meta{display:flex;align-items:baseline;gap:6px;margin-top:3px}
-.cc-onb-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--st-onboarded)}
-.cc-onb-of{font-size:10.5px;color:var(--txt3);font-weight:400}
-
-/* ── Pipeline strip: always 3 equal columns (Draft | In Review | Rejected) ── */
-.cc-pipe-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:9px;overflow:hidden;margin-bottom:14px}
-.cc-pipe-col{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:3px;padding:8px 4px;background:var(--card);text-align:center;
+/* ── 3-box pipeline (Draft | In Review | Completed) ── */
+.cc-pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.cc-pipe-box{
+  border-radius:8px;padding:14px 10px 12px;text-align:center;
+  border:1px solid transparent;
 }
-.cc-pipe-col b{font-size:17px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1}
-.cc-pipe-col span{font-size:8.5px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
-.cc-col-draft b{color:var(--st-draft)}.cc-col-draft span{color:var(--st-draft-tx)}
-.cc-col-review b{color:var(--st-review)}.cc-col-review span{color:var(--st-review-tx)}
-.cc-col-rej b{color:var(--st-rejected,#B03030)}.cc-col-rej span{color:color-mix(in srgb,var(--st-rejected,#B03030) 60%,transparent)}
+.cc-pipe-box b{display:block;font-size:32px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1;margin-bottom:5px}
+.cc-pipe-box span{display:block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.cc-pipe-draft{background:var(--bg2);border-color:var(--border)}
+.cc-pipe-draft b{color:var(--txt)}
+.cc-pipe-draft span{color:var(--txt3)}
+.cc-pipe-review{background:var(--st-review-bg);border-color:rgba(201,146,46,.2)}
+.cc-pipe-review b{color:var(--st-review)}
+.cc-pipe-review span{color:var(--st-review)}
+.cc-pipe-onb{background:var(--st-onboarded-bg);border-color:rgba(29,199,151,.2)}
+.cc-pipe-onb b{color:var(--st-onboarded)}
+.cc-pipe-onb span{color:var(--st-onboarded)}
 
-/* ── FY breakdown rows on card (flex:1 pushes footer down) ── */
-.cc-fy-rows{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;margin:0 0 14px}
-.cc-fy-row{display:grid;grid-template-columns:52px 1fr 32px;align-items:center;gap:7px}
-.cc-fy-lbl{font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.2px;white-space:nowrap}
-.cc-fy-bar-bg{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
-.cc-fy-bar-fg{height:100%;border-radius:3px;background:var(--vc,var(--blue));opacity:.8;width:0;transition:width 1s var(--ease-out)}
-.cc-fy-val{font-size:11px;font-weight:700;color:var(--txt);text-align:right;font-variant-numeric:tabular-nums}
-.cc-fy-row.cc-fy-current .cc-fy-lbl{color:var(--vc-ink,var(--blue))}
-.cc-fy-row.cc-fy-current .cc-fy-bar-fg{opacity:1}
-.cc-fy-row.cc-fy-current .cc-fy-val{color:var(--vc-ink,var(--blue))}
+/* ── Category rows: badge + "X done · Y draft · Z review" ── */
+.cc-cat-rows{flex:1;display:flex;flex-direction:column;gap:5px;margin:0 0 14px}
+.cc-cat-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;background:var(--bg2);border:1px solid var(--border)}
+.cc-cat-badge{
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;
+  background:var(--vc-soft,var(--border));color:var(--vc-ink,var(--txt2));
+}
+.cc-cat-detail{font-size:11.5px;color:var(--txt3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-cat-detail em{font-style:normal;color:var(--txt2);font-weight:600}
+
+/* ── Stats list: label left, value right ── */
+.cc-stat-list{border-top:1px solid var(--border);padding-top:10px;margin-top:auto;display:flex;flex-direction:column;gap:0}
+.cc-stat-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:7px 0;border-bottom:1px solid var(--border);
+  font-size:12.5px;color:var(--txt2);
+}
+.cc-stat-row:last-child{border-bottom:none}
+.cc-stat-row b{font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt);letter-spacing:-.1px}
+.cc-stat-row.cc-stat-warn b{color:var(--st-review)}
+.cc-stat-row.cc-stat-bad b{color:var(--st-rejected,#B03030)}
 
 /* ══════════════════════════════════════════════════
    VERTICAL STORY SECTION — full editorial layout
@@ -1796,10 +1806,10 @@ function renderVerticals() {
       + ' onclick="scrollToVert(\'' + cfg.key + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();scrollToVert(\'' + cfg.key + '\')}"';
 
-    // Card header: badge + name (no % pill)
+    // Card header: vertical name as pipeline title
     var hdr = '<div class="cc-hdr2">'
       + '<span class="compare-source-badge">' + cfg.code + '</span>'
-      + '<span class="cc-name2">' + esc(cfg.name) + '</span>'
+      + '<span class="cc-name2">' + esc(cfg.name) + ' Pipeline</span>'
       + '</div>';
 
     if (tot <= 0) {
@@ -1807,66 +1817,52 @@ function renderVerticals() {
         + hdr + '<div class="no-data" style="padding:24px 0">No records in selected period</div></div>';
     }
 
-    // Hero: Onboarded count (large) + "of X total" sub-text
-    var heroHtml = '<div class="cc-onb-hero">'
-      + '<span class="cc-onb-num">' + fmt(v.completed || 0) + '</span>'
-      + '<div class="cc-onb-meta">'
-      +   '<span class="cc-onb-lbl">Onboarded</span>'
-      + '</div>'
+    // 3 pipeline boxes: Draft | In Review | Completed
+    var pipe = '<div class="cc-pipe">'
+      + '<div class="cc-pipe-box cc-pipe-draft"><b>' + fmt(v.draft    || 0) + '</b><span>Draft</span></div>'
+      + '<div class="cc-pipe-box cc-pipe-review"><b>' + fmt(v.inReview || 0) + '</b><span>In Review</span></div>'
+      + '<div class="cc-pipe-box cc-pipe-onb"><b>'   + fmt(v.completed|| 0) + '</b><span>Completed</span></div>'
       + '</div>';
 
-    // Always 3 columns: Draft | In Review | Rejected (aligned across all cards)
-    var pipe = '<div class="cc-pipe-row">'
-      + '<div class="cc-pipe-col cc-col-draft"><b>' + fmt(v.draft    || 0) + '</b><span>Draft</span></div>'
-      + '<div class="cc-pipe-col cc-col-review"><b>' + fmt(v.inReview || 0) + '</b><span>In Review</span></div>'
-      + '<div class="cc-pipe-col cc-col-rej"><b>'   + fmt(v.rejected || 0) + '</b><span>Rejected</span></div>'
-      + '</div>';
-
-    // FY breakdown bars (last 4 FYs, newest first)
-    var fyRows = (v.fyBreakdown || []).slice(0, 4);
-    var maxFyOnb = fyRows.reduce(function(m, r) { return Math.max(m, r.onboarded); }, 1);
-    var nowFyKey = (function() {
-      var d = new Date(), y = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
-      return 'FY' + String(y).slice(2) + '-' + String(y + 1).slice(2);
-    }());
-    var catRows = fyRows.length
-      ? '<div class="cc-fy-rows">'
-        + fyRows.map(function(r) {
-            var barPct = Math.round((r.onboarded / maxFyOnb) * 100);
-            var isCurrent = r.fy === nowFyKey;
-            return '<div class="cc-fy-row' + (isCurrent ? ' cc-fy-current' : '') + '">'
-              + '<span class="cc-fy-lbl">' + esc(r.fy) + '</span>'
-              + '<div class="cc-fy-bar-bg"><div class="cc-fy-bar-fg" data-pct="' + barPct + '"></div></div>'
-              + '<span class="cc-fy-val">' + fmt(r.onboarded) + '</span>'
+    // Category rows: badge label + "X done · Y draft · Z review"
+    var topCats = (v.categories || []).filter(function(c){ return (c.total||0) > 0; }).slice(0, 3);
+    var catRows = topCats.length
+      ? '<div class="cc-cat-rows">'
+        + topCats.map(function(c) {
+            var parts = [];
+            if ((c.onboarded||0) > 0) parts.push('<em>' + fmt(c.onboarded) + ' done</em>');
+            if ((c.draft    ||0) > 0) parts.push(fmt(c.draft)    + ' draft');
+            if ((c.inReview ||0) > 0) parts.push(fmt(c.inReview) + ' review');
+            return '<div class="cc-cat-row">'
+              + '<span class="cc-cat-badge">' + esc(c.category) + '</span>'
+              + '<span class="cc-cat-detail">' + parts.join(' · ') + '</span>'
               + '</div>';
           }).join('')
         + '</div>'
-      : '<div class="cc-fy-rows"></div>';
+      : '<div class="cc-cat-rows"></div>';
 
-    // Footer
-    var txnItem = (v.transacted === null || v.transacted === undefined) ? ''
-      : '<div class="cc-foot-item"><b>' + fmt(v.transacted) + '</b>Transacted</div>';
-    var gmvItem = (v.totalTxnValue === null || v.totalTxnValue === undefined) ? ''
-      : '<div class="cc-foot-item"><b>' + fmtINR(v.totalTxnValue) + '</b>Total GMV</div>';
-    var agingParts = [];
-    if (v.aging   != null) agingParts.push('<b style="color:#C25A24">' + fmt(v.aging)   + '</b>Aging');
-    if (v.overdue != null) agingParts.push('<b style="color:#B03030">' + fmt(v.overdue) + '</b>Overdue');
-    var agingItem = agingParts.length
-      ? '<div class="cc-foot-item cc-aging">' + agingParts.join('') + '</div>'
+    // Stats list: label → value rows
+    var statsRows = [];
+    if (v.avgTAT != null) statsRows.push(['Avg TAT', dOr(v.avgTAT,'d'), '']);
+    if (v.transacted != null) statsRows.push(['% Transacted', (v.pctTransacted||0)+'%', '']);
+    if (v.totalTxnValue != null) statsRows.push(['Total GMV', fmtINR(v.totalTxnValue), '']);
+    if (v.aging   != null) statsRows.push(['Dwelling (>14d at stage)', fmt(v.aging),   'cc-stat-warn']);
+    if (v.overdue != null) statsRows.push(['Overdue (>30d)',           fmt(v.overdue), 'cc-stat-bad']);
+    if (v.withGST    != null) statsRows.push(['GSTIN active',  fmt(v.withGST),    '']);
+    if (v.missingGST != null) statsRows.push(['GSTIN missing', fmt(v.missingGST), v.missingGST > 0 ? 'cc-stat-bad' : '']);
+    var statsList = statsRows.length
+      ? '<div class="cc-stat-list">'
+        + statsRows.map(function(r){
+            return '<div class="cc-stat-row ' + r[2] + '"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>';
+          }).join('')
+        + '<div class="cc-stat-row" style="border-bottom:none;padding-top:6px">'
+        +   '<span></span><span style="font-size:11px;color:var(--vc-ink,var(--blue));font-weight:600">Details ↓</span>'
+        + '</div>'
+        + '</div>'
       : '';
 
     return '<div class="compare-card"' + attrs + '>'
-      + hdr
-      + heroHtml
-      + pipe
-      + catRows
-      + '<div class="cc-foot">'
-      +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
-      +   txnItem + gmvItem + agingItem
-      +   (v.withGST    != null ? '<div class="cc-foot-item cc-gst-active"><b>'   + fmt(v.withGST)    + '</b>GST Active</div>'   : '')
-      +   (v.missingGST != null ? '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST) + '</b>GST Missing</div>'  : '')
-      +   '<span class="cc-foot-more">Details ↓</span>'
-      + '</div>'
+      + hdr + pipe + catRows + statsList
       + '</div>';
   }).join('');
 
@@ -1884,12 +1880,6 @@ function renderVerticals() {
     grid._animT = setTimeout(function() { grid.classList.remove('animate'); }, 1100);
   }
   animateCounters(grid);
-  // Animate FY bars after a short delay so cards have risen into view first.
-  setTimeout(function() {
-    grid.querySelectorAll('.cc-fy-bar-fg').forEach(function(el) {
-      el.style.width = (el.getAttribute('data-pct') || '0') + '%';
-    });
-  }, 200);
 }
 
 function openVertDetail(key) {
