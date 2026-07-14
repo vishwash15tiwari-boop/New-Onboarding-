@@ -2348,9 +2348,20 @@ function renderGST() {
   renderGSTLastUpdated();
   var host = document.getElementById('tab-gst');
   if (!host) return;
+  // Whole sheet empty / not populated yet → clean single message, not a wall of zeros.
+  if (!GST.totalVendors) { host.innerHTML = gstEmptyState(); return; }
   host.innerHTML = gstKPIs() + gstAgingSection() + gstChartsRow() + gstFiltersRow() + gstTableShell();
   animateGSTCounters();
   renderGSTVendorTable();
+}
+
+function gstEmptyState() {
+  return '<div class="gp-card" style="text-align:center;padding:56px 24px">'
+    + '<div style="font-size:34px;margin-bottom:12px">🧾</div>'
+    + '<div style="color:var(--gp-ink);font-weight:700;font-size:16px;margin-bottom:6px">Vendor Payables sheet has no data yet</div>'
+    + '<div style="color:var(--gp-ink2);max-width:520px;margin:0 auto 20px;line-height:1.5">Once the “Vendor Payables” tab of the GST Payables sheet is populated, this dashboard fills in automatically on the next refresh (within ~5 minutes), or hit refresh below.</div>'
+    + '<button onclick="loadGSTData(false)" style="padding:9px 22px;border-radius:11px;border:1px solid var(--gp-orange);background:var(--gp-orange);color:#fff;font-size:13px;font-weight:600;cursor:pointer">↻ Check again</button>'
+    + '</div>';
 }
 
 function renderGSTYearChips() {

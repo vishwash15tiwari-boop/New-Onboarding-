@@ -747,6 +747,7 @@ function getGSTPayablesData(filtersJson) {
       lastUpdated: new Date().toISOString(),
       year: year,
       fyList: fyList,
+      totalVendors: all.length,   // unfiltered — lets the UI tell "sheet empty" from "year filter empty"
       vendorCount: n,
       totalOutstanding: totalOut,
       materialBalance: matSum,
