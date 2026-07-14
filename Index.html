@@ -314,40 +314,50 @@ select,input{font-family:inherit}
 .cc-stat b{display:block;font-size:15px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1}
 .cc-stat span{display:block;font-size:8.5px;color:var(--st-tx,var(--txt3));font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Onboarded-by-category cards (green accent = onboarded) */
-.cc-cap{font-size:9px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0 0 7px}
-.cc-cats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+/* ── Section heading inside detail page — matches main .section-title style ── */
+.cc-cap{
+  display:flex;align-items:center;gap:10px;
+  font-size:16px;font-weight:800;letter-spacing:-.3px;
+  color:var(--txt);margin:0 0 14px;
+}
+.cc-cap::before{
+  content:'';width:22px;height:5px;border-radius:3px;flex-shrink:0;
+  background:linear-gradient(90deg,#005DFF,#1DC797);
+}
+
+/* Onboarded-by-category cards */
+.cc-cats{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px}
 .cc-cat{
-  flex:1 1 130px;
-  background:var(--vc-soft,var(--card2));
-  border:1.5px solid var(--vc-line,var(--border));
-  border-left:5px solid var(--vc,var(--st-onboarded));
-  border-radius:12px;
-  padding:14px 16px;
+  flex:1 1 140px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-left:4px solid var(--vc,var(--st-onboarded));
+  border-radius:14px;
+  padding:16px 18px 14px;
   min-width:0;
   box-shadow:var(--shadow-sm);
 }
 .cc-cat b{
   display:block;
-  font-size:28px;font-weight:800;
-  color:var(--vc,var(--st-onboarded));
+  font-size:32px;font-weight:800;
+  color:var(--txt);
   font-variant-numeric:tabular-nums;
-  letter-spacing:-.8px;line-height:1;
+  letter-spacing:-1.2px;line-height:1;
 }
 .cc-cat span{
   display:block;
-  font-size:11px;font-weight:600;
+  font-size:11px;font-weight:700;
   color:var(--txt2);
-  margin-top:5px;line-height:1.3;
-  text-transform:uppercase;letter-spacing:.3px;
+  margin-top:6px;line-height:1.3;
+  text-transform:uppercase;letter-spacing:.4px;
 }
-.cc-cat-click{cursor:pointer;transition:transform .45s var(--ease-out),box-shadow .45s var(--ease-out),border-color .25s var(--ease)}
-.cc-cat-click:hover{box-shadow:var(--shadow-lg,var(--shadow));transform:translateY(-4px)}
-.cc-cat-click:active{transform:translateY(-1px) scale(.97);transition-duration:.15s}
+.cc-cat-click{cursor:pointer;transition:transform .35s var(--ease-out),box-shadow .35s var(--ease-out),border-color .2s}
+.cc-cat-click:hover{box-shadow:var(--shadow-lg,var(--shadow));transform:translateY(-4px);border-color:var(--vc,var(--blue))}
+.cc-cat-click:active{transform:translateY(-1px) scale(.97);transition-duration:.12s}
 #cat-detail-wrap{animation:riseIn .55s var(--ease-sheet) both;margin-top:16px;margin-bottom:32px}
 #cat-detail-wrap.no-anim,#cat-detail-wrap.no-anim *{animation:none!important}
-.cc-cat-hint{display:block;font-size:9.5px;font-weight:600;color:var(--vc,var(--blue));margin-top:7px;font-style:normal;letter-spacing:.2px;opacity:.85;transition:transform .35s var(--ease-out)}
-.cc-cat-click:hover .cc-cat-hint{transform:translateX(3px)}
+.cc-cat-hint{display:block;font-size:10px;font-weight:600;color:var(--vc,var(--blue));margin-top:8px;font-style:normal;letter-spacing:.1px;opacity:.8;transition:transform .3s var(--ease-out)}
+.cc-cat-click:hover .cc-cat-hint{transform:translateX(4px);opacity:1}
 
 /* Donut breakdown — Apple-ring sweep on reveal, hover pop per segment */
 .donut-seg{transition:stroke-width .3s var(--ease-out)}
@@ -463,7 +473,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .gst-ok{color:var(--st-onboarded-tx);font-size:11px;font-weight:600}
 .gst-bad{color:var(--st-rejected-tx);font-size:11px;font-weight:600}
 /* ===== Detail KPI Mini-Cards ===== */
-.vd-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:26px}
+.vd-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-bottom:28px}
 .vd-kpi{
   background:var(--card);
   border:1px solid var(--border);
@@ -480,8 +490,8 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 .vd-kpi.k-onboarded {background:var(--st-onboarded-bg); border-left-color:var(--st-onboarded)}
 .vd-kpi.k-transacted{background:var(--st-transacted-bg);border-left-color:var(--st-transacted)}
 .vd-kpi.k-rejected  {background:var(--st-rejected-bg);  border-left-color:var(--st-rejected)}
-.vd-kpi-val{font-size:20px;font-weight:800;color:var(--txt);letter-spacing:-.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.vd-kpi-lbl{font-size:10px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-top:6px;line-height:1.4}
+.vd-kpi-val{font-size:24px;font-weight:800;color:var(--txt);letter-spacing:-.8px;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1}
+.vd-kpi-lbl{font-size:10px;color:var(--txt2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:8px;line-height:1.4}
 
 /* ===== Vertical Detail — Full-Page Overlay ===== */
 @keyframes sheetIn{from{opacity:0;transform:translateY(30px) scale(.99)}to{opacity:1;transform:none}}
@@ -508,8 +518,8 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 #vert-detail.vd-anim .cc-cat{animation:riseIn .55s var(--ease-out) both;animation-delay:calc(var(--kd,0)*1ms + 40ms)}
 #vert-detail.vd-anim .vd-kpi{animation:riseIn .55s var(--ease-out) both;animation-delay:calc(var(--kd,0)*1ms + 150ms)}
 .vd-page-inner{max-width:1200px;margin:0 auto;padding:24px 32px 48px}
-.vd-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)}
-.vd-title{font-size:18px;font-weight:800;color:var(--txt);letter-spacing:-.3px}
+.vd-head{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.vd-title{font-size:20px;font-weight:800;color:var(--txt);letter-spacing:-.4px}
 .vd-back{
   display:inline-flex;align-items:center;gap:6px;
   padding:7px 18px;border-radius:var(--pill);
