@@ -796,221 +796,218 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 </style>
 
 <style id="story-theme">
-/* ── Dark design tokens — cascade over the light :root block ── */
-/* ── Scroll-reveal: fade + rise on viewport entry ── */
-.reveal{
-  opacity:0;
-  transform:translateY(20px);
-  transition:opacity .7s var(--ease-out),transform .7s var(--ease-out);
-}
+
+/* ── Scroll-reveal: fade + rise ── */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .65s var(--ease-out),transform .65s var(--ease-out)}
 .reveal.visible{opacity:1;transform:none}
 
 /* ── Section title bar ── */
 .section-title{
-  font-size:10px;
-  font-weight:700;
-  letter-spacing:2px;
-  color:var(--txt3);
-  text-transform:uppercase;
-  padding:48px 0 16px;
-  margin:0 0 32px;
-  border-bottom:1px solid var(--border);
-  background:none;
-  border-radius:0;
+  font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--txt2);
+  text-transform:uppercase;padding:40px 0 14px;margin:0 0 28px;
+  border-bottom:1px solid var(--border);background:none;border-radius:0;
 }
 .section-title::before{display:none}
 .section-title .badge{display:none}
 
 /* ── Story separator ── */
-.story-sep{
-  text-align:center;
-  padding:44px 0 28px;
-  color:var(--txt3);
-  font-size:11px;
-  letter-spacing:1px;
-  text-transform:uppercase;
-}
+.story-sep{text-align:center;padding:36px 0 20px;color:var(--txt3);font-size:11px;letter-spacing:1px;text-transform:uppercase}
 .story-sep span{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  border:1px solid var(--border);
-  border-radius:999px;
-  padding:8px 20px;
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--border);border-radius:999px;padding:8px 20px;
   animation:sepPulse 2.4s ease-in-out infinite;
 }
-@keyframes sepPulse{
-  0%,100%{opacity:.55}
-  50%{opacity:1}
-}
+@keyframes sepPulse{0%,100%{opacity:.5}50%{opacity:1}}
 
-/* ── Per-vertical story section ── */
+/* ══════════════════════════════════════════════════
+   COMPARE CARD — redesigned with pipeline stages
+   and inline category rows (like the screenshot)
+   ══════════════════════════════════════════════════ */
+.compare-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:14px;
+  margin-bottom:0;
+  background:none;border:none;border-radius:0;overflow:visible;
+}
+.compare-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:18px 18px 14px;
+  box-shadow:0 1px 4px rgba(0,0,0,.05),0 0 0 0 var(--vc-soft,transparent);
+  transition:box-shadow .4s var(--ease-out),border-color .25s,transform .4s var(--ease-out);
+}
+.compare-card:hover{box-shadow:0 6px 28px rgba(0,0,0,.10),0 1px 6px rgba(0,0,0,.06);border-color:var(--vc-line,var(--border2));transform:translateY(-3px)}
+.compare-card:active{transform:translateY(-1px);transition-duration:.12s}
+.compare-card::before{
+  content:'';position:absolute;inset:0 0 auto 0;height:80px;pointer-events:none;border-radius:14px 14px 0 0;
+  background:linear-gradient(180deg,var(--vc-soft,transparent),transparent);
+}
+.compare-card::after{
+  content:'';position:absolute;inset:0 0 auto 0;height:3px;pointer-events:none;
+  background:linear-gradient(90deg,var(--vc,var(--blue)),var(--vc-fade,var(--border)));
+  border-radius:14px 14px 0 0;
+}
+.compare-card>*{position:relative}
+/* Card entrance stagger */
+.compare-grid.animate .compare-card{opacity:0;animation:riseIn .6s var(--ease-out) forwards;animation-delay:calc(var(--i,0)*60ms)}
+
+/* Card header: badge + name + completion pill */
+.cc-hdr2{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.cc-name2{font-size:14px;font-weight:700;color:var(--txt);letter-spacing:-.15px;flex:1 1 100px}
+
+/* ── Pipeline stage boxes (3 across: Draft / In Review / Onboarded) ── */
+.cc-pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.cc-pipe-box{
+  border-radius:9px;padding:10px 8px;text-align:center;
+  transition:transform .2s var(--ease-out);
+}
+.cc-pipe-box:hover{transform:scale(1.04)}
+.cc-pipe-box b{display:block;font-size:23px;font-weight:800;letter-spacing:-.8px;font-variant-numeric:tabular-nums;line-height:1}
+.cc-pipe-box s{display:block;font-size:8.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-top:4px;font-style:normal}
+.cc-pipe-draft{background:var(--st-draft-bg)}
+.cc-pipe-draft b{color:var(--st-draft)}
+.cc-pipe-draft s{color:var(--st-draft-tx)}
+.cc-pipe-review{background:var(--st-review-bg)}
+.cc-pipe-review b{color:var(--st-review)}
+.cc-pipe-review s{color:var(--st-review-tx)}
+.cc-pipe-onb{background:var(--st-onboarded-bg)}
+.cc-pipe-onb b{color:var(--st-onboarded)}
+.cc-pipe-onb s{color:var(--st-onboarded-tx)}
+
+/* ── Compact category rows ── */
+.cc-cat-rows{margin:0 0 10px;display:flex;flex-direction:column;gap:4px}
+.cc-cat-row{
+  display:flex;align-items:center;gap:8px;padding:5px 8px;
+  border-radius:6px;background:var(--bg2);
+  border-left:3px solid var(--vc,var(--blue));
+  font-size:11px;min-width:0;
+}
+.cc-cat-nm{font-weight:600;color:var(--txt);flex-shrink:0;max-width:85px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-cat-nums{color:var(--txt3);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-cat-nums em{font-style:normal;color:var(--st-onboarded);font-weight:700}
+
+/* ══════════════════════════════════════════════════
+   VERTICAL STORY SECTION — full editorial layout
+   ══════════════════════════════════════════════════ */
 .vert-section{
-  position:relative;
-  margin:0 0 88px;
-  padding:52px 0 0;
-  border-top:2px solid var(--border);
-  scroll-margin-top:72px;
+  position:relative;margin:0 0 80px;padding:52px 0 0;
+  border-top:2px solid var(--border);scroll-margin-top:68px;
 }
 .vert-section::before{
-  content:'';
-  position:absolute;
-  top:-2px;left:0;
-  width:72px;height:2px;
-  background:var(--vc,var(--blue));
-  border-radius:2px;
+  content:'';position:absolute;top:-2px;left:0;width:80px;height:2px;
+  background:var(--vc,var(--blue));border-radius:2px;
 }
 
-/* Section header: title left, hero number right */
-.vs-hdr{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:24px;
-  margin-bottom:36px;
-  flex-wrap:wrap;
-}
+/* Story header */
+.vs-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:28px;flex-wrap:wrap}
 .vs-title-wrap{flex:1 1 200px}
 .vs-badge{
-  display:inline-flex;
-  align-items:center;
-  font-size:9.5px;
-  font-weight:600;
-  letter-spacing:1.2px;
-  text-transform:uppercase;
-  color:var(--txt3);
-  border:1px solid var(--border);
-  border-radius:4px;
-  padding:2px 8px;
-  margin-bottom:10px;
+  display:inline-flex;align-items:center;
+  font-size:9.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--txt3);border:1px solid var(--border);border-radius:5px;padding:2px 9px;margin-bottom:9px;
 }
-.vs-title{
-  font-size:26px;
-  font-weight:700;
-  letter-spacing:-.4px;
-  color:var(--txt);
-  line-height:1.15;
-  margin-bottom:14px;
-}
+.vs-title{font-size:26px;font-weight:700;letter-spacing:-.4px;color:var(--txt);line-height:1.15;margin-bottom:12px}
 .vs-rec-btn{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding:9px 20px;
-  border:1.5px solid var(--vc,var(--blue));
-  border-radius:999px;
-  background:transparent;
-  color:var(--vc,var(--blue));
-  font:600 12px/1 'Poppins',sans-serif;
-  cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;padding:9px 20px;
+  border:1.5px solid var(--vc,var(--blue));border-radius:999px;background:transparent;
+  color:var(--vc,var(--blue));font:600 12px/1 'Poppins',sans-serif;cursor:pointer;
   transition:background .18s,box-shadow .18s;
 }
-.vs-rec-btn:hover{
-  background:var(--vc-soft,rgba(0,93,255,.07));
-  box-shadow:0 0 0 3px var(--vc-soft,rgba(0,93,255,.07));
-}
+.vs-rec-btn:hover{background:var(--vc-soft,rgba(0,93,255,.07));box-shadow:0 0 0 3px var(--vc-soft,rgba(0,93,255,.07))}
 .vs-hero-stat{flex-shrink:0;text-align:right}
-.vs-hero-count{
-  font-size:60px;
-  font-weight:800;
-  letter-spacing:-3px;
-  color:var(--vc,var(--blue));
-  line-height:1;
-  font-variant-numeric:tabular-nums;
-}
-.vs-hero-lbl{
-  font-size:9.5px;
-  font-weight:600;
-  letter-spacing:1px;
-  text-transform:uppercase;
-  color:var(--txt3);
-  margin-top:6px;
-}
+.vs-hero-count{font-size:58px;font-weight:800;letter-spacing:-3px;color:var(--vc,var(--blue));line-height:1;font-variant-numeric:tabular-nums}
+.vs-hero-lbl{font-size:9.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-top:6px}
 
-/* KPI row */
-.vs-kpis{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-  gap:10px;
-  margin-bottom:40px;
+/* Completion progress bar */
+.vs-progress{margin-bottom:32px}
+.vs-progress-hdr{
+  display:flex;justify-content:space-between;align-items:baseline;
+  margin-bottom:8px;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--txt3);font-weight:600;
 }
-.vs-kpi{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:16px;
-  opacity:0;
-  transform:translateY(10px);
-  transition:opacity .45s var(--ease-out),transform .45s var(--ease-out);
-  transition-delay:calc(var(--ki,0) * 55ms);
-}
-.vs-kpi.kpi-in{opacity:1;transform:none}
-.vs-kpi-val{
-  font-size:19px;
-  font-weight:700;
-  letter-spacing:-.4px;
-  color:var(--txt);
-  margin-bottom:5px;
-}
-.vs-kpi-lbl{
-  font-size:9.5px;
-  font-weight:500;
-  letter-spacing:.5px;
-  color:var(--txt3);
-  text-transform:uppercase;
-}
+.vs-progress-hdr strong{font-size:13px;color:var(--txt);font-weight:700;letter-spacing:-.1px;text-transform:none}
+.vs-progress-track{height:7px;background:var(--border);border-radius:4px;overflow:hidden}
+.vs-progress-fill{height:100%;border-radius:4px;transition:width 1.1s var(--ease-out);
+  background:linear-gradient(90deg,var(--vc,var(--blue)),var(--st-onboarded))}
 
-/* Funnel inside story section — rings already animated by JS; section reveal is the entrance */
-.vs-funnel{margin-bottom:40px}
+/* ── Big 4-box pipeline in story section ── */
+.vs-pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:36px}
+.vs-pipe-box{
+  border-radius:14px;padding:22px 14px;text-align:center;
+  border:1px solid transparent;
+  opacity:0;transform:translateY(14px);
+  transition:opacity .5s var(--ease-out),transform .5s var(--ease-out);
+  transition-delay:calc(var(--pi,0)*70ms);
+}
+.vs-pipe-box.pipe-in{opacity:1;transform:none}
+.vs-pipe-box b{display:block;font-size:40px;font-weight:800;letter-spacing:-2px;font-variant-numeric:tabular-nums;line-height:1}
+.vs-pipe-box s{display:block;font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-top:8px;font-style:normal}
+.vs-pipe-draft {background:var(--st-draft-bg);      border-color:rgba(96,165,250,.18)}
+.vs-pipe-draft b{color:var(--st-draft)}
+.vs-pipe-draft s{color:var(--st-draft-tx)}
+.vs-pipe-review{background:var(--st-review-bg);     border-color:rgba(129,140,248,.18)}
+.vs-pipe-review b{color:var(--st-review)}
+.vs-pipe-review s{color:var(--st-review-tx)}
+.vs-pipe-onb   {background:var(--st-onboarded-bg);  border-color:rgba(29,199,151,.18)}
+.vs-pipe-onb b {color:var(--st-onboarded)}
+.vs-pipe-onb s {color:var(--st-onboarded-tx)}
+.vs-pipe-rej   {background:var(--st-rejected-bg);   border-color:rgba(229,99,99,.18)}
+.vs-pipe-rej b {color:var(--st-rejected)}
+.vs-pipe-rej s {color:var(--st-rejected-tx)}
+
+/* ── Category list with mini progress bars ── */
+.vs-cat-list{margin-bottom:36px}
+.vs-cat-list-hdr{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:12px}
+.vs-cat-item{
+  display:flex;align-items:center;gap:12px;padding:11px 14px;
+  border-radius:9px;margin-bottom:7px;background:var(--card);
+  border:1px solid var(--border);border-left:4px solid var(--vc,var(--blue));
+  opacity:0;transform:translateX(-12px);
+  transition:opacity .42s var(--ease-out),transform .42s var(--ease-out);
+  transition-delay:calc(var(--ci,0)*50ms);
+}
+.vs-cat-item.cat-in{opacity:1;transform:none}
+.vs-cat-nm2{font-size:12.5px;font-weight:600;color:var(--txt);min-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vs-cat-done-val{font-size:17px;font-weight:800;color:var(--st-onboarded);font-variant-numeric:tabular-nums;letter-spacing:-.5px;min-width:36px;text-align:right}
+.vs-cat-done-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.3px;font-weight:600;flex-shrink:0}
+.vs-cat-bar-wrap{flex:1;min-width:60px}
+.vs-cat-bar-bg{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.vs-cat-bar-fg{height:100%;background:var(--st-onboarded);border-radius:3px;width:0;transition:width 1s var(--ease-out)}
+.vs-cat-total{font-size:10.5px;color:var(--txt3);white-space:nowrap;min-width:48px;text-align:right}
+
+/* Funnel inside story section */
+.vs-funnel{margin-bottom:36px}
 .vert-section .fring{animation:none !important}
-
-/* Category grid */
-.vs-cats{margin-bottom:40px}
-.vs-cap{
-  font-size:9.5px;
-  font-weight:600;
-  letter-spacing:1px;
-  text-transform:uppercase;
-  color:var(--txt3);
-  margin-bottom:14px;
-}
-.vs-cat-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
-  gap:10px;
-}
-.vs-cat-card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:16px;
-  opacity:0;
-  transform:translateY(8px);
-  transition:opacity .38s var(--ease-out),transform .38s var(--ease-out);
-  transition-delay:calc(var(--ri,0) * 45ms);
-}
-.vs-cat-card.cat-in{opacity:1;transform:none}
-.vs-cat-card b{font-size:21px;font-weight:700;letter-spacing:-.5px;color:var(--txt);display:block}
-.vs-cat-name{font-size:10.5px;color:var(--txt2);margin-top:4px}
 
 /* Flash ring when scrolled-to */
 @keyframes vsFlash{
-  0%  {box-shadow:0 0 0 0   var(--vc-soft,rgba(0,93,255,.18))}
-  40% {box-shadow:0 0 0 12px var(--vc-soft,rgba(0,93,255,.0))}
+  0%  {box-shadow:0 0 0 0 var(--vc-soft,rgba(0,93,255,.18))}
+  40% {box-shadow:0 0 0 14px transparent}
   100%{box-shadow:none}
 }
-.vert-section.flash{animation:vsFlash .9s var(--ease-out)}
+.vert-section.flash{animation:vsFlash 1s var(--ease-out)}
+
+/* Extra KPI strip (compact metrics row below categories) */
+.vs-metrics{display:flex;flex-wrap:wrap;gap:6px 20px;margin-bottom:32px;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.vs-metric{display:flex;flex-direction:column;gap:2px}
+.vs-metric b{font-size:15px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.vs-metric span{font-size:9.5px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;font-weight:500}
 
 /* Responsive */
-@media(max-width:1100px){.compare-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1100px){
+  .compare-grid{grid-template-columns:repeat(2,1fr)}
+  .vs-pipe{grid-template-columns:repeat(2,1fr)}
+}
 @media(max-width:760px){
-  #main{padding:0 20px 60px}
-  #header{padding:0 20px}
-  .section-title{padding-top:32px}
+  #main{padding:0 16px 60px}
+  #header{padding:0 16px}
+  .section-title{padding-top:28px}
   .compare-grid{grid-template-columns:1fr}
-  .vd-page-inner{padding:20px 20px 48px}
+  .vs-pipe{grid-template-columns:repeat(2,1fr)}
+  .vd-page-inner{padding:16px 16px 44px}
   .vs-hero-count{font-size:44px;letter-spacing:-2px}
-  .vs-title{font-size:20px}
+  .vs-title{font-size:22px}
 }
 </style>
 </head>
@@ -1774,45 +1771,59 @@ function renderVerticals() {
   grid.innerHTML = getVertCfg().map(function(cfg) {
     var v   = verts[cfg.key] || {};
     var tot = v.total || 0;
-    var sel = selectedVert === cfg.key;
     var attrs = ' style="--i:' + (idx++) + ';' + vcVars(cfg.key) + '" tabindex="0" role="button"'
       + ' aria-label="' + esc(cfg.name) + ' details"'
       + ' onclick="scrollToVert(\'' + cfg.key + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();scrollToVert(\'' + cfg.key + '\')}"';
 
-    var head = '<div class="compare-header">'
-      + '<div><div class="compare-label">' + esc(cfg.name) + '</div>'
-      + (cfg.sub ? '<div class="compare-sub">' + esc(cfg.sub) + '</div>' : '')
-      + '</div>'
-      + '<span class="compare-source-badge">' + cfg.code + '</span></div>';
+    // Card header: badge + name + completion pill
+    var hdr = '<div class="cc-hdr2">'
+      + '<span class="compare-source-badge">' + cfg.code + '</span>'
+      + '<span class="cc-name2">' + esc(cfg.name) + '</span>'
+      + (tot > 0 ? '<span class="cc-pill">' + (v.completionPct || 0) + '%</span>' : '')
+      + '</div>';
 
     if (tot <= 0) {
-      return '<div class="compare-card' + (sel ? ' selected' : '') + '"' + attrs + '>'
-        + head + '<div class="no-data" style="padding:26px 0">No records in selected period</div></div>';
+      return '<div class="compare-card"' + attrs + '>'
+        + hdr + '<div class="no-data" style="padding:24px 0">No records in selected period</div></div>';
     }
 
-    // Transacted count and GMV value — only shown when the backend provides the data.
+    // Three pipeline stage boxes
+    var pipe = '<div class="cc-pipe">'
+      + '<div class="cc-pipe-box cc-pipe-draft"><b>' + fmt(v.draft || 0) + '</b><s>Draft</s></div>'
+      + '<div class="cc-pipe-box cc-pipe-review"><b>' + fmt(v.inReview || 0) + '</b><s>In Review</s></div>'
+      + '<div class="cc-pipe-box cc-pipe-onb"><b>' + fmt(v.completed || 0) + '</b><s>Onboarded</s></div>'
+      + '</div>';
+
+    // Top 3 categories as compact rows
+    var topCats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; }).slice(0, 3);
+    var catRows = topCats.length
+      ? '<div class="cc-cat-rows">'
+        + topCats.map(function(c) {
+            var done = c.onboarded || 0;
+            return '<div class="cc-cat-row">'
+              + '<span class="cc-cat-nm">' + esc(c.category) + '</span>'
+              + '<span class="cc-cat-nums"><em>' + fmt(done) + ' done</em> · of ' + fmt(c.total) + '</span>'
+              + '</div>';
+          }).join('')
+        + '</div>'
+      : '';
+
+    // Footer
     var txnItem = (v.transacted === null || v.transacted === undefined) ? ''
       : '<div class="cc-foot-item"><b>' + fmt(v.transacted) + '</b>Transacted</div>';
     var gmvItem = (v.totalTxnValue === null || v.totalTxnValue === undefined) ? ''
       : '<div class="cc-foot-item"><b>' + fmtINR(v.totalTxnValue) + '</b>GMV</div>';
 
-    return '<div class="compare-card' + (sel ? ' selected' : '') + '"' + attrs + '>'
-      + head
-      + '<div class="cc-hero">'
-      +   '<span class="cc-hero-num" data-count="' + (v.completed || 0) + '" data-count-id="' + currentAudience + ':' + cfg.key + '">' + fmt(v.completed || 0) + '</span>'
-      +   '<span class="cc-hero-of">of ' + fmt(tot) + '</span>'
-      +   '<span class="cc-pill">' + (v.completionPct || 0) + '%</span>'
-      + '</div>'
-      + '<div class="cc-hero-lbl">Onboarded</div>'
-      + cardStats(v)
+    return '<div class="compare-card"' + attrs + '>'
+      + hdr
+      + pipe
+      + catRows
       + '<div class="cc-foot">'
       +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
-      +   txnItem
-      +   gmvItem
-      +   (v.withGST   != null ? '<div class="cc-foot-item cc-gst-active"><b>'   + fmt(v.withGST)   + '</b>GST Active</div>'   : '')
-      +   (v.missingGST != null ? '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST) + '</b>GST Inactive</div>' : '')
-      +   '<span class="cc-foot-more">Scroll to details ↓</span>'
+      +   txnItem + gmvItem
+      +   (v.missingGST != null ? '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST) + '</b>GST Missing</div>' : '')
+      +   '<span class="cc-foot-more" style="color:var(--vc-ink,var(--blue))">Details ↓</span>'
       + '</div>'
       + '</div>';
   }).join('');
@@ -1951,9 +1962,9 @@ function renderVertStory() {
   var sep       = document.getElementById('story-sep');
   if (!container) return;
 
-  var verts    = D.verticals;
-  var cfgList  = getVertCfg();
-  var hasAny   = cfgList.some(function(c) { return (verts[c.key] || {}).total > 0; });
+  var verts   = D.verticals;
+  var cfgList = getVertCfg();
+  var hasAny  = cfgList.some(function(c) { return (verts[c.key] || {}).total > 0; });
 
   if (sep) sep.style.display = hasAny ? '' : 'none';
   if (!hasAny) { container.innerHTML = ''; return; }
@@ -1964,93 +1975,123 @@ function renderVertStory() {
     if (!tot) return '';
 
     var vcStyle = 'style="' + vcVars(cfg.key) + '"';
+    var pct = v.completionPct || 0;
 
-    // KPI tiles
-    var metricsArr = [
-      ['Total Cases',    fmt(v.total || 0)],
-      ['Onboarded',      fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)'],
-      v.transacted != null ? ['Transacted', fmt(v.transacted)] : null,
-      v.totalTxnValue != null ? ['Txn Value', fmtINR(v.totalTxnValue)] : null,
-      ['In Review',      fmt(v.inReview  || 0)],
-      ['Draft',          fmt(v.draft     || 0)],
-      ['Rejected',       fmt(v.rejected  || 0)],
-      ['Avg TAT',        dOr(v.avgTAT, 'd')],
-      ['Onboarded (7d)', fmt(v.completedThisWeek || 0)],
-      v.withGST    != null ? ['GST Active',   fmt(v.withGST)]   : null,
-      v.missingGST != null ? ['GST Inactive', fmt(v.missingGST)] : null,
-    ].filter(Boolean);
-
-    var kpiHtml = '<div class="vs-kpis">'
-      + metricsArr.map(function(m, i) {
-          return '<div class="vs-kpi" style="--ki:' + i + '">'
-            + '<div class="vs-kpi-val">' + m[1] + '</div>'
-            + '<div class="vs-kpi-lbl">' + m[0] + '</div>'
-            + '</div>';
-        }).join('')
-      + '</div>';
-
-    // Funnel chart (reuses existing funnelBig)
-    var funnelHtml = '<div class="vs-funnel chart-card">'
-      + '<div class="chart-card-title">Onboarding Funnel'
-      + '<span class="muted-total">' + fmt(tot) + ' total · share of all cases</span></div>'
-      + funnelBig(v, cfg)
-      + '</div>';
-
-    // Category grid
-    var catHtml = '';
-    if (v.categories && v.categories.length) {
-      var cats = v.categories.filter(function(c) { return (c.total || 0) > 0; }).slice(0, 8);
-      if (cats.length) {
-        catHtml = '<div class="vs-cats">'
-          + '<div class="vs-cap">Onboarded by Category</div>'
-          + '<div class="vs-cat-grid">'
-          + cats.map(function(c, ri) {
-              return '<div class="vs-cat-card" style="--ri:' + ri + '">'
-                + '<b>' + fmt(c.total) + '</b>'
-                + '<div class="vs-cat-name">' + esc(c.name) + '</div>'
-                + '</div>';
-            }).join('')
-          + '</div></div>';
-      }
-    }
-
-    return '<section class="vert-section reveal" id="vs-' + cfg.key + '" ' + vcStyle + '>'
-      + '<div class="vs-hdr">'
+    // ── Section header ──────────────────────────────────────────────────────
+    var hdrHtml = '<div class="vs-hdr">'
       + '<div class="vs-title-wrap">'
       + '<div class="vs-badge">' + cfg.code + '</div>'
       + '<div class="vs-title">' + esc(cfg.name) + '</div>'
-      + '<button class="vs-rec-btn" onclick="openVertDetail(\'' + cfg.key + '\')" type="button">'
-      + 'View Records →'
-      + '</button>'
+      + '<button class="vs-rec-btn" onclick="openVertDetail(\'' + cfg.key + '\')" type="button">View Records →</button>'
       + '</div>'
       + '<div class="vs-hero-stat">'
       + '<div class="vs-hero-count">' + fmt(v.completed || 0) + '</div>'
-      + '<div class="vs-hero-lbl">Onboarded of ' + fmt(tot) + '</div>'
+      + '<div class="vs-hero-lbl">onboarded of ' + fmt(tot) + '</div>'
       + '</div>'
-      + '</div>'
-      + kpiHtml
-      + funnelHtml
-      + catHtml
+      + '</div>';
+
+    // ── Completion progress bar ──────────────────────────────────────────────
+    var progressHtml = '<div class="vs-progress">'
+      + '<div class="vs-progress-hdr"><span>Completion Rate</span><strong>' + pct + '%</strong></div>'
+      + '<div class="vs-progress-track"><div class="vs-progress-fill" style="width:' + pct + '%"></div></div>'
+      + '</div>';
+
+    // ── Four pipeline stage boxes ────────────────────────────────────────────
+    var pipeHtml = '<div class="vs-pipe">'
+      + '<div class="vs-pipe-box vs-pipe-draft" style="--pi:0"><b>' + fmt(v.draft || 0) + '</b><s>Draft</s></div>'
+      + '<div class="vs-pipe-box vs-pipe-review" style="--pi:1"><b>' + fmt(v.inReview || 0) + '</b><s>In Review</s></div>'
+      + '<div class="vs-pipe-box vs-pipe-onb" style="--pi:2"><b>' + fmt(v.completed || 0) + '</b><s>Onboarded</s></div>'
+      + '<div class="vs-pipe-box vs-pipe-rej" style="--pi:3"><b>' + fmt(v.rejected || 0) + '</b><s>Rejected</s></div>'
+      + '</div>';
+
+    // ── Compact key metrics strip ────────────────────────────────────────────
+    var metArr = [
+      ['Avg TAT',        dOr(v.avgTAT, 'd')],
+      v.completedThisWeek ? ['Onboarded (7d)', fmt(v.completedThisWeek)] : null,
+      v.transacted != null ? ['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)'] : null,
+      v.totalTxnValue != null ? ['GMV', fmtINR(v.totalTxnValue)] : null,
+      v.withGST    != null ? ['GST Active',   fmt(v.withGST)]   : null,
+      v.missingGST != null ? ['GST Missing',  fmt(v.missingGST)] : null,
+    ].filter(Boolean);
+    var metricsHtml = metArr.length
+      ? '<div class="vs-metrics">'
+        + metArr.map(function(m) {
+            return '<div class="vs-metric"><b>' + m[1] + '</b><span>' + m[0] + '</span></div>';
+          }).join('')
+        + '</div>'
+      : '';
+
+    // ── Category list with progress bars ─────────────────────────────────────
+    var catHtml = '';
+    if (v.categories && v.categories.length) {
+      var cats = v.categories.filter(function(c) { return (c.total || 0) > 0; });
+      if (cats.length) {
+        var maxTot = Math.max.apply(null, cats.map(function(c) { return c.total || 0; }));
+        catHtml = '<div class="vs-cat-list">'
+          + '<div class="vs-cat-list-hdr">By Category</div>'
+          + cats.map(function(c, ci) {
+              var done    = c.onboarded || 0;
+              var barPct  = maxTot ? Math.round((c.total / maxTot) * 100) : 0;
+              return '<div class="vs-cat-item" style="--ci:' + ci + '">'
+                + '<span class="vs-cat-nm2">' + esc(c.category) + '</span>'
+                + '<span class="vs-cat-done-val">' + fmt(done) + '</span>'
+                + '<span class="vs-cat-done-lbl">done</span>'
+                + '<div class="vs-cat-bar-wrap">'
+                +   '<div class="vs-cat-bar-bg"><div class="vs-cat-bar-fg" data-pct="' + barPct + '"></div></div>'
+                + '</div>'
+                + '<span class="vs-cat-total">of ' + fmt(c.total) + '</span>'
+                + '</div>';
+            }).join('')
+          + '</div>';
+      }
+    }
+
+    // ── Funnel chart ─────────────────────────────────────────────────────────
+    var funnelHtml = '<div class="vs-funnel chart-card">'
+      + '<div class="chart-card-title">Onboarding Funnel'
+      + '<span class="muted-total">' + fmt(tot) + ' total · share of pipeline</span></div>'
+      + funnelBig(v, cfg)
+      + '</div>';
+
+    return '<section class="vert-section reveal" id="vs-' + cfg.key + '" ' + vcStyle + '>'
+      + hdrHtml + progressHtml + pipeHtml + metricsHtml + catHtml + funnelHtml
       + '</section>';
   }).join('');
 
-  // Animate KPI tiles and category cards as their section scrolls in.
+  // Animate pipeline boxes and category rows as they scroll into view.
   requestAnimationFrame(function() {
     if (!motionOK()) {
-      container.querySelectorAll('.vs-kpi,.vs-cat-card').forEach(function(el) {
-        el.classList.add('kpi-in','cat-in');
+      container.querySelectorAll('.vs-pipe-box,.vs-cat-item').forEach(function(el) {
+        el.classList.add('pipe-in','cat-in');
+      });
+      // Set bar widths immediately
+      container.querySelectorAll('.vs-cat-bar-fg').forEach(function(el) {
+        el.style.width = (el.getAttribute('data-pct') || '0') + '%';
       });
       return;
     }
-    var kpiObs = new IntersectionObserver(function(entries) {
+    var obs = new IntersectionObserver(function(entries) {
       entries.forEach(function(e) {
         if (!e.isIntersecting) return;
-        var delay = (parseInt(e.target.style.getPropertyValue('--ki') || e.target.style.getPropertyValue('--ri') || '0', 10) || 0);
-        setTimeout(function() { e.target.classList.add('kpi-in','cat-in'); }, delay * 55);
-        kpiObs.unobserve(e.target);
+        var el  = e.target;
+        var idx = parseInt(el.style.getPropertyValue('--pi') || el.style.getPropertyValue('--ci') || '0', 10) || 0;
+        setTimeout(function() {
+          el.classList.add('pipe-in','cat-in');
+          // Animate progress bars inside category items
+          el.querySelectorAll('.vs-cat-bar-fg').forEach(function(bar) {
+            bar.style.width = (bar.getAttribute('data-pct') || '0') + '%';
+          });
+        }, idx * 65);
+        obs.unobserve(el);
       });
-    }, { threshold: 0.1, rootMargin: '0px 0px -24px 0px' });
-    container.querySelectorAll('.vs-kpi,.vs-cat-card').forEach(function(el) { kpiObs.observe(el); });
+    }, { threshold: 0.08, rootMargin: '0px 0px -20px 0px' });
+    container.querySelectorAll('.vs-pipe-box,.vs-cat-item').forEach(function(el) { obs.observe(el); });
+    // Also animate completion bars that are already in view
+    container.querySelectorAll('.vs-progress-fill').forEach(function(el) {
+      var w = el.style.width;
+      el.style.width = '0';
+      requestAnimationFrame(function() { el.style.width = w; });
+    });
   });
 }
 
