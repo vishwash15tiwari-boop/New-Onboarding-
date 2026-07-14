@@ -665,9 +665,22 @@ function gpNormFY_(v) {
   return s;
 }
 
+// Resolve the target tab: prefer the one literally named "Vendor Payables"
+// (case/spacing-insensitive), else fall back to the first tab. Guards against
+// a reordered workbook or a hidden helper sheet sitting at index 0.
+function gpOpenSheet_() {
+  var ss = SpreadsheetApp.openById(GST_PAYABLES.SHEET_ID);
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    var nm = String(sheets[i].getName() || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    if (nm === 'vendor payables' || nm === 'vendor payable' || nm === 'vendorpayables') return sheets[i];
+  }
+  return sheets[0];
+}
+
 // Read + normalize the vendor rows from the GST Payables sheet.
 function gpReadVendors_() {
-  var sheet = SpreadsheetApp.openById(GST_PAYABLES.SHEET_ID).getSheets()[0];
+  var sheet = gpOpenSheet_();
   var raw = readSheetObj_(sheet);
   var idx = buildIndex(raw.headers);
   return raw.rows.map(function(row) {
@@ -780,11 +793,12 @@ function getGSTPayablesData(filtersJson) {
 function diagnoseGSTPayables() {
   try {
     var ss = SpreadsheetApp.openById(GST_PAYABLES.SHEET_ID);
-    var sheet = ss.getSheets()[0];
+    var sheet = gpOpenSheet_();
     var raw = readSheetObj_(sheet);
     var idx = buildIndex(raw.headers);
     Logger.log('Spreadsheet: ' + ss.getName());
-    Logger.log('First tab:   ' + sheet.getName());
+    Logger.log('Tab read:    ' + sheet.getName());
+    Logger.log('All tabs:    ' + ss.getSheets().map(function(s) { return s.getName(); }).join(' | '));
     Logger.log('Data rows:   ' + raw.rows.length);
     Logger.log('Headers (' + raw.headers.length + '): ' + raw.headers.join(' | '));
     Logger.log('── Resolved field mapping ──');
