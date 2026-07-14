@@ -1090,6 +1090,7 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
   border-top:1px solid var(--border);
   margin-top:auto;
   padding-top:2px;
+  overflow-x:auto;
 }
 .cc-fy-row{
   display:flex;align-items:center;
@@ -2098,8 +2099,8 @@ function renderVerticals() {
         + '</div>'
       : '<div class="cc-cat-rows"></div>';
 
-    // FY breakdown table: up to 2 most-recent FYs side-by-side
-    var fys = (v.fyBreakdown || []).slice(0, 2);
+    // FY breakdown table: all available FYs, newest first
+    var fys = (v.fyBreakdown || []);
     var statsList = '';
     if (fys.length) {
       function fyDataRow(label, valFn, badCls) {
@@ -3519,6 +3520,7 @@ function fyShort(fy) { return String(fy || '').replace(/^FY\s*/, ''); }
 // SIDEBAR NAVIGATION
 // ═══════════════════════════════════════════════════════════════
 var snActiveKey = null;    // which vertical's section is active (scroll spy)
+var snVertsOpen = false;   // sidebar verticals list collapsed by default
 var _scrollSpyObs = null;  // IntersectionObserver instance for scroll spy
 
 function buildSideNav() {
@@ -3531,13 +3533,15 @@ function buildSideNav() {
 
   var html = '<div class="sn-sect">Navigation</div>';
 
-  // ── Verticals group (always expanded in overview) ──────────
-  html += '<button class="sn-grp' + (isOvw ? ' sn-active sn-open' : '') + '" onclick="if(currentView===\'gst\'){switchView(\'onboarding\');}">'
+  // ── Verticals group (collapsed by default, toggles on click) ──
+  var vertsOpen = isOvw && snVertsOpen;
+  html += '<button class="sn-grp' + (isOvw ? ' sn-active' : '') + (vertsOpen ? ' sn-open' : '') + '"'
+    + ' onclick="if(currentView===\'gst\'){switchView(\'onboarding\');}else{snVertsOpen=!snVertsOpen;buildSideNav();}">'
     + '<span class="sn-grp-ic">V</span>'
     + '<span class="sn-grp-lbl">Verticals</span>'
     + '<span class="sn-grp-arr">›</span>'
     + '</button>';
-  if (isOvw && cfgList.length) {
+  if (vertsOpen && cfgList.length) {
     html += '<div class="sn-subs sn-open">';
     cfgList.forEach(function(cfg) {
       var vs  = DS && DS.verticals && DS.verticals[cfg.key] || {};

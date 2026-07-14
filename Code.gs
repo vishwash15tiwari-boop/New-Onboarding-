@@ -468,47 +468,6 @@ function vStats(data) {
     else if (elapsed > AGE_WARN_MS) { agingCount++; }
   });
 
-  // Fiscal-year breakdown: all key stats per FY, bucketed by createdDate.
-  var fyMap = {};
-  data.forEach(function(r) {
-    var d = r.createdDate;
-    if (!d) return;
-    var y = fyStartYear(d);
-    var key = 'FY' + String(y).slice(2) + '-' + String(y + 1).slice(2);
-    if (!fyMap[key]) fyMap[key] = {
-      fy: key, onboarded: 0,
-      tatSum: 0, tatCount: 0,
-      txnSum: 0, transacted: 0, hasTxn: false,
-      gstActive: 0, gstMissing: 0
-    };
-    var f = fyMap[key];
-    if (r.status === 'COMPLETED') {
-      f.onboarded++;
-      if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) {
-        f.tatSum += r.onbTAT; f.tatCount++;
-      }
-      if (r.hasGST) f.gstActive++; else f.gstMissing++;
-    }
-    if (r.hasTxn) f.hasTxn = true;
-    if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
-      f.txnSum += r.txnValue; f.transacted++;
-    }
-  });
-  var fyBreakdown = Object.keys(fyMap)
-    .sort(function(a, b) { return b.localeCompare(a); })
-    .map(function(k) {
-      var f = fyMap[k];
-      return {
-        fy:            f.fy,
-        onboarded:     f.onboarded,
-        avgTAT:        f.tatCount ? Math.round(f.tatSum / f.tatCount) : null,
-        totalTxnValue: (f.hasTxn && f.txnSum > 0) ? f.txnSum : null,
-        pctTransacted: f.hasTxn ? pct(f.transacted, f.onboarded) : null,
-        withGST:       f.gstActive  > 0 ? f.gstActive  : null,
-        missingGST:    f.gstMissing > 0 ? f.gstMissing : null,
-      };
-    });
-
   var catMap = {};
   data.forEach(function(r) {
     var c = r.category || 'Others';
@@ -547,7 +506,7 @@ function vStats(data) {
     var fyTransacted = fyHasTxn ? countFn(d, function(r) { return r.hasTransacted; }) : null;
     var fyTxnSum = 0, fyHasTxnVal = false;
     d.forEach(function(r) {
-      if (r.txnValue !== null && r.txnValue !== undefined) { fyHasTxnVal = true; fyTxnSum += r.txnValue; }
+      if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) { fyHasTxnVal = true; fyTxnSum += r.txnValue; }
     });
     var fyWithGST = d.some(function(r) { return r.gstin; })
       ? countFn(d, function(r) { return r.status === 'COMPLETED' && r.hasGST; }) : null;
@@ -587,7 +546,6 @@ function vStats(data) {
     fyBreakdown: fyBreakdown,
     categories:  categories,
     rowsTotal: total,
-    fyBreakdown: fyBreakdown,
   };
 }
 
