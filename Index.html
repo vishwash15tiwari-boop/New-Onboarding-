@@ -887,12 +887,12 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .cc-name2{font-size:11px;font-weight:700;color:var(--txt2);letter-spacing:.8px;text-transform:uppercase;flex:1;min-width:0}
 
 /* ── 3-box pipeline (Draft | In Review | Completed) ── */
-.cc-pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.cc-pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
 .cc-pipe-box{
-  border-radius:8px;padding:14px 10px 12px;text-align:center;
+  border-radius:8px;padding:11px 8px 9px;text-align:center;
   border:1px solid transparent;
 }
-.cc-pipe-box b{display:block;font-size:32px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1;margin-bottom:5px}
+.cc-pipe-box b{display:block;font-size:28px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1;margin-bottom:4px}
 .cc-pipe-box span{display:block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .cc-pipe-draft{background:var(--bg2);border-color:var(--border)}
 .cc-pipe-draft b{color:var(--txt)}
@@ -905,8 +905,8 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .cc-pipe-onb span{color:var(--st-onboarded-tx)}
 
 /* ── Category rows: badge + "X done · Y draft · Z review" ── */
-.cc-cat-rows{flex:1;display:flex;flex-direction:column;gap:5px;margin:0 0 14px}
-.cc-cat-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;background:var(--bg2);border:1px solid var(--border)}
+.cc-cat-rows{flex:1;display:flex;flex-direction:column;gap:4px;margin:0 0 10px}
+.cc-cat-row{display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:7px;background:var(--bg2);border:1px solid var(--border)}
 .cc-cat-badge{
   font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;
   background:var(--vc-soft,var(--border));color:var(--vc-ink,var(--txt2));
@@ -1038,26 +1038,43 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .vs-aging-sub .ag-warn{color:#C25A24;font-weight:700}
 .vs-aging-sub .ag-crit{color:#B03030;font-weight:700}
 
-/* ── FY column table inside compare cards ── */
-.cc-fy-wrap{border-top:1px solid var(--border);margin-top:auto}
-.cc-fy-row{display:flex;align-items:center;border-bottom:1px solid var(--border);min-height:30px}
+/* ── FY year-wise stats table inside compare cards ── */
+.cc-fy-wrap{
+  border-top:1px solid var(--border);
+  margin-top:auto;
+  padding-top:2px;
+}
+.cc-fy-row{
+  display:flex;align-items:center;
+  border-bottom:1px solid var(--border);
+  min-height:30px;
+}
 .cc-fy-row:last-child{border-bottom:none}
-.cc-fy-lbl{flex:1;padding:5px 0;font-size:11.5px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Label: left side, muted, compact */
+.cc-fy-lbl{
+  flex:1;padding:6px 8px 6px 0;
+  font-size:10.5px;color:var(--txt2);font-weight:500;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  letter-spacing:-.1px;
+}
+/* Value column: right-aligned, bold, wide enough for "₹87.75 Cr" */
 .cc-fy-col{
-  min-width:62px;text-align:right;
-  padding:5px 0 5px 8px;
+  min-width:82px;text-align:right;
+  padding:6px 0 6px 12px;
   border-left:1px solid var(--border);
   font-size:12.5px;font-weight:700;
   color:var(--txt);font-variant-numeric:tabular-nums;
-  flex-shrink:0;white-space:nowrap;
+  flex-shrink:0;white-space:nowrap;letter-spacing:-.3px;
 }
-/* Header row */
-.cc-fy-hdr{min-height:auto}
+/* FY name header row */
+.cc-fy-hdr{min-height:auto;padding:8px 0 2px}
 .cc-fy-hdr .cc-fy-col{
-  font-size:9px;font-weight:700;
-  color:var(--blue);text-transform:none;
-  letter-spacing:.1px;padding-top:7px;padding-bottom:4px;
+  font-size:9.5px;font-weight:700;
+  color:var(--vc-ink,var(--blue));letter-spacing:.3px;
+  border-left-color:transparent;
+  padding-top:0;padding-bottom:0;
 }
+/* Only bad (non-zero GSTIN missing) shows in red */
 .cc-fy-bad .cc-fy-col{color:var(--st-rejected,#B03030)}
 
 /* Responsive */
@@ -2070,12 +2087,14 @@ function renderVerticals() {
           + cells.map(function(c){ return '<span class="cc-fy-col">' + (c != null ? c : '—') + '</span>'; }).join('')
           + '</div>';
       }
+      // Only highlight GSTIN missing in red when at least one FY actually has missing GSTINs.
+      var hasMissingGST = fys.some(function(f) { return (f.missingGST || 0) > 0; });
       var fyRows = [
         fyDataRow('Avg TAT',       function(f){ return f.avgTAT      != null ? f.avgTAT + 'd'          : null; }, ''),
         fyDataRow('% Transacted',  function(f){ return f.pctTransacted!= null ? f.pctTransacted + '%'  : null; }, ''),
         fyDataRow('Total GMV',     function(f){ return f.totalTxnValue!= null ? fmtINR(f.totalTxnValue): null; }, ''),
         fyDataRow('GSTIN active',  function(f){ return f.withGST      != null ? fmt(f.withGST)         : null; }, ''),
-        fyDataRow('GSTIN missing', function(f){ return f.missingGST   != null ? fmt(f.missingGST)      : null; }, 'cc-fy-bad'),
+        fyDataRow('GSTIN missing', function(f){ return f.missingGST   != null ? fmt(f.missingGST)      : null; }, hasMissingGST ? 'cc-fy-bad' : ''),
       ].filter(Boolean).join('');
 
       if (fyRows) {
@@ -2085,9 +2104,8 @@ function renderVerticals() {
           + '</div>';
         statsList = '<div class="cc-fy-wrap">'
           + fyHdr + fyRows
-          + '<div class="cc-fy-row" style="border-bottom:none;padding-top:4px">'
-          +   '<span class="cc-fy-lbl"></span>'
-          +   '<span style="flex:1;text-align:right;font-size:11px;color:var(--vc-ink,var(--blue));font-weight:600">Details ↓</span>'
+          + '<div style="display:flex;justify-content:flex-end;padding:7px 0 2px">'
+          +   '<span style="font-size:11px;font-weight:600;color:var(--vc-ink,var(--blue));letter-spacing:-.1px">Details ↓</span>'
           + '</div>'
           + '</div>';
       }
