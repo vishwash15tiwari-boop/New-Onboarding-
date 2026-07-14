@@ -1563,9 +1563,9 @@ function loadData(silent) {
     .withSuccessHandler(function(res) {
       try {
         var d = JSON.parse(res);
-        if (d.success) { _sData = d; }
-        else if (!_bData) { _failed = true; fail(d.error || 'Seller data error'); return; }
-      } catch (e) { if (!_bData) { _failed = true; fail('Parse error: ' + e.message); return; } }
+        if (d && d.verticals) { _sData = d; }
+        else { _failed = true; fail((d && d.error) || 'Seller data error'); return; }
+      } catch (e) { _failed = true; fail('Parse error: ' + e.message); return; }
       tryMerge();
     })
     .withFailureHandler(function(err) {
@@ -1573,13 +1573,12 @@ function loadData(silent) {
     })
     .getDashboardData(sellerF);
 
-  // Buyer call (parallel)
+  // Buyer call (parallel, non-fatal)
   google.script.run
     .withSuccessHandler(function(res) {
       try {
         var d = JSON.parse(res);
-        if (d.success) { _bData = d; }
-        // Buyer failing is non-fatal — render with seller only
+        if (d && d.verticals) { _bData = d; }
       } catch (e) {}
       tryMerge();
     })

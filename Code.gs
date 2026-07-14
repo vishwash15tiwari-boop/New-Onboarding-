@@ -140,6 +140,7 @@ function getDashboardData(filtersJson) {
     });
 
     var dash = buildDashboard(audience, cfg, rows, f);
+    dash.success = true;
 
     // Annotate data source so the frontend can show "Live (Metabase)" vs "Sheets"
     dash.dataSource = raw.source || 'sheets';
