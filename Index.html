@@ -1296,14 +1296,14 @@ function renderOverview() {
 // `verticalConfig` from the backend; when present it drives the cards instead,
 // so Buyers can define an entirely different set of verticals.
 var VERT_CFG = [
-  { key:'OMP',           name:'Open Marketplace', sub:'Open Marketplace onboarding',                              code:'OMP' },
-  { key:'EPR',           name:'EPR',              sub:'Extended Producer Responsibility',                         code:'EPR' },
-  { key:'Marketplace',   name:'Marketplace',      sub:'Metal · Plastic · Institutional · Reverse (Pre FY 26-27)', code:'MKT' },
-  { key:'InfraBusiness', name:'Infra Business',   sub:'Metal · Plastic · Institutional · Reverse (FY 26-27+)',   code:'INF' },
-  { key:'AFR',           name:'AFR',              sub:'Alternative Fuels & Resources',                           code:'AFR' },
-  { key:'Recommerce',    name:'Re-Commerce',      sub:'Re-Commerce · E-Waste',                                   code:'REC' },
-  { key:'DRS',           name:'DRS',              sub:'Deposit Refund System',                                   code:'DRS' },
-  { key:'Others',        name:'Others',           sub:'Other verticals & categories',                            code:'OTH' },
+  { key:'OMP',           name:'Open Marketplace', sub:'', code:'OMP' },
+  { key:'EPR',           name:'EPR',              sub:'', code:'EPR' },
+  { key:'Marketplace',   name:'Marketplace',      sub:'', code:'MKT' },
+  { key:'InfraBusiness', name:'Infra Business',   sub:'', code:'INF' },
+  { key:'AFR',           name:'AFR',              sub:'', code:'AFR' },
+  { key:'Recommerce',    name:'Re-Commerce',      sub:'', code:'REC' },
+  { key:'DRS',           name:'DRS',              sub:'', code:'DRS' },
+  { key:'Others',        name:'Others',           sub:'', code:'OTH' },
 ];
 
 // Active vertical layout: backend-supplied config for this audience, else default.
@@ -1560,7 +1560,8 @@ function renderVerticals() {
 
     var head = '<div class="compare-header">'
       + '<div><div class="compare-label">' + esc(cfg.name) + '</div>'
-      + '<div class="compare-sub">' + esc(cfg.sub) + '</div></div>'
+      + (cfg.sub ? '<div class="compare-sub">' + esc(cfg.sub) + '</div>' : '')
+      + '</div>'
       + '<span class="compare-source-badge">' + cfg.code + '</span></div>';
 
     if (tot <= 0) {
@@ -1568,9 +1569,11 @@ function renderVerticals() {
         + head + '<div class="no-data" style="padding:26px 0">No records in selected period</div></div>';
     }
 
-    // Transacted only shown where the backend provides it (Open Marketplace).
+    // Transacted count and GMV value — only shown when the backend provides the data.
     var txnItem = (v.transacted === null || v.transacted === undefined) ? ''
       : '<div class="cc-foot-item"><b>' + fmt(v.transacted) + '</b>Transacted</div>';
+    var gmvItem = (v.totalTxnValue === null || v.totalTxnValue === undefined) ? ''
+      : '<div class="cc-foot-item"><b>' + fmtINR(v.totalTxnValue) + '</b>GMV</div>';
 
     return '<div class="compare-card' + (sel ? ' selected' : '') + '"' + attrs + '>'
       + head
@@ -1584,6 +1587,7 @@ function renderVerticals() {
       + '<div class="cc-foot">'
       +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
       +   txnItem
+      +   gmvItem
       +   (v.withGST   != null ? '<div class="cc-foot-item cc-gst-active"><b>'   + fmt(v.withGST)   + '</b>GST Active</div>'   : '')
       +   (v.missingGST != null ? '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST) + '</b>GST Inactive</div>' : '')
       +   '<span class="cc-foot-more">' + (sel ? 'Viewing ▾' : 'Click for Details →') + '</span>'
@@ -1815,7 +1819,9 @@ function renderVertDetail() {
     + '<div class="vd-head">'
     + '<button class="vd-back" onclick="closeVertDetail()">Back</button>'
     + '<span class="compare-source-badge">' + cfg.code + '</span>'
-    + '<div><div class="vd-title">' + esc(cfg.name) + '</div><div class="compare-sub">' + esc(cfg.sub) + '</div></div>'
+    + '<div><div class="vd-title">' + esc(cfg.name) + '</div>'
+    + (cfg.sub ? '<div class="compare-sub">' + esc(cfg.sub) + '</div>' : '')
+    + '</div>'
     + '</div>'
     + catSection
     + '<div id="cat-detail-wrap" style="display:none"></div>'

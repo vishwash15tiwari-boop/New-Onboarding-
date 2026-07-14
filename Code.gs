@@ -51,14 +51,14 @@ var TAT_MAX_DAYS = 365;
 // The eight business verticals, in display order. Rows are mapped into these by
 // mapToVertical() + date-based migration in normalizeRows.
 var VERTICALS = [
-  { key: 'OMP',           name: 'Open Marketplace', code: 'OMP', sub: 'Open Marketplace onboarding' },
-  { key: 'EPR',           name: 'EPR',              code: 'EPR', sub: 'Extended Producer Responsibility' },
-  { key: 'Marketplace',   name: 'Marketplace',      code: 'MKT', sub: 'Metal · Plastic · Institutional · Reverse (Pre FY 26-27)' },
-  { key: 'InfraBusiness', name: 'Infra Business',   code: 'INF', sub: 'Metal · Plastic · Institutional · Reverse (FY 26-27+)' },
-  { key: 'AFR',           name: 'AFR',              code: 'AFR', sub: 'Alternative Fuels & Resources' },
-  { key: 'Recommerce',    name: 'Re-Commerce',      code: 'REC', sub: 'Re-Commerce · E-Waste' },
-  { key: 'DRS',           name: 'DRS',              code: 'DRS', sub: 'Deposit Refund System' },
-  { key: 'Others',        name: 'Others',           code: 'OTH', sub: 'Other verticals & categories' },
+  { key: 'OMP',           name: 'Open Marketplace', code: 'OMP', sub: '' },
+  { key: 'EPR',           name: 'EPR',              code: 'EPR', sub: '' },
+  { key: 'Marketplace',   name: 'Marketplace',      code: 'MKT', sub: '' },
+  { key: 'InfraBusiness', name: 'Infra Business',   code: 'INF', sub: '' },
+  { key: 'AFR',           name: 'AFR',              code: 'AFR', sub: '' },
+  { key: 'Recommerce',    name: 'Re-Commerce',      code: 'REC', sub: '' },
+  { key: 'DRS',           name: 'DRS',              code: 'DRS', sub: '' },
+  { key: 'Others',        name: 'Others',           code: 'OTH', sub: '' },
 ];
 
 // Categories (from the Marketplace business_vertical) that roll into Infra Business.
@@ -297,8 +297,8 @@ function normalizeRows(raw, cfg) {
       }
       return '';
     }());
-    var _txnN = (txnValRaw !== '' && txnValRaw !== null)
-      ? parseFloat(String(txnValRaw).replace(/,/g, ''))
+    var _txnN = (txnValRaw !== '' && txnValRaw !== null && txnValRaw !== undefined)
+      ? parseFloat(String(txnValRaw).replace(/[^0-9.\-]/g, ''))
       : NaN;
     var txnVal = isNaN(_txnN) ? null : _txnN; // preserve 0 — parseFloat('0')||null would lose it
     // GMV present & positive ⇒ a transaction has happened, regardless of what the
