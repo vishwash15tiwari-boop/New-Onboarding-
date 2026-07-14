@@ -205,8 +205,9 @@ select,input{font-family:inherit}
 .filter-input{width:220px}
 .filter-input::placeholder{color:var(--txt3);font-weight:400}
 
-/* ===== Main ===== */
-#main{max-width:1640px;margin:0 auto;padding:18px 32px 48px}
+/* ===== Main — flex-row shell; sidebar + content side-by-side ===== */
+#main{display:flex;flex-direction:row;align-items:flex-start}
+#dash-content{flex:1;min-width:0;padding:18px 32px 48px}
 
 /* ===== Section Titles — large, bold, brand-gradient accent ===== */
 .section-title{
@@ -1030,7 +1031,7 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
   .vs-pipe{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:760px){
-  #main{padding:0 16px 60px}
+  #dash-content{padding:0 16px 60px}
   #header{padding:0 16px}
   .section-title{padding-top:28px}
   .compare-grid{grid-template-columns:1fr}
@@ -1038,6 +1039,143 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
   .vd-page-inner{padding:16px 16px 44px}
   .vs-hero-count{font-size:44px;letter-spacing:-2px}
   .vs-title{font-size:22px}
+}
+</style>
+
+<style id="sidenav-css">
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR NAVIGATION
+   ═══════════════════════════════════════════════════════════ */
+#side-nav{
+  width:232px;flex-shrink:0;
+  position:sticky;top:56px;
+  height:calc(100vh - 56px);
+  overflow-y:auto;
+  border-right:1px solid var(--border);
+  background:var(--card);
+  display:flex;flex-direction:column;
+  padding:8px 0 32px;
+  z-index:10;
+}
+#side-nav::-webkit-scrollbar{width:4px}
+#side-nav::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* Section label */
+.sn-sect{
+  font-size:9px;font-weight:700;color:var(--txt3);
+  text-transform:uppercase;letter-spacing:1.2px;
+  padding:14px 14px 6px;
+}
+
+/* Group button (Sellers / Buyers) */
+.sn-grp{
+  display:flex;align-items:center;gap:8px;
+  width:100%;padding:8px 12px 8px 14px;
+  border:none;background:transparent;
+  cursor:pointer;text-align:left;
+  font-family:inherit;
+  transition:background .13s;
+  border-left:2px solid transparent;
+}
+.sn-grp:hover{background:var(--hover)}
+.sn-grp.sn-active{background:var(--accent-soft);border-left-color:var(--blue)}
+.sn-grp-ic{
+  width:26px;height:26px;border-radius:7px;
+  background:var(--bg2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:var(--txt2);
+  flex-shrink:0;
+  transition:background .13s,color .13s,border-color .13s;
+}
+.sn-grp.sn-active .sn-grp-ic{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sn-grp-lbl{flex:1;font-size:12.5px;font-weight:600;color:var(--txt)}
+.sn-grp-arr{
+  font-size:10px;color:var(--txt3);line-height:1;
+  transition:transform .2s var(--ease-out);
+}
+.sn-grp.sn-open .sn-grp-arr{transform:rotate(90deg)}
+
+/* Sub-list (vertical items under each group) */
+.sn-subs{display:none;flex-direction:column;padding:2px 0 4px}
+.sn-subs.sn-open{display:flex}
+.sn-sub{
+  display:flex;align-items:center;gap:7px;
+  padding:6px 12px 6px 28px;
+  cursor:pointer;border:none;
+  background:transparent;text-align:left;
+  width:100%;font-family:inherit;
+  transition:background .12s;
+  border-left:2px solid transparent;
+}
+.sn-sub:hover{background:var(--hover)}
+.sn-sub.sn-active{
+  background:var(--accent-soft);
+  border-left-color:var(--vc,var(--blue));
+}
+.sn-sub-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--vc,var(--border2));
+  flex-shrink:0;opacity:.6;
+  transition:opacity .13s;
+}
+.sn-sub.sn-active .sn-sub-dot{opacity:1}
+.sn-sub-lbl{
+  flex:1;font-size:12px;font-weight:500;
+  color:var(--txt2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.sn-sub.sn-active .sn-sub-lbl{color:var(--txt);font-weight:600}
+.sn-sub-n{
+  font-size:10px;font-weight:600;color:var(--txt3);
+  font-variant-numeric:tabular-nums;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:6px;padding:1px 6px;flex-shrink:0;
+}
+
+/* Separator */
+.sn-sep{height:1px;background:var(--border);margin:8px 14px}
+
+/* GST Payables button */
+.sn-gst{
+  display:flex;align-items:center;gap:8px;
+  width:100%;padding:8px 12px 8px 14px;
+  border:none;background:transparent;
+  cursor:pointer;text-align:left;font-family:inherit;
+  transition:background .13s;
+  border-left:2px solid transparent;
+}
+.sn-gst:hover{background:rgba(194,90,36,.06)}
+.sn-gst.sn-active{
+  background:rgba(194,90,36,.09);
+  border-left-color:var(--gp-orange,#C25A24);
+}
+.sn-gst-ic{
+  width:26px;height:26px;border-radius:7px;
+  background:var(--gp-orange-bg,#F6E7D8);
+  border:1px solid var(--gp-border,#EBE2D3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:var(--gp-orange,#C25A24);
+  flex-shrink:0;
+  transition:background .13s,color .13s,border-color .13s;
+}
+.sn-gst.sn-active .sn-gst-ic{
+  background:var(--gp-orange,#C25A24);color:#fff;
+  border-color:var(--gp-orange,#C25A24);
+}
+.sn-gst-lbl{font-size:12.5px;font-weight:600;color:var(--txt)}
+
+/* On desktop: hide the top .aud-tabs (sidebar replaces them) */
+@media(min-width:1025px){
+  .aud-tabs{display:none!important}
+}
+
+/* Responsive: collapse sidebar on small screens */
+@media(max-width:1024px){
+  #side-nav{display:none!important}
+  #dash-content{padding:18px 20px 48px}
+}
+@media(max-width:760px){
+  #dash-content{padding:0 16px 60px}
 }
 </style>
 </head>
@@ -1072,6 +1210,11 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 
 <!-- Main -->
 <div id="main">
+
+  <!-- Sidebar navigation — built by buildSideNav() -->
+  <nav id="side-nav"></nav>
+
+  <div id="dash-content">
 
   <!-- Top-level view switcher — Sellers · Buyers · GST Payables -->
   <div class="section-title reveal" style="flex-wrap:wrap">
@@ -1113,6 +1256,8 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 
   <!-- ── VIEW: GST PAYABLES ── -->
   <div id="tab-gst" style="display:none"></div>
+
+  </div><!-- /dash-content -->
 
 </div><!-- /main -->
 
@@ -1352,6 +1497,7 @@ function updateViewChrome() {
   if (s) s.classList.toggle('active', !isGst && currentAudience === 'seller');
   if (b) b.classList.toggle('active', !isGst && currentAudience === 'buyer');
   if (g) g.classList.toggle('active', isGst);
+  buildSideNav();
 }
 
 // Kept for compatibility with renderAll(); view chrome now lives in updateViewChrome.
@@ -1362,6 +1508,7 @@ function switchAudience(a) {
   currentView = 'onboarding';
   if (a === currentAudience && !leavingGst) { updateViewChrome(); return; }
   currentAudience = a;
+  snActiveKey = null;                        // reset scroll spy active item
   selectedVert = null;                       // close any open detail panel
   vertRows = [];
   vertRowsLoading = false;
@@ -1408,6 +1555,7 @@ function switchView(view) {
   if (view !== 'gst') { switchAudience(currentAudience); return; }
   if (currentView === 'gst') return;
   currentView = 'gst';
+  snActiveKey = null;
   if (selectedVert) closeVertDetail();
   document.body.style.overflow = '';
   updateViewChrome();
@@ -2141,6 +2289,9 @@ function renderVertStory() {
       requestAnimationFrame(function() { el.style.width = w; });
     });
   });
+
+  // Scroll spy — wired up after DOM is updated
+  setTimeout(setupScrollSpy, 200);
 }
 
 function vdUnique(rows, field) {
@@ -3229,6 +3380,133 @@ function fyShort(fy) { return String(fy || '').replace(/^FY\s*/, ''); }
     requestAnimationFrame(observe);
   };
 })();
+
+// ═══════════════════════════════════════════════════════════════
+// SIDEBAR NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+var snActiveKey = null;    // which vertical's section is active (scroll spy)
+var _scrollSpyObs = null;  // IntersectionObserver instance for scroll spy
+
+function buildSideNav() {
+  var nav = document.getElementById('side-nav');
+  if (!nav) return;
+
+  var cfgList = getVertCfg();
+  var verts   = (D && D.verticals) || {};
+  var isGST   = currentView === 'gst';
+  var isSeller = !isGST && currentAudience === 'seller';
+  var isBuyer  = !isGST && currentAudience === 'buyer';
+
+  var html = '<div class="sn-sect">Navigation</div>';
+
+  // ── Sellers group ──────────────────────────────────────────
+  html += '<button class="sn-grp' + (isSeller ? ' sn-active sn-open' : '') + '" onclick="snSelectGroup(\'seller\')">'
+    + '<span class="sn-grp-ic">S</span>'
+    + '<span class="sn-grp-lbl">Sellers</span>'
+    + '<span class="sn-grp-arr">›</span>'
+    + '</button>';
+  if (isSeller && cfgList.length) {
+    html += '<div class="sn-subs sn-open">';
+    cfgList.forEach(function(cfg) {
+      var v   = verts[cfg.key] || {};
+      var tot = v.total || 0;
+      var vc  = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
+      html += '<button class="sn-sub' + (snActiveKey === cfg.key ? ' sn-active' : '') + '"'
+        + ' data-key="' + esc(cfg.key) + '"'
+        + ' style="--vc:' + vc.c + '"'
+        + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
+        + '<span class="sn-sub-dot"></span>'
+        + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
+        + (tot > 0 ? '<span class="sn-sub-n">' + fmt(tot) + '</span>' : '')
+        + '</button>';
+    });
+    html += '</div>';
+  }
+
+  // ── Buyers group ───────────────────────────────────────────
+  html += '<button class="sn-grp' + (isBuyer ? ' sn-active sn-open' : '') + '" onclick="snSelectGroup(\'buyer\')">'
+    + '<span class="sn-grp-ic">B</span>'
+    + '<span class="sn-grp-lbl">Buyers</span>'
+    + '<span class="sn-grp-arr">›</span>'
+    + '</button>';
+  if (isBuyer && cfgList.length) {
+    html += '<div class="sn-subs sn-open">';
+    cfgList.forEach(function(cfg) {
+      var v   = verts[cfg.key] || {};
+      var tot = v.total || 0;
+      var vc  = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
+      html += '<button class="sn-sub' + (snActiveKey === cfg.key ? ' sn-active' : '') + '"'
+        + ' data-key="' + esc(cfg.key) + '"'
+        + ' style="--vc:' + vc.c + '"'
+        + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
+        + '<span class="sn-sub-dot"></span>'
+        + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
+        + (tot > 0 ? '<span class="sn-sub-n">' + fmt(tot) + '</span>' : '')
+        + '</button>';
+    });
+    html += '</div>';
+  }
+
+  // ── Separator + GST Payables ───────────────────────────────
+  html += '<div class="sn-sep"></div>';
+  html += '<button class="sn-gst' + (isGST ? ' sn-active' : '') + '" onclick="switchView(\'gst\')">'
+    + '<span class="sn-gst-ic">₹</span>'
+    + '<span class="sn-gst-lbl">GST Payables</span>'
+    + '</button>';
+
+  nav.innerHTML = html;
+}
+
+// Called when a group header (Sellers/Buyers) is clicked.
+function snSelectGroup(aud) {
+  snActiveKey = null;
+  switchAudience(aud);
+}
+
+// Called when a vertical sub-item is clicked — scrolls to its story section.
+function snSelectVert(key) {
+  snActiveKey = key;
+  var nav = document.getElementById('side-nav');
+  if (nav) {
+    nav.querySelectorAll('.sn-sub').forEach(function(el) {
+      el.classList.toggle('sn-active', el.getAttribute('data-key') === key);
+    });
+  }
+  scrollToVert(key);
+}
+
+// IntersectionObserver scroll spy — highlights the sidebar item matching the
+// section closest to the top of the viewport.
+function setupScrollSpy() {
+  if (_scrollSpyObs) { _scrollSpyObs.disconnect(); _scrollSpyObs = null; }
+  if (!window.IntersectionObserver) return;
+
+  var sections = document.querySelectorAll('.vert-section[id^="vs-"]');
+  if (!sections.length) return;
+
+  _scrollSpyObs = new IntersectionObserver(function(entries) {
+    var best = null, bestRatio = 0;
+    entries.forEach(function(e) {
+      if (e.isIntersecting && e.intersectionRatio > bestRatio) {
+        bestRatio = e.intersectionRatio;
+        best = e.target;
+      }
+    });
+    if (!best) return;
+    var key = best.id.replace('vs-', '');
+    if (key === snActiveKey) return;
+    snActiveKey = key;
+    var nav = document.getElementById('side-nav');
+    if (!nav) return;
+    nav.querySelectorAll('.sn-sub').forEach(function(el) {
+      el.classList.toggle('sn-active', el.getAttribute('data-key') === key);
+    });
+    var activeEl = nav.querySelector('.sn-sub.sn-active');
+    if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, { threshold: [0.1, 0.25, 0.5], rootMargin: '-64px 0px -40% 0px' });
+
+  sections.forEach(function(sec) { _scrollSpyObs.observe(sec); });
+}
 
 // ═══════════════════════════════════════════════════════════════
 // UTILITY
