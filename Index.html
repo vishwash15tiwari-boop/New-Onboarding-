@@ -1025,6 +1025,28 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .vs-aging-sub .ag-warn{color:#C25A24;font-weight:700}
 .vs-aging-sub .ag-crit{color:#B03030;font-weight:700}
 
+/* ── FY column table inside compare cards ── */
+.cc-fy-wrap{border-top:1px solid var(--border);margin-top:auto}
+.cc-fy-row{display:flex;align-items:center;border-bottom:1px solid var(--border);min-height:30px}
+.cc-fy-row:last-child{border-bottom:none}
+.cc-fy-lbl{flex:1;padding:5px 0;font-size:11.5px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-fy-col{
+  min-width:62px;text-align:right;
+  padding:5px 0 5px 8px;
+  border-left:1px solid var(--border);
+  font-size:12.5px;font-weight:700;
+  color:var(--txt);font-variant-numeric:tabular-nums;
+  flex-shrink:0;white-space:nowrap;
+}
+/* Header row */
+.cc-fy-hdr{min-height:auto}
+.cc-fy-hdr .cc-fy-col{
+  font-size:9px;font-weight:700;
+  color:var(--blue);text-transform:none;
+  letter-spacing:.1px;padding-top:7px;padding-bottom:4px;
+}
+.cc-fy-bad .cc-fy-col{color:var(--st-rejected,#B03030)}
+
 /* Responsive */
 @media(max-width:1100px){
   .compare-grid{grid-template-columns:repeat(2,1fr)}
@@ -1308,7 +1330,7 @@ var _isFirstLoad     = true;
 
 // localStorage key prefix — bump the version suffix when the data shape changes
 // so stale entries from an old schema are silently ignored.
-var STORE_PFX = 'ebt_v9_';
+var STORE_PFX = 'ebt_v10_';
 
 // Stale-while-revalidate: if we have a previous response in localStorage, paint
 // it immediately so the user sees real data with zero wait, then fetch fresh data
@@ -1985,25 +2007,41 @@ function renderVerticals() {
         + '</div>'
       : '<div class="cc-cat-rows"></div>';
 
-    // Stats list: label → value rows
-    var statsRows = [];
-    if (v.avgTAT != null) statsRows.push(['Avg TAT', dOr(v.avgTAT,'d'), '']);
-    if (v.transacted != null) statsRows.push(['% Transacted', (v.pctTransacted||0)+'%', '']);
-    if (v.totalTxnValue != null) statsRows.push(['Total GMV', fmtINR(v.totalTxnValue), '']);
-    if (v.aging   != null) statsRows.push(['Dwelling (>14d at stage)', fmt(v.aging),   'cc-stat-warn']);
-    if (v.overdue != null) statsRows.push(['Overdue (>30d)',           fmt(v.overdue), 'cc-stat-bad']);
-    if (v.withGST    != null) statsRows.push(['GSTIN active',  fmt(v.withGST),    '']);
-    if (v.missingGST != null) statsRows.push(['GSTIN missing', fmt(v.missingGST), v.missingGST > 0 ? 'cc-stat-bad' : '']);
-    var statsList = statsRows.length
-      ? '<div class="cc-stat-list">'
-        + statsRows.map(function(r){
-            return '<div class="cc-stat-row ' + r[2] + '"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>';
-          }).join('')
-        + '<div class="cc-stat-row" style="border-bottom:none;padding-top:6px">'
-        +   '<span></span><span style="font-size:11px;color:var(--vc-ink,var(--blue));font-weight:600">Details ↓</span>'
-        + '</div>'
-        + '</div>'
-      : '';
+    // FY column table: show up to 2 most-recent FYs side-by-side
+    var fys = (v.fyBreakdown || []).slice(0, 2);
+    var statsList = '';
+    if (fys.length) {
+      // Helper: build one data row (returns '' when all values are missing)
+      function fyDataRow(label, valFn, badCls) {
+        var cells = fys.map(valFn);
+        if (cells.every(function(c){ return c === null || c === undefined || c === '—'; })) return '';
+        return '<div class="cc-fy-row' + (badCls ? ' ' + badCls : '') + '">'
+          + '<span class="cc-fy-lbl">' + label + '</span>'
+          + cells.map(function(c){ return '<span class="cc-fy-col">' + (c != null ? c : '—') + '</span>'; }).join('')
+          + '</div>';
+      }
+      var fyRows = [
+        fyDataRow('Avg TAT',       function(f){ return f.avgTAT      != null ? f.avgTAT + 'd'          : null; }, ''),
+        fyDataRow('% Transacted',  function(f){ return f.pctTransacted!= null ? f.pctTransacted + '%'  : null; }, ''),
+        fyDataRow('Total GMV',     function(f){ return f.totalTxnValue!= null ? fmtINR(f.totalTxnValue): null; }, ''),
+        fyDataRow('GSTIN active',  function(f){ return f.withGST      != null ? fmt(f.withGST)         : null; }, ''),
+        fyDataRow('GSTIN missing', function(f){ return f.missingGST   != null ? fmt(f.missingGST)      : null; }, 'cc-fy-bad'),
+      ].filter(Boolean).join('');
+
+      if (fyRows) {
+        var fyHdr = '<div class="cc-fy-row cc-fy-hdr">'
+          + '<span class="cc-fy-lbl"></span>'
+          + fys.map(function(f){ return '<span class="cc-fy-col">' + esc(f.fy) + '</span>'; }).join('')
+          + '</div>';
+        statsList = '<div class="cc-fy-wrap">'
+          + fyHdr + fyRows
+          + '<div class="cc-fy-row" style="border-bottom:none;padding-top:4px">'
+          +   '<span class="cc-fy-lbl"></span>'
+          +   '<span style="flex:1;text-align:right;font-size:11px;color:var(--vc-ink,var(--blue));font-weight:600">Details ↓</span>'
+          + '</div>'
+          + '</div>';
+      }
+    }
 
     return '<div class="compare-card"' + attrs + '>'
       + hdr + pipe + catRows + statsList

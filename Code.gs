@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v25_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v26_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -136,7 +136,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v9_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v10_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var dash = buildDashboard(audience, cfg, rows, f);
@@ -170,7 +170,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v9_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v10_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -434,19 +434,46 @@ function vStats(data) {
     else if (elapsed > AGE_WARN_MS) { agingCount++; }
   });
 
-  // Fiscal-year breakdown: onboarded count per FY (by onboardedDate, newest first).
+  // Fiscal-year breakdown: all key stats per FY, bucketed by createdDate.
   var fyMap = {};
   data.forEach(function(r) {
-    var d = r.onboardedDate || r.createdDate;
+    var d = r.createdDate;
     if (!d) return;
     var y = fyStartYear(d);
     var key = 'FY' + String(y).slice(2) + '-' + String(y + 1).slice(2);
-    if (!fyMap[key]) fyMap[key] = { fy: key, onboarded: 0 };
-    if (r.status === 'COMPLETED') fyMap[key].onboarded++;
+    if (!fyMap[key]) fyMap[key] = {
+      fy: key, onboarded: 0,
+      tatSum: 0, tatCount: 0,
+      txnSum: 0, transacted: 0, hasTxn: false,
+      gstActive: 0, gstMissing: 0
+    };
+    var f = fyMap[key];
+    if (r.status === 'COMPLETED') {
+      f.onboarded++;
+      if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) {
+        f.tatSum += r.onbTAT; f.tatCount++;
+      }
+      if (r.hasGST) f.gstActive++; else f.gstMissing++;
+    }
+    if (r.hasTxn) f.hasTxn = true;
+    if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
+      f.txnSum += r.txnValue; f.transacted++;
+    }
   });
   var fyBreakdown = Object.keys(fyMap)
     .sort(function(a, b) { return b.localeCompare(a); })
-    .map(function(k) { return fyMap[k]; });
+    .map(function(k) {
+      var f = fyMap[k];
+      return {
+        fy:            f.fy,
+        onboarded:     f.onboarded,
+        avgTAT:        f.tatCount ? Math.round(f.tatSum / f.tatCount) : null,
+        totalTxnValue: (f.hasTxn && f.txnSum > 0) ? f.txnSum : null,
+        pctTransacted: f.hasTxn ? pct(f.transacted, f.onboarded) : null,
+        withGST:       f.gstActive  > 0 ? f.gstActive  : null,
+        missingGST:    f.gstMissing > 0 ? f.gstMissing : null,
+      };
+    });
 
   var catMap = {};
   data.forEach(function(r) {
