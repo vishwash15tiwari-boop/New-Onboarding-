@@ -885,6 +885,10 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 /* Header: vertical name as pipeline title */
 .cc-hdr2{display:flex;align-items:center;gap:8px;margin-bottom:14px}
 .cc-name2{font-size:11px;font-weight:700;color:var(--txt2);letter-spacing:.8px;text-transform:uppercase;flex:1;min-width:0}
+/* Seller / Buyer audience badge in card header */
+.cc-aud-badge{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 8px;border-radius:4px;flex-shrink:0;white-space:nowrap}
+.cc-aud-seller{background:var(--st-onboarded-bg,#edfaf5);color:var(--st-onboarded,#1DC797)}
+.cc-aud-buyer{background:#EEF2FF;color:#4F46E5}
 
 /* ── 3-box pipeline (Draft | In Review | Completed) ── */
 .cc-pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
@@ -2043,89 +2047,77 @@ function renderVerticals() {
   if (!DS || !DS.verticals) { grid.innerHTML = ''; return; }
 
   var idx = 0;
-  grid.innerHTML = getVertCfg().map(function(cfg) {
-    var vs  = (DS.verticals || {})[cfg.key] || {};
-    var vb  = (DB && DB.verticals || {})[cfg.key] || {};
-    var totS = vs.total || 0;
-    var totB = vb.total || 0;
 
+  // Builds a standalone compare-card for one audience (seller or buyer)
+  function buildCard(cfg, v, audLabel) {
+    var tot = v.total || 0;
+    var audClass = audLabel === 'Seller' ? 'cc-aud-seller' : 'cc-aud-buyer';
     var attrs = ' style="--i:' + (idx++) + ';' + vcVars(cfg.key) + '" tabindex="0" role="button"'
-      + ' aria-label="' + esc(cfg.name) + ' details"'
+      + ' aria-label="' + esc(cfg.name) + ' ' + audLabel + ' pipeline details"'
       + ' onclick="scrollToVert(\'' + cfg.key + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();scrollToVert(\'' + cfg.key + '\')}"';
 
     var hdr = '<div class="cc-hdr2">'
       + '<span class="compare-source-badge">' + cfg.code + '</span>'
-      + '<span class="cc-name2">' + esc(cfg.name) + ' Pipeline</span>'
+      + '<span class="cc-name2">' + esc(cfg.name) + '</span>'
+      + '<span class="cc-aud-badge ' + audClass + '">' + audLabel + '</span>'
       + '</div>';
 
-    if (totS <= 0 && totB <= 0) {
+    if (tot <= 0) {
       return '<div class="compare-card"' + attrs + '>'
-        + hdr + '<div class="no-data" style="padding:24px 0">No records in selected period</div></div>';
+        + hdr + '<div class="no-data" style="padding:24px 0">No data</div></div>';
     }
 
-    // Build one pipeline half (seller or buyer)
-    function buildHalf(v, tot, label, isRight) {
-      if (tot <= 0) {
-        return '<div class="cc-half' + (isRight ? ' cc-half-r' : '') + '">'
-          + '<div class="cc-half-hdr">' + label + '</div>'
-          + '<div class="no-data" style="padding:12px 0;font-size:12px;color:var(--txt3)">No data</div>'
-          + '</div>';
-      }
+    var pipe = '<div class="cc-pipe">'
+      + '<div class="cc-pipe-box cc-pipe-draft"><b>'  + fmt(v.draft     || 0) + '</b><span>Draft</span></div>'
+      + '<div class="cc-pipe-box cc-pipe-review"><b>' + fmt(v.inReview  || 0) + '</b><span>In Review</span></div>'
+      + '<div class="cc-pipe-box cc-pipe-onb"><b>'   + fmt(v.completed || 0) + '</b><span>Completed</span></div>'
+      + '</div>';
 
-      var pipe = '<div class="cc-pipe">'
-        + '<div class="cc-pipe-box cc-pipe-draft"><b>' + fmt(v.draft || 0) + '</b><span>Draft</span></div>'
-        + '<div class="cc-pipe-box cc-pipe-review"><b>' + fmt(v.inReview || 0) + '</b><span>In Review</span></div>'
-        + '<div class="cc-pipe-box cc-pipe-onb"><b>' + fmt(v.completed || 0) + '</b><span>Completed</span></div>'
-        + '</div>';
+    var topCats = (v.categories || []).filter(function(c){ return (c.total||0) > 0; }).slice(0, 3);
+    var catRows = topCats.length
+      ? '<div class="cc-cat-rows">'
+        + topCats.map(function(c) {
+            var parts = [];
+            if ((c.onboarded||0) > 0) parts.push('<em>' + fmt(c.onboarded) + ' done</em>');
+            if ((c.draft    ||0) > 0) parts.push(fmt(c.draft) + ' draft');
+            if ((c.inReview ||0) > 0) parts.push(fmt(c.inReview) + ' review');
+            return '<div class="cc-cat-row">'
+              + '<span class="cc-cat-badge">' + esc(c.category) + '</span>'
+              + '<span class="cc-cat-detail">' + parts.join(' · ') + '</span>'
+              + '</div>';
+          }).join('')
+        + '</div>'
+      : '';
 
-      var topCats = (v.categories || []).filter(function(c){ return (c.total||0) > 0; }).slice(0, 2);
-      var catRows = topCats.length
-        ? '<div class="cc-cat-rows">'
-          + topCats.map(function(c) {
-              var parts = [];
-              if ((c.onboarded||0) > 0) parts.push('<em>' + fmt(c.onboarded) + ' done</em>');
-              if ((c.draft    ||0) > 0) parts.push(fmt(c.draft) + ' draft');
-              if ((c.inReview ||0) > 0) parts.push(fmt(c.inReview) + ' review');
-              return '<div class="cc-cat-row">'
-                + '<span class="cc-cat-badge">' + esc(c.category) + '</span>'
-                + '<span class="cc-cat-detail">' + parts.join(' · ') + '</span>'
-                + '</div>';
-            }).join('')
-          + '</div>'
-        : '';
-
-      var statsRows = [];
-      if (v.avgTAT != null) statsRows.push(['Avg TAT', v.avgTAT + 'd', '']);
-      if (v.pctTransacted != null) statsRows.push(['% Transacted', v.pctTransacted + '%', '']);
-      if ((v.missingGST || 0) > 0) statsRows.push(['GSTIN missing', fmt(v.missingGST), 'cc-hs-warn']);
-      var stats = statsRows.length
-        ? '<div class="cc-hs-rows">'
-          + statsRows.map(function(r) {
-              return '<div class="cc-hs-row' + (r[2] ? ' ' + r[2] : '') + '">'
-                + '<span class="cc-hs-lbl">' + r[0] + '</span>'
-                + '<span class="cc-hs-val">' + r[1] + '</span>'
-                + '</div>';
-            }).join('')
-          + '</div>'
-        : '';
-
-      return '<div class="cc-half' + (isRight ? ' cc-half-r' : '') + '">'
-        + '<div class="cc-half-hdr">' + label + '</div>'
-        + pipe + catRows + stats
-        + '</div>';
-    }
+    var statsRows = [];
+    if (v.avgTAT != null) statsRows.push(['Avg TAT', v.avgTAT + 'd', '']);
+    if (v.pctTransacted != null) statsRows.push(['% Transacted', v.pctTransacted + '%', '']);
+    if ((v.missingGST || 0) > 0) statsRows.push(['GSTIN missing', fmt(v.missingGST), 'cc-hs-warn']);
+    var stats = statsRows.length
+      ? '<div class="cc-hs-rows">'
+        + statsRows.map(function(r) {
+            return '<div class="cc-hs-row' + (r[2] ? ' ' + r[2] : '') + '">'
+              + '<span class="cc-hs-lbl">' + r[0] + '</span>'
+              + '<span class="cc-hs-val">' + r[1] + '</span>'
+              + '</div>';
+          }).join('')
+        + '</div>'
+      : '';
 
     return '<div class="compare-card"' + attrs + '>'
-      + hdr
-      + '<div class="cc-dual">'
-      + buildHalf(vs, totS, 'Seller Pipeline', false)
-      + buildHalf(vb, totB, 'Buyer Pipeline',  true)
-      + '</div>'
-      + '<div style="display:flex;justify-content:flex-end;padding:6px 14px 10px">'
+      + hdr + pipe + catRows + stats
+      + '<div style="display:flex;justify-content:flex-end;padding:6px 0 2px">'
       +   '<span style="font-size:11px;font-weight:600;color:var(--vc-ink,var(--blue));letter-spacing:-.1px">Details ↓</span>'
       + '</div>'
       + '</div>';
+  }
+
+  // Each vertical emits TWO cards (seller + buyer); the 2-column grid places them side by side
+  grid.innerHTML = getVertCfg().map(function(cfg) {
+    var vs = (DS.verticals || {})[cfg.key] || {};
+    var vb = (DB && DB.verticals || {})[cfg.key] || {};
+    return buildCard(cfg, vs, 'Seller') + buildCard(cfg, vb, 'Buyer');
   }).join('');
 
   var animKey = 'combined|' + currentPeriod + '|' + customStart + '|' + customEnd;
