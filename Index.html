@@ -519,7 +519,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 #vert-detail.vd-anim .vd-kpi{animation:riseIn .55s var(--ease-out) both;animation-delay:calc(var(--kd,0)*1ms + 150ms)}
 .vd-page-inner{max-width:1200px;margin:0 auto;padding:24px 32px 48px}
 .vd-head{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)}
-.vd-title{font-size:20px;font-weight:800;color:var(--txt);letter-spacing:-.4px}
+.vd-title{font-size:26px;font-weight:800;color:var(--txt);letter-spacing:-.6px;text-transform:none;line-height:1.15}
 .vd-back{
   display:inline-flex;align-items:center;gap:6px;
   padding:7px 18px;border-radius:var(--pill);
@@ -2530,7 +2530,7 @@ function renderVertDetail() {
     + '<div class="vd-head">'
     + '<button class="vd-back" onclick="closeVertDetail()">Back</button>'
     + '<span class="compare-source-badge">' + cfg.code + '</span>'
-    + '<div><div class="vd-title">' + esc(cfg.name) + '</div>'
+    + '<div><div class="vd-title">' + esc(cfg.name.toLowerCase().replace(/\b\w/g, function(c){ return c.toUpperCase(); })) + '</div>'
     + (cfg.sub ? '<div class="compare-sub">' + esc(cfg.sub) + '</div>' : '')
     + '</div>'
     + '</div>'
