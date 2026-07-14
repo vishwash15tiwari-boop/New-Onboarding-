@@ -914,8 +914,8 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 
 /* ── Onboarded hero: big clean number, no box or border ── */
 .cc-onb-hero{text-align:center;padding:16px 0 12px;border-bottom:1px solid var(--border);margin-bottom:0}
-.cc-onb-num{display:block;font-size:44px;font-weight:800;color:var(--txt);letter-spacing:-2px;line-height:1;font-variant-numeric:tabular-nums}
-.cc-onb-sub{display:block;font-size:10px;font-weight:700;color:var(--txt);text-transform:uppercase;letter-spacing:.6px;margin-top:6px}
+.cc-onb-num{display:block;font-size:36px;font-weight:700;color:var(--txt);letter-spacing:-1.5px;line-height:1;font-variant-numeric:tabular-nums}
+.cc-onb-sub{display:block;font-size:10px;font-weight:600;color:var(--txt2);text-transform:uppercase;letter-spacing:.6px;margin-top:4px}
 
 /* ── Pipeline stats as label:count rows (replaces the 3-box grid) ── */
 .cc-pipe-stats{display:flex;flex-direction:column;margin-bottom:10px}
@@ -2097,7 +2097,7 @@ function renderVerticals() {
       ? '<div class="cc-cat-rows">'
         + topCats.map(function(c) {
             var parts = [];
-            if ((c.onboarded||0) > 0) parts.push('<em>' + fmt(c.onboarded) + ' done</em>');
+            if ((c.onboarded||0) > 0) parts.push('<em>' + fmt(c.onboarded) + ' onboarded</em>');
             if ((c.draft    ||0) > 0) parts.push(fmt(c.draft) + ' draft');
             if ((c.inReview ||0) > 0) parts.push(fmt(c.inReview) + ' review');
             return '<div class="cc-cat-row">'
@@ -2384,7 +2384,7 @@ function renderVertStory() {
               return '<div class="vs-cat-item" style="--ci:' + ci + '">'
                 + '<span class="vs-cat-nm2">' + esc(c.category) + '</span>'
                 + '<span class="vs-cat-done-val">' + fmt(done) + '</span>'
-                + '<span class="vs-cat-done-lbl">done</span>'
+                + '<span class="vs-cat-done-lbl">onboarded</span>'
                 + '<div class="vs-cat-bar-wrap">'
                 +   '<div class="vs-cat-bar-bg"><div class="vs-cat-bar-fg" data-pct="' + barPct + '"></div></div>'
                 + '</div>'
