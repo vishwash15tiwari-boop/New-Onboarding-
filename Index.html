@@ -1753,6 +1753,10 @@ function renderLastUpdated() {
       + ' <span style="display:inline-flex;align-items:center;gap:4px;background:var(--st-onboarded-bg);color:var(--st-onboarded-tx);border:1px solid var(--border);border-radius:999px;padding:1px 9px;font-size:10.5px;font-weight:600;margin-left:4px;white-space:nowrap">'
       + liveLabel + syncLabel + '</span>';
     if (dot) { dot.style.background = '#fff'; }
+  } else if (D.dataSource === 'empty') {
+    el.innerHTML = 'Updated: ' + d.toLocaleTimeString('en-IN')
+      + ' <span style="display:inline-flex;align-items:center;background:var(--st-rejected-bg);color:var(--st-rejected-tx);border-radius:999px;padding:1px 9px;font-size:10.5px;font-weight:700;margin-left:4px;white-space:nowrap">⚠ No data source</span>';
+    if (dot) { dot.style.background = '#FFB3B3'; }
   } else {
     el.textContent = 'Updated: ' + d.toLocaleTimeString('en-IN');
     if (dot) { dot.style.background = 'rgba(255,255,255,.45)'; }
@@ -2062,6 +2066,23 @@ function renderVerticals() {
   var grid = document.getElementById('vert-grid');
   if (!grid) return;
   if (!DS || !DS.verticals) { grid.innerHTML = ''; return; }
+
+  // Backend reachable but every data source failed (no _mb_* sync sheets,
+  // no Metabase credentials, fallback sheet not shared) — say so instead of
+  // rendering 16 silent "No data" cards.
+  if (D && D.dataSource === 'empty') {
+    grid.innerHTML = '<div style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:36px 32px;text-align:center;box-shadow:var(--shadow-sm)">'
+      + '<div style="font-size:15px;font-weight:800;color:var(--red);margin-bottom:8px">⚠ Backend connected — but no data source is reachable</div>'
+      + '<div style="font-size:12.5px;color:var(--txt2);max-width:640px;margin:0 auto 14px;line-height:1.7">The web app responded, but all three data paths came back empty. In the Apps Script editor, check in this order:'
+      + '<ol style="text-align:left;margin:10px auto 0;max-width:560px;padding-left:22px">'
+      + '<li>Run <b>setupMetabaseCredentials()</b> once (Metabase.gs) so live Metabase fetches can authenticate.</li>'
+      + '<li>Run <b>syncAllOnboarding()</b>, then <b>setupMetabaseTrigger()</b> to create the <b>_mb_sellers</b> / <b>_mb_buyers</b> synced sheets.</li>'
+      + '<li>If Metabase is unavailable, share the fallback Google Sheets with the account that deployed this web app.</li>'
+      + '</ol></div>'
+      + '<button onclick="loadData(false)" style="padding:9px 24px;border-radius:999px;border:1px solid var(--blue);background:var(--blue);color:#fff;font-size:13px;font-weight:600;cursor:pointer">↻ Retry</button>'
+      + '</div>';
+    return;
+  }
 
   var idx = 0;
 
