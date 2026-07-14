@@ -887,8 +887,8 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 /* ── Card: flex column ── */
 .compare-card{display:flex;flex-direction:column}
 
-/* Header: vertical name as pipeline title */
-.cc-hdr2{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+/* Header: vertical name as pipeline title — bleeds to card top & sides, same cap colour */
+.cc-hdr2{display:flex;align-items:center;gap:8px;margin:-18px -18px 0;padding:14px 18px 12px;background:var(--vc-soft,var(--bg2));border-radius:13px 13px 0 0;}
 .cc-name2{font-size:11px;font-weight:700;color:var(--txt2);letter-spacing:.8px;text-transform:uppercase;flex:1;min-width:0}
 /* Vertical group header — spans both grid columns above each Seller/Buyer pair */
 .cc-vert-hdr{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:20px 4px 10px;border-bottom:2px solid var(--border);margin-bottom:4px}
@@ -896,8 +896,8 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .cc-vert-name{font-size:13px;font-weight:800;color:var(--txt);letter-spacing:.5px;text-transform:uppercase}
 /* Seller / Buyer pipeline label inside each card */
 .cc-pipe-lbl{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 10px;border-radius:5px;white-space:nowrap}
-.cc-pipe-lbl-seller{background:var(--st-onboarded-bg,#edfaf5);color:var(--st-onboarded,#1DC797)}
-.cc-pipe-lbl-buyer{background:#EEF2FF;color:#4F46E5}
+.cc-pipe-lbl-seller{background:var(--st-onboarded-bg,#edfaf5);color:var(--txt)}
+.cc-pipe-lbl-buyer{background:#EEF2FF;color:var(--txt)}
 
 /* ── 3-box pipeline (Draft | In Review | Completed) ── */
 .cc-pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
@@ -917,13 +917,12 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .cc-pipe-onb b{color:var(--st-onboarded)}
 .cc-pipe-onb span{color:var(--st-onboarded-tx)}
 
-/* ── Onboarded hero: coloured cap — bleeds to card edges, wears the vertical's soft accent ── */
+/* ── Onboarded hero: lower half of the coloured cap — no top border (flows from cc-hdr2) ── */
 .cc-onb-hero{
   text-align:center;
-  padding:16px 18px 14px;
+  padding:14px 18px 16px;
   margin:0 -18px 12px;
   background:var(--vc-soft,var(--bg2));
-  border-top:1px solid var(--vc-line,var(--border));
   border-bottom:1px solid var(--vc-line,var(--border));
 }
 .cc-onb-num{display:block;font-size:36px;font-weight:700;color:var(--txt);letter-spacing:-1.5px;line-height:1;font-variant-numeric:tabular-nums}
