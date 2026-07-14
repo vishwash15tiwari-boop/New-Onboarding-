@@ -25,7 +25,7 @@
   --card:    #FFFFFF;
   --card2:   #F8FAFB;
   --hover:   #F4F6F9;
-  --header-bg: #0B1829;
+  --header-bg: #000000;   /* Recykal brand black — primary brand colour */
 
   /* ── Borders — hairline ── */
   --border:  #E8ECF1;
@@ -36,10 +36,12 @@
   --txt2:    #4E5A67;
   --txt3:    #808A94;
 
-  /* ── Brand accents ── */
+  /* ── Brand accents — Recykal primary palette ── */
   --blue:      #005DFF;   /* Bright Blue — primary interactive accent */
-  --blue-ink:  #0047D4;
+  --blue-ink:  #024C8A;   /* Midnight Blue — text-safe darker blue */
   --blue2:     #024C8A;   /* Midnight Blue */
+  --purple:    #8460D4;   /* Medium Purple */
+  --duke:      #0000AF;   /* Duke Blue */
   --accent-soft: rgba(0,93,255,.07);
 
   /* ── Status ink (TAT / deltas) ── */
@@ -47,9 +49,9 @@
   --amber:   #C77700;
   --red:     #D64545;
 
-  /* ── Stage palette — ONE semantic set everywhere (validated) ── */
+  /* ── Stage palette — Recykal brand hues, ONE semantic set everywhere ── */
   --st-total:      #9AA0A6;   --st-total-bg:     #F1F2F3;   --st-total-tx:     #575C63;
-  --st-draft:      #0E63AB;   --st-draft-bg:     #EAF2FB;   --st-draft-tx:     #0B4E8A;
+  --st-draft:      #024C8A;   --st-draft-bg:     #E6EFF7;   --st-draft-tx:     #023A6B;
   --st-review:     #567DE8;   --st-review-bg:    #EDF1FE;   --st-review-tx:    #3050C8;
   --st-onboarded:  #1DC797;   --st-onboarded-bg: #E3F8F1;   --st-onboarded-tx: #037556;
   --st-transacted: #3E7D44;   --st-transacted-bg:#EAF3EA;   --st-transacted-tx:#33673A;
@@ -127,7 +129,7 @@ select,input{font-family:inherit}
 .sk-line{position:relative;overflow:hidden;height:13px;border-radius:6px;background:var(--bg2);margin:10px 0}
 .sk-line::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 32%,var(--card) 50%,transparent 68%);background-size:200% 100%;animation:shimmer 1.5s linear infinite}
 
-/* ===== Header — dark navy, always solid ===== */
+/* ===== Header — Recykal brand black, always solid ===== */
 #header{
   position:sticky;top:0;z-index:200;
   background:var(--header-bg);
@@ -224,7 +226,7 @@ select,input{font-family:inherit}
 /* Sellers / Buyers audience switcher (segmented control) */
 .aud-tabs{display:inline-flex;background:var(--bg2);border:1px solid var(--border);border-radius:var(--pill);padding:3px;gap:2px;vertical-align:middle}
 .aud-tab{font-family:inherit;font-size:12.5px;font-weight:600;padding:5px 20px;border:none;background:transparent;color:var(--txt2);cursor:pointer;border-radius:var(--pill);transition:background .18s var(--ease),color .18s ease,box-shadow .18s ease;white-space:nowrap;letter-spacing:.1px}
-.aud-tab.active{background:linear-gradient(135deg,#005DFF,#2E71F0);color:#fff;box-shadow:0 2px 8px rgba(0,93,255,.28)}
+.aud-tab.active{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(0,93,255,.28)}
 .aud-tab:not(.active):hover{color:var(--txt)}
 .subsection-title{
   font-size:12.5px;font-weight:600;
@@ -647,42 +649,39 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   GST PAYABLES VIEW — warm cream / burnt-orange enterprise palette
+   GST PAYABLES VIEW — Recykal brand palette, Dark Green signature
    ═══════════════════════════════════════════════════════════════ */
 :root{
-  --gp-bg:      #F4EEE3;
-  --gp-bg2:     #EFE7D9;
+  --gp-bg:      #F0F2F5;
+  --gp-bg2:     #E8ECF1;
   --gp-card:    #FFFFFF;
-  --gp-card2:   #FBF7F0;
-  --gp-ink:     #2A2620;
-  --gp-ink2:    #6B6357;
-  --gp-ink3:    #9C9384;
-  --gp-border:  #EBE2D3;
-  --gp-border2: #DFD4C1;
-  --gp-orange:      #C25A24;
-  --gp-orange-ink:  #A94A18;
-  --gp-orange-bg:   #F6E7D8;
-  --gp-green:       #2E8B62;
-  --gp-green-bg:    #E2F0E9;
-  --gp-gold:        #C9922E;
-  --gp-gold-bg:     #F5ECD5;
-  --gp-blue:        #3D6DB5;
-  --gp-purple:      #8A5CB0;
-  --gp-red:         #C0492F;
-  --gp-red-bg:      #F7E4DE;
-  --gp-grid:        #ECE3D4;
-  --gp-shadow-sm: 0 1px 2px rgba(72,55,34,.05);
-  --gp-shadow:    0 4px 16px rgba(72,55,34,.07), 0 1px 3px rgba(72,55,34,.05);
-  --gp-shadow-lg: 0 16px 40px rgba(72,55,34,.12), 0 4px 10px rgba(72,55,34,.06);
+  --gp-card2:   #F8FAFB;
+  --gp-ink:     #0F1720;
+  --gp-ink2:    #4E5A67;
+  --gp-ink3:    #808A94;
+  --gp-border:  #E8ECF1;
+  --gp-border2: #D9DFE7;
+  --gp-orange:      #049769;   /* view accent — brand Dark Green */
+  --gp-orange-ink:  #03654B;
+  --gp-orange-bg:   #E3F4EE;
+  --gp-green:       #1DC797;   /* brand Bright Green */
+  --gp-green-bg:    #E3F8F1;
+  --gp-gold:        #C77700;   /* functional amber — warnings only */
+  --gp-gold-bg:     #FBF0DE;
+  --gp-blue:        #567DE8;   /* brand Blue */
+  --gp-purple:      #8460D4;   /* brand Medium Purple */
+  --gp-red:         #D64545;
+  --gp-red-bg:      #FBECEC;
+  --gp-grid:        #E8ECF1;
+  --gp-shadow-sm: 0 1px 3px rgba(15,23,32,.08), 0 1px 2px rgba(15,23,32,.06);
+  --gp-shadow:    0 2px 8px rgba(15,23,32,.08), 0 8px 24px rgba(15,23,32,.08);
+  --gp-shadow-lg: 0 4px 16px rgba(15,23,32,.10), 0 24px 56px rgba(15,23,32,.12);
 }
 
-/* Immersive warm background when the GST view is active */
+/* GST view shares the neutral page surface; header stays brand black */
 body.view-gst{background:var(--gp-bg)}
 body.view-gst #main{background:var(--gp-bg)}
-body.view-gst #header{background:rgba(250,246,239,.9);border-bottom-color:var(--gp-border)}
-body.view-gst #aud-gst.active{background:linear-gradient(135deg,#C25A24,#D2731F);box-shadow:0 2px 8px rgba(194,90,36,.3)}
-body.view-gst .live-pill{background:var(--gp-orange-bg);border-color:var(--gp-border2)}
-body.view-gst .live-pill b{color:var(--gp-orange)}
+body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px rgba(4,151,105,.3)}
 
 /* Year filter chips */
 .gp-year-chips{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}
@@ -769,10 +768,10 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .gp-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--gp-card);border:1px solid var(--gp-border);border-radius:16px;padding:14px 16px;margin-bottom:16px;box-shadow:var(--gp-shadow-sm)}
 .gp-filters .gp-search{flex:1;min-width:200px}
 .gp-input,.gp-select{font-family:inherit;background:var(--gp-card2);border:1px solid var(--gp-border2);color:var(--gp-ink);padding:9px 12px;border-radius:11px;font-size:12.5px;font-weight:450;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
-.gp-select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:30px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23A94A18' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
+.gp-select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:30px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23808A94' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
 .gp-select-wrap{min-width:150px}
 .gp-input:hover,.gp-select:hover{border-color:var(--gp-orange)}
-.gp-input:focus,.gp-select:focus{border-color:var(--gp-orange);box-shadow:0 0 0 3px rgba(194,90,36,.14)}
+.gp-input:focus,.gp-select:focus{border-color:var(--gp-orange);box-shadow:0 0 0 3px rgba(4,151,105,.14)}
 .gp-input::placeholder{color:var(--gp-ink3)}
 
 /* ── Vendor register table ── */
@@ -953,7 +952,7 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .cc-hs-row:last-child{border-bottom:none}
 .cc-hs-lbl{font-size:10.5px;color:var(--txt3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cc-hs-val{font-size:12px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:6px}
-.cc-hs-warn .cc-hs-val{color:var(--st-rejected,#B03030)}
+.cc-hs-warn .cc-hs-val{color:var(--st-rejected,#D64545)}
 @media(max-width:760px){.cc-dual{grid-template-columns:1fr}.cc-half-r{border-left:none;border-top:1px solid var(--border)}}
 
 /* ── Category rows: badge + "X done · Y draft · Z review" ── */
@@ -976,7 +975,7 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .cc-stat-row:last-child{border-bottom:none}
 .cc-stat-row b{font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt);letter-spacing:-.1px}
 .cc-stat-row.cc-stat-warn b{color:var(--st-review)}
-.cc-stat-row.cc-stat-bad b{color:var(--st-rejected,#B03030)}
+.cc-stat-row.cc-stat-bad b{color:var(--st-rejected,#D64545)}
 
 /* ══════════════════════════════════════════════════
    VERTICAL STORY SECTION — full editorial layout
@@ -1083,12 +1082,12 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .vs-metric{display:flex;flex-direction:column;gap:2px}
 .vs-metric b{font-size:15px;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
 .vs-metric span{font-size:9.5px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
-.vs-metric.m-warn b{color:#C25A24}
-.vs-metric.m-crit b{color:#B03030}
+.vs-metric.m-warn b{color:var(--amber)}
+.vs-metric.m-crit b{color:var(--st-rejected-tx)}
 .vs-metric.m-gmv b{color:var(--vc-ink,var(--blue))}
 .vs-aging-sub{font-size:9.5px;color:var(--txt3);margin-top:2px;white-space:nowrap}
-.vs-aging-sub .ag-warn{color:#C25A24;font-weight:700}
-.vs-aging-sub .ag-crit{color:#B03030;font-weight:700}
+.vs-aging-sub .ag-warn{color:var(--amber);font-weight:700}
+.vs-aging-sub .ag-crit{color:var(--st-rejected-tx);font-weight:700}
 
 /* ── FY year-wise stats table inside compare cards ── */
 .cc-fy-wrap{
@@ -1132,7 +1131,7 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 }
 .cc-fy-td-lbl{border-top:1px solid var(--border)}
 /* Highlighted bad row (non-zero GSTIN missing) */
-tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#B03030)}
+tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#D64545)}
 /* "All" aggregate column — slightly stronger, acts as a summary */
 .cc-fy-all{border-left:2px solid var(--border)!important;font-weight:600!important}
 
@@ -1251,18 +1250,18 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#B03030)}
   border-radius:10px;
   transition:background .15s var(--ease);
 }
-.sn-gst:hover{background:rgba(194,90,36,.07)}
-.sn-gst.sn-active{background:rgba(194,90,36,.10)}
+.sn-gst:hover{background:rgba(4,151,105,.07)}
+.sn-gst.sn-active{background:rgba(4,151,105,.10)}
 .sn-gst-ic{
   width:28px;height:28px;border-radius:8px;
-  background:var(--gp-orange-bg,#F6E7D8);
+  background:var(--gp-orange-bg,#E3F4EE);
   display:flex;align-items:center;justify-content:center;
-  font-size:12px;color:var(--gp-orange,#C25A24);
+  font-size:12px;color:var(--gp-orange,#049769);
   flex-shrink:0;
   transition:background .15s,color .15s;
 }
 .sn-gst.sn-active .sn-gst-ic{
-  background:var(--gp-orange,#C25A24);color:#fff;
+  background:var(--gp-orange,#049769);color:#fff;
 }
 .sn-gst-lbl{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.1px}
 
@@ -1390,8 +1389,9 @@ var GST = null;             // aggregated GST Payables data for the active FY fi
 var gpYear = 'All';         // active financial-year filter ('All' | 'FY 21-22' …)
 var gpFilters = { search: '', status: 'All', vertical: 'All', msme: 'All', itc: 'All' };
 var gpSort = { key: 'total', dir: -1 };  // vendor table sort (default: largest balance first)
-var GP_STATUS_COLORS = ['#C25A24', '#C9922E', '#2E8B62', '#3D6DB5', '#8A5CB0', '#B0596E', '#7A8B3D'];
-var GP_VERT_COLORS   = ['#C25A24', '#C9922E', '#2E8B62', '#3D6DB5', '#8A5CB0', '#B0596E', '#5AA0A2', '#C77D3A'];
+/* Recykal primary palette — fixed categorical order, never cycled */
+var GP_STATUS_COLORS = ['#049769', '#005DFF', '#8460D4', '#024C8A', '#1DC797', '#567DE8', '#3E7D44'];
+var GP_VERT_COLORS   = ['#005DFF', '#1DC797', '#8460D4', '#024C8A', '#567DE8', '#049769', '#0000AF', '#3E7D44'];
 var GP_MAX_ROWS = 300;      // vendor rows rendered at once
 
 // Display names for raw pipeline statuses (values stay raw for filtering)
@@ -1792,7 +1792,7 @@ function getVertCfg() {
 // ── Signature colour per vertical — the eight Recykal primary-palette hues.
 //    c = accent · ink = darker text-safe variant of the same hue.
 var VERT_COLORS = {
-  OMP:           { c: '#005DFF', ink: '#0047D4' },   // Bright Blue
+  OMP:           { c: '#005DFF', ink: '#024C8A' },   // Bright Blue (Midnight ink)
   EPR:           { c: '#8460D4', ink: '#6A44BC' },   // Medium Purple
   Marketplace:   { c: '#024C8A', ink: '#024C8A' },   // Midnight Blue
   InfraBusiness: { c: '#0000AF', ink: '#0000AF' },   // Duke Blue
