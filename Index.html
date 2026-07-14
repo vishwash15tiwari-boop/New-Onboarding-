@@ -1406,10 +1406,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (stored) {
       var parsed = JSON.parse(stored);
       if (parsed && parsed.success && parsed.seller && parsed.buyer) {
-        D = parsed;
         DS = parsed.seller;
         DB = parsed.buyer;
-        D.verticals = DS.verticals;
+        D  = parsed;
+        D.verticals      = DS.verticals || {};
+        D.verticalConfig = parsed.verticalConfig || [];
         _isFirstLoad = false;
         hideLoading();
         renderAll();
@@ -1487,7 +1488,8 @@ function refreshActive(silent) {
   else loadData(silent);
 }
 
-// Request the active audience's dashboard from the backend and render it.
+// Fetch seller + buyer dashboards in parallel via two getDashboardData calls,
+// then combine and render. Uses the existing deployed getDashboardData function.
 function loadData(silent) {
   var btn = document.getElementById('btn-refresh');
   if (btn) btn.classList.add('spinning');
@@ -1508,41 +1510,74 @@ function loadData(silent) {
     scheduleNextRefresh();
   }
 
-  var reqF = { period: currentPeriod };
-  if (currentPeriod === 'Custom') { reqF.startDate = customStart; reqF.endDate = customEnd; }
+  var baseF = { period: currentPeriod };
+  if (currentPeriod === 'Custom') { baseF.startDate = customStart; baseF.endDate = customEnd; }
+  var sellerF = JSON.stringify({ audience: 'seller', period: baseF.period, startDate: baseF.startDate, endDate: baseF.endDate });
+  var buyerF  = JSON.stringify({ audience: 'buyer',  period: baseF.period, startDate: baseF.startDate, endDate: baseF.endDate });
 
+  var _sData = null, _bData = null, _pending = 2, _failed = false;
+
+  function tryMerge() {
+    if (_failed || --_pending > 0) return;
+    // Both calls finished — merge and render
+    DS = _sData ? { verticals: _sData.verticals || {} } : { verticals: {} };
+    DB = _bData ? { verticals: _bData.verticals || {} } : { verticals: {} };
+    D  = _sData || _bData || {};
+    D.verticals      = DS.verticals;
+    D.verticalConfig = (_sData && _sData.verticalConfig) || (_bData && _bData.verticalConfig) || [];
+
+    // Cache combined shape
+    try {
+      localStorage.setItem(STORE_PFX + 'combined', JSON.stringify({
+        success: true, lastUpdated: D.lastUpdated, dataSource: D.dataSource,
+        verticalConfig: D.verticalConfig, seller: DS, buyer: DB,
+      }));
+    } catch (e) {}
+
+    var hash = JSON.stringify([_sData && _sData.lastUpdated, _bData && _bData.lastUpdated]);
+    var unchanged = (_lastDashHash['combined'] === hash);
+    _lastDashHash['combined'] = hash;
+
+    if (!unchanged) {
+      var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+      if (selectedVert && _vertRowsPKey !== newPKey) {
+        vertRows = []; vertRowsLoading = false; vertRowsError = null;
+        loadVertRows(selectedVert);
+      }
+      renderAll();
+    }
+    done();
+  }
+
+  // Seller call
   google.script.run
     .withSuccessHandler(function(res) {
       try {
-        var data = JSON.parse(res);
-        if (data.success) {
-          try { localStorage.setItem(STORE_PFX + 'combined', res); } catch (e) {}
-          var hash = res.length + '|' + res.slice(0, 200);
-          var unchanged = (_lastDashHash['combined'] === hash);
-          _lastDashHash['combined'] = hash;
-
-          D  = data;
-          DS = data.seller || {};
-          DB = data.buyer  || {};
-          D.verticals = DS.verticals || {};  // backward-compat for renderVertStory etc.
-          if (!unchanged) {
-            var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
-            if (selectedVert && _vertRowsPKey !== newPKey) {
-              vertRows = [];
-              vertRowsLoading = false;
-              vertRowsError = null;
-              loadVertRows(selectedVert);
-            }
-            renderAll();
-          }
-          done();
-        } else {
-          fail(data.error || 'No data returned.');
-        }
-      } catch (e) { fail('Parse error: ' + e.message); }
+        var d = JSON.parse(res);
+        if (d.success) { _sData = d; }
+        else if (!_bData) { _failed = true; fail(d.error || 'Seller data error'); return; }
+      } catch (e) { if (!_bData) { _failed = true; fail('Parse error: ' + e.message); return; } }
+      tryMerge();
     })
-    .withFailureHandler(function(err) { fail((err && err.message) ? err.message : 'Script error'); })
-    .getCombinedDashboard(JSON.stringify(reqF));
+    .withFailureHandler(function(err) {
+      if (!_failed) { _failed = true; fail((err && err.message) ? err.message : 'Script error'); }
+    })
+    .getDashboardData(sellerF);
+
+  // Buyer call (parallel)
+  google.script.run
+    .withSuccessHandler(function(res) {
+      try {
+        var d = JSON.parse(res);
+        if (d.success) { _bData = d; }
+        // Buyer failing is non-fatal — render with seller only
+      } catch (e) {}
+      tryMerge();
+    })
+    .withFailureHandler(function() {
+      tryMerge(); // buyer failure is non-fatal
+    })
+    .getDashboardData(buyerF);
 }
 
 // ── View chrome (Sellers · Buyers · GST Payables) ────────────────
