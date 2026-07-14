@@ -380,6 +380,19 @@ select,input{font-family:inherit}
   padding-top:6px;border-top:1px solid var(--border);
 }
 
+/* ── Year-wise FY table inside compare card ── */
+.cfy-wrap{margin-top:10px;border-top:1px solid var(--border);padding-top:8px}
+.cfy-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3);margin-bottom:6px}
+.cfy-table{width:100%;border-collapse:collapse;font-size:10px}
+.cfy-table th{font-size:8.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;padding:0 5px 5px 3px;text-align:right;white-space:nowrap}
+.cfy-table th:first-child{text-align:left}
+.cfy-table td{padding:3.5px 5px 3.5px 3px;text-align:right;font-variant-numeric:tabular-nums;color:var(--txt2);border-top:1px solid var(--border);font-size:10.5px}
+.cfy-table td:first-child{text-align:left;font-weight:650;color:var(--txt);font-size:10px;letter-spacing:-.1px}
+.cfy-table tbody tr:first-child td{border-top:none}
+.cfy-table .cfy-pct{font-size:9px;color:var(--txt3);font-weight:400}
+.cfy-table .cfy-gmv{color:var(--st-transacted-tx);font-weight:600}
+.cfy-table .cfy-tat{color:var(--amber)}
+
 /* ===== Detail Funnel — Activity rings (left) + 3D funnel (right) ===== */
 .fun-rings{flex:1.1;min-width:0;display:flex;align-items:center;justify-content:center;gap:26px;flex-wrap:wrap}
 .fring{transition:stroke-width .3s var(--ease-out)}
@@ -1798,6 +1811,43 @@ function cardStats(v) {
     return '<div class="cc-stat" style="--st-c:' + st.fill + ';--st-bg:' + st.bg + ';--st-tx:' + st.tx + '">'
       + '<b>' + fmt(s[1]) + '</b><span>' + st.lbl + '</span></div>';
   }).join('') + '</div>';
+}
+
+// Compact year-wise breakdown table rendered inside the compare card.
+function fyTable(v) {
+  var rows = (v.fyBreakdown || []);
+  if (!rows.length) return '';
+
+  var hasTxn = rows.some(function(f) { return f.pctTransacted !== null || f.totalTxnValue !== null; });
+  var hasGST = rows.some(function(f) { return f.withGST !== null; });
+
+  var thead = '<thead><tr>'
+    + '<th style="text-align:left">FY</th>'
+    + '<th>Total</th>'
+    + '<th>Onboarded</th>'
+    + (hasTxn ? '<th>Txn%</th><th>GMV</th>' : '')
+    + '<th>Avg TAT</th>'
+    + (hasGST ? '<th>GST ✓</th>' : '')
+    + '</tr></thead>';
+
+  var tbody = '<tbody>' + rows.map(function(f) {
+    return '<tr>'
+      + '<td>' + esc(f.fy) + '</td>'
+      + '<td>' + fmt(f.total) + '</td>'
+      + '<td>' + fmt(f.onboarded) + ' <span class="cfy-pct">(' + f.completionPct + '%)</span></td>'
+      + (hasTxn
+          ? '<td>' + (f.pctTransacted !== null ? f.pctTransacted + '%' : '—') + '</td>'
+          + '<td class="cfy-gmv">' + (f.totalTxnValue !== null ? fmtINR(f.totalTxnValue) : '—') + '</td>'
+          : '')
+      + '<td class="cfy-tat">' + (f.avgTAT !== null ? f.avgTAT + 'd' : '—') + '</td>'
+      + (hasGST ? '<td>' + (f.withGST !== null ? fmt(f.withGST) : '—') + '</td>' : '')
+      + '</tr>';
+  }).join('') + '</tbody>';
+
+  return '<div class="cfy-wrap">'
+    + '<div class="cfy-title">Year-wise</div>'
+    + '<table class="cfy-table">' + thead + tbody + '</table>'
+    + '</div>';
 }
 
 // Onboarded count per business category (top `max`, remainder rolled into

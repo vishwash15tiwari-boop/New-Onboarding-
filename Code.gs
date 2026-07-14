@@ -495,6 +495,45 @@ function vStats(data) {
   var categories = Object.keys(catMap).map(function(k) { return catMap[k]; })
     .sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });
 
+  // Per-financial-year breakdown (India FY: Apr 1 – Mar 31), newest FY first.
+  var fyMap = {};
+  data.forEach(function(r) {
+    if (!r.createdDate) return;
+    var y = r.createdDate.getFullYear(), m = r.createdDate.getMonth();
+    var fyStart = m >= 3 ? y : y - 1;
+    var fyKey   = 'FY ' + String(fyStart).slice(2) + '-' + String(fyStart + 1).slice(2);
+    if (!fyMap[fyKey]) fyMap[fyKey] = { fyKey: fyKey, fyStart: fyStart, rows: [] };
+    fyMap[fyKey].rows.push(r);
+  });
+  var fyBreakdown = Object.keys(fyMap).map(function(fk) {
+    var d = fyMap[fk].rows;
+    var fyTotal     = d.length;
+    var fyCompleted = countFn(d, function(r) { return r.status === 'COMPLETED'; });
+    var fyHasTxn    = d.some(function(r) { return r.hasTxn; });
+    var fyTransacted = fyHasTxn ? countFn(d, function(r) { return r.hasTransacted; }) : null;
+    var fyTxnSum = 0, fyHasTxnVal = false;
+    d.forEach(function(r) {
+      if (r.txnValue !== null && r.txnValue !== undefined) { fyHasTxnVal = true; fyTxnSum += r.txnValue; }
+    });
+    var fyWithGST = d.some(function(r) { return r.gstin; })
+      ? countFn(d, function(r) { return r.status === 'COMPLETED' && r.hasGST; }) : null;
+    var fyTats = d.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS; })
+                  .map(function(r) { return r.onbTAT; });
+    return {
+      fy:            fk,
+      fyStart:       fyMap[fk].fyStart,
+      total:         fyTotal,
+      onboarded:     fyCompleted,
+      completionPct: pct(fyCompleted, fyTotal),
+      transacted:    fyTransacted,
+      pctTransacted: fyTransacted === null ? null : pct(fyTransacted, fyCompleted),
+      totalTxnValue: fyHasTxnVal ? fyTxnSum : null,
+      withGST:       fyWithGST,
+      missingGST:    fyWithGST !== null ? fyCompleted - fyWithGST : null,
+      avgTAT:        fyTats.length ? Math.round(avg(fyTats)) : null,
+    };
+  }).sort(function(a, b) { return b.fyStart - a.fyStart; });
+
   return {
     total: total,
     completed: completed,
@@ -514,6 +553,7 @@ function vStats(data) {
     fyBreakdown: fyBreakdown,
     categories:  categories,
     rowsTotal: total,
+    fyBreakdown: fyBreakdown,
   };
 }
 
