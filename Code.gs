@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v23_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v24_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -136,7 +136,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v8_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v9_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var dash = buildDashboard(audience, cfg, rows, f);
@@ -170,7 +170,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v8_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v9_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -410,15 +410,29 @@ function vStats(data) {
   var hasTxnData = data.some(function(r) { return r.hasTxn; });
   var transacted = hasTxnData ? countFn(data, function(r) { return r.hasTransacted; }) : null;
 
-  // Sum transaction values when any row carries the field.
+  // GMV: only positive transaction values count — zero means no transaction occurred.
   var txnValSum = 0, hasTxnValData = false;
   data.forEach(function(r) {
-    if (r.txnValue !== null && r.txnValue !== undefined) {
+    if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
       hasTxnValData = true;
       txnValSum += r.txnValue;
     }
   });
   var totalTxnValue = hasTxnValData ? txnValSum : null;
+
+  // Pipeline aging: open records (DRAFT or IN_REVIEW) that haven't completed yet.
+  // Aging = open > 14 days; Overdue = open > 30 days.
+  var AGE_WARN_MS  = 14 * 86400000;
+  var AGE_DUE_MS   = 30 * 86400000;
+  var nowMs = now.getTime();
+  var agingCount = 0, overdueCount = 0;
+  data.forEach(function(r) {
+    if (r.status === 'COMPLETED' || r.status === 'REJECTED') return;
+    if (!r.createdDate) return;
+    var elapsed = nowMs - r.createdDate.getTime();
+    if (elapsed > AGE_DUE_MS)  { overdueCount++; agingCount++; }
+    else if (elapsed > AGE_WARN_MS) { agingCount++; }
+  });
 
   var catMap = {};
   data.forEach(function(r) {
@@ -454,6 +468,8 @@ function vStats(data) {
     transacted: transacted,
     pctTransacted: transacted === null ? null : pct(transacted, completed),
     totalTxnValue: totalTxnValue,
+    aging:   agingCount   > 0 ? agingCount   : null,
+    overdue: overdueCount > 0 ? overdueCount : null,
     categories: categories,
     rowsTotal: total,
   };

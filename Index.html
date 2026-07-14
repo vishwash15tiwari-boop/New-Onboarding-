@@ -366,6 +366,8 @@ select,input{font-family:inherit}
 .cc-foot-item b{font-size:12.5px;color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.1px}
 .cc-gst-active b{color:var(--st-onboarded)}
 .cc-gst-inactive b{color:var(--st-rejected)}
+.cc-aging{gap:4px}
+.cc-aging b{display:block;font-size:12px}
 .cc-foot-more{margin-left:auto;font-size:11px;color:var(--vc-ink,var(--blue));font-weight:600;white-space:nowrap}
 
 /* ===== Detail Funnel — Activity rings (left) + 3D funnel (right) ===== */
@@ -993,6 +995,12 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .vs-metric{display:flex;flex-direction:column;gap:2px}
 .vs-metric b{font-size:15px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
 .vs-metric span{font-size:9.5px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;font-weight:500}
+.vs-metric.m-warn b{color:#C25A24}
+.vs-metric.m-crit b{color:#B03030}
+.vs-metric.m-gmv b{color:var(--vc-ink,var(--blue))}
+.vs-aging-sub{font-size:9.5px;color:var(--txt3);margin-top:2px;white-space:nowrap}
+.vs-aging-sub .ag-warn{color:#C25A24;font-weight:700}
+.vs-aging-sub .ag-crit{color:#B03030;font-weight:700}
 
 /* Responsive */
 @media(max-width:1100px){
@@ -1137,7 +1145,7 @@ var _isFirstLoad     = true;
 
 // localStorage key prefix — bump the version suffix when the data shape changes
 // so stale entries from an old schema are silently ignored.
-var STORE_PFX = 'ebt_v7_';
+var STORE_PFX = 'ebt_v8_';
 
 // Stale-while-revalidate: if we have a previous response in localStorage, paint
 // it immediately so the user sees real data with zero wait, then fetch fresh data
@@ -1813,7 +1821,13 @@ function renderVerticals() {
     var txnItem = (v.transacted === null || v.transacted === undefined) ? ''
       : '<div class="cc-foot-item"><b>' + fmt(v.transacted) + '</b>Transacted</div>';
     var gmvItem = (v.totalTxnValue === null || v.totalTxnValue === undefined) ? ''
-      : '<div class="cc-foot-item"><b>' + fmtINR(v.totalTxnValue) + '</b>GMV</div>';
+      : '<div class="cc-foot-item"><b>' + fmtINR(v.totalTxnValue) + '</b>Total GMV</div>';
+    var agingParts = [];
+    if (v.aging   != null) agingParts.push('<b style="color:#C25A24">' + fmt(v.aging)   + '</b>Aging');
+    if (v.overdue != null) agingParts.push('<b style="color:#B03030">' + fmt(v.overdue) + '</b>Overdue');
+    var agingItem = agingParts.length
+      ? '<div class="cc-foot-item cc-aging">' + agingParts.join('') + '</div>'
+      : '';
 
     return '<div class="compare-card"' + attrs + '>'
       + hdr
@@ -1821,7 +1835,7 @@ function renderVerticals() {
       + catRows
       + '<div class="cc-foot">'
       +   '<div class="cc-foot-item"><b>' + dOr(v.avgTAT, 'd') + '</b>Avg TAT</div>'
-      +   txnItem + gmvItem
+      +   txnItem + gmvItem + agingItem
       +   (v.missingGST != null ? '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST) + '</b>GST Missing</div>' : '')
       +   '<span class="cc-foot-more" style="color:var(--vc-ink,var(--blue))">Details ↓</span>'
       + '</div>'
@@ -2005,18 +2019,31 @@ function renderVertStory() {
       + '</div>';
 
     // ── Compact key metrics strip ────────────────────────────────────────────
+    // GMV card: shows total GMV with aging/overdue as a sub-line when present
+    var gmvMetric = '';
+    if (v.totalTxnValue != null) {
+      var agingSub = '';
+      if (v.aging != null || v.overdue != null) {
+        agingSub = '<div class="vs-aging-sub">';
+        if (v.aging   != null) agingSub += 'Aging: <span class="ag-warn">' + fmt(v.aging)   + '</span>';
+        if (v.aging != null && v.overdue != null) agingSub += ' · ';
+        if (v.overdue != null) agingSub += 'Overdue: <span class="ag-crit">' + fmt(v.overdue) + '</span>';
+        agingSub += '</div>';
+      }
+      gmvMetric = '<div class="vs-metric m-gmv"><b>' + fmtINR(v.totalTxnValue) + '</b><span>Total GMV</span>' + agingSub + '</div>';
+    }
     var metArr = [
-      ['Avg TAT',        dOr(v.avgTAT, 'd')],
-      v.completedThisWeek ? ['Onboarded (7d)', fmt(v.completedThisWeek)] : null,
-      v.transacted != null ? ['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)'] : null,
-      v.totalTxnValue != null ? ['GMV', fmtINR(v.totalTxnValue)] : null,
-      v.withGST    != null ? ['GST Active',   fmt(v.withGST)]   : null,
-      v.missingGST != null ? ['GST Missing',  fmt(v.missingGST)] : null,
+      ['Avg TAT',        dOr(v.avgTAT, 'd'), ''],
+      v.completedThisWeek ? ['Onboarded (7d)', fmt(v.completedThisWeek), ''] : null,
+      v.transacted != null ? ['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)', ''] : null,
+      v.withGST    != null ? ['GST Active',   fmt(v.withGST),   ''] : null,
+      v.missingGST != null ? ['GST Missing',  fmt(v.missingGST), 'm-warn'] : null,
     ].filter(Boolean);
-    var metricsHtml = metArr.length
+    var metricsHtml = (metArr.length || gmvMetric)
       ? '<div class="vs-metrics">'
+        + (gmvMetric || '')
         + metArr.map(function(m) {
-            return '<div class="vs-metric"><b>' + m[1] + '</b><span>' + m[0] + '</span></div>';
+            return '<div class="vs-metric' + (m[2] ? ' ' + m[2] : '') + '"><b>' + m[1] + '</b><span>' + m[0] + '</span></div>';
           }).join('')
         + '</div>'
       : '';
