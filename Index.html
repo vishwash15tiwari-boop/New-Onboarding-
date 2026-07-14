@@ -19,12 +19,12 @@
 :root{
   color-scheme:light;
 
-  /* ── Surfaces — cool porcelain, generous whitespace ── */
-  --bg:      #F8FAFC;
-  --bg2:     #EFF3F7;
+  /* ── Surfaces — clean white ── */
+  --bg:      #FFFFFF;
+  --bg2:     #F4F6F9;
   --card:    #FFFFFF;
-  --card2:   #FAFBFD;
-  --hover:   #F2F6FA;
+  --card2:   #F8FAFB;
+  --hover:   #F0F4F8;
 
   /* ── Borders — hairline ── */
   --border:  #E8ECF1;
@@ -69,10 +69,7 @@
   --ease-sheet:  cubic-bezier(.32,.72,0,1);    /* iOS sheet — overlays & modals */
   --ease-spring: cubic-bezier(.34,1.35,.62,1); /* gentle overshoot — micro-presses */
 
-  /* ── Ambient page wash — colourful yet airy: blue, green, a hint of purple ── */
-  --wash: radial-gradient(1150px 460px at 10% -10%, rgba(0,93,255,.08), transparent 62%),
-          radial-gradient(950px 420px at 90% -12%, rgba(29,199,151,.075), transparent 62%),
-          radial-gradient(760px 360px at 55% -16%, rgba(132,96,212,.05), transparent 60%);
+  --wash: none;
 }
 
 html{
@@ -85,7 +82,7 @@ html{
   -moz-osx-font-smoothing:grayscale;
   text-rendering:optimizeLegibility;
 }
-body{min-height:100vh;background:var(--bg);background-image:var(--wash);background-repeat:no-repeat;transition:background-color .3s var(--ease)}
+body{min-height:100vh;background:var(--bg);transition:background-color .3s var(--ease)}
 a{color:var(--blue);text-decoration:none}
 button{cursor:pointer;font-family:inherit;color:inherit}
 select,input{font-family:inherit}
@@ -109,7 +106,7 @@ select,input{font-family:inherit}
 ::-webkit-scrollbar-thumb:hover{background:var(--txt3);background-clip:content-box}
 
 /* ===== Loading Overlay — sophisticated, brand-quiet ===== */
-#loading-overlay{position:fixed;inset:0;background:var(--bg);background-image:var(--wash);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;transition:opacity .45s var(--ease),visibility 0s linear .45s}
+#loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;transition:opacity .45s var(--ease),visibility 0s linear .45s}
 #loading-overlay.hidden{opacity:0;pointer-events:none;visibility:hidden}
 #loading-overlay.hidden .spinner{animation-play-state:paused}
 .spinner{width:34px;height:34px;border:2.5px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s cubic-bezier(.5,.1,.5,.9) infinite}
@@ -500,8 +497,6 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   inset:0;
   z-index:400;
   background:var(--bg);
-  background-image:var(--wash);
-  background-repeat:no-repeat;
   overflow-y:auto;
   animation:sheetIn .55s var(--ease-sheet) both;
 }
