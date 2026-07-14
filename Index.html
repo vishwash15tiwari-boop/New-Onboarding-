@@ -2068,8 +2068,8 @@ function renderVerticals() {
     var lblCls = pipelineLabel === 'Seller Pipeline' ? 'cc-pipe-lbl-seller' : 'cc-pipe-lbl-buyer';
     var attrs = ' style="--i:' + (idx++) + ';' + vcVars(cfg.key) + '" tabindex="0" role="button"'
       + ' aria-label="' + esc(cfg.name) + ' ' + esc(pipelineLabel) + ' details"'
-      + ' onclick="scrollToVert(\'' + cfg.key + '\')"'
-      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();scrollToVert(\'' + cfg.key + '\')}"';
+      + ' onclick="openVertDetail(\'' + cfg.key + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openVertDetail(\'' + cfg.key + '\')}"';
 
     var hdr = '<div class="cc-hdr2"><span class="cc-pipe-lbl ' + lblCls + '">' + pipelineLabel + '</span></div>';
 
@@ -2146,7 +2146,7 @@ function renderVerticals() {
         statsList = '<div class="cc-fy-wrap">'
           + '<table class="cc-fy-tbl">' + fyThead + '<tbody>' + fyTbody + '</tbody></table>'
           + '<div style="display:flex;justify-content:flex-end;padding:6px 0 2px">'
-          +   '<span style="font-size:11px;font-weight:600;color:var(--vc-ink,var(--blue));letter-spacing:-.1px">Details ↓</span>'
+          +   '<span style="font-size:11px;font-weight:600;color:var(--vc-ink,var(--blue));letter-spacing:-.1px">View details →</span>'
           + '</div>'
           + '</div>';
       }
@@ -3593,10 +3593,10 @@ function snSelectGroup(aud) {
   switchAudience(aud);
 }
 
-// Called when a vertical sub-item is clicked — scrolls to its story section.
+// Called when a vertical sub-item is clicked — opens the detail panel.
 function snSelectVert(key) {
   snActiveKey = key;
-  scrollToVert(key);
+  openVertDetail(key);
 }
 
 // IntersectionObserver scroll spy — highlights the sidebar item matching the
