@@ -621,6 +621,178 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
   #main{padding:18px 16px}
   .compare-grid{grid-template-columns:1fr}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   GST PAYABLES VIEW — warm cream / burnt-orange enterprise palette
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --gp-bg:      #F4EEE3;
+  --gp-bg2:     #EFE7D9;
+  --gp-card:    #FFFFFF;
+  --gp-card2:   #FBF7F0;
+  --gp-ink:     #2A2620;
+  --gp-ink2:    #6B6357;
+  --gp-ink3:    #9C9384;
+  --gp-border:  #EBE2D3;
+  --gp-border2: #DFD4C1;
+  --gp-orange:      #C25A24;
+  --gp-orange-ink:  #A94A18;
+  --gp-orange-bg:   #F6E7D8;
+  --gp-green:       #2E8B62;
+  --gp-green-bg:    #E2F0E9;
+  --gp-gold:        #C9922E;
+  --gp-gold-bg:     #F5ECD5;
+  --gp-blue:        #3D6DB5;
+  --gp-purple:      #8A5CB0;
+  --gp-red:         #C0492F;
+  --gp-red-bg:      #F7E4DE;
+  --gp-grid:        #ECE3D4;
+  --gp-shadow-sm: 0 1px 2px rgba(72,55,34,.05);
+  --gp-shadow:    0 4px 16px rgba(72,55,34,.07), 0 1px 3px rgba(72,55,34,.05);
+  --gp-shadow-lg: 0 16px 40px rgba(72,55,34,.12), 0 4px 10px rgba(72,55,34,.06);
+}
+
+/* Immersive warm background when the GST view is active */
+body.view-gst{background:var(--gp-bg)}
+body.view-gst #main{background:var(--gp-bg)}
+body.view-gst #header{background:rgba(250,246,239,.9);border-bottom-color:var(--gp-border)}
+body.view-gst #aud-gst.active{background:linear-gradient(135deg,#C25A24,#D2731F);box-shadow:0 2px 8px rgba(194,90,36,.3)}
+body.view-gst .live-pill{background:var(--gp-orange-bg);border-color:var(--gp-border2)}
+body.view-gst .live-pill b{color:var(--gp-orange)}
+
+/* Year filter chips */
+.gp-year-chips{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}
+.gp-year-chip{font-family:inherit;font-size:12px;font-weight:600;padding:5px 13px;border:1.5px solid var(--gp-border2);border-radius:20px;cursor:pointer;background:var(--gp-card);color:var(--gp-ink2);transition:background .18s,border-color .18s,color .18s,transform .18s;white-space:nowrap;line-height:1.35}
+.gp-year-chip:hover{border-color:var(--gp-orange);color:var(--gp-orange-ink);transform:translateY(-1px)}
+.gp-year-chip.active{background:var(--gp-orange);border-color:var(--gp-orange);color:#fff}
+
+/* Staggered reveal for cards */
+@keyframes gpReveal{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+#tab-gst>*{animation:gpReveal .42s cubic-bezier(.22,.8,.36,1) both}
+#tab-gst>*:nth-child(1){animation-delay:.02s}
+#tab-gst>*:nth-child(2){animation-delay:.08s}
+#tab-gst>*:nth-child(3){animation-delay:.14s}
+#tab-gst>*:nth-child(4){animation-delay:.20s}
+#tab-gst>*:nth-child(5){animation-delay:.26s}
+
+/* ── KPI row ── */
+.gp-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.gp-kpi{position:relative;background:var(--gp-card);border:1px solid var(--gp-border);border-radius:20px;padding:22px 24px 20px;box-shadow:var(--gp-shadow-sm);overflow:hidden;transition:box-shadow .22s ease,transform .22s ease,border-color .22s}
+.gp-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gp-orange)}
+.gp-kpi:hover{box-shadow:var(--gp-shadow);transform:translateY(-3px)}
+.gp-kpi.gp-orange::before{background:var(--gp-orange)}
+.gp-kpi.gp-green::before{background:var(--gp-green)}
+.gp-kpi.gp-gold::before{background:var(--gp-gold)}
+.gp-kpi-tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:4px 11px;border-radius:20px;margin-bottom:14px}
+.gp-orange .gp-kpi-tag{background:var(--gp-orange-bg);color:var(--gp-orange-ink)}
+.gp-green .gp-kpi-tag{background:var(--gp-green-bg);color:var(--gp-green)}
+.gp-gold .gp-kpi-tag{background:var(--gp-gold-bg);color:var(--gp-gold)}
+.gp-kpi-val{font-size:30px;font-weight:750;color:var(--gp-ink);letter-spacing:-1.2px;line-height:1.05;font-variant-numeric:tabular-nums}
+.gp-kpi-sub{font-size:12.5px;color:var(--gp-ink3);font-weight:450;margin-top:6px}
+.gp-kpi-barrow{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--gp-ink3);margin-top:16px;margin-bottom:6px;text-transform:none;letter-spacing:.2px}
+.gp-kpi-track{height:6px;border-radius:6px;background:var(--gp-bg2);overflow:hidden}
+.gp-kpi-fill{height:100%;border-radius:6px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.gp-orange .gp-kpi-fill{background:var(--gp-orange)}
+.gp-green .gp-kpi-fill{background:var(--gp-green)}
+.gp-gold .gp-kpi-fill{background:var(--gp-gold)}
+
+/* ── Generic GST card ── */
+.gp-card{background:var(--gp-card);border:1px solid var(--gp-border);border-radius:20px;padding:22px 24px;box-shadow:var(--gp-shadow-sm);transition:box-shadow .22s ease,border-color .22s}
+.gp-card:hover{box-shadow:var(--gp-shadow)}
+.gp-card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.gp-card-title{font-size:16px;font-weight:700;color:var(--gp-ink);letter-spacing:-.3px}
+.gp-card-sub{font-size:12.5px;color:var(--gp-ink3);font-weight:450;margin-top:2px}
+.gp-empty{color:var(--gp-ink3);font-size:13px;text-align:center;padding:34px 12px}
+
+/* ── Aging row: line chart + FY cards ── */
+.gp-aging-row{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;margin-bottom:16px}
+.gp-chart-wrap{width:100%;overflow:hidden;margin-top:8px}
+.gp-line-svg{width:100%;height:auto;display:block}
+.gp-axis-txt{fill:var(--gp-ink3);font-size:10.5px;font-weight:500;font-family:inherit}
+.gp-fy-list{display:flex;flex-direction:column;gap:10px;max-height:none;overflow-y:auto;padding-right:2px}
+.gp-fy-card{background:var(--gp-card);border:1px solid var(--gp-border);border-radius:14px;padding:12px 15px;cursor:pointer;transition:box-shadow .18s,border-color .18s,transform .18s}
+.gp-fy-card:hover{box-shadow:var(--gp-shadow);border-color:var(--gp-border2);transform:translateX(2px)}
+.gp-fy-card.active{border-color:var(--gp-orange);background:var(--gp-orange-bg)}
+.gp-fy-label{font-size:11.5px;font-weight:600;color:var(--gp-ink3);letter-spacing:.2px}
+.gp-fy-val{font-size:18px;font-weight:750;color:var(--gp-ink);letter-spacing:-.6px;margin:3px 0 8px;font-variant-numeric:tabular-nums}
+.gp-fy-track{height:4px;border-radius:4px;background:var(--gp-bg2);overflow:hidden}
+.gp-fy-bar{height:100%;border-radius:4px;background:var(--gp-orange);transition:width .7s cubic-bezier(.4,0,.2,1)}
+
+/* ── Charts row: donut / bars / compliance ── */
+.gp-charts-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.gp-donut-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:10px}
+.gp-donut-svg{width:170px;height:170px}
+.gp-donut-num{fill:var(--gp-ink);font-size:26px;font-weight:750;font-family:inherit;letter-spacing:-1px}
+.gp-donut-lbl{fill:var(--gp-ink3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-family:inherit}
+.gp-donut-svg circle{transition:stroke-dasharray .8s cubic-bezier(.4,0,.2,1)}
+.gp-legend{display:flex;flex-direction:column;gap:7px;width:100%}
+.gp-leg{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gp-ink2);font-weight:500}
+.gp-leg b{margin-left:auto;color:var(--gp-ink);font-weight:700;font-variant-numeric:tabular-nums}
+.gp-leg-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.gp-vbars{display:flex;align-items:flex-end;justify-content:space-around;gap:6px;height:170px;margin-top:14px;padding:0 2px}
+.gp-vbar-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%}
+.gp-vbar{width:60%;max-width:30px;min-height:4px;border-radius:6px 6px 0 0;transition:height .7s cubic-bezier(.4,0,.2,1)}
+.gp-vbar-col:hover .gp-vbar{filter:brightness(1.08)}
+.gp-vbar-lbl{font-size:9.5px;color:var(--gp-ink3);font-weight:600;text-align:center;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;transform:rotate(-18deg);transform-origin:center}
+.gp-comp{display:flex;flex-direction:column;gap:16px;margin-top:16px}
+.gp-comp-row{display:grid;grid-template-columns:118px minmax(0,1fr) 40px;align-items:center;gap:10px}
+.gp-comp-lbl{font-size:12px;font-weight:600;color:var(--gp-ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gp-comp-track{height:12px;border-radius:8px;background:var(--gp-bg2);overflow:hidden}
+.gp-comp-fill{height:100%;border-radius:8px;min-width:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.gp-comp-val{font-size:12px;font-weight:700;color:var(--gp-ink);text-align:right;font-variant-numeric:tabular-nums}
+
+/* ── Filters ── */
+.gp-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--gp-card);border:1px solid var(--gp-border);border-radius:16px;padding:14px 16px;margin-bottom:16px;box-shadow:var(--gp-shadow-sm)}
+.gp-filters .gp-search{flex:1;min-width:200px}
+.gp-input,.gp-select{font-family:inherit;background:var(--gp-card2);border:1px solid var(--gp-border2);color:var(--gp-ink);padding:9px 12px;border-radius:11px;font-size:12.5px;font-weight:450;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.gp-select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:30px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23A94A18' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
+.gp-select-wrap{min-width:150px}
+.gp-input:hover,.gp-select:hover{border-color:var(--gp-orange)}
+.gp-input:focus,.gp-select:focus{border-color:var(--gp-orange);box-shadow:0 0 0 3px rgba(194,90,36,.14)}
+.gp-input::placeholder{color:var(--gp-ink3)}
+
+/* ── Vendor register table ── */
+.gp-table-card{background:var(--gp-card);border:1px solid var(--gp-border);border-radius:20px;box-shadow:var(--gp-shadow-sm);overflow:hidden}
+.gp-table-head{padding:18px 22px 14px}
+.gp-table-head .gp-card-title{font-size:15px}
+.gp-table-scroll{overflow-x:auto;max-height:620px;overflow-y:auto}
+.gp-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.gp-table thead th{position:sticky;top:0;z-index:5;background:var(--gp-card2);padding:11px 16px;text-align:left;font-size:10.5px;font-weight:700;color:var(--gp-ink3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid var(--gp-border);cursor:pointer;user-select:none;transition:color .12s}
+.gp-table thead th:hover{color:var(--gp-orange-ink)}
+.gp-table thead th.gp-sort-asc::after{content:' ↑';color:var(--gp-orange)}
+.gp-table thead th.gp-sort-desc::after{content:' ↓';color:var(--gp-orange)}
+.gp-table thead th.gp-num,.gp-table td.gp-num{text-align:right;font-variant-numeric:tabular-nums}
+.gp-table tbody tr{border-bottom:1px solid var(--gp-border);transition:background .12s}
+.gp-table tbody tr:last-child{border-bottom:none}
+.gp-table tbody tr:hover{background:var(--gp-card2)}
+.gp-table td{padding:12px 16px;color:var(--gp-ink);vertical-align:middle;white-space:nowrap}
+.gp-vname{font-weight:650;color:var(--gp-ink)}
+.gp-gstno{font-size:11.5px;color:var(--gp-ink3);font-variant-numeric:tabular-nums}
+.gp-chip{display:inline-block;font-size:10.5px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap;letter-spacing:.1px}
+.gp-chip.active{background:var(--gp-green-bg);color:var(--gp-green)}
+.gp-chip.cancelled{background:var(--gp-red-bg);color:var(--gp-red)}
+.gp-chip.suspended{background:var(--gp-gold-bg);color:var(--gp-gold)}
+.gp-chip.inactive{background:var(--gp-bg2);color:var(--gp-ink2)}
+.gp-chip.neutral{background:var(--gp-bg2);color:var(--gp-ink2)}
+.gp-amt{font-weight:650;color:var(--gp-ink);font-variant-numeric:tabular-nums}
+.gp-amt.muted{font-weight:450;color:var(--gp-ink3)}
+.gp-table-note{padding:12px 22px;font-size:11.5px;color:var(--gp-ink3);border-top:1px solid var(--gp-border);background:var(--gp-card2)}
+
+/* Skeleton loading */
+@keyframes gpShimmer{0%{background-position:-320px 0}100%{background-position:320px 0}}
+.gp-skel{background:linear-gradient(90deg,var(--gp-bg2) 0%,var(--gp-card2) 40%,var(--gp-bg2) 80%);background-size:640px 100%;animation:gpShimmer 1.3s infinite linear;border-radius:12px}
+
+/* ── GST view responsive ── */
+@media (max-width:1100px){
+  .gp-charts-row{grid-template-columns:1fr}
+  .gp-aging-row{grid-template-columns:1fr}
+  .gp-fy-list{flex-direction:row;flex-wrap:wrap;max-height:none}
+  .gp-fy-card{flex:1 1 140px}
+}
+@media (max-width:760px){
+  .gp-kpi-row{grid-template-columns:1fr}
+  .gp-kpi-val{font-size:26px}
+}
 </style>
 </head>
 
@@ -646,7 +818,7 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
     <span class="status-dot"></span>
     <span class="last-updated" id="last-updated">Loading…</span>
     <span class="live-pill"><b>LIVE</b> · <span id="refresh-countdown">—</span></span>
-    <button id="btn-refresh" onclick="loadData()">
+    <button id="btn-refresh" onclick="refreshActive()">
       <span class="icon-refresh">↻</span> Refresh
     </button>
   </div>
@@ -655,17 +827,18 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
 <!-- Main -->
 <div id="main">
 
-  <!-- ── TAB: OVERVIEW ──────────────────────────────────────── -->
-  <div id="tab-overview">
+  <!-- Top-level view switcher — Sellers · Buyers · GST Payables -->
+  <div class="section-title" style="flex-wrap:wrap">
+    <span id="view-title">Business Verticals</span>
+    <div class="aud-tabs" role="tablist" aria-label="View">
+      <button class="aud-tab active" id="aud-seller" role="tab" onclick="switchAudience('seller')">Sellers</button>
+      <button class="aud-tab" id="aud-buyer" role="tab" onclick="switchAudience('buyer')">Buyers</button>
+      <button class="aud-tab" id="aud-gst" role="tab" onclick="switchView('gst')">GST Payables</button>
+    </div>
+    <span style="flex:1"></span>
 
-    <!-- Business Verticals -->
-    <div class="section-title" style="flex-wrap:wrap">
-      Business Verticals
-      <div class="aud-tabs" role="tablist" aria-label="Audience">
-        <button class="aud-tab active" id="aud-seller" role="tab" onclick="switchAudience('seller')">Sellers</button>
-        <button class="aud-tab" id="aud-buyer" role="tab" onclick="switchAudience('buyer')">Buyers</button>
-      </div>
-      <span style="flex:1"></span>
+    <!-- Onboarding period controls -->
+    <span id="onb-period-controls" style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div class="qf-chips" id="qf-chips">
         <button class="qf-chip" data-qf="Today"     onclick="onPeriodSelect('Today')">Daily</button>
         <button class="qf-chip" data-qf="ThisWeek"  onclick="onPeriodSelect('ThisWeek')">Weekly</button>
@@ -679,10 +852,19 @@ tbody td{padding:11px 14px;color:var(--txt);vertical-align:middle;white-space:no
         <input type="date" class="filter-select" id="top-start" onchange="onCustomDates()">
         <input type="date" class="filter-select" id="top-end" onchange="onCustomDates()">
       </span>
-    </div>
-    <div class="compare-grid" id="vert-grid"></div>
+    </span>
 
+    <!-- GST Payables financial-year filter -->
+    <div class="gp-year-chips" id="gp-year-chips" style="display:none"></div>
   </div>
+
+  <!-- ── VIEW: ONBOARDING ── -->
+  <div id="tab-overview">
+    <div class="compare-grid" id="vert-grid"></div>
+  </div>
+
+  <!-- ── VIEW: GST PAYABLES ── -->
+  <div id="tab-gst" style="display:none"></div>
 
 </div><!-- /main -->
 
@@ -705,6 +887,19 @@ var D = null;          // full dashboard data for the active audience
 // from the backend (google.script.run) with an `audience` filter; the backend
 // reads the matching sheet server-side and returns the computed dashboard.
 var currentAudience = 'seller';
+
+// Top-level view: 'onboarding' (Sellers/Buyers vertical dashboard) or 'gst'
+// (GST Payables vendor register). Sellers/Buyers stay within 'onboarding'.
+var currentView = 'onboarding';
+
+// GST Payables state — a separate dataset with its own dashboard + filters.
+var GST = null;             // aggregated GST Payables data for the active FY filter
+var gpYear = 'All';         // active financial-year filter ('All' | 'FY 21-22' …)
+var gpFilters = { search: '', status: 'All', vertical: 'All', msme: 'All', itc: 'All' };
+var gpSort = { key: 'total', dir: -1 };  // vendor table sort (default: largest balance first)
+var GP_STATUS_COLORS = ['#C25A24', '#C9922E', '#2E8B62', '#3D6DB5', '#8A5CB0', '#B0596E', '#7A8B3D'];
+var GP_VERT_COLORS   = ['#C25A24', '#C9922E', '#2E8B62', '#3D6DB5', '#8A5CB0', '#B0596E', '#5AA0A2', '#C77D3A'];
+var GP_MAX_ROWS = 300;      // vendor rows rendered at once
 
 // Display names for raw pipeline statuses (values stay raw for filtering)
 var STATUS_LABELS = { COMPLETED: 'Onboarded', DRAFT: 'Draft', IN_REVIEW: 'In Review', REJECTED: 'Rejected' };
@@ -755,6 +950,9 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && selectedVert) closeVertDetail();
 });
 
+// Initialize view chrome once the DOM is ready (correct show/hide from the start).
+document.addEventListener('DOMContentLoaded', updateViewChrome);
+
 // ── Motion: respect the OS reduced-motion switch for JS-driven animation ──
 function motionOK() {
   return !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -802,7 +1000,13 @@ function scheduleNextRefresh() {
     if (el) el.textContent = (rem >= 60 ? Math.floor(rem / 60) + 'm ' : '') + (rem % 60) + 's';
   }, 1000);
 
-  _refreshTimer = setTimeout(function() { loadData(true); }, AUTO_REFRESH_SEC * 1000);
+  _refreshTimer = setTimeout(function() { refreshActive(true); }, AUTO_REFRESH_SEC * 1000);
+}
+
+// Reload whichever view is active (manual refresh button + auto-refresh timer).
+function refreshActive(silent) {
+  if (currentView === 'gst') loadGSTData(silent);
+  else loadData(silent);
 }
 
 // Request the active audience's dashboard from the backend and render it.
@@ -879,16 +1083,36 @@ function loadData(silent) {
     .getDashboardData(JSON.stringify(getFilters()));
 }
 
-// ── Audience (Sellers / Buyers) ──────────────────────────────────
-function renderAudienceTabs() {
+// ── View chrome (Sellers · Buyers · GST Payables) ────────────────
+// Shows/hides the right panels + controls and syncs the tab active states.
+function updateViewChrome() {
+  var isGst = currentView === 'gst';
+  var ov = document.getElementById('tab-overview');
+  var gt = document.getElementById('tab-gst');
+  var pc = document.getElementById('onb-period-controls');
+  var yc = document.getElementById('gp-year-chips');
+  var vt = document.getElementById('view-title');
+  if (ov) ov.style.display = isGst ? 'none' : '';
+  if (gt) gt.style.display = isGst ? 'block' : 'none';
+  if (pc) pc.style.display = isGst ? 'none' : 'inline-flex';
+  if (yc) yc.style.display = isGst ? 'inline-flex' : 'none';
+  if (vt) vt.textContent = isGst ? 'GST Payables' : 'Business Verticals';
+  document.body.classList.toggle('view-gst', isGst);
   var s = document.getElementById('aud-seller');
   var b = document.getElementById('aud-buyer');
-  if (s) s.classList.toggle('active', currentAudience === 'seller');
-  if (b) b.classList.toggle('active', currentAudience === 'buyer');
+  var g = document.getElementById('aud-gst');
+  if (s) s.classList.toggle('active', !isGst && currentAudience === 'seller');
+  if (b) b.classList.toggle('active', !isGst && currentAudience === 'buyer');
+  if (g) g.classList.toggle('active', isGst);
 }
 
+// Kept for compatibility with renderAll(); view chrome now lives in updateViewChrome.
+function renderAudienceTabs() { updateViewChrome(); }
+
 function switchAudience(a) {
-  if (a === currentAudience) return;
+  var leavingGst = currentView === 'gst';
+  currentView = 'onboarding';
+  if (a === currentAudience && !leavingGst) { updateViewChrome(); return; }
   currentAudience = a;
   selectedVert = null;                       // close any open detail panel
   vertRows = [];
@@ -899,7 +1123,7 @@ function switchAudience(a) {
   document.body.style.overflow = '';
   var panel = document.getElementById('vert-detail');
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
-  renderAudienceTabs();
+  updateViewChrome();
 
   // Show cached data for this audience immediately while the backend refreshes
   var swrDone = false;
@@ -929,6 +1153,27 @@ function switchAudience(a) {
   }
 
   loadData(swrDone);  // silent if stale data already shown
+}
+
+// Switch to the GST Payables view (paint cached data instantly, then refresh).
+function switchView(view) {
+  if (view !== 'gst') { switchAudience(currentAudience); return; }
+  if (currentView === 'gst') return;
+  currentView = 'gst';
+  if (selectedVert) closeVertDetail();
+  document.body.style.overflow = '';
+  updateViewChrome();
+
+  var swrDone = false;
+  try {
+    var stored = localStorage.getItem(STORE_PFX + 'gst_' + gpYear);
+    if (stored) {
+      var parsed = JSON.parse(stored);
+      if (parsed && parsed.success) { GST = parsed; renderGST(); swrDone = true; }
+    }
+  } catch (e) {}
+  if (!swrDone) { GST = null; renderGSTSkeleton(); }
+  loadGSTData(swrDone);
 }
 
 function hideLoading() {
@@ -2028,6 +2273,448 @@ function vdfClear() {
   showCatDetail('All');
   renderVdRecords();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// GST PAYABLES VIEW
+// ═══════════════════════════════════════════════════════════════
+function loadGSTData(silent) {
+  var btn = document.getElementById('btn-refresh');
+  if (btn) btn.classList.add('spinning');
+  clearTimeout(_refreshTimer);
+  clearInterval(_countdownTimer);
+  var cd = document.getElementById('refresh-countdown');
+  if (cd) cd.textContent = '…';
+
+  var reqYear = gpYear;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (btn) btn.classList.remove('spinning');
+      if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
+      try {
+        var data = JSON.parse(res);
+        if (data.success) {
+          try { localStorage.setItem(STORE_PFX + 'gst_' + reqYear, res); } catch (e) {}
+          if (currentView === 'gst' && reqYear === gpYear) { GST = data; renderGST(); }
+        } else if (currentView === 'gst') {
+          showGSTError(data.error || 'No data returned.');
+        }
+      } catch (e) {
+        if (currentView === 'gst') showGSTError('Parse error: ' + e.message);
+      }
+      scheduleNextRefresh();
+    })
+    .withFailureHandler(function(err) {
+      if (btn) btn.classList.remove('spinning');
+      if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
+      if (currentView === 'gst') showGSTError((err && err.message) ? err.message : 'Server error while loading GST Payables.');
+      scheduleNextRefresh();
+    })
+    .getGSTPayablesData(JSON.stringify({ year: gpYear }));
+}
+
+function showGSTError(msg) {
+  var host = document.getElementById('tab-gst');
+  if (!host) return;
+  host.innerHTML = '<div class="gp-card" style="text-align:center;padding:48px 24px">'
+    + '<div style="color:var(--gp-red);font-weight:700;font-size:15px;margin-bottom:8px">⚠ Could not load GST Payables</div>'
+    + '<div style="color:var(--gp-ink2);margin-bottom:18px;max-width:560px;margin-left:auto;margin-right:auto">' + esc(msg) + '</div>'
+    + '<div style="color:var(--gp-ink3);font-size:12px;margin-bottom:18px">If this is a permissions error, share the source sheet with the account that deployed this web app.</div>'
+    + '<button onclick="loadGSTData(false)" style="padding:9px 22px;border-radius:11px;border:1px solid var(--gp-orange);background:var(--gp-orange);color:#fff;font-size:13px;font-weight:600;cursor:pointer">↻ Retry</button>'
+    + '</div>';
+}
+
+function renderGSTSkeleton() {
+  var host = document.getElementById('tab-gst');
+  if (!host) return;
+  var kpi = '<div class="gp-kpi-row">' + [0,0,0].map(function() {
+    return '<div class="gp-kpi"><div class="gp-skel" style="height:20px;width:44%;margin-bottom:14px"></div>'
+      + '<div class="gp-skel" style="height:32px;width:70%"></div>'
+      + '<div class="gp-skel" style="height:12px;width:55%;margin-top:12px"></div>'
+      + '<div class="gp-skel" style="height:6px;width:100%;margin-top:16px"></div></div>';
+  }).join('') + '</div>';
+  var charts = '<div class="gp-charts-row">' + [0,0,0].map(function() {
+    return '<div class="gp-card"><div class="gp-skel" style="height:16px;width:50%;margin-bottom:18px"></div>'
+      + '<div class="gp-skel" style="height:150px;width:100%"></div></div>';
+  }).join('') + '</div>';
+  host.innerHTML = kpi
+    + '<div class="gp-aging-row"><div class="gp-card"><div class="gp-skel" style="height:16px;width:40%;margin-bottom:18px"></div><div class="gp-skel" style="height:200px;width:100%"></div></div>'
+    + '<div class="gp-card"><div class="gp-skel" style="height:100%;min-height:240px;width:100%"></div></div></div>'
+    + charts;
+}
+
+function renderGST() {
+  if (!GST) { renderGSTSkeleton(); return; }
+  renderGSTYearChips();
+  renderGSTLastUpdated();
+  var host = document.getElementById('tab-gst');
+  if (!host) return;
+  host.innerHTML = gstKPIs() + gstAgingSection() + gstChartsRow() + gstFiltersRow() + gstTableShell();
+  animateGSTCounters();
+  renderGSTVendorTable();
+}
+
+function renderGSTYearChips() {
+  var host = document.getElementById('gp-year-chips');
+  if (!host) return;
+  var years = ['All'].concat((GST && GST.fyList) || []);
+  host.innerHTML = years.map(function(y) {
+    var label = y === 'All' ? 'All' : fyShort(y);
+    return '<button class="gp-year-chip' + (gpYear === y ? ' active' : '') + '" onclick="gpSetYear(\'' + y + '\')">' + esc(label) + '</button>';
+  }).join('');
+}
+
+function gpSetYear(y) {
+  if (y === gpYear) return;
+  gpYear = y;
+  renderGSTYearChips();
+  var swrDone = false;
+  try {
+    var stored = localStorage.getItem(STORE_PFX + 'gst_' + y);
+    if (stored) { var p = JSON.parse(stored); if (p && p.success) { GST = p; renderGST(); swrDone = true; } }
+  } catch (e) {}
+  loadGSTData(swrDone);
+}
+
+function renderGSTLastUpdated() {
+  var el = document.getElementById('last-updated');
+  if (!el || !GST) return;
+  var d = new Date(GST.lastUpdated);
+  el.innerHTML = 'Updated: ' + d.toLocaleTimeString('en-IN')
+    + ' <span style="display:inline-flex;align-items:center;gap:4px;background:var(--gp-orange-bg);color:var(--gp-orange-ink);border:1px solid var(--gp-border2);border-radius:12px;padding:1px 8px;font-size:10.5px;font-weight:600;margin-left:4px;white-space:nowrap">📄 Google Sheet</span>';
+  var dot = document.querySelector('.status-dot');
+  if (dot) dot.style.background = 'var(--gp-orange)';
+}
+
+// ── KPI cards ──
+function gstKPIs() {
+  var g = GST;
+  return '<div class="gp-kpi-row">'
+    + gpKpiCard('Total Outstanding', g.totalOutstanding, 'Across ' + fmt(g.vendorCount) + ' vendors', 'of grand total', 100, 'orange')
+    + gpKpiCard('Material Balance', g.materialBalance, 'Goods component of outstanding', 'Share of total', g.materialShare, 'green')
+    + gpKpiCard('GST Balance', g.gstBalance, 'Tax component of outstanding', 'Share of total', g.gstShare, 'gold')
+    + '</div>';
+}
+function gpKpiCard(label, value, sub, barLabel, pct, tone) {
+  return '<div class="gp-kpi gp-' + tone + '">'
+    + '<span class="gp-kpi-tag">' + esc(label) + '</span>'
+    + '<div class="gp-kpi-val" data-count="' + value + '">' + fmtRupee(value) + '</div>'
+    + '<div class="gp-kpi-sub">' + esc(sub) + '</div>'
+    + '<div class="gp-kpi-barrow"><span>' + esc(barLabel) + '</span><span>' + pct + '%</span></div>'
+    + '<div class="gp-kpi-track"><div class="gp-kpi-fill" style="width:' + Math.max(0, Math.min(100, pct)) + '%"></div></div>'
+    + '</div>';
+}
+
+// ── Aging by financial year (line/area chart + FY cards) ──
+function gstAgingSection() {
+  var g = GST;
+  var maxAging = Math.max.apply(null, g.aging.map(function(x) { return x.value; }).concat([1]));
+  var fyCards = g.aging.length
+    ? g.aging.slice().reverse().map(function(a) {
+        var w = Math.round(a.value / maxAging * 100);
+        return '<div class="gp-fy-card' + (gpYear === a.fy ? ' active' : '') + '" onclick="gpSetYear(\'' + a.fy + '\')" title="Filter to ' + esc(fyFull(a.fy)) + '">'
+          + '<div class="gp-fy-label">' + esc(fyFull(a.fy)) + '</div>'
+          + '<div class="gp-fy-val">' + fmtRupee(a.value) + '</div>'
+          + '<div class="gp-fy-track"><div class="gp-fy-bar" style="width:' + w + '%"></div></div>'
+          + '</div>';
+      }).join('')
+    : '<div class="gp-empty">No financial-year data</div>';
+  return '<div class="gp-aging-row">'
+    + '<div class="gp-card">'
+    +   '<div class="gp-card-h"><div><div class="gp-card-title">Outstanding by Financial Year</div>'
+    +   '<div class="gp-card-sub">Aging profile of total payables</div></div></div>'
+    +   gpLineChart(g.aging)
+    + '</div>'
+    + '<div class="gp-fy-list">' + fyCards + '</div>'
+    + '</div>';
+}
+
+function gpLineChart(pts) {
+  if (!pts || !pts.length) return '<div class="gp-empty" style="height:200px;display:flex;align-items:center;justify-content:center">No data</div>';
+  var W = 680, H = 250, padL = 56, padR = 18, padT = 18, padB = 38;
+  var n = pts.length;
+  var max = Math.max.apply(null, pts.map(function(p) { return p.value; }).concat([1]));
+  var niceMax = gpNiceCeil(max);
+  var innerW = W - padL - padR, innerH = H - padT - padB;
+  var X = function(i) { return padL + (n === 1 ? innerW / 2 : innerW * i / (n - 1)); };
+  var Y = function(v) { return padT + innerH - (v / niceMax) * innerH; };
+  var ticks = 4, grid = '';
+  for (var i = 0; i <= ticks; i++) {
+    var gv = niceMax * i / ticks, gy = Y(gv);
+    grid += '<line x1="' + padL + '" y1="' + gy.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + gy.toFixed(1) + '" stroke="var(--gp-grid)" stroke-width="1"/>'
+      + '<text x="' + (padL - 9) + '" y="' + (gy + 3.5).toFixed(1) + '" text-anchor="end" class="gp-axis-txt">' + gpAxisFmt(gv) + '</text>';
+  }
+  var coords = pts.map(function(p, i) { return [X(i), Y(p.value)]; });
+  var line = gpSmoothPath(coords);
+  var area = line + ' L' + X(n - 1).toFixed(1) + ' ' + (padT + innerH) + ' L' + X(0).toFixed(1) + ' ' + (padT + innerH) + ' Z';
+  var dots = pts.map(function(p, i) {
+    return '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(p.value).toFixed(1) + '" r="4.5" fill="var(--gp-orange)" stroke="#fff" stroke-width="2">'
+      + '<title>' + esc(fyFull(p.fy)) + ': ' + fmtRupee(p.value) + '</title></circle>';
+  }).join('');
+  var xlabels = pts.map(function(p, i) {
+    // Anchor the edge labels inward so they never clip the SVG bounds.
+    var anchor = i === 0 ? 'start' : (i === n - 1 ? 'end' : 'middle');
+    return '<text x="' + X(i).toFixed(1) + '" y="' + (H - 13) + '" text-anchor="' + anchor + '" class="gp-axis-txt">' + esc(fyFull(p.fy)) + '</text>';
+  }).join('');
+  return '<div class="gp-chart-wrap"><svg viewBox="0 0 ' + W + ' ' + H + '" class="gp-line-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Outstanding by financial year">'
+    + '<defs><linearGradient id="gpArea" x1="0" y1="0" x2="0" y2="1">'
+    +   '<stop offset="0" stop-color="var(--gp-orange)" stop-opacity=".26"/><stop offset="1" stop-color="var(--gp-orange)" stop-opacity="0"/>'
+    + '</linearGradient></defs>'
+    + grid
+    + '<path d="' + area + '" fill="url(#gpArea)"/>'
+    + '<path d="' + line + '" fill="none" stroke="var(--gp-orange)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    + dots + xlabels
+    + '</svg></div>';
+}
+
+// Catmull-Rom → cubic Bézier smoothing for a pleasant aging curve.
+function gpSmoothPath(p) {
+  if (!p.length) return '';
+  if (p.length === 1) return 'M' + p[0][0].toFixed(1) + ' ' + p[0][1].toFixed(1);
+  var d = 'M' + p[0][0].toFixed(1) + ' ' + p[0][1].toFixed(1);
+  for (var i = 0; i < p.length - 1; i++) {
+    var p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2, t = 0.16;
+    var c1x = p1[0] + (p2[0] - p0[0]) * t, c1y = p1[1] + (p2[1] - p0[1]) * t;
+    var c2x = p2[0] - (p3[0] - p1[0]) * t, c2y = p2[1] - (p3[1] - p1[1]) * t;
+    d += ' C' + c1x.toFixed(1) + ' ' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ' ' + c2y.toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
+  }
+  return d;
+}
+
+// ── Charts row: GST status donut · vertical distribution · compliance ──
+function gstChartsRow() {
+  var g = GST;
+  return '<div class="gp-charts-row">'
+    + '<div class="gp-card"><div class="gp-card-h"><div><div class="gp-card-title">GST Status</div>'
+    +   '<div class="gp-card-sub">Vendor registration breakdown</div></div></div>' + gpDonut(g.gstStatus) + '</div>'
+    + '<div class="gp-card"><div class="gp-card-h"><div><div class="gp-card-title">Vertical Distribution</div>'
+    +   '<div class="gp-card-sub">Outstanding by business vertical</div></div></div>' + gpVBars(g.verticals) + '</div>'
+    + '<div class="gp-card"><div class="gp-card-h"><div><div class="gp-card-title">Compliance Rate</div>'
+    +   '<div class="gp-card-sub">% of applicable vendors cleared</div></div></div>' + gpCompliance(g.compliance) + '</div>'
+    + '</div>';
+}
+
+function gpDonut(segs) {
+  var total = segs.reduce(function(a, s) { return a + s.count; }, 0);
+  if (!total) return '<div class="gp-empty">No data</div>';
+  var cx = 90, cy = 90, r = 66, sw = 24, circ = 2 * Math.PI * r, off = 0;
+  var arcs = segs.map(function(s, i) {
+    var len = s.count / total * circ, col = GP_STATUS_COLORS[i % GP_STATUS_COLORS.length];
+    var el = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '"'
+      + ' stroke-dasharray="' + len.toFixed(2) + ' ' + (circ - len).toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '"'
+      + ' transform="rotate(-90 ' + cx + ' ' + cy + ')"><title>' + esc(s.label) + ': ' + fmt(s.count) + ' (' + Math.round(s.count / total * 100) + '%)</title></circle>';
+    off += len; return el;
+  }).join('');
+  var legend = segs.map(function(s, i) {
+    return '<div class="gp-leg"><span class="gp-leg-dot" style="background:' + GP_STATUS_COLORS[i % GP_STATUS_COLORS.length] + '"></span>'
+      + esc(s.label) + ' <b>' + fmt(s.count) + '</b></div>';
+  }).join('');
+  return '<div class="gp-donut-wrap"><svg viewBox="0 0 180 180" class="gp-donut-svg" role="img" aria-label="GST status breakdown">'
+    + arcs
+    + '<text x="90" y="86" text-anchor="middle" class="gp-donut-num">' + fmt(total) + '</text>'
+    + '<text x="90" y="104" text-anchor="middle" class="gp-donut-lbl">Vendors</text>'
+    + '</svg><div class="gp-legend">' + legend + '</div></div>';
+}
+
+function gpVBars(items) {
+  items = (items || []).slice(0, 8);
+  if (!items.length) return '<div class="gp-empty">No data</div>';
+  var max = Math.max.apply(null, items.map(function(x) { return x.value; }).concat([1]));
+  return '<div class="gp-vbars">' + items.map(function(it, i) {
+    var h = Math.max(4, Math.round(it.value / max * 132));
+    return '<div class="gp-vbar-col" title="' + esc(it.label) + ': ' + fmtRupee(it.value) + '">'
+      + '<div class="gp-vbar" style="height:' + h + 'px;background:' + GP_VERT_COLORS[i % GP_VERT_COLORS.length] + '"></div>'
+      + '<div class="gp-vbar-lbl">' + esc(it.label) + '</div></div>';
+  }).join('') + '</div>';
+}
+
+function gpCompliance(items) {
+  var colors = ['var(--gp-orange)', 'var(--gp-gold)', 'var(--gp-green)', 'var(--gp-blue)'];
+  if (!items || !items.length) return '<div class="gp-empty">No data</div>';
+  return '<div class="gp-comp">' + items.map(function(it, i) {
+    return '<div class="gp-comp-row" title="' + esc(it.label) + ': ' + fmt(it.count) + ' vendors (' + it.pct + '%)">'
+      + '<span class="gp-comp-lbl">' + esc(it.label) + '</span>'
+      + '<div class="gp-comp-track"><div class="gp-comp-fill" style="width:' + it.pct + '%;background:' + colors[i % colors.length] + '"></div></div>'
+      + '<span class="gp-comp-val">' + it.pct + '%</span></div>';
+  }).join('') + '</div>';
+}
+
+// ── Filters ──
+function gstFiltersRow() {
+  var g = GST;
+  var itcVals = gpDistinct(g.rows, 'itcCheck');
+  return '<div class="gp-filters">'
+    + '<div class="gp-search"><input type="text" class="gp-input" id="gp-search" placeholder="🔍 Search vendor / GST No…" value="' + esc(gpFilters.search) + '" oninput="gpSearchDeb()"></div>'
+    + gpSelect('gp-status', 'GST Status', g.gstStatus.map(function(s) { return s.label; }), gpFilters.status)
+    + gpSelect('gp-vertical', 'Vertical', g.verticals.map(function(s) { return s.label; }), gpFilters.vertical)
+    + gpSelect('gp-msme', 'MSME', g.msme.map(function(s) { return s.label; }), gpFilters.msme)
+    + gpSelect('gp-itc', 'ITC Check', itcVals, gpFilters.itc)
+    + '</div>';
+}
+function gpSelect(id, label, options, current) {
+  var opts = '<option value="All">' + esc(label) + ': All</option>'
+    + options.map(function(o) { return '<option value="' + esc(o) + '"' + (current === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('');
+  return '<div class="gp-select-wrap"><select class="gp-select" id="' + id + '" onchange="gpFilterChange()">' + opts + '</select></div>';
+}
+function gpDistinct(rows, field) {
+  var seen = {}, out = [];
+  rows.forEach(function(r) { var v = r[field]; if (v && !seen[v]) { seen[v] = true; out.push(v); } });
+  return out.sort();
+}
+
+// ── Vendor register table ──
+function gstTableShell() {
+  var cols = [
+    ['name', 'Vendor', false], ['gstNo', 'GST No', false], ['gstStatus', 'Status', false],
+    ['vertical', 'Vertical', false], ['msme', 'MSME', false], ['total', 'Total Balance', true],
+    ['material', 'Material', true], ['gst', 'GST Balance', true],
+  ];
+  return '<div class="gp-table-card">'
+    + '<div class="gp-table-head"><div class="gp-card-title">Vendor Register</div>'
+    +   '<div class="gp-card-sub" id="gp-table-sub">GST Payables Register</div></div>'
+    + '<div class="gp-table-scroll"><table class="gp-table"><thead><tr>'
+    + cols.map(function(c) {
+        return '<th class="' + (c[2] ? 'gp-num' : '') + '" data-key="' + c[0] + '" onclick="gpSortBy(\'' + c[0] + '\')">' + c[1] + '</th>';
+      }).join('')
+    + '</tr></thead><tbody id="gp-tbody"></tbody></table></div>'
+    + '<div class="gp-table-note" id="gp-table-note"></div>'
+    + '</div>';
+}
+
+function gpFilteredRows() {
+  if (!GST) return [];
+  var q = (gpFilters.search || '').toLowerCase();
+  return GST.rows.filter(function(r) {
+    if (gpFilters.status   !== 'All' && r.gstStatus !== gpFilters.status)   return false;
+    if (gpFilters.vertical !== 'All' && r.vertical  !== gpFilters.vertical) return false;
+    if (gpFilters.msme     !== 'All' && r.msme      !== gpFilters.msme)     return false;
+    if (gpFilters.itc      !== 'All' && r.itcCheck  !== gpFilters.itc)      return false;
+    if (q && (r.name || '').toLowerCase().indexOf(q) === -1
+          && (r.gstNo || '').toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  });
+}
+
+function gpSortRows(rows) {
+  var key = gpSort.key, dir = gpSort.dir;
+  var numeric = (key === 'total' || key === 'material' || key === 'gst');
+  return rows.slice().sort(function(a, b) {
+    var va = numeric ? (a[key] || 0) : String(a[key] || '').toLowerCase();
+    var vb = numeric ? (b[key] || 0) : String(b[key] || '').toLowerCase();
+    if (va < vb) return -dir;
+    if (va > vb) return dir;
+    return 0;
+  });
+}
+
+function gpSortBy(key) {
+  if (gpSort.key === key) gpSort.dir = -gpSort.dir;
+  else gpSort = { key: key, dir: (key === 'total' || key === 'material' || key === 'gst') ? -1 : 1 };
+  renderGSTVendorTable();
+}
+
+function renderGSTVendorTable() {
+  var tbody = document.getElementById('gp-tbody');
+  var note = document.getElementById('gp-table-note');
+  var sub = document.getElementById('gp-table-sub');
+  if (!tbody || !GST) return;
+
+  var filtered = gpSortRows(gpFilteredRows());
+  var shown = filtered.slice(0, GP_MAX_ROWS);
+  var sumTotal = filtered.reduce(function(a, r) { return a + (r.total || 0); }, 0);
+
+  document.querySelectorAll('#tab-gst .gp-table thead th').forEach(function(th) {
+    th.classList.remove('gp-sort-asc', 'gp-sort-desc');
+    if (th.dataset.key === gpSort.key) th.classList.add(gpSort.dir === 1 ? 'gp-sort-asc' : 'gp-sort-desc');
+  });
+
+  tbody.innerHTML = shown.length ? shown.map(function(r) {
+    return '<tr>'
+      + '<td><span class="gp-vname">' + esc(r.name || '—') + '</span></td>'
+      + '<td><span class="gp-gstno">' + esc(r.gstNo || '—') + '</span></td>'
+      + '<td>' + gpStatusChip(r.gstStatus) + '</td>'
+      + '<td>' + esc(r.vertical || '—') + '</td>'
+      + '<td><span class="gp-chip neutral">' + esc(r.msme || '—') + '</span></td>'
+      + '<td class="gp-num"><span class="gp-amt">' + fmtRupee(r.total) + '</span></td>'
+      + '<td class="gp-num"><span class="gp-amt muted">' + fmtRupee(r.material) + '</span></td>'
+      + '<td class="gp-num"><span class="gp-amt muted">' + fmtRupee(r.gst) + '</span></td>'
+      + '</tr>';
+  }).join('') : '<tr><td colspan="8" class="gp-empty">No vendors match the selected filters</td></tr>';
+
+  if (sub) sub.textContent = fmt(GST.vendorCount) + ' vendors · GST Payables Register'
+    + (gpYear !== 'All' ? ' · ' + fyFull(gpYear) : '');
+  if (note) note.textContent = 'Showing ' + fmt(shown.length) + ' of ' + fmt(filtered.length)
+    + ' vendors · combined balance ' + fmtRupee(sumTotal)
+    + (filtered.length > GP_MAX_ROWS ? ' · refine filters to see all' : '');
+}
+
+function gpStatusChip(status) {
+  var s = String(status || '').toLowerCase();
+  var cls = 'neutral';
+  if (s.indexOf('cancel') !== -1) cls = 'cancelled';
+  else if (s.indexOf('suspend') !== -1) cls = 'suspended';
+  else if (s.indexOf('inactive') !== -1) cls = 'inactive';
+  else if (s.indexOf('active') !== -1) cls = 'active';
+  return '<span class="gp-chip ' + cls + '">' + esc(status || '—') + '</span>';
+}
+
+function gpVal(id) { var el = document.getElementById(id); return el ? el.value : 'All'; }
+function gpFilterChange() {
+  gpFilters.status   = gpVal('gp-status');
+  gpFilters.vertical = gpVal('gp-vertical');
+  gpFilters.msme     = gpVal('gp-msme');
+  gpFilters.itc      = gpVal('gp-itc');
+  renderGSTVendorTable();
+}
+var gpSearchTimer;
+function gpSearchDeb() {
+  var el = document.getElementById('gp-search');
+  gpFilters.search = el ? el.value : '';
+  clearTimeout(gpSearchTimer);
+  gpSearchTimer = setTimeout(renderGSTVendorTable, 250);
+}
+
+function animateGSTCounters() {
+  if (typeof motionOK === 'function' && !motionOK()) return;   // respect reduced-motion
+  document.querySelectorAll('#tab-gst .gp-kpi-val[data-count]').forEach(function(el) {
+    var target = parseFloat(el.getAttribute('data-count')) || 0, dur = 850, start = null;
+    function step(ts) {
+      if (!start) start = ts;
+      var p = Math.min(1, (ts - start) / dur), eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmtRupee(Math.round(target * eased));
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+// ── GST formatting helpers ──
+// Full Indian-grouped rupee value: ₹4,00,42,207
+function fmtRupee(v) {
+  if (v === null || v === undefined || isNaN(v)) return '₹0';
+  return '₹' + Math.round(v).toLocaleString('en-IN');
+}
+// Compact axis label: ₹1.20Cr / ₹80.0L / ₹5.0K / ₹0
+function gpAxisFmt(v) {
+  if (!v) return '₹0';
+  if (v >= 1e7) return '₹' + (v / 1e7).toFixed(2) + 'Cr';
+  if (v >= 1e5) return '₹' + (v / 1e5).toFixed(1) + 'L';
+  if (v >= 1e3) return '₹' + (v / 1e3).toFixed(0) + 'K';
+  return '₹' + Math.round(v);
+}
+// Round a max up to a clean axis ceiling (1/2/2.5/5 × 10ⁿ).
+function gpNiceCeil(v) {
+  if (v <= 0) return 1;
+  var exp = Math.floor(Math.log(v) / Math.LN10), base = v / Math.pow(10, exp);
+  var nice = base <= 1 ? 1 : base <= 2 ? 2 : base <= 2.5 ? 2.5 : base <= 5 ? 5 : 10;
+  return nice * Math.pow(10, exp);
+}
+// 'FY 21-22' → '2021-22'  (financial years here are all in the 2000s)
+function fyFull(fy) {
+  var m = String(fy || '').match(/(\d{2})-(\d{2})/);
+  return m ? '20' + m[1] + '-' + m[2] : String(fy || '');
+}
+// 'FY 21-22' → '21-22'
+function fyShort(fy) { return String(fy || '').replace(/^FY\s*/, ''); }
 
 // ═══════════════════════════════════════════════════════════════
 // UTILITY
