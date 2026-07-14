@@ -262,7 +262,7 @@ select,input{font-family:inherit}
 .chart-card-title .muted-total{font-size:11px;font-weight:600;color:var(--txt3);text-transform:none;letter-spacing:0}
 
 /* ===== Vertical Comparison Cards — soft elevation, whole card clickable ===== */
-.compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px}
+.compare-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:24px}
 .compare-card{
   position:relative;overflow:hidden;
   background:var(--card);
@@ -919,6 +919,30 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .cc-pipe-stat.ps-review  .cc-pipe-stat-val{color:var(--st-review)}
 .cc-pipe-stat.ps-reject  .cc-pipe-stat-val{color:var(--st-rejected)}
 
+/* ── Dual Seller / Buyer pipeline layout ── */
+.cc-dual{display:grid;grid-template-columns:1fr 1fr}
+.cc-half{display:flex;flex-direction:column;padding:12px 14px;min-width:0}
+.cc-half-r{border-left:1px solid var(--border)}
+.cc-half-hdr{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3);margin-bottom:8px;white-space:nowrap}
+/* Compact pipeline boxes inside each half */
+.cc-half .cc-pipe{gap:4px;margin-bottom:8px}
+.cc-half .cc-pipe-box{padding:7px 4px 6px;border-radius:6px}
+.cc-half .cc-pipe-box b{font-size:20px;letter-spacing:-.5px;margin-bottom:2px}
+.cc-half .cc-pipe-box span{font-size:8px;letter-spacing:.3px}
+/* Compact category rows inside a half */
+.cc-half .cc-cat-rows{gap:3px;margin-bottom:8px}
+.cc-half .cc-cat-row{padding:3px 7px}
+.cc-half .cc-cat-badge{font-size:9.5px;padding:1px 5px}
+.cc-half .cc-cat-detail{font-size:10.5px}
+/* Stat rows at the bottom of each half */
+.cc-hs-rows{margin-top:auto;border-top:1px solid var(--border);padding-top:2px}
+.cc-hs-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)}
+.cc-hs-row:last-child{border-bottom:none}
+.cc-hs-lbl{font-size:10.5px;color:var(--txt3);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-hs-val{font-size:12px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:6px}
+.cc-hs-warn .cc-hs-val{color:var(--st-rejected,#B03030)}
+@media(max-width:760px){.cc-dual{grid-template-columns:1fr}.cc-half-r{border-left:none;border-top:1px solid var(--border)}}
+
 /* ── Category rows: badge + "X done · Y draft · Z review" ── */
 .cc-cat-rows{flex:1;display:flex;flex-direction:column;gap:4px;margin:0 0 10px}
 .cc-cat-row{display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:7px;background:var(--bg2);border:1px solid var(--border)}
@@ -1275,8 +1299,6 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
   <div class="section-title reveal" style="flex-wrap:wrap">
     <span id="view-title">Business Verticals</span>
     <div class="aud-tabs" role="tablist" aria-label="View">
-      <button class="aud-tab active" id="aud-seller" role="tab" onclick="switchAudience('seller')">Sellers</button>
-      <button class="aud-tab" id="aud-buyer" role="tab" onclick="switchAudience('buyer')">Buyers</button>
       <button class="aud-tab" id="aud-gst" role="tab" onclick="switchView('gst')">GST Payables</button>
     </div>
     <span style="flex:1"></span>
@@ -1332,7 +1354,9 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 // ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
-var D = null;          // full dashboard data for the active audience
+var D  = null;   // full combined dashboard response
+var DS = null;   // seller verticals (D.seller)
+var DB = null;   // buyer  verticals (D.buyer)
 
 // Sellers / Buyers are two independent datasets. The active one is requested
 // from the backend (google.script.run) with an `audience` filter; the backend
@@ -1378,12 +1402,15 @@ var STORE_PFX = 'ebt_v10_';
 document.addEventListener('DOMContentLoaded', function() {
   var restored = false;
   try {
-    var stored = localStorage.getItem(STORE_PFX + currentAudience);
+    var stored = localStorage.getItem(STORE_PFX + 'combined');
     if (stored) {
       var parsed = JSON.parse(stored);
-      if (parsed && parsed.success) {
+      if (parsed && parsed.success && parsed.seller && parsed.buyer) {
         D = parsed;
-        _isFirstLoad = false;   // loading overlay already unnecessary
+        DS = parsed.seller;
+        DB = parsed.buyer;
+        D.verticals = DS.verticals;
+        _isFirstLoad = false;
         hideLoading();
         renderAll();
         var lu = document.getElementById('last-updated');
@@ -1469,7 +1496,6 @@ function loadData(silent) {
   var cd = document.getElementById('refresh-countdown');
   if (cd) cd.textContent = '…';
 
-  var reqAudience = currentAudience;   // guard against a tab switch mid-request
   function done() {
     if (btn) btn.classList.remove('spinning');
     if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
@@ -1482,47 +1508,32 @@ function loadData(silent) {
     scheduleNextRefresh();
   }
 
+  var reqF = { period: currentPeriod };
+  if (currentPeriod === 'Custom') { reqF.startDate = customStart; reqF.endDate = customEnd; }
+
   google.script.run
     .withSuccessHandler(function(res) {
       try {
         var data = JSON.parse(res);
         if (data.success) {
-          // Persist for instant display on next page load
-          try { localStorage.setItem(STORE_PFX + reqAudience, res); } catch (e) {}
-          if (reqAudience === currentAudience) {
-            // Skip full re-render when data hasn't changed (silent auto-refresh, same data)
-            var hash = res.length + '|' + res.slice(0, 200);
-            var unchanged = (_lastDashHash[reqAudience] === hash);
-            _lastDashHash[reqAudience] = hash;
+          try { localStorage.setItem(STORE_PFX + 'combined', res); } catch (e) {}
+          var hash = res.length + '|' + res.slice(0, 200);
+          var unchanged = (_lastDashHash['combined'] === hash);
+          _lastDashHash['combined'] = hash;
 
-            D = data;
-            if (!unchanged) {
-              // Reload vertical rows only when the period key changed
-              var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
-              if (selectedVert && _vertRowsPKey !== newPKey) {
-                vertRows = [];
-                vertRowsLoading = false;
-                vertRowsError = null;
-                loadVertRows(selectedVert);
-              }
-              renderAll();
+          D  = data;
+          DS = data.seller || {};
+          DB = data.buyer  || {};
+          D.verticals = DS.verticals || {};  // backward-compat for renderVertStory etc.
+          if (!unchanged) {
+            var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+            if (selectedVert && _vertRowsPKey !== newPKey) {
+              vertRows = [];
+              vertRowsLoading = false;
+              vertRowsError = null;
+              loadVertRows(selectedVert);
             }
-          }
-          // Silently prefetch the other audience so tab switches are always instant
-          var other = reqAudience === 'seller' ? 'buyer' : 'seller';
-          if (!_prefetchedAuds[other]) {
-            _prefetchedAuds[other] = true;
-            var otherF = { audience: other, period: currentPeriod };
-            if (currentPeriod === 'Custom') { otherF.startDate = customStart; otherF.endDate = customEnd; }
-            google.script.run
-              .withSuccessHandler(function(r2) {
-                try {
-                  var d2 = JSON.parse(r2);
-                  if (d2.success) try { localStorage.setItem(STORE_PFX + other, r2); } catch (e) {}
-                } catch (e) {}
-              })
-              .withFailureHandler(function() {})
-              .getDashboardData(JSON.stringify(otherF));
+            renderAll();
           }
           done();
         } else {
@@ -1531,7 +1542,7 @@ function loadData(silent) {
       } catch (e) { fail('Parse error: ' + e.message); }
     })
     .withFailureHandler(function(err) { fail((err && err.message) ? err.message : 'Script error'); })
-    .getDashboardData(JSON.stringify(getFilters()));
+    .getCombinedDashboard(JSON.stringify(reqF));
 }
 
 // ── View chrome (Sellers · Buyers · GST Payables) ────────────────
@@ -1549,11 +1560,7 @@ function updateViewChrome() {
   if (yc) yc.style.display = isGst ? 'inline-flex' : 'none';
   if (vt) vt.textContent = isGst ? 'GST Payables' : 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
-  var s = document.getElementById('aud-seller');
-  var b = document.getElementById('aud-buyer');
   var g = document.getElementById('aud-gst');
-  if (s) s.classList.toggle('active', !isGst && currentAudience === 'seller');
-  if (b) b.classList.toggle('active', !isGst && currentAudience === 'buyer');
   if (g) g.classList.toggle('active', isGst);
   buildSideNav();
 }
@@ -1562,50 +1569,11 @@ function updateViewChrome() {
 function renderAudienceTabs() { updateViewChrome(); }
 
 function switchAudience(a) {
-  var leavingGst = currentView === 'gst';
+  // Audience tabs removed; this function is kept for backward compat with
+  // any remaining callers (e.g. sidebar group click). Just switch back to
+  // the overview and keep the combined data.
   currentView = 'onboarding';
-  if (a === currentAudience && !leavingGst) { updateViewChrome(); return; }
-  currentAudience = a;
-  snActiveKey = null;                        // reset scroll spy active item
-  selectedVert = null;                       // close any open detail panel
-  vertRows = [];
-  vertRowsLoading = false;
-  vertRowsError = null;
-  _vertRowsPKey = null;
-  ++_vertRowsGen;
-  document.body.style.overflow = '';
-  var panel = document.getElementById('vert-detail');
-  if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
   updateViewChrome();
-
-  // Show cached data for this audience immediately while the backend refreshes
-  var swrDone = false;
-  try {
-    var stored = localStorage.getItem(STORE_PFX + a);
-    if (stored) {
-      var parsed = JSON.parse(stored);
-      if (parsed && parsed.success) {
-        D = parsed;
-        renderAll();
-        var lu = document.getElementById('last-updated');
-        if (lu) lu.textContent = 'Refreshing…';
-        swrDone = true;
-      }
-    }
-  } catch (e) {}
-
-  if (!swrDone) {
-    D = null;
-    var grid = document.getElementById('vert-grid');
-    if (grid) {
-      grid.classList.remove('animate');
-      var sk = '';
-      for (var i = 0; i < 8; i++) sk += '<div class="sk"></div>';
-      grid.innerHTML = sk;
-    }
-  }
-
-  loadData(swrDone);  // silent if stale data already shown
 }
 
 // Switch to the GST Payables view (paint cached data instantly, then refresh).
@@ -2035,111 +2003,102 @@ function funnel3D(v) {
 
 var _gridAnimKey = null;   // dataset identity — stagger cards only when it changes
 function renderVerticals() {
-  var verts = D.verticals;
-  var grid  = document.getElementById('vert-grid');
+  var grid = document.getElementById('vert-grid');
   if (!grid) return;
-  if (!verts) { grid.innerHTML = ''; return; }
+  if (!DS || !DS.verticals) { grid.innerHTML = ''; return; }
 
   var idx = 0;
   grid.innerHTML = getVertCfg().map(function(cfg) {
-    var v   = verts[cfg.key] || {};
-    var tot = v.total || 0;
+    var vs  = (DS.verticals || {})[cfg.key] || {};
+    var vb  = (DB && DB.verticals || {})[cfg.key] || {};
+    var totS = vs.total || 0;
+    var totB = vb.total || 0;
+
     var attrs = ' style="--i:' + (idx++) + ';' + vcVars(cfg.key) + '" tabindex="0" role="button"'
       + ' aria-label="' + esc(cfg.name) + ' details"'
       + ' onclick="scrollToVert(\'' + cfg.key + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();scrollToVert(\'' + cfg.key + '\')}"';
 
-    // Card header: vertical name as pipeline title
     var hdr = '<div class="cc-hdr2">'
       + '<span class="compare-source-badge">' + cfg.code + '</span>'
       + '<span class="cc-name2">' + esc(cfg.name) + ' Pipeline</span>'
       + '</div>';
 
-    if (tot <= 0) {
+    if (totS <= 0 && totB <= 0) {
       return '<div class="compare-card"' + attrs + '>'
         + hdr + '<div class="no-data" style="padding:24px 0">No records in selected period</div></div>';
     }
 
-    // Onboarded hero number + pipeline stats rows
-    var pipe = '<div class="cc-onb-hero">'
-      + '<span class="cc-onb-num">' + fmt(v.completed || 0) + '</span>'
-      + '<span class="cc-onb-sub">of ' + fmt(tot) + ' · Onboarded</span>'
-      + '</div>'
-      + '<div class="cc-pipe-stats">'
-      + '<div class="cc-pipe-stat ps-draft"><span class="cc-pipe-stat-lbl">Draft</span><span class="cc-pipe-stat-val">' + fmt(v.draft || 0) + '</span></div>'
-      + '<div class="cc-pipe-stat ps-review"><span class="cc-pipe-stat-lbl">In Review</span><span class="cc-pipe-stat-val">' + fmt(v.inReview || 0) + '</span></div>'
-      + '<div class="cc-pipe-stat ps-reject"><span class="cc-pipe-stat-lbl">Rejected</span><span class="cc-pipe-stat-val">' + fmt(v.rejected || 0) + '</span></div>'
-      + '</div>';
-
-    // Category rows: badge label + "X done · Y draft · Z review"
-    var topCats = (v.categories || []).filter(function(c){ return (c.total||0) > 0; }).slice(0, 3);
-    var catRows = topCats.length
-      ? '<div class="cc-cat-rows">'
-        + topCats.map(function(c) {
-            var parts = [];
-            if ((c.onboarded||0) > 0) parts.push('<em>' + fmt(c.onboarded) + ' done</em>');
-            if ((c.draft    ||0) > 0) parts.push(fmt(c.draft)    + ' draft');
-            if ((c.inReview ||0) > 0) parts.push(fmt(c.inReview) + ' review');
-            return '<div class="cc-cat-row">'
-              + '<span class="cc-cat-badge">' + esc(c.category) + '</span>'
-              + '<span class="cc-cat-detail">' + parts.join(' · ') + '</span>'
-              + '</div>';
-          }).join('')
-        + '</div>'
-      : '<div class="cc-cat-rows"></div>';
-
-    // FY column table: show up to 2 most-recent FYs side-by-side
-    var fys = (v.fyBreakdown || []).slice(0, 2);
-    var statsList = '';
-    if (fys.length) {
-      // Helper: build one data row (returns '' when all values are missing)
-      function fyDataRow(label, valFn, badCls) {
-        var cells = fys.map(valFn);
-        if (cells.every(function(c){ return c === null || c === undefined || c === '—'; })) return '';
-        return '<div class="cc-fy-row' + (badCls ? ' ' + badCls : '') + '">'
-          + '<span class="cc-fy-lbl">' + label + '</span>'
-          + cells.map(function(c){ return '<span class="cc-fy-col">' + (c != null ? c : '—') + '</span>'; }).join('')
+    // Build one pipeline half (seller or buyer)
+    function buildHalf(v, tot, label, isRight) {
+      if (tot <= 0) {
+        return '<div class="cc-half' + (isRight ? ' cc-half-r' : '') + '">'
+          + '<div class="cc-half-hdr">' + label + '</div>'
+          + '<div class="no-data" style="padding:12px 0;font-size:12px;color:var(--txt3)">No data</div>'
           + '</div>';
       }
-      // Only highlight GSTIN missing in red when at least one FY actually has missing GSTINs.
-      var hasMissingGST = fys.some(function(f) { return (f.missingGST || 0) > 0; });
-      var fyRows = [
-        fyDataRow('Avg TAT',       function(f){ return f.avgTAT      != null ? f.avgTAT + 'd'          : null; }, ''),
-        fyDataRow('% Transacted',  function(f){ return f.pctTransacted!= null ? f.pctTransacted + '%'  : null; }, ''),
-        fyDataRow('Total GMV',     function(f){ return f.totalTxnValue!= null ? fmtINR(f.totalTxnValue): null; }, ''),
-        fyDataRow('GSTIN active',  function(f){ return f.withGST      != null ? fmt(f.withGST)         : null; }, ''),
-        fyDataRow('GSTIN missing', function(f){ return f.missingGST   != null ? fmt(f.missingGST)      : null; }, hasMissingGST ? 'cc-fy-bad' : ''),
-      ].filter(Boolean).join('');
 
-      if (fyRows) {
-        var fyHdr = '<div class="cc-fy-row cc-fy-hdr">'
-          + '<span class="cc-fy-lbl"></span>'
-          + fys.map(function(f){ return '<span class="cc-fy-col">' + esc(f.fy) + '</span>'; }).join('')
-          + '</div>';
-        statsList = '<div class="cc-fy-wrap">'
-          + fyHdr + fyRows
-          + '<div style="display:flex;justify-content:flex-end;padding:7px 0 2px">'
-          +   '<span style="font-size:11px;font-weight:600;color:var(--vc-ink,var(--blue));letter-spacing:-.1px">Details ↓</span>'
+      var pipe = '<div class="cc-pipe">'
+        + '<div class="cc-pipe-box cc-pipe-draft"><b>' + fmt(v.draft || 0) + '</b><span>Draft</span></div>'
+        + '<div class="cc-pipe-box cc-pipe-review"><b>' + fmt(v.inReview || 0) + '</b><span>In Review</span></div>'
+        + '<div class="cc-pipe-box cc-pipe-onb"><b>' + fmt(v.completed || 0) + '</b><span>Completed</span></div>'
+        + '</div>';
+
+      var topCats = (v.categories || []).filter(function(c){ return (c.total||0) > 0; }).slice(0, 2);
+      var catRows = topCats.length
+        ? '<div class="cc-cat-rows">'
+          + topCats.map(function(c) {
+              var parts = [];
+              if ((c.onboarded||0) > 0) parts.push('<em>' + fmt(c.onboarded) + ' done</em>');
+              if ((c.draft    ||0) > 0) parts.push(fmt(c.draft) + ' draft');
+              if ((c.inReview ||0) > 0) parts.push(fmt(c.inReview) + ' review');
+              return '<div class="cc-cat-row">'
+                + '<span class="cc-cat-badge">' + esc(c.category) + '</span>'
+                + '<span class="cc-cat-detail">' + parts.join(' · ') + '</span>'
+                + '</div>';
+            }).join('')
           + '</div>'
-          + '</div>';
-      }
+        : '';
+
+      var statsRows = [];
+      if (v.avgTAT != null) statsRows.push(['Avg TAT', v.avgTAT + 'd', '']);
+      if (v.pctTransacted != null) statsRows.push(['% Transacted', v.pctTransacted + '%', '']);
+      if ((v.missingGST || 0) > 0) statsRows.push(['GSTIN missing', fmt(v.missingGST), 'cc-hs-warn']);
+      var stats = statsRows.length
+        ? '<div class="cc-hs-rows">'
+          + statsRows.map(function(r) {
+              return '<div class="cc-hs-row' + (r[2] ? ' ' + r[2] : '') + '">'
+                + '<span class="cc-hs-lbl">' + r[0] + '</span>'
+                + '<span class="cc-hs-val">' + r[1] + '</span>'
+                + '</div>';
+            }).join('')
+          + '</div>'
+        : '';
+
+      return '<div class="cc-half' + (isRight ? ' cc-half-r' : '') + '">'
+        + '<div class="cc-half-hdr">' + label + '</div>'
+        + pipe + catRows + stats
+        + '</div>';
     }
 
     return '<div class="compare-card"' + attrs + '>'
-      + hdr + pipe + catRows + statsList
+      + hdr
+      + '<div class="cc-dual">'
+      + buildHalf(vs, totS, 'Seller Pipeline', false)
+      + buildHalf(vb, totB, 'Buyer Pipeline',  true)
+      + '</div>'
+      + '<div style="display:flex;justify-content:flex-end;padding:6px 14px 10px">'
+      +   '<span style="font-size:11px;font-weight:600;color:var(--vc-ink,var(--blue));letter-spacing:-.1px">Details ↓</span>'
+      + '</div>'
       + '</div>';
   }).join('');
 
-  // Staggered entrance only when the dataset changes (first paint, audience or
-  // period switch) — silent auto-refreshes must not replay the animation.
-  var animKey = currentAudience + '|' + currentPeriod + '|' + customStart + '|' + customEnd;
+  var animKey = 'combined|' + currentPeriod + '|' + customStart + '|' + customEnd;
   if (_gridAnimKey !== animKey && motionOK()) {
     _gridAnimKey = animKey;
     grid.classList.remove('animate');
-    void grid.offsetWidth;   // restart CSS animations
+    void grid.offsetWidth;
     grid.classList.add('animate');
-    // Release the animation class once the stagger completes so cards return
-    // to plain static rendering (no lingering composited layers).
     clearTimeout(grid._animT);
     grid._animT = setTimeout(function() { grid.classList.remove('animate'); }, 1100);
   }
@@ -2259,7 +2218,8 @@ function scrollToVert(key) {
 
 // Render all verticals as full inline editorial sections below the compare grid.
 function renderVertStory() {
-  if (currentView !== 'onboarding' || !D || !D.verticals) return;
+  if (currentView !== 'onboarding' || !DS || !DS.verticals) return;
+  if (!D) return;
   var container = document.getElementById('vert-story');
   var sep       = document.getElementById('story-sep');
   if (!container) return;
@@ -3508,24 +3468,23 @@ function buildSideNav() {
   if (!nav) return;
 
   var cfgList = getVertCfg();
-  var verts   = (D && D.verticals) || {};
   var isGST   = currentView === 'gst';
-  var isSeller = !isGST && currentAudience === 'seller';
-  var isBuyer  = !isGST && currentAudience === 'buyer';
+  var isOvw   = !isGST;
 
   var html = '<div class="sn-sect">Navigation</div>';
 
-  // ── Sellers group ──────────────────────────────────────────
-  html += '<button class="sn-grp' + (isSeller ? ' sn-active sn-open' : '') + '" onclick="snSelectGroup(\'seller\')">'
-    + '<span class="sn-grp-ic">S</span>'
-    + '<span class="sn-grp-lbl">Sellers</span>'
+  // ── Verticals group (always expanded in overview) ──────────
+  html += '<button class="sn-grp' + (isOvw ? ' sn-active sn-open' : '') + '" onclick="if(currentView===\'gst\'){switchView(\'onboarding\');}">'
+    + '<span class="sn-grp-ic">V</span>'
+    + '<span class="sn-grp-lbl">Verticals</span>'
     + '<span class="sn-grp-arr">›</span>'
     + '</button>';
-  if (isSeller && cfgList.length) {
+  if (isOvw && cfgList.length) {
     html += '<div class="sn-subs sn-open">';
     cfgList.forEach(function(cfg) {
-      var v   = verts[cfg.key] || {};
-      var tot = v.total || 0;
+      var vs  = DS && DS.verticals && DS.verticals[cfg.key] || {};
+      var vb  = DB && DB.verticals && DB.verticals[cfg.key] || {};
+      var tot = (vs.total || 0) + (vb.total || 0);
       var vc  = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
       html += '<button class="sn-sub' + (snActiveKey === cfg.key ? ' sn-active' : '') + '"'
         + ' data-key="' + esc(cfg.key) + '"'
@@ -3533,31 +3492,6 @@ function buildSideNav() {
         + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
         + '<span class="sn-sub-dot"></span>'
         + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
-        + (tot > 0 ? '<span class="sn-sub-n">' + fmt(tot) + '</span>' : '')
-        + '</button>';
-    });
-    html += '</div>';
-  }
-
-  // ── Buyers group ───────────────────────────────────────────
-  html += '<button class="sn-grp' + (isBuyer ? ' sn-active sn-open' : '') + '" onclick="snSelectGroup(\'buyer\')">'
-    + '<span class="sn-grp-ic">B</span>'
-    + '<span class="sn-grp-lbl">Buyers</span>'
-    + '<span class="sn-grp-arr">›</span>'
-    + '</button>';
-  if (isBuyer && cfgList.length) {
-    html += '<div class="sn-subs sn-open">';
-    cfgList.forEach(function(cfg) {
-      var v   = verts[cfg.key] || {};
-      var tot = v.total || 0;
-      var vc  = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
-      html += '<button class="sn-sub' + (snActiveKey === cfg.key ? ' sn-active' : '') + '"'
-        + ' data-key="' + esc(cfg.key) + '"'
-        + ' style="--vc:' + vc.c + ';--vc-ink:' + vc.ink + ';--vc-soft:' + hexRGBA(vc.c, .09) + '"'
-        + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
-        + '<span class="sn-sub-dot"></span>'
-        + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
-        + (tot > 0 ? '<span class="sn-sub-n">' + fmt(tot) + '</span>' : '')
         + '</button>';
     });
     html += '</div>';

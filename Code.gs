@@ -161,8 +161,42 @@ function getDashboardData(filtersJson) {
   }
 }
 
+// Returns seller + buyer dashboard data in one call so the frontend can
+// render both pipelines side-by-side without two round trips.
+function getCombinedDashboard(filtersJson) {
+  try {
+    var f = filtersJson ? JSON.parse(filtersJson) : {};
+    var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cacheKey  = 'dash_v26_cmb_' + periodKey;
+    var cache = CacheService.getScriptCache();
+    var hit = cache.get(cacheKey);
+    if (hit) return hit;
+
+    var sRaw  = readData('seller');
+    var bRaw  = readData('buyer');
+    var sCfg  = AUDIENCE_CFG.seller;
+    var bCfg  = AUDIENCE_CFG.buyer;
+    var sDash = buildDashboard('seller', sCfg, normalizeRows(sRaw, sCfg), f);
+    var bDash = buildDashboard('buyer',  bCfg, normalizeRows(bRaw, bCfg), f);
+
+    var out = JSON.stringify({
+      success:        true,
+      lastUpdated:    new Date().toISOString(),
+      dataSource:     sRaw.source || 'sheets',
+      verticalConfig: sDash.verticalConfig,
+      seller: { verticals: sDash.verticals, fiscalYears: sDash.fiscalYears },
+      buyer:  { verticals: bDash.verticals, fiscalYears: bDash.fiscalYears },
+    });
+
+    try { cache.put(cacheKey, out, CONFIG.CACHE_TTL); } catch (e) {}
+    return out;
+  } catch (err) {
+    return JSON.stringify({ success: false, error: (err && err.message) ? err.message : String(err) });
+  }
+}
+
 // On-demand row fetch for a single vertical's detail panel.
-// Kept separate so the main getDashboardData response stays small
+// Kept separate so the main getCombinedDashboard response stays small
 // enough for Script Cache (100KB limit per value).
 function getVerticalRows(vertKey, filtersJson) {
   try {
