@@ -526,7 +526,7 @@ function vStats(data) {
       missingGST:    fyWithGST !== null ? fyCompleted - fyWithGST : null,
       avgTAT:        fyTats.length ? Math.round(avg(fyTats)) : null,
     };
-  }).filter(function(f) { return f.fyStart >= 2015; })
+  }).filter(function(f) { return f.fyStart >= 2019; })
     .sort(function(a, b) { return b.fyStart - a.fyStart; });
 
   return {
@@ -604,7 +604,7 @@ function buildFiscalYears(all) {
   var nowFY = fyStartYear(new Date()), minFY = nowFY;
   all.forEach(function(r) {
     var d = r.createdDate || r.onboardedDate;
-    if (d) { var y = fyStartYear(d); if (y >= 2015 && y < minFY) minFY = y; }
+    if (d) { var y = fyStartYear(d); if (y >= 2019 && y < minFY) minFY = y; }
   });
   var list = [];
   for (var y = nowFY; y >= minFY; y--) list.push('FY' + String(y).slice(2) + '-' + String(y + 1).slice(2));
