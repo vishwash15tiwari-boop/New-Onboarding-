@@ -1821,6 +1821,7 @@ function vcVars(key) {
     + ';--vc-fade:' + hexRGBA(vc.c, .25) + ';';
 }
 var selectedVert = null;
+var selectedAud  = 'seller';   // 'seller' | 'buyer' — which pipeline card was clicked
 var vertRows = [];          // lazily loaded rows for the open vertical
 var vertRowsLoading = false;
 var vertRowsError = null;   // backend error message when the last row fetch failed
@@ -2072,11 +2073,12 @@ function renderVerticals() {
   // Build a full detail card for one pipeline (Seller or Buyer)
   function buildCard(cfg, v, pipelineLabel) {
     var tot = v.total || 0;
+    var aud = pipelineLabel === 'Seller Pipeline' ? 'seller' : 'buyer';
     var lblCls = pipelineLabel === 'Seller Pipeline' ? 'cc-pipe-lbl-seller' : 'cc-pipe-lbl-buyer';
     var attrs = ' style="--i:' + (idx++) + ';' + vcVars(cfg.key) + '" tabindex="0" role="button"'
       + ' aria-label="' + esc(cfg.name) + ' ' + esc(pipelineLabel) + ' details"'
-      + ' onclick="openVertDetail(\'' + cfg.key + '\')"'
-      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openVertDetail(\'' + cfg.key + '\')}"';
+      + ' onclick="openVertDetail(\'' + cfg.key + '\',\'' + aud + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openVertDetail(\'' + cfg.key + '\',\'' + aud + '\')}"';
 
     var hdr = '<div class="cc-hdr2"><span class="cc-pipe-lbl ' + lblCls + '">' + pipelineLabel + '</span></div>';
 
@@ -2189,8 +2191,9 @@ function renderVerticals() {
   animateCounters(grid);
 }
 
-function openVertDetail(key) {
-  var isNew = (selectedVert !== key);
+function openVertDetail(key, aud) {
+  aud = aud || 'seller';
+  var isNew = (selectedVert !== key || selectedAud !== aud);
   if (isNew) {
     vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
     vdSort = { key: '', dir: 1 };
@@ -2201,6 +2204,7 @@ function openVertDetail(key) {
     ++_vertRowsGen;           // cancel any in-flight request for the old vertical
   }
   selectedVert = key;
+  selectedAud  = aud;
   renderVerticals();
   renderVertDetail();
   document.body.style.overflow = 'hidden';
@@ -2219,10 +2223,10 @@ function openVertDetail(key) {
 
 function loadVertRows(key) {
   var myGen = ++_vertRowsGen;
-  var f = { audience: currentAudience, period: currentPeriod };
+  var f = { audience: selectedAud, period: currentPeriod };
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
   var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
-  var lsVKey = STORE_PFX + 'vr_' + currentAudience + '_' + key;
+  var lsVKey = STORE_PFX + 'vr_' + selectedAud + '_' + key;
 
   // SWR: serve cached rows immediately so the panel is never blank
   var swrDone = false;
@@ -2278,6 +2282,7 @@ function vdRetryRows() {
 
 function closeVertDetail() {
   selectedVert = null;
+  selectedAud  = 'seller';
   vertRows = [];
   vertRowsLoading = false;
   vertRowsError = null;
@@ -2447,7 +2452,8 @@ function renderVertDetail() {
   var panel = document.getElementById('vert-detail');
   if (!panel || !selectedVert || !D || !D.verticals) return;
   var cfg = getVertCfg().filter(function(x) { return x.key === selectedVert; })[0];
-  var v   = D.verticals[selectedVert];
+  var vSrc = selectedAud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
+  var v = vSrc && vSrc[selectedVert];
   if (!cfg || !v) return;
   var has = (v.total || 0) > 0;
 
@@ -2526,10 +2532,13 @@ function renderVertDetail() {
     : '';
 
   panel.style.cssText = 'display:block;' + vcVars(selectedVert);   // signature colour for badge + accents
+  var audBadgeCls = selectedAud === 'seller' ? 'cc-pipe-lbl-seller' : 'cc-pipe-lbl-buyer';
+  var audBadgeTxt = selectedAud === 'seller' ? 'Seller Pipeline' : 'Buyer Pipeline';
   panel.innerHTML = '<div class="vd-page-inner">'
     + '<div class="vd-head">'
     + '<button class="vd-back" onclick="closeVertDetail()">Back</button>'
     + '<span class="compare-source-badge">' + cfg.code + '</span>'
+    + '<span class="cc-pipe-lbl ' + audBadgeCls + '">' + audBadgeTxt + '</span>'
     + '<div><div class="vd-title">' + esc(cfg.name.toLowerCase().replace(/\b\w/g, function(c){ return c.toUpperCase(); })) + '</div>'
     + (cfg.sub ? '<div class="compare-sub">' + esc(cfg.sub) + '</div>' : '')
     + '</div>'
@@ -2554,7 +2563,8 @@ function renderVertDetail() {
 }
 
 function vdFilteredRows() {
-  if (!selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return [];
+  var _fvd = selectedAud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
+  if (!selectedVert || !_fvd || !_fvd[selectedVert]) return [];
   var rows = vertRows;
   var q = (vdF.search || '').toLowerCase();
   return rows.filter(function(r) {
@@ -2594,7 +2604,8 @@ function renderVdRecords() {
 function renderVdBoard() {
   var host = document.getElementById('vd-board');
   var note = document.getElementById('vd-note');
-  if (!host || !selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return;
+  var _bvd = selectedAud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
+  if (!host || !selectedVert || !_bvd || !_bvd[selectedVert]) return;
   _rmD = {}; _rmI = 0;   // fresh lookup for the modal
   var all      = vertRows;
   var filtered = vdFilteredRows();
@@ -2711,7 +2722,8 @@ function vdSortedRows(filtered) {
 function renderVdTable() {
   var tbody = document.getElementById('vd-tbody');
   var note  = document.getElementById('vd-note');
-  if (!tbody || !selectedVert || !D || !D.verticals || !D.verticals[selectedVert]) return;
+  var _tvd = selectedAud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
+  if (!tbody || !selectedVert || !_tvd || !_tvd[selectedVert]) return;
   _rmD = {}; _rmI = 0;   // fresh lookup for the modal
   var all      = vertRows;
   var filtered = vdSortedRows(vdFilteredRows());
@@ -2945,7 +2957,8 @@ function showCatDetail(catName, quiet) {
     wrap.innerHTML = '';
     return;
   }
-  var v = D && D.verticals && selectedVert && D.verticals[selectedVert];
+  var _scdSrc = selectedAud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
+  var v = _scdSrc && selectedVert && _scdSrc[selectedVert];
   var cats = (v && v.categories) || [];
   var c = null;
   for (var i = 0; i < cats.length; i++) {
