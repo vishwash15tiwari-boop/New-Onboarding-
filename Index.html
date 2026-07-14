@@ -2380,40 +2380,8 @@ function renderVertStory() {
         + '</div>'
       : '';
 
-    // ── Category list with progress bars ─────────────────────────────────────
-    var catHtml = '';
-    if (v.categories && v.categories.length) {
-      var cats = v.categories.filter(function(c) { return (c.total || 0) > 0; });
-      if (cats.length) {
-        var maxTot = Math.max.apply(null, cats.map(function(c) { return c.total || 0; }));
-        catHtml = '<div class="vs-cat-list">'
-          + '<div class="vs-cat-list-hdr">By Category</div>'
-          + cats.map(function(c, ci) {
-              var done    = c.onboarded || 0;
-              var barPct  = maxTot ? Math.round((c.total / maxTot) * 100) : 0;
-              return '<div class="vs-cat-item" style="--ci:' + ci + '">'
-                + '<span class="vs-cat-nm2">' + esc(c.category) + '</span>'
-                + '<span class="vs-cat-done-val">' + fmt(done) + '</span>'
-                + '<span class="vs-cat-done-lbl">onboarded</span>'
-                + '<div class="vs-cat-bar-wrap">'
-                +   '<div class="vs-cat-bar-bg"><div class="vs-cat-bar-fg" data-pct="' + barPct + '"></div></div>'
-                + '</div>'
-                + '<span class="vs-cat-total">of ' + fmt(c.total) + '</span>'
-                + '</div>';
-            }).join('')
-          + '</div>';
-      }
-    }
-
-    // ── Funnel chart ─────────────────────────────────────────────────────────
-    var funnelHtml = '<div class="vs-funnel chart-card">'
-      + '<div class="chart-card-title">Onboarding Funnel'
-      + '<span class="muted-total">' + fmt(tot) + ' total · share of pipeline</span></div>'
-      + funnelBig(v, cfg)
-      + '</div>';
-
     return '<section class="vert-section reveal" id="vs-' + cfg.key + '" ' + vcStyle + '>'
-      + hdrHtml + progressHtml + pipeHtml + metricsHtml + catHtml + funnelHtml
+      + hdrHtml + progressHtml + pipeHtml + metricsHtml
       + '</section>';
   }).join('');
 
