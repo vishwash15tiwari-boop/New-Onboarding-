@@ -1128,6 +1128,8 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .cc-fy-td-lbl{border-top:1px solid var(--border)}
 /* Highlighted bad row (non-zero GSTIN missing) */
 tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#B03030)}
+/* "All" aggregate column — slightly stronger, acts as a summary */
+.cc-fy-all{border-left:2px solid var(--border)!important;font-weight:800!important}
 
 /* Responsive */
 @media(max-width:1100px){
@@ -2110,26 +2112,36 @@ function renderVerticals() {
     var fys = (v.fyBreakdown || []).filter(function(f) { return !f.fyStart || f.fyStart >= 2019; });
     var statsList = '';
     if (fys.length) {
-      function fyTr(label, valFn, badCls) {
+      // Aggregate values from v (totals across all FYs)
+      var aggTAT   = v.avgTAT        != null ? v.avgTAT + 'd'           : null;
+      var aggPct   = v.pctTransacted  != null ? v.pctTransacted + '%'   : null;
+      var aggGMV   = v.totalTxnValue  != null ? fmtINR(v.totalTxnValue) : null;
+      var aggGSTon = v.withGST        != null ? fmt(v.withGST)          : null;
+      var aggGSTof = v.missingGST     != null ? fmt(v.missingGST)       : null;
+
+      function fyTr(label, valFn, aggVal, badCls) {
         var cells = fys.map(valFn);
-        if (cells.every(function(c){ return c === null || c === undefined || c === '—'; })) return '';
+        var allEmpty = cells.every(function(c){ return c === null || c === undefined || c === '—'; }) && aggVal == null;
+        if (allEmpty) return '';
         return '<tr' + (badCls ? ' class="' + badCls + '"' : '') + '>'
           + '<td class="cc-fy-td-lbl">' + label + '</td>'
           + cells.map(function(c){ return '<td class="cc-fy-td">' + (c != null ? c : '—') + '</td>'; }).join('')
+          + '<td class="cc-fy-td cc-fy-all">' + (aggVal != null ? aggVal : '—') + '</td>'
           + '</tr>';
       }
       var hasMissingGST = fys.some(function(f) { return (f.missingGST || 0) > 0; });
       var fyTbody = [
-        fyTr('Avg TAT',       function(f){ return f.avgTAT       != null ? f.avgTAT + 'd'           : null; }, ''),
-        fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, ''),
-        fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, ''),
-        fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, ''),
-        fyTr('GSTIN missing', function(f){ return f.missingGST    != null ? fmt(f.missingGST)       : null; }, hasMissingGST ? 'cc-fy-bad' : ''),
+        fyTr('Avg TAT',       function(f){ return f.avgTAT       != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
+        fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
+        fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
+        fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
+        fyTr('GSTIN missing', function(f){ return f.missingGST    != null ? fmt(f.missingGST)       : null; }, aggGSTof, hasMissingGST ? 'cc-fy-bad' : ''),
       ].filter(Boolean).join('');
 
       if (fyTbody) {
         var fyThead = '<thead><tr><th class="cc-fy-th-lbl"></th>'
           + fys.map(function(f){ return '<th class="cc-fy-th">' + esc(f.fy) + '</th>'; }).join('')
+          + '<th class="cc-fy-th cc-fy-all">All</th>'
           + '</tr></thead>';
         statsList = '<div class="cc-fy-wrap">'
           + '<table class="cc-fy-tbl">' + fyThead + '<tbody>' + fyTbody + '</tbody></table>'
