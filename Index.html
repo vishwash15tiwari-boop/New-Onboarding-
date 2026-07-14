@@ -355,15 +355,29 @@ select,input{font-family:inherit}
 #cat-detail-wrap:not(.no-anim) .donut-ctr{animation:fadeIn .55s var(--ease-out) .35s both}
 #cat-detail-wrap:not(.no-anim) .donut-leg-row{animation:riseIn .5s var(--ease-out) both}
 
-/* Footer stats */
-.cc-foot{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--txt3)}
-.cc-foot-item{display:flex;flex-direction:column;gap:1px}
-.cc-foot-item b{font-size:12.5px;color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.1px}
+/* Footer stats — 3-col grid, labels inherit small-caps from parent */
+.cc-foot{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px 8px;
+  padding-top:10px;border-top:1px solid var(--border);
+  font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.35px;
+  color:var(--txt3);margin-top:auto;
+}
+.cc-foot-item{display:flex;flex-direction:column;gap:2px}
+.cc-foot-item b{
+  font-size:13px;color:var(--txt);font-weight:700;
+  font-variant-numeric:tabular-nums;letter-spacing:-.2px;
+  text-transform:none;display:block;
+}
 .cc-gst-active b{color:var(--st-onboarded)}
 .cc-gst-inactive b{color:var(--st-rejected)}
-.cc-aging{gap:4px}
-.cc-aging b{display:block;font-size:12px}
-.cc-foot-more{margin-left:auto;font-size:11px;color:var(--vc-ink,var(--blue));font-weight:600;white-space:nowrap}
+.cc-aging{gap:6px}
+.cc-aging b{display:block;font-size:13px}
+.cc-foot-more{
+  grid-column:1/-1;text-align:right;
+  font-size:10.5px;color:var(--vc-ink,var(--blue));font-weight:600;
+  text-transform:none;letter-spacing:0;
+  padding-top:6px;border-top:1px solid var(--border);
+}
 
 /* ===== Detail Funnel — Activity rings (left) + 3D funnel (right) ===== */
 .fun-rings{flex:1.1;min-width:0;display:flex;align-items:center;justify-content:center;gap:26px;flex-wrap:wrap}
@@ -822,9 +836,10 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
    ══════════════════════════════════════════════════ */
 .compare-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
-  gap:14px;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:16px;
   margin-bottom:0;
+  align-items:stretch;
   background:none;border:none;border-radius:0;overflow:visible;
 }
 .compare-card{
@@ -850,42 +865,42 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 /* Card entrance stagger */
 .compare-grid.animate .compare-card{opacity:0;animation:riseIn .6s var(--ease-out) forwards;animation-delay:calc(var(--i,0)*60ms)}
 
-/* Card header: badge + name + completion pill */
-.cc-hdr2{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.cc-name2{font-size:14px;font-weight:700;color:var(--txt);letter-spacing:-.15px;flex:1 1 100px}
+/* ── Card: flex column so footer always anchors to the bottom ── */
+.compare-card{display:flex;flex-direction:column}
 
-/* ── Onboarded hero number ── */
-.cc-onb-hero{
-  display:flex;align-items:baseline;gap:8px;
-  padding:12px 14px;margin-bottom:10px;
-  background:var(--st-onboarded-bg);
-  border-radius:11px;border-left:3px solid var(--st-onboarded);
+/* Card header: badge + name */
+.cc-hdr2{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.cc-name2{font-size:13.5px;font-weight:700;color:var(--txt);letter-spacing:-.15px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── Onboarded hero ── */
+.cc-onb-hero{margin-bottom:14px}
+.cc-onb-num{font-size:40px;font-weight:800;letter-spacing:-1.5px;font-variant-numeric:tabular-nums;line-height:1;color:var(--vc,var(--st-onboarded));display:block}
+.cc-onb-meta{display:flex;align-items:baseline;gap:6px;margin-top:3px}
+.cc-onb-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--st-onboarded)}
+.cc-onb-of{font-size:10.5px;color:var(--txt3);font-weight:400}
+
+/* ── Pipeline strip: always 3 equal columns (Draft | In Review | Rejected) ── */
+.cc-pipe-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:9px;overflow:hidden;margin-bottom:14px}
+.cc-pipe-col{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:8px 4px;background:var(--card);text-align:center;
 }
-.cc-onb-num{font-size:34px;font-weight:800;letter-spacing:-1.2px;font-variant-numeric:tabular-nums;line-height:1;color:var(--st-onboarded)}
-.cc-onb-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--st-onboarded);opacity:.75}
+.cc-pipe-col b{font-size:17px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1}
+.cc-pipe-col span{font-size:8.5px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.cc-col-draft b{color:var(--st-draft)}.cc-col-draft span{color:var(--st-draft-tx)}
+.cc-col-review b{color:var(--st-review)}.cc-col-review span{color:var(--st-review-tx)}
+.cc-col-rej b{color:var(--st-rejected,#B03030)}.cc-col-rej span{color:color-mix(in srgb,var(--st-rejected,#B03030) 60%,transparent)}
 
-/* ── Mini secondary row: Draft · In Review · Rejected ── */
-.cc-pipe-mini{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.cc-pipe-mini-item{
-  display:flex;align-items:center;gap:5px;
-  padding:4px 9px;border-radius:20px;
-  font-size:11.5px;font-weight:600;
-}
-.cc-pipe-mini-item b{font-weight:700;font-variant-numeric:tabular-nums}
-.cc-mini-draft{background:var(--st-draft-bg);color:var(--st-draft)}
-.cc-mini-review{background:var(--st-review-bg);color:var(--st-review)}
-.cc-mini-rej{background:var(--st-rejected-bg,#fef2f2);color:var(--st-rejected,#B03030)}
-
-/* ── Compact category rows ── */
-.cc-cat-rows{margin:0 0 10px;display:flex;flex-direction:column;gap:4px}
+/* ── Category rows (flex:1 stretches to push footer down) ── */
+.cc-cat-rows{flex:1;margin:0 0 12px;display:flex;flex-direction:column;gap:4px}
 .cc-cat-row{
-  display:flex;align-items:center;gap:8px;padding:5px 8px;
+  display:flex;align-items:center;gap:6px;padding:5px 8px;
   border-radius:6px;background:var(--bg2);
   border-left:3px solid var(--vc,var(--blue));
   font-size:11px;min-width:0;
 }
-.cc-cat-nm{font-weight:600;color:var(--txt);flex-shrink:0;max-width:85px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cc-cat-nums{color:var(--txt3);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-cat-nm{font-weight:600;color:var(--txt);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-cat-nums{color:var(--txt3);font-size:10.5px;white-space:nowrap;flex-shrink:0}
 .cc-cat-nums em{font-style:normal;color:var(--st-onboarded);font-weight:700}
 
 /* ══════════════════════════════════════════════════
@@ -1793,18 +1808,21 @@ function renderVerticals() {
         + hdr + '<div class="no-data" style="padding:24px 0">No records in selected period</div></div>';
     }
 
-    // Hero: Onboarded count (prominent)
+    // Hero: Onboarded count (large) + "of X total" sub-text
     var heroHtml = '<div class="cc-onb-hero">'
       + '<span class="cc-onb-num">' + fmt(v.completed || 0) + '</span>'
-      + '<span class="cc-onb-lbl">Onboarded</span>'
+      + '<div class="cc-onb-meta">'
+      +   '<span class="cc-onb-lbl">Onboarded</span>'
+      +   '<span class="cc-onb-of">of ' + fmt(tot) + ' total</span>'
+      + '</div>'
       + '</div>';
 
-    // Mini secondary row: Draft · In Review · Rejected
-    var miniParts = [];
-    if ((v.draft    || 0) > 0) miniParts.push('<span class="cc-pipe-mini-item cc-mini-draft"><b>' + fmt(v.draft)    + '</b>Draft</span>');
-    if ((v.inReview || 0) > 0) miniParts.push('<span class="cc-pipe-mini-item cc-mini-review"><b>' + fmt(v.inReview) + '</b>In Review</span>');
-    if ((v.rejected || 0) > 0) miniParts.push('<span class="cc-pipe-mini-item cc-mini-rej"><b>'   + fmt(v.rejected) + '</b>Rejected</span>');
-    var pipe = miniParts.length ? '<div class="cc-pipe-mini">' + miniParts.join('') + '</div>' : '';
+    // Always 3 columns: Draft | In Review | Rejected (aligned across all cards)
+    var pipe = '<div class="cc-pipe-row">'
+      + '<div class="cc-pipe-col cc-col-draft"><b>' + fmt(v.draft    || 0) + '</b><span>Draft</span></div>'
+      + '<div class="cc-pipe-col cc-col-review"><b>' + fmt(v.inReview || 0) + '</b><span>In Review</span></div>'
+      + '<div class="cc-pipe-col cc-col-rej"><b>'   + fmt(v.rejected || 0) + '</b><span>Rejected</span></div>'
+      + '</div>';
 
     // Top 3 categories as compact rows
     var topCats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; }).slice(0, 3);
@@ -1842,7 +1860,7 @@ function renderVerticals() {
       +   txnItem + gmvItem + agingItem
       +   (v.withGST    != null ? '<div class="cc-foot-item cc-gst-active"><b>'   + fmt(v.withGST)    + '</b>GST Active</div>'   : '')
       +   (v.missingGST != null ? '<div class="cc-foot-item cc-gst-inactive"><b>' + fmt(v.missingGST) + '</b>GST Missing</div>'  : '')
-      +   '<span class="cc-foot-more" style="color:var(--vc-ink,var(--blue))">Details ↓</span>'
+      +   '<span class="cc-foot-more">Details ↓</span>'
       + '</div>'
       + '</div>';
   }).join('');
