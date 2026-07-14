@@ -1091,39 +1091,43 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
   margin-top:auto;
   padding-top:2px;
   overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
 }
-.cc-fy-row{
-  display:flex;align-items:center;
-  border-bottom:1px solid var(--border);
-  min-height:30px;
+.cc-fy-tbl{
+  border-collapse:collapse;
+  width:100%;
+  min-width:max-content; /* forces scroll when cols overflow */
 }
-.cc-fy-row:last-child{border-bottom:none}
-/* Label: left side, muted, compact */
-.cc-fy-lbl{
-  flex:1;padding:6px 8px 6px 0;
+/* Row label (metric name) */
+.cc-fy-th-lbl,.cc-fy-td-lbl{
+  text-align:left;
+  padding:6px 10px 6px 0;
   font-size:10.5px;color:var(--txt2);font-weight:500;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  letter-spacing:-.1px;
+  white-space:nowrap;letter-spacing:-.1px;
+  min-width:90px;
 }
-/* Value column: right-aligned, bold, wide enough for "₹87.75 Cr" */
-.cc-fy-col{
-  min-width:82px;text-align:right;
-  padding:6px 0 6px 12px;
-  border-left:1px solid var(--border);
-  font-size:12.5px;font-weight:700;
-  color:var(--txt);font-variant-numeric:tabular-nums;
-  flex-shrink:0;white-space:nowrap;letter-spacing:-.3px;
-}
-/* FY name header row */
-.cc-fy-hdr{min-height:auto;padding:8px 0 2px}
-.cc-fy-hdr .cc-fy-col{
+.cc-fy-th-lbl{padding-top:8px;padding-bottom:4px}
+/* FY column header */
+.cc-fy-th{
+  text-align:right;
+  padding:8px 0 4px 14px;
   font-size:9.5px;font-weight:700;
   color:var(--vc-ink,var(--blue));letter-spacing:.3px;
-  border-left-color:transparent;
-  padding-top:0;padding-bottom:0;
+  white-space:nowrap;
 }
-/* Only bad (non-zero GSTIN missing) shows in red */
-.cc-fy-bad .cc-fy-col{color:var(--st-rejected,#B03030)}
+/* Data cells */
+.cc-fy-td{
+  text-align:right;
+  padding:6px 0 6px 14px;
+  border-top:1px solid var(--border);
+  font-size:12px;font-weight:700;
+  color:var(--txt);font-variant-numeric:tabular-nums;
+  white-space:nowrap;letter-spacing:-.3px;
+  min-width:82px;
+}
+.cc-fy-td-lbl{border-top:1px solid var(--border)}
+/* Highlighted bad row (non-zero GSTIN missing) */
+tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#B03030)}
 
 /* Responsive */
 @media(max-width:1100px){
@@ -2102,31 +2106,30 @@ function renderVerticals() {
     var fys = (v.fyBreakdown || []);
     var statsList = '';
     if (fys.length) {
-      function fyDataRow(label, valFn, badCls) {
+      function fyTr(label, valFn, badCls) {
         var cells = fys.map(valFn);
         if (cells.every(function(c){ return c === null || c === undefined || c === '—'; })) return '';
-        return '<div class="cc-fy-row' + (badCls ? ' ' + badCls : '') + '">'
-          + '<span class="cc-fy-lbl">' + label + '</span>'
-          + cells.map(function(c){ return '<span class="cc-fy-col">' + (c != null ? c : '—') + '</span>'; }).join('')
-          + '</div>';
+        return '<tr' + (badCls ? ' class="' + badCls + '"' : '') + '>'
+          + '<td class="cc-fy-td-lbl">' + label + '</td>'
+          + cells.map(function(c){ return '<td class="cc-fy-td">' + (c != null ? c : '—') + '</td>'; }).join('')
+          + '</tr>';
       }
       var hasMissingGST = fys.some(function(f) { return (f.missingGST || 0) > 0; });
-      var fyRows = [
-        fyDataRow('Avg TAT',       function(f){ return f.avgTAT       != null ? f.avgTAT + 'd'           : null; }, ''),
-        fyDataRow('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, ''),
-        fyDataRow('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, ''),
-        fyDataRow('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, ''),
-        fyDataRow('GSTIN missing', function(f){ return f.missingGST    != null ? fmt(f.missingGST)       : null; }, hasMissingGST ? 'cc-fy-bad' : ''),
+      var fyTbody = [
+        fyTr('Avg TAT',       function(f){ return f.avgTAT       != null ? f.avgTAT + 'd'           : null; }, ''),
+        fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, ''),
+        fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, ''),
+        fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, ''),
+        fyTr('GSTIN missing', function(f){ return f.missingGST    != null ? fmt(f.missingGST)       : null; }, hasMissingGST ? 'cc-fy-bad' : ''),
       ].filter(Boolean).join('');
 
-      if (fyRows) {
-        var fyHdr = '<div class="cc-fy-row cc-fy-hdr">'
-          + '<span class="cc-fy-lbl"></span>'
-          + fys.map(function(f){ return '<span class="cc-fy-col">' + esc(f.fy) + '</span>'; }).join('')
-          + '</div>';
+      if (fyTbody) {
+        var fyThead = '<thead><tr><th class="cc-fy-th-lbl"></th>'
+          + fys.map(function(f){ return '<th class="cc-fy-th">' + esc(f.fy) + '</th>'; }).join('')
+          + '</tr></thead>';
         statsList = '<div class="cc-fy-wrap">'
-          + fyHdr + fyRows
-          + '<div style="display:flex;justify-content:flex-end;padding:7px 0 2px">'
+          + '<table class="cc-fy-tbl">' + fyThead + '<tbody>' + fyTbody + '</tbody></table>'
+          + '<div style="display:flex;justify-content:flex-end;padding:6px 0 2px">'
           +   '<span style="font-size:11px;font-weight:600;color:var(--vc-ink,var(--blue));letter-spacing:-.1px">Details ↓</span>'
           + '</div>'
           + '</div>';
