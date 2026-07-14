@@ -891,17 +891,16 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .cc-col-review b{color:var(--st-review)}.cc-col-review span{color:var(--st-review-tx)}
 .cc-col-rej b{color:var(--st-rejected,#B03030)}.cc-col-rej span{color:color-mix(in srgb,var(--st-rejected,#B03030) 60%,transparent)}
 
-/* ── Category rows (flex:1 stretches to push footer down) ── */
-.cc-cat-rows{flex:1;margin:0 0 12px;display:flex;flex-direction:column;gap:4px}
-.cc-cat-row{
-  display:flex;align-items:center;gap:6px;padding:5px 8px;
-  border-radius:6px;background:var(--bg2);
-  border-left:3px solid var(--vc,var(--blue));
-  font-size:11px;min-width:0;
-}
-.cc-cat-nm{font-weight:600;color:var(--txt);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cc-cat-nums{color:var(--txt3);font-size:10.5px;white-space:nowrap;flex-shrink:0}
-.cc-cat-nums em{font-style:normal;color:var(--st-onboarded);font-weight:700}
+/* ── FY breakdown rows on card (flex:1 pushes footer down) ── */
+.cc-fy-rows{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;margin:0 0 14px}
+.cc-fy-row{display:grid;grid-template-columns:52px 1fr 32px;align-items:center;gap:7px}
+.cc-fy-lbl{font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.2px;white-space:nowrap}
+.cc-fy-bar-bg{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.cc-fy-bar-fg{height:100%;border-radius:3px;background:var(--vc,var(--blue));opacity:.8;width:0;transition:width 1s var(--ease-out)}
+.cc-fy-val{font-size:11px;font-weight:700;color:var(--txt);text-align:right;font-variant-numeric:tabular-nums}
+.cc-fy-row.cc-fy-current .cc-fy-lbl{color:var(--vc-ink,var(--blue))}
+.cc-fy-row.cc-fy-current .cc-fy-bar-fg{opacity:1}
+.cc-fy-row.cc-fy-current .cc-fy-val{color:var(--vc-ink,var(--blue))}
 
 /* ══════════════════════════════════════════════════
    VERTICAL STORY SECTION — full editorial layout
@@ -1158,7 +1157,7 @@ var _isFirstLoad     = true;
 
 // localStorage key prefix — bump the version suffix when the data shape changes
 // so stale entries from an old schema are silently ignored.
-var STORE_PFX = 'ebt_v8_';
+var STORE_PFX = 'ebt_v9_';
 
 // Stale-while-revalidate: if we have a previous response in localStorage, paint
 // it immediately so the user sees real data with zero wait, then fetch fresh data
@@ -1823,19 +1822,26 @@ function renderVerticals() {
       + '<div class="cc-pipe-col cc-col-rej"><b>'   + fmt(v.rejected || 0) + '</b><span>Rejected</span></div>'
       + '</div>';
 
-    // Top 3 categories as compact rows
-    var topCats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; }).slice(0, 3);
-    var catRows = topCats.length
-      ? '<div class="cc-cat-rows">'
-        + topCats.map(function(c) {
-            var done = c.onboarded || 0;
-            return '<div class="cc-cat-row">'
-              + '<span class="cc-cat-nm">' + esc(c.category) + '</span>'
-              + '<span class="cc-cat-nums"><em>' + fmt(done) + ' done</em> · of ' + fmt(c.total) + '</span>'
+    // FY breakdown bars (last 4 FYs, newest first)
+    var fyRows = (v.fyBreakdown || []).slice(0, 4);
+    var maxFyOnb = fyRows.reduce(function(m, r) { return Math.max(m, r.onboarded); }, 1);
+    var nowFyKey = (function() {
+      var d = new Date(), y = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+      return 'FY' + String(y).slice(2) + '-' + String(y + 1).slice(2);
+    }());
+    var catRows = fyRows.length
+      ? '<div class="cc-fy-rows">'
+        + fyRows.map(function(r) {
+            var barPct = Math.round((r.onboarded / maxFyOnb) * 100);
+            var isCurrent = r.fy === nowFyKey;
+            return '<div class="cc-fy-row' + (isCurrent ? ' cc-fy-current' : '') + '">'
+              + '<span class="cc-fy-lbl">' + esc(r.fy) + '</span>'
+              + '<div class="cc-fy-bar-bg"><div class="cc-fy-bar-fg" data-pct="' + barPct + '"></div></div>'
+              + '<span class="cc-fy-val">' + fmt(r.onboarded) + '</span>'
               + '</div>';
           }).join('')
         + '</div>'
-      : '';
+      : '<div class="cc-fy-rows"></div>';
 
     // Footer
     var txnItem = (v.transacted === null || v.transacted === undefined) ? ''
@@ -1878,6 +1884,12 @@ function renderVerticals() {
     grid._animT = setTimeout(function() { grid.classList.remove('animate'); }, 1100);
   }
   animateCounters(grid);
+  // Animate FY bars after a short delay so cards have risen into view first.
+  setTimeout(function() {
+    grid.querySelectorAll('.cc-fy-bar-fg').forEach(function(el) {
+      el.style.width = (el.getAttribute('data-pct') || '0') + '%';
+    });
+  }, 200);
 }
 
 function openVertDetail(key) {
@@ -2027,10 +2039,7 @@ function renderVertStory() {
       + '</div>';
 
     // ── Completion progress bar ──────────────────────────────────────────────
-    var progressHtml = '<div class="vs-progress">'
-      + '<div class="vs-progress-hdr"><span>Completion Rate</span><strong>' + pct + '%</strong></div>'
-      + '<div class="vs-progress-track"><div class="vs-progress-fill" style="width:' + pct + '%"></div></div>'
-      + '</div>';
+    var progressHtml = '';
 
     // ── Four pipeline stage boxes ────────────────────────────────────────────
     var pipeHtml = '<div class="vs-pipe">'

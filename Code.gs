@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v24_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v25_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -434,6 +434,20 @@ function vStats(data) {
     else if (elapsed > AGE_WARN_MS) { agingCount++; }
   });
 
+  // Fiscal-year breakdown: onboarded count per FY (by onboardedDate, newest first).
+  var fyMap = {};
+  data.forEach(function(r) {
+    var d = r.onboardedDate || r.createdDate;
+    if (!d) return;
+    var y = fyStartYear(d);
+    var key = 'FY' + String(y).slice(2) + '-' + String(y + 1).slice(2);
+    if (!fyMap[key]) fyMap[key] = { fy: key, onboarded: 0 };
+    if (r.status === 'COMPLETED') fyMap[key].onboarded++;
+  });
+  var fyBreakdown = Object.keys(fyMap)
+    .sort(function(a, b) { return b.localeCompare(a); })
+    .map(function(k) { return fyMap[k]; });
+
   var catMap = {};
   data.forEach(function(r) {
     var c = r.category || 'Others';
@@ -468,9 +482,10 @@ function vStats(data) {
     transacted: transacted,
     pctTransacted: transacted === null ? null : pct(transacted, completed),
     totalTxnValue: totalTxnValue,
-    aging:   agingCount   > 0 ? agingCount   : null,
-    overdue: overdueCount > 0 ? overdueCount : null,
-    categories: categories,
+    aging:       agingCount   > 0 ? agingCount   : null,
+    overdue:     overdueCount > 0 ? overdueCount : null,
+    fyBreakdown: fyBreakdown,
+    categories:  categories,
     rowsTotal: total,
   };
 }
