@@ -1047,122 +1047,118 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
    SIDEBAR NAVIGATION
    ═══════════════════════════════════════════════════════════ */
 #side-nav{
-  width:232px;flex-shrink:0;
+  width:220px;flex-shrink:0;
   position:sticky;top:56px;
   height:calc(100vh - 56px);
   overflow-y:auto;
-  border-right:1px solid var(--border);
-  background:var(--card);
+  /* No border — blends with the page wash background */
+  background:transparent;
   display:flex;flex-direction:column;
-  padding:8px 0 32px;
+  padding:16px 0 40px;
   z-index:10;
 }
-#side-nav::-webkit-scrollbar{width:4px}
-#side-nav::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+#side-nav::-webkit-scrollbar{width:3px}
+#side-nav::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;opacity:.5}
 
 /* Section label */
 .sn-sect{
   font-size:9px;font-weight:700;color:var(--txt3);
   text-transform:uppercase;letter-spacing:1.2px;
-  padding:14px 14px 6px;
+  padding:0 14px 10px;
 }
 
 /* Group button (Sellers / Buyers) */
 .sn-grp{
-  display:flex;align-items:center;gap:8px;
-  width:100%;padding:8px 12px 8px 14px;
+  display:flex;align-items:center;gap:9px;
+  width:100%;padding:9px 14px;
   border:none;background:transparent;
   cursor:pointer;text-align:left;
   font-family:inherit;
-  transition:background .13s;
-  border-left:2px solid transparent;
+  border-radius:10px;
+  transition:background .15s var(--ease);
 }
-.sn-grp:hover{background:var(--hover)}
-.sn-grp.sn-active{background:var(--accent-soft);border-left-color:var(--blue)}
+.sn-grp:hover{background:rgba(15,23,32,.05)}
+.sn-grp.sn-active{background:rgba(0,93,255,.07)}
 .sn-grp-ic{
-  width:26px;height:26px;border-radius:7px;
-  background:var(--bg2);border:1px solid var(--border);
+  width:28px;height:28px;border-radius:8px;
+  background:var(--bg2);
   display:flex;align-items:center;justify-content:center;
   font-size:11px;font-weight:700;color:var(--txt2);
   flex-shrink:0;
-  transition:background .13s,color .13s,border-color .13s;
+  transition:background .15s,color .15s;
 }
-.sn-grp.sn-active .sn-grp-ic{background:var(--blue);color:#fff;border-color:var(--blue)}
-.sn-grp-lbl{flex:1;font-size:12.5px;font-weight:600;color:var(--txt)}
+.sn-grp.sn-active .sn-grp-ic{background:var(--blue);color:#fff}
+.sn-grp-lbl{flex:1;font-size:13px;font-weight:600;color:var(--txt);letter-spacing:-.1px}
 .sn-grp-arr{
-  font-size:10px;color:var(--txt3);line-height:1;
-  transition:transform .2s var(--ease-out);
+  font-size:11px;color:var(--txt3);line-height:1;
+  transition:transform .22s var(--ease-out);
 }
 .sn-grp.sn-open .sn-grp-arr{transform:rotate(90deg)}
 
 /* Sub-list (vertical items under each group) */
-.sn-subs{display:none;flex-direction:column;padding:2px 0 4px}
+.sn-subs{display:none;flex-direction:column;padding:2px 0 6px;margin:0 6px}
 .sn-subs.sn-open{display:flex}
 .sn-sub{
-  display:flex;align-items:center;gap:7px;
-  padding:6px 12px 6px 28px;
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px 7px 20px;
   cursor:pointer;border:none;
   background:transparent;text-align:left;
   width:100%;font-family:inherit;
-  transition:background .12s;
-  border-left:2px solid transparent;
+  border-radius:8px;
+  transition:background .13s var(--ease);
 }
-.sn-sub:hover{background:var(--hover)}
-.sn-sub.sn-active{
-  background:var(--accent-soft);
-  border-left-color:var(--vc,var(--blue));
-}
+.sn-sub:hover{background:rgba(15,23,32,.05)}
+.sn-sub.sn-active{background:var(--vc-soft,rgba(0,93,255,.07))}
 .sn-sub-dot{
-  width:5px;height:5px;border-radius:50%;
+  width:6px;height:6px;border-radius:50%;
   background:var(--vc,var(--border2));
-  flex-shrink:0;opacity:.6;
-  transition:opacity .13s;
+  flex-shrink:0;opacity:.5;
+  transition:opacity .13s,transform .13s;
 }
-.sn-sub.sn-active .sn-sub-dot{opacity:1}
+.sn-sub.sn-active .sn-sub-dot{opacity:1;transform:scale(1.3)}
 .sn-sub-lbl{
   flex:1;font-size:12px;font-weight:500;
-  color:var(--txt2);
+  color:var(--txt3);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:color .13s,font-weight .13s;
 }
+.sn-sub:hover .sn-sub-lbl{color:var(--txt2)}
 .sn-sub.sn-active .sn-sub-lbl{color:var(--txt);font-weight:600}
 .sn-sub-n{
   font-size:10px;font-weight:600;color:var(--txt3);
   font-variant-numeric:tabular-nums;
-  background:var(--bg2);border:1px solid var(--border);
-  border-radius:6px;padding:1px 6px;flex-shrink:0;
+  background:rgba(15,23,32,.06);
+  border-radius:6px;padding:2px 7px;flex-shrink:0;
+  transition:color .13s,background .13s;
 }
+.sn-sub.sn-active .sn-sub-n{color:var(--vc-ink,var(--blue));background:var(--vc-soft,rgba(0,93,255,.09))}
 
 /* Separator */
-.sn-sep{height:1px;background:var(--border);margin:8px 14px}
+.sn-sep{height:1px;background:var(--border);margin:10px 14px;opacity:.6}
 
 /* GST Payables button */
 .sn-gst{
-  display:flex;align-items:center;gap:8px;
-  width:100%;padding:8px 12px 8px 14px;
+  display:flex;align-items:center;gap:9px;
+  width:100%;padding:9px 14px;
   border:none;background:transparent;
   cursor:pointer;text-align:left;font-family:inherit;
-  transition:background .13s;
-  border-left:2px solid transparent;
+  border-radius:10px;
+  transition:background .15s var(--ease);
 }
-.sn-gst:hover{background:rgba(194,90,36,.06)}
-.sn-gst.sn-active{
-  background:rgba(194,90,36,.09);
-  border-left-color:var(--gp-orange,#C25A24);
-}
+.sn-gst:hover{background:rgba(194,90,36,.07)}
+.sn-gst.sn-active{background:rgba(194,90,36,.10)}
 .sn-gst-ic{
-  width:26px;height:26px;border-radius:7px;
+  width:28px;height:28px;border-radius:8px;
   background:var(--gp-orange-bg,#F6E7D8);
-  border:1px solid var(--gp-border,#EBE2D3);
   display:flex;align-items:center;justify-content:center;
   font-size:12px;color:var(--gp-orange,#C25A24);
   flex-shrink:0;
-  transition:background .13s,color .13s,border-color .13s;
+  transition:background .15s,color .15s;
 }
 .sn-gst.sn-active .sn-gst-ic{
   background:var(--gp-orange,#C25A24);color:#fff;
-  border-color:var(--gp-orange,#C25A24);
 }
-.sn-gst-lbl{font-size:12.5px;font-weight:600;color:var(--txt)}
+.sn-gst-lbl{font-size:13px;font-weight:600;color:var(--txt);letter-spacing:-.1px}
 
 /* On desktop: hide the top .aud-tabs (sidebar replaces them) */
 @media(min-width:1025px){
@@ -1211,9 +1207,6 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 <!-- Main -->
 <div id="main">
 
-  <!-- Sidebar navigation — built by buildSideNav() -->
-  <nav id="side-nav"></nav>
-
   <div id="dash-content">
 
   <!-- Top-level view switcher — Sellers · Buyers · GST Payables -->
@@ -1258,6 +1251,9 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
   <div id="tab-gst" style="display:none"></div>
 
   </div><!-- /dash-content -->
+
+  <!-- Sidebar navigation — built by buildSideNav() -->
+  <nav id="side-nav"></nav>
 
 </div><!-- /main -->
 
@@ -3413,7 +3409,7 @@ function buildSideNav() {
       var vc  = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
       html += '<button class="sn-sub' + (snActiveKey === cfg.key ? ' sn-active' : '') + '"'
         + ' data-key="' + esc(cfg.key) + '"'
-        + ' style="--vc:' + vc.c + '"'
+        + ' style="--vc:' + vc.c + ';--vc-ink:' + vc.ink + ';--vc-soft:' + hexRGBA(vc.c, .09) + '"'
         + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
         + '<span class="sn-sub-dot"></span>'
         + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
@@ -3437,7 +3433,7 @@ function buildSideNav() {
       var vc  = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
       html += '<button class="sn-sub' + (snActiveKey === cfg.key ? ' sn-active' : '') + '"'
         + ' data-key="' + esc(cfg.key) + '"'
-        + ' style="--vc:' + vc.c + '"'
+        + ' style="--vc:' + vc.c + ';--vc-ink:' + vc.ink + ';--vc-soft:' + hexRGBA(vc.c, .09) + '"'
         + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
         + '<span class="sn-sub-dot"></span>'
         + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
