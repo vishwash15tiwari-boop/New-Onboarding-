@@ -783,7 +783,7 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 .gp-fy-bar{height:100%;border-radius:3px;background:var(--gp-orange);transition:width .7s cubic-bezier(.4,0,.2,1)}
 .gp-fy-breakdown{margin-top:7px;display:flex;flex-direction:column;gap:3px}
 .gp-fy-brow{display:flex;align-items:center;gap:3px;font-size:9.5px;line-height:1.3}
-.gp-fy-blbl{color:var(--gp-ink3);font-weight:500;min-width:40px;flex-shrink:0}
+.gp-fy-blbl{color:var(--gp-ink3);font-weight:500;min-width:90px;flex-shrink:0}
 .gp-fy-bamt{font-weight:700;font-variant-numeric:tabular-nums;flex:1;text-align:right}
 .gp-fy-bpct{font-size:8.5px;color:var(--gp-ink3);font-weight:500;min-width:24px;text-align:right}
 
@@ -3663,20 +3663,17 @@ function gstAgingSection() {
   if (src) {
     var maxT = Math.max.apply(null, src.map(function(r) { return r.total; }).concat([1]));
     fyCards = src.slice().reverse().map(function(r) {
-      var barW   = Math.round(r.total / maxT * 100);
-      var matPct = r.total ? Math.round(r.material / r.total * 100) : 0;
-      var gstPct = r.total ? Math.round(r.gst      / r.total * 100) : 0;
+      var barW = Math.round(r.total / maxT * 100);
       return '<div class="gp-fy-card' + (gpYear === r.fy ? ' active' : '') + '" onclick="gpSetYear(\'' + r.fy + '\')" title="Filter to ' + esc(fyFull(r.fy)) + '">'
         + '<div class="gp-fy-label">' + esc(fyFull(r.fy)) + '</div>'
-        + '<div class="gp-fy-val" style="color:var(--gp-orange)">' + fmtRupee(r.total) + '</div>'
-        + '<div class="gp-fy-track"><div class="gp-fy-bar" style="width:' + barW + '%"></div></div>'
+        + '<div class="gp-fy-track" style="margin-bottom:8px"><div class="gp-fy-bar" style="width:' + barW + '%"></div></div>'
         + '<div class="gp-fy-breakdown">'
-        +   '<div class="gp-fy-brow"><span class="gp-fy-blbl">Material</span>'
-        +     '<span class="gp-fy-bamt" style="color:var(--gp-green)">' + fmtRupee(r.material) + '</span>'
-        +     '<span class="gp-fy-bpct">' + matPct + '%</span></div>'
-        +   '<div class="gp-fy-brow"><span class="gp-fy-blbl">GST</span>'
-        +     '<span class="gp-fy-bamt" style="color:var(--gp-gold)">' + fmtRupee(r.gst) + '</span>'
-        +     '<span class="gp-fy-bpct">' + gstPct + '%</span></div>'
+        +   '<div class="gp-fy-brow"><span class="gp-fy-blbl">GST Balance</span>'
+        +     '<span class="gp-fy-bamt" style="color:var(--gp-gold)">' + fmtRupee(r.gst) + '</span></div>'
+        +   '<div class="gp-fy-brow"><span class="gp-fy-blbl">Material Balance</span>'
+        +     '<span class="gp-fy-bamt" style="color:var(--gp-green)">' + fmtRupee(r.material) + '</span></div>'
+        +   '<div class="gp-fy-brow" style="margin-top:4px;padding-top:5px;border-top:1px solid var(--gp-border)"><span class="gp-fy-blbl" style="color:var(--gp-ink);font-weight:700">Total Balance</span>'
+        +     '<span class="gp-fy-bamt" style="color:var(--gp-orange);font-size:12px">' + fmtRupee(r.total) + '</span></div>'
         + '</div>'
         + '</div>';
     }).join('');
