@@ -1150,6 +1150,87 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#D64545)}
   .vs-hero-count{font-size:44px;letter-spacing:-2px}
   .vs-title{font-size:22px}
 }
+
+/* ══════════════════════════════════════════════════
+   VERTICAL TAB BAR
+   ══════════════════════════════════════════════════ */
+.vert-tabs-bar{
+  display:flex;gap:0;
+  border-bottom:2px solid var(--border);
+  margin:0 0 22px;
+  overflow-x:auto;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.vert-tabs-bar::-webkit-scrollbar{display:none}
+.vert-tab{
+  font-family:inherit;font-size:11px;font-weight:700;
+  letter-spacing:.6px;text-transform:uppercase;
+  padding:11px 15px;border:none;background:transparent;
+  color:var(--txt3);cursor:pointer;white-space:nowrap;
+  position:relative;border-bottom:3px solid transparent;
+  margin-bottom:-2px;
+  transition:color .15s,border-color .15s;
+}
+.vert-tab:hover{color:var(--txt)}
+.vert-tab.active{color:var(--vc,var(--blue));border-bottom-color:var(--vc,var(--blue))}
+.vert-tab-gst{border-left:1px solid var(--border);margin-left:8px;padding-left:20px;color:var(--green)!important}
+.vert-tab-gst.active{color:var(--green)!important;border-bottom-color:var(--green)!important}
+
+/* ══════════════════════════════════════════════════
+   HERO KPI ROW (4 combined cards)
+   ══════════════════════════════════════════════════ */
+.vkpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.vkpi-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:18px 18px 16px;
+  box-shadow:var(--shadow-sm);
+  display:flex;flex-direction:column;gap:2px;
+  position:relative;overflow:hidden;
+  transition:box-shadow .22s ease,transform .22s ease;
+}
+.vkpi-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--vc,var(--border2));border-radius:4px 0 0 4px;
+}
+.vkpi-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.vkpi-lbl{font-size:9.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--txt3);margin-bottom:8px}
+.vkpi-val{font-size:32px;font-weight:800;letter-spacing:-1.4px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
+.vkpi-sub{font-size:11px;color:var(--txt3);font-weight:500;margin-top:6px;line-height:1.4}
+.vkpi-card.vk-onboarded::before{background:var(--st-onboarded)}
+.vkpi-card.vk-onboarded .vkpi-val{color:var(--st-onboarded)}
+.vkpi-card.vk-transacted::before{background:var(--st-transacted)}
+.vkpi-card.vk-transacted .vkpi-val{color:var(--st-transacted)}
+.vkpi-card.vk-warn::before{background:var(--st-rejected)}
+.vkpi-card.vk-warn .vkpi-val{color:var(--st-rejected)}
+
+/* ══════════════════════════════════════════════════
+   PIPELINE PAIR (Seller + Buyer side by side)
+   ══════════════════════════════════════════════════ */
+.vpipe-pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.vpipe-card{cursor:pointer}
+.vpipe-card.det-active{border-color:var(--vc,var(--blue))!important;box-shadow:var(--ring),var(--shadow)!important}
+
+/* ══════════════════════════════════════════════════
+   INLINE DETAIL SECTION
+   ══════════════════════════════════════════════════ */
+.vds-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:32px}
+.vds-head{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--card2);flex-wrap:wrap}
+.vds-title{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt2);flex:1;min-width:100px}
+.vds-count{font-size:11.5px;font-weight:700;background:var(--bg2);border:1px solid var(--border);color:var(--txt2);border-radius:var(--pill);padding:2px 11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.vds-body{padding:16px 20px 24px}
+
+/* Sidebar no longer needed — vertical tabs replace it */
+#side-nav{display:none!important}
+
+/* Responsive */
+@media(max-width:1100px){
+  .vkpi-grid{grid-template-columns:repeat(2,1fr)}
+  .vpipe-pair{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .vkpi-grid{grid-template-columns:1fr}
+  .vert-tab{font-size:10px;padding:9px 11px;letter-spacing:.4px}
+}
 </style>
 
 <style id="sidenav-css">
@@ -1265,9 +1346,9 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#D64545)}
 }
 .sn-gst-lbl{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.1px}
 
-/* On desktop: hide the top .aud-tabs (sidebar replaces them) */
+/* On desktop: hide the top header .aud-tabs (sidebar/tab bar replaces them) */
 @media(min-width:1025px){
-  .aud-tabs{display:none!important}
+  #header .aud-tabs{display:none!important}
 }
 
 /* Responsive: collapse sidebar on small screens */
@@ -1345,7 +1426,14 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#D64545)}
 
   <!-- ── VIEW: ONBOARDING ── -->
   <div id="tab-overview">
-    <div class="compare-grid" id="vert-grid"></div>
+    <!-- Vertical tab navigation -->
+    <div id="vert-tabs-bar" class="vert-tabs-bar"></div>
+    <!-- Combined KPI hero row (4 cards, S+B merged) -->
+    <div id="vert-kpi-row" class="vkpi-grid"></div>
+    <!-- Seller + Buyer pipeline cards side by side -->
+    <div id="vert-pipeline-pair" class="vpipe-pair"></div>
+    <!-- Inline detailed view with SELLERS/BUYERS toggle -->
+    <div id="vert-detail-section" class="vds-wrap" style="display:none"></div>
   </div>
 
   <!-- ── VIEW: GST PAYABLES ── -->
@@ -1359,7 +1447,7 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#D64545)}
 </div><!-- /main -->
 
 <!-- Vertical Detail — full-page overlay (outside main layout) -->
-<div id="vert-detail" style="display:none"></div>
+<div id="vert-detail" style="display:none;pointer-events:none"></div>
 
 <!-- Record Detail Modal — click any board card or table row to open -->
 <div id="rec-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Record details">
@@ -1820,7 +1908,8 @@ function vcVars(key) {
     + ';--vc-fade:' + hexRGBA(vc.c, .25) + ';';
 }
 var selectedVert = null;
-var selectedAud  = 'seller';   // 'seller' | 'buyer' — which pipeline card was clicked
+var activeVertKey = null;      // which vertical tab is currently active
+var selectedAud  = 'seller';   // 'seller' | 'buyer' — which pipeline is shown in the detail section
 var vertRows = [];          // lazily loaded rows for the open vertical
 var vertRowsLoading = false;
 var vertRowsError = null;   // backend error message when the last row fetch failed
@@ -2061,17 +2150,18 @@ function funnel3D(v) {
   return out + '</div>';
 }
 
-var _gridAnimKey = null;   // dataset identity — stagger cards only when it changes
+// ═══════════════════════════════════════════════════════════════
+// VERTICAL TAB NAVIGATION — new layout
+// ═══════════════════════════════════════════════════════════════
 function renderVerticals() {
-  var grid = document.getElementById('vert-grid');
-  if (!grid) return;
-  if (!DS || !DS.verticals) { grid.innerHTML = ''; return; }
+  if (!DS || !DS.verticals) return;
 
-  // Backend reachable but every data source failed (no _mb_* sync sheets,
-  // no Metabase credentials, fallback sheet not shared) — say so instead of
-  // rendering 16 silent "No data" cards.
   if (D && D.dataSource === 'empty') {
-    grid.innerHTML = '<div style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:36px 32px;text-align:center;box-shadow:var(--shadow-sm)">'
+    var kEl = document.getElementById('vert-kpi-row');
+    var pEl = document.getElementById('vert-pipeline-pair');
+    var dEl = document.getElementById('vert-detail-section');
+    if (kEl) kEl.innerHTML = '';
+    if (pEl) pEl.innerHTML = '<div style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:36px 32px;text-align:center;box-shadow:var(--shadow-sm)">'
       + '<div style="font-size:15px;font-weight:800;color:var(--red);margin-bottom:8px">⚠ Backend connected — but no data source is reachable</div>'
       + '<div style="font-size:12.5px;color:var(--txt2);max-width:640px;margin:0 auto 14px;line-height:1.7">The web app responded, but all three data paths came back empty. In the Apps Script editor, check in this order:'
       + '<ol style="text-align:left;margin:10px auto 0;max-width:560px;padding-left:22px">'
@@ -2081,13 +2171,261 @@ function renderVerticals() {
       + '</ol></div>'
       + '<button onclick="loadData(false)" style="padding:9px 24px;border-radius:999px;border:1px solid var(--blue);background:var(--blue);color:#fff;font-size:13px;font-weight:600;cursor:pointer">↻ Retry</button>'
       + '</div>';
+    if (dEl) dEl.style.display = 'none';
     return;
   }
 
-  var idx = 0;
+  // First render — initialize the active tab to the first vertical
+  if (!activeVertKey) {
+    var cfg0 = getVertCfg();
+    activeVertKey = cfg0.length ? cfg0[0].key : 'OMP';
+    selectedVert  = activeVertKey;
+    selectedAud   = 'seller';
+    vertRows = []; vertRowsLoading = true; vertRowsError = null;
+    _vertRowsPKey = null; ++_vertRowsGen;
+    loadVertRows(activeVertKey);
+  }
 
-  // Build a full detail card for one pipeline (Seller or Buyer)
-  function buildCard(cfg, v, pipelineLabel) {
+  renderVertTabBar();
+  renderVertKPIs(activeVertKey);
+  renderPipelinePair(activeVertKey);
+
+  var detEl = document.getElementById('vert-detail-section');
+  if (detEl) detEl.style.display = '';
+  renderInlineDetail(activeVertKey);
+}
+
+function renderVertTabBar() {
+  var bar = document.getElementById('vert-tabs-bar');
+  if (!bar) return;
+  var cfg = getVertCfg();
+  bar.innerHTML = cfg.map(function(c) {
+    var isActive = c.key === activeVertKey;
+    return '<button class="vert-tab' + (isActive ? ' active' : '') + '"'
+      + ' data-key="' + esc(c.key) + '"'
+      + ' style="' + vcVars(c.key) + '"'
+      + ' onclick="selectVertTab(\'' + c.key + '\')">'
+      + esc(c.name.toUpperCase())
+      + '</button>';
+  }).join('')
+  + '<button class="vert-tab vert-tab-gst" onclick="switchView(\'gst\')">GST PAYABLES</button>';
+}
+
+function selectVertTab(key) {
+  if (activeVertKey === key) return;
+  activeVertKey = key;
+  selectedVert  = key;
+  // Reset rows — new vertical, fresh load
+  vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+  vdSort = { key: '', dir: 1 };
+  vertRows = []; vertRowsLoading = true; vertRowsError = null;
+  _vertRowsPKey = null; ++_vertRowsGen;
+  // Update tab active states in-place (faster than full re-render)
+  document.querySelectorAll('.vert-tab[data-key]').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.key === key);
+  });
+  renderVertKPIs(key);
+  renderPipelinePair(key);
+  var detEl = document.getElementById('vert-detail-section');
+  if (detEl) detEl.style.display = '';
+  renderInlineDetail(key);
+  loadVertRows(key);
+}
+
+function renderVertKPIs(key) {
+  var el = document.getElementById('vert-kpi-row');
+  if (!el) return;
+  var vs = (DS && DS.verticals || {})[key] || {};
+  var vb = (DB && DB.verticals || {})[key] || {};
+  var totalS = vs.total || 0, totalB = vb.total || 0;
+  var compS  = vs.completed || 0, compB = vb.completed || 0;
+  var missS  = vs.missingGST || 0, missB = vb.missingGST || 0;
+  var pctTxn = vs.pctTransacted != null ? vs.pctTransacted + '%' : '—';
+  var totMiss = missS + missB;
+  var vars = vcVars(key);
+  function mk(lbl, val, sub, cls) {
+    return '<div class="vkpi-card' + (cls ? ' ' + cls : '') + '" style="' + vars + '">'
+      + '<div class="vkpi-lbl">' + lbl + '</div>'
+      + '<div class="vkpi-val">' + val + '</div>'
+      + (sub ? '<div class="vkpi-sub">' + sub + '</div>' : '')
+      + '</div>';
+  }
+  el.innerHTML = [
+    mk('Total in Pipeline', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', ''),
+    mk('Onboarded',         fmt(compS + compB),   'Sellers: ' + fmt(compS) + ' · Buyers: ' + fmt(compB), 'vk-onboarded'),
+    mk('% Transacted',      pctTxn,               'Seller transacted rate', 'vk-transacted'),
+    mk('GSTIN Missing',     fmt(totMiss),          'Sellers: ' + fmt(missS) + ' · Buyers: ' + fmt(missB), totMiss > 0 ? 'vk-warn' : ''),
+  ].join('');
+  animateCounters(el);
+}
+
+function renderPipelinePair(key) {
+  var el = document.getElementById('vert-pipeline-pair');
+  if (!el) return;
+  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  if (!cfg || !DS || !DS.verticals) { el.innerHTML = ''; return; }
+  var vs = (DS.verticals || {})[key] || {};
+  var vb = (DB && DB.verticals || {})[key] || {};
+  el.innerHTML = buildInlinePipeCard(cfg, vs, 'Seller Pipeline', 'seller', 0)
+    + buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1);
+  animateCounters(el);
+}
+
+function buildInlinePipeCard(cfg, v, label, aud, idx) {
+  var lblCls = aud === 'seller' ? 'cc-pipe-lbl-seller' : 'cc-pipe-lbl-buyer';
+  var isActive = aud === selectedAud;
+  var attrs = ' style="--i:' + idx + ';' + vcVars(cfg.key) + '"'
+    + ' class="compare-card vpipe-card' + (isActive ? ' det-active' : '') + '"'
+    + ' onclick="setDetailAud(\'' + aud + '\')" role="button" tabindex="0"'
+    + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();setDetailAud(\'' + aud + '\')}"';
+  var hdr = '<div class="cc-hdr2"><span class="cc-pipe-lbl ' + lblCls + '">' + esc(label) + '</span></div>';
+  var tot = v.total || 0;
+  if (!tot) {
+    return '<div' + attrs + '>' + hdr + '<div class="no-data" style="padding:24px 0">No data</div></div>';
+  }
+  var hero = '<div class="cc-onb-hero"><span class="cc-onb-num">' + fmt(v.completed || 0) + '</span>'
+    + '<span class="cc-onb-sub">Onboarded</span></div>';
+  var pipeStats = '<div class="cc-pipe-stats">'
+    + '<div class="cc-pipe-stat ps-draft"><span class="cc-pipe-stat-lbl">Draft</span><span class="cc-pipe-stat-val">' + fmt(v.draft || 0) + '</span></div>'
+    + '<div class="cc-pipe-stat ps-review"><span class="cc-pipe-stat-lbl">In Review</span><span class="cc-pipe-stat-val">' + fmt(v.inReview || 0) + '</span></div>'
+    + '<div class="cc-pipe-stat ps-reject"><span class="cc-pipe-stat-lbl">Rejected</span><span class="cc-pipe-stat-val">' + fmt(v.rejected || 0) + '</span></div>'
+    + '</div>';
+  var topCats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; }).slice(0, 3);
+  var catRows = topCats.map(function(c) {
+    var parts = [];
+    if ((c.onboarded || 0) > 0) parts.push('<em>' + fmt(c.onboarded) + ' onboarded</em>');
+    if ((c.draft     || 0) > 0) parts.push(fmt(c.draft) + ' draft');
+    if ((c.inReview  || 0) > 0) parts.push(fmt(c.inReview) + ' review');
+    return '<div class="cc-cat-row"><span class="cc-cat-badge">' + esc(c.category) + '</span>'
+      + '<span class="cc-cat-detail">' + parts.join(' · ') + '</span></div>';
+  }).join('');
+  if (catRows) catRows = '<div class="cc-cat-rows">' + catRows + '</div>';
+  var statRows = [];
+  if (v.avgTAT        != null) statRows.push(['Avg TAT',       v.avgTAT + 'd',              '']);
+  if (v.pctTransacted != null) statRows.push(['% Transacted',  v.pctTransacted + '%',        '']);
+  if (v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '']);
+  if (v.withGST       != null) statRows.push(['GSTIN Active',  fmt(v.withGST),               '']);
+  if (v.missingGST    != null) statRows.push(['GSTIN Missing', fmt(v.missingGST),            v.missingGST > 0 ? 'cc-stat-bad' : '']);
+  var statsList = statRows.length
+    ? '<div class="cc-stat-list">' + statRows.map(function(r) {
+        return '<div class="cc-stat-row' + (r[2] ? ' ' + r[2] : '') + '">' + r[0] + '<b>' + r[1] + '</b></div>';
+      }).join('') + '</div>'
+    : '';
+  return '<div' + attrs + '>' + hdr + hero + pipeStats + catRows + statsList + '</div>';
+}
+
+// Render the inline detailed view section (replaces the full-screen overlay).
+function renderInlineDetail(key) {
+  var el = document.getElementById('vert-detail-section');
+  if (!el) return;
+  if (!key) { el.style.display = 'none'; return; }
+  var vcStyle = vcVars(key);
+  el.style.cssText = 'display:block;' + vcStyle;
+
+  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var aud = selectedAud || 'seller';
+  var rowCount = vertRows.length;
+
+  var audTabs = '<div class="aud-tabs">'
+    + '<button class="aud-tab' + (aud === 'seller' ? ' active' : '') + '" id="det-aud-s" onclick="setDetailAud(\'seller\')">Sellers</button>'
+    + '<button class="aud-tab' + (aud === 'buyer'  ? ' active' : '') + '" id="det-aud-b" onclick="setDetailAud(\'buyer\')">Buyers</button>'
+    + '</div>';
+
+  var head = '<div class="vds-head">'
+    + '<span class="vds-title">Detailed View' + (cfg ? ' · ' + esc(cfg.name) : '') + '</span>'
+    + audTabs
+    + (rowCount > 0 ? '<span class="vds-count">' + fmt(rowCount) + ' rows</span>' : '')
+    + '</div>';
+
+  var bodyContent;
+  if (vertRowsLoading) {
+    bodyContent = '<div style="padding:26px">'
+      + '<div class="sk-line" style="width:38%"></div>'
+      + '<div class="sk-line" style="width:86%"></div>'
+      + '<div class="sk-line" style="width:74%"></div>'
+      + '<div class="no-data plain" style="padding:14px 0 0">Loading records…</div></div>';
+  } else if (vertRowsError) {
+    bodyContent = '<div class="no-data plain" style="padding:32px">'
+      + '<div style="color:var(--red);font-weight:600;margin-bottom:6px">⚠ Could not load records</div>'
+      + '<div style="margin-bottom:14px">' + esc(vertRowsError) + '</div>'
+      + '<button class="vd-retry" onclick="vdRetryRows()">↻ Retry</button></div>';
+  } else if (vertRows.length) {
+    var vSrcD = aud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
+    var vD = (vSrcD && vSrcD[key]) || {};
+    var catSection = ((vD.categories || []).length > 0)
+      ? '<div class="cc-cap vd-cat-cap">Onboarded by Category</div>' + cardCategories(vD, 12)
+      : '';
+    var cols = [
+      ['id', 'ID'], ['name', 'Business Name'], ['category', 'Category'], ['vendorType', 'Vendor Type'],
+      ['status', 'Status'], ['gstin', 'GSTIN'], ['state', 'State'], ['createdDate', 'Created'],
+      ['onbDate', 'Onboarded'], ['tat', 'TAT'], ['txn', 'Transaction'],
+    ];
+    var filtersHtml = '<div class="vd-filters">'
+      + '<div class="vd-toggle">'
+      + '<button class="vd-toggle-btn' + (vdView === 'board' ? ' active' : '') + '" onclick="vdSetView(\'board\')">▦ Board</button>'
+      + '<button class="vd-toggle-btn' + (vdView === 'table' ? ' active' : '') + '" onclick="vdSetView(\'table\')">☰ Table</button>'
+      + '</div>'
+      + vdSelect('vdf-category', 'Category',    vdUnique(vertRows, 'category'),   vdF.category, null)
+      + vdSelect('vdf-vendor',   'Vendor Type', vdUnique(vertRows, 'vendorType'), vdF.vendor,   null)
+      + vdSelect('vdf-status',   'Status',      vdUnique(vertRows, 'status'),     vdF.status,   STATUS_LABELS)
+      + vdSelect('vdf-gst',      'GST',         ['Active', 'Inactive'],           vdF.gst,      null)
+      + '<input type="text" class="filter-input" id="vdf-search" placeholder="🔍 Search name / GSTIN / ID…" value="' + esc(vdF.search) + '" oninput="vdfSearchDeb()">'
+      + '<button class="vd-close" onclick="vdfClear()">✕ Clear</button>'
+      + '</div>';
+    bodyContent = catSection
+      + '<div id="cat-detail-wrap" style="display:none"></div>'
+      + filtersHtml
+      + '<div class="kb-wrap mt-16" id="vd-board-view"><div class="kb-board" id="vd-board"></div></div>'
+      + '<div class="table-wrap vd-table-wrap mt-16" id="vd-table-view"><table><thead><tr>'
+      + cols.map(function(c) {
+          return '<th data-key="' + c[0] + '" onclick="vdSortBy(\'' + c[0] + '\')" title="Sort by ' + esc(c[1]) + '">' + c[1] + '</th>';
+        }).join('')
+      + '</tr></thead><tbody id="vd-tbody"></tbody></table></div>'
+      + '<div class="vd-note" id="vd-note"></div>';
+  } else {
+    bodyContent = '<div class="no-data">No records for this vertical</div>';
+  }
+
+  el.innerHTML = head + '<div class="vds-body">' + bodyContent + '</div>';
+
+  if (vdF.category && vdF.category !== 'All') showCatDetail(vdF.category, true);
+  renderVdRecords();
+}
+
+// SELLERS / BUYERS toggle inside the detailed view section.
+function setDetailAud(aud) {
+  var key = activeVertKey || selectedVert;
+  if (selectedAud === aud && vertRows.length > 0 && !vertRowsLoading) {
+    // Already active — just scroll to the detail section
+    var el = document.getElementById('vert-detail-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+  selectedAud = aud;
+  renderPipelinePair(key);   // updates .det-active class on the cards
+  // Reset and reload rows for the new audience
+  vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+  vdSort = { key: '', dir: 1 };
+  vertRows = []; vertRowsLoading = true; vertRowsError = null;
+  _vertRowsPKey = null; ++_vertRowsGen;
+  var detEl = document.getElementById('vert-detail-section');
+  if (detEl) {
+    detEl.style.display = '';
+    setTimeout(function() { detEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+  }
+  renderInlineDetail(key);
+  loadVertRows(key);
+}
+
+// Redirect renderVertDetail() to the inline section (backward compat for existing callers).
+function renderVertDetail() {
+  var key = activeVertKey || selectedVert;
+  if (key) renderInlineDetail(key);
+}
+
+// Legacy buildCard kept for backward compat (e.g. snSelectVert) — not used in the new layout.
+var _gridAnimKey = null;
+function buildCard(cfg, v, pipelineLabel) {
     var tot = v.total || 0;
     var aud = pipelineLabel === 'Seller Pipeline' ? 'seller' : 'buyer';
     var lblCls = pipelineLabel === 'Seller Pipeline' ? 'cc-pipe-lbl-seller' : 'cc-pipe-lbl-buyer';
@@ -2182,59 +2520,35 @@ function renderVerticals() {
       + '</div>';
   }
 
-  // Emit: group header (spans 2 cols) + Seller card + Buyer card per vertical
-  grid.innerHTML = getVertCfg().map(function(cfg) {
-    var vs = (DS.verticals || {})[cfg.key] || {};
-    var vb = (DB && DB.verticals || {})[cfg.key] || {};
-    var groupHdr = '<div class="cc-vert-hdr">'
-      + '<span class="compare-source-badge">' + cfg.code + '</span>'
-      + '<span class="cc-vert-name">' + esc(cfg.name) + '</span>'
-      + '</div>';
-    return groupHdr
-      + buildCard(cfg, vs, 'Seller Pipeline')
-      + buildCard(cfg, vb, 'Buyer Pipeline');
-  }).join('');
-
-  var animKey = 'combined|' + currentPeriod + '|' + customStart + '|' + customEnd;
-  if (_gridAnimKey !== animKey && motionOK()) {
-    _gridAnimKey = animKey;
-    grid.classList.remove('animate');
-    void grid.offsetWidth;
-    grid.classList.add('animate');
-    clearTimeout(grid._animT);
-    grid._animT = setTimeout(function() { grid.classList.remove('animate'); }, 1100);
-  }
-  animateCounters(grid);
-}
-
 function openVertDetail(key, aud) {
   aud = aud || 'seller';
-  var isNew = (selectedVert !== key || selectedAud !== aud);
-  if (isNew) {
+  // If a different vertical tab — switch to it, which resets rows and re-renders.
+  if (activeVertKey !== key) {
+    selectedAud = aud;
+    activeVertKey = key;
+    selectedVert  = key;
     vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
     vdSort = { key: '', dir: 1 };
-    vertRows = [];
-    vertRowsLoading = true;  // show "Loading records…" on initial render
-    vertRowsError = null;
-    _vertRowsPKey = null;
-    ++_vertRowsGen;           // cancel any in-flight request for the old vertical
+    vertRows = []; vertRowsLoading = true; vertRowsError = null;
+    _vertRowsPKey = null; ++_vertRowsGen;
+    document.querySelectorAll('.vert-tab[data-key]').forEach(function(t) {
+      t.classList.toggle('active', t.dataset.key === key);
+    });
+    renderVertKPIs(key);
+    renderPipelinePair(key);
+    var detEl = document.getElementById('vert-detail-section');
+    if (detEl) detEl.style.display = '';
+    renderInlineDetail(key);
+    loadVertRows(key);
+  } else {
+    // Same vertical — just switch audience
+    setDetailAud(aud);
   }
-  selectedVert = key;
-  selectedAud  = aud;
-  renderVerticals();
-  renderVertDetail();
-  document.body.style.overflow = 'hidden';
-  var panel = document.getElementById('vert-detail');
-  if (panel) {
-    panel.scrollTop = 0;
-    // Entrance choreography — cascade plays once per open, then the class is
-    // removed so silent data refreshes re-render without replaying it.
-    panel.classList.add('vd-anim');
-    clearTimeout(panel._vdAnimT);
-    panel._vdAnimT = setTimeout(function() { panel.classList.remove('vd-anim'); }, 1000);
-  }
-  // Always trigger load on new vertical; also re-fetch if rows are empty and idle
-  if (isNew || (vertRows.length === 0 && !vertRowsLoading)) loadVertRows(key);
+  // Scroll to the detail section
+  setTimeout(function() {
+    var detEl = document.getElementById('vert-detail-section');
+    if (detEl) detEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 80);
 }
 
 function loadVertRows(key) {
@@ -2297,17 +2611,13 @@ function vdRetryRows() {
 }
 
 function closeVertDetail() {
-  selectedVert = null;
-  selectedAud  = 'seller';
-  vertRows = [];
-  vertRowsLoading = false;
-  vertRowsError = null;
-  _vertRowsPKey = null;
-  ++_vertRowsGen;
+  // In the new tab layout the detail section is always visible while a tab is active.
+  // This function is kept for backward compat (Escape key, switchView, etc.).
   document.body.style.overflow = '';
   var panel = document.getElementById('vert-detail');
   if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
-  renderVerticals();
+  var inlineDetail = document.getElementById('vert-detail-section');
+  if (inlineDetail) inlineDetail.style.display = 'none';
 }
 
 // Scroll to a vertical's inline story section, flashing it on arrival.
@@ -2464,119 +2774,8 @@ function vdSelect(id, label, options, current, labels) {
   return html + '</select></div>';
 }
 
-function renderVertDetail() {
-  var panel = document.getElementById('vert-detail');
-  if (!panel || !selectedVert || !D || !D.verticals) return;
-  var cfg = getVertCfg().filter(function(x) { return x.key === selectedVert; })[0];
-  var vSrc = selectedAud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
-  var v = vSrc && vSrc[selectedVert];
-  if (!cfg || !v) return;
-  var has = (v.total || 0) > 0;
-
-  // [label, value, semantic stage class] — the class tints the KPI tile
-  var metrics = [
-    ['Total Cases',    fmt(v.total || 0),                                              ''],
-    ['Onboarded',      fmt(v.completed || 0) + ' (' + (v.completionPct || 0) + '%)',   'k-onboarded'],
-    v.transacted != null ? ['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)', 'k-transacted'] : null,
-    v.totalTxnValue !== null && v.totalTxnValue !== undefined ? ['Txn Value', fmtINR(v.totalTxnValue), 'k-transacted'] : null,
-    ['In Review',      fmt(v.inReview || 0),                                           'k-review'],
-    ['Draft',          fmt(v.draft || 0),                                              'k-draft'],
-    ['Rejected',       fmt(v.rejected || 0),                                           'k-rejected'],
-    ['Avg TAT',        dOr(v.avgTAT, 'd'),                                             ''],
-    ['Onboarded (7d)', fmt(v.completedThisWeek || 0),                                  'k-onboarded'],
-    v.withGST    != null ? ['GST Active',   fmt(v.withGST),   'k-onboarded'] : null,
-    v.missingGST != null ? ['GST Inactive', fmt(v.missingGST), 'k-rejected'] : null,
-  ].filter(Boolean);
-
-  var funnelSection = has
-    ? '<div class="chart-card mt-16"><div class="chart-card-title">Onboarding Funnel'
-      + '<span class="muted-total">' + fmt(v.total || 0) + ' total · share of all cases</span></div>'
-      + funnelBig(v, cfg) + '</div>'
-    : '';
-
-  // Detail filters — local to this vertical's records (Period lives above the cards)
-  var rows = vertRows;
-  var filtersHtml = '<div class="vd-filters">'
-    + '<div class="vd-toggle">'
-    +   '<button class="vd-toggle-btn' + (vdView === 'board' ? ' active' : '') + '" onclick="vdSetView(\'board\')">▦ Board</button>'
-    +   '<button class="vd-toggle-btn' + (vdView === 'table' ? ' active' : '') + '" onclick="vdSetView(\'table\')">☰ Table</button>'
-    + '</div>'
-    + vdSelect('vdf-category', 'Category',    vdUnique(rows, 'category'),   vdF.category, null)
-    + vdSelect('vdf-vendor',   'Vendor Type', vdUnique(rows, 'vendorType'), vdF.vendor,   null)
-    + vdSelect('vdf-status',   'Status',      vdUnique(rows, 'status'),     vdF.status,   STATUS_LABELS)
-    + vdSelect('vdf-gst',      'GST',         ['Active', 'Inactive'],       vdF.gst,      null)
-    + '<input type="text" class="filter-input" id="vdf-search" placeholder="🔍 Search name / GSTIN / ID…" value="' + esc(vdF.search) + '" oninput="vdfSearchDeb()">'
-    + '<button class="vd-close" onclick="vdfClear()">✕ Clear</button>'
-    + '</div>';
-
-  var recordsHtml;
-  if (vertRowsLoading) {
-    // Sophisticated loading — shimmer rows instead of a bare message
-    recordsHtml = '<div style="padding:26px 2px 8px">'
-      + '<div class="sk-line" style="width:38%"></div>'
-      + '<div class="sk-line" style="width:86%"></div>'
-      + '<div class="sk-line" style="width:74%"></div>'
-      + '<div class="sk-line" style="width:80%"></div>'
-      + '<div class="no-data plain" style="padding:14px 0 0">Loading records…</div>'
-      + '</div>';
-  } else if (vertRowsError) {
-    recordsHtml = '<div class="no-data plain" style="padding:32px 0">'
-      + '<div style="color:var(--red);font-weight:600;margin-bottom:6px">⚠ Could not load records</div>'
-      + '<div style="margin-bottom:14px">' + esc(vertRowsError) + '</div>'
-      + '<button class="vd-retry" onclick="vdRetryRows()">↻ Retry</button>'
-      + '</div>';
-  } else if (rows.length) {
-    var cols = [
-      ['id', 'ID'], ['name', 'Business Name'], ['category', 'Category'], ['vendorType', 'Vendor Type'],
-      ['status', 'Status'], ['gstin', 'GSTIN'], ['state', 'State'], ['createdDate', 'Created'],
-      ['onbDate', 'Onboarded'], ['tat', 'TAT'], ['txn', 'Transaction'],
-    ];
-    recordsHtml = filtersHtml
-      + '<div class="kb-wrap mt-16" id="vd-board-view"><div class="kb-board" id="vd-board"></div></div>'
-      + '<div class="table-wrap vd-table-wrap mt-16" id="vd-table-view"><table><thead><tr>'
-      + cols.map(function(c) {
-          return '<th data-key="' + c[0] + '" onclick="vdSortBy(\'' + c[0] + '\')" title="Sort by ' + esc(c[1]) + '">' + c[1] + '</th>';
-        }).join('')
-      + '</tr></thead><tbody id="vd-tbody"></tbody></table></div>'
-      + '<div class="vd-note" id="vd-note"></div>';
-  } else {
-    recordsHtml = '<div class="no-data">No records yet for this vertical</div>';
-  }
-
-  var catSection = has && (v.categories && v.categories.length)
-    ? '<div class="cc-cap vd-cat-cap">Onboarded by Category</div>' + cardCategories(v, 12)
-    : '';
-
-  panel.style.cssText = 'display:block;' + vcVars(selectedVert);   // signature colour for badge + accents
-  var audBadgeCls = selectedAud === 'seller' ? 'cc-pipe-lbl-seller' : 'cc-pipe-lbl-buyer';
-  var audBadgeTxt = selectedAud === 'seller' ? 'Seller Pipeline' : 'Buyer Pipeline';
-  panel.innerHTML = '<div class="vd-page-inner">'
-    + '<div class="vd-head">'
-    + '<button class="vd-back" onclick="closeVertDetail()">Back</button>'
-    + '<span class="compare-source-badge">' + cfg.code + '</span>'
-    + '<span class="cc-pipe-lbl ' + audBadgeCls + '">' + audBadgeTxt + '</span>'
-    + '<div><div class="vd-title">' + esc(cfg.name) + '</div>'
-    + (cfg.sub ? '<div class="compare-sub">' + esc(cfg.sub) + '</div>' : '')
-    + '</div>'
-    + '</div>'
-    + catSection
-    + '<div id="cat-detail-wrap" style="display:none"></div>'
-    + '<div class="vd-kpis">'
-    + metrics.map(function(m, mi) {
-        return '<div class="vd-kpi' + (m[2] ? ' ' + m[2] : '') + '" style="--kd:' + (mi * 35) + '"><div class="vd-kpi-val">' + m[1] + '</div><div class="vd-kpi-lbl">' + m[0] + '</div></div>';
-      }).join('')
-    + '</div>'
-    + funnelSection
-    + recordsHtml
-    + '</div>';
-
-  panel.style.display = 'block';
-
-  // Keep an open category breakdown alive across re-renders (quiet = no replay).
-  if (vdF.category && vdF.category !== 'All') showCatDetail(vdF.category, true);
-
-  renderVdRecords();
-}
+// renderVertDetail() is defined above (redirects to renderInlineDetail).
+// The old full-overlay implementation has been removed in favour of the inline detail section.
 
 function vdFilteredRows() {
   var _fvd = selectedAud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
