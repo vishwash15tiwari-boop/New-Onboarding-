@@ -1571,8 +1571,6 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#D64545)}
       </span>
     </span>
 
-    <!-- GST Payables financial-year filter -->
-    <div class="gp-year-chips" id="gp-year-chips" style="display:none"></div>
   </div>
 
   <!-- ── VIEW: ONBOARDING ── -->
@@ -1846,12 +1844,12 @@ function updateViewChrome() {
   var ov = document.getElementById('tab-overview');
   var gt = document.getElementById('tab-gst');
   var pc = document.getElementById('onb-period-controls');
-  var yc = document.getElementById('gp-year-chips');
+
   var vt = document.getElementById('view-title');
   if (ov) ov.style.display = isGst ? 'none' : '';
   if (gt) gt.style.display = isGst ? 'block' : 'none';
   if (pc) pc.style.display = isGst ? 'none' : 'inline-flex';
-  if (yc) yc.style.display = isGst ? 'inline-flex' : 'none';
+
   if (vt) vt.textContent = isGst ? 'GST Payables' : 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
   var g = document.getElementById('aud-gst');
@@ -3554,7 +3552,6 @@ function gstFYTable() {
 
 function renderGST() {
   if (!GST) { renderGSTSkeleton(); return; }
-  renderGSTYearChips();
   renderGSTLastUpdated();
   var host = document.getElementById('tab-gst');
   if (!host) return;
@@ -3617,7 +3614,6 @@ function renderGSTYearChips() {
 function gpSetYear(y) {
   if (y === gpYear) return;
   gpYear = y;
-  renderGSTYearChips();
   var swrDone = false;
   try {
     var stored = localStorage.getItem(STORE_PFX + 'gst_' + y);
