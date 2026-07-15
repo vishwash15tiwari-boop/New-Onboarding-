@@ -1649,7 +1649,7 @@ function loadData(silent) {
         vertRows = []; vertRowsLoading = false; vertRowsError = null;
         loadVertRows(selectedVert);
       }
-      renderAll();
+      try { renderAll(); } catch (e) { console.error('renderAll error', e); }
     }
     done();
   }
@@ -1738,8 +1738,19 @@ function switchView(view) {
 }
 
 function hideLoading() {
-  document.getElementById('loading-overlay').classList.add('hidden');
+  var el = document.getElementById('loading-overlay');
+  if (el) el.classList.add('hidden');
 }
+// Safety net — if neither callback fires within 20 s (script timeout, network
+// issue, or an unhandled render error), dismiss the overlay so the app isn't
+// stuck on the loading screen. A retry button will be visible after dismissal.
+setTimeout(function() {
+  var el = document.getElementById('loading-overlay');
+  if (el && !el.classList.contains('hidden')) {
+    el.classList.add('hidden');
+    console.warn('loading-overlay force-dismissed after 20 s');
+  }
+}, 20000);
 function showError(msg, persistent) {
   console.error(msg);
   var ov = document.getElementById('loading-overlay');
@@ -2419,13 +2430,14 @@ function renderVertDetail() {
   if (key) renderInlineDetail(key);
 }
 
-// Legacy buildCard kept for backward compat (e.g. snSelectVert) — not used in the new layout.
+// Legacy buildCard — not used in the new layout.
 var _gridAnimKey = null;
+var _bcIdx = 0;
 function buildCard(cfg, v, pipelineLabel) {
     var tot = v.total || 0;
     var aud = pipelineLabel === 'Seller Pipeline' ? 'seller' : 'buyer';
     var lblCls = pipelineLabel === 'Seller Pipeline' ? 'cc-pipe-lbl-seller' : 'cc-pipe-lbl-buyer';
-    var attrs = ' style="--i:' + (idx++) + ';' + vcVars(cfg.key) + '" tabindex="0" role="button"'
+    var attrs = ' style="--i:' + (_bcIdx++) + ';' + vcVars(cfg.key) + '" tabindex="0" role="button"'
       + ' aria-label="' + esc(cfg.name) + ' ' + esc(pipelineLabel) + ' details"'
       + ' onclick="openVertDetail(\'' + cfg.key + '\',\'' + aud + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openVertDetail(\'' + cfg.key + '\',\'' + aud + '\')}"';
@@ -3306,28 +3318,28 @@ function gstEmptyState() {
       return '<tr><td style="padding:3px 12px 3px 0;color:var(--gp-ink2)">' + esc(k) + '</td>'
         + '<td style="padding:3px 0;font-weight:600;color:' + (v ? 'var(--gp-green)' : 'var(--gp-red)') + '">' + esc(v || '‹unmapped›') + '</td></tr>';
     }).join('') : '';
-    return ‘<div class=”gp-card” style=”padding:40px 28px;max-width:760px;margin:0 auto”>’
-      + ‘<div style=”margin-bottom:18px”><button onclick=”switchView(\’onboarding\’)” style=”display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:999px;border:1px solid var(--gp-border);background:var(--gp-card);color:var(--gp-ink2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit”>← Back to Dashboard</button></div>’
-      + ‘<div style=”text-align:center;font-size:32px;margin-bottom:10px”>🔍</div>’
-      + ‘<div style=”text-align:center;color:var(--gp-ink);font-weight:700;font-size:16px;margin-bottom:6px”>Data found, but the columns weren\’t recognized</div>’
-      + ‘<div style=”text-align:center;color:var(--gp-ink2);max-width:560px;margin:0 auto 18px;line-height:1.5”>Read <b>’ + fmt(dbg.rawRows) + ‘</b> row(s) from tab “<b>’ + esc(dbg.tab || ‘’) + ‘</b>”, but none had a recognizable Vendor / GST No / balance column. The column names below need mapping — share this with your developer.</div>’
-      + ‘<div style=”background:var(--gp-card2);border:1px solid var(--gp-border);border-radius:12px;padding:14px 16px;margin-bottom:16px”>’
-      +   ‘<div style=”font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gp-ink3);margin-bottom:8px”>Detected headers</div>’
-      +   ‘<div style=”font-size:12.5px;color:var(--gp-ink);word-break:break-word”>’ + (dbg.headers && dbg.headers.length ? esc(dbg.headers.join(‘ · ‘)) : ‘‹none›’) + ‘</div>’
-      + ‘</div>’
-      + ‘<div style=”background:var(--gp-card2);border:1px solid var(--gp-border);border-radius:12px;padding:14px 16px;margin-bottom:18px;overflow-x:auto”>’
-      +   ‘<div style=”font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gp-ink3);margin-bottom:8px”>Field mapping</div>’
-      +   ‘<table style=”font-size:12px;border-collapse:collapse”>’ + mapRows + ‘</table>’
-      + ‘</div>’
-      + ‘<div style=”text-align:center”><button onclick=”loadGSTData(false)” style=”padding:9px 22px;border-radius:11px;border:1px solid var(--gp-orange);background:var(--gp-orange);color:#fff;font-size:13px;font-weight:600;cursor:pointer”>↻ Check again</button></div>’
-      + ‘</div>’;
+    return '<div class="gp-card" style="padding:40px 28px;max-width:760px;margin:0 auto">'
+      + '<div style="margin-bottom:18px"><button onclick="switchView(\'onboarding\')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:999px;border:1px solid var(--gp-border);background:var(--gp-card);color:var(--gp-ink2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit">← Back to Dashboard</button></div>'
+      + '<div style="text-align:center;font-size:32px;margin-bottom:10px">🔍</div>'
+      + '<div style="text-align:center;color:var(--gp-ink);font-weight:700;font-size:16px;margin-bottom:6px">Data found, but the columns weren\'t recognized</div>'
+      + '<div style="text-align:center;color:var(--gp-ink2);max-width:560px;margin:0 auto 18px;line-height:1.5">Read <b>' + fmt(dbg.rawRows) + '</b> row(s) from tab "<b>' + esc(dbg.tab || '') + '</b>", but none had a recognizable Vendor / GST No / balance column. The column names below need mapping — share this with your developer.</div>'
+      + '<div style="background:var(--gp-card2);border:1px solid var(--gp-border);border-radius:12px;padding:14px 16px;margin-bottom:16px">'
+      +   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gp-ink3);margin-bottom:8px">Detected headers</div>'
+      +   '<div style="font-size:12.5px;color:var(--gp-ink);word-break:break-word">' + (dbg.headers && dbg.headers.length ? esc(dbg.headers.join(' · ')) : '‹none›') + '</div>'
+      + '</div>'
+      + '<div style="background:var(--gp-card2);border:1px solid var(--gp-border);border-radius:12px;padding:14px 16px;margin-bottom:18px;overflow-x:auto">'
+      +   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gp-ink3);margin-bottom:8px">Field mapping</div>'
+      +   '<table style="font-size:12px;border-collapse:collapse">' + mapRows + '</table>'
+      + '</div>'
+      + '<div style="text-align:center"><button onclick="loadGSTData(false)" style="padding:9px 22px;border-radius:11px;border:1px solid var(--gp-orange);background:var(--gp-orange);color:#fff;font-size:13px;font-weight:600;cursor:pointer">↻ Check again</button></div>'
+      + '</div>';
   }
-  return '<div class=”gp-card” style=”padding:56px 24px;text-align:center”>'
-    + '<div style=”margin-bottom:24px”><button onclick=”switchView(\'onboarding\')” style=”display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:999px;border:1px solid var(--gp-border);background:var(--gp-card);color:var(--gp-ink2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit”>← Back to Dashboard</button></div>'
-    + '<div style=”font-size:34px;margin-bottom:12px”>🧾</div>'
-    + '<div style=”color:var(--gp-ink);font-weight:700;font-size:16px;margin-bottom:6px”>Vendor Payables sheet has no data yet</div>'
-    + '<div style=”color:var(--gp-ink2);max-width:520px;margin:0 auto 20px;line-height:1.5”>Once the “Vendor Payables” tab of the GST Payables sheet is populated, this dashboard fills in automatically on the next refresh (within ~5 minutes), or hit refresh below.</div>'
-    + '<button onclick=”loadGSTData(false)” style=”padding:9px 22px;border-radius:11px;border:1px solid var(--gp-orange);background:var(--gp-orange);color:#fff;font-size:13px;font-weight:600;cursor:pointer”>↻ Check again</button>'
+  return '<div class="gp-card" style="padding:56px 24px;text-align:center">'
+    + '<div style="margin-bottom:24px"><button onclick="switchView(\'onboarding\')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:999px;border:1px solid var(--gp-border);background:var(--gp-card);color:var(--gp-ink2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit">← Back to Dashboard</button></div>'
+    + '<div style="font-size:34px;margin-bottom:12px">🧾</div>'
+    + '<div style="color:var(--gp-ink);font-weight:700;font-size:16px;margin-bottom:6px">Vendor Payables sheet has no data yet</div>'
+    + '<div style="color:var(--gp-ink2);max-width:520px;margin:0 auto 20px;line-height:1.5">Once the "Vendor Payables" tab of the GST Payables sheet is populated, this dashboard fills in automatically on the next refresh (within ~5 minutes), or hit refresh below.</div>'
+    + '<button onclick="loadGSTData(false)" style="padding:9px 22px;border-radius:11px;border:1px solid var(--gp-orange);background:var(--gp-orange);color:#fff;font-size:13px;font-weight:600;cursor:pointer">↻ Check again</button>'
     + '</div>';
 }
 
