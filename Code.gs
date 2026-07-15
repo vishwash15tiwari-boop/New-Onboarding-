@@ -771,33 +771,46 @@ function gpOpenSheet_() {
 }
 
 // GST-specific sheet reader that auto-detects the header row.
-// Scans the first 15 rows and picks the one with the most cells matching
-// known GST_FIELDS variant names — handles report-title rows above the table.
+// Strategy: skip rows where every non-empty cell is a number (title/total rows);
+// use the first row that has at least one text cell and more text cells than
+// numeric cells. This reliably handles sheets with a report-title row above
+// the actual column header row (headers in row 2, data rows 3+).
 function gpReadSheet_(sheet) {
   var vals = sheet.getDataRange().getValues();
-  if (!vals.length) return { headers: [], rows: [] };
-  var knownVariants = {};
-  Object.keys(GST_FIELDS).forEach(function(k) {
-    GST_FIELDS[k].forEach(function(v) { knownVariants[v] = true; });
-  });
-  var bestRow = 0, bestScore = 0;
+  if (!vals.length) return { headers: [], rawHeaders: [], rows: [], headerRowIdx: 0 };
+
+  var headerRowIdx = 0;
   var limit = Math.min(15, vals.length);
   for (var i = 0; i < limit; i++) {
-    var score = 0;
+    var textCnt = 0, numCnt = 0;
     vals[i].forEach(function(cell) {
-      var n = String(cell || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-      if (n && knownVariants[n]) score++;
+      if (cell === '' || cell === null || cell === undefined) return;
+      var s = String(cell).trim();
+      if (!s) return;
+      // Treat Dates and pure numbers as "numeric"
+      if (cell instanceof Date || typeof cell === 'number' ||
+          (s !== '' && !isNaN(parseFloat(s)) && isFinite(s.replace(/,/g, '')))) {
+        numCnt++;
+      } else {
+        textCnt++;
+      }
     });
-    if (score > bestScore) { bestScore = score; bestRow = i; }
-    if (score >= 3) break;
+    // First row with at least one text cell and more text than numbers → header row
+    if (textCnt > 0 && textCnt >= numCnt) {
+      headerRowIdx = i;
+      break;
+    }
   }
-  var headers = vals[bestRow].map(function(h) {
-    return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+  var rawCells = vals[headerRowIdx];
+  var rawHeaders = rawCells.map(function(h) { return String(h || '').trim(); });
+  var headers = rawHeaders.map(function(h) {
+    return h.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
   });
-  var rows = vals.slice(bestRow + 1).filter(function(row) {
+  var rows = vals.slice(headerRowIdx + 1).filter(function(row) {
     return row.some(function(c) { return c !== '' && c !== null && c !== undefined; });
   });
-  return { headers: headers, rows: rows };
+  return { headers: headers, rawHeaders: rawHeaders, rows: rows, headerRowIdx: headerRowIdx };
 }
 
 // Read + normalize the vendor rows from the GST Payables sheet.
@@ -841,7 +854,7 @@ function gpReadVendors_() {
   // header-mapping miss on the name/GST columns can't silently hide populated
   // rows that clearly carry payables data.
   }).filter(function(r) { return r.name || r.gstNo || r.total > 0; });
-  return { vendors: vendors, headers: raw.headers, rawRowCount: raw.rows.length, tab: sheet.getName(), mapping: mapping };
+  return { vendors: vendors, headers: raw.headers, rawHeaders: raw.rawHeaders, rawRowCount: raw.rows.length, headerRowIdx: raw.headerRowIdx, tab: sheet.getName(), mapping: mapping };
 }
 
 // Entry point — aggregated GST Payables dashboard for the requested FY filter.
@@ -850,7 +863,7 @@ function getGSTPayablesData(filtersJson) {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var year = f.year || 'All';
 
-    var cacheKey = 'gstpay_v2_' + JSON.stringify([year]);
+    var cacheKey = 'gstpay_v4_' + JSON.stringify([year]);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -913,7 +926,7 @@ function getGSTPayablesData(filtersJson) {
       // Diagnostics — lets the UI (and you) see the tab read, how many raw rows
       // it held, the actual column headers, and how each mapped. Column names
       // only; no row data leaks here.
-      debug: { tab: read.tab, rawRows: read.rawRowCount, headers: read.headers, mapping: read.mapping },
+      debug: { tab: read.tab, rawRows: read.rawRowCount, headers: read.headers, rawHeaders: read.rawHeaders, headerRowIdx: read.headerRowIdx, mapping: read.mapping },
     };
 
     var s = JSON.stringify(out);
