@@ -880,7 +880,7 @@ function getGSTPayablesData(filtersJson) {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var year = f.year || 'All';
 
-    var cacheKey = 'gstpay_v8_' + JSON.stringify([year]);
+    var cacheKey = 'gstpay_v9_' + JSON.stringify([year]);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -906,8 +906,28 @@ function getGSTPayablesData(filtersJson) {
     });
     var fyList = Object.keys(fyBreakMap).sort();
 
-    // Year filter: include vendors who have a non-zero amount in the selected year.
-    var rows = (year === 'All') ? all : all.filter(function(r) { return (r.yearAmounts || {})[year] > 0; });
+    // Year filter: include vendors with a non-zero amount in the selected year,
+    // and replace total/material/gst with that year's specific amounts.
+    var rows;
+    if (year === 'All') {
+      rows = all;
+    } else {
+      rows = all.filter(function(r) { return (r.yearAmounts || {})[year] > 0; })
+        .map(function(r) {
+          var yearAmt  = r.yearAmounts[year] || 0;
+          var matRatio = r.total > 0 ? r.material / r.total : 0;
+          var gstRatio = r.total > 0 ? r.gst      / r.total : 0;
+          return {
+            name: r.name, gstNo: r.gstNo, gstStatus: r.gstStatus,
+            vertical: r.vertical, msme: r.msme, state: r.state,
+            total:    yearAmt,
+            material: Math.round(yearAmt * matRatio),
+            gst:      Math.round(yearAmt * gstRatio),
+            sda: r.sda, ledger: r.ledger, osv: r.osv,
+            itcClosed: r.itcClosed, itcCheck: r.itcCheck,
+          };
+        });
+    }
 
     var totalOut = 0, matSum = 0, gstSum = 0;
     var statusMap = {}, vertMap = {}, msmeMap = {};
