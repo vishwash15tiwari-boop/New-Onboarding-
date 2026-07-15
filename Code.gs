@@ -770,13 +770,43 @@ function gpOpenSheet_() {
   return sheets[0];
 }
 
+// GST-specific sheet reader that auto-detects the header row.
+// Scans the first 15 rows and picks the one with the most cells matching
+// known GST_FIELDS variant names — handles report-title rows above the table.
+function gpReadSheet_(sheet) {
+  var vals = sheet.getDataRange().getValues();
+  if (!vals.length) return { headers: [], rows: [] };
+  var knownVariants = {};
+  Object.keys(GST_FIELDS).forEach(function(k) {
+    GST_FIELDS[k].forEach(function(v) { knownVariants[v] = true; });
+  });
+  var bestRow = 0, bestScore = 0;
+  var limit = Math.min(15, vals.length);
+  for (var i = 0; i < limit; i++) {
+    var score = 0;
+    vals[i].forEach(function(cell) {
+      var n = String(cell || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      if (n && knownVariants[n]) score++;
+    });
+    if (score > bestScore) { bestScore = score; bestRow = i; }
+    if (score >= 3) break;
+  }
+  var headers = vals[bestRow].map(function(h) {
+    return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  });
+  var rows = vals.slice(bestRow + 1).filter(function(row) {
+    return row.some(function(c) { return c !== '' && c !== null && c !== undefined; });
+  });
+  return { headers: headers, rows: rows };
+}
+
 // Read + normalize the vendor rows from the GST Payables sheet.
 // Returns the vendors plus diagnostics (tab name, raw row count, headers,
 // resolved field mapping) so the UI can distinguish a truly empty sheet from
 // a header-mapping miss, and surface the real column names for verification.
 function gpReadVendors_() {
   var sheet = gpOpenSheet_();
-  var raw = readSheetObj_(sheet);
+  var raw = gpReadSheet_(sheet);
   var idx = buildIndex(raw.headers);
   var mapping = {};
   Object.keys(GST_FIELDS).forEach(function(k) { mapping[k] = gpField_(idx, GST_FIELDS[k]) || null; });
@@ -900,7 +930,7 @@ function diagnoseGSTPayables() {
   try {
     var ss = SpreadsheetApp.openById(GST_PAYABLES.SHEET_ID);
     var sheet = gpOpenSheet_();
-    var raw = readSheetObj_(sheet);
+    var raw = gpReadSheet_(sheet);
     var idx = buildIndex(raw.headers);
     Logger.log('Spreadsheet: ' + ss.getName());
     Logger.log('Tab read:    ' + sheet.getName());
