@@ -823,38 +823,57 @@ function gpReadVendors_() {
   var idx = buildIndex(raw.headers);
   var mapping = {};
   Object.keys(GST_FIELDS).forEach(function(k) { mapping[k] = gpField_(idx, GST_FIELDS[k]) || null; });
+
+  // Detect financial-year columns by their raw header names (e.g. "2021-22",
+  // "22-23", "2021-2022"). Normalised headers have the dash stripped so we
+  // must look at rawHeaders. Each such column holds the outstanding amount for
+  // that vendor in that financial year; 0 means none.
+  var FY_RE = /^(?:fy\s*)?(\d{2,4})\s*[-\/]\s*(\d{2,4})$/i;
+  var yearCols = [];
+  raw.rawHeaders.forEach(function(rh, ci) {
+    var m = String(rh || '').trim().match(FY_RE);
+    if (!m) return;
+    var y1 = m[1].length === 4 ? m[1].slice(2) : m[1];
+    var y2 = m[2].length === 4 ? m[2].slice(2) : m[2];
+    yearCols.push({ colIdx: ci, fy: 'FY ' + y1 + '-' + y2 });
+  });
+
   var vendors = raw.rows.map(function(row) {
     var total = gpNum_(gpVal_(row, idx, GST_FIELDS.total));
     var hasMat = gpField_(idx, GST_FIELDS.material) !== null;
     var hasGst = gpField_(idx, GST_FIELDS.gst) !== null;
     var mat = hasMat ? gpNum_(gpVal_(row, idx, GST_FIELDS.material)) : null;
     var gst = hasGst ? gpNum_(gpVal_(row, idx, GST_FIELDS.gst)) : null;
-    // Fill the missing component when only one of the two is present.
     if (mat === null && gst !== null) mat = total - gst;
     if (gst === null && mat !== null) gst = total - mat;
     if (!total && (mat || gst)) total = (mat || 0) + (gst || 0);
+
+    // Per-year outstanding from the year columns. 0 values are omitted.
+    var yearAmounts = {};
+    yearCols.forEach(function(yc) {
+      var v = gpNum_(row[yc.colIdx]);
+      if (v) yearAmounts[yc.fy] = v;
+    });
+
     return {
-      name:      String(gpVal_(row, idx, GST_FIELDS.name) || '').trim(),
-      gstNo:     String(gpVal_(row, idx, GST_FIELDS.gstNo) || '').trim(),
-      gstStatus: String(gpVal_(row, idx, GST_FIELDS.gstStatus) || '').trim() || 'Unknown',
-      vertical:  String(gpVal_(row, idx, GST_FIELDS.vertical) || '').trim() || 'Others',
-      msme:      String(gpVal_(row, idx, GST_FIELDS.msme) || '').trim() || 'Not Registered',
-      state:     String(gpVal_(row, idx, GST_FIELDS.state) || '').trim(),
-      total:     total,
-      material:  mat || 0,
-      gst:       gst || 0,
-      fy:        gpNormFY_(gpVal_(row, idx, GST_FIELDS.fy)),
-      sda:       gpBool_(gpVal_(row, idx, GST_FIELDS.sda)),
-      ledger:    gpBool_(gpVal_(row, idx, GST_FIELDS.ledger)),
-      osv:       gpBool_(gpVal_(row, idx, GST_FIELDS.osv)),
-      itcClosed: gpBool_(gpVal_(row, idx, GST_FIELDS.itcClosed)),
-      itcCheck:  String(gpVal_(row, idx, GST_FIELDS.itcCheck) || '').trim(),
+      name:        String(gpVal_(row, idx, GST_FIELDS.name) || '').trim(),
+      gstNo:       String(gpVal_(row, idx, GST_FIELDS.gstNo) || '').trim(),
+      gstStatus:   String(gpVal_(row, idx, GST_FIELDS.gstStatus) || '').trim() || 'Unknown',
+      vertical:    String(gpVal_(row, idx, GST_FIELDS.vertical) || '').trim() || 'Others',
+      msme:        String(gpVal_(row, idx, GST_FIELDS.msme) || '').trim() || 'Not Registered',
+      state:       String(gpVal_(row, idx, GST_FIELDS.state) || '').trim(),
+      total:       total,
+      material:    mat || 0,
+      gst:         gst || 0,
+      yearAmounts: yearAmounts,
+      sda:         gpBool_(gpVal_(row, idx, GST_FIELDS.sda)),
+      ledger:      gpBool_(gpVal_(row, idx, GST_FIELDS.ledger)),
+      osv:         gpBool_(gpVal_(row, idx, GST_FIELDS.osv)),
+      itcClosed:   gpBool_(gpVal_(row, idx, GST_FIELDS.itcClosed)),
+      itcCheck:    String(gpVal_(row, idx, GST_FIELDS.itcCheck) || '').trim(),
     };
-  // Keep a row if it has an identity (name/GST) OR a positive balance — so a
-  // header-mapping miss on the name/GST columns can't silently hide populated
-  // rows that clearly carry payables data.
   }).filter(function(r) { return r.name || r.gstNo || r.total > 0; });
-  return { vendors: vendors, headers: raw.headers, rawHeaders: raw.rawHeaders, rawRowCount: raw.rows.length, headerRowIdx: raw.headerRowIdx, tab: sheet.getName(), mapping: mapping };
+  return { vendors: vendors, yearCols: yearCols, headers: raw.headers, rawHeaders: raw.rawHeaders, rawRowCount: raw.rows.length, headerRowIdx: raw.headerRowIdx, tab: sheet.getName(), mapping: mapping };
 }
 
 // Entry point — aggregated GST Payables dashboard for the requested FY filter.
@@ -863,7 +882,7 @@ function getGSTPayablesData(filtersJson) {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var year = f.year || 'All';
 
-    var cacheKey = 'gstpay_v5_' + JSON.stringify([year]);
+    var cacheKey = 'gstpay_v7_' + JSON.stringify([year]);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -871,22 +890,26 @@ function getGSTPayablesData(filtersJson) {
     var read = gpReadVendors_();
     var all = read.vendors;
 
-    // Aging + FY breakdown computed across ALL rows (unfiltered) so the year
-    // timeline and year-wise table always show the full picture.
-    var agingMap = {}, fyBreakMap = {};
+    // FY breakdown: sum each year column across all vendors (unfiltered).
+    // Material/GST per year derived from each vendor's overall ratio.
+    var fyBreakMap = {};
     all.forEach(function(r) {
-      if (!r.fy) return;
-      agingMap[r.fy] = (agingMap[r.fy] || 0) + r.total;
-      if (!fyBreakMap[r.fy]) fyBreakMap[r.fy] = { total: 0, material: 0, gst: 0, vendors: 0 };
-      fyBreakMap[r.fy].total    += r.total;
-      fyBreakMap[r.fy].material += r.material;
-      fyBreakMap[r.fy].gst      += r.gst;
-      fyBreakMap[r.fy].vendors  += 1;
+      var matRatio = r.total > 0 ? r.material / r.total : 0;
+      var gstRatio = r.total > 0 ? r.gst      / r.total : 0;
+      Object.keys(r.yearAmounts || {}).forEach(function(fy) {
+        var amt = r.yearAmounts[fy] || 0;
+        if (!amt) return;
+        if (!fyBreakMap[fy]) fyBreakMap[fy] = { total: 0, material: 0, gst: 0, vendors: 0 };
+        fyBreakMap[fy].total    += amt;
+        fyBreakMap[fy].material += amt * matRatio;
+        fyBreakMap[fy].gst      += amt * gstRatio;
+        fyBreakMap[fy].vendors  += 1;
+      });
     });
-    var fyList = Object.keys(agingMap).sort();
+    var fyList = Object.keys(fyBreakMap).sort();
 
-    // Everything else respects the active year filter.
-    var rows = (year === 'All') ? all : all.filter(function(r) { return r.fy === year; });
+    // Year filter: include vendors who have a non-zero amount in the selected year.
+    var rows = (year === 'All') ? all : all.filter(function(r) { return (r.yearAmounts || {})[year] > 0; });
 
     var totalOut = 0, matSum = 0, gstSum = 0;
     var statusMap = {}, vertMap = {}, msmeMap = {};
@@ -920,10 +943,10 @@ function getGSTPayablesData(filtersJson) {
       gstBalance: gstSum,
       materialShare: totalOut ? Math.round(matSum / totalOut * 100) : 0,
       gstShare:      totalOut ? Math.round(gstSum / totalOut * 100) : 0,
-      aging:         fyList.map(function(fy) { return { fy: fy, value: agingMap[fy] }; }),
+      aging:         fyList.map(function(fy) { return { fy: fy, value: fyBreakMap[fy].total }; }),
       fyBreakdown:   fyList.map(function(fy) {
-        var b = fyBreakMap[fy] || {};
-        return { fy: fy, total: b.total || 0, material: b.material || 0, gst: b.gst || 0, vendors: b.vendors || 0 };
+        var b = fyBreakMap[fy];
+        return { fy: fy, total: b.total, material: Math.round(b.material), gst: Math.round(b.gst), vendors: b.vendors };
       }),
       gstStatus:  toList(statusMap, 'count'),
       verticals:  toList(vertMap, 'value'),
@@ -938,7 +961,7 @@ function getGSTPayablesData(filtersJson) {
       // Diagnostics — lets the UI (and you) see the tab read, how many raw rows
       // it held, the actual column headers, and how each mapped. Column names
       // only; no row data leaks here.
-      debug: { tab: read.tab, rawRows: read.rawRowCount, headers: read.headers, rawHeaders: read.rawHeaders, headerRowIdx: read.headerRowIdx, mapping: read.mapping },
+      debug: { tab: read.tab, rawRows: read.rawRowCount, headers: read.headers, rawHeaders: read.rawHeaders, headerRowIdx: read.headerRowIdx, mapping: read.mapping, yearCols: (read.yearCols || []).map(function(c) { return c.fy; }) },
     };
 
     var s = JSON.stringify(out);

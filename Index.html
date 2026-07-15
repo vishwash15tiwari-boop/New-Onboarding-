@@ -780,6 +780,11 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 .gp-fy-val{font-size:14px;font-weight:800;color:var(--gp-ink);letter-spacing:-.4px;margin:2px 0 5px;font-variant-numeric:tabular-nums}
 .gp-fy-track{height:3px;border-radius:3px;background:var(--gp-bg2);overflow:hidden}
 .gp-fy-bar{height:100%;border-radius:3px;background:var(--gp-orange);transition:width .7s cubic-bezier(.4,0,.2,1)}
+.gp-fy-breakdown{margin-top:7px;display:flex;flex-direction:column;gap:3px}
+.gp-fy-brow{display:flex;align-items:center;gap:3px;font-size:9.5px;line-height:1.3}
+.gp-fy-blbl{color:var(--gp-ink3);font-weight:500;min-width:40px;flex-shrink:0}
+.gp-fy-bamt{font-weight:700;font-variant-numeric:tabular-nums;flex:1;text-align:right}
+.gp-fy-bpct{font-size:8.5px;color:var(--gp-ink3);font-weight:500;min-width:24px;text-align:right}
 
 /* ── Charts row: donut / bars / compliance ── */
 .gp-charts-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
@@ -3554,7 +3559,7 @@ function renderGST() {
   if (!host) return;
   // Whole sheet empty / not populated yet → clean single message, not a wall of zeros.
   if (!GST.totalVendors) { host.innerHTML = gstEmptyState(); return; }
-  host.innerHTML = gstBackRow() + gstKPIs() + gstFYTable() + gstAgingSection() + gstChartsRow() + gstFiltersRow() + gstTableShell();
+  host.innerHTML = gstBackRow() + gstKPIs() + gstAgingSection() + gstChartsRow() + gstFiltersRow() + gstTableShell();
   animateGSTCounters();
   renderGSTVendorTable();
 }
@@ -3652,17 +3657,31 @@ function gpKpiCard(label, value, sub, barLabel, pct, tone) {
 // ── Aging by financial year (line/area chart + FY cards) ──
 function gstAgingSection() {
   var g = GST;
-  var maxAging = Math.max.apply(null, g.aging.map(function(x) { return x.value; }).concat([1]));
-  var fyCards = g.aging.length
-    ? g.aging.slice().reverse().map(function(a) {
-        var w = Math.round(a.value / maxAging * 100);
-        return '<div class="gp-fy-card' + (gpYear === a.fy ? ' active' : '') + '" onclick="gpSetYear(\'' + a.fy + '\')" title="Filter to ' + esc(fyFull(a.fy)) + '">'
-          + '<div class="gp-fy-label">' + esc(fyFull(a.fy)) + '</div>'
-          + '<div class="gp-fy-val">' + fmtRupee(a.value) + '</div>'
-          + '<div class="gp-fy-track"><div class="gp-fy-bar" style="width:' + w + '%"></div></div>'
-          + '</div>';
-      }).join('')
-    : '<div class="gp-empty">No financial-year data</div>';
+  var src = (g.fyBreakdown && g.fyBreakdown.length) ? g.fyBreakdown : null;
+  var fyCards;
+  if (src) {
+    var maxT = Math.max.apply(null, src.map(function(r) { return r.total; }).concat([1]));
+    fyCards = src.slice().reverse().map(function(r) {
+      var barW   = Math.round(r.total / maxT * 100);
+      var matPct = r.total ? Math.round(r.material / r.total * 100) : 0;
+      var gstPct = r.total ? Math.round(r.gst      / r.total * 100) : 0;
+      return '<div class="gp-fy-card' + (gpYear === r.fy ? ' active' : '') + '" onclick="gpSetYear(\'' + r.fy + '\')" title="Filter to ' + esc(fyFull(r.fy)) + '">'
+        + '<div class="gp-fy-label">' + esc(fyFull(r.fy)) + '</div>'
+        + '<div class="gp-fy-val" style="color:var(--gp-orange)">' + fmtRupee(r.total) + '</div>'
+        + '<div class="gp-fy-track"><div class="gp-fy-bar" style="width:' + barW + '%"></div></div>'
+        + '<div class="gp-fy-breakdown">'
+        +   '<div class="gp-fy-brow"><span class="gp-fy-blbl">Material</span>'
+        +     '<span class="gp-fy-bamt" style="color:var(--gp-green)">' + fmtRupee(r.material) + '</span>'
+        +     '<span class="gp-fy-bpct">' + matPct + '%</span></div>'
+        +   '<div class="gp-fy-brow"><span class="gp-fy-blbl">GST</span>'
+        +     '<span class="gp-fy-bamt" style="color:var(--gp-gold)">' + fmtRupee(r.gst) + '</span>'
+        +     '<span class="gp-fy-bpct">' + gstPct + '%</span></div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  } else {
+    fyCards = '<div class="gp-empty">No financial-year data</div>';
+  }
   return '<div class="gp-aging-row">'
     + '<div class="gp-card">'
     +   '<div class="gp-card-h"><div><div class="gp-card-title">Outstanding by Financial Year</div>'
