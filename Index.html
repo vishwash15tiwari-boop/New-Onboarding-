@@ -3657,9 +3657,7 @@ function gstAgingSection() {
   var src = (g.fyBreakdown && g.fyBreakdown.length) ? g.fyBreakdown : null;
   var fyCards;
   if (src) {
-    var maxT = Math.max.apply(null, src.map(function(r) { return r.total; }).concat([1]));
     fyCards = src.slice().reverse().map(function(r) {
-      var barW = Math.round(r.total / maxT * 100);
       return '<div class="gp-fy-card' + (gpYear === r.fy ? ' active' : '') + '" onclick="gpSetYear(\'' + r.fy + '\')" title="Filter to ' + esc(fyFull(r.fy)) + '">'
         + '<div class="gp-fy-label">' + esc(fyFull(r.fy)) + '</div>'
         + '<div style="border-top:1.5px solid var(--gp-border);margin:7px 0 8px"></div>'

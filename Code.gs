@@ -880,7 +880,7 @@ function getGSTPayablesData(filtersJson) {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var year = f.year || 'All';
 
-    var cacheKey = 'gstpay_v9_' + JSON.stringify([year]);
+    var cacheKey = 'gstpay_v10_' + JSON.stringify([year]);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -917,12 +917,13 @@ function getGSTPayablesData(filtersJson) {
           var yearAmt  = r.yearAmounts[year] || 0;
           var matRatio = r.total > 0 ? r.material / r.total : 0;
           var gstRatio = r.total > 0 ? r.gst      / r.total : 0;
+          var matAmt = Math.round(yearAmt * matRatio);
           return {
             name: r.name, gstNo: r.gstNo, gstStatus: r.gstStatus,
             vertical: r.vertical, msme: r.msme, state: r.state,
             total:    yearAmt,
-            material: Math.round(yearAmt * matRatio),
-            gst:      Math.round(yearAmt * gstRatio),
+            material: matAmt,
+            gst:      yearAmt - matAmt,
             sda: r.sda, ledger: r.ledger, osv: r.osv,
             itcClosed: r.itcClosed, itcCheck: r.itcCheck,
           };
@@ -964,7 +965,9 @@ function getGSTPayablesData(filtersJson) {
       aging:         fyList.map(function(fy) { return { fy: fy, value: fyBreakMap[fy].total }; }),
       fyBreakdown:   fyList.map(function(fy) {
         var b = fyBreakMap[fy];
-        return { fy: fy, total: b.total, material: Math.round(b.material), gst: Math.round(b.gst), vendors: b.vendors };
+        var bTotal = Math.round(b.total);
+        var bMat   = Math.round(b.material);
+        return { fy: fy, total: bTotal, material: bMat, gst: bTotal - bMat, vendors: b.vendors };
       }),
       gstStatus:  toList(statusMap, 'count'),
       verticals:  toList(vertMap, 'value'),
