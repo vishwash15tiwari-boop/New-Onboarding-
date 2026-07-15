@@ -824,18 +824,16 @@ function gpReadVendors_() {
   var mapping = {};
   Object.keys(GST_FIELDS).forEach(function(k) { mapping[k] = gpField_(idx, GST_FIELDS[k]) || null; });
 
-  // Detect financial-year columns by their raw header names (e.g. "2021-22",
-  // "22-23", "2021-2022"). Normalised headers have the dash stripped so we
-  // must look at rawHeaders. Each such column holds the outstanding amount for
-  // that vendor in that financial year; 0 means none.
-  var FY_RE = /^(?:fy\s*)?(\d{2,4})\s*[-\/]\s*(\d{2,4})$/i;
+  // Match only the exact financial-year columns present in the sheet.
+  // Normalised headers strip the dash (2021-22 → 202122) so we match rawHeaders.
+  var YEAR_HEADERS = {
+    '2021-22': 'FY 21-22', '2022-23': 'FY 22-23', '2023-24': 'FY 23-24',
+    '2024-25': 'FY 24-25', '2025-26': 'FY 25-26', '2026-27': 'FY 26-27',
+  };
   var yearCols = [];
   raw.rawHeaders.forEach(function(rh, ci) {
-    var m = String(rh || '').trim().match(FY_RE);
-    if (!m) return;
-    var y1 = m[1].length === 4 ? m[1].slice(2) : m[1];
-    var y2 = m[2].length === 4 ? m[2].slice(2) : m[2];
-    yearCols.push({ colIdx: ci, fy: 'FY ' + y1 + '-' + y2 });
+    var key = String(rh || '').trim();
+    if (YEAR_HEADERS[key]) yearCols.push({ colIdx: ci, fy: YEAR_HEADERS[key] });
   });
 
   var vendors = raw.rows.map(function(row) {
@@ -882,7 +880,7 @@ function getGSTPayablesData(filtersJson) {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var year = f.year || 'All';
 
-    var cacheKey = 'gstpay_v7_' + JSON.stringify([year]);
+    var cacheKey = 'gstpay_v8_' + JSON.stringify([year]);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
