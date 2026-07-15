@@ -1253,6 +1253,7 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#D64545)}
   box-shadow:var(--shadow-card);
   display:flex;flex-direction:column;gap:0;
   position:relative;overflow:hidden;
+  cursor:pointer;
   transition:box-shadow .28s var(--ease-out),transform .28s var(--ease-out),border-color .18s;
 }
 .vkpi-card::before{
@@ -1261,6 +1262,7 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#D64545)}
   border-radius:3px 0 0 3px;
 }
 .vkpi-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px);border-color:var(--border2)}
+.vkpi-card:active{transform:translateY(0) scale(.985);transition-duration:.1s}
 .vkpi-icon{font-size:14px;line-height:1;margin-bottom:6px;opacity:.65}
 .vkpi-lbl{font-size:8.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--txt3);margin-bottom:4px;line-height:1}
 .vkpi-val{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
@@ -2347,8 +2349,11 @@ function renderVertKPIs(key) {
   var pctTxn = vs.pctTransacted != null ? vs.pctTransacted + '%' : '—';
   var totMiss = missS + missB;
   var vars = vcVars(key);
-  function mk(icon, lbl, val, sub, cls) {
-    return '<div class="vkpi-card' + (cls ? ' ' + cls : '') + '" style="' + vars + '">'
+  function mk(icon, lbl, val, sub, cls, action) {
+    return '<div class="vkpi-card' + (cls ? ' ' + cls : '') + '" style="' + vars + '"'
+      + ' role="button" tabindex="0"'
+      + ' onclick="vkpiOpen(\'' + action + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();vkpiOpen(\'' + action + '\')}">'
       + '<div class="vkpi-icon">' + icon + '</div>'
       + '<div class="vkpi-lbl">' + lbl + '</div>'
       + '<div class="vkpi-val">' + val + '</div>'
@@ -2356,12 +2361,38 @@ function renderVertKPIs(key) {
       + '</div>';
   }
   el.innerHTML = [
-    mk('📋', 'Total in Pipeline', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', ''),
-    mk('✅', 'Onboarded',         fmt(compS + compB),   'Sellers: ' + fmt(compS) + ' · Buyers: ' + fmt(compB), 'vk-onboarded'),
-    mk('📈', '% Transacted',      pctTxn,               'Seller transacted rate', 'vk-transacted'),
-    mk('⚠️', 'GSTIN Missing',     fmt(totMiss),          'Sellers: ' + fmt(missS) + ' · Buyers: ' + fmt(missB), totMiss > 0 ? 'vk-warn' : ''),
+    mk('📋', 'Total in Pipeline', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', '',            'all'),
+    mk('✅', 'Onboarded',         fmt(compS + compB),   'Sellers: ' + fmt(compS) + ' · Buyers: ' + fmt(compB), 'vk-onboarded','onboarded'),
+    mk('📈', '% Transacted',      pctTxn,               'Seller transacted rate', 'vk-transacted',                             'all'),
+    mk('⚠️', 'GSTIN Missing',     fmt(totMiss),          'Sellers: ' + fmt(missS) + ' · Buyers: ' + fmt(missB), totMiss > 0 ? 'vk-warn' : '', 'missing'),
   ].join('');
   animateCounters(el);
+}
+
+function vkpiOpen(action) {
+  var aud = selectedAud || 'seller';
+  var detEl = document.getElementById('vert-detail-section');
+  var rowsReady = vertRows.length > 0 && !vertRowsLoading;
+  if (rowsReady && detEl) {
+    // Rows already loaded — apply filter shortcut then scroll
+    vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+    ['vdf-category','vdf-vendor','vdf-status','vdf-gst'].forEach(function(id) {
+      var e = document.getElementById(id); if (e) e.value = 'All';
+    });
+    var s = document.getElementById('vdf-search'); if (s) s.value = '';
+    if (action === 'missing') {
+      vdF.gst = 'Inactive';
+      var e = document.getElementById('vdf-gst'); if (e) e.value = 'Inactive';
+    } else if (action === 'onboarded') {
+      vdF.status = 'COMPLETED';
+      var e = document.getElementById('vdf-status'); if (e) e.value = 'COMPLETED';
+    }
+    renderVdRecords();
+    detEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    // Open detail section (loads rows); scroll handled inside setDetailAud
+    setDetailAud(aud);
+  }
 }
 
 function renderPipelinePair(key) {
