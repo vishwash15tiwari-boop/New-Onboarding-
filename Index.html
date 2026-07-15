@@ -769,9 +769,10 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 .gp-line-svg{width:100%;height:auto;display:block}
 .gp-axis-txt{fill:var(--gp-ink3);font-size:9.5px;font-weight:500;font-family:inherit}
 .gp-fy-list{display:flex;flex-direction:column;gap:6px;max-height:none;overflow-y:auto;padding-right:2px}
+.gp-fy-list-row{flex-direction:row;flex-wrap:wrap;overflow-y:visible;padding-right:0;gap:8px}
 .gp-fy-card{
   background:var(--gp-card);border:1px solid var(--gp-border);
-  border-radius:8px;padding:9px 12px;cursor:pointer;
+  border-radius:8px;padding:9px 12px;cursor:pointer;flex:1 1 140px;min-width:130px;
   transition:box-shadow .18s,border-color .18s,transform .18s
 }
 .gp-fy-card:hover{box-shadow:var(--shadow-card);border-color:var(--gp-border2);transform:translateX(2px)}
@@ -3682,13 +3683,10 @@ function gstAgingSection() {
   } else {
     fyCards = '<div class="gp-empty">No financial-year data</div>';
   }
-  return '<div class="gp-aging-row">'
-    + '<div class="gp-card">'
-    +   '<div class="gp-card-h"><div><div class="gp-card-title">Outstanding by Financial Year</div>'
-    +   '<div class="gp-card-sub">Aging profile of total payables</div></div></div>'
-    +   gpLineChart(g.aging)
-    + '</div>'
-    + '<div class="gp-fy-list">' + fyCards + '</div>'
+  return '<div class="gp-card" style="margin-bottom:12px">'
+    + '<div class="gp-card-h"><div><div class="gp-card-title">Outstanding by Financial Year</div>'
+    +   '<div class="gp-card-sub">Aging profile of total payables — click a year to filter</div></div></div>'
+    + '<div class="gp-fy-list gp-fy-list-row">' + fyCards + '</div>'
     + '</div>';
 }
 
