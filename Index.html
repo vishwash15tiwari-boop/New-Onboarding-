@@ -3514,11 +3514,19 @@ function renderGSTSkeleton() {
 }
 
 function gstBackRow() {
+  var rightSide;
+  if (GST.year && GST.year !== 'All') {
+    rightSide = '<span style="display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:500">'
+      + '<button onclick="gpSetYear(\'All\')" style="font-family:inherit;font-size:10px;font-weight:600;padding:3px 10px;border-radius:5px;border:1px solid var(--gp-border);background:var(--gp-card);color:var(--gp-ink2);cursor:pointer;line-height:1.4">All</button>'
+      + '<span style="color:var(--gp-ink3)">›</span>'
+      + '<span style="color:var(--gp-ink)">Showing: <b>' + esc(GST.year) + '</b></span>'
+      + '</span>';
+  } else {
+    rightSide = '<span style="font-size:10px;color:var(--gp-ink3);font-weight:500">All Financial Years</span>';
+  }
   return '<div class="gp-back-row">'
     + '<button class="gp-back-btn" onclick="switchView(\'onboarding\')">← Back to Dashboard</button>'
-    + '<span style="font-size:10px;color:var(--gp-ink3);font-weight:500">'
-    + (GST.year && GST.year !== 'All' ? 'Showing: <b style="color:var(--gp-ink)">' + esc(GST.year) + '</b>' : 'All Financial Years')
-    + '</span>'
+    + rightSide
     + '</div>';
 }
 
