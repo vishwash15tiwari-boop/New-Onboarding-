@@ -2419,17 +2419,54 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
       + '<span class="cc-cat-detail">' + parts.join(' · ') + '</span></div>';
   }).join('');
   if (catRows) catRows = '<div class="cc-cat-rows">' + catRows + '</div>';
-  var statRows = [];
-  if (v.avgTAT        != null) statRows.push(['Avg TAT',       v.avgTAT + 'd',              '']);
-  if (v.pctTransacted != null) statRows.push(['% Transacted',  v.pctTransacted + '%',        '']);
-  if (v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '']);
-  if (v.withGST       != null) statRows.push(['GSTIN Active',  fmt(v.withGST),               '']);
-  if (v.missingGST    != null) statRows.push(['GSTIN Missing', fmt(v.missingGST),            v.missingGST > 0 ? 'cc-stat-bad' : '']);
-  var statsList = statRows.length
-    ? '<div class="cc-stat-list">' + statRows.map(function(r) {
-        return '<div class="cc-stat-row' + (r[2] ? ' ' + r[2] : '') + '">' + r[0] + '<b>' + r[1] + '</b></div>';
-      }).join('') + '</div>'
-    : '';
+  var fys = (v.fyBreakdown || []).filter(function(f) { return !f.fyStart || f.fyStart >= 2019; });
+  var statsList = '';
+  if (fys.length) {
+    var aggTAT   = v.avgTAT        != null ? v.avgTAT + 'd'           : null;
+    var aggPct   = v.pctTransacted  != null ? v.pctTransacted + '%'   : null;
+    var aggGMV   = v.totalTxnValue  != null ? fmtINR(v.totalTxnValue) : null;
+    var aggGSTon = v.withGST        != null ? fmt(v.withGST)          : null;
+    var aggGSTof = v.missingGST     != null ? fmt(v.missingGST)       : null;
+    var fyTr = function(label, valFn, aggVal, badCls) {
+      var cells = fys.map(valFn);
+      var allEmpty = cells.every(function(c){ return c === null || c === undefined || c === '—'; }) && aggVal == null;
+      if (allEmpty) return '';
+      return '<tr' + (badCls ? ' class="' + badCls + '"' : '') + '>'
+        + '<td class="cc-fy-td-lbl">' + label + '</td>'
+        + cells.map(function(c){ return '<td class="cc-fy-td">' + (c != null ? c : '—') + '</td>'; }).join('')
+        + '<td class="cc-fy-td cc-fy-all">' + (aggVal != null ? aggVal : '—') + '</td>'
+        + '</tr>';
+    };
+    var hasMissingGST = fys.some(function(f) { return (f.missingGST || 0) > 0; });
+    var fyTbody = [
+      fyTr('Avg TAT',       function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
+      fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
+      fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
+      fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
+      fyTr('GSTIN missing', function(f){ return f.missingGST    != null ? fmt(f.missingGST)       : null; }, aggGSTof, hasMissingGST ? 'cc-fy-bad' : ''),
+    ].filter(Boolean).join('');
+    if (fyTbody) {
+      var fyThead = '<thead><tr><th class="cc-fy-th-lbl"></th>'
+        + fys.map(function(f){ return '<th class="cc-fy-th">' + esc(f.fy) + '</th>'; }).join('')
+        + '<th class="cc-fy-th cc-fy-all">All</th>'
+        + '</tr></thead>';
+      statsList = '<div class="cc-fy-wrap">'
+        + '<table class="cc-fy-tbl">' + fyThead + '<tbody>' + fyTbody + '</tbody></table>'
+        + '</div>';
+    }
+  } else {
+    var statRows = [];
+    if (v.avgTAT        != null) statRows.push(['Avg TAT',       v.avgTAT + 'd',              '']);
+    if (v.pctTransacted != null) statRows.push(['% Transacted',  v.pctTransacted + '%',        '']);
+    if (v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '']);
+    if (v.withGST       != null) statRows.push(['GSTIN Active',  fmt(v.withGST),               '']);
+    if (v.missingGST    != null) statRows.push(['GSTIN Missing', fmt(v.missingGST),            v.missingGST > 0 ? 'cc-stat-bad' : '']);
+    statsList = statRows.length
+      ? '<div class="cc-stat-list">' + statRows.map(function(r) {
+          return '<div class="cc-stat-row' + (r[2] ? ' ' + r[2] : '') + '">' + r[0] + '<b>' + r[1] + '</b></div>';
+        }).join('') + '</div>'
+      : '';
+  }
   return '<div' + attrs + '>' + hdr + hero + pipeStats + catRows + statsList + '</div>';
 }
 
