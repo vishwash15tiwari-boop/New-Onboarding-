@@ -841,6 +841,28 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 .gp-amt.muted{font-weight:450;color:var(--gp-ink3)}
 .gp-table-note{padding:9px 16px;font-size:10.5px;color:var(--gp-ink3);border-top:1px solid var(--gp-border);background:var(--gp-card2)}
 
+/* ── FY year-wise breakdown table ── */
+.gp-fyt{width:100%;border-collapse:collapse;font-size:11.5px}
+.gp-fyt thead th{padding:6px 12px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gp-ink3);border-bottom:1px solid var(--gp-border);white-space:nowrap;background:var(--gp-card2)}
+.gp-fyt thead th:not(:first-child){text-align:right}
+.gp-fyt tbody td{padding:8px 12px;border-bottom:1px solid var(--gp-border)}
+.gp-fyt tbody tr:last-child td{border-bottom:none}
+.gp-fyt tbody tr:hover td{background:var(--gp-card2)}
+.gp-fyt-fy{font-size:11px;font-weight:700;color:var(--gp-ink);white-space:nowrap}
+.gp-fyt-num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--gp-ink);white-space:nowrap}
+.gp-fyt-orange{color:var(--gp-orange)}
+.gp-fyt-green{color:var(--gp-green)}
+.gp-fyt-gold{color:var(--gp-gold)}
+.gp-fyt-cnt{text-align:right;font-size:11px;font-weight:600;color:var(--gp-ink2);font-variant-numeric:tabular-nums}
+.gp-fyt-pct{font-size:9px;font-weight:500;color:var(--gp-ink3);margin-left:4px}
+.gp-fyt-barwrap{height:3px;border-radius:3px;background:var(--gp-bg2);overflow:hidden;margin-top:3px}
+.gp-fyt-bar{height:100%;border-radius:3px;background:var(--gp-orange);transition:width .7s cubic-bezier(.4,0,.2,1)}
+
+/* ── GST back-nav row ── */
+.gp-back-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.gp-back-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:7px;border:1px solid var(--gp-border);background:var(--gp-card);color:var(--gp-ink2);font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
+.gp-back-btn:hover{border-color:var(--gp-border2);background:var(--gp-card2);color:var(--gp-ink)}
+
 /* Skeleton loading */
 @keyframes gpShimmer{0%{background-position:-320px 0}100%{background-position:320px 0}}
 .gp-skel{background:linear-gradient(90deg,var(--gp-bg2) 0%,var(--gp-card2) 40%,var(--gp-bg2) 80%);background-size:640px 100%;animation:gpShimmer 1.3s infinite linear;border-radius:8px}
@@ -3487,6 +3509,43 @@ function renderGSTSkeleton() {
     + charts;
 }
 
+function gstBackRow() {
+  return '<div class="gp-back-row">'
+    + '<button class="gp-back-btn" onclick="switchView(\'onboarding\')">← Back to Dashboard</button>'
+    + '<span style="font-size:10px;color:var(--gp-ink3);font-weight:500">'
+    + (GST.year && GST.year !== 'All' ? 'Showing: <b style="color:var(--gp-ink)">' + esc(GST.year) + '</b>' : 'All Financial Years')
+    + '</span>'
+    + '</div>';
+}
+
+function gstFYTable() {
+  var g = GST;
+  if (!g.fyBreakdown || !g.fyBreakdown.length) return '';
+  var maxTotal = Math.max.apply(null, g.fyBreakdown.map(function(r) { return r.total; }).concat([1]));
+  var rows = g.fyBreakdown.map(function(r) {
+    var barW = Math.round(r.total / maxTotal * 100);
+    var matPct = r.total ? Math.round(r.material / r.total * 100) : 0;
+    var gstPct = r.total ? Math.round(r.gst     / r.total * 100) : 0;
+    return '<tr>'
+      + '<td class="gp-fyt-fy">' + esc(r.fy) + '</td>'
+      + '<td class="gp-fyt-num gp-fyt-orange">' + fmtRupee(r.total)
+      +   '<div class="gp-fyt-barwrap"><div class="gp-fyt-bar" style="width:' + barW + '%"></div></div></td>'
+      + '<td class="gp-fyt-num gp-fyt-green">' + fmtRupee(r.material) + '<span class="gp-fyt-pct">' + matPct + '%</span></td>'
+      + '<td class="gp-fyt-num gp-fyt-gold">'  + fmtRupee(r.gst)      + '<span class="gp-fyt-pct">' + gstPct + '%</span></td>'
+      + '<td class="gp-fyt-cnt">' + fmt(r.vendors) + '</td>'
+      + '</tr>';
+  }).join('');
+  return '<div class="gp-card" style="margin-bottom:12px;overflow-x:auto">'
+    + '<div class="gp-card-h"><div>'
+    +   '<div class="gp-card-title">Year-wise Breakdown</div>'
+    +   '<div class="gp-card-sub">Outstanding split by financial year — unfiltered</div>'
+    + '</div></div>'
+    + '<table class="gp-fyt"><thead><tr>'
+    + '<th>Financial Year</th><th>Total Outstanding</th><th>Material Balance</th><th>GST Balance</th><th>Vendors</th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table>'
+    + '</div>';
+}
+
 function renderGST() {
   if (!GST) { renderGSTSkeleton(); return; }
   renderGSTYearChips();
@@ -3495,7 +3554,7 @@ function renderGST() {
   if (!host) return;
   // Whole sheet empty / not populated yet → clean single message, not a wall of zeros.
   if (!GST.totalVendors) { host.innerHTML = gstEmptyState(); return; }
-  host.innerHTML = gstKPIs() + gstAgingSection() + gstChartsRow() + gstFiltersRow() + gstTableShell();
+  host.innerHTML = gstBackRow() + gstKPIs() + gstFYTable() + gstAgingSection() + gstChartsRow() + gstFiltersRow() + gstTableShell();
   animateGSTCounters();
   renderGSTVendorTable();
 }

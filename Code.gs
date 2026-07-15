@@ -863,7 +863,7 @@ function getGSTPayablesData(filtersJson) {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var year = f.year || 'All';
 
-    var cacheKey = 'gstpay_v4_' + JSON.stringify([year]);
+    var cacheKey = 'gstpay_v5_' + JSON.stringify([year]);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -871,10 +871,18 @@ function getGSTPayablesData(filtersJson) {
     var read = gpReadVendors_();
     var all = read.vendors;
 
-    // Aging profile is computed across ALL rows so the FY chart always shows the
-    // full timeline regardless of which year is selected for the rest of the view.
-    var agingMap = {};
-    all.forEach(function(r) { if (r.fy) agingMap[r.fy] = (agingMap[r.fy] || 0) + r.total; });
+    // Aging + FY breakdown computed across ALL rows (unfiltered) so the year
+    // timeline and year-wise table always show the full picture.
+    var agingMap = {}, fyBreakMap = {};
+    all.forEach(function(r) {
+      if (!r.fy) return;
+      agingMap[r.fy] = (agingMap[r.fy] || 0) + r.total;
+      if (!fyBreakMap[r.fy]) fyBreakMap[r.fy] = { total: 0, material: 0, gst: 0, vendors: 0 };
+      fyBreakMap[r.fy].total    += r.total;
+      fyBreakMap[r.fy].material += r.material;
+      fyBreakMap[r.fy].gst      += r.gst;
+      fyBreakMap[r.fy].vendors  += 1;
+    });
     var fyList = Object.keys(agingMap).sort();
 
     // Everything else respects the active year filter.
@@ -912,7 +920,11 @@ function getGSTPayablesData(filtersJson) {
       gstBalance: gstSum,
       materialShare: totalOut ? Math.round(matSum / totalOut * 100) : 0,
       gstShare:      totalOut ? Math.round(gstSum / totalOut * 100) : 0,
-      aging:      fyList.map(function(fy) { return { fy: fy, value: agingMap[fy] }; }),
+      aging:         fyList.map(function(fy) { return { fy: fy, value: agingMap[fy] }; }),
+      fyBreakdown:   fyList.map(function(fy) {
+        var b = fyBreakMap[fy] || {};
+        return { fy: fy, total: b.total || 0, material: b.material || 0, gst: b.gst || 0, vendors: b.vendors || 0 };
+      }),
       gstStatus:  toList(statusMap, 'count'),
       verticals:  toList(vertMap, 'value'),
       msme:       toList(msmeMap, 'count'),
