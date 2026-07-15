@@ -3665,22 +3665,7 @@ function gstAgingSection() {
   var src = (g.fyBreakdown && g.fyBreakdown.length) ? g.fyBreakdown : null;
   var fyCards;
   if (src) {
-    var allTotal = src.reduce(function(s, r) { return s + r.total; }, 0);
-    var allMat   = src.reduce(function(s, r) { return s + r.material; }, 0);
-    var allGst   = allTotal - allMat;
-    var allCard  = '<div class="gp-fy-card' + (gpYear === 'All' ? ' active' : '') + '" onclick="gpSetYear(\'All\')" title="Show all financial years">'
-      + '<div class="gp-fy-label">All Years</div>'
-      + '<div style="border-top:1.5px solid var(--gp-border);margin:7px 0 8px"></div>'
-      + '<div class="gp-fy-breakdown">'
-      +   '<div class="gp-fy-brow"><span class="gp-fy-blbl">GST Balance</span>'
-      +     '<span class="gp-fy-bamt" style="color:var(--gp-gold)">' + fmtRupee(allGst) + '</span></div>'
-      +   '<div class="gp-fy-brow"><span class="gp-fy-blbl">Material Balance</span>'
-      +     '<span class="gp-fy-bamt" style="color:var(--gp-green)">' + fmtRupee(allMat) + '</span></div>'
-      +   '<div class="gp-fy-brow" style="margin-top:4px;padding-top:5px;border-top:1px solid var(--gp-border)"><span class="gp-fy-blbl" style="color:var(--gp-ink);font-weight:700">Total Balance</span>'
-      +     '<span class="gp-fy-bamt" style="color:var(--gp-orange);font-size:12px">' + fmtRupee(allTotal) + '</span></div>'
-      + '</div>'
-      + '</div>';
-    fyCards = allCard + src.slice().reverse().map(function(r) {
+    fyCards = src.slice().reverse().map(function(r) {
       return '<div class="gp-fy-card' + (gpYear === r.fy ? ' active' : '') + '" onclick="gpSetYear(\'' + r.fy + '\')" title="Filter to ' + esc(fyFull(r.fy)) + '">'
         + '<div class="gp-fy-label">' + esc(fyFull(r.fy)) + '</div>'
         + '<div style="border-top:1.5px solid var(--gp-border);margin:7px 0 8px"></div>'
@@ -3698,8 +3683,11 @@ function gstAgingSection() {
     fyCards = '<div class="gp-empty">No financial-year data</div>';
   }
   return '<div class="gp-card" style="margin-bottom:12px">'
-    + '<div class="gp-card-h"><div><div class="gp-card-title">Outstanding by Financial Year</div>'
-    +   '<div class="gp-card-sub">Aging profile of total payables — click a year to filter</div></div></div>'
+    + '<div class="gp-card-h">'
+    +   '<div><div class="gp-card-title">Outstanding by Financial Year</div>'
+    +   '<div class="gp-card-sub">Aging profile of total payables — click a year to filter</div></div>'
+    +   '<button class="gp-year-chip' + (gpYear === 'All' ? ' active' : '') + '" onclick="gpSetYear(\'All\')" title="Show all financial years">All</button>'
+    + '</div>'
     + '<div class="gp-fy-list gp-fy-list-row">' + fyCards + '</div>'
     + '</div>';
 }
