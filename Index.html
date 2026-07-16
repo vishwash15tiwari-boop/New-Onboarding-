@@ -760,16 +760,16 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
   text-transform:uppercase;margin-bottom:7px;line-height:1;
   background:none;padding:0;border-radius:0;
 }
-.gp-orange .gp-kpi-tag{color:var(--gp-orange-ink)}
-.gp-green .gp-kpi-tag{color:var(--txt3)}
-.gp-gold .gp-kpi-tag{color:var(--txt3)}
-/* Value */
-.gp-kpi-val{font-size:clamp(14px,1.55vw,20px);font-weight:800;letter-spacing:-.5px;line-height:1.15;font-variant-numeric:tabular-nums;overflow:hidden;word-break:break-all}
-.gp-orange .gp-kpi-val{color:var(--gp-orange)}
-.gp-green .gp-kpi-val{color:var(--gp-green)}
-.gp-gold .gp-kpi-val{color:var(--gp-gold)}
+.gp-orange .gp-kpi-tag{color:var(--gp-ink2)}
+.gp-green .gp-kpi-tag{color:var(--gp-ink2)}
+.gp-gold .gp-kpi-tag{color:var(--gp-ink2)}
+/* Value — always near-black so numbers are legible on any surface */
+.gp-kpi-val{font-size:clamp(14px,1.55vw,20px);font-weight:800;letter-spacing:-.5px;line-height:1.15;font-variant-numeric:tabular-nums;overflow:hidden;word-break:break-all;color:var(--gp-ink)}
+.gp-orange .gp-kpi-val{color:var(--gp-ink)}
+.gp-green .gp-kpi-val{color:var(--gp-ink)}
+.gp-gold .gp-kpi-val{color:var(--gp-ink)}
 /* Sub */
-.gp-kpi-sub{font-size:9.5px;color:var(--gp-ink3);font-weight:500;margin-top:4px;line-height:1.4}
+.gp-kpi-sub{font-size:9.5px;color:var(--gp-ink2);font-weight:500;margin-top:4px;line-height:1.4}
 /* Progress bar */
 .gp-kpi-barrow{display:flex;justify-content:space-between;font-size:9px;font-weight:600;color:var(--gp-ink3);margin-top:10px;margin-bottom:4px;letter-spacing:.1px}
 .gp-kpi-track{height:5px;border-radius:5px;background:var(--gp-bg2);overflow:hidden}
@@ -1003,14 +1003,14 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 .cc-onb-num{
   display:block;
   font-size:44px;font-weight:800;
-  color:var(--vc,var(--txt));
+  color:var(--txt);
   letter-spacing:-2.5px;line-height:1;
   font-variant-numeric:tabular-nums;
 }
 .cc-onb-sub{
   display:block;font-size:9px;font-weight:700;
-  color:var(--vc-ink,var(--txt3));text-transform:uppercase;
-  letter-spacing:.7px;margin-top:4px;opacity:.8;
+  color:var(--txt2);text-transform:uppercase;
+  letter-spacing:.7px;margin-top:4px;
 }
 
 /* ── Pipeline stage stats — cleaner row treatment ── */
@@ -1020,7 +1020,7 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
   padding:6px 10px;border-radius:7px;
   background:var(--bg2);
 }
-.cc-pipe-stat-lbl{font-size:10.5px;font-weight:600;color:var(--txt3)}
+.cc-pipe-stat-lbl{font-size:10.5px;font-weight:600;color:var(--txt2)}
 .cc-pipe-stat-val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
 .cc-pipe-stat.ps-draft .cc-pipe-stat-val{color:var(--st-draft)}
 .cc-pipe-stat.ps-draft{background:var(--st-draft-bg)}
@@ -1033,7 +1033,7 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 .cc-dual{display:grid;grid-template-columns:1fr 1fr}
 .cc-half{display:flex;flex-direction:column;padding:12px 14px;min-width:0}
 .cc-half-r{border-left:1px solid var(--border)}
-.cc-half-hdr{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3);margin-bottom:8px;white-space:nowrap}
+.cc-half-hdr{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--txt2);margin-bottom:8px;white-space:nowrap}
 /* Compact pipeline boxes inside each half */
 .cc-half .cc-pipe{gap:4px;margin-bottom:8px}
 .cc-half .cc-pipe-box{padding:7px 4px 6px;border-radius:6px}
@@ -1116,14 +1116,14 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 }
 .vs-rec-btn:hover{background:var(--vc-soft,rgba(0,93,255,.07));box-shadow:0 0 0 3px var(--vc-soft,rgba(0,93,255,.07))}
 .vs-hero-stat{flex-shrink:0;text-align:right}
-.vs-hero-count{font-size:62px;font-weight:800;letter-spacing:-3.5px;color:var(--vc,var(--blue));line-height:1;font-variant-numeric:tabular-nums}
-.vs-hero-lbl{font-size:9.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-top:6px}
+.vs-hero-count{font-size:62px;font-weight:800;letter-spacing:-3.5px;color:var(--txt);line-height:1;font-variant-numeric:tabular-nums}
+.vs-hero-lbl{font-size:9.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--txt2);margin-top:6px}
 
 /* Completion progress bar */
 .vs-progress{margin-bottom:32px}
 .vs-progress-hdr{
   display:flex;justify-content:space-between;align-items:baseline;
-  margin-bottom:8px;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--txt3);font-weight:600;
+  margin-bottom:8px;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--txt2);font-weight:600;
 }
 .vs-progress-hdr strong{font-size:13px;color:var(--txt);font-weight:700;letter-spacing:-.1px;text-transform:none}
 .vs-progress-track{height:7px;background:var(--border);border-radius:4px;overflow:hidden}
@@ -1146,18 +1146,18 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 .vs-pipe-draft b{color:var(--st-draft)}
 .vs-pipe-draft s{color:var(--st-draft-tx)}
 .vs-pipe-review{background:var(--st-review-bg);     border-color:rgba(129,140,248,.18)}
-.vs-pipe-review b{color:var(--st-review)}
+.vs-pipe-review b{color:var(--st-review-tx)}
 .vs-pipe-review s{color:var(--st-review-tx)}
 .vs-pipe-onb   {background:var(--st-onboarded-bg);  border-color:rgba(29,199,151,.18)}
-.vs-pipe-onb b {color:var(--st-onboarded)}
+.vs-pipe-onb b {color:var(--st-onboarded-tx)}
 .vs-pipe-onb s {color:var(--st-onboarded-tx)}
 .vs-pipe-rej   {background:var(--st-rejected-bg);   border-color:rgba(229,99,99,.18)}
-.vs-pipe-rej b {color:var(--st-rejected)}
+.vs-pipe-rej b {color:var(--st-rejected-tx)}
 .vs-pipe-rej s {color:var(--st-rejected-tx)}
 
 /* ── Category list with mini progress bars ── */
 .vs-cat-list{margin-bottom:36px}
-.vs-cat-list-hdr{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:12px}
+.vs-cat-list-hdr{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt2);margin-bottom:12px}
 .vs-cat-item{
   display:flex;align-items:center;gap:12px;padding:11px 14px;
   border-radius:9px;margin-bottom:7px;background:var(--card);
@@ -1168,12 +1168,12 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 }
 .vs-cat-item.cat-in{opacity:1;transform:none}
 .vs-cat-nm2{font-size:12.5px;font-weight:600;color:var(--txt);min-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.vs-cat-done-val{font-size:17px;font-weight:800;color:var(--st-onboarded);font-variant-numeric:tabular-nums;letter-spacing:-.5px;min-width:36px;text-align:right}
-.vs-cat-done-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.3px;font-weight:600;flex-shrink:0}
+.vs-cat-done-val{font-size:17px;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.5px;min-width:36px;text-align:right}
+.vs-cat-done-lbl{font-size:9px;color:var(--txt2);text-transform:uppercase;letter-spacing:.3px;font-weight:600;flex-shrink:0}
 .vs-cat-bar-wrap{flex:1;min-width:60px}
 .vs-cat-bar-bg{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
 .vs-cat-bar-fg{height:100%;background:var(--st-onboarded);border-radius:3px;width:0;transition:width 1s var(--ease-out)}
-.vs-cat-total{font-size:10.5px;color:var(--txt3);white-space:nowrap;min-width:48px;text-align:right}
+.vs-cat-total{font-size:10.5px;color:var(--txt2);white-space:nowrap;min-width:48px;text-align:right}
 
 /* Funnel inside story section */
 .vs-funnel{margin-bottom:36px}
@@ -1191,7 +1191,7 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 .vs-metrics{display:flex;flex-wrap:wrap;gap:6px 20px;margin-bottom:32px;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .vs-metric{display:flex;flex-direction:column;gap:2px}
 .vs-metric b{font-size:15px;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
-.vs-metric span{font-size:9.5px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.vs-metric span{font-size:9.5px;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
 .vs-metric.m-warn b{color:var(--amber)}
 .vs-metric.m-crit b{color:var(--st-rejected-tx)}
 .vs-metric.m-gmv b{color:var(--vc-ink,var(--blue))}
@@ -1321,13 +1321,13 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected,#D64545)}
 .vkpi-card:hover{box-shadow:var(--shadow-lg);transform:scale(1.02)}
 .vkpi-card:active{transform:scale(.97);transition-duration:.1s}
 .vkpi-icon{font-size:14px;line-height:1;margin-bottom:8px;opacity:.6}
-.vkpi-lbl{font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;line-height:1}
+.vkpi-lbl{font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--txt2);margin-bottom:6px;line-height:1}
 .vkpi-val{font-size:32px;font-weight:700;letter-spacing:-1.5px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
-.vkpi-sub{font-size:11px;color:var(--txt3);font-weight:400;margin-top:6px;line-height:1.4}
+.vkpi-sub{font-size:11px;color:var(--txt2);font-weight:400;margin-top:6px;line-height:1.4}
 /* Semantic color variants */
-.vkpi-card.vk-onboarded .vkpi-val{color:var(--st-onboarded)}
-.vkpi-card.vk-transacted .vkpi-val{color:var(--st-transacted)}
-.vkpi-card.vk-warn .vkpi-val{color:var(--st-rejected)}
+.vkpi-card.vk-onboarded .vkpi-val{color:var(--txt)}
+.vkpi-card.vk-transacted .vkpi-val{color:var(--txt)}
+.vkpi-card.vk-warn .vkpi-val{color:var(--st-rejected-tx)}
 
 /* ══════════════════════════════════════════════════
    PIPELINE PAIR (Seller + Buyer side by side)
