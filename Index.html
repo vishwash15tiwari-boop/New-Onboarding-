@@ -242,10 +242,7 @@ select,input{font-family:inherit}
   margin:4px 0 20px;
   display:flex;align-items:center;gap:14px;
 }
-.section-title::before{
-  content:'';width:4px;height:24px;border-radius:2px;flex-shrink:0;
-  background:#049769;
-}
+.section-title::before{display:none}
 .section-title .badge{
   font-size:11px;font-weight:600;
   padding:3px 10px;
@@ -898,7 +895,7 @@ body.view-gst #main{background:var(--bg2)}
 .section-title::before{display:none}
 .section-title .badge{display:none}
 #view-title{
-  font-size:28px;font-weight:700;letter-spacing:-.7px;
+  font-size:26px;font-weight:700;letter-spacing:-.6px;
   color:var(--txt);text-transform:none;line-height:1.15;
 }
 
@@ -1051,7 +1048,7 @@ body.view-gst #main{background:var(--bg2)}
 .cc-cat-row{
   display:flex;align-items:center;gap:7px;
   padding:5px 8px;border-radius:6px;
-  background:var(--bg2);border:1px solid var(--border);
+  background:var(--bg2);border:none;
   transition:background .15s;
 }
 .cc-cat-row:hover{background:var(--hover)}
@@ -1276,6 +1273,16 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   color:var(--txt);font-weight:600;
   box-shadow:0 1px 4px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04);
 }
+.vert-tab.active::before{
+  content:'';
+  display:inline-block;
+  width:5px;height:5px;border-radius:50%;
+  background:var(--vc,var(--blue));
+  margin-right:6px;
+  margin-bottom:1px;
+  vertical-align:middle;
+  flex-shrink:0;
+}
 .vert-tab:active{transform:scale(.94);transition-duration:.08s}
 /* GST tab — separated by a hairline, same neutral treatment */
 .vert-tab-gst{
@@ -1283,6 +1290,24 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   border-radius:0 9px 9px 0;
 }
 .vert-tab-gst.active{border-left-color:transparent;border-radius:9px}
+
+/* ── Vertical context header — between tab bar and KPI cards ── */
+.vert-ctx-hdr{
+  display:flex;align-items:baseline;gap:9px;
+  padding:6px 0 16px;
+  min-height:44px;
+}
+.vert-ctx-code{
+  font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+  color:var(--vc-ink,var(--blue));
+  padding:3px 9px;border-radius:var(--pill);
+  background:var(--vc-soft,var(--accent-soft));
+  white-space:nowrap;
+}
+.vert-ctx-sep{color:var(--txt3);font-size:11px;user-select:none}
+.vert-ctx-name{
+  font-size:20px;font-weight:700;letter-spacing:-.5px;color:var(--txt);line-height:1.15;
+}
 
 /* ══════════════════════════════════════════════════
    HERO KPI ROW — Apple large-number cards
@@ -1299,7 +1324,22 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 }
 .vkpi-card:hover{box-shadow:var(--shadow-lg);transform:scale(1.02)}
 .vkpi-card:active{transform:scale(.97);transition-duration:.1s}
-.vkpi-icon{display:none}
+/* Thin vertical-color accent stripe — ties each KPI card to the active vertical */
+.vkpi-card::before{
+  content:'';position:absolute;inset:0 0 auto 0;height:3px;pointer-events:none;
+  background:var(--vc,var(--blue));
+  border-radius:var(--r) var(--r) 0 0;
+}
+.vkpi-icon{
+  display:flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:10px;
+  font-size:16px;font-weight:700;line-height:1;
+  margin-bottom:10px;flex-shrink:0;
+  background:var(--bg2);color:var(--txt2);
+}
+.vkpi-card.vk-onboarded  .vkpi-icon{background:var(--st-onboarded-bg);color:var(--st-onboarded-tx)}
+.vkpi-card.vk-transacted .vkpi-icon{background:var(--st-transacted-bg);color:var(--st-transacted-tx)}
+.vkpi-card.vk-warn       .vkpi-icon{background:var(--st-review-bg);color:var(--st-review-tx)}
 .vkpi-lbl{font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--txt2);margin-bottom:8px;line-height:1.2}
 .vkpi-val{font-size:36px;font-weight:700;letter-spacing:-1.5px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
 .vkpi-sub{font-size:11.5px;color:var(--txt2);font-weight:400;margin-top:7px;line-height:1.4}
@@ -1620,6 +1660,8 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   <div id="tab-overview">
     <!-- Vertical tab navigation -->
     <div id="vert-tabs-bar" class="vert-tabs-bar"></div>
+    <!-- Active vertical context: code pill + full name -->
+    <div id="vert-ctx-hdr" class="vert-ctx-hdr"></div>
     <!-- Combined KPI hero row (4 cards, S+B merged) -->
     <div id="vert-kpi-row" class="vkpi-grid"></div>
     <!-- Seller + Buyer pipeline cards side by side -->
@@ -2390,6 +2432,7 @@ function renderVerticals() {
   }
 
   renderVertTabBar();
+  renderVertCtxHdr(activeVertKey);
   renderVertKPIs(activeVertKey);
   renderPipelinePair(activeVertKey);
 
@@ -2408,10 +2451,22 @@ function renderVertTabBar() {
       + ' data-key="' + esc(c.key) + '"'
       + ' style="' + vcVars(c.key) + '"'
       + ' onclick="selectVertTab(\'' + c.key + '\')">'
-      + esc(c.name.toUpperCase())
+      + esc(c.name)
       + '</button>';
   }).join('')
-  + '<button class="vert-tab vert-tab-gst" onclick="switchView(\'gst\')">GST PAYABLES</button>';
+  + '<button class="vert-tab vert-tab-gst" onclick="switchView(\'gst\')">GST Payables</button>';
+}
+
+function renderVertCtxHdr(key) {
+  var el = document.getElementById('vert-ctx-hdr');
+  if (!el) return;
+  if (currentView === 'gst' || !key) { el.innerHTML = ''; return; }
+  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  if (!cfg) { el.innerHTML = ''; return; }
+  el.setAttribute('style', vcVars(key));
+  el.innerHTML = '<span class="vert-ctx-code">' + esc(cfg.code || cfg.key) + '</span>'
+    + '<span class="vert-ctx-sep">·</span>'
+    + '<span class="vert-ctx-name">' + esc(cfg.name) + '</span>';
 }
 
 function selectVertTab(key) {
@@ -2426,7 +2481,9 @@ function selectVertTab(key) {
   // Update tab active states in-place (faster than full re-render)
   document.querySelectorAll('.vert-tab[data-key]').forEach(function(t) {
     t.classList.toggle('active', t.dataset.key === key);
+    if (t.dataset.key === key) t.setAttribute('style', vcVars(key));
   });
+  renderVertCtxHdr(key);
   renderVertKPIs(key);
   renderPipelinePair(key);
   var detEl = document.getElementById('vert-detail-section');
@@ -2458,10 +2515,10 @@ function renderVertKPIs(key) {
       + '</div>';
   }
   el.innerHTML = [
-    mk('📋', 'Total in Pipeline', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', '',            'all'),
-    mk('✅', 'Onboarded',         fmt(compS + compB),   'Sellers: ' + fmt(compS) + ' · Buyers: ' + fmt(compB), 'vk-onboarded','onboarded'),
-    mk('📈', '% Transacted',      pctTxn,               'Seller transacted rate', 'vk-transacted',                             'all'),
-    mk('⚠️', 'GSTIN Missing',     fmt(totMiss),          'Sellers: ' + fmt(missS) + ' · Buyers: ' + fmt(missB), totMiss > 0 ? 'vk-warn' : '', 'missing'),
+    mk('◎',  'Total in Pipeline', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',    'all'),
+    mk('✓',  'Onboarded',         fmt(compS + compB),   'Sellers: ' + fmt(compS) + ' · Buyers: ' + fmt(compB), 'vk-onboarded','onboarded'),
+    mk('↗',  '% Transacted',      pctTxn,               'Seller transacted rate', 'vk-transacted',              'all'),
+    mk('!',  'GSTIN Missing',     fmt(totMiss),          'Sellers: ' + fmt(missS) + ' · Buyers: ' + fmt(missB), totMiss > 0 ? 'vk-warn' : 'vk-total', 'missing'),
   ].join('');
   animateCounters(el);
 }
@@ -2511,7 +2568,11 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     + ' class="compare-card vpipe-card' + (isActive ? ' det-active' : '') + '"'
     + ' onclick="setDetailAud(\'' + aud + '\')" role="button" tabindex="0"'
     + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();setDetailAud(\'' + aud + '\')}"';
-  var hdr = '<div class="cc-hdr2"><span class="cc-pipe-lbl ' + lblCls + '">' + esc(label) + '</span></div>';
+  var vcInk = (VERT_COLORS[cfg.key] || VERT_COLORS.Others).ink;
+  var hdr = '<div class="cc-hdr2" style="flex-direction:column;align-items:flex-start;gap:3px;margin-bottom:10px">'
+    + '<span style="font-size:13px;font-weight:700;letter-spacing:-.2px;color:' + vcInk + '">' + esc(cfg.name) + '</span>'
+    + '<span class="cc-pipe-lbl ' + lblCls + '">' + esc(label) + '</span>'
+    + '</div>';
   var tot = v.total || 0;
   if (!tot) {
     return '<div' + attrs + '>' + hdr + '<div class="no-data" style="padding:24px 0">No data</div></div>';
@@ -2600,7 +2661,9 @@ function renderInlineDetail(key) {
     + '</div>';
 
   var head = '<div class="vds-head">'
-    + '<span class="vds-title">Detailed View' + (cfg ? ' · ' + esc(cfg.name) : '') + '</span>'
+    + '<span class="vds-title">Records'
+    + (cfg ? ' <span style="color:var(--vc-ink,var(--blue))">' + esc(cfg.name) + '</span>' : '')
+    + '</span>'
     + audTabs
     + (rowCount > 0 ? '<span class="vds-count">' + fmt(rowCount) + ' rows</span>' : '')
     + '</div>';
