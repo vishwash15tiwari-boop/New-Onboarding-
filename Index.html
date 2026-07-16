@@ -696,7 +696,6 @@ body.view-gst #main{background:var(--gp-bg)}
 body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px rgba(224,115,50,.3)}
 
 /* Year filter chips */
-.gp-year-chips{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}
 .gp-year-chip{font-family:inherit;font-size:11px;font-weight:600;padding:4px 11px;border:1px solid var(--gp-border2);border-radius:6px;cursor:pointer;background:var(--gp-card);color:var(--gp-ink2);transition:background .18s,border-color .18s,color .18s,transform .18s;white-space:nowrap;line-height:1.35}
 .gp-year-chip:hover{border-color:var(--gp-orange);color:var(--gp-orange-ink);transform:translateY(-1px)}
 .gp-year-chip.active{background:var(--gp-orange);border-color:var(--gp-orange);color:#fff}
@@ -763,11 +762,7 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 .gp-card-sub{font-size:10px;color:var(--gp-ink3);font-weight:500;margin-top:1px}
 .gp-empty{color:var(--gp-ink3);font-size:12px;text-align:center;padding:24px 10px}
 
-/* ── Aging row: line chart + FY cards ── */
-.gp-aging-row{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:12px;margin-bottom:12px}
-.gp-chart-wrap{width:100%;overflow:hidden;margin-top:6px}
-.gp-line-svg{width:100%;height:auto;display:block}
-.gp-axis-txt{fill:var(--gp-ink3);font-size:9.5px;font-weight:500;font-family:inherit}
+/* ── FY cards row ── */
 .gp-fy-list{display:flex;flex-direction:column;gap:6px;max-height:none;overflow-y:auto;padding-right:2px}
 .gp-fy-list-row{flex-direction:row;flex-wrap:wrap;overflow-y:visible;padding-right:0;gap:8px}
 .gp-fy-card{
@@ -779,14 +774,10 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 .gp-fy-card:hover{box-shadow:var(--shadow-card);border-color:var(--gp-border2);transform:translateX(2px)}
 .gp-fy-card.active{border-color:var(--gp-orange);background:var(--gp-orange-bg)}
 .gp-fy-label{font-size:12px;font-weight:800;color:var(--gp-ink);letter-spacing:.2px;text-transform:uppercase}
-.gp-fy-val{font-size:14px;font-weight:800;color:var(--gp-ink);letter-spacing:-.4px;margin:2px 0 5px;font-variant-numeric:tabular-nums}
-.gp-fy-track{height:3px;border-radius:3px;background:var(--gp-bg2);overflow:hidden}
-.gp-fy-bar{height:100%;border-radius:3px;background:var(--gp-orange);transition:width .7s cubic-bezier(.4,0,.2,1)}
 .gp-fy-breakdown{margin-top:7px;display:flex;flex-direction:column;gap:3px}
 .gp-fy-brow{display:flex;align-items:center;gap:3px;font-size:9.5px;line-height:1.3}
 .gp-fy-blbl{color:var(--gp-ink3);font-weight:500;min-width:90px;flex-shrink:0}
 .gp-fy-bamt{font-weight:700;font-variant-numeric:tabular-nums;flex:1;text-align:right;min-width:0;overflow:hidden;word-break:break-all}
-.gp-fy-bpct{font-size:8.5px;color:var(--gp-ink3);font-weight:500;min-width:24px;text-align:right}
 
 /* ── Charts row: donut / bars / compliance ── */
 .gp-charts-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
@@ -848,23 +839,6 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 .gp-amt.muted{font-weight:450;color:var(--gp-ink3)}
 .gp-table-note{padding:9px 16px;font-size:10.5px;color:var(--gp-ink3);border-top:1px solid var(--gp-border);background:var(--gp-card2)}
 
-/* ── FY year-wise breakdown table ── */
-.gp-fyt{width:100%;border-collapse:collapse;font-size:11.5px}
-.gp-fyt thead th{padding:6px 12px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gp-ink3);border-bottom:1px solid var(--gp-border);white-space:nowrap;background:var(--gp-card2)}
-.gp-fyt thead th:not(:first-child){text-align:right}
-.gp-fyt tbody td{padding:8px 12px;border-bottom:1px solid var(--gp-border)}
-.gp-fyt tbody tr:last-child td{border-bottom:none}
-.gp-fyt tbody tr:hover td{background:var(--gp-card2)}
-.gp-fyt-fy{font-size:11px;font-weight:700;color:var(--gp-ink);white-space:nowrap}
-.gp-fyt-num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--gp-ink);white-space:nowrap}
-.gp-fyt-orange{color:var(--gp-orange)}
-.gp-fyt-green{color:var(--gp-green)}
-.gp-fyt-gold{color:var(--gp-gold)}
-.gp-fyt-cnt{text-align:right;font-size:11px;font-weight:600;color:var(--gp-ink2);font-variant-numeric:tabular-nums}
-.gp-fyt-pct{font-size:9px;font-weight:500;color:var(--gp-ink3);margin-left:4px}
-.gp-fyt-barwrap{height:3px;border-radius:3px;background:var(--gp-bg2);overflow:hidden;margin-top:3px}
-.gp-fyt-bar{height:100%;border-radius:3px;background:var(--gp-orange);transition:width .7s cubic-bezier(.4,0,.2,1)}
-
 /* ── GST back-nav row ── */
 .gp-back-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .gp-back-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:7px;border:1px solid var(--gp-border);background:var(--gp-card);color:var(--gp-ink2);font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
@@ -877,7 +851,6 @@ body.view-gst #aud-gst.active{background:var(--gp-orange);box-shadow:0 2px 8px r
 /* ── GST view responsive ── */
 @media (max-width:1100px){
   .gp-charts-row{grid-template-columns:1fr}
-  .gp-aging-row{grid-template-columns:1fr}
   .gp-fy-list{flex-direction:row;flex-wrap:wrap;max-height:none}
   .gp-fy-card{flex:1 1 120px}
 }
@@ -3507,10 +3480,14 @@ function renderGSTSkeleton() {
     return '<div class="gp-card"><div class="gp-skel" style="height:16px;width:50%;margin-bottom:18px"></div>'
       + '<div class="gp-skel" style="height:150px;width:100%"></div></div>';
   }).join('') + '</div>';
-  host.innerHTML = kpi
-    + '<div class="gp-aging-row"><div class="gp-card"><div class="gp-skel" style="height:16px;width:40%;margin-bottom:18px"></div><div class="gp-skel" style="height:200px;width:100%"></div></div>'
-    + '<div class="gp-card"><div class="gp-skel" style="height:100%;min-height:240px;width:100%"></div></div></div>'
-    + charts;
+  var fyCards = '<div class="gp-card" style="margin-bottom:12px">'
+    + '<div class="gp-skel" style="height:13px;width:36%;margin-bottom:14px"></div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    + [0,0,0,0,0,0].map(function() {
+        return '<div class="gp-skel" style="height:90px;flex:1 1 130px;min-width:130px;border-radius:8px"></div>';
+      }).join('')
+    + '</div></div>';
+  host.innerHTML = kpi + fyCards + charts;
 }
 
 function gstBackRow() {
@@ -3527,34 +3504,6 @@ function gstBackRow() {
   return '<div class="gp-back-row">'
     + '<button class="gp-back-btn" onclick="switchView(\'onboarding\')">← Back to Dashboard</button>'
     + rightSide
-    + '</div>';
-}
-
-function gstFYTable() {
-  var g = GST;
-  if (!g.fyBreakdown || !g.fyBreakdown.length) return '';
-  var maxTotal = Math.max.apply(null, g.fyBreakdown.map(function(r) { return r.total; }).concat([1]));
-  var rows = g.fyBreakdown.map(function(r) {
-    var barW = Math.round(r.total / maxTotal * 100);
-    var matPct = r.total ? Math.round(r.material / r.total * 100) : 0;
-    var gstPct = r.total ? Math.round(r.gst     / r.total * 100) : 0;
-    return '<tr>'
-      + '<td class="gp-fyt-fy">' + esc(r.fy) + '</td>'
-      + '<td class="gp-fyt-num gp-fyt-orange">' + fmtRupee(r.total)
-      +   '<div class="gp-fyt-barwrap"><div class="gp-fyt-bar" style="width:' + barW + '%"></div></div></td>'
-      + '<td class="gp-fyt-num gp-fyt-green">' + fmtRupee(r.material) + '<span class="gp-fyt-pct">' + matPct + '%</span></td>'
-      + '<td class="gp-fyt-num gp-fyt-gold">'  + fmtRupee(r.gst)      + '<span class="gp-fyt-pct">' + gstPct + '%</span></td>'
-      + '<td class="gp-fyt-cnt">' + fmt(r.vendors) + '</td>'
-      + '</tr>';
-  }).join('');
-  return '<div class="gp-card" style="margin-bottom:12px;overflow-x:auto">'
-    + '<div class="gp-card-h"><div>'
-    +   '<div class="gp-card-title">Year-wise Breakdown</div>'
-    +   '<div class="gp-card-sub">Outstanding split by financial year — unfiltered</div>'
-    + '</div></div>'
-    + '<table class="gp-fyt"><thead><tr>'
-    + '<th>Financial Year</th><th>Total Outstanding</th><th>Material Balance</th><th>GST Balance</th><th>Vendors</th>'
-    + '</tr></thead><tbody>' + rows + '</tbody></table>'
     + '</div>';
 }
 
@@ -3607,16 +3556,6 @@ function gstEmptyState() {
     + '<div style="color:var(--gp-ink2);max-width:520px;margin:0 auto 20px;line-height:1.5">Once the "Vendor Payables" tab of the GST Payables sheet is populated, this dashboard fills in automatically on the next refresh (within ~5 minutes), or hit refresh below.</div>'
     + '<button onclick="loadGSTData(false)" style="padding:9px 22px;border-radius:11px;border:1px solid var(--gp-orange);background:var(--gp-orange);color:#fff;font-size:13px;font-weight:600;cursor:pointer">↻ Check again</button>'
     + '</div>';
-}
-
-function renderGSTYearChips() {
-  var host = document.getElementById('gp-year-chips');
-  if (!host) return;
-  var years = ['All'].concat((GST && GST.fyList) || []);
-  host.innerHTML = years.map(function(y) {
-    var label = y === 'All' ? 'All' : fyShort(y);
-    return '<button class="gp-year-chip' + (gpYear === y ? ' active' : '') + '" onclick="gpSetYear(\'' + y + '\')">' + esc(label) + '</button>';
-  }).join('');
 }
 
 function gpSetYear(y) {
@@ -3690,58 +3629,6 @@ function gstAgingSection() {
     + '</div>'
     + '<div class="gp-fy-list gp-fy-list-row">' + fyCards + '</div>'
     + '</div>';
-}
-
-function gpLineChart(pts) {
-  if (!pts || !pts.length) return '<div class="gp-empty" style="height:200px;display:flex;align-items:center;justify-content:center">No data</div>';
-  var W = 680, H = 250, padL = 56, padR = 18, padT = 18, padB = 38;
-  var n = pts.length;
-  var max = Math.max.apply(null, pts.map(function(p) { return p.value; }).concat([1]));
-  var niceMax = gpNiceCeil(max);
-  var innerW = W - padL - padR, innerH = H - padT - padB;
-  var X = function(i) { return padL + (n === 1 ? innerW / 2 : innerW * i / (n - 1)); };
-  var Y = function(v) { return padT + innerH - (v / niceMax) * innerH; };
-  var ticks = 4, grid = '';
-  for (var i = 0; i <= ticks; i++) {
-    var gv = niceMax * i / ticks, gy = Y(gv);
-    grid += '<line x1="' + padL + '" y1="' + gy.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + gy.toFixed(1) + '" stroke="var(--gp-grid)" stroke-width="1"/>'
-      + '<text x="' + (padL - 9) + '" y="' + (gy + 3.5).toFixed(1) + '" text-anchor="end" class="gp-axis-txt">' + gpAxisFmt(gv) + '</text>';
-  }
-  var coords = pts.map(function(p, i) { return [X(i), Y(p.value)]; });
-  var line = gpSmoothPath(coords);
-  var area = line + ' L' + X(n - 1).toFixed(1) + ' ' + (padT + innerH) + ' L' + X(0).toFixed(1) + ' ' + (padT + innerH) + ' Z';
-  var dots = pts.map(function(p, i) {
-    return '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(p.value).toFixed(1) + '" r="4.5" fill="var(--gp-orange)" stroke="#fff" stroke-width="2">'
-      + '<title>' + esc(fyFull(p.fy)) + ': ' + fmtRupee(p.value) + '</title></circle>';
-  }).join('');
-  var xlabels = pts.map(function(p, i) {
-    // Anchor the edge labels inward so they never clip the SVG bounds.
-    var anchor = i === 0 ? 'start' : (i === n - 1 ? 'end' : 'middle');
-    return '<text x="' + X(i).toFixed(1) + '" y="' + (H - 13) + '" text-anchor="' + anchor + '" class="gp-axis-txt">' + esc(fyFull(p.fy)) + '</text>';
-  }).join('');
-  return '<div class="gp-chart-wrap"><svg viewBox="0 0 ' + W + ' ' + H + '" class="gp-line-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Outstanding by financial year">'
-    + '<defs><linearGradient id="gpArea" x1="0" y1="0" x2="0" y2="1">'
-    +   '<stop offset="0" stop-color="var(--gp-orange)" stop-opacity=".26"/><stop offset="1" stop-color="var(--gp-orange)" stop-opacity="0"/>'
-    + '</linearGradient></defs>'
-    + grid
-    + '<path d="' + area + '" fill="url(#gpArea)"/>'
-    + '<path d="' + line + '" fill="none" stroke="var(--gp-orange)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'
-    + dots + xlabels
-    + '</svg></div>';
-}
-
-// Catmull-Rom → cubic Bézier smoothing for a pleasant aging curve.
-function gpSmoothPath(p) {
-  if (!p.length) return '';
-  if (p.length === 1) return 'M' + p[0][0].toFixed(1) + ' ' + p[0][1].toFixed(1);
-  var d = 'M' + p[0][0].toFixed(1) + ' ' + p[0][1].toFixed(1);
-  for (var i = 0; i < p.length - 1; i++) {
-    var p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2, t = 0.16;
-    var c1x = p1[0] + (p2[0] - p0[0]) * t, c1y = p1[1] + (p2[1] - p0[1]) * t;
-    var c2x = p2[0] - (p3[0] - p1[0]) * t, c2y = p2[1] - (p3[1] - p1[1]) * t;
-    d += ' C' + c1x.toFixed(1) + ' ' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ' ' + c2y.toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
-  }
-  return d;
 }
 
 // ── Charts row: GST status donut · vertical distribution · compliance ──
@@ -3956,21 +3843,6 @@ function animateGSTCounters() {
 function fmtRupee(v) {
   if (v === null || v === undefined || isNaN(v)) return '₹0';
   return '₹' + Math.round(v).toLocaleString('en-IN');
-}
-// Compact axis label: ₹1.20Cr / ₹80.0L / ₹5.0K / ₹0
-function gpAxisFmt(v) {
-  if (!v) return '₹0';
-  if (v >= 1e7) return '₹' + (v / 1e7).toFixed(2) + 'Cr';
-  if (v >= 1e5) return '₹' + (v / 1e5).toFixed(1) + 'L';
-  if (v >= 1e3) return '₹' + (v / 1e3).toFixed(0) + 'K';
-  return '₹' + Math.round(v);
-}
-// Round a max up to a clean axis ceiling (1/2/2.5/5 × 10ⁿ).
-function gpNiceCeil(v) {
-  if (v <= 0) return 1;
-  var exp = Math.floor(Math.log(v) / Math.LN10), base = v / Math.pow(10, exp);
-  var nice = base <= 1 ? 1 : base <= 2 ? 2 : base <= 2.5 ? 2.5 : base <= 5 ? 5 : 10;
-  return nice * Math.pow(10, exp);
 }
 // 'FY 21-22' → '2021-22'  (financial years here are all in the 2000s)
 function fyFull(fy) {

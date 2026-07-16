@@ -744,19 +744,6 @@ function gpBool_(v) {
             'ok': 1, 'cleared': 1, 'yes ': 1, '✓': 1, 'true ': 1 })[s] === 1;
 }
 
-// Normalize any financial-year notation to "FY YY-YY" (e.g. "2021-22",
-// "2021-2022", "FY21-22", "21-22" → "FY 21-22").
-function gpNormFY_(v) {
-  if (v instanceof Date) { var yy = fyStartYear(v); return 'FY ' + String(yy).slice(2) + '-' + String(yy + 1).slice(2); }
-  var s = String(v || '').trim();
-  if (!s) return '';
-  var m = s.match(/(\d{2,4})\s*[-\/]\s*(\d{2,4})/);
-  if (m) return 'FY ' + m[1].slice(-2) + '-' + m[2].slice(-2);
-  var y = s.match(/(\d{4})/);
-  if (y) { var yr = parseInt(y[1], 10); return 'FY ' + String(yr).slice(2) + '-' + String(yr + 1).slice(2); }
-  return s;
-}
-
 // Resolve the target tab: prefer the one literally named "Vendor Payables"
 // (case/spacing-insensitive), else fall back to the first tab. Guards against
 // a reordered workbook or a hidden helper sheet sitting at index 0.
