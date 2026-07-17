@@ -380,6 +380,7 @@ select,input{font-family:inherit}
 /* Onboarded-by-category cards */
 .cc-cats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
 .cc-cat{
+  position:relative;
   flex:1 1 120px;
   background:var(--card);
   border:none;
@@ -388,6 +389,13 @@ select,input{font-family:inherit}
   min-width:0;
   box-shadow:var(--shadow-card);
 }
+/* Drill-down affordance — one quiet chevron, slides on hover */
+.cc-cat-click::after{
+  content:'›';position:absolute;top:10px;right:14px;
+  font-size:17px;line-height:1;font-weight:600;color:var(--txt3);
+  transition:transform .25s var(--ease-out),color .2s;
+}
+.cc-cat-click:hover::after{transform:translateX(3px);color:var(--txt)}
 .cc-cat b{
   display:block;
   font-size:20px;font-weight:700;
@@ -407,8 +415,7 @@ select,input{font-family:inherit}
 .cc-cat-click:active{transform:scale(.98);transition-duration:.12s}
 #cat-detail-wrap{animation:riseIn .55s var(--ease-sheet) both;margin-top:16px;margin-bottom:32px}
 #cat-detail-wrap.no-anim,#cat-detail-wrap.no-anim *{animation:none!important}
-.cc-cat-hint{display:block;font-size:11px;font-weight:500;color:var(--blue);margin-top:8px;font-style:normal;letter-spacing:0;transition:transform .3s var(--ease-out)}
-.cc-cat-click:hover .cc-cat-hint{transform:translateX(4px);opacity:1}
+/* (link-line hint removed — the ::after chevron carries the affordance) */
 
 /* Donut breakdown — Apple-ring sweep on reveal, hover pop per segment */
 .donut-seg{transition:stroke-width .3s var(--ease-out)}
@@ -489,17 +496,18 @@ select,input{font-family:inherit}
 table{width:100%;border-collapse:collapse;font-size:13px}
 thead th{
   background:var(--card);
-  padding:12px 16px;
+  padding:11px 16px;
   text-align:left;
-  font-weight:600;
+  font-weight:700;
   color:var(--txt2);
   white-space:nowrap;
   position:sticky;top:0;z-index:10;
   border-bottom:1px solid var(--border);
   cursor:pointer;user-select:none;
   transition:color .12s;
-  font-size:12px;
-  letter-spacing:0;
+  font-size:10.5px;
+  letter-spacing:.07em;
+  text-transform:uppercase;
 }
 thead th:hover{color:var(--txt)}
 thead th.sort-asc::after{content:' ↑';color:var(--txt)}
@@ -507,7 +515,16 @@ thead th.sort-desc::after{content:' ↓';color:var(--txt)}
 tbody tr{border-bottom:1px solid var(--border);transition:background .15s ease}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:rgba(0,0,0,.02)}
-tbody td{padding:13px 16px;color:var(--txt);vertical-align:middle;white-space:nowrap;font-weight:400;font-size:13px}
+tbody td{padding:12px 16px;color:var(--txt);vertical-align:middle;white-space:nowrap;font-weight:400;font-size:13px}
+/* Secondary line under a primary cell value (e.g. record ID under the name) */
+.td-sub{display:block;font-size:10.5px;color:var(--txt3);font-weight:500;font-variant-numeric:tabular-nums;margin-top:2px}
+/* Transacted value — one quiet chip, details in the tooltip */
+.txn-chip{
+  display:inline-block;font-size:11px;font-weight:650;
+  color:var(--st-transacted-tx);background:var(--st-transacted-bg);
+  padding:3px 10px;border-radius:var(--pill);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
 .status-chip{
   display:inline-flex;align-items:center;gap:4px;
   font-size:11px;font-weight:600;
@@ -595,8 +612,28 @@ tbody td{padding:13px 16px;color:var(--txt);vertical-align:middle;white-space:no
 .vd-retry:active{transform:scale(.97)}
 .vd-close:hover{background:rgba(120,120,128,.18);color:var(--txt)}
 .vd-table-wrap{max-height:420px;overflow:auto}
-.vd-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:18px}
-.vd-filters .filter-input{width:200px}
+.vd-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:18px}
+/* Pill select — label lives inside ("Category: All"), no floating labels */
+.vd-pill{
+  font-family:inherit;font-size:12px;font-weight:500;color:var(--txt);
+  background:var(--seg-track);border:none;border-radius:var(--pill);
+  padding:7px 28px 7px 14px;cursor:pointer;outline:none;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236E6E73' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;
+  transition:background-color .15s;
+  max-width:180px;text-overflow:ellipsis;
+}
+.vd-pill:hover{background-color:rgba(120,120,128,.18)}
+.vd-pill:focus-visible{box-shadow:var(--ring)}
+/* Search — quiet pill, grows to fill the row */
+.vd-filters .vd-search{
+  flex:1;min-width:180px;width:auto;
+  border:none;background:var(--seg-track);border-radius:var(--pill);
+  padding:8px 16px;font-size:12px;
+}
+.vd-filters .vd-search:hover{background:rgba(120,120,128,.18)}
+.vd-filters .vd-search:focus{background:var(--card);box-shadow:var(--ring)}
 #top-custom{align-items:center;gap:6px}
 .vd-note{font-size:11.5px;color:var(--txt3);margin-top:10px}
 
@@ -615,11 +652,16 @@ tbody td{padding:13px 16px;color:var(--txt);vertical-align:middle;white-space:no
 /* ── Kanban board — Apple card grid ── */
 .kb-wrap{overflow-x:auto;padding-bottom:4px}
 .kb-board{display:grid;grid-template-columns:repeat(4,minmax(200px,1fr));gap:12px;min-width:820px}
-.kb-col{background:var(--bg2);border:none;border-radius:var(--r2);display:flex;flex-direction:column;box-shadow:none}
-.kb-col-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border);border-radius:var(--r2) var(--r2) 0 0;background:transparent}
-.kb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.kb-col-title{font-size:11px;font-weight:600;letter-spacing:0;color:var(--txt);white-space:nowrap}
-.kb-count{margin-left:auto;font-size:10.5px;font-weight:600;background:var(--seg-track);border:none;border-radius:var(--pill);padding:2px 9px;color:var(--txt2);font-variant-numeric:tabular-nums}
+/* Stage columns — a sharp 3px rule in the stage colour crowns each lane */
+.kb-col{background:var(--bg2);border:none;border-top:3px solid var(--st-total);border-radius:var(--r2);display:flex;flex-direction:column;box-shadow:none}
+.kb-col.draft   {border-top-color:var(--st-draft)}
+.kb-col.review  {border-top-color:var(--st-review)}
+.kb-col.done    {border-top-color:var(--st-onboarded)}
+.kb-col.rejected{border-top-color:var(--st-rejected)}
+.kb-col-head{display:flex;align-items:center;gap:8px;padding:11px 14px 8px;border-bottom:none;border-radius:var(--r2) var(--r2) 0 0;background:transparent}
+.kb-dot{display:none}
+.kb-col-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt2);white-space:nowrap}
+.kb-count{margin-left:auto;font-size:11px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;background:none;border:none;padding:0}
 .kb-cards{padding:8px;display:flex;flex-direction:column;gap:7px;overflow-y:auto;max-height:420px}
 .kb-card{background:var(--card);border:none;border-radius:10px;padding:10px 12px;box-shadow:var(--shadow-sm);transition:box-shadow .25s var(--ease-out),transform .25s var(--ease-out)}
 .kb-card:hover{box-shadow:var(--shadow);transform:scale(1.02)}
@@ -630,7 +672,7 @@ tbody td{padding:13px 16px;color:var(--txt);vertical-align:middle;white-space:no
 .kb-gst{font-size:9.5px;font-weight:600;padding:1.5px 7px;border-radius:8px;white-space:nowrap}
 .kb-gst.ok{background:var(--st-onboarded-bg);color:var(--st-onboarded-tx)}
 .kb-gst.bad{background:var(--st-rejected-bg);color:var(--st-rejected-tx)}
-.kb-age{font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kb-age{font-size:10.5px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
 .kb-empty{font-size:11px;color:var(--txt3);text-align:center;padding:20px 8px}
 .kb-more{font-size:10.5px;color:var(--txt3);text-align:center;padding:2px 0 6px}
 .kb-col.draft    .kb-dot{background:var(--st-draft)}
@@ -677,13 +719,17 @@ tbody td{padding:13px 16px;color:var(--txt);vertical-align:middle;white-space:no
 .rm-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .rm-sec{padding:14px 24px;border-bottom:1px solid var(--border)}
 .rm-sec:last-child{border-bottom:none;padding-bottom:22px}
-.rm-sec-ttl{font-size:11px;color:var(--txt2);font-weight:600;letter-spacing:0;margin-bottom:10px}
+.rm-sec-ttl{font-size:10px;color:var(--txt2);font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:10px}
 .rm-g{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px}
 .rm-f{min-width:0}
 .rm-fl{font-size:10.5px;color:var(--txt2);font-weight:500;letter-spacing:0;margin-bottom:3px}
 .rm-fv{font-size:13px;color:var(--txt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rm-fv.mu{color:var(--txt3);font-weight:500}
-.rm-fv.mo{font-family:'Courier New',monospace;font-size:11.5px;letter-spacing:.4px}
+.rm-fv.mo{
+  font-family:'SF Mono','Menlo','Consolas',monospace;font-size:12px;letter-spacing:.5px;
+  display:inline-block;background:var(--bg2);border-radius:8px;padding:6px 12px;
+  font-variant-numeric:tabular-nums;
+}
 .rm-txn{display:flex;align-items:flex-start;gap:12px;border-radius:12px;padding:12px 14px}
 .rm-txn.yes{background:var(--st-onboarded-bg);border:none}
 .rm-txn.no {background:var(--bg2);border:none}
@@ -881,10 +927,10 @@ body.view-gst #main{background:transparent}
 /* ── Vendor register table — Apple clean ── */
 .gp-table-card{background:var(--gp-card);border:none;border-radius:var(--r);box-shadow:var(--shadow-card);overflow:hidden}
 .gp-table-head{padding:14px 18px 12px}
-.gp-table-head .gp-card-title{font-size:11px}
+.gp-table-head .gp-card-title{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--gp-ink2)}
 .gp-table-scroll{overflow-x:auto;max-height:580px;overflow-y:auto}
 .gp-table{width:100%;border-collapse:collapse;font-size:13px}
-.gp-table thead th{position:sticky;top:0;z-index:5;background:var(--gp-card);padding:10px 14px;text-align:left;font-size:11.5px;font-weight:600;color:var(--gp-ink2);text-transform:none;letter-spacing:0;white-space:nowrap;border-bottom:1px solid var(--gp-border);cursor:pointer;user-select:none;transition:color .12s}
+.gp-table thead th{position:sticky;top:0;z-index:5;background:var(--gp-card);padding:10px 14px;text-align:left;font-size:10.5px;font-weight:700;color:var(--gp-ink2);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap;border-bottom:1px solid var(--gp-border);cursor:pointer;user-select:none;transition:color .12s}
 .gp-table thead th:hover{color:var(--gp-ink)}
 .gp-table thead th.gp-sort-asc::after{content:' ↑';color:var(--gp-ink)}
 .gp-table thead th.gp-sort-desc::after{content:' ↓';color:var(--gp-ink)}
@@ -1651,6 +1697,7 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .sp-search-row{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid rgba(0,0,0,.07)}
 .sp-icon{color:var(--txt3);flex-shrink:0}
 .sp-input{flex:1;border:none;outline:none;font-family:inherit;font-size:17px;font-weight:400;color:var(--txt);background:transparent;letter-spacing:-.2px}
+.sp-input:focus,.sp-input:focus-visible{box-shadow:none;outline:none}
 .sp-input::placeholder{color:var(--txt3)}
 .sp-esc{font-family:inherit;font-size:11px;font-weight:600;color:var(--txt3);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:3px 7px;cursor:pointer;flex-shrink:0;letter-spacing:.05em}
 .sp-results{max-height:420px;overflow-y:auto;padding:8px}
@@ -2389,7 +2436,6 @@ function cardCategories(v, max) {
       + ' onclick="filterByCategory(\'' + catJs + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();filterByCategory(\'' + catJs + '\')}">'
       + '<b>' + fmt(n) + '</b><span>' + catEsc + '</span>'
-      + '<em class="cc-cat-hint">Click for details →</em>'
       + '</div>';
   }).join('') + '</div>';
 }
@@ -2908,7 +2954,7 @@ function renderInlineDetail(key) {
       ? '<div class="cc-cap vd-cat-cap">Onboarded by Category</div>' + cardCategories(vD, 12)
       : '';
     var cols = [
-      ['id', 'ID'], ['name', 'Business Name'], ['category', 'Category'], ['vendorType', 'Vendor Type'],
+      ['name', 'Business'], ['category', 'Category'], ['vendorType', 'Vendor Type'],
       ['status', 'Status'], ['gstin', 'GSTIN'], ['state', 'State'], ['createdDate', 'Created'],
       ['onbDate', 'Onboarded'], ['tat', 'TAT'], ['txn', 'Transaction'],
     ];
@@ -2921,8 +2967,8 @@ function renderInlineDetail(key) {
       + vdSelect('vdf-vendor',   'Vendor Type', vdUnique(vertRows, 'vendorType'), vdF.vendor,   null)
       + vdSelect('vdf-status',   'Status',      vdUnique(vertRows, 'status'),     vdF.status,   STATUS_LABELS)
       + vdSelect('vdf-gst',      'GST',         ['Active', 'Inactive'],           vdF.gst,      null)
-      + '<input type="text" class="filter-input" id="vdf-search" placeholder="🔍 Search name / GSTIN / ID…" value="' + esc(vdF.search) + '" oninput="vdfSearchDeb()">'
-      + '<button class="vd-close" onclick="vdfClear()">✕ Clear</button>'
+      + '<input type="text" class="filter-input vd-search" id="vdf-search" placeholder="Search name, GSTIN or ID" value="' + esc(vdF.search) + '" oninput="vdfSearchDeb()">'
+      + '<button class="vd-close" onclick="vdfClear()">Clear</button>'
       + '</div>';
     bodyContent = catSection
       + '<div id="cat-detail-wrap" style="display:none"></div>'
@@ -3317,14 +3363,15 @@ function vdUnique(rows, field) {
 }
 
 function vdSelect(id, label, options, current, labels) {
-  var html = '<div class="filter-group"><span class="filter-label">' + label + '</span>'
-    + '<select class="filter-select" id="' + id + '" onchange="vdfChange()">'
-    + '<option value="All">All</option>';
+  // Pill select — the label lives inside the control ("Category: All"),
+  // matching the GST filter bar. No floating form labels.
+  var html = '<select class="vd-pill" id="' + id + '" onchange="vdfChange()">'
+    + '<option value="All">' + esc(label) + ': All</option>';
   options.forEach(function(o) {
     html += '<option value="' + esc(o) + '"' + (current === o ? ' selected' : '') + '>'
       + esc((labels && labels[o]) || o) + '</option>';
   });
-  return html + '</select></div>';
+  return html + '</select>';
 }
 
 // renderVertDetail() is defined above (redirects to renderInlineDetail).
@@ -3509,29 +3556,29 @@ function renderVdTable() {
         _rmD[key] = r;
         var txnCell;
         if (r.hasTransacted) {
-          var val  = r.txnValue !== null ? '<br><span style="font-size:11px;color:var(--st-transacted-tx);font-weight:600">' + fmtINR(r.txnValue) + '</span>' : '';
-          var date = r.txnDate && r.txnDate !== '—' ? '<br><span style="font-size:10px;color:var(--txt3)">' + esc(r.txnDate) + '</span>' : '';
-          txnCell  = '<span class="gst-ok">✓ Transacted</span>' + val + date;
+          var txnTip = 'Transacted' + (r.txnDate && r.txnDate !== '—' ? ' · ' + r.txnDate : '');
+          txnCell = '<span class="txn-chip" title="' + esc(txnTip) + '">'
+            + (r.txnValue !== null ? fmtINR(r.txnValue) : 'Transacted') + '</span>';
         } else if (r.status === 'COMPLETED') {
-          txnCell = '<span style="color:var(--txt3);font-size:11.5px;font-weight:500">— Not yet</span>';
+          txnCell = '<span style="color:var(--txt3);font-size:11.5px;font-weight:500">Not yet</span>';
         } else {
           txnCell = '<span class="text-muted">—</span>';
         }
         return '<tr class="vd-tr" onclick="openRecModal(' + key + ')" title="View details">'
-          + '<td class="text-muted">' + esc(r.id) + '</td>'
-          + '<td><strong>' + esc(r.name || '—') + '</strong></td>'
+          + '<td><strong>' + esc(r.name || '—') + '</strong>'
+          +   '<span class="td-sub">' + esc(r.id) + '</span></td>'
           + '<td>' + esc(r.category || '—') + '</td>'
           + '<td class="text-muted">' + esc(r.vendorType || '—') + '</td>'
           + '<td>' + statusChip(r.status) + '</td>'
-          + '<td style="font-size:11px">' + (r.hasGST ? '<span class="gst-ok">✓ ' + esc(r.gstin) + '</span>' : '<span class="gst-bad">✗ Missing</span>') + '</td>'
+          + '<td style="font-size:11px">' + (r.hasGST ? '<span class="gst-ok">' + esc(r.gstin) + '</span>' : '<span class="gst-bad">Missing</span>') + '</td>'
           + '<td class="text-muted">' + esc(r.state || '—') + '</td>'
           + '<td class="text-muted">' + esc(r.createdDate) + '</td>'
           + '<td class="text-muted">' + esc(r.onbDate) + '</td>'
           + '<td>' + tatChip(r.tat) + '</td>'
-          + '<td style="font-size:11.5px">' + txnCell + '</td>'
+          + '<td>' + txnCell + '</td>'
           + '</tr>';
       }).join('')
-    : '<tr><td colspan="11" class="no-data">No records match the selected filters</td></tr>';
+    : '<tr><td colspan="10" class="no-data">No records match the selected filters</td></tr>';
 
   if (note) {
     note.textContent = 'Showing ' + fmt(shown.length) + ' of ' + fmt(filtered.length)
@@ -4048,7 +4095,7 @@ function gstFiltersRow() {
   var g = GST;
   var itcVals = gpDistinct(g.rows, 'itcCheck');
   return '<div class="gp-filters">'
-    + '<div class="gp-search"><input type="text" class="gp-input" id="gp-search" placeholder="🔍 Search vendor / GST No…" value="' + esc(gpFilters.search) + '" oninput="gpSearchDeb()"></div>'
+    + '<div class="gp-search"><input type="text" class="gp-input" id="gp-search" placeholder="Search vendor or GST No" value="' + esc(gpFilters.search) + '" oninput="gpSearchDeb()"></div>'
     + gpSelect('gp-status', 'GST Status', g.gstStatus.map(function(s) { return s.label; }), gpFilters.status)
     + gpSelect('gp-vertical', 'Vertical', g.verticals.map(function(s) { return s.label; }), gpFilters.vertical)
     + gpSelect('gp-msme', 'MSME', g.msme.map(function(s) { return s.label; }), gpFilters.msme)
