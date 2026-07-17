@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Enterprise Business Control Tower</title>
+<title>Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -913,17 +913,12 @@ body.view-gst #main{background:transparent}
 .gp-leg{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--gp-ink2);font-weight:500}
 .gp-leg b{margin-left:auto;color:var(--gp-ink);font-weight:700;font-variant-numeric:tabular-nums}
 .gp-leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
-.gp-vbars{display:flex;align-items:flex-end;justify-content:space-around;gap:5px;height:140px;margin-top:10px;padding:0 2px}
-.gp-vbar-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%}
-.gp-vbar{width:60%;max-width:26px;min-height:3px;border-radius:5px 5px 0 0;transition:height .7s cubic-bezier(.4,0,.2,1)}
-.gp-vbar-col:hover .gp-vbar{filter:brightness(1.08)}
-.gp-vbar-lbl{font-size:9.5px;color:var(--gp-ink2);font-weight:500;text-align:center;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;transform:rotate(-18deg);transform-origin:center}
-.gp-comp{display:flex;flex-direction:column;gap:10px;margin-top:10px}
-.gp-comp-row{display:grid;grid-template-columns:100px minmax(0,1fr) 36px;align-items:center;gap:8px}
-.gp-comp-lbl{font-size:10.5px;font-weight:600;color:var(--gp-ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gp-comp-track{height:8px;border-radius:6px;background:var(--gp-bg2);overflow:hidden}
-.gp-comp-fill{height:100%;border-radius:6px;min-width:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
-.gp-comp-val{font-size:10.5px;font-weight:700;color:var(--gp-ink);text-align:right;font-variant-numeric:tabular-nums}
+.gp-num-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.gp-num-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:8px}
+.gp-num-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.gp-num-lbl{font-size:11px;font-weight:600;color:var(--gp-ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gp-num-val{font-size:12px;font-weight:700;color:var(--gp-ink);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gp-num-pct{font-size:10.5px;font-weight:500;color:var(--gp-ink2)}
 
 /* ── Filters — Apple-style search bar ── */
 .gp-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--gp-card);border:none;border-radius:var(--r);padding:12px 16px;margin-bottom:14px;box-shadow:var(--shadow-card)}
@@ -1756,9 +1751,9 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 
 <!-- Loading -->
 <div id="loading-overlay">
-  <div class="load-wordmark">Recykal Control Tower</div>
+  <div class="load-wordmark">Dashboard</div>
   <div class="load-track"><div class="load-fill"></div></div>
-  <div class="loading-txt">Loading Enterprise Data…</div>
+  <div class="loading-txt">Loading Data…</div>
 </div>
 
 <!-- Header -->
@@ -2789,7 +2784,7 @@ function renderVertKPIs(key) {
   var meter   = '<div class="vkpi-meter" title="' + compPct + '% of pipeline onboarded"><i style="width:' + compPct + '%"></i></div>';
 
   el.innerHTML = [
-    mk(icFunnel, 'Total in Pipeline', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',    'all',       spTotal, ''),
+    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',    'all',       spTotal, ''),
     mk(icCheck,  'Onboarded',         fmt(compS + compB),   fmt(compS) + ' sellers · ' + fmt(compB) + ' buyers · ' + compPct + '% of pipeline', 'vk-onboarded', 'onboarded', spOnb, meter),
     mk(icTrend,  '% Transacted',      pctTxn,               'Seller transacted rate', 'vk-transacted',              'all',       spTxn,  ''),
     mk(icWarn,   'GSTIN Missing',     fmt(totMiss),          fmt(missS) + ' sellers · ' + fmt(missB) + ' buyers', totMiss > 0 ? 'vk-warn' : 'vk-total', 'missing', spMiss, ''),
@@ -4005,7 +4000,7 @@ function renderGSTLastUpdated() {
 function gstKPIs() {
   var g = GST;
   return '<div class="gp-kpi-row">'
-    + gpKpiCard('Total Outstanding', g.totalOutstanding, 'Across ' + fmt(g.vendorCount) + ' vendors', 'of grand total', 100, 'orange')
+    + gpKpiCard('Total Payables', g.totalOutstanding, 'Across ' + fmt(g.vendorCount) + ' vendors', 'of grand total', 100, 'orange')
     + gpKpiCard('Material Balance', g.materialBalance, 'Goods component of outstanding', 'Share of total', g.materialShare, 'green')
     + gpKpiCard('GST Balance', g.gstBalance, 'Tax component of outstanding', 'Share of total', g.gstShare, 'gold')
     + '</div>';
@@ -4091,23 +4086,24 @@ function gpDonut(segs) {
 function gpVBars(items) {
   items = (items || []).slice(0, 8);
   if (!items.length) return '<div class="gp-empty">No data</div>';
-  var max = Math.max.apply(null, items.map(function(x) { return x.value; }).concat([1]));
-  return '<div class="gp-vbars">' + items.map(function(it, i) {
-    var h = Math.max(4, Math.round(it.value / max * 132));
-    return '<div class="gp-vbar-col" title="' + esc(it.label) + ': ' + fmtRupee(it.value) + '">'
-      + '<div class="gp-vbar" style="height:' + h + 'px;background:' + GP_VERT_COLORS[i % GP_VERT_COLORS.length] + '"></div>'
-      + '<div class="gp-vbar-lbl">' + esc(it.label) + '</div></div>';
+  return '<div class="gp-num-list">' + items.map(function(it, i) {
+    return '<div class="gp-num-row">'
+      + '<span class="gp-num-dot" style="background:' + GP_VERT_COLORS[i % GP_VERT_COLORS.length] + '"></span>'
+      + '<span class="gp-num-lbl">' + esc(it.label) + '</span>'
+      + '<span class="gp-num-val">' + fmtRupee(it.value) + '</span>'
+      + '</div>';
   }).join('') + '</div>';
 }
 
 function gpCompliance(items) {
   var colors = ['var(--gp-orange)', 'var(--gp-gold)', 'var(--gp-green)', 'var(--gp-blue)'];
   if (!items || !items.length) return '<div class="gp-empty">No data</div>';
-  return '<div class="gp-comp">' + items.map(function(it, i) {
-    return '<div class="gp-comp-row" title="' + esc(it.label) + ': ' + fmt(it.count) + ' vendors (' + it.pct + '%)">'
-      + '<span class="gp-comp-lbl">' + esc(it.label) + '</span>'
-      + '<div class="gp-comp-track"><div class="gp-comp-fill" style="width:' + it.pct + '%;background:' + colors[i % colors.length] + '"></div></div>'
-      + '<span class="gp-comp-val">' + it.pct + '%</span></div>';
+  return '<div class="gp-num-list">' + items.map(function(it, i) {
+    return '<div class="gp-num-row">'
+      + '<span class="gp-num-dot" style="background:' + colors[i % colors.length] + '"></span>'
+      + '<span class="gp-num-lbl">' + esc(it.label) + '</span>'
+      + '<span class="gp-num-val">' + fmt(it.count) + ' <span class="gp-num-pct">(' + it.pct + '%)</span></span>'
+      + '</div>';
   }).join('') + '</div>';
 }
 
