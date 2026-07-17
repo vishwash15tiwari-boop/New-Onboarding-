@@ -72,7 +72,7 @@
   --shadow-sm:   0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
   --shadow:      0 2px 6px rgba(0,0,0,.04), 0 8px 28px rgba(0,0,0,.07);
   --shadow-lg:   0 4px 12px rgba(0,0,0,.05), 0 20px 48px rgba(0,0,0,.10);
-  --shadow-card: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05);
+  --shadow-card: 0 0 0 .5px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.05), 0 6px 20px rgba(0,0,0,.05);
   --ring:        0 0 0 3px rgba(0,113,227,.22);
 
   /* ── Geometry & motion — Apple 8-pt grid, easing curves ── */
@@ -110,6 +110,14 @@ body{min-height:100vh;background:transparent;position:relative}
   background:
     radial-gradient(760px 400px at 12% -14%, var(--aura-a), transparent 64%),
     radial-gradient(680px 340px at 88% -18%, var(--aura-b), transparent 62%);
+}
+/* Precision dot grid — engineering-paper texture dissolving downward */
+#aura::after{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle, rgba(29,29,31,.055) 1px, transparent 1.5px);
+  background-size:20px 20px;
+  -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,.85), transparent 76%);
+  mask-image:linear-gradient(to bottom, rgba(0,0,0,.85), transparent 76%);
 }
 a{color:var(--blue);text-decoration:none}
 button{cursor:pointer;font-family:inherit;color:inherit}
@@ -363,8 +371,9 @@ select,input{font-family:inherit}
 /* ── Section heading inside detail page — matches main .section-title style ── */
 .cc-cap{
   display:flex;align-items:center;gap:8px;
-  font-size:13px;font-weight:700;letter-spacing:-.1px;
-  color:var(--txt);margin:0 0 12px;
+  font-size:11px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--txt2);margin:0 0 12px;
 }
 .cc-cap::before{display:none}
 
@@ -783,10 +792,11 @@ body.view-gst #main{background:transparent}
 .gp-kpi-val{font-size:clamp(18px,1.8vw,26px);font-weight:700;letter-spacing:-.6px;line-height:1.15;font-variant-numeric:tabular-nums;overflow:hidden;word-break:break-all;color:var(--gp-ink)}
 .gp-green .gp-kpi-val{color:var(--gp-ink)}
 .gp-gold .gp-kpi-val{color:var(--gp-ink)}
-/* ── Hero payable — Total Outstanding rides the ink card, anchoring the row ── */
+/* ── Hero payable — Total Outstanding rides the graphite jewel ── */
 .gp-kpi.gp-orange{
-  background:#1D1D1F;
-  box-shadow:0 2px 8px rgba(0,0,0,.18),0 14px 36px rgba(0,0,0,.22);
+  background:linear-gradient(155deg,#38383C 0%,#1D1D1F 42%,#0B0B0D 100%);
+  box-shadow:inset 0 0 0 .5px rgba(255,255,255,.10),
+             0 2px 8px rgba(0,0,0,.18),0 14px 36px rgba(0,0,0,.22);
 }
 .gp-kpi.gp-orange:hover{box-shadow:0 4px 12px rgba(0,0,0,.22),0 22px 48px rgba(0,0,0,.28)}
 .gp-orange .gp-kpi-tag{color:rgba(255,255,255,.66)}
@@ -1022,6 +1032,10 @@ body.view-gst #vert-tabs-bar{display:none}
   border:none;
 }
 .cc-pipe-lbl-buyer::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--st-transacted);flex-shrink:0}
+
+/* ── Flow bar — the whole pipeline as one proportional strip ── */
+.cc-flow{display:flex;gap:3px;height:6px;margin:0 0 12px}
+.cc-flow i{border-radius:3px;min-width:6px}
 
 /* ── 3-box pipeline (Draft | In Review | Completed) ── */
 .cc-pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px}
@@ -1372,7 +1386,7 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 }
 /* Gradient headline — the Apple.com promo-tile signature */
 .vert-ctx-name{
-  font-size:30px;font-weight:800;letter-spacing:-.9px;line-height:1.1;
+  font-size:32px;font-weight:800;letter-spacing:-1.1px;line-height:1.05;
   padding-right:2px;
   color:var(--vc-ink,var(--txt));
   background:linear-gradient(120deg,var(--vc-ink,var(--txt)) 15%,var(--vc,var(--txt)) 100%);
@@ -1409,10 +1423,11 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vkpi-lbl{font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--txt2);margin-bottom:8px;line-height:1.2}
 .vkpi-val{font-size:38px;font-weight:700;letter-spacing:-1.6px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
 .vkpi-sub{font-size:11.5px;color:var(--txt2);font-weight:400;margin-top:7px;line-height:1.4}
-/* ── Bento hierarchy — one ink card anchors the row (Apple keynote grid) ── */
+/* ── Bento hierarchy — one graphite jewel anchors the row ── */
 .vkpi-card.vk-onboarded{
-  background:#1D1D1F;
-  box-shadow:0 2px 8px rgba(0,0,0,.18),0 14px 36px rgba(0,0,0,.22);
+  background:linear-gradient(155deg,#38383C 0%,#1D1D1F 42%,#0B0B0D 100%);
+  box-shadow:inset 0 0 0 .5px rgba(255,255,255,.10),
+             0 2px 8px rgba(0,0,0,.18),0 14px 36px rgba(0,0,0,.22);
 }
 .vkpi-card.vk-onboarded:hover{box-shadow:0 4px 12px rgba(0,0,0,.22),0 22px 48px rgba(0,0,0,.28)}
 .vkpi-card.vk-onboarded .vkpi-lbl{color:rgba(255,255,255,.62)}
@@ -1421,6 +1436,11 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vkpi-card.vk-onboarded .vkpi-icon{background:rgba(48,209,88,.18);color:#30D158}
 .vkpi-card.vk-transacted .vkpi-val{color:var(--txt)}
 .vkpi-card.vk-warn .vkpi-val{color:var(--st-rejected-tx)}
+/* FY sparkline — three mini bars, latest year accented */
+.vkpi-spark{position:absolute;top:20px;right:20px;width:46px;height:26px;display:block}
+/* Completion meter — hairline progress inside the ink card */
+.vkpi-meter{height:3px;border-radius:2px;background:rgba(255,255,255,.14);margin-top:12px;overflow:hidden}
+.vkpi-meter i{display:block;height:100%;background:#30D158;border-radius:2px;transition:width 1s var(--ease-out)}
 
 /* ══════════════════════════════════════════════════
    PIPELINE PAIR (Seller + Buyer side by side)
@@ -1461,8 +1481,8 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   position:relative;
 }
 .vds-title{
-  font-size:13px;font-weight:600;letter-spacing:-.1px;
-  text-transform:none;color:var(--txt);
+  font-size:11px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--txt2);
   flex:1;min-width:100px;
 }
 .vds-count{
@@ -2629,6 +2649,35 @@ function selectVertTab(key) {
   loadVertRows(key);
 }
 
+// Merge seller+buyer FY breakdowns into one chronological series per metric.
+function mergeFYSeries(vsF, vbF, field) {
+  var m = {};
+  (vsF || []).concat(vbF || []).forEach(function(f) {
+    if (!f || !f.fy) return;
+    if (m[f.fy] === undefined) m[f.fy] = null;
+    if (f[field] != null) m[f.fy] = (m[f.fy] || 0) + f[field];
+  });
+  return Object.keys(m).sort().map(function(k) { return m[k]; });
+}
+
+// Mini FY bar sparkline — quiet bars, latest year in the accent colour.
+function sparkBars(vals, accent, dark) {
+  vals = (vals || []).filter(function(v) { return v != null; });
+  if (vals.length < 2) return '';
+  var max = Math.max.apply(null, vals);
+  if (!(max > 0)) return '';
+  var H = 26, bw = 9, gap = 5;
+  var n = vals.length, W = n * bw + (n - 1) * gap;
+  var base = dark ? 'rgba(255,255,255,.22)' : 'rgba(60,60,67,.18)';
+  return '<svg class="vkpi-spark" viewBox="0 0 ' + W + ' ' + H + '" style="width:' + W + 'px" aria-hidden="true">'
+    + vals.map(function(v, i) {
+        var h = Math.max(3, Math.round((v / max) * H));
+        var x = i * (bw + gap), y = H - h;
+        return '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="2.5" fill="' + (i === n - 1 ? accent : base) + '"/>';
+      }).join('')
+    + '</svg>';
+}
+
 function renderVertKPIs(key) {
   var el = document.getElementById('vert-kpi-row');
   if (!el) return;
@@ -2640,15 +2689,17 @@ function renderVertKPIs(key) {
   var pctTxn = vs.pctTransacted != null ? vs.pctTransacted + '%' : '—';
   var totMiss = missS + missB;
   var vars = vcVars(key);
-  function mk(icon, lbl, val, sub, cls, action) {
+  function mk(icon, lbl, val, sub, cls, action, spark, extra) {
     return '<div class="vkpi-card' + (cls ? ' ' + cls : '') + '" style="' + vars + '"'
       + ' role="button" tabindex="0"'
       + ' onclick="vkpiOpen(\'' + action + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();vkpiOpen(\'' + action + '\')}">'
+      + (spark || '')
       + '<div class="vkpi-icon">' + icon + '</div>'
       + '<div class="vkpi-lbl">' + lbl + '</div>'
       + '<div class="vkpi-val">' + val + '</div>'
       + (sub ? '<div class="vkpi-sub">' + sub + '</div>' : '')
+      + (extra || '')
       + '</div>';
   }
   function svg(paths) {
@@ -2658,11 +2709,23 @@ function renderVertKPIs(key) {
   var icCheck  = svg('<circle cx="12" cy="12" r="8.4"/><path d="M8.6 12.4l2.4 2.4 4.4-5"/>');
   var icTrend  = svg('<path d="M3.5 17l5.5-5.5 3.8 3.8L20.5 7.5"/><path d="M14.8 7.5h5.7v5.7"/>');
   var icWarn   = svg('<path d="M12 4.6l8.4 14.6H3.6L12 4.6z"/><path d="M12 10.4v3.6"/><path d="M12 16.9v.01"/>');
+
+  // FY sparklines from real breakdown data (skipped when <2 years exist)
+  var spTotal = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'total'),      'var(--vc, #0071E3)', false);
+  var spOnb   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'onboarded'),  '#30D158', true);
+  var spTxn   = sparkBars((vs.fyBreakdown || []).map(function(f) { return f.pctTransacted; }), 'var(--st-transacted)', false);
+  var spMiss  = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'missingGST'), 'var(--st-rejected)', false);
+
+  // Completion meter on the ink card — onboarded share of the whole pipeline
+  var totAll  = totalS + totalB;
+  var compPct = totAll > 0 ? Math.round(((compS + compB) / totAll) * 100) : 0;
+  var meter   = '<div class="vkpi-meter" title="' + compPct + '% of pipeline onboarded"><i style="width:' + compPct + '%"></i></div>';
+
   el.innerHTML = [
-    mk(icFunnel, 'Total in Pipeline', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',    'all'),
-    mk(icCheck,  'Onboarded',         fmt(compS + compB),   'Sellers: ' + fmt(compS) + ' · Buyers: ' + fmt(compB), 'vk-onboarded','onboarded'),
-    mk(icTrend,  '% Transacted',      pctTxn,               'Seller transacted rate', 'vk-transacted',              'all'),
-    mk(icWarn,   'GSTIN Missing',     fmt(totMiss),          'Sellers: ' + fmt(missS) + ' · Buyers: ' + fmt(missB), totMiss > 0 ? 'vk-warn' : 'vk-total', 'missing'),
+    mk(icFunnel, 'Total in Pipeline', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',    'all',       spTotal, ''),
+    mk(icCheck,  'Onboarded',         fmt(compS + compB),   fmt(compS) + ' sellers · ' + fmt(compB) + ' buyers · ' + compPct + '% of pipeline', 'vk-onboarded', 'onboarded', spOnb, meter),
+    mk(icTrend,  '% Transacted',      pctTxn,               'Seller transacted rate', 'vk-transacted',              'all',       spTxn,  ''),
+    mk(icWarn,   'GSTIN Missing',     fmt(totMiss),          fmt(missS) + ' sellers · ' + fmt(missB) + ' buyers', totMiss > 0 ? 'vk-warn' : 'vk-total', 'missing', spMiss, ''),
   ].join('');
   animateCounters(el);
 }
@@ -2724,6 +2787,19 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
   if (!tot) {
     return '<div' + attrs + '>' + ghost + hdr + '<div class="no-data" style="padding:24px 0">No data</div></div>';
   }
+  // Flow bar — the whole pipeline as one proportional strip
+  var flowSegs = [
+    ['draft',     v.draft     || 0],
+    ['review',    v.inReview  || 0],
+    ['onboarded', v.completed || 0],
+    ['rejected',  v.rejected  || 0],
+  ].filter(function(s) { return s[1] > 0; });
+  var flowTot = flowSegs.reduce(function(a, s) { return a + s[1]; }, 0);
+  var flowBar = flowTot > 0
+    ? '<div class="cc-flow" aria-hidden="true">' + flowSegs.map(function(s) {
+        return '<i style="flex:' + (s[1] / flowTot * 100).toFixed(2) + ';background:var(--st-' + s[0] + ')" title="' + STAGE[s[0]].lbl + ' — ' + fmt(s[1]) + '"></i>';
+      }).join('') + '</div>'
+    : '';
   var pipeBoxes = '<div class="cc-pipe">'
     + '<div class="cc-pipe-box cc-pipe-draft"><b>' + fmt(v.draft || 0) + '</b><span>Draft</span></div>'
     + '<div class="cc-pipe-box cc-pipe-review"><b>' + fmt(v.inReview || 0) + '</b><span>In Review</span></div>'
@@ -2787,7 +2863,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
         }).join('') + '</div>'
       : '';
   }
-  return '<div' + attrs + '>' + ghost + hdr + pipeBoxes + catRows + statsList + '</div>';
+  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + catRows + statsList + '</div>';
 }
 
 // Render the inline detailed view section (replaces the full-screen overlay).
