@@ -781,9 +781,19 @@ body.view-gst #main{background:transparent}
 .gp-gold .gp-kpi-tag::before{background:var(--gp-gold)}
 /* Value — always near-black so numbers are legible on any surface */
 .gp-kpi-val{font-size:clamp(18px,1.8vw,26px);font-weight:700;letter-spacing:-.6px;line-height:1.15;font-variant-numeric:tabular-nums;overflow:hidden;word-break:break-all;color:var(--gp-ink)}
-.gp-orange .gp-kpi-val{color:var(--gp-ink)}
 .gp-green .gp-kpi-val{color:var(--gp-ink)}
 .gp-gold .gp-kpi-val{color:var(--gp-ink)}
+/* ── Hero payable — Total Outstanding rides the ink card, anchoring the row ── */
+.gp-kpi.gp-orange{
+  background:#1D1D1F;
+  box-shadow:0 2px 8px rgba(0,0,0,.18),0 14px 36px rgba(0,0,0,.22);
+}
+.gp-kpi.gp-orange:hover{box-shadow:0 4px 12px rgba(0,0,0,.22),0 22px 48px rgba(0,0,0,.28)}
+.gp-orange .gp-kpi-tag{color:rgba(255,255,255,.66)}
+.gp-orange .gp-kpi-val{color:#FFFFFF}
+.gp-orange .gp-kpi-sub{color:rgba(255,255,255,.5)}
+.gp-orange .gp-kpi-barrow{color:rgba(255,255,255,.55)}
+.gp-orange .gp-kpi-track{background:rgba(255,255,255,.16)}
 /* Sub */
 .gp-kpi-sub{font-size:11px;color:var(--gp-ink2);font-weight:400;margin-top:5px;line-height:1.4}
 /* Progress bar */
@@ -960,6 +970,23 @@ body.view-gst #main{background:transparent}
 
 /* ── Card: flex column ── */
 .compare-card{display:flex;flex-direction:column}
+
+/* ── Card identity — every card type carries its own signature ──
+   Seller runs warm-green, Buyer runs cool-blue (whisper gradients),
+   and a giant ghost monogram in the vertical's hue names each card
+   the way Apple Sports ghosts jersey numbers. */
+.vpipe-card.aud-seller{background:linear-gradient(150deg,#FFFFFF 58%,#F4FBF6 100%)}
+.vpipe-card.aud-buyer {background:linear-gradient(150deg,#FFFFFF 58%,#F3F8FE 100%)}
+.cc-ghost{
+  position:absolute;top:-12px;right:6px;
+  font-size:108px;font-weight:900;letter-spacing:-5px;line-height:1;
+  color:var(--vc,#1D1D1F);opacity:.06;
+  pointer-events:none;user-select:none;
+}
+/* Ghost wears the audience colour — S rides seller-green, B rides buyer-blue,
+   completing dot + temperature + monogram as one coherent identity */
+.aud-seller .cc-ghost{color:var(--st-onboarded)}
+.aud-buyer  .cc-ghost{color:var(--st-transacted)}
 
 /* Header: vertical name as pipeline title — bleeds to card top & sides, same cap colour */
 .cc-hdr2{
@@ -1378,10 +1405,20 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vkpi-lbl{font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--txt2);margin-bottom:8px;line-height:1.2}
 .vkpi-val{font-size:38px;font-weight:700;letter-spacing:-1.6px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
 .vkpi-sub{font-size:11.5px;color:var(--txt2);font-weight:400;margin-top:7px;line-height:1.4}
-/* Semantic color variants */
-.vkpi-card.vk-onboarded .vkpi-val{color:var(--txt)}
+/* ── Bento hierarchy — one ink card anchors the row (Apple keynote grid) ── */
+.vkpi-card.vk-onboarded{
+  background:#1D1D1F;
+  box-shadow:0 2px 8px rgba(0,0,0,.18),0 14px 36px rgba(0,0,0,.22);
+}
+.vkpi-card.vk-onboarded:hover{box-shadow:0 4px 12px rgba(0,0,0,.22),0 22px 48px rgba(0,0,0,.28)}
+.vkpi-card.vk-onboarded .vkpi-lbl{color:rgba(255,255,255,.62)}
+.vkpi-card.vk-onboarded .vkpi-val{color:#FFFFFF}
+.vkpi-card.vk-onboarded .vkpi-sub{color:rgba(255,255,255,.48)}
+.vkpi-card.vk-onboarded .vkpi-icon{background:rgba(48,209,88,.18);color:#30D158}
 .vkpi-card.vk-transacted .vkpi-val{color:var(--txt)}
 .vkpi-card.vk-warn .vkpi-val{color:var(--st-rejected-tx)}
+/* Warning card — a whisper of warmth, only when GSTINs are missing */
+.vkpi-card.vk-warn{background:linear-gradient(150deg,#FFFFFF 55%,#FFF7F0 100%)}
 
 /* ══════════════════════════════════════════════════
    PIPELINE PAIR (Seller + Buyer side by side)
@@ -1406,7 +1443,9 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   display:flex;align-items:center;gap:10px;
   padding:14px 20px;
   border-bottom:1px solid var(--border);
-  background:var(--card);
+  background-color:var(--card);
+  /* tint sweep in the vertical's hue — marks this as the workspace card */
+  background-image:linear-gradient(90deg,var(--vc-soft,rgba(0,113,227,.07)),rgba(255,255,255,0) 58%);
   flex-wrap:wrap;
   position:relative;
 }
@@ -1422,6 +1461,11 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   padding:3px 10px;font-variant-numeric:tabular-nums;white-space:nowrap;
 }
 .vds-body{padding:16px 20px 22px}
+/* Nested cards inside the white panel invert to grey insets (iOS Settings
+   pattern) — they lift back to white + shadow on hover. White-on-white
+   card nesting is how hierarchy dies. */
+.vds-body .cc-cat{background:var(--bg2);box-shadow:none}
+.vds-body .cc-cat-click:hover{background:var(--card);box-shadow:var(--shadow);transform:scale(1.02)}
 
 /* Sidebar no longer needed — vertical tabs replace it */
 #side-nav{display:none!important}
@@ -2649,9 +2693,10 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
   var lblCls = aud === 'seller' ? 'cc-pipe-lbl-seller' : 'cc-pipe-lbl-buyer';
   var isActive = aud === selectedAud;
   var attrs = ' style="--i:' + idx + ';' + vcVars(cfg.key) + '"'
-    + ' class="compare-card vpipe-card' + (isActive ? ' det-active' : '') + '"'
+    + ' class="compare-card vpipe-card aud-' + aud + (isActive ? ' det-active' : '') + '"'
     + ' onclick="setDetailAud(\'' + aud + '\')" role="button" tabindex="0"'
     + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();setDetailAud(\'' + aud + '\')}"';
+  var ghost = '<span class="cc-ghost" aria-hidden="true">' + (aud === 'seller' ? 'S' : 'B') + '</span>';
   var vcInk = (VERT_COLORS[cfg.key] || VERT_COLORS.Others).ink;
   var hdr = '<div class="cc-hdr2" style="flex-direction:column;align-items:flex-start;gap:3px;margin-bottom:10px">'
     + '<span style="font-size:13px;font-weight:700;letter-spacing:-.2px;color:' + vcInk + '">' + esc(cfg.name) + '</span>'
@@ -2659,7 +2704,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     + '</div>';
   var tot = v.total || 0;
   if (!tot) {
-    return '<div' + attrs + '>' + hdr + '<div class="no-data" style="padding:24px 0">No data</div></div>';
+    return '<div' + attrs + '>' + ghost + hdr + '<div class="no-data" style="padding:24px 0">No data</div></div>';
   }
   var pipeBoxes = '<div class="cc-pipe">'
     + '<div class="cc-pipe-box cc-pipe-draft"><b>' + fmt(v.draft || 0) + '</b><span>Draft</span></div>'
@@ -2724,7 +2769,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
         }).join('') + '</div>'
       : '';
   }
-  return '<div' + attrs + '>' + hdr + pipeBoxes + catRows + statsList + '</div>';
+  return '<div' + attrs + '>' + ghost + hdr + pipeBoxes + catRows + statsList + '</div>';
 }
 
 // Render the inline detailed view section (replaces the full-screen overlay).
