@@ -18,16 +18,16 @@
    Recykal green lives in the logo badge alone. */
 /* Registered aura colors — lets the page's ambient hue crossfade smoothly
    when the vertical changes (browsers without @property simply snap). */
-@property --aura-a{syntax:'<color>';inherits:true;initial-value:#0071E317}
-@property --aura-b{syntax:'<color>';inherits:true;initial-value:#0071E30D}
+@property --aura-a{syntax:'<color>';inherits:true;initial-value:#0071E322}
+@property --aura-b{syntax:'<color>';inherits:true;initial-value:#0071E312}
 
 :root{
   color-scheme:light;
   transition:--aura-a .9s cubic-bezier(.25,.1,.25,1),--aura-b .9s cubic-bezier(.25,.1,.25,1);
 
   /* ── Ambient vertical aura — faint wash behind the cards ── */
-  --aura-a: rgba(0,113,227,.09);
-  --aura-b: rgba(0,113,227,.05);
+  --aura-a: rgba(0,113,227,.13);
+  --aura-b: rgba(0,113,227,.07);
 
   /* ── Surfaces — Apple SF palette ── */
   --bg:      #FFFFFF;
@@ -257,7 +257,7 @@ select,input{font-family:inherit}
 
 /* ===== Main — flex-row shell ===== */
 #main{display:flex;flex-direction:row;align-items:flex-start;background:transparent;min-height:calc(100vh - 56px)}
-#dash-content{flex:1;min-width:0;padding:20px 28px 56px}
+#dash-content{flex:1;min-width:0;padding:12px 36px 64px;max-width:1340px;margin:0 auto}
 
 /* ===== Section Titles — Apple large title style ===== */
 .section-title{
@@ -921,11 +921,11 @@ body.view-gst #main{background:transparent}
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .65s var(--ease-out),transform .65s var(--ease-out)}
 .reveal.visible{opacity:1;transform:none}
 
-/* ── Page header (story mode) — Apple large title + trailing controls ── */
+/* ── Hero row — one band: identity left, period controls right ── */
 .section-title{
   font-size:11px;font-weight:600;letter-spacing:0;color:var(--txt2);
-  padding:20px 0 14px;margin:0 0 20px;
-  border-bottom:1px solid var(--border);background:none;border-radius:0;
+  padding:14px 0 4px;margin:0 0 14px;
+  border-bottom:none;background:none;border-radius:0;
 }
 .section-title::before{display:none}
 .section-title .badge{display:none}
@@ -933,6 +933,10 @@ body.view-gst #main{background:transparent}
   font-size:26px;font-weight:700;letter-spacing:-.6px;
   color:var(--txt);text-transform:none;line-height:1.15;
 }
+/* The generic title only exists in the GST view — the gradient vertical
+   name IS the title everywhere else. One name per screen. */
+body:not(.view-gst) #view-title{display:none}
+body.view-gst #vert-tabs-bar{display:none}
 
 /* ── Story separator — quiet, no blinking ── */
 .story-sep{text-align:center;padding:36px 0 20px;color:var(--txt2);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
@@ -978,9 +982,9 @@ body.view-gst #main{background:transparent}
 .vpipe-card.aud-seller{background:linear-gradient(150deg,#FFFFFF 58%,#F4FBF6 100%)}
 .vpipe-card.aud-buyer {background:linear-gradient(150deg,#FFFFFF 58%,#F3F8FE 100%)}
 .cc-ghost{
-  position:absolute;top:-12px;right:6px;
-  font-size:108px;font-weight:900;letter-spacing:-5px;line-height:1;
-  color:var(--vc,#1D1D1F);opacity:.06;
+  position:absolute;bottom:-58px;right:-16px;top:auto;
+  font-size:170px;font-weight:900;letter-spacing:-7px;line-height:1;
+  color:var(--vc,#1D1D1F);opacity:.035;
   pointer-events:none;user-select:none;
 }
 /* Ghost wears the audience colour — S rides seller-green, B rides buyer-blue,
@@ -1306,7 +1310,7 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   border:none;
   border-radius:var(--r2);
   padding:3px;
-  margin:0 0 18px;
+  margin:8px 0 0;
   overflow-x:auto;scrollbar-width:none;
   -webkit-overflow-scrolling:touch;
 }
@@ -1353,11 +1357,11 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 }
 .vert-tab-gst.active{border-left-color:transparent;border-radius:9px}
 
-/* ── Vertical context hero — between tab bar and KPI cards ── */
+/* ── Vertical context hero — lives inside the hero row ── */
 .vert-ctx-hdr{
   display:flex;align-items:center;gap:12px;
-  padding:8px 0 18px;
-  min-height:58px;
+  padding:0;
+  min-height:44px;
 }
 .vert-ctx-code{
   font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
@@ -1395,10 +1399,10 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vkpi-icon{
   display:flex;align-items:center;justify-content:center;
   width:36px;height:36px;border-radius:10px;
-  font-size:16px;font-weight:700;line-height:1;
   margin-bottom:10px;flex-shrink:0;
   background:var(--bg2);color:var(--txt2);
 }
+.vkpi-icon svg{width:18px;height:18px;display:block}
 .vkpi-card.vk-onboarded  .vkpi-icon{background:var(--st-onboarded-bg);color:var(--st-onboarded-tx)}
 .vkpi-card.vk-transacted .vkpi-icon{background:var(--st-transacted-bg);color:var(--st-transacted-tx)}
 .vkpi-card.vk-warn       .vkpi-icon{background:var(--st-review-bg);color:var(--st-review-tx)}
@@ -1417,8 +1421,6 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vkpi-card.vk-onboarded .vkpi-icon{background:rgba(48,209,88,.18);color:#30D158}
 .vkpi-card.vk-transacted .vkpi-val{color:var(--txt)}
 .vkpi-card.vk-warn .vkpi-val{color:var(--st-rejected-tx)}
-/* Warning card — a whisper of warmth, only when GSTINs are missing */
-.vkpi-card.vk-warn{background:linear-gradient(150deg,#FFFFFF 55%,#FFF7F0 100%)}
 
 /* ══════════════════════════════════════════════════
    PIPELINE PAIR (Seller + Buyer side by side)
@@ -1427,7 +1429,16 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vpipe-card{cursor:pointer;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
 .vpipe-card:hover{transform:scale(1.015);box-shadow:var(--shadow-lg)!important}
 .vpipe-card.det-active{
-  box-shadow:0 0 0 3px rgba(0,113,227,.28),var(--shadow)!important;
+  box-shadow:0 0 0 1.5px rgba(0,113,227,.45),var(--shadow)!important;
+}
+/* Pipeline card header — plain audience title, no repeated vertical name */
+.pipe-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pipe-title{font-size:15px;font-weight:700;letter-spacing:-.25px;color:var(--txt)}
+.pipe-sub{font-size:11.5px;font-weight:400;color:var(--txt3)}
+.pipe-viewing{
+  margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.02em;
+  color:var(--blue-ink);background:var(--accent-soft);
+  padding:3px 10px;border-radius:var(--pill);white-space:nowrap;
 }
 
 /* ══════════════════════════════════════════════════
@@ -1692,7 +1703,6 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   <div class="header-meta">
     <span class="status-dot"></span>
     <span class="last-updated" id="last-updated">Loading…</span>
-    <span class="live-pill"><b>LIVE</b> · <span id="refresh-countdown">—</span></span>
     <button id="btn-refresh" onclick="refreshActive()">
       <span class="icon-refresh">↻</span> Refresh
     </button>
@@ -1717,8 +1727,13 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 
   <div id="dash-content">
 
+  <!-- Vertical tab navigation — the page's top nav -->
+  <div id="vert-tabs-bar" class="vert-tabs-bar"></div>
+
+  <!-- Hero row: vertical identity left · period controls right -->
   <div class="section-title reveal" style="flex-wrap:wrap">
     <span id="view-title">Business Verticals</span>
+    <div id="vert-ctx-hdr" class="vert-ctx-hdr"></div>
     <span style="flex:1"></span>
 
     <!-- Onboarding period controls -->
@@ -1728,7 +1743,6 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
         <button class="qf-chip" data-qf="ThisWeek"  onclick="onPeriodSelect('ThisWeek')">Weekly</button>
         <button class="qf-chip" data-qf="ThisMonth" onclick="onPeriodSelect('ThisMonth')">Monthly</button>
       </div>
-      <span class="filter-label">Period</span>
       <select class="filter-select" id="top-period" onchange="onPeriodSelect(this.value)">
         <option value="All">All Time</option>
       </select>
@@ -1742,10 +1756,6 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 
   <!-- ── VIEW: ONBOARDING ── -->
   <div id="tab-overview">
-    <!-- Vertical tab navigation -->
-    <div id="vert-tabs-bar" class="vert-tabs-bar"></div>
-    <!-- Active vertical context: code pill + full name -->
-    <div id="vert-ctx-hdr" class="vert-ctx-hdr"></div>
     <!-- Combined KPI hero row (4 cards, S+B merged) -->
     <div id="vert-kpi-row" class="vkpi-grid"></div>
     <!-- Seller + Buyer pipeline cards side by side -->
@@ -2015,13 +2025,16 @@ function updateViewChrome() {
   var pc = document.getElementById('onb-period-controls');
 
   var vt = document.getElementById('view-title');
+  var tb = document.getElementById('vert-tabs-bar');
   if (ov) ov.style.display = isGst ? 'none' : '';
   if (gt) gt.style.display = isGst ? 'block' : 'none';
   if (pc) pc.style.display = isGst ? 'none' : 'inline-flex';
+  if (tb) tb.style.display = isGst ? 'none' : '';
 
   if (vt) vt.textContent = isGst ? 'GST Payables' : 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
   setAura(isGst ? 'gst' : (activeVertKey || 'OMP'));
+  renderVertCtxHdr(isGst ? null : activeVertKey);   // hero row: clear in GST, restore on return
   if (!isGst) positionVertThumb(false);   // bar may have re-rendered while hidden
   var g = document.getElementById('aud-gst');
   if (g) g.classList.toggle('active', isGst);
@@ -2160,24 +2173,20 @@ function renderLastUpdated() {
   var el  = document.getElementById('last-updated');
   var dot = document.querySelector('.status-dot');
 
+  var t = d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
   var isLive = D.dataSource === 'metabase_live' || D.dataSource === 'metabase_sync' || D.dataSource === 'metabase';
   if (isLive) {
-    var liveLabel = D.dataSource === 'metabase_live' ? '⚡ Metabase Live' : '⚡ Metabase Sync';
-    var syncLabel = '';
-    if (D.mbSyncedAt) {
-      var sd = new Date(D.mbSyncedAt);
-      syncLabel = ' · ' + sd.toLocaleTimeString('en-IN');
-    }
-    el.innerHTML = 'Updated: ' + d.toLocaleTimeString('en-IN')
-      + ' <span style="display:inline-flex;align-items:center;gap:4px;background:var(--st-onboarded-bg);color:var(--st-onboarded-tx);border-radius:999px;padding:2px 9px;font-size:10.5px;font-weight:600;margin-left:4px;white-space:nowrap">'
-      + liveLabel + syncLabel + '</span>';
+    el.textContent = 'Live · Updated ' + t;
+    el.title = (D.dataSource === 'metabase_live' ? 'Metabase Live' : 'Metabase Sync')
+      + (D.mbSyncedAt ? ' · synced ' + new Date(D.mbSyncedAt).toLocaleTimeString('en-IN') : '');
     if (dot) { dot.style.background = '#30D158'; }
   } else if (D.dataSource === 'empty') {
-    el.innerHTML = 'Updated: ' + d.toLocaleTimeString('en-IN')
-      + ' <span style="display:inline-flex;align-items:center;background:var(--st-rejected-bg);color:var(--st-rejected-tx);border-radius:999px;padding:2px 9px;font-size:10.5px;font-weight:600;margin-left:4px;white-space:nowrap">⚠ No data source</span>';
+    el.innerHTML = '<span style="color:var(--st-rejected-tx);font-weight:600">No data source</span>';
+    el.title = 'All data paths returned empty — check the Apps Script configuration';
     if (dot) { dot.style.background = '#FF3B30'; }
   } else {
-    el.textContent = 'Updated: ' + d.toLocaleTimeString('en-IN');
+    el.textContent = 'Updated ' + t;
+    el.title = 'Source: ' + (D.dataSource || 'sheet');
     if (dot) { dot.style.background = '#AEAEB2'; }
   }
 }
@@ -2245,8 +2254,8 @@ function vcVars(key) {
 function setAura(key) {
   var c = key === 'gst' ? '#FF9500' : ((VERT_COLORS[key] || VERT_COLORS.OMP).c);
   var rs = document.documentElement.style;
-  rs.setProperty('--aura-a', hexRGBA(c, .09));
-  rs.setProperty('--aura-b', hexRGBA(c, .05));
+  rs.setProperty('--aura-a', hexRGBA(c, .13));
+  rs.setProperty('--aura-b', hexRGBA(c, .07));
 }
 var selectedVert = null;
 var activeVertKey = null;      // which vertical tab is currently active
@@ -2642,11 +2651,18 @@ function renderVertKPIs(key) {
       + (sub ? '<div class="vkpi-sub">' + sub + '</div>' : '')
       + '</div>';
   }
+  function svg(paths) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
+  }
+  var icFunnel = svg('<path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/>');
+  var icCheck  = svg('<circle cx="12" cy="12" r="8.4"/><path d="M8.6 12.4l2.4 2.4 4.4-5"/>');
+  var icTrend  = svg('<path d="M3.5 17l5.5-5.5 3.8 3.8L20.5 7.5"/><path d="M14.8 7.5h5.7v5.7"/>');
+  var icWarn   = svg('<path d="M12 4.6l8.4 14.6H3.6L12 4.6z"/><path d="M12 10.4v3.6"/><path d="M12 16.9v.01"/>');
   el.innerHTML = [
-    mk('◎',  'Total in Pipeline', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',    'all'),
-    mk('✓',  'Onboarded',         fmt(compS + compB),   'Sellers: ' + fmt(compS) + ' · Buyers: ' + fmt(compB), 'vk-onboarded','onboarded'),
-    mk('↗',  '% Transacted',      pctTxn,               'Seller transacted rate', 'vk-transacted',              'all'),
-    mk('!',  'GSTIN Missing',     fmt(totMiss),          'Sellers: ' + fmt(missS) + ' · Buyers: ' + fmt(missB), totMiss > 0 ? 'vk-warn' : 'vk-total', 'missing'),
+    mk(icFunnel, 'Total in Pipeline', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',    'all'),
+    mk(icCheck,  'Onboarded',         fmt(compS + compB),   'Sellers: ' + fmt(compS) + ' · Buyers: ' + fmt(compB), 'vk-onboarded','onboarded'),
+    mk(icTrend,  '% Transacted',      pctTxn,               'Seller transacted rate', 'vk-transacted',              'all'),
+    mk(icWarn,   'GSTIN Missing',     fmt(totMiss),          'Sellers: ' + fmt(missS) + ' · Buyers: ' + fmt(missB), totMiss > 0 ? 'vk-warn' : 'vk-total', 'missing'),
   ].join('');
   animateCounters(el);
 }
@@ -2697,10 +2713,12 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     + ' onclick="setDetailAud(\'' + aud + '\')" role="button" tabindex="0"'
     + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();setDetailAud(\'' + aud + '\')}"';
   var ghost = '<span class="cc-ghost" aria-hidden="true">' + (aud === 'seller' ? 'S' : 'B') + '</span>';
-  var vcInk = (VERT_COLORS[cfg.key] || VERT_COLORS.Others).ink;
-  var hdr = '<div class="cc-hdr2" style="flex-direction:column;align-items:flex-start;gap:3px;margin-bottom:10px">'
-    + '<span style="font-size:13px;font-weight:700;letter-spacing:-.2px;color:' + vcInk + '">' + esc(cfg.name) + '</span>'
-    + '<span class="cc-pipe-lbl ' + lblCls + '">' + esc(label) + '</span>'
+  var dotClr = aud === 'seller' ? 'var(--st-onboarded)' : 'var(--st-transacted)';
+  var hdr = '<div class="cc-hdr2" style="align-items:center;gap:8px;margin-bottom:12px">'
+    + '<span class="pipe-dot" style="background:' + dotClr + '"></span>'
+    + '<span class="pipe-title">' + (aud === 'seller' ? 'Sellers' : 'Buyers') + '</span>'
+    + '<span class="pipe-sub">Onboarding pipeline</span>'
+    + (isActive ? '<span class="pipe-viewing">Viewing below</span>' : '')
     + '</div>';
   var tot = v.total || 0;
   if (!tot) {
@@ -2790,9 +2808,7 @@ function renderInlineDetail(key) {
     + '</div>';
 
   var head = '<div class="vds-head">'
-    + '<span class="vds-title">Records'
-    + (cfg ? ' <span style="color:var(--vc-ink,var(--blue))">' + esc(cfg.name) + '</span>' : '')
-    + '</span>'
+    + '<span class="vds-title">Records</span>'
     + audTabs
     + (rowCount > 0 ? '<span class="vds-count">' + fmt(rowCount) + ' rows</span>' : '')
     + '</div>';
@@ -3835,8 +3851,8 @@ function renderGSTLastUpdated() {
   var el = document.getElementById('last-updated');
   if (!el || !GST) return;
   var d = new Date(GST.lastUpdated);
-  el.innerHTML = 'Updated: ' + d.toLocaleTimeString('en-IN')
-    + ' <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.12);color:var(--txt2);border-radius:999px;padding:2px 9px;font-size:10.5px;font-weight:600;margin-left:4px;white-space:nowrap">Google Sheet</span>';
+  el.textContent = 'Updated ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+  el.title = 'Source: Google Sheet';
   var dot = document.querySelector('.status-dot');
   if (dot) dot.style.background = '#30D158';
 }
