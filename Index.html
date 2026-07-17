@@ -16,8 +16,18 @@
    Monochrome-first: white cards on #F5F5F7 wash, near-black ink, one blue accent (#0071E3).
    iOS system colors appear ONLY as small dots, thin chips and chart fills.
    Recykal green lives in the logo badge alone. */
+/* Registered aura colors — lets the page's ambient hue crossfade smoothly
+   when the vertical changes (browsers without @property simply snap). */
+@property --aura-a{syntax:'<color>';inherits:true;initial-value:#0071E317}
+@property --aura-b{syntax:'<color>';inherits:true;initial-value:#0071E30D}
+
 :root{
   color-scheme:light;
+  transition:--aura-a .9s cubic-bezier(.25,.1,.25,1),--aura-b .9s cubic-bezier(.25,.1,.25,1);
+
+  /* ── Ambient vertical aura — faint wash behind the cards ── */
+  --aura-a: rgba(0,113,227,.09);
+  --aura-b: rgba(0,113,227,.05);
 
   /* ── Surfaces — Apple SF palette ── */
   --bg:      #FFFFFF;
@@ -25,7 +35,7 @@
   --card:    #FFFFFF;
   --card2:   #F9F9FB;
   --hover:   rgba(0,0,0,.035);
-  --header-bg: rgba(255,255,255,.88);   /* frosted glass — Apple nav bar */
+  --header-bg: rgba(255,255,255,.78);   /* frosted glass — Apple nav bar */
 
   /* ── Borders — ultra-thin Apple hairlines ── */
   --border:  rgba(0,0,0,.09);
@@ -62,11 +72,11 @@
   --shadow-sm:   0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
   --shadow:      0 2px 6px rgba(0,0,0,.04), 0 8px 28px rgba(0,0,0,.07);
   --shadow-lg:   0 4px 12px rgba(0,0,0,.05), 0 20px 48px rgba(0,0,0,.10);
-  --shadow-card: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
+  --shadow-card: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05);
   --ring:        0 0 0 3px rgba(0,113,227,.22);
 
   /* ── Geometry & motion — Apple 8-pt grid, easing curves ── */
-  --r:    16px;   /* card radius — Apple.com card */
+  --r:    18px;   /* card radius — Apple.com card */
   --r2:   12px;
   --seg-track: rgba(120,120,128,.12);   /* iOS segmented-control track */
   --pill: 999px;
@@ -89,7 +99,18 @@ html{
   text-rendering:optimizeLegibility;
   font-feature-settings:'cv02','cv03','cv04','cv11';  /* Inter optical features */
 }
-body{min-height:100vh;background:var(--bg2);transition:background-color .3s var(--ease)}
+body{min-height:100vh;background:transparent;position:relative}
+
+/* ── Ambient aura — a faint field of the active vertical's colour washing
+      the top of the page. Cards float above it in solid white; switching
+      verticals crossfades the hue. The quietest possible identity system. ── */
+#aura{
+  position:absolute;top:0;left:0;right:0;height:min(62vh,580px);
+  z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(760px 400px at 12% -14%, var(--aura-a), transparent 64%),
+    radial-gradient(680px 340px at 88% -18%, var(--aura-b), transparent 62%);
+}
 a{color:var(--blue);text-decoration:none}
 button{cursor:pointer;font-family:inherit;color:inherit}
 select,input{font-family:inherit}
@@ -115,8 +136,12 @@ select,input{font-family:inherit}
 /* ===== Loading Overlay — sophisticated, brand-quiet ===== */
 #loading-overlay{position:fixed;inset:0;background:var(--bg2);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px;transition:opacity .4s var(--ease),visibility 0s linear .4s}
 #loading-overlay.hidden{opacity:0;pointer-events:none;visibility:hidden}
-#loading-overlay.hidden .spinner{animation-play-state:paused}
-.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--txt2);border-radius:50%;animation:spin .7s linear infinite}
+#loading-overlay.hidden .load-fill{animation-play-state:paused}
+/* Apple-style launch moment: wordmark + slim indeterminate progress */
+.load-wordmark{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--txt)}
+.load-track{width:190px;height:3px;border-radius:3px;background:rgba(120,120,128,.18);overflow:hidden}
+.load-fill{width:44%;height:100%;border-radius:3px;background:var(--txt);animation:loadSlide 1.05s cubic-bezier(.45,.1,.55,.9) infinite}
+@keyframes loadSlide{from{transform:translateX(-120%)}to{transform:translateX(350%)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-txt{color:var(--txt3);font-size:12px;font-weight:500;letter-spacing:.05px}
 @keyframes riseIn{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
@@ -137,9 +162,9 @@ select,input{font-family:inherit}
 #header{
   position:sticky;top:0;z-index:200;
   background:var(--header-bg);
-  backdrop-filter:saturate(180%) blur(20px);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-bottom:1px solid rgba(0,0,0,.10);
+  backdrop-filter:saturate(180%) blur(24px);
+  -webkit-backdrop-filter:saturate(180%) blur(24px);
+  border-bottom:1px solid rgba(0,0,0,.08);
   padding:0 32px;
   height:56px;
   display:flex;align-items:center;gap:16px;
@@ -184,7 +209,7 @@ select,input{font-family:inherit}
   display:flex;align-items:center;gap:6px;
   transition:transform .18s var(--ease-spring),background .18s;
 }
-#btn-refresh:hover{background:#3A3A3C}
+#btn-refresh:hover{background:#3A3A3C;transform:scale(1.03)}
 #btn-refresh:active{transform:scale(.96);transition-duration:.08s}
 #btn-refresh.spinning .icon-refresh{animation:spin .6s linear infinite}
 .icon-refresh{display:inline-block;font-size:12px;line-height:1}
@@ -231,7 +256,7 @@ select,input{font-family:inherit}
 .filter-input::placeholder{color:var(--txt3);font-weight:400}
 
 /* ===== Main — flex-row shell ===== */
-#main{display:flex;flex-direction:row;align-items:flex-start;background:var(--bg2);min-height:calc(100vh - 56px)}
+#main{display:flex;flex-direction:row;align-items:flex-start;background:transparent;min-height:calc(100vh - 56px)}
 #dash-content{flex:1;min-width:0;padding:20px 28px 56px}
 
 /* ===== Section Titles — Apple large title style ===== */
@@ -715,9 +740,9 @@ tbody td{padding:13px 16px;color:var(--txt);vertical-align:middle;white-space:no
   --gp-shadow-lg: 0 4px 12px rgba(0,0,0,.05), 0 20px 48px rgba(0,0,0,.10);
 }
 
-/* GST view — same system surface as main */
-body.view-gst{background:var(--bg2)}
-body.view-gst #main{background:var(--bg2)}
+/* GST view — same transparent surface; the aura turns orange via setAura() */
+body.view-gst{background:transparent}
+body.view-gst #main{background:transparent}
 
 /* Year filter chips — App Store style: quiet pill, black when selected */
 .gp-year-chip{font-family:inherit;font-size:11.5px;font-weight:500;padding:6px 14px;border:none;border-radius:var(--pill);cursor:pointer;background:var(--seg-track);color:var(--gp-ink);transition:background .2s,color .18s,transform .2s var(--ease-spring);white-space:nowrap;line-height:1.35}
@@ -1249,6 +1274,7 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
    ══════════════════════════════════════════════════ */
 .vert-tabs-bar{
   display:flex;gap:2px;
+  position:relative;
   background:var(--seg-track);
   border:none;
   border-radius:var(--r2);
@@ -1258,12 +1284,21 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   -webkit-overflow-scrolling:touch;
 }
 .vert-tabs-bar::-webkit-scrollbar{display:none}
+/* Liquid thumb — the white pill physically slides between tabs (iOS behaviour) */
+.vert-tab-thumb{
+  position:absolute;top:3px;left:0;height:calc(100% - 6px);width:0;
+  border-radius:9px;background:var(--card);
+  box-shadow:0 1px 4px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04);
+  transition:transform .38s var(--ease-sheet),width .38s var(--ease-sheet);
+  pointer-events:none;will-change:transform;
+}
+.vert-tabs-bar.has-thumb .vert-tab.active{background:transparent;box-shadow:none}
 .vert-tab{
   font-family:inherit;font-size:12px;font-weight:500;
   letter-spacing:0;
   padding:7px 14px;border:none;background:transparent;
   color:var(--txt2);cursor:pointer;white-space:nowrap;
-  position:relative;border-radius:9px;
+  position:relative;z-index:1;border-radius:9px;
   transition:color .2s var(--ease),background .2s var(--ease),box-shadow .2s,transform .2s var(--ease-spring);
   flex-shrink:0;
 }
@@ -1291,22 +1326,27 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 }
 .vert-tab-gst.active{border-left-color:transparent;border-radius:9px}
 
-/* ── Vertical context header — between tab bar and KPI cards ── */
+/* ── Vertical context hero — between tab bar and KPI cards ── */
 .vert-ctx-hdr{
-  display:flex;align-items:baseline;gap:9px;
-  padding:6px 0 16px;
-  min-height:44px;
+  display:flex;align-items:center;gap:12px;
+  padding:8px 0 18px;
+  min-height:58px;
 }
 .vert-ctx-code{
   font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
   color:var(--vc-ink,var(--blue));
-  padding:3px 9px;border-radius:var(--pill);
+  padding:4px 10px;border-radius:var(--pill);
   background:var(--vc-soft,var(--accent-soft));
   white-space:nowrap;
 }
-.vert-ctx-sep{color:var(--txt3);font-size:11px;user-select:none}
+/* Gradient headline — the Apple.com promo-tile signature */
 .vert-ctx-name{
-  font-size:20px;font-weight:700;letter-spacing:-.5px;color:var(--txt);line-height:1.15;
+  font-size:30px;font-weight:800;letter-spacing:-.9px;line-height:1.1;
+  padding-right:2px;
+  color:var(--vc-ink,var(--txt));
+  background:linear-gradient(120deg,var(--vc-ink,var(--txt)) 15%,var(--vc,var(--txt)) 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
 }
 
 /* ══════════════════════════════════════════════════
@@ -1324,12 +1364,7 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 }
 .vkpi-card:hover{box-shadow:var(--shadow-lg);transform:scale(1.02)}
 .vkpi-card:active{transform:scale(.97);transition-duration:.1s}
-/* Thin vertical-color accent stripe — ties each KPI card to the active vertical */
-.vkpi-card::before{
-  content:'';position:absolute;inset:0 0 auto 0;height:3px;pointer-events:none;
-  background:var(--vc,var(--blue));
-  border-radius:var(--r) var(--r) 0 0;
-}
+/* No stripe — the ambient aura already carries the vertical's identity */
 .vkpi-icon{
   display:flex;align-items:center;justify-content:center;
   width:36px;height:36px;border-radius:10px;
@@ -1341,7 +1376,7 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vkpi-card.vk-transacted .vkpi-icon{background:var(--st-transacted-bg);color:var(--st-transacted-tx)}
 .vkpi-card.vk-warn       .vkpi-icon{background:var(--st-review-bg);color:var(--st-review-tx)}
 .vkpi-lbl{font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--txt2);margin-bottom:8px;line-height:1.2}
-.vkpi-val{font-size:36px;font-weight:700;letter-spacing:-1.5px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
+.vkpi-val{font-size:38px;font-weight:700;letter-spacing:-1.6px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
 .vkpi-sub{font-size:11.5px;color:var(--txt2);font-weight:400;margin-top:7px;line-height:1.4}
 /* Semantic color variants */
 .vkpi-card.vk-onboarded .vkpi-val{color:var(--txt)}
@@ -1365,6 +1400,7 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   background:var(--card);border:none;
   border-radius:var(--r);overflow:hidden;
   box-shadow:var(--shadow-card);margin-bottom:32px;
+  scroll-margin-top:72px;   /* clear the sticky glass header when scrolled to */
 }
 .vds-head{
   display:flex;align-items:center;gap:10px;
@@ -1581,9 +1617,13 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 
 <body>
 
+<!-- Ambient vertical aura — behind everything -->
+<div id="aura" aria-hidden="true"></div>
+
 <!-- Loading -->
 <div id="loading-overlay">
-  <div class="spinner"></div>
+  <div class="load-wordmark">Recykal Control Tower</div>
+  <div class="load-track"><div class="load-fill"></div></div>
   <div class="loading-txt">Loading Enterprise Data…</div>
 </div>
 
@@ -1937,6 +1977,8 @@ function updateViewChrome() {
 
   if (vt) vt.textContent = isGst ? 'GST Payables' : 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
+  setAura(isGst ? 'gst' : (activeVertKey || 'OMP'));
+  if (!isGst) positionVertThumb(false);   // bar may have re-rendered while hidden
   var g = document.getElementById('aud-gst');
   if (g) g.classList.toggle('active', isGst);
   buildSideNav();
@@ -2151,6 +2193,16 @@ function vcVars(key) {
     + ';--vc-soft:' + hexRGBA(vc.c, .09)
     + ';--vc-line:' + hexRGBA(vc.c, .30)
     + ';--vc-fade:' + hexRGBA(vc.c, .25) + ';';
+}
+
+// ── Ambient aura — repaint the page's faint colour field to match the
+//    active vertical (or GST orange). Registered @property colours make
+//    the hue crossfade; older browsers simply snap.
+function setAura(key) {
+  var c = key === 'gst' ? '#FF9500' : ((VERT_COLORS[key] || VERT_COLORS.OMP).c);
+  var rs = document.documentElement.style;
+  rs.setProperty('--aura-a', hexRGBA(c, .09));
+  rs.setProperty('--aura-b', hexRGBA(c, .05));
 }
 var selectedVert = null;
 var activeVertKey = null;      // which vertical tab is currently active
@@ -2386,7 +2438,6 @@ function funnel3D(v) {
       + '<ellipse cx="' + cx + '" cy="' + y1 + '" rx="' + (wB / 2).toFixed(1) + '" ry="' + (ry * 0.78).toFixed(1) + '" fill="#000" opacity=".12"/>'
       + '</svg>';
     var card = '<div class="f3d-card"><span class="cc-dot" style="background:' + col + '"></span>'
-      + '<span class="cc-dot" style="background:' + col + '"></span>'
       + '<span class="f3d-card-lbl">' + STAGE[t.k].lbl + '</span>'
       + '<span class="f3d-card-val">' + fmt(t.n) + '</span></div>';
     return '<div class="f3d-row">' + band + card + '</div>';
@@ -2455,6 +2506,34 @@ function renderVertTabBar() {
       + '</button>';
   }).join('')
   + '<button class="vert-tab vert-tab-gst" onclick="switchView(\'gst\')">GST Payables</button>';
+  positionVertThumb(false);
+}
+
+// ── Liquid tab thumb — the white pill that slides between vertical tabs.
+//    Recreated on every bar re-render (innerHTML wipes it); positioned from
+//    the active tab's box. animate=false snaps (first paint, resize, refresh).
+function positionVertThumb(animate) {
+  var bar = document.getElementById('vert-tabs-bar');
+  if (!bar) return;
+  var active = bar.querySelector('.vert-tab.active');
+  var thumb  = bar.querySelector('.vert-tab-thumb');
+  if (!active) { if (thumb) thumb.style.width = '0px'; return; }
+  if (!active.offsetWidth) return;   // bar hidden (GST view) — keep last position
+  if (!thumb) {
+    thumb = document.createElement('div');
+    thumb.className = 'vert-tab-thumb';
+    bar.insertBefore(thumb, bar.firstChild);
+  }
+  bar.classList.add('has-thumb');
+  var instant = animate === false || !motionOK();
+  if (instant) thumb.style.transition = 'none';
+  thumb.style.width = active.offsetWidth + 'px';
+  thumb.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+  if (instant) requestAnimationFrame(function() { thumb.style.transition = ''; });
+}
+window.addEventListener('resize', function() { positionVertThumb(false); });
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(function() { positionVertThumb(false); });
 }
 
 function renderVertCtxHdr(key) {
@@ -2465,7 +2544,6 @@ function renderVertCtxHdr(key) {
   if (!cfg) { el.innerHTML = ''; return; }
   el.setAttribute('style', vcVars(key));
   el.innerHTML = '<span class="vert-ctx-code">' + esc(cfg.code || cfg.key) + '</span>'
-    + '<span class="vert-ctx-sep">·</span>'
     + '<span class="vert-ctx-name">' + esc(cfg.name) + '</span>';
 }
 
@@ -2479,10 +2557,16 @@ function selectVertTab(key) {
   vertRows = []; vertRowsLoading = true; vertRowsError = null;
   _vertRowsPKey = null; ++_vertRowsGen;
   // Update tab active states in-place (faster than full re-render)
+  var actTab = null;
   document.querySelectorAll('.vert-tab[data-key]').forEach(function(t) {
     t.classList.toggle('active', t.dataset.key === key);
-    if (t.dataset.key === key) t.setAttribute('style', vcVars(key));
+    if (t.dataset.key === key) { t.setAttribute('style', vcVars(key)); actTab = t; }
   });
+  positionVertThumb(true);
+  setAura(key);
+  if (actTab && actTab.scrollIntoView) {
+    try { actTab.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'nearest', inline: 'nearest' }); } catch (e) {}
+  }
   renderVertCtxHdr(key);
   renderVertKPIs(key);
   renderPipelinePair(key);
