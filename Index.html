@@ -1476,6 +1476,16 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vkpi-lbl{font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--txt2);margin-bottom:8px;line-height:1.2}
 .vkpi-val{font-size:38px;font-weight:700;letter-spacing:-1.6px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
 .vkpi-sub{font-size:11.5px;color:var(--txt2);font-weight:400;margin-top:7px;line-height:1.4}
+/* Split audience row: [S 259 sellers / B 78 buyers] left · big number right */
+.vkpi-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:6px}
+.vkpi-bottom .vkpi-val{margin-top:0;flex-shrink:0}
+.vkpi-side{display:flex;flex-direction:column;gap:4px;padding-bottom:3px}
+.vkpi-side-row{display:flex;align-items:center;gap:5px;line-height:1}
+.vkpi-side-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;display:inline-block}
+.vkpi-side-num{font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--txt);letter-spacing:-.3px}
+.vkpi-side-tag{font-size:10.5px;font-style:normal;color:var(--txt2);font-weight:400}
+.vk-onboarded .vkpi-side-num{color:rgba(255,255,255,.88)}
+.vk-onboarded .vkpi-side-tag{color:rgba(255,255,255,.44)}
 /* ── Bento hierarchy — one graphite jewel anchors the row ── */
 .vkpi-card.vk-onboarded{
   background:linear-gradient(155deg,#38383C 0%,#1D1D1F 42%,#0B0B0D 100%);
@@ -2720,7 +2730,26 @@ function renderVertKPIs(key) {
   var pctTxn = vs.pctTransacted != null ? vs.pctTransacted + '%' : '—';
   var totMiss = missS + missB;
   var vars = vcVars(key);
-  function mk(icon, lbl, val, sub, cls, action, spark, extra) {
+  function sideRow(v, tag, clr) {
+    return '<span class="vkpi-side-row">'
+      + '<i class="vkpi-side-dot" style="background:' + clr + '"></i>'
+      + '<b class="vkpi-side-num">' + v + '</b>'
+      + '<em class="vkpi-side-tag">' + tag + '</em>'
+      + '</span>';
+  }
+  // sides: [{val,tag,clr}] → renders as left column; big number anchors right.
+  // sub: plain string shown below the value when no sides are given.
+  function mk(icon, lbl, val, sub, cls, action, spark, extra, sides) {
+    var body;
+    if (sides && sides.length) {
+      body = '<div class="vkpi-bottom">'
+        + '<div class="vkpi-side">' + sides.map(function(s) { return sideRow(s.v, s.t, s.c); }).join('') + '</div>'
+        + '<div class="vkpi-val">' + val + '</div>'
+        + '</div>';
+    } else {
+      body = '<div class="vkpi-val" style="margin-top:6px">' + val + '</div>'
+        + (sub ? '<div class="vkpi-sub">' + sub + '</div>' : '');
+    }
     return '<div class="vkpi-card' + (cls ? ' ' + cls : '') + '" style="' + vars + '"'
       + ' role="button" tabindex="0"'
       + ' onclick="vkpiOpen(\'' + action + '\')"'
@@ -2728,8 +2757,7 @@ function renderVertKPIs(key) {
       + (spark || '')
       + '<div class="vkpi-icon">' + icon + '</div>'
       + '<div class="vkpi-lbl">' + lbl + '</div>'
-      + '<div class="vkpi-val">' + val + '</div>'
-      + (sub ? '<div class="vkpi-sub">' + sub + '</div>' : '')
+      + body
       + (extra || '')
       + '</div>';
   }
@@ -2752,11 +2780,12 @@ function renderVertKPIs(key) {
   var compPct = totAll > 0 ? Math.round(((compS + compB) / totAll) * 100) : 0;
   var meter   = '<div class="vkpi-meter" title="' + compPct + '% of pipeline onboarded"><i style="width:' + compPct + '%"></i></div>';
 
+  var S = '#34C759', B = '#007AFF';
   el.innerHTML = [
-    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',    'all',       spTotal, ''),
-    mk(icCheck,  'Onboarded',         fmt(compS + compB),   fmt(compS) + ' sellers · ' + fmt(compB) + ' buyers · ' + compPct + '% of pipeline', 'vk-onboarded', 'onboarded', spOnb, meter),
-    mk(icTrend,  '% Transacted',      pctTxn,               'Seller transacted rate', 'vk-transacted',              'all',       spTxn,  ''),
-    mk(icWarn,   'GSTIN Missing',     fmt(totMiss),          fmt(missS) + ' sellers · ' + fmt(missB) + ' buyers', totMiss > 0 ? 'vk-warn' : 'vk-total', 'missing', spMiss, ''),
+    mk(icFunnel, 'Total Cases',   fmt(totalS + totalB), null,                    'vk-total',                             'all',       spTotal, '',    [{v:fmt(totalS),t:'sellers',c:S},{v:fmt(totalB),t:'buyers',c:B}]),
+    mk(icCheck,  'Onboarded',     fmt(compS + compB),   compPct + '% onboarded', 'vk-onboarded',                         'onboarded', spOnb,   meter, [{v:fmt(compS), t:'sellers',c:'#30D158'},{v:fmt(compB),t:'buyers',c:'rgba(255,255,255,.55)'}]),
+    mk(icTrend,  '% Transacted',  pctTxn,               'Seller transacted rate','vk-transacted',                         'all',       spTxn,   '',    null),
+    mk(icWarn,   'GSTIN Missing', fmt(totMiss),          null,                    totMiss > 0 ? 'vk-warn' : 'vk-total',   'missing',   spMiss,  '',    [{v:fmt(missS), t:'sellers',c:S},{v:fmt(missB),t:'buyers',c:B}]),
   ].join('');
   animateCounters(el);
 }
