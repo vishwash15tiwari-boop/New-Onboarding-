@@ -198,11 +198,17 @@ function bustDashboardCache_() {
 
   ['seller', 'buyer'].forEach(function(aud) {
     periods.forEach(function(p) {
-      keys.push('dash_v23_' + aud + '_' + JSON.stringify([p, '', '']));
+      var pk = JSON.stringify([p, '', '']);
+      keys.push('dash_v26_' + aud + '_' + pk);
       vertKeys.forEach(function(vk) {
-        keys.push('vrows_v8_' + aud + '_' + vk + '_' + JSON.stringify([p, '', '']));
+        keys.push('vrows_v10_' + aud + '_' + vk + '_' + pk);
       });
     });
+  });
+
+  // Combined dashboard cache (getCombinedDashboard)
+  periods.forEach(function(p) {
+    keys.push('dash_v26_cmb_' + JSON.stringify([p, '', '']));
   });
 
   keys.forEach(function(k) { try { cache.remove(k); } catch (e) {} });
