@@ -1997,8 +1997,8 @@ function refreshActive(silent) {
   else loadData(silent);
 }
 
-// Fetch seller + buyer dashboards in parallel via two getDashboardData calls,
-// then combine and render. Uses the existing deployed getDashboardData function.
+// Fetch seller + buyer dashboards in a single getCombinedDashboard call so both
+// pipelines always render together from one authoritative response.
 function loadData(silent) {
   var btn = document.getElementById('btn-refresh');
   if (btn) btn.classList.add('spinning');
@@ -2021,73 +2021,48 @@ function loadData(silent) {
 
   var baseF = { period: currentPeriod };
   if (currentPeriod === 'Custom') { baseF.startDate = customStart; baseF.endDate = customEnd; }
-  var sellerF = JSON.stringify({ audience: 'seller', period: baseF.period, startDate: baseF.startDate, endDate: baseF.endDate });
-  var buyerF  = JSON.stringify({ audience: 'buyer',  period: baseF.period, startDate: baseF.startDate, endDate: baseF.endDate });
+  var filtersJson = JSON.stringify(baseF);
 
-  var _sData = null, _bData = null, _pending = 2, _failed = false;
-
-  function tryMerge() {
-    if (_failed || --_pending > 0) return;
-    // Both calls finished — merge and render
-    DS = _sData ? { verticals: _sData.verticals || {} } : { verticals: {} };
-    DB = _bData ? { verticals: _bData.verticals || {} } : { verticals: {} };
-    D  = _sData || _bData || {};
-    D.verticals      = DS.verticals;
-    D.verticalConfig = (_sData && _sData.verticalConfig) || (_bData && _bData.verticalConfig) || [];
-    D.fiscalYears    = (_sData && _sData.fiscalYears)    || (_bData && _bData.fiscalYears)    || [];
-
-    // Cache combined shape (include fiscalYears so period dropdown works on restore)
-    try {
-      localStorage.setItem(STORE_PFX + 'combined', JSON.stringify({
-        success: true, lastUpdated: D.lastUpdated, dataSource: D.dataSource,
-        verticalConfig: D.verticalConfig, fiscalYears: D.fiscalYears,
-        seller: DS, buyer: DB,
-      }));
-    } catch (e) {}
-
-    var hash = JSON.stringify([_sData && _sData.lastUpdated, _bData && _bData.lastUpdated]);
-    var unchanged = (_lastDashHash['combined'] === hash);
-    _lastDashHash['combined'] = hash;
-
-    if (!unchanged) {
-      var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
-      if (selectedVert && _vertRowsPKey !== newPKey) {
-        vertRows = []; vertRowsLoading = false; vertRowsError = null;
-        loadVertRows(selectedVert);
-      }
-      try { renderAll(); } catch (e) { console.error('renderAll error', e); }
-    }
-    done();
-  }
-
-  // Seller call
   google.script.run
     .withSuccessHandler(function(res) {
       try {
         var d = JSON.parse(res);
-        if (d && d.verticals) { _sData = d; }
-        else { _failed = true; fail((d && d.error) || 'Seller data error'); return; }
-      } catch (e) { _failed = true; fail('Parse error: ' + e.message); return; }
-      tryMerge();
+        if (!d || !d.success || !d.seller) { fail((d && d.error) || 'Data error'); return; }
+
+        DS = { verticals: (d.seller && d.seller.verticals) || {} };
+        DB = { verticals: (d.buyer  && d.buyer.verticals)  || {} };
+        D  = d;
+        D.verticals      = DS.verticals;
+        D.verticalConfig = d.verticalConfig || [];
+        D.fiscalYears    = (d.seller && d.seller.fiscalYears) || d.fiscalYears || [];
+
+        try {
+          localStorage.setItem(STORE_PFX + 'combined', JSON.stringify({
+            success: true, lastUpdated: d.lastUpdated, dataSource: d.dataSource,
+            verticalConfig: D.verticalConfig, fiscalYears: D.fiscalYears,
+            seller: DS, buyer: DB,
+          }));
+        } catch (e) {}
+
+        var hash = d.lastUpdated || '';
+        var unchanged = (_lastDashHash['combined'] === hash);
+        _lastDashHash['combined'] = hash;
+
+        if (!unchanged) {
+          var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+          if (selectedVert && _vertRowsPKey !== newPKey) {
+            vertRows = []; vertRowsLoading = false; vertRowsError = null;
+            loadVertRows(selectedVert);
+          }
+          try { renderAll(); } catch (e) { console.error('renderAll error', e); }
+        }
+        done();
+      } catch (e) { fail('Parse error: ' + e.message); }
     })
     .withFailureHandler(function(err) {
-      if (!_failed) { _failed = true; fail((err && err.message) ? err.message : 'Script error'); }
+      fail((err && err.message) ? err.message : 'Script error');
     })
-    .getDashboardData(sellerF);
-
-  // Buyer call (parallel, non-fatal)
-  google.script.run
-    .withSuccessHandler(function(res) {
-      try {
-        var d = JSON.parse(res);
-        if (d && d.verticals) { _bData = d; }
-      } catch (e) {}
-      tryMerge();
-    })
-    .withFailureHandler(function() {
-      tryMerge(); // buyer failure is non-fatal
-    })
-    .getDashboardData(buyerF);
+    .getCombinedDashboard(filtersJson);
 }
 
 // ── View chrome (Sellers · Buyers · GST Payables) ────────────────
