@@ -248,12 +248,18 @@ function syncAllOnboarding() {
   try { syncBuyers();  } catch (e) { Logger.log('❌ Buyers error: '  + e.message); }
   try { syncDetail();  } catch (e) { Logger.log('❌ Detail error: '  + e.message); }
   bustDashboardCache_();
-  // Pre-warm both audience caches so the next user request is always a cache hit.
+  // Pre-warm all caches so every user request is a cache hit.
+  // getCombinedDashboard must be warmed too — the frontend now calls it as its
+  // primary entry point, and its cache key differs from the individual audience keys.
   try {
     getDashboardData(JSON.stringify({ audience: 'seller', period: 'All' }));
     getDashboardData(JSON.stringify({ audience: 'buyer',  period: 'All' }));
-    Logger.log('  Cache pre-warmed (seller + buyer).');
-  } catch (e) { Logger.log('  Cache pre-warm failed: ' + e.message); }
+    Logger.log('  Cache pre-warmed (seller + buyer individual).');
+  } catch (e) { Logger.log('  Individual cache pre-warm failed: ' + e.message); }
+  try {
+    getCombinedDashboard(JSON.stringify({ period: 'All' }));
+    Logger.log('  Cache pre-warmed (combined dashboard).');
+  } catch (e) { Logger.log('  Combined cache pre-warm failed: ' + e.message); }
   Logger.log('═══ Metabase sync complete — ' + new Date().toISOString() + ' ═══');
 }
 

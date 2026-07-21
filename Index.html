@@ -2007,8 +2007,9 @@ function refreshActive(silent) {
   else loadData(silent);
 }
 
-// Fetch seller + buyer dashboards in a single getCombinedDashboard call so both
-// pipelines always render together from one authoritative response.
+// Primary: getCombinedDashboard (one call, seller + buyer together).
+// Fallback: two getDashboardData calls when the combined cache is cold and
+// the live read returns empty seller data (Metabase temporarily unreachable).
 function loadData(silent) {
   var btn = document.getElementById('btn-refresh');
   if (btn) btn.classList.add('spinning');
@@ -2032,45 +2033,84 @@ function loadData(silent) {
   var baseF = { period: currentPeriod };
   if (currentPeriod === 'Custom') { baseF.startDate = customStart; baseF.endDate = customEnd; }
   var filtersJson = JSON.stringify(baseF);
+  var sellerF = JSON.stringify({ audience: 'seller', period: baseF.period, startDate: baseF.startDate, endDate: baseF.endDate });
+  var buyerF  = JSON.stringify({ audience: 'buyer',  period: baseF.period, startDate: baseF.startDate, endDate: baseF.endDate });
 
+  function applyAndRender(newDS, newDB, meta) {
+    DS = newDS; DB = newDB; D = meta;
+    D.verticals      = DS.verticals;
+    D.verticalConfig = meta.verticalConfig || [];
+    D.fiscalYears    = (meta.seller && meta.seller.fiscalYears) || meta.fiscalYears || [];
+    try {
+      localStorage.setItem(STORE_PFX + 'combined', JSON.stringify({
+        success: true, lastUpdated: D.lastUpdated, dataSource: D.dataSource,
+        verticalConfig: D.verticalConfig, fiscalYears: D.fiscalYears,
+        seller: DS, buyer: DB,
+      }));
+    } catch (e) {}
+    var hash = D.lastUpdated || '';
+    if (_lastDashHash['combined'] !== hash) {
+      _lastDashHash['combined'] = hash;
+      var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+      if (selectedVert && _vertRowsPKey !== newPKey) {
+        vertRows = []; vertRowsLoading = false; vertRowsError = null;
+        loadVertRows(selectedVert);
+      }
+      try { renderAll(); } catch (e) { console.error('renderAll error', e); }
+    }
+    done();
+  }
+
+  // Returns true if seller verticals object has at least one non-zero total.
+  function hasSellerData(verticals) {
+    if (!verticals) return false;
+    return Object.keys(verticals).some(function(k) { return (verticals[k].total || 0) > 0; });
+  }
+
+  // Fallback: two individual getDashboardData calls (seller is fatal, buyer is not).
+  function loadFallback() {
+    var _sData = null, _bData = null, _pending = 2, _fbFailed = false;
+    function tryFbMerge() {
+      if (_fbFailed || --_pending > 0) return;
+      applyAndRender(
+        _sData ? { verticals: _sData.verticals || {} } : { verticals: {} },
+        _bData ? { verticals: _bData.verticals || {} } : { verticals: {} },
+        _sData || _bData || {}
+      );
+    }
+    google.script.run
+      .withSuccessHandler(function(res) {
+        try { var d = JSON.parse(res); if (d && d.verticals) _sData = d; else { _fbFailed = true; fail((d && d.error) || 'Seller error'); return; } } catch (e) { _fbFailed = true; fail('Parse error'); return; }
+        tryFbMerge();
+      })
+      .withFailureHandler(function(err) { if (!_fbFailed) { _fbFailed = true; fail((err && err.message) || 'Script error'); } })
+      .getDashboardData(sellerF);
+    google.script.run
+      .withSuccessHandler(function(res) { try { var d = JSON.parse(res); if (d && d.verticals) _bData = d; } catch (e) {} tryFbMerge(); })
+      .withFailureHandler(function() { tryFbMerge(); })
+      .getDashboardData(buyerF);
+  }
+
+  // Primary: single combined call.
   google.script.run
     .withSuccessHandler(function(res) {
       try {
         var d = JSON.parse(res);
         if (!d || !d.success || !d.seller) { fail((d && d.error) || 'Data error'); return; }
-
-        DS = { verticals: (d.seller && d.seller.verticals) || {} };
-        DB = { verticals: (d.buyer  && d.buyer.verticals)  || {} };
-        D  = d;
-        D.verticals      = DS.verticals;
-        D.verticalConfig = d.verticalConfig || [];
-        D.fiscalYears    = (d.seller && d.seller.fiscalYears) || d.fiscalYears || [];
-
-        try {
-          localStorage.setItem(STORE_PFX + 'combined', JSON.stringify({
-            success: true, lastUpdated: d.lastUpdated, dataSource: d.dataSource,
-            verticalConfig: D.verticalConfig, fiscalYears: D.fiscalYears,
-            seller: DS, buyer: DB,
-          }));
-        } catch (e) {}
-
-        var hash = d.lastUpdated || '';
-        var unchanged = (_lastDashHash['combined'] === hash);
-        _lastDashHash['combined'] = hash;
-
-        if (!unchanged) {
-          var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
-          if (selectedVert && _vertRowsPKey !== newPKey) {
-            vertRows = []; vertRowsLoading = false; vertRowsError = null;
-            loadVertRows(selectedVert);
-          }
-          try { renderAll(); } catch (e) { console.error('renderAll error', e); }
-        }
-        done();
+        var sVerts = (d.seller && d.seller.verticals) || {};
+        // If combined returned empty seller data (cold cache + Metabase unreachable),
+        // fall back to individual calls which may hit the pre-warmed getDashboardData cache.
+        if (!hasSellerData(sVerts)) { loadFallback(); return; }
+        applyAndRender(
+          { verticals: sVerts },
+          { verticals: (d.buyer && d.buyer.verticals) || {} },
+          d
+        );
       } catch (e) { fail('Parse error: ' + e.message); }
     })
     .withFailureHandler(function(err) {
-      fail((err && err.message) ? err.message : 'Script error');
+      // getCombinedDashboard not available (older deployment) — fall back.
+      loadFallback();
     })
     .getCombinedDashboard(filtersJson);
 }
