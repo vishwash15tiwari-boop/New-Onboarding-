@@ -547,6 +547,17 @@ function vStats(data) {
   var newVendors = countFn(data, function(r) { return !r.isOldVendor; });
   var oldVendors = countFn(data, function(r) { return !!r.isOldVendor; });
 
+  // Plastic vs Metal — OMP business_category values; zero for other verticals.
+  function catLC(r) { return String(r.category || '').trim().toLowerCase(); }
+  var plasticTotal      = countFn(data, function(r) { return catLC(r) === 'plastic'; });
+  var metalTotal        = countFn(data, function(r) { return catLC(r) === 'metal'; });
+  var plasticOnboarded  = countFn(data, function(r) { return catLC(r) === 'plastic' && r.status === 'COMPLETED'; });
+  var metalOnboarded    = countFn(data, function(r) { return catLC(r) === 'metal'   && r.status === 'COMPLETED'; });
+  var plasticTransacted = countFn(data, function(r) { return catLC(r) === 'plastic' && r.hasTransacted; });
+  var metalTransacted   = countFn(data, function(r) { return catLC(r) === 'metal'   && r.hasTransacted; });
+  var plasticNew        = countFn(data, function(r) { return catLC(r) === 'plastic' && !r.isOldVendor; });
+  var metalNew          = countFn(data, function(r) { return catLC(r) === 'metal'   && !r.isOldVendor; });
+
   return {
     total: total,
     completed: completed,
@@ -565,6 +576,10 @@ function vStats(data) {
     overdue:     overdueCount > 0 ? overdueCount : null,
     newVendors: newVendors,
     oldVendors: oldVendors,
+    plasticTotal: plasticTotal,       metalTotal: metalTotal,
+    plasticOnboarded: plasticOnboarded, metalOnboarded: metalOnboarded,
+    plasticTransacted: plasticTransacted, metalTransacted: metalTransacted,
+    plasticNew: plasticNew,           metalNew: metalNew,
     fyBreakdown: fyBreakdown,
     categories:  categories,
     rowsTotal: total,

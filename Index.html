@@ -1476,6 +1476,10 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vkpi-lbl{font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--txt2);margin-bottom:8px;line-height:1.2}
 .vkpi-val{font-size:38px;font-weight:700;letter-spacing:-1.6px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
 .vkpi-sub{font-size:11.5px;color:var(--txt2);font-weight:400;margin-top:7px;line-height:1.4}
+.vkpi-mat{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.vkpi-mat-chip{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:500;color:var(--txt2);white-space:nowrap}
+.vkpi-mat-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.vk-onboarded .vkpi-mat-chip{color:rgba(255,255,255,.50)}
 /* Split audience row: [S 259 sellers / B 78 buyers] left · big number right */
 .vkpi-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:6px}
 .vkpi-bottom .vkpi-val{margin-top:0;flex-shrink:0}
@@ -2828,13 +2832,31 @@ function renderVertKPIs(key) {
 
   var S = '#34C759', B = '#007AFF';
   var G2 = 'rgba(52,199,89,.38)', B2 = 'rgba(0,122,255,.38)';
-  var nonTxnSub  = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
-  var oldTotalSub = (oldS + oldB) > 0 ? '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>' : '<div class="vkpi-sub">0 existing</div>';
+  // Plastic vs Metal combined (S + B) per metric
+  var PC = '#FF9F0A', MC = '#8E8E93';
+  function matLine(p, m) {
+    if (!p && !m) return '';
+    return '<div class="vkpi-mat">'
+      + '<span class="vkpi-mat-chip"><i class="vkpi-mat-dot" style="background:' + PC + '"></i>' + fmt(p) + ' plastic</span>'
+      + '<span class="vkpi-mat-chip"><i class="vkpi-mat-dot" style="background:' + MC + '"></i>' + fmt(m) + ' metal</span>'
+      + '</div>';
+  }
+  var pTotal   = (vs.plasticTotal      || 0) + (vb.plasticTotal      || 0);
+  var mTotal   = (vs.metalTotal        || 0) + (vb.metalTotal        || 0);
+  var pOnb     = (vs.plasticOnboarded  || 0) + (vb.plasticOnboarded  || 0);
+  var mOnb     = (vs.metalOnboarded    || 0) + (vb.metalOnboarded    || 0);
+  var pTxn     = (vs.plasticTransacted || 0) + (vb.plasticTransacted || 0);
+  var mTxn     = (vs.metalTransacted   || 0) + (vb.metalTransacted   || 0);
+  var pNew     = (vs.plasticNew        || 0) + (vb.plasticNew        || 0);
+  var mNew     = (vs.metalNew          || 0) + (vb.metalNew          || 0);
+
+  var nonTxnSub   = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
+  var oldTotalSub = '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>';
   el.innerHTML = [
-    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                    'vk-total',     'all',       spTotal, '', [{v:fmt(totalS),t:'sellers',c:S},{v:fmt(totalB),t:'buyers',c:B}]),
-    mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% onboarded', 'vk-onboarded', 'onboarded', spOnb, meter, [{v:fmt(compS),t:'sellers',c:'#30D158'},{v:fmt(compB),t:'buyers',c:'rgba(255,255,255,.55)'}]),
-    mk(icZap,    'Transacted',  fmt(txnTotal),         null,                   'vk-transacted', 'all',       spTxn, nonTxnSub, txnS != null ? [{v:fmt(txnS),t:'sellers',c:S},{v:fmt(txnB),t:'buyers',c:B}] : null),
-    mk(icUsers,  'Old vs New',  fmt(newS + newB),      null,                   'vk-total',      'all',       '', oldTotalSub,
+    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                    'vk-total',     'all',       spTotal, matLine(pTotal, mTotal), [{v:fmt(totalS),t:'sellers',c:S},{v:fmt(totalB),t:'buyers',c:B}]),
+    mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% onboarded', 'vk-onboarded', 'onboarded', spOnb, meter + matLine(pOnb, mOnb), [{v:fmt(compS),t:'sellers',c:'#30D158'},{v:fmt(compB),t:'buyers',c:'rgba(255,255,255,.55)'}]),
+    mk(icZap,    'Transacted',  fmt(txnTotal),         null,                   'vk-transacted', 'all',       spTxn, nonTxnSub + matLine(pTxn, mTxn), txnS != null ? [{v:fmt(txnS),t:'sellers',c:S},{v:fmt(txnB),t:'buyers',c:B}] : null),
+    mk(icUsers,  'Old vs New',  fmt(newS + newB),      null,                   'vk-total',      'all',       '', oldTotalSub + matLine(pNew, mNew),
        [{v:fmt(newS),t:'new sellers',c:S},{v:fmt(oldS),t:'old sellers',c:G2},{v:fmt(newB),t:'new buyers',c:B},{v:fmt(oldB),t:'old buyers',c:B2}]),
   ].join('');
   animateCounters(el);
