@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v27_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v28_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -136,7 +136,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v11_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v12_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var dash = buildDashboard(audience, cfg, rows, f);
@@ -168,7 +168,7 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v27_cmb_' + periodKey;
+    var cacheKey  = 'dash_v28_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -205,7 +205,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v11_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v12_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -413,11 +413,15 @@ function buildDashboard(audience, cfg, allRows, f) {
   var byVert = {};
   rows.forEach(function(r) { (byVert[r.vertical] = byVert[r.vertical] || []).push(r); });
 
-  // Old vs New (OMP only): a vendor is "old" if they already have a COMPLETED
-  // record in the Marketplace vertical. Only Marketplace is the source of truth.
+  // Old vs New (OMP only): a vendor is "old" if they have a COMPLETED record in
+  // Marketplace at ANY point in history — so build the ID set from allRows (not
+  // date-filtered rows), otherwise Marketplace completions outside the current
+  // date window are invisible and entities are wrongly counted as New.
   var marketplaceDoneIds = {};
-  (byVert['Marketplace'] || []).forEach(function(r) {
-    if (r.status === 'COMPLETED' && r.id) marketplaceDoneIds[r.id] = true;
+  allRows.forEach(function(r) {
+    if (r.vertical === 'Marketplace' && r.status === 'COMPLETED' && r.id) {
+      marketplaceDoneIds[r.id] = true;
+    }
   });
   (byVert['OMP'] || []).forEach(function(r) {
     r.isOldVendor = !!(r.id && marketplaceDoneIds[r.id]);
