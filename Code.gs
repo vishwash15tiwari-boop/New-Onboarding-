@@ -451,6 +451,63 @@ function buildDashboard(audience, cfg, allRows, f) {
   };
 }
 
+// ─── DIAGNOSTIC — run this from the Apps Script editor to debug Old vs New ───
+// Check: Logger → View logs after running.
+function debugOldVsNew() {
+  Logger.log('=== Old vs New Debug ===');
+  ['seller', 'buyer'].forEach(function(aud) {
+    Logger.log('\n--- ' + aud.toUpperCase() + ' ---');
+    var cfg = AUDIENCE_CFG[aud];
+    var raw  = readData(aud);
+    var rows = normalizeRows(raw, cfg);
+    Logger.log('Total rows: ' + rows.length);
+
+    // Count rows by bizVertical
+    var bvCounts = {};
+    rows.forEach(function(r) {
+      var bv = String(r.bizVertical || '(blank)').trim() || '(blank)';
+      bvCounts[bv] = (bvCounts[bv] || 0) + 1;
+    });
+    Logger.log('Rows by bizVertical:');
+    Object.keys(bvCounts).sort().forEach(function(k) {
+      Logger.log('  "' + k + '" → ' + bvCounts[k]);
+    });
+
+    // IDs that appear with bizVertical = 'Marketplace' and COMPLETED
+    var mktIds = {};
+    rows.forEach(function(r) {
+      if (String(r.bizVertical || '').trim().toLowerCase() === 'marketplace'
+          && r.status === 'COMPLETED' && r.id) {
+        mktIds[r.id] = true;
+      }
+    });
+    Logger.log('Marketplace COMPLETED IDs: ' + Object.keys(mktIds).length);
+    if (Object.keys(mktIds).length > 0) {
+      Logger.log('  Sample IDs: ' + Object.keys(mktIds).slice(0, 5).join(', '));
+    }
+
+    // OMP rows
+    var ompRows = rows.filter(function(r) { return r.vertical === 'OMP'; });
+    Logger.log('OMP rows total: ' + ompRows.length);
+    Logger.log('OMP COMPLETED rows: ' + ompRows.filter(function(r) { return r.status === 'COMPLETED'; }).length);
+
+    // Overlap: OMP COMPLETED who are also in Marketplace COMPLETED
+    var oldCount = ompRows.filter(function(r) {
+      return r.status === 'COMPLETED' && mktIds[r.id];
+    }).length;
+    Logger.log('OMP COMPLETED also in Marketplace COMPLETED (=Old): ' + oldCount);
+
+    if (oldCount === 0 && Object.keys(mktIds).length === 0) {
+      // Check the raw bizVertical values for OMP rows to see if ID column is right
+      Logger.log('\nSample OMP row IDs (first 5):');
+      ompRows.slice(0, 5).forEach(function(r) {
+        Logger.log('  id="' + r.id + '" bizVertical="' + r.bizVertical + '" status=' + r.status);
+      });
+    }
+  });
+  Logger.log('\n=== Done ===');
+}
+
 // Per-vertical KPIs + onboarded-by-category breakdown + detail rows.
 function vStats(data) {
   var now = new Date(), weekAgo = new Date(now.getTime() - 7 * 86400000);
