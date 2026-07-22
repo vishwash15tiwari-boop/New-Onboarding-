@@ -529,6 +529,11 @@ function vStats(data) {
   }).filter(function(f) { return f.fyStart >= 2019; })
     .sort(function(a, b) { return b.fyStart - a.fyStart; });
 
+  // Old vs New: New = registered in current Indian FY (Apr 1 →); Old = before that.
+  var fyStartYearN = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  var fyStartN = new Date(fyStartYearN, 3, 1);
+  var newVendors = countFn(data, function(r) { return r.createdDate && r.createdDate >= fyStartN; });
+
   return {
     total: total,
     completed: completed,
@@ -545,6 +550,8 @@ function vStats(data) {
     totalTxnValue: totalTxnValue,
     aging:       agingCount   > 0 ? agingCount   : null,
     overdue:     overdueCount > 0 ? overdueCount : null,
+    newVendors: newVendors,
+    oldVendors: total - newVendors,
     fyBreakdown: fyBreakdown,
     categories:  categories,
     rowsTotal: total,

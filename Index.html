@@ -2770,9 +2770,12 @@ function renderVertKPIs(key) {
   var vb = (DB && DB.verticals || {})[key] || {};
   var totalS = vs.total || 0, totalB = vb.total || 0;
   var compS  = vs.completed || 0, compB = vb.completed || 0;
-  var missS  = vs.missingGST || 0, missB = vb.missingGST || 0;
-  var pctTxn = vs.pctTransacted != null ? vs.pctTransacted + '%' : '—';
-  var totMiss = missS + missB;
+  var txnS   = vs.transacted != null ? (vs.transacted || 0) : null;
+  var txnB   = vb.transacted != null ? (vb.transacted || 0) : null;
+  var txnTotal   = (txnS || 0) + (txnB || 0);
+  var nonTxnTotal = Math.max(0, (compS + compB) - txnTotal);
+  var newS = vs.newVendors || 0, newB = vb.newVendors || 0;
+  var oldS = vs.oldVendors || 0, oldB = vb.oldVendors || 0;
   var vars = vcVars(key);
   function sideRow(v, tag, clr) {
     return '<span class="vkpi-side-row">'
@@ -2810,14 +2813,13 @@ function renderVertKPIs(key) {
   }
   var icFunnel = svg('<path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/>');
   var icCheck  = svg('<circle cx="12" cy="12" r="8.4"/><path d="M8.6 12.4l2.4 2.4 4.4-5"/>');
-  var icTrend  = svg('<path d="M3.5 17l5.5-5.5 3.8 3.8L20.5 7.5"/><path d="M14.8 7.5h5.7v5.7"/>');
-  var icWarn   = svg('<path d="M12 4.6l8.4 14.6H3.6L12 4.6z"/><path d="M12 10.4v3.6"/><path d="M12 16.9v.01"/>');
+  var icZap    = svg('<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>');
+  var icUsers  = svg('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>');
 
   // FY sparklines from real breakdown data (skipped when <2 years exist)
   var spTotal = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'total'),      'var(--vc, #0071E3)', false);
   var spOnb   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'onboarded'),  '#30D158', true);
-  var spTxn   = sparkBars((vs.fyBreakdown || []).map(function(f) { return f.pctTransacted; }), 'var(--st-transacted)', false);
-  var spMiss  = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'missingGST'), 'var(--st-rejected)', false);
+  var spTxn   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'transacted'), 'var(--st-transacted)', false);
 
   // Completion meter on the ink card — onboarded share of the whole pipeline
   var totAll  = totalS + totalB;
@@ -2825,11 +2827,13 @@ function renderVertKPIs(key) {
   var meter   = '<div class="vkpi-meter" title="' + compPct + '% of pipeline onboarded"><i style="width:' + compPct + '%"></i></div>';
 
   var S = '#34C759', B = '#007AFF';
+  var nonTxnSub = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
+  var oldTotalSub = '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>';
   el.innerHTML = [
-    mk(icFunnel, 'Total Cases',   fmt(totalS + totalB), null,                    'vk-total',                             'all',       spTotal, '',    [{v:fmt(totalS),t:'sellers',c:S},{v:fmt(totalB),t:'buyers',c:B}]),
-    mk(icCheck,  'Onboarded',     fmt(compS + compB),   compPct + '% onboarded', 'vk-onboarded',                         'onboarded', spOnb,   meter, [{v:fmt(compS), t:'sellers',c:'#30D158'},{v:fmt(compB),t:'buyers',c:'rgba(255,255,255,.55)'}]),
-    mk(icTrend,  '% Transacted',  pctTxn,               'Seller transacted rate','vk-transacted',                         'all',       spTxn,   '',    null),
-    mk(icWarn,   'GSTIN Missing', fmt(totMiss),          null,                    totMiss > 0 ? 'vk-warn' : 'vk-total',   'missing',   spMiss,  '',    [{v:fmt(missS), t:'sellers',c:S},{v:fmt(missB),t:'buyers',c:B}]),
+    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                    'vk-total',     'all',       spTotal, '', [{v:fmt(totalS),t:'sellers',c:S},{v:fmt(totalB),t:'buyers',c:B}]),
+    mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% onboarded', 'vk-onboarded', 'onboarded', spOnb, meter, [{v:fmt(compS),t:'sellers',c:'#30D158'},{v:fmt(compB),t:'buyers',c:'rgba(255,255,255,.55)'}]),
+    mk(icZap,    'Transacted',  fmt(txnTotal),         null,                   'vk-transacted', 'all',       spTxn, nonTxnSub, txnS != null ? [{v:fmt(txnS),t:'sellers',c:S},{v:fmt(txnB),t:'buyers',c:B}] : null),
+    mk(icUsers,  'Old vs New',  fmt(newS + newB),      null,                   'vk-total',     'all',        '',    oldTotalSub, [{v:fmt(newS),t:'new sellers',c:S},{v:fmt(newB),t:'new buyers',c:B}]),
   ].join('');
   animateCounters(el);
 }
