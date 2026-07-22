@@ -1151,7 +1151,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v4';
+  var CACHE_KEY = 'quality_data_v5';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1211,6 +1211,11 @@ function getQualityData() {
         'kyc_document','gst_portal_screenshot_bank_details','cancelled_cheque',
         'msme_certificate','aadhaar','owner_pan','entity_pan','gst_certificate'
       ];
+      var DOC_LABELS = [
+        'Additional Docs','Proof of Premises','Electricity Bill',
+        'KYC Document','GST Screenshot','Cancelled Cheque',
+        'MSME Certificate','Aadhaar','Owner PAN','Entity PAN','GST Certificate'
+      ];
       var docIdx = DOC_NAMES.map(function(n) { return qualityFindCol_(vrh, [n]); });
       // Positional fallback: use indices 32-42 if none found by name
       if (docIdx.every(function(i) { return i < 0; })) {
@@ -1218,6 +1223,8 @@ function getQualityData() {
       }
 
       var vendorRatings = [];
+      var vendorOSV     = [];
+      var vendorDocs    = [];
 
       vrd.rows.forEach(function(row) {
         var rowAud = resolveAud_(row, vrh, vidC, vauC);
@@ -1254,20 +1261,43 @@ function getQualityData() {
                    os === 'FAIL')                                                           acc[t].o.failed      += 1;
           else                                                                              acc[t].o.notInitiated+= 1;
         });
+        var osvStatus;
+        if      (os === 'CONSENT_ACCEPTED' || os === 'COMPLETED' || os === 'VERIFIED' ||
+                 os === 'APPROVED' || os === 'DONE' || os === 'PASSED' || os === 'PASS') osvStatus = 'verified';
+        else if (os === 'CONSENT_PENDING'  || os === 'PENDING'   || os === 'IN_PROGRESS' ||
+                 os === 'SCHEDULED'        || os === 'IN_REVIEW' || os === 'IN_QUEUE')   osvStatus = 'pending';
+        else if (os === 'CONSENT_REJECTED' || os === 'REJECTED'  || os === 'FAILED' ||
+                 os === 'FAIL')                                                           osvStatus = 'failed';
+        else                                                                              osvStatus = 'not_initiated';
+        vendorOSV.push({
+          id:     String(row[vidC] || '').trim().slice(0, 30),
+          name:   String(row[nameC] || '').trim().slice(0, 60),
+          status: osvStatus,
+          aud:    rowAud
+        });
 
         // — Doc completeness: count how many of 11 docs are submitted (value > 0) —
-        var submitted = 0, totalDocs = 0;
-        docIdx.forEach(function(idx) {
-          if (idx < 0 || idx >= row.length) return;
+        var submitted = 0, totalDocs = 0, missingDocNames = [];
+        docIdx.forEach(function(didx, di) {
+          if (didx < 0 || didx >= row.length) return;
           totalDocs++;
-          var v = parseInt(row[idx], 10);
-          if (!isNaN(v) && v > 0) submitted++;
+          var dv = parseInt(row[didx], 10);
+          if (!isNaN(dv) && dv > 0) submitted++;
+          else missingDocNames.push(DOC_LABELS[di]);
         });
         ts.forEach(function(t) {
           acc[t].d.total += 1;
           if      (totalDocs > 0 && submitted === totalDocs) acc[t].d.complete   += 1;
           else if (submitted > 0)                            acc[t].d.partial    += 1;
           else                                               acc[t].d.incomplete += 1;
+        });
+        vendorDocs.push({
+          id:          String(row[vidC] || '').trim().slice(0, 30),
+          name:        String(row[nameC] || '').trim().slice(0, 60),
+          submitted:   submitted,
+          total:       totalDocs,
+          missingDocs: missingDocNames,
+          aud:         rowAud
         });
       });
     }
@@ -1289,7 +1319,7 @@ function getQualityData() {
   if (buyer.rating.total === 0 && buyer.osv.total === 0 && buyer.docs.total === 0)
     buyer  = JSON.parse(JSON.stringify(combined));
 
-  var result = { success: true, lastUpdated: new Date().toISOString(), combined: combined, seller: seller, buyer: buyer, vendorRatings: vendorRatings || [] };
+  var result = { success: true, lastUpdated: new Date().toISOString(), combined: combined, seller: seller, buyer: buyer, vendorRatings: vendorRatings || [], vendorOSV: vendorOSV || [], vendorDocs: vendorDocs || [] };
   var out = JSON.stringify(result);
   try { cache.put(CACHE_KEY, out, 300); } catch (e) {}
   return out;

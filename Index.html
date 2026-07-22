@@ -711,6 +711,13 @@ tbody td{padding:12px 16px;color:var(--txt);vertical-align:middle;white-space:no
 .km-vid{font-size:9.5px;font-weight:600;color:var(--txt3);background:var(--bg2);border-radius:4px;padding:1px 5px;flex-shrink:0;font-variant-numeric:tabular-nums;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .km-vname{flex:1;color:var(--txt);font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .km-vrating{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0}
+.km-sg-xp{cursor:pointer;transition:filter .12s}
+.km-sg-xp:hover{filter:brightness(.93)}
+.km-sg-open .km-star-arr{transform:rotate(90deg)}
+.km-tile-vlist{padding:4px 0 6px;margin-top:2px}
+.km-vbadge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;flex-shrink:0;letter-spacing:.02em}
+.km-vaud{font-size:10px;color:var(--txt3);flex-shrink:0;font-variant-numeric:tabular-nums}
+.km-vmissing{font-size:10px;color:var(--txt3);line-height:1.5;padding:2px 0 2px 0;width:100%}
 /* Segmented progress bar (OSV / docs modal) */
 .km-prog{display:flex;height:6px;border-radius:3px;overflow:hidden;gap:2px;margin:8px 0 4px}
 .km-prog-seg{border-radius:3px;transition:flex .8s var(--ease-out)}
@@ -3153,6 +3160,57 @@ function openKpiModal(cardId) {
             + '</div>';
         }).join('') + '</div>';
   }
+  function expandTileGrid(specs) {
+    var gid = 'etg' + Math.random().toString(36).slice(2, 8);
+    var h = '<div class="km-sg" id="' + gid + '-g">'
+      + specs.map(function(sp, si) {
+          var vendors = sp.vendors || [];
+          if (vendors.length === 0) {
+            return '<div class="km-sg-item">'
+              + '<div class="km-sg-v">' + sp.v + '</div>'
+              + '<div class="km-sg-l"><i class="km-dot" style="background:' + sp.c + '"></i>' + sp.l + '</div>'
+              + '</div>';
+          }
+          var tid = gid + '-p' + si;
+          return '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
+            + ' onclick="_kmTileToggle(\'' + tid + '\',\'' + gid + '\',this)"'
+            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmTileToggle(\'' + tid + '\',\'' + gid + '\',this)}">'
+            + '<div class="km-sg-v">' + sp.v + '</div>'
+            + '<div class="km-sg-l"><i class="km-dot" style="background:' + sp.c + '"></i>'
+            + sp.l + ' <span class="km-star-arr">▶</span></div>'
+            + '</div>';
+        }).join('')
+      + '</div>';
+    specs.forEach(function(sp, si) {
+      var vendors = sp.vendors || [];
+      if (vendors.length === 0) return;
+      var tid = gid + '-p' + si;
+      h += '<div id="' + tid + '" class="km-tile-vlist" style="display:none">';
+      var shown = vendors.slice(0, 60);
+      h += shown.map(function(v) {
+        var vr = '<div class="km-vrow"' + (sp.mode === 'docs' && v.missingDocs && v.missingDocs.length ? ' style="flex-wrap:wrap;align-items:flex-start"' : '') + '>';
+        if (v.id) vr += '<span class="km-vid">' + esc(v.id) + '</span>';
+        vr += '<span class="km-vname">' + esc(v.name || 'Unknown') + '</span>';
+        if (v.aud === 'seller' || v.aud === 'buyer') {
+          var ac = v.aud === 'seller' ? '#3B82F6' : '#8B5CF6';
+          vr += '<span class="km-vbadge" style="background:' + ac + '20;color:' + ac + '">' + (v.aud === 'seller' ? 'S' : 'B') + '</span>';
+        }
+        if (sp.mode === 'docs') {
+          vr += '<span class="km-vaud">' + (v.submitted || 0) + '/' + (v.total || 0) + '</span>';
+          if (v.missingDocs && v.missingDocs.length > 0) {
+            vr += '<span class="km-vmissing">Missing: ' + esc(v.missingDocs.join(' · ')) + '</span>';
+          }
+        }
+        vr += '</div>';
+        return vr;
+      }).join('');
+      if (vendors.length > 60) {
+        h += '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (vendors.length - 60) + ' more</span></div>';
+      }
+      h += '</div>';
+    });
+    return h;
+  }
   function matBadges(p, m) {
     if (!p && !m) return '';
     return '<div class="km-mat">'
@@ -3383,12 +3441,15 @@ function openKpiModal(cardId) {
                 {w: o.failed       || 0, color: 'var(--st-rejected)'},
                 {w: o.notInitiated || 0, color: 'var(--st-draft)'},
               ])
-              + sgrid([
-                  {v: fmt(o.completed    || 0), l: 'Verified',      c: 'var(--st-onboarded)'},
-                  {v: fmt(o.pending      || 0), l: 'Pending',       c: 'var(--st-review)'},
-                  {v: fmt(o.failed       || 0), l: 'Failed',        c: 'var(--st-rejected)'},
-                  {v: fmt(o.notInitiated || 0), l: 'Not Initiated', c: 'var(--st-draft)'},
-                ])
+              + (function() {
+                  var vl = qd.vendorOSV || [];
+                  return expandTileGrid([
+                    {v: fmt(o.completed    || 0), l: 'Verified',      c: 'var(--st-onboarded)', vendors: vl.filter(function(v){return v.status==='verified';})},
+                    {v: fmt(o.pending      || 0), l: 'Pending',       c: 'var(--st-review)',    vendors: vl.filter(function(v){return v.status==='pending';})},
+                    {v: fmt(o.failed       || 0), l: 'Failed',        c: 'var(--st-rejected)',  vendors: vl.filter(function(v){return v.status==='failed';})},
+                    {v: fmt(o.notInitiated || 0), l: 'Not Initiated', c: 'var(--st-draft)',     vendors: vl.filter(function(v){return v.status==='not_initiated';})},
+                  ]);
+                })()
             );
       }
 
@@ -3420,12 +3481,15 @@ function openKpiModal(cardId) {
                 {w: d2.incomplete || 0, color: 'var(--st-draft)'},
                 {w: d2.missing    || 0, color: 'var(--st-rejected)'},
               ])
-              + sgrid([
-                  {v: fmt(d2.complete   || 0), l: 'Complete',   c: 'var(--st-onboarded)'},
-                  {v: fmt(d2.partial    || 0), l: 'Partial',    c: 'var(--st-review)'},
-                  {v: fmt(d2.incomplete || 0), l: 'Incomplete', c: 'var(--st-draft)'},
-                  {v: fmt(d2.missing    || 0), l: 'Missing',    c: 'var(--st-rejected)'},
-                ])
+              + (function() {
+                  var vd = qd.vendorDocs || [];
+                  return expandTileGrid([
+                    {v: fmt(d2.complete   || 0), l: 'Complete',   c: 'var(--st-onboarded)', vendors: vd.filter(function(v){return v.submitted===v.total&&v.total>0;})},
+                    {v: fmt(d2.partial    || 0), l: 'Partial',    c: 'var(--st-review)',    vendors: vd.filter(function(v){return v.submitted>0&&v.submitted<v.total;}), mode:'docs'},
+                    {v: fmt(d2.incomplete || 0), l: 'Incomplete', c: 'var(--st-draft)',     vendors: vd.filter(function(v){return v.submitted===0&&v.total>0;}),          mode:'docs'},
+                    {v: fmt(d2.missing    || 0), l: 'Missing',    c: 'var(--st-rejected)',  vendors: vd.filter(function(v){return v.total===0;})},
+                  ]);
+                })()
             );
       }
     }
@@ -3467,6 +3531,26 @@ function _kmStarToggle(id, row) {
   var open = el.style.display !== 'none';
   el.style.display = open ? 'none' : '';
   if (row) row.classList.toggle('km-star-open', !open);
+}
+function _kmTileToggle(panelId, groupId, tile) {
+  var panel = document.getElementById(panelId);
+  if (!panel) return;
+  var isOpen = panel.style.display !== 'none';
+  var grid = document.getElementById(groupId + '-g');
+  if (grid && grid.parentNode) {
+    var ch = grid.parentNode.children;
+    for (var i = 0; i < ch.length; i++) {
+      if (ch[i].className && ch[i].className.indexOf('km-tile-vlist') >= 0) ch[i].style.display = 'none';
+    }
+  }
+  if (grid) {
+    var tiles = grid.querySelectorAll('.km-sg-xp');
+    for (var j = 0; j < tiles.length; j++) tiles[j].classList.remove('km-sg-open');
+  }
+  if (!isOpen) {
+    panel.style.display = '';
+    if (tile) tile.classList.add('km-sg-open');
+  }
 }
 
 function _kpiEsc(e) { if (e.key === 'Escape') closeKpiModal(); }
