@@ -1823,9 +1823,11 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
     <!-- Onboarding period controls -->
     <span id="onb-period-controls" style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div class="qf-chips" id="qf-chips">
-        <button class="qf-chip" data-qf="Today"     onclick="onPeriodSelect('Today')">Daily</button>
+        <button class="qf-chip" data-qf="Today"     onclick="onPeriodSelect('Today')">Today</button>
         <button class="qf-chip" data-qf="ThisWeek"  onclick="onPeriodSelect('ThisWeek')">Weekly</button>
         <button class="qf-chip" data-qf="ThisMonth" onclick="onPeriodSelect('ThisMonth')">Monthly</button>
+        <button class="qf-chip" data-qf="MTD"       onclick="onPeriodSelect('MTD')">MTD</button>
+        <button class="qf-chip" data-qf="YTD"       onclick="onPeriodSelect('YTD')">YTD</button>
       </div>
       <select class="filter-select" id="top-period" onchange="onPeriodSelect(this.value)">
         <option value="All">All Time</option>
@@ -2206,7 +2208,7 @@ function getFilters() {
   return { audience: currentAudience, period: currentPeriod, startDate: customStart, endDate: customEnd };
 }
 
-// Sync the Daily/Weekly/Monthly chip active state to currentPeriod.
+// Sync the Today/Weekly/Monthly/MTD/YTD chip active state to currentPeriod.
 function renderQFChips() {
   document.querySelectorAll('#qf-chips .qf-chip').forEach(function(btn) {
     btn.classList.toggle('active', btn.dataset.qf === currentPeriod);
@@ -2220,9 +2222,11 @@ function renderPeriodControl() {
   if (!sel) return;
   var pairs = [
     ['All',       'All Time'],
-    ['Today',     'Daily (Today)'],
+    ['Today',     'Today'],
     ['ThisWeek',  'Weekly (Last 7 Days)'],
     ['ThisMonth', 'Monthly (Last 30 Days)'],
+    ['MTD',       'MTD (Month to Date)'],
+    ['YTD',       'YTD (Apr 1 – Today)'],
   ];
   ((D && D.fiscalYears) || []).forEach(function(fy) { pairs.push([fy, fy.replace(/^FY/, 'FY ')]); });
   pairs.push(['Custom', 'Custom Range']);
@@ -4506,9 +4510,11 @@ function spBuildItems(query) {
 
   // ── Period filters (shown when on overview) ──
   var periodItems = [
-    { ic:'D', title:'Daily View', sub:'Onboarding activity for today', action:function(){onPeriodSelect('Today')}, badge:'Period' },
+    { ic:'D', title:'Today', sub:'Onboarding activity for today', action:function(){onPeriodSelect('Today')}, badge:'Period' },
     { ic:'W', title:'Weekly View', sub:'This week\'s onboarding activity', action:function(){onPeriodSelect('ThisWeek')}, badge:'Period' },
     { ic:'M', title:'Monthly View', sub:'This month\'s onboarding activity', action:function(){onPeriodSelect('ThisMonth')}, badge:'Period' },
+    { ic:'MTD', title:'MTD – Month to Date', sub:'From 1st of current month to today', action:function(){onPeriodSelect('MTD')}, badge:'Period' },
+    { ic:'YTD', title:'YTD – Year to Date', sub:'From Apr 1 of current financial year', action:function(){onPeriodSelect('YTD')}, badge:'Period' },
     { ic:'All', title:'All Time', sub:'Complete onboarding history', action:function(){onPeriodSelect('All')}, badge:'Period' },
   ];
 

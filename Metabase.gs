@@ -186,7 +186,7 @@ function writeMBSheet_(data, sheetName) {
 function bustDashboardCache_() {
   var cache = CacheService.getScriptCache();
   var keys  = [];
-  var periods = ['All', 'Today', 'ThisWeek', 'ThisMonth'];
+  var periods = ['All', 'Today', 'ThisWeek', 'ThisMonth', 'MTD', 'YTD'];
 
   // Add FY keys for the last 5 years
   var nowYear = new Date().getFullYear();

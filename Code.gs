@@ -583,6 +583,15 @@ function applyDateFilter(r, f) {
     // T-30: rolling last 30 days
     ps = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
     pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  } else if (f.period === 'MTD') {
+    // Month to date: 1st of current calendar month → today
+    ps = new Date(now.getFullYear(), now.getMonth(), 1);
+    pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  } else if (f.period === 'YTD') {
+    // Financial year to date: April 1 of current Indian FY → today
+    var fyS = (now.getMonth() >= 3) ? now.getFullYear() : now.getFullYear() - 1;
+    ps = new Date(fyS, 3, 1);
+    pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   } else if (f.period === 'Custom' && f.startDate && f.endDate) {
     ps = parseYMD(f.startDate, false);
     pe = parseYMD(f.endDate, true);
