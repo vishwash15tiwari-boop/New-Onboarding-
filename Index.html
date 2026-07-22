@@ -1481,29 +1481,28 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vkpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
 .vkpi-card{
   background:var(--card);border:none;
-  border-radius:var(--r);padding:20px 22px 18px;
+  border-radius:var(--r);padding:12px 16px;
   box-shadow:var(--shadow-card);
-  display:flex;flex-direction:column;gap:0;
+  display:flex;flex-direction:row;align-items:center;gap:12px;
   position:relative;overflow:hidden;
   cursor:pointer;
-  transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out);
+  transition:box-shadow .22s var(--ease-out),transform .22s var(--ease-out);
 }
-.vkpi-card:hover{box-shadow:var(--shadow-lg);transform:scale(1.02)}
-.vkpi-card:active{transform:scale(.97);transition-duration:.1s}
-/* No stripe — the ambient aura already carries the vertical's identity */
+.vkpi-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+.vkpi-card:active{transform:scale(.98);transition-duration:.08s}
 .vkpi-icon{
   display:flex;align-items:center;justify-content:center;
-  width:36px;height:36px;border-radius:10px;
-  margin-bottom:10px;flex-shrink:0;
+  width:30px;height:30px;border-radius:8px;flex-shrink:0;
   background:var(--bg2);color:var(--txt2);
 }
-.vkpi-icon svg{width:18px;height:18px;display:block}
+.vkpi-icon svg{width:14px;height:14px;display:block}
 .vkpi-card.vk-onboarded  .vkpi-icon{background:var(--st-onboarded-bg);color:var(--st-onboarded-tx)}
 .vkpi-card.vk-transacted .vkpi-icon{background:var(--st-transacted-bg);color:var(--st-transacted-tx)}
 .vkpi-card.vk-warn       .vkpi-icon{background:var(--st-review-bg);color:var(--st-review-tx)}
-.vkpi-lbl{font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--txt2);margin-bottom:8px;line-height:1.2}
-.vkpi-val{font-size:38px;font-weight:700;letter-spacing:-1.6px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
-.vkpi-sub{font-size:11.5px;color:var(--txt2);font-weight:400;margin-top:7px;line-height:1.4}
+.vkpi-text{flex:1;min-width:0}
+.vkpi-lbl{font-size:11px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--txt2);margin-bottom:0;line-height:1.2}
+.vkpi-val{font-size:24px;font-weight:700;letter-spacing:-0.8px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt);flex-shrink:0}
+.vkpi-sub{font-size:10px;color:var(--txt3);font-weight:400;margin-top:2px;line-height:1.3}
 .vkpi-mat{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
 .vkpi-mat-chip{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:500;color:var(--txt2);white-space:nowrap}
 .vkpi-mat-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
@@ -1517,8 +1516,6 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vkpi-side-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;display:inline-block}
 .vkpi-side-num{font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--txt);letter-spacing:-.3px}
 .vkpi-side-tag{font-size:10.5px;font-style:normal;color:var(--txt2);font-weight:400}
-.vk-onboarded .vkpi-side-num{color:rgba(255,255,255,.88)}
-.vk-onboarded .vkpi-side-tag{color:rgba(255,255,255,.44)}
 /* ── Bento hierarchy — one graphite jewel anchors the row ── */
 .vkpi-card.vk-onboarded{
   background:linear-gradient(155deg,#38383C 0%,#1D1D1F 42%,#0B0B0D 100%);
@@ -1526,9 +1523,9 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
              0 2px 8px rgba(0,0,0,.18),0 14px 36px rgba(0,0,0,.22);
 }
 .vkpi-card.vk-onboarded:hover{box-shadow:0 4px 12px rgba(0,0,0,.22),0 22px 48px rgba(0,0,0,.28)}
-.vkpi-card.vk-onboarded .vkpi-lbl{color:rgba(255,255,255,.62)}
+.vkpi-card.vk-onboarded .vkpi-lbl{color:rgba(255,255,255,.60)}
 .vkpi-card.vk-onboarded .vkpi-val{color:#FFFFFF}
-.vkpi-card.vk-onboarded .vkpi-sub{color:rgba(255,255,255,.48)}
+.vkpi-card.vk-onboarded .vkpi-sub{color:rgba(255,255,255,.45)}
 .vkpi-card.vk-onboarded .vkpi-icon{background:rgba(48,209,88,.18);color:#30D158}
 .vkpi-card.vk-transacted .vkpi-val{color:var(--txt)}
 .vkpi-card.vk-warn .vkpi-val{color:var(--st-rejected-tx)}
@@ -2821,26 +2818,17 @@ function renderVertKPIs(key) {
   }
   // sides: [{val,tag,clr}] → renders as left column; big number anchors right.
   // sub: plain string shown below the value when no sides are given.
-  function mk(icon, lbl, val, sub, cls, action, spark, extra, sides) {
-    var body;
-    if (sides && sides.length) {
-      body = '<div class="vkpi-bottom">'
-        + '<div class="vkpi-side">' + sides.map(function(s) { return sideRow(s.v, s.t, s.c); }).join('') + '</div>'
-        + '<div class="vkpi-val">' + val + '</div>'
-        + '</div>';
-    } else {
-      body = '<div class="vkpi-val" style="margin-top:6px">' + val + '</div>'
-        + (sub ? '<div class="vkpi-sub">' + sub + '</div>' : '');
-    }
+  function mk(icon, lbl, val, sub, cls, action) {
     return '<div class="vkpi-card' + (cls ? ' ' + cls : '') + '" style="' + vars + '"'
       + ' role="button" tabindex="0"'
       + ' onclick="openKpiModal(\'' + action + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'' + action + '\')}">'
-      + (spark || '')
       + '<div class="vkpi-icon">' + icon + '</div>'
+      + '<div class="vkpi-text">'
       + '<div class="vkpi-lbl">' + lbl + '</div>'
-      + body
-      + (extra || '')
+      + (sub ? '<div class="vkpi-sub">' + sub + '</div>' : '')
+      + '</div>'
+      + '<div class="vkpi-val">' + val + '</div>'
       + '</div>';
   }
   function svg(paths) {
@@ -2900,12 +2888,12 @@ function renderVertKPIs(key) {
     pTxn: pTxn, mTxn: mTxn,
     pNew: pNew, mNew: mNew,
   };
+  var txnPct = (compS + compB) > 0 ? Math.round(txnTotal / (compS + compB) * 100) : 0;
   el.innerHTML = [
-    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                    'vk-total',     'total',       spTotal, matLine(pTotal, mTotal), [{v:fmt(totalS),t:'sellers'+matBracket(vs.plasticTotal||0,vs.metalTotal||0),c:S},{v:fmt(totalB),t:'buyers'+matBracket(vb.plasticTotal||0,vb.metalTotal||0),c:B}]),
-    mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% onboarded', 'vk-onboarded', 'onboarded', spOnb, meter + matLine(pOnb, mOnb), [{v:fmt(compS),t:'sellers'+matBracket(vs.plasticOnboarded||0,vs.metalOnboarded||0),c:'#30D158'},{v:fmt(compB),t:'buyers'+matBracket(vb.plasticOnboarded||0,vb.metalOnboarded||0),c:'rgba(255,255,255,.55)'}]),
-    mk(icZap,    'Transacted',  fmt(txnTotal),         null,                   'vk-transacted', 'transacted', spTxn, nonTxnSub + matLine(pTxn, mTxn), txnS != null ? [{v:fmt(txnS),t:'sellers'+matBracket(vs.plasticTransacted||0,vs.metalTransacted||0),c:S},{v:fmt(txnB),t:'buyers'+matBracket(vb.plasticTransacted||0,vb.metalTransacted||0),c:B}] : null),
-    mk(icUsers,  'Old vs New',  fmt((newS + oldS) + (newB + oldB)), null,   'vk-total',      'oldvsnew',   '', oldTotalSub + matLine(pNew, mNew),
-       [{v:fmt(newS),t:'new sellers'+matBracket(vs.plasticNew||0,vs.metalNew||0),c:S},{v:fmt(oldS),t:'old sellers'+matBracket(vs.plasticOld||0,vs.metalOld||0),c:G2},{v:fmt(newB),t:'new buyers'+matBracket(vb.plasticNew||0,vb.metalNew||0),c:B},{v:fmt(oldB),t:'old buyers'+matBracket(vb.plasticOld||0,vb.metalOld||0),c:B2}]),
+    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                           'vk-total',     'total'),
+    mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% completion rate',  'vk-onboarded', 'onboarded'),
+    mk(icZap,    'Transacted',  fmt(txnTotal),         txnPct > 0 ? txnPct + '% of onboarded' : null, 'vk-transacted', 'transacted'),
+    mk(icUsers,  'Old vs New',  fmt((newS + oldS) + (newB + oldB)), fmt(newS + newB) + ' new this vertical', 'vk-total', 'oldvsnew'),
   ].join('');
   animateCounters(el);
 }
