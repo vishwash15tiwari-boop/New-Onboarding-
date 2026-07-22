@@ -413,6 +413,19 @@ function buildDashboard(audience, cfg, allRows, f) {
   var byVert = {};
   rows.forEach(function(r) { (byVert[r.vertical] = byVert[r.vertical] || []).push(r); });
 
+  // Old vs New (OMP only): a vendor is "old" if they are already COMPLETED in any
+  // other vertical. Build an ID set from all non-OMP completed rows, then tag OMP.
+  var nonOmpDoneIds = {};
+  VERTICALS.forEach(function(vc) {
+    if (vc.key === 'OMP') return;
+    (byVert[vc.key] || []).forEach(function(r) {
+      if (r.status === 'COMPLETED' && r.id) nonOmpDoneIds[r.id] = true;
+    });
+  });
+  (byVert['OMP'] || []).forEach(function(r) {
+    r.isOldVendor = !!(r.id && nonOmpDoneIds[r.id]);
+  });
+
   // Always emit all seven verticals, in fixed order (empty ones render "No records").
   var verticalConfig = VERTICALS.map(function(vc) {
     return { key: vc.key, name: vc.name, sub: vc.sub, code: vc.code };
@@ -529,10 +542,10 @@ function vStats(data) {
   }).filter(function(f) { return f.fyStart >= 2019; })
     .sort(function(a, b) { return b.fyStart - a.fyStart; });
 
-  // Old vs New: New = registered in current Indian FY (Apr 1 →); Old = before that.
-  var fyStartYearN = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
-  var fyStartN = new Date(fyStartYearN, 3, 1);
-  var newVendors = countFn(data, function(r) { return r.createdDate && r.createdDate >= fyStartN; });
+  // Old vs New (OMP only): uses isOldVendor flag set by buildDashboard.
+  // For other verticals data.isOldVendor is always undefined → all count as new.
+  var newVendors = countFn(data, function(r) { return !r.isOldVendor; });
+  var oldVendors = countFn(data, function(r) { return !!r.isOldVendor; });
 
   return {
     total: total,
@@ -551,7 +564,7 @@ function vStats(data) {
     aging:       agingCount   > 0 ? agingCount   : null,
     overdue:     overdueCount > 0 ? overdueCount : null,
     newVendors: newVendors,
-    oldVendors: total - newVendors,
+    oldVendors: oldVendors,
     fyBreakdown: fyBreakdown,
     categories:  categories,
     rowsTotal: total,

@@ -2827,13 +2827,15 @@ function renderVertKPIs(key) {
   var meter   = '<div class="vkpi-meter" title="' + compPct + '% of pipeline onboarded"><i style="width:' + compPct + '%"></i></div>';
 
   var S = '#34C759', B = '#007AFF';
-  var nonTxnSub = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
-  var oldTotalSub = '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>';
+  var G2 = 'rgba(52,199,89,.38)', B2 = 'rgba(0,122,255,.38)';
+  var nonTxnSub  = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
+  var oldTotalSub = (oldS + oldB) > 0 ? '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>' : '<div class="vkpi-sub">0 existing</div>';
   el.innerHTML = [
     mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                    'vk-total',     'all',       spTotal, '', [{v:fmt(totalS),t:'sellers',c:S},{v:fmt(totalB),t:'buyers',c:B}]),
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% onboarded', 'vk-onboarded', 'onboarded', spOnb, meter, [{v:fmt(compS),t:'sellers',c:'#30D158'},{v:fmt(compB),t:'buyers',c:'rgba(255,255,255,.55)'}]),
     mk(icZap,    'Transacted',  fmt(txnTotal),         null,                   'vk-transacted', 'all',       spTxn, nonTxnSub, txnS != null ? [{v:fmt(txnS),t:'sellers',c:S},{v:fmt(txnB),t:'buyers',c:B}] : null),
-    mk(icUsers,  'Old vs New',  fmt(newS + newB),      null,                   'vk-total',     'all',        '',    oldTotalSub, [{v:fmt(newS),t:'new sellers',c:S},{v:fmt(newB),t:'new buyers',c:B}]),
+    mk(icUsers,  'Old vs New',  fmt(newS + newB),      null,                   'vk-total',      'all',       '', oldTotalSub,
+       [{v:fmt(newS),t:'new sellers',c:S},{v:fmt(oldS),t:'old sellers',c:G2},{v:fmt(newB),t:'new buyers',c:B},{v:fmt(oldB),t:'old buyers',c:B2}]),
   ].join('');
   animateCounters(el);
 }
@@ -2926,9 +2928,12 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
   var fys = (v.fyBreakdown || []).filter(function(f) { return !f.fyStart || f.fyStart >= 2019; });
   var statsList = '';
   if (fys.length) {
-    var aggTAT   = v.avgTAT       != null ? v.avgTAT + 'd'           : null;
-    var aggGMV   = v.totalTxnValue != null ? fmtINR(v.totalTxnValue) : null;
-    var aggGSTon = v.withGST      != null ? fmt(v.withGST)           : null;
+    var isOMP    = cfg.key === 'OMP';
+    var aggTAT   = v.avgTAT        != null ? v.avgTAT + 'd'           : null;
+    var aggPct   = v.pctTransacted  != null ? v.pctTransacted + '%'   : null;
+    var aggGMV   = v.totalTxnValue  != null ? fmtINR(v.totalTxnValue) : null;
+    var aggGSTon = v.withGST        != null ? fmt(v.withGST)          : null;
+    var aggGSTof = v.missingGST     != null ? fmt(v.missingGST)       : null;
     var fyTr = function(label, valFn, aggVal, badCls) {
       var cells = fys.map(valFn);
       var allEmpty = cells.every(function(c){ return c === null || c === undefined || c === '—'; }) && aggVal == null;
@@ -2939,10 +2944,13 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
         + '<td class="cc-fy-td cc-fy-all">' + (aggVal != null ? aggVal : '—') + '</td>'
         + '</tr>';
     };
+    var hasMissingGST = !isOMP && fys.some(function(f) { return (f.missingGST || 0) > 0; });
     var fyTbody = [
-      fyTr('Avg TAT',      function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
-      fyTr('Total GMV',    function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
-      fyTr('GSTIN active', function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
+      fyTr('Avg TAT',       function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
+      isOMP ? null : fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
+      fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
+      fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
+      isOMP ? null : fyTr('GSTIN missing', function(f){ return f.missingGST    != null ? fmt(f.missingGST)       : null; }, aggGSTof, hasMissingGST ? 'cc-fy-bad' : ''),
     ].filter(Boolean).join('');
     if (fyTbody) {
       var fyThead = '<thead><tr><th class="cc-fy-th-lbl"></th>'
@@ -2954,10 +2962,13 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
         + '</div>';
     }
   } else {
+    var isOMP2 = cfg.key === 'OMP';
     var statRows = [];
-    if (v.avgTAT        != null) statRows.push(['Avg TAT',  v.avgTAT + 'd',              '']);
+    if (v.avgTAT        != null) statRows.push(['Avg TAT',      v.avgTAT + 'd',          '']);
+    if (!isOMP2 && v.pctTransacted != null) statRows.push(['% Transacted', v.pctTransacted + '%', '']);
     if (v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '']);
-    if (v.withGST       != null) statRows.push(['GSTIN Active', fmt(v.withGST),              '']);
+    if (v.withGST       != null) statRows.push(['GSTIN Active', fmt(v.withGST),          '']);
+    if (!isOMP2 && v.missingGST != null) statRows.push(['GSTIN Missing', fmt(v.missingGST), v.missingGST > 0 ? 'cc-stat-bad' : '']);
     statsList = statRows.length
       ? '<div class="cc-stat-list">' + statRows.map(function(r) {
           return '<div class="cc-stat-row' + (r[2] ? ' ' + r[2] : '') + '">' + r[0] + '<b>' + r[1] + '</b></div>';
@@ -3130,9 +3141,12 @@ function buildCard(cfg, v, pipelineLabel) {
     var statsList = '';
     if (fys.length) {
       // Aggregate values from v (totals across all FYs)
-      var aggTAT   = v.avgTAT       != null ? v.avgTAT + 'd'           : null;
-      var aggGMV   = v.totalTxnValue != null ? fmtINR(v.totalTxnValue) : null;
-      var aggGSTon = v.withGST      != null ? fmt(v.withGST)           : null;
+      var isOMPc   = cfg.key === 'OMP';
+      var aggTAT   = v.avgTAT        != null ? v.avgTAT + 'd'           : null;
+      var aggPct   = v.pctTransacted  != null ? v.pctTransacted + '%'   : null;
+      var aggGMV   = v.totalTxnValue  != null ? fmtINR(v.totalTxnValue) : null;
+      var aggGSTon = v.withGST        != null ? fmt(v.withGST)          : null;
+      var aggGSTof = v.missingGST     != null ? fmt(v.missingGST)       : null;
 
       function fyTr(label, valFn, aggVal, badCls) {
         var cells = fys.map(valFn);
@@ -3144,10 +3158,13 @@ function buildCard(cfg, v, pipelineLabel) {
           + '<td class="cc-fy-td cc-fy-all">' + (aggVal != null ? aggVal : '—') + '</td>'
           + '</tr>';
       }
+      var hasMissingGSTc = !isOMPc && fys.some(function(f) { return (f.missingGST || 0) > 0; });
       var fyTbody = [
-        fyTr('Avg TAT',      function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
-        fyTr('Total GMV',    function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
-        fyTr('GSTIN active', function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
+        fyTr('Avg TAT',       function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
+        isOMPc ? null : fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
+        fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
+        fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
+        isOMPc ? null : fyTr('GSTIN missing', function(f){ return f.missingGST    != null ? fmt(f.missingGST)       : null; }, aggGSTof, hasMissingGSTc ? 'cc-fy-bad' : ''),
       ].filter(Boolean).join('');
 
       if (fyTbody) {
@@ -3341,10 +3358,13 @@ function renderVertStory() {
       }
       gmvMetric = '<div class="vs-metric m-gmv"><b>' + fmtINR(v.totalTxnValue) + '</b><span>Total GMV</span>' + agingSub + '</div>';
     }
+    var isOMPs = cfg.key === 'OMP';
     var metArr = [
       ['Avg TAT',        dOr(v.avgTAT, 'd'), ''],
       v.completedThisWeek ? ['Onboarded (7d)', fmt(v.completedThisWeek), ''] : null,
-      v.withGST    != null ? ['GST Active', fmt(v.withGST), ''] : null,
+      !isOMPs && v.transacted != null ? ['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)', ''] : null,
+      v.withGST != null ? ['GST Active', fmt(v.withGST), ''] : null,
+      !isOMPs && v.missingGST != null ? ['GST Missing', fmt(v.missingGST), 'm-warn'] : null,
     ].filter(Boolean);
     var metricsHtml = (metArr.length || gmvMetric)
       ? '<div class="vs-metrics">'
