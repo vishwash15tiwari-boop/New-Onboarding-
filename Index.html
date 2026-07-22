@@ -692,6 +692,34 @@ tbody td{padding:12px 16px;color:var(--txt);vertical-align:middle;white-space:no
 .kb-col.rejected .kb-dot{background:var(--st-rejected)}
 .kb-card{cursor:pointer}
 
+/* ===== KPI Card Detail Modal ===== */
+@keyframes kmUp{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+#kpi-modal{position:fixed;inset:0;z-index:800;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;opacity:0;transition:opacity .18s}
+#kpi-modal.km-open{pointer-events:all;opacity:1}
+@media(min-width:600px){#kpi-modal{align-items:center;padding:20px}}
+.km-bd{position:absolute;inset:0;background:rgba(0,0,0,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.km-pn{position:relative;z-index:1;background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;padding:20px 20px 32px;box-shadow:0 -4px 40px rgba(0,0,0,.18);animation:kmUp .22s var(--ease-out,cubic-bezier(.25,.46,.45,.94)) both}
+@media(min-width:600px){.km-pn{border-radius:20px}}
+.km-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.km-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:10px}
+.km-icon svg{width:16px;height:16px}
+.km-htxt{flex:1}
+.km-title{font-size:16px;font-weight:700;color:var(--txt);letter-spacing:-.2px;line-height:1.2}
+.km-sub{font-size:11.5px;color:var(--txt2);margin-top:2px}
+.km-close{width:28px;height:28px;border-radius:50%;background:var(--g100,#F2F2F7);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--txt2);flex-shrink:0;transition:background .12s}
+.km-close:hover{background:var(--border)}
+.km-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.km-cell{background:var(--bg2,#F5F5F7);border-radius:12px;padding:13px 14px}
+.km-cell.km-full{grid-column:1/-1}
+.km-cv{font-size:22px;font-weight:700;color:var(--txt);letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1.1}
+.km-cl{font-size:11px;color:var(--txt2);margin-top:3px;line-height:1.35}
+.km-sub2{font-size:11px;color:var(--txt3);margin-top:5px;font-style:italic}
+.km-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.km-row{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.km-chip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:500;color:var(--txt2);background:var(--card);border-radius:20px;padding:3px 8px;border:1px solid var(--border)}
+.km-sep{grid-column:1/-1;height:1px;background:var(--border);margin:2px 0}
+.km-foot{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);text-align:center}
+.km-foot-link{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:var(--accent,#007AFF);cursor:pointer;text-decoration:none;background:none;border:none;padding:0}
 /* ===== Record Detail Modal — Apple sheet style ===== */
 @keyframes rmUp{from{opacity:0;transform:translateY(32px) scale(.97)}to{opacity:1;transform:none}}
 #rec-modal{position:fixed;inset:0;z-index:700;display:flex;align-items:flex-end;justify-content:center;padding:0}
@@ -1872,6 +1900,12 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   <div class="rm-pn" id="rm-pn"></div>
 </div>
 
+<!-- KPI Card Detail Modal -->
+<div id="kpi-modal" role="dialog" aria-modal="true" aria-label="KPI details">
+  <div class="km-bd" onclick="closeKpiModal()"></div>
+  <div class="km-pn" id="km-pn"></div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
 // STATE
@@ -2800,8 +2834,8 @@ function renderVertKPIs(key) {
     }
     return '<div class="vkpi-card' + (cls ? ' ' + cls : '') + '" style="' + vars + '"'
       + ' role="button" tabindex="0"'
-      + ' onclick="vkpiOpen(\'' + action + '\')"'
-      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();vkpiOpen(\'' + action + '\')}">'
+      + ' onclick="openKpiModal(\'' + action + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'' + action + '\')}">'
       + (spark || '')
       + '<div class="vkpi-icon">' + icon + '</div>'
       + '<div class="vkpi-lbl">' + lbl + '</div>'
@@ -2853,11 +2887,24 @@ function renderVertKPIs(key) {
 
   var nonTxnSub   = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
   var oldTotalSub = '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>';
+  // Save snapshot so openKpiModal() can read it without recomputing
+  window._kpiSnap = {
+    key: key,
+    totalS: totalS, totalB: totalB,
+    compS: compS, compB: compB, compPct: compPct,
+    txnS: txnS, txnB: txnB, txnTotal: txnTotal, nonTxnTotal: nonTxnTotal,
+    newS: newS, oldS: oldS, newB: newB, oldB: oldB,
+    vs: vs, vb: vb,
+    pTotal: pTotal, mTotal: mTotal,
+    pOnb: pOnb, mOnb: mOnb,
+    pTxn: pTxn, mTxn: mTxn,
+    pNew: pNew, mNew: mNew,
+  };
   el.innerHTML = [
-    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                    'vk-total',     'all',       spTotal, matLine(pTotal, mTotal), [{v:fmt(totalS),t:'sellers'+matBracket(vs.plasticTotal||0,vs.metalTotal||0),c:S},{v:fmt(totalB),t:'buyers'+matBracket(vb.plasticTotal||0,vb.metalTotal||0),c:B}]),
+    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                    'vk-total',     'total',       spTotal, matLine(pTotal, mTotal), [{v:fmt(totalS),t:'sellers'+matBracket(vs.plasticTotal||0,vs.metalTotal||0),c:S},{v:fmt(totalB),t:'buyers'+matBracket(vb.plasticTotal||0,vb.metalTotal||0),c:B}]),
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% onboarded', 'vk-onboarded', 'onboarded', spOnb, meter + matLine(pOnb, mOnb), [{v:fmt(compS),t:'sellers'+matBracket(vs.plasticOnboarded||0,vs.metalOnboarded||0),c:'#30D158'},{v:fmt(compB),t:'buyers'+matBracket(vb.plasticOnboarded||0,vb.metalOnboarded||0),c:'rgba(255,255,255,.55)'}]),
-    mk(icZap,    'Transacted',  fmt(txnTotal),         null,                   'vk-transacted', 'all',       spTxn, nonTxnSub + matLine(pTxn, mTxn), txnS != null ? [{v:fmt(txnS),t:'sellers'+matBracket(vs.plasticTransacted||0,vs.metalTransacted||0),c:S},{v:fmt(txnB),t:'buyers'+matBracket(vb.plasticTransacted||0,vb.metalTransacted||0),c:B}] : null),
-    mk(icUsers,  'Old vs New',  fmt((newS + oldS) + (newB + oldB)), null,   'vk-total',      'all',       '', oldTotalSub + matLine(pNew, mNew),
+    mk(icZap,    'Transacted',  fmt(txnTotal),         null,                   'vk-transacted', 'transacted', spTxn, nonTxnSub + matLine(pTxn, mTxn), txnS != null ? [{v:fmt(txnS),t:'sellers'+matBracket(vs.plasticTransacted||0,vs.metalTransacted||0),c:S},{v:fmt(txnB),t:'buyers'+matBracket(vb.plasticTransacted||0,vb.metalTransacted||0),c:B}] : null),
+    mk(icUsers,  'Old vs New',  fmt((newS + oldS) + (newB + oldB)), null,   'vk-total',      'oldvsnew',   '', oldTotalSub + matLine(pNew, mNew),
        [{v:fmt(newS),t:'new sellers'+matBracket(vs.plasticNew||0,vs.metalNew||0),c:S},{v:fmt(oldS),t:'old sellers'+matBracket(vs.plasticOld||0,vs.metalOld||0),c:G2},{v:fmt(newB),t:'new buyers'+matBracket(vb.plasticNew||0,vb.metalNew||0),c:B},{v:fmt(oldB),t:'old buyers'+matBracket(vb.plasticOld||0,vb.metalOld||0),c:B2}]),
   ].join('');
   animateCounters(el);
@@ -2888,6 +2935,152 @@ function vkpiOpen(action) {
     setDetailAud(aud);
   }
 }
+
+function openKpiModal(cardId) {
+  var d = window._kpiSnap;
+  if (!d) return;
+  var el = document.getElementById('km-pn');
+  var modal = document.getElementById('kpi-modal');
+  if (!el || !modal) return;
+
+  var S = '#34C759', B = '#007AFF';
+  var PC = '#FF9F0A', MC = '#8E8E93';
+
+  function cell(val, lbl, sub, full) {
+    return '<div class="km-cell' + (full ? ' km-full' : '') + '">'
+      + '<div class="km-cv">' + val + '</div>'
+      + '<div class="km-cl">' + lbl + '</div>'
+      + (sub ? '<div class="km-sub2">' + sub + '</div>' : '')
+      + '</div>';
+  }
+  function dotChip(color, val, lbl) {
+    return '<span class="km-chip"><i class="km-dot" style="background:' + color + '"></i>' + val + ' ' + lbl + '</span>';
+  }
+  function matChips(p, m) {
+    if (!p && !m) return '';
+    return '<div class="km-row">' + dotChip(PC, fmt(p), 'plastic') + dotChip(MC, fmt(m), 'metal') + '</div>';
+  }
+
+  var content = '', title = '', subtitle = '', iconHtml = '';
+  var vs = d.vs, vb = d.vb;
+
+  if (cardId === 'total') {
+    title = 'Total Cases';
+    subtitle = 'All pipeline entries across sellers & buyers';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>';
+    var dS = vs.draft || 0, dB = vb.draft || 0;
+    var rS = vs.inReview || 0, rB = vb.inReview || 0;
+    var jS = vs.rejected || 0, jB = vb.rejected || 0;
+    content = '<div class="km-grid">'
+      + cell(fmt(d.totalS + d.totalB), 'Total pipeline', null, true)
+      + cell('<span style="color:' + S + '">' + fmt(d.totalS) + '</span>', 'Sellers')
+      + cell('<span style="color:' + B + '">' + fmt(d.totalB) + '</span>', 'Buyers')
+      + '<div class="km-sep"></div>'
+      + cell(fmt(d.compS + d.compB), 'Completed', null)
+      + cell(fmt(dS + dB), 'Draft')
+      + cell(fmt(rS + rB), 'In Review')
+      + cell(fmt(jS + jB), 'Rejected')
+      + (d.pTotal + d.mTotal > 0
+          ? '<div class="km-sep"></div>'
+            + '<div class="km-cell km-full">'
+            + '<div class="km-cl">Material split</div>'
+            + '<div class="km-row" style="margin-top:8px">' + dotChip(PC, fmt(d.pTotal), 'plastic') + dotChip(MC, fmt(d.mTotal), 'metal') + '</div>'
+            + '</div>'
+          : '')
+      + '</div>';
+  } else if (cardId === 'onboarded') {
+    title = 'Onboarded';
+    subtitle = 'Vendors who completed onboarding';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M8.6 12.4l2.4 2.4 4.4-5"/></svg>';
+    var tatS = vs.avgTAT !== null && vs.avgTAT !== undefined ? vs.avgTAT + 'd avg TAT' : null;
+    var tatB = vb.avgTAT !== null && vb.avgTAT !== undefined ? vb.avgTAT + 'd avg TAT' : null;
+    content = '<div class="km-grid">'
+      + cell(fmt(d.compS + d.compB), 'Onboarded total', null, true)
+      + cell('<span style="color:' + S + '">' + fmt(d.compS) + '</span>', 'Sellers', tatS)
+      + cell('<span style="color:' + B + '">' + fmt(d.compB) + '</span>', 'Buyers', tatB)
+      + '<div class="km-sep"></div>'
+      + cell(d.compPct + '%', 'Completion rate', 'of total pipeline')
+      + cell(fmt(d.totalS + d.totalB - d.compS - d.compB), 'Still pending', 'draft + in review')
+      + (d.pOnb + d.mOnb > 0
+          ? '<div class="km-sep"></div>'
+            + '<div class="km-cell km-full">'
+            + '<div class="km-cl">Material split (onboarded)</div>'
+            + '<div class="km-row" style="margin-top:8px">' + dotChip(PC, fmt(d.pOnb), 'plastic') + dotChip(MC, fmt(d.mOnb), 'metal') + '</div>'
+            + '</div>'
+          : '')
+      + '</div>';
+  } else if (cardId === 'transacted') {
+    title = 'Transacted';
+    subtitle = 'Onboarded vendors who have made a transaction';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
+    var gmvS = vs.totalTxnValue != null ? fmtINR(vs.totalTxnValue) : null;
+    var gmvB = vb.totalTxnValue != null ? fmtINR(vb.totalTxnValue) : null;
+    var gmvCombined = (vs.totalTxnValue || 0) + (vb.totalTxnValue || 0);
+    content = '<div class="km-grid">'
+      + cell(fmt(d.txnTotal), 'Transacted total', null, true)
+      + (d.txnS != null
+          ? cell('<span style="color:' + S + '">' + fmt(d.txnS) + '</span>', 'Sellers', gmvS)
+            + cell('<span style="color:' + B + '">' + fmt(d.txnB) + '</span>', 'Buyers', gmvB)
+          : '')
+      + '<div class="km-sep"></div>'
+      + cell(fmt(d.nonTxnTotal), 'Not yet transacted', 'onboarded but no txn')
+      + (gmvCombined > 0 ? cell(fmtINR(gmvCombined), 'Total GMV') : '')
+      + (d.pTxn + d.mTxn > 0
+          ? '<div class="km-sep"></div>'
+            + '<div class="km-cell km-full">'
+            + '<div class="km-cl">Material split (transacted)</div>'
+            + '<div class="km-row" style="margin-top:8px">' + dotChip(PC, fmt(d.pTxn), 'plastic') + dotChip(MC, fmt(d.mTxn), 'metal') + '</div>'
+            + '</div>'
+          : '')
+      + '</div>';
+  } else if (cardId === 'oldvsnew') {
+    title = 'Old vs New';
+    subtitle = 'Breakdown of onboarded vendors by first-time status';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+    var pOldS = vs.plasticOld || 0, mOldS = vs.metalOld || 0;
+    var pOldB = vb.plasticOld || 0, mOldB = vb.metalOld || 0;
+    content = '<div class="km-grid">'
+      + cell(fmt((d.newS + d.oldS) + (d.newB + d.oldB)), 'Total onboarded', null, true)
+      + cell('<span style="color:' + S + '">' + fmt(d.newS) + '</span>', 'New sellers', (vs.plasticNew || vs.metalNew) ? fmt(vs.plasticNew||0) + 'P · ' + fmt(vs.metalNew||0) + 'M' : null)
+      + cell('<span style="color:rgba(52,199,89,.7)">' + fmt(d.oldS) + '</span>', 'Existing sellers', (pOldS || mOldS) ? fmt(pOldS) + 'P · ' + fmt(mOldS) + 'M' : null)
+      + cell('<span style="color:' + B + '">' + fmt(d.newB) + '</span>', 'New buyers', (vb.plasticNew || vb.metalNew) ? fmt(vb.plasticNew||0) + 'P · ' + fmt(vb.metalNew||0) + 'M' : null)
+      + cell('<span style="color:rgba(0,122,255,.7)">' + fmt(d.oldB) + '</span>', 'Existing buyers', (pOldB || mOldB) ? fmt(pOldB) + 'P · ' + fmt(mOldB) + 'M' : null)
+      + (d.pNew + d.mNew > 0
+          ? '<div class="km-sep"></div>'
+            + '<div class="km-cell km-full">'
+            + '<div class="km-cl">New vendor material split</div>'
+            + '<div class="km-row" style="margin-top:8px">' + dotChip(PC, fmt(d.pNew), 'plastic') + dotChip(MC, fmt(d.mNew), 'metal') + '</div>'
+            + '</div>'
+          : '')
+      + '</div>';
+  }
+
+  el.innerHTML =
+    '<div class="km-head">'
+    + '<div style="display:flex;align-items:center;gap:10px;min-width:0">'
+    + '<div class="km-icon" style="background:var(--bg2)">' + iconHtml + '</div>'
+    + '<div class="km-htxt">'
+    + '<div class="km-title">' + title + '</div>'
+    + '<div class="km-sub">' + subtitle + '</div>'
+    + '</div></div>'
+    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
+    + '</div>'
+    + content
+    + '<div class="km-foot">'
+    + '<button class="km-foot-link" onclick="closeKpiModal();vkpiOpen(\'' + (cardId === 'onboarded' ? 'onboarded' : 'all') + '\')">View vendor detail ↓</button>'
+    + '</div>';
+
+  modal.classList.add('km-open');
+  document.addEventListener('keydown', _kpiEsc);
+}
+
+function closeKpiModal() {
+  var modal = document.getElementById('kpi-modal');
+  if (modal) modal.classList.remove('km-open');
+  document.removeEventListener('keydown', _kpiEsc);
+}
+
+function _kpiEsc(e) { if (e.key === 'Escape') closeKpiModal(); }
 
 function renderPipelinePair(key) {
   var el = document.getElementById('vert-pipeline-pair');
