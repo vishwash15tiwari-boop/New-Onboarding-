@@ -690,6 +690,7 @@ function vertRow(r) {
     hasTransacted: r.hasTransacted,
     txnValue:     r.txnValue !== null && r.txnValue !== undefined ? r.txnValue : null,
     txnDate:      fmtDate(r.txnDate),
+    isOldVendor:  !!r.isOldVendor,
   };
 }
 

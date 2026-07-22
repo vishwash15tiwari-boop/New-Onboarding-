@@ -2103,7 +2103,7 @@ var _isFirstLoad     = true;
 
 // localStorage key prefix — bump the version suffix when the data shape changes
 // so stale entries from an old schema are silently ignored.
-var STORE_PFX = 'ebt_v10_';
+var STORE_PFX = 'ebt_v11_';
 
 // Stale-while-revalidate: if we have a previous response in localStorage, paint
 // it immediately so the user sees real data with zero wait, then fetch fresh data
@@ -3299,28 +3299,81 @@ function openKpiModal(cardId) {
     var totalOnb  = (d.newS + d.oldS) + (d.newB + d.oldB);
     var totalNew  = d.newS + d.newB;
     var totalExst = d.oldS + d.oldB;
+
+    function ovnBlock(aud, nCount, eCount) {
+      var gid     = 'ovn-' + aud;
+      var hasRows = vertRows.length > 0 && !vertRowsLoading && selectedAud === aud;
+      var acNew   = aud === 'seller' ? S : B;
+      var acExst  = aud === 'seller' ? '#22c55e' : '#60a5fa';
+
+      function tile(count, label, pid, color) {
+        if (count === 0) {
+          return '<div class="km-sg-item">'
+            + '<div class="km-sg-v">' + fmt(count) + '</div>'
+            + '<div class="km-sg-l"><i class="km-dot" style="background:' + color + '"></i>' + label + '</div>'
+            + '</div>';
+        }
+        return '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
+          + ' onclick="_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)"'
+          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)}">'
+          + '<div class="km-sg-v">' + fmt(count) + '</div>'
+          + '<div class="km-sg-l"><i class="km-dot" style="background:' + color + '"></i>'
+          + label + ' <span class="km-star-arr">▶</span></div>'
+          + '</div>';
+      }
+
+      var h = '<div id="' + gid + '-g" class="km-sg km-sg-2">'
+        + tile(nCount, 'New',      gid + '-n', acNew)
+        + tile(eCount, 'Existing', gid + '-e', acExst)
+        + '</div>';
+
+      [['n', false, nCount], ['e', true, eCount]].forEach(function(spec) {
+        var k = spec[0], isOld = spec[1], count = spec[2];
+        if (count === 0) return;
+        var pid = gid + '-' + k;
+        h += '<div id="' + pid + '" class="km-tile-vlist" style="display:none">';
+        if (!hasRows) {
+          var audLabel = aud === 'seller' ? 'Sellers' : 'Buyers';
+          h += '<div style="padding:10px 4px;text-align:center">'
+            + '<div style="font-size:11px;color:var(--txt3);margin-bottom:8px">'
+            + audLabel + ' detail is not loaded yet</div>'
+            + '<button class="km-foot-link" style="font-size:11px" '
+            + 'onclick="closeKpiModal();setDetailAud(\'' + aud + '\');event.stopPropagation()">'
+            + 'Load ' + audLabel + ' detail ↓</button>'
+            + '</div>';
+        } else {
+          var filtered = vertRows.filter(function(r) {
+            return r.status === 'COMPLETED' && !!r.isOldVendor === isOld;
+          });
+          if (filtered.length === 0) {
+            h += '<div class="km-vrow" style="color:var(--txt3);font-size:11px">No vendors in this segment</div>';
+          } else {
+            h += filtered.slice(0, 60).map(function(r) {
+              return '<div class="km-vrow">'
+                + (r.id ? '<span class="km-vid">' + esc(String(r.id)) + '</span>' : '')
+                + '<span class="km-vname">' + esc(r.name || 'Unknown') + '</span>'
+                + (r.category ? '<span class="km-vaud">' + esc(r.category) + '</span>' : '')
+                + '</div>';
+            }).join('');
+            if (filtered.length > 60) {
+              h += '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (filtered.length - 60) + ' more</span></div>';
+            }
+          }
+        }
+        h += '</div>';
+      });
+
+      return h;
+    }
+
     content =
       hero(fmt(totalOnb), 'Total Onboarded in OMP')
       + srow([
-          {v: fmt(totalNew),  l: 'New'},
-          {v: fmt(totalExst), l: 'Existing'},
+          {v: fmt(totalNew),  l: 'New',      s: 'first-time in OMP'},
+          {v: fmt(totalExst), l: 'Existing', s: 'active in other verticals'},
         ])
-      + sec('Sellers',
-          sgrid([
-            {v: fmt(d.newS), l: 'New',      c: S},
-            {v: fmt(d.oldS), l: 'Existing', c: 'rgba(52,199,89,.55)'},
-          ], true)
-          + ((vs.plasticNew || vs.metalNew)
-              ? '<div style="margin-top:8px">' + matBadges(vs.plasticNew || 0, vs.metalNew || 0) + '</div>' : '')
-        )
-      + sec('Buyers',
-          sgrid([
-            {v: fmt(d.newB), l: 'New',      c: B},
-            {v: fmt(d.oldB), l: 'Existing', c: 'rgba(0,122,255,.55)'},
-          ], true)
-          + ((vb.plasticNew || vb.metalNew)
-              ? '<div style="margin-top:8px">' + matBadges(vb.plasticNew || 0, vb.metalNew || 0) + '</div>' : '')
-        );
+      + sec('Sellers', ovnBlock('seller', d.newS, d.oldS))
+      + sec('Buyers',  ovnBlock('buyer',  d.newB, d.oldB));
   }
 
   // ── Quality card modals ──────────────────────────────────────
