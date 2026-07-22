@@ -242,7 +242,7 @@ function bustDashboardCache_() {
     keys.push('dash_v30_cmb_' + JSON.stringify([p, '', '']));
   });
 
-  keys.push('quality_data_v1');   // quality metrics cache (getQualityData in Code.gs)
+  keys.push('quality_data_v2');   // quality metrics cache (getQualityData in Code.gs)
   keys.forEach(function(k) { try { cache.remove(k); } catch (e) {} });
   Logger.log('  Cache busted (' + keys.length + ' keys).');
 }

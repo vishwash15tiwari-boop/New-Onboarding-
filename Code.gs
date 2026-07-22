@@ -1146,90 +1146,204 @@ function diagnoseGSTPayables() {
 // ════════════════════════════════════════════════════════════════
 // QUALITY DATA — Vendor Rating · OSV Status · Doc Completeness
 // Reads from the three visible sheets created by Metabase.gs
-// (syncRating / syncOSV / syncDocs) and returns aggregated metrics.
-// Called from the frontend when the OMP vertical is active.
+// (syncRating / syncOSV / syncDocs).  Returns audience-split data
+// { seller, buyer, combined } so each pipeline card shows its own
+// quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v1';
+  var CACHE_KEY = 'quality_data_v2';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
 
-  var result = {
-    success:     true,
-    lastUpdated: new Date().toISOString(),
-    rating: { avg: null, total: 0, rated: 0, dist: [0, 0, 0, 0, 0] },
-    osv:    { completed: 0, pending: 0, failed: 0, notInitiated: 0, total: 0 },
-    docs:   { complete: 0, partial: 0, incomplete: 0, missing: 0, total: 0 },
-  };
+  // Build vendor-ID lookup sets from the hidden main sheets
+  var sellerIds = buildQualityIdSet_('_mb_sellers', ['seller_id','id','vendor_id','vendorid']);
+  var buyerIds  = buildQualityIdSet_('_mb_buyers',  ['buyer_id', 'id','vendor_id','vendorid']);
+  var hasSplit  = Object.keys(sellerIds).length > 0 || Object.keys(buyerIds).length > 0;
 
-  try {
-    var ratingData = qualityReadSheet_('Vendor Rating');
-    if (ratingData.rows.length) {
-      var rh = ratingData.headers;
-      var ratingCol = qualityFindCol_(rh, ['rating','vendor_rating','average_rating','avg_rating','score','overall_rating','stars']);
-      var countCol  = qualityFindCol_(rh, ['count','vendor_count','total','total_vendors','no_of_vendors']);
-      var weightedSum = 0, rated = 0, total = 0;
-      var dist = [0, 0, 0, 0, 0];
-      ratingData.rows.forEach(function(row) {
-        var rv  = ratingCol >= 0 ? parseFloat(row[ratingCol])   : NaN;
-        var cnt = countCol  >= 0 ? parseInt(row[countCol],  10) : 1;
-        if (isNaN(cnt) || cnt < 0) cnt = 1;
-        total += cnt;
-        if (!isNaN(rv) && rv > 0) {
-          weightedSum += rv * cnt;
-          rated       += cnt;
-          dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += cnt;
-        }
-      });
-      result.rating.total = total || rated;
-      result.rating.rated = rated;
-      result.rating.avg   = rated > 0 ? Math.round(weightedSum / rated * 10) / 10 : null;
-      result.rating.dist  = dist;
+  function mkR()  { return { ws: 0, rated: 0, total: 0, dist: [0,0,0,0,0] }; }
+  function mkO()  { return { completed: 0, pending: 0, failed: 0, notInitiated: 0, total: 0 }; }
+  function mkD()  { return { complete: 0, partial: 0, incomplete: 0, missing: 0, total: 0 }; }
+  function mkAcc(){ return { r: mkR(), o: mkO(), d: mkD() }; }
+  var acc = { seller: mkAcc(), buyer: mkAcc(), combined: mkAcc() };
+
+  // Determine audience for a quality-sheet row
+  function resolveAud_(row, headers, idCol, audCol) {
+    if (audCol >= 0) {
+      var av = String(row[audCol] || '').trim().toLowerCase();
+      if (av.indexOf('sell') >= 0 || av === 's') return 'seller';
+      if (av.indexOf('buy')  >= 0 || av === 'b') return 'buyer';
     }
-  } catch (e) { Logger.log('getQualityData rating error: ' + e.message); }
-
-  try {
-    var osvData = qualityReadSheet_('OSV Status');
-    if (osvData.rows.length) {
-      var oh = osvData.headers;
-      var stCol  = qualityFindCol_(oh, ['osv_status','status','verification_status','site_verification_status','osv','field_verification_status']);
-      var cntCol = qualityFindCol_(oh, ['count','vendor_count','total','no_of_vendors']);
-      osvData.rows.forEach(function(row) {
-        var st  = stCol  >= 0 ? String(row[stCol]  || '').trim().toUpperCase().replace(/\s+/g, '_') : '';
-        var cnt = cntCol >= 0 ? parseInt(row[cntCol], 10) : 1;
-        if (isNaN(cnt) || cnt < 0) cnt = 1;
-        result.osv.total += cnt;
-        if      (st === 'COMPLETED' || st === 'DONE'        || st === 'COMPLETE')       result.osv.completed    += cnt;
-        else if (st === 'PENDING'   || st === 'IN_PROGRESS' || st === 'IN_REVIEW')      result.osv.pending      += cnt;
-        else if (st === 'FAILED'    || st === 'REJECTED'    || st === 'FAIL')           result.osv.failed       += cnt;
-        else                                                                              result.osv.notInitiated += cnt;
-      });
+    if (idCol >= 0 && hasSplit) {
+      var vid = String(row[idCol] || '').trim();
+      if (vid && sellerIds[vid]) return 'seller';
+      if (vid && buyerIds[vid])  return 'buyer';
     }
-  } catch (e) { Logger.log('getQualityData osv error: ' + e.message); }
+    return 'combined';
+  }
+  function tgts_(aud) { return aud === 'combined' ? ['combined'] : [aud, 'combined']; }
 
+  // ── Vendor Rating ─────────────────────────────────────────────
   try {
-    var docsData = qualityReadSheet_('Doc Completeness');
-    if (docsData.rows.length) {
-      var dh = docsData.headers;
-      var dsCol  = qualityFindCol_(dh, ['doc_status','document_status','completeness_status','document_completeness','completeness','status','doc_completeness']);
-      var dcCol  = qualityFindCol_(dh, ['count','vendor_count','total','no_of_vendors']);
-      docsData.rows.forEach(function(row) {
-        var st  = dsCol >= 0 ? String(row[dsCol] || '').trim().toUpperCase().replace(/[\s\-]+/g, '_') : '';
-        var cnt = dcCol >= 0 ? parseInt(row[dcCol], 10) : 1;
+    var rd = qualityReadSheet_('Vendor Rating');
+    if (rd.rows.length) {
+      var rh  = rd.headers;
+      var rc  = qualityFindCol_(rh, ['rating','vendor_rating','average_rating','avg_rating','score','overall_rating','stars']);
+      var rcc = qualityFindCol_(rh, ['count','vendor_count','total','total_vendors','no_of_vendors']);
+      var rid = qualityFindCol_(rh, ['vendor_id','id','seller_id','buyer_id','vendorid']);
+      var rau = qualityFindCol_(rh, ['audience','type','aud','seller_buyer','vendor_type_aud']);
+      rd.rows.forEach(function(row) {
+        var rv  = rc  >= 0 ? parseFloat(row[rc])    : NaN;
+        var cnt = rcc >= 0 ? parseInt(row[rcc], 10) : 1;
         if (isNaN(cnt) || cnt < 0) cnt = 1;
-        result.docs.total += cnt;
-        if      (st === 'COMPLETE'   || st === 'COMPLETED'         || st === 'FULL')    result.docs.complete   += cnt;
-        else if (st === 'PARTIAL'    || st === 'PARTIALLY_COMPLETE' || st === 'PARTIAL_COMPLETE') result.docs.partial += cnt;
-        else if (st === 'INCOMPLETE')                                                    result.docs.incomplete += cnt;
-        else                                                                             result.docs.missing    += cnt;
+        tgts_(resolveAud_(row, rh, rid, rau)).forEach(function(t) {
+          acc[t].r.total += cnt;
+          if (!isNaN(rv) && rv > 0) {
+            acc[t].r.ws   += rv * cnt;
+            acc[t].r.rated += cnt;
+            acc[t].r.dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += cnt;
+          }
+        });
       });
     }
-  } catch (e) { Logger.log('getQualityData docs error: ' + e.message); }
+  } catch (e) { Logger.log('getQualityData rating: ' + e.message); }
 
+  // ── OSV Status ───────────────────────────────────────────────
+  try {
+    var od = qualityReadSheet_('OSV Status');
+    if (od.rows.length) {
+      var oh  = od.headers;
+      var osc = qualityFindCol_(oh, ['osv_status','status','verification_status','site_verification_status','osv','field_verification_status']);
+      var occ = qualityFindCol_(oh, ['count','vendor_count','total','no_of_vendors']);
+      var oid = qualityFindCol_(oh, ['vendor_id','id','seller_id','buyer_id','vendorid']);
+      var oau = qualityFindCol_(oh, ['audience','type','aud','seller_buyer']);
+      od.rows.forEach(function(row) {
+        var st  = osc >= 0 ? String(row[osc] || '').trim().toUpperCase().replace(/\s+/g, '_') : '';
+        var cnt = occ >= 0 ? parseInt(row[occ], 10) : 1;
+        if (isNaN(cnt) || cnt < 0) cnt = 1;
+        tgts_(resolveAud_(row, oh, oid, oau)).forEach(function(t) {
+          acc[t].o.total += cnt;
+          if      (st === 'COMPLETED' || st === 'DONE' || st === 'COMPLETE')         acc[t].o.completed    += cnt;
+          else if (st === 'PENDING'   || st === 'IN_PROGRESS' || st === 'IN_REVIEW') acc[t].o.pending      += cnt;
+          else if (st === 'FAILED'    || st === 'REJECTED'    || st === 'FAIL')      acc[t].o.failed       += cnt;
+          else                                                                         acc[t].o.notInitiated += cnt;
+        });
+      });
+    }
+  } catch (e) { Logger.log('getQualityData osv: ' + e.message); }
+
+  // ── Doc Completeness ─────────────────────────────────────────
+  try {
+    var dd = qualityReadSheet_('Doc Completeness');
+    if (dd.rows.length) {
+      var dh  = dd.headers;
+      var dsc = qualityFindCol_(dh, ['doc_status','document_status','completeness_status','document_completeness','completeness','status','doc_completeness']);
+      var dcc = qualityFindCol_(dh, ['count','vendor_count','total','no_of_vendors']);
+      var did = qualityFindCol_(dh, ['vendor_id','id','seller_id','buyer_id','vendorid']);
+      var dau = qualityFindCol_(dh, ['audience','type','aud','seller_buyer']);
+      dd.rows.forEach(function(row) {
+        var st  = dsc >= 0 ? String(row[dsc] || '').trim().toUpperCase().replace(/[\s\-]+/g, '_') : '';
+        var cnt = dcc >= 0 ? parseInt(row[dcc], 10) : 1;
+        if (isNaN(cnt) || cnt < 0) cnt = 1;
+        tgts_(resolveAud_(row, dh, did, dau)).forEach(function(t) {
+          acc[t].d.total += cnt;
+          if      (st === 'COMPLETE' || st === 'COMPLETED' || st === 'FULL')                     acc[t].d.complete   += cnt;
+          else if (st === 'PARTIAL'  || st === 'PARTIALLY_COMPLETE' || st === 'PARTIAL_COMPLETE') acc[t].d.partial    += cnt;
+          else if (st === 'INCOMPLETE')                                                            acc[t].d.incomplete += cnt;
+          else                                                                                     acc[t].d.missing    += cnt;
+        });
+      });
+    }
+  } catch (e) { Logger.log('getQualityData docs: ' + e.message); }
+
+  // ── Fallback: scan _mb_detail for inline quality columns ─────
+  var cEmpty = acc.combined.r.total === 0 && acc.combined.o.total === 0 && acc.combined.d.total === 0;
+  if (cEmpty) {
+    try {
+      var det = qualityReadSheet_('_mb_detail');
+      if (det.rows.length) {
+        var deth = det.headers;
+        var drC  = qualityFindCol_(deth, ['rating','vendor_rating','score']);
+        var doC  = qualityFindCol_(deth, ['osv_status','verification_status','site_verification_status']);
+        var ddC  = qualityFindCol_(deth, ['doc_status','document_status','doc_completeness']);
+        var diC  = qualityFindCol_(deth, ['seller_id','buyer_id','vendor_id','id']);
+        var daC  = qualityFindCol_(deth, ['audience','type','aud','seller_buyer']);
+        det.rows.forEach(function(row) {
+          var aud = resolveAud_(row, deth, diC, daC);
+          var ts  = tgts_(aud);
+          if (drC >= 0) {
+            var rv = parseFloat(row[drC]);
+            ts.forEach(function(t) {
+              acc[t].r.total += 1;
+              if (!isNaN(rv) && rv > 0) { acc[t].r.ws += rv; acc[t].r.rated += 1; acc[t].r.dist[Math.min(4,Math.max(0,Math.round(rv)-1))] += 1; }
+            });
+          }
+          if (doC >= 0) {
+            var os = String(row[doC] || '').trim().toUpperCase().replace(/\s+/g, '_');
+            ts.forEach(function(t) {
+              acc[t].o.total += 1;
+              if      (os === 'COMPLETED' || os === 'DONE')        acc[t].o.completed    += 1;
+              else if (os === 'PENDING'   || os === 'IN_PROGRESS') acc[t].o.pending      += 1;
+              else if (os === 'FAILED'    || os === 'REJECTED')    acc[t].o.failed       += 1;
+              else                                                   acc[t].o.notInitiated += 1;
+            });
+          }
+          if (ddC >= 0) {
+            var ds = String(row[ddC] || '').trim().toUpperCase().replace(/[\s\-]+/g, '_');
+            ts.forEach(function(t) {
+              acc[t].d.total += 1;
+              if      (ds === 'COMPLETE' || ds === 'COMPLETED')         acc[t].d.complete   += 1;
+              else if (ds === 'PARTIAL'  || ds === 'PARTIALLY_COMPLETE') acc[t].d.partial   += 1;
+              else if (ds === 'INCOMPLETE')                              acc[t].d.incomplete += 1;
+              else                                                        acc[t].d.missing   += 1;
+            });
+          }
+        });
+      }
+    } catch (e) { Logger.log('getQualityData detail fallback: ' + e.message); }
+  }
+
+  // ── Finalize accumulators → output shape ─────────────────────
+  function fR(r) { return { avg: r.rated>0?Math.round(r.ws/r.rated*10)/10:null, total:r.total||r.rated, rated:r.rated, dist:r.dist }; }
+  function fO(o) { return { completed:o.completed, pending:o.pending, failed:o.failed, notInitiated:o.notInitiated, total:o.total }; }
+  function fD(d) { return { complete:d.complete, partial:d.partial, incomplete:d.incomplete, missing:d.missing, total:d.total }; }
+  function fA(a) { return { rating:fR(a.r), osv:fO(a.o), docs:fD(a.d) }; }
+
+  var combined = fA(acc.combined);
+  var seller   = fA(acc.seller);
+  var buyer    = fA(acc.buyer);
+
+  // If audience-specific buckets are empty, fall back to combined
+  if (seller.rating.total === 0 && seller.osv.total === 0 && seller.docs.total === 0)
+    seller = JSON.parse(JSON.stringify(combined));
+  if (buyer.rating.total === 0 && buyer.osv.total === 0 && buyer.docs.total === 0)
+    buyer  = JSON.parse(JSON.stringify(combined));
+
+  var result = { success: true, lastUpdated: new Date().toISOString(), combined: combined, seller: seller, buyer: buyer };
   var out = JSON.stringify(result);
   try { cache.put(CACHE_KEY, out, 300); } catch (e) {}
   return out;
+}
+
+// Builds a { id: true } lookup set from a Metabase-synced sheet.
+function buildQualityIdSet_(sheetName, idCols) {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet || sheet.getLastRow() < 2) return {};
+  var maxCol  = Math.min(sheet.getLastColumn(), 40);
+  var vals    = sheet.getRange(1, 1, sheet.getLastRow(), maxCol).getValues();
+  var headers = vals[0].map(function(h) {
+    return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  });
+  var idCol = -1;
+  for (var i = 0; i < idCols.length; i++) {
+    var idx = headers.indexOf(idCols[i]);
+    if (idx >= 0) { idCol = idx; break; }
+  }
+  if (idCol < 0) return {};
+  var set = {};
+  vals.slice(1).forEach(function(row) { var id = String(row[idCol]||'').trim(); if (id) set[id] = true; });
+  return set;
 }
 
 function qualityFindCol_(headers, candidates) {

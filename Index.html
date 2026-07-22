@@ -1563,7 +1563,6 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
    PIPELINE PAIR (Seller + Buyer side by side)
    ══════════════════════════════════════════════════ */
 .vpipe-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
-.vpipe-pair.three-col{grid-template-columns:1fr 1fr 1fr}
 .vpipe-card{cursor:pointer;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
 .vpipe-card:hover{transform:scale(1.015);box-shadow:var(--shadow-lg)!important}
 .vpipe-card.det-active{
@@ -1632,6 +1631,39 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 @keyframes shimmer{0%,100%{opacity:.6}50%{opacity:1}}
 
 /* ══════════════════════════════════════════════════
+   IN-CARD QUALITY & COMPLIANCE SECTION
+   Rendered at the bottom of Seller/Buyer pipeline
+   cards for the OMP vertical.
+   ══════════════════════════════════════════════════ */
+.cc-qsect{border-top:1px solid var(--border);margin-top:14px;padding-top:10px}
+.cc-qsect-hd{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px}
+.cc-qsect-row{display:flex;align-items:baseline;gap:6px;margin-bottom:3px}
+.cc-qsect-mt{margin-top:9px}
+.cc-qsect-ic{font-size:11px;color:var(--txt3);flex-shrink:0;line-height:1}
+.cc-qsect-lb{font-size:11px;color:var(--txt2);flex:1;min-width:0}
+.cc-qsect-vl{font-size:11px;font-weight:600;color:var(--txt);white-space:nowrap}
+.cc-qsect-sub{font-size:10px;color:var(--txt3);font-weight:400}
+/* Mini star bars */
+.cc-qsect-bars{margin:3px 0 6px}
+.cc-qsect-sbar{display:flex;align-items:center;gap:4px;margin:2px 0}
+.cc-qsect-sbar-n{font-size:9px;color:var(--txt3);min-width:7px;text-align:right}
+.cc-qsect-sbar-t{flex:1;height:4px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.cc-qsect-sbar-f{height:100%;border-radius:2px}
+.cc-qsect-sbar-c{font-size:9px;color:var(--txt3);min-width:22px;text-align:right}
+/* Progress bar */
+.cc-qsect-prog{display:flex;height:5px;border-radius:3px;overflow:hidden;gap:1px;margin:4px 0 5px}
+.cc-qsect-prog-seg{height:100%}
+/* Status chips */
+.cc-qsect-chips{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px}
+.qchip{font-size:9px;padding:2px 5px;border-radius:3px;font-weight:500;white-space:nowrap}
+.qchip-done{background:rgba(34,197,94,.15);color:#16a34a}
+.qchip-pend{background:rgba(245,158,11,.15);color:#d97706}
+.qchip-fail{background:rgba(239,68,68,.15);color:#dc2626}
+.qchip-na{background:var(--bg2);color:var(--txt3)}
+/* Skeleton */
+.cc-qsect-sk{height:10px;border-radius:4px;background:var(--bg2);margin:5px 0;animation:shimmer 1.4s infinite}
+
+/* ══════════════════════════════════════════════════
    INLINE DETAIL SECTION — polished header
    ══════════════════════════════════════════════════ */
 .vds-wrap{
@@ -1675,11 +1707,8 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 @media(max-width:1100px){
   .vkpi-grid{grid-template-columns:repeat(2,1fr)}
   .vpipe-pair{grid-template-columns:1fr}
-  .vpipe-pair.three-col{grid-template-columns:1fr 1fr}
 }
-@media(max-width:700px){
-  .vpipe-pair.three-col{grid-template-columns:1fr}
-}
+@media(max-width:700px){}
 @media(max-width:600px){
   .vkpi-grid{grid-template-columns:1fr}
   .vert-tab{font-size:10px;padding:9px 11px;letter-spacing:.4px}
@@ -3199,139 +3228,109 @@ function closeKpiModal() {
 
 function _kpiEsc(e) { if (e.key === 'Escape') closeKpiModal(); }
 
-// ── Quality card: load once for OMP, refresh on bust ─────────────
+// ── Quality data: load once for OMP, patch into Seller + Buyer cards ─
 function loadQualityData() {
-  if (qualityLoading || qualityData) return;
+  if (qualityData) { _patchQualitySects(); return; }
+  if (qualityLoading) return;
   qualityLoading = true;
   google.script.run
     .withSuccessHandler(function(json) {
       qualityLoading = false;
       try { qualityData = JSON.parse(json); } catch (e) { qualityData = { success: false }; }
-      var el = document.getElementById('vert-pipeline-pair');
-      if (el && activeVertKey === 'OMP') {
-        var qSlot = el.querySelector('.qcard-slot');
-        if (qSlot) qSlot.outerHTML = buildQualityCard();
-        animateCounters(el);
-      }
+      _patchQualitySects();
     })
     .withFailureHandler(function() {
       qualityLoading = false;
       qualityData = { success: false };
+      _patchQualitySects();
     })
     .getQualityData();
 }
 
-function buildQualityCard() {
-  if (qualityLoading && !qualityData) {
-    return '<div class="qcard qcard-slot">'
-      + '<div class="qcard-head"><span class="qcard-dot"></span>'
-      + '<span class="qcard-title">Quality & Compliance</span>'
-      + '<span class="qcard-badge">OMP</span></div>'
-      + '<div class="qcard-sk" style="width:80%"></div>'
-      + '<div class="qcard-sk" style="width:60%"></div>'
-      + '<div class="qcard-sk" style="width:70%"></div>'
-      + '</div>';
-  }
-  if (!qualityData || !qualityData.success) {
-    return '<div class="qcard qcard-slot">'
-      + '<div class="qcard-head"><span class="qcard-dot"></span>'
-      + '<span class="qcard-title">Quality & Compliance</span>'
-      + '<span class="qcard-badge">OMP</span></div>'
-      + '<div style="font-size:12px;color:var(--txt3);padding:12px 0">Data syncing…<br>Run <code>syncQualityData()</code> in Apps Script to populate.</div>'
-      + '</div>';
-  }
+function _patchQualitySects() {
+  ['seller', 'buyer'].forEach(function(aud) {
+    var el = document.getElementById('qsect-' + aud);
+    if (!el) return;
+    el.innerHTML = buildQualitySect(qualityData, aud);
+  });
+}
 
-  var q = qualityData;
+// Build compact quality HTML for inside a pipeline card.
+// qd = { success, seller:{rating,osv,docs}, buyer:{...}, combined:{...} }
+function buildQualitySect(qd, aud) {
+  var hd = '<div class="cc-qsect-hd">Quality &amp; Compliance</div>';
+  if (!qd || !qd.success) {
+    return hd + '<div style="font-size:11px;color:var(--txt3);padding:4px 0">Data syncing… Run syncQualityData() in Apps Script to populate.</div>';
+  }
+  var q = qd[aud] || qd.combined || {};
+  var html = hd;
 
-  // ── Vendor Rating section ────────────────────────────────────
-  var ratingHtml = '';
-  if (q.rating) {
-    var r = q.rating;
-    var avgVal = r.avg != null ? r.avg.toFixed(1) : '—';
-    var maxDist = Math.max.apply(null, r.dist) || 1;
-    var stars = '';
+  // ── Vendor Rating ──────────────────────────────────────────
+  if (q.rating && q.rating.total > 0) {
+    var r    = q.rating;
+    var avg  = r.avg != null ? r.avg.toFixed(1) : '—';
+    var maxD = Math.max.apply(null, r.dist) || 1;
+    var bars = '';
     for (var i = 5; i >= 1; i--) {
       var cnt  = r.dist[i - 1] || 0;
-      var pct  = Math.round(cnt / maxDist * 100);
-      var dotCol = i >= 4 ? '#22C55E' : i === 3 ? '#F59E0B' : '#EF4444';
-      stars += '<div class="qcard-star-row">'
-        + '<span style="font-size:10px;color:var(--txt3);min-width:8px">' + i + '</span>'
-        + '<div class="qcard-star-bar-wrap"><div class="qcard-star-bar-fill" style="width:' + pct + '%;background:' + dotCol + '"></div></div>'
-        + '<span class="qcard-star-cnt">' + (cnt > 999 ? Math.round(cnt / 1000) + 'k' : cnt) + '</span>'
+      var bpct = Math.round(cnt / maxD * 100);
+      var bcol = i >= 4 ? '#22C55E' : i === 3 ? '#F59E0B' : '#EF4444';
+      bars += '<div class="cc-qsect-sbar">'
+        + '<span class="cc-qsect-sbar-n">' + i + '</span>'
+        + '<div class="cc-qsect-sbar-t"><div class="cc-qsect-sbar-f" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
+        + '<span class="cc-qsect-sbar-c">' + (cnt > 999 ? Math.round(cnt / 1000) + 'k' : cnt) + '</span>'
         + '</div>';
     }
-    ratingHtml = '<div class="qcard-sec">'
-      + '<div class="qcard-sec-lbl">Vendor Rating</div>'
-      + '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">'
-      + '<span class="qcard-avg">' + avgVal + '</span>'
-      + '<span class="qcard-stars">★★★★★</span>'
+    html += '<div class="cc-qsect-row">'
+      + '<span class="cc-qsect-ic">★</span>'
+      + '<span class="cc-qsect-lb">Vendor Rating</span>'
+      + '<span class="cc-qsect-vl">' + avg + ' <span class="cc-qsect-sub">/ ' + fmt(r.rated) + ' rated</span></span>'
       + '</div>'
-      + '<div class="qcard-avg-sub">' + fmt(r.rated) + ' rated of ' + fmt(r.total) + ' vendors</div>'
-      + '<div style="margin-top:8px">' + stars + '</div>'
+      + '<div class="cc-qsect-bars">' + bars + '</div>';
+  }
+
+  // ── OSV Status ────────────────────────────────────────────
+  if (q.osv && q.osv.total > 0) {
+    var o  = q.osv, oT = o.total || 1;
+    var oc = [
+      { cls: 'qchip-done', v: o.completed,    lbl: 'Done'    },
+      { cls: 'qchip-pend', v: o.pending,      lbl: 'Pending' },
+      { cls: 'qchip-fail', v: o.failed,       lbl: 'Failed'  },
+      { cls: 'qchip-na',   v: o.notInitiated, lbl: 'Not Init'},
+    ].filter(function(c) { return c.v > 0; });
+    html += '<div class="cc-qsect-row cc-qsect-mt">'
+      + '<span class="cc-qsect-ic">◎</span>'
+      + '<span class="cc-qsect-lb">OSV Verification</span>'
+      + '<span class="cc-qsect-vl">' + fmt(o.completed) + ' <span class="cc-qsect-sub">done</span></span>'
+      + '</div>'
+      + '<div class="cc-qsect-chips">'
+      + oc.map(function(c) { return '<span class="qchip ' + c.cls + '">' + fmt(c.v) + ' ' + c.lbl + '</span>'; }).join('')
       + '</div>';
   }
 
-  // ── OSV section ───────────────────────────────────────────────
-  var osvHtml = '';
-  if (q.osv) {
-    var o = q.osv, oT = o.total || 1;
-    var osvRows = [
-      { lbl: 'Completed',    val: o.completed,    col: 'var(--st-onboarded)' },
-      { lbl: 'Pending',      val: o.pending,      col: 'var(--st-review)' },
-      { lbl: 'Failed',       val: o.failed,       col: 'var(--st-rejected)' },
-      { lbl: 'Not Initiated',val: o.notInitiated, col: 'var(--st-draft)' },
-    ].filter(function(x) { return x.val > 0; });
-    osvHtml = '<div class="qcard-sec">'
-      + '<div class="qcard-sec-lbl">OSV Verification</div>'
-      + '<div class="qcard-rows">'
-      + osvRows.map(function(row) {
-          var p = Math.round(row.val / oT * 100);
-          return '<div class="qcard-row">'
-            + '<span class="qcard-row-dot" style="background:' + row.col + '"></span>'
-            + '<span class="qcard-row-lbl">' + row.lbl + '</span>'
-            + '<span class="qcard-row-val">' + fmt(row.val) + '</span>'
-            + '<span class="qcard-row-pct">(' + p + '%)</span>'
-            + '</div>';
-        }).join('')
-      + '</div></div>';
+  // ── Doc Completeness ──────────────────────────────────────
+  if (q.docs && q.docs.total > 0) {
+    var d  = q.docs, dT = d.total || 1;
+    var ds = [
+      { cls: 'qchip-done', col: 'var(--st-onboarded)', v: d.complete,   lbl: 'Complete'   },
+      { cls: 'qchip-pend', col: 'var(--st-review)',    v: d.partial,    lbl: 'Partial'    },
+      { cls: 'qchip-na',   col: 'var(--st-draft)',     v: d.incomplete, lbl: 'Incomplete' },
+      { cls: 'qchip-fail', col: 'var(--st-rejected)',  v: d.missing,    lbl: 'Missing'    },
+    ].filter(function(s) { return s.v > 0; });
+    html += '<div class="cc-qsect-row cc-qsect-mt">'
+      + '<span class="cc-qsect-ic">◻</span>'
+      + '<span class="cc-qsect-lb">Doc Completeness</span>'
+      + '<span class="cc-qsect-vl">' + Math.round(d.complete / dT * 100) + '<span class="cc-qsect-sub">% complete</span></span>'
+      + '</div>'
+      + '<div class="cc-qsect-prog">'
+      + ds.map(function(s) { return '<div class="cc-qsect-prog-seg" style="flex:' + (s.v/dT*100).toFixed(1) + ';background:' + s.col + '"></div>'; }).join('')
+      + '</div>'
+      + '<div class="cc-qsect-chips">'
+      + ds.map(function(s) { return '<span class="qchip ' + s.cls + '">' + fmt(s.v) + ' ' + s.lbl + '</span>'; }).join('')
+      + '</div>';
   }
 
-  // ── Doc Completeness section ──────────────────────────────────
-  var docsHtml = '';
-  if (q.docs) {
-    var d = q.docs, dT = d.total || 1;
-    var segs = [
-      { lbl: 'Complete',   val: d.complete,   col: 'var(--st-onboarded)' },
-      { lbl: 'Partial',    val: d.partial,    col: 'var(--st-review)' },
-      { lbl: 'Incomplete', val: d.incomplete, col: 'var(--st-draft)' },
-      { lbl: 'Missing',    val: d.missing,    col: 'var(--st-rejected)' },
-    ].filter(function(x) { return x.val > 0; });
-    var progBar = '<div class="qcard-prog-wrap">'
-      + segs.map(function(s) {
-          return '<div class="qcard-prog-seg" style="flex:' + (s.val / dT * 100).toFixed(1) + ';background:' + s.col + '"></div>';
-        }).join('') + '</div>';
-    docsHtml = '<div class="qcard-sec">'
-      + '<div class="qcard-sec-lbl">Document Completeness</div>'
-      + progBar
-      + '<div class="qcard-rows">'
-      + segs.map(function(s) {
-          var p = Math.round(s.val / dT * 100);
-          return '<div class="qcard-row">'
-            + '<span class="qcard-row-dot" style="background:' + s.col + '"></span>'
-            + '<span class="qcard-row-lbl">' + s.lbl + '</span>'
-            + '<span class="qcard-row-val">' + fmt(s.val) + '</span>'
-            + '<span class="qcard-row-pct">(' + p + '%)</span>'
-            + '</div>';
-        }).join('')
-      + '</div></div>';
-  }
-
-  return '<div class="qcard qcard-slot">'
-    + '<div class="qcard-head"><span class="qcard-dot"></span>'
-    + '<span class="qcard-title">Quality & Compliance</span>'
-    + '<span class="qcard-badge">OMP</span></div>'
-    + ratingHtml + osvHtml + docsHtml
-    + '</div>';
+  return html;
 }
 
 function renderPipelinePair(key) {
@@ -3341,13 +3340,11 @@ function renderPipelinePair(key) {
   if (!cfg || !DS || !DS.verticals) { el.innerHTML = ''; return; }
   var vs = (DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
-  var isOMP = key === 'OMP';
-  el.classList.toggle('three-col', isOMP);
+  el.classList.remove('three-col');
   el.innerHTML = buildInlinePipeCard(cfg, vs, 'Seller Pipeline', 'seller', 0)
-    + buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1)
-    + (isOMP ? buildQualityCard() : '');
+    + buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1);
   animateCounters(el);
-  if (isOMP) loadQualityData();
+  if (key === 'OMP') loadQualityData();
 }
 
 function buildInlinePipeCard(cfg, v, label, aud, idx) {
@@ -3447,7 +3444,19 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
         }).join('') + '</div>'
       : '';
   }
-  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + catRows + statsList + '</div>';
+  // ── Quality & Compliance section (OMP only) ─────────────────
+  var qualSect = '';
+  if (cfg.key === 'OMP') {
+    // Skeleton shown immediately; _patchQualitySects() fills it after the async load.
+    var qSkel = '<div class="cc-qsect-hd">Quality &amp; Compliance</div>'
+      + '<div class="cc-qsect-sk" style="width:75%"></div>'
+      + '<div class="cc-qsect-sk" style="width:55%"></div>'
+      + '<div class="cc-qsect-sk" style="width:65%"></div>';
+    qualSect = '<div id="qsect-' + aud + '" class="cc-qsect">'
+      + (qualityData ? buildQualitySect(qualityData, aud) : qSkel)
+      + '</div>';
+  }
+  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + catRows + statsList + qualSect + '</div>';
 }
 
 // Render the inline detailed view section (replaces the full-screen overlay).
