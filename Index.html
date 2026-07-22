@@ -2889,12 +2889,16 @@ function renderVertKPIs(key) {
     pNew: pNew, mNew: mNew,
   };
   var txnPct = (compS + compB) > 0 ? Math.round(txnTotal / (compS + compB) * 100) : 0;
-  el.innerHTML = [
+  var cards = [
     mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                           'vk-total',     'total'),
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% completion rate',  'vk-onboarded', 'onboarded'),
     mk(icZap,    'Transacted',  fmt(txnTotal),         txnPct > 0 ? txnPct + '% of onboarded' : null, 'vk-transacted', 'transacted'),
-    mk(icUsers,  'Old vs New',  fmt((newS + oldS) + (newB + oldB)), fmt(newS + newB) + ' new this vertical', 'vk-total', 'oldvsnew'),
-  ].join('');
+  ];
+  if (key === 'OMP') {
+    cards.push(mk(icUsers, 'Old vs New', fmt((newS + oldS) + (newB + oldB)), fmt(newS + newB) + ' new this vertical', 'vk-total', 'oldvsnew'));
+  }
+  el.style.gridTemplateColumns = 'repeat(' + cards.length + ',1fr)';
+  el.innerHTML = cards.join('');
   animateCounters(el);
 }
 
