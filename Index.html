@@ -694,6 +694,16 @@ tbody td{padding:12px 16px;color:var(--txt);vertical-align:middle;white-space:no
 
 /* ===== KPI Card Detail Modal ===== */
 @keyframes kmUp{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+/* Star-distribution bars inside quality modals */
+.km-star-row{display:grid;grid-template-columns:28px 1fr 34px 32px;align-items:center;gap:6px;margin-bottom:5px}
+.km-star-n{font-size:11px;font-weight:600;color:var(--txt2);text-align:right;white-space:nowrap}
+.km-star-track{height:5px;border-radius:3px;background:var(--bg2);overflow:hidden}
+.km-star-fill{height:100%;border-radius:3px;transition:width .8s var(--ease-out)}
+.km-star-cnt{font-size:11px;font-weight:600;color:var(--txt);font-variant-numeric:tabular-nums;text-align:right}
+.km-star-pct{font-size:10px;color:var(--txt3);text-align:right}
+/* Segmented progress bar (OSV / docs modal) */
+.km-prog{display:flex;height:6px;border-radius:3px;overflow:hidden;gap:2px;margin:8px 0 4px}
+.km-prog-seg{border-radius:3px;transition:flex .8s var(--ease-out)}
 #kpi-modal{position:fixed;inset:0;z-index:800;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;opacity:0;transition:opacity .18s}
 #kpi-modal.km-open{pointer-events:all;opacity:1}
 @media(min-width:600px){#kpi-modal{align-items:center;padding:20px}}
@@ -1553,6 +1563,14 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 .vkpi-card.vk-onboarded .vkpi-icon{background:rgba(48,209,88,.18);color:#30D158}
 .vkpi-card.vk-transacted .vkpi-val{color:var(--txt)}
 .vkpi-card.vk-warn .vkpi-val{color:var(--st-rejected-tx)}
+/* Quality summary cards */
+.vkpi-card.vk-rating .vkpi-icon{background:rgba(255,159,10,.14);color:#FF9F0A}
+.vkpi-card.vk-osv    .vkpi-icon{background:rgba(0,122,255,.12);color:#007AFF}
+.vkpi-card.vk-docs   .vkpi-icon{background:rgba(48,209,88,.13);color:#30D158}
+.vkpi-card.vk-rating .vkpi-val{color:#E48800;font-size:21px}
+.vkpi-card.vk-osv    .vkpi-val{color:#007AFF;font-size:21px}
+.vkpi-card.vk-docs   .vkpi-val{color:var(--st-onboarded-tx);font-size:21px}
+@media(prefers-color-scheme:dark){.vkpi-card.vk-rating .vkpi-val{color:#FF9F0A}}
 /* FY sparkline — three mini bars, latest year accented */
 .vkpi-spark{position:absolute;top:20px;right:20px;width:46px;height:26px;display:block}
 /* Completion meter — hairline progress inside the ink card */
@@ -1711,15 +1729,17 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 /* Sidebar no longer needed — vertical tabs replace it */
 #side-nav{display:none!important}
 
-/* Responsive */
-@media(max-width:1100px){
-  .vkpi-grid{grid-template-columns:repeat(2,1fr)}
+/* Responsive — !important overrides the JS inline gridTemplateColumns */
+@media(max-width:1200px){
+  .vkpi-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))!important}
   .vpipe-pair{grid-template-columns:1fr}
 }
-@media(max-width:700px){}
 @media(max-width:600px){
-  .vkpi-grid{grid-template-columns:1fr}
+  .vkpi-grid{grid-template-columns:repeat(2,1fr)!important}
   .vert-tab{font-size:10px;padding:9px 11px;letter-spacing:.4px}
+}
+@media(max-width:440px){
+  .vkpi-grid{grid-template-columns:1fr!important}
 }
 </style>
 
@@ -2940,15 +2960,16 @@ function renderVertKPIs(key) {
   }
   // sides: [{val,tag,clr}] → renders as left column; big number anchors right.
   // sub: plain string shown below the value when no sides are given.
-  function mk(icon, lbl, val, sub, cls, action) {
-    return '<div class="vkpi-card' + (cls ? ' ' + cls : '') + '" style="' + vars + '"'
+  // id: optional DOM id so cards can be patched after async data arrives.
+  function mk(icon, lbl, val, sub, cls, action, id) {
+    return '<div' + (id ? ' id="' + id + '"' : '') + ' class="vkpi-card' + (cls ? ' ' + cls : '') + '" style="' + vars + '"'
       + ' role="button" tabindex="0"'
       + ' onclick="openKpiModal(\'' + action + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'' + action + '\')}">'
       + '<div class="vkpi-icon">' + icon + '</div>'
       + '<div class="vkpi-text">'
       + '<div class="vkpi-lbl">' + lbl + '</div>'
-      + (sub ? '<div class="vkpi-sub">' + sub + '</div>' : '')
+      + (sub != null ? '<div class="vkpi-sub">' + (sub || '') + '</div>' : '')
       + '</div>'
       + '<div class="vkpi-val">' + val + '</div>'
       + '</div>';
@@ -3018,6 +3039,29 @@ function renderVertKPIs(key) {
   ];
   if (key === 'OMP') {
     cards.push(mk(icUsers, 'Existing vs New', fmt((newS + oldS) + (newB + oldB)), fmt(oldS + oldB) + ' existing · ' + fmt(newS + newB) + ' new', 'vk-total', 'oldvsnew'));
+
+    // ── Quality summary cards (patched async after loadQualityData) ──
+    var icStar   = svg('<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>');
+    var icShield = svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>');
+    var icDocFl  = svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>');
+
+    var qc     = qualityData && qualityData.success ? (qualityData.combined || {}) : null;
+    var rQ     = qc ? (qc.rating || {}) : null;
+    var oQ     = qc ? (qc.osv    || {}) : null;
+    var dQ     = qc ? (qc.docs   || {}) : null;
+    var oQT    = oQ ? (oQ.total  || 0) : 0;
+    var dQT    = dQ ? (dQ.total  || 0) : 0;
+
+    var rVal = rQ && rQ.avg != null ? rQ.avg.toFixed(1) + '★' : '—';
+    var rSub = rQ ? (rQ.total > rQ.rated ? fmt(rQ.rated) + ' of ' + fmt(rQ.total) + ' rated' : fmt(rQ.rated) + ' rated') : 'Syncing…';
+    var oVal = oQT > 0 ? Math.round(oQ.completed / oQT * 100) + '%' : '—';
+    var oSub = oQ ? fmt(oQ.completed || 0) + ' of ' + fmt(oQT) + ' verified' : 'Syncing…';
+    var dVal = dQT > 0 ? Math.round(dQ.complete  / dQT * 100) + '%' : '—';
+    var dSub = dQ ? fmt(dQ.complete  || 0) + ' of ' + fmt(dQT) + ' complete' : 'Syncing…';
+
+    cards.push(mk(icStar,   'Vendor Rating', rVal, rSub, 'vk-rating', 'rating', 'qkpi-rating'));
+    cards.push(mk(icShield, 'OSV Status',    oVal, oSub, 'vk-osv',    'osv',    'qkpi-osv'));
+    cards.push(mk(icDocFl,  'Doc Status',    dVal, dSub, 'vk-docs',   'docs',   'qkpi-docs'));
   }
   el.style.gridTemplateColumns = 'repeat(' + cards.length + ',1fr)';
   el.innerHTML = cards.join('');
@@ -3052,7 +3096,8 @@ function vkpiOpen(action) {
 
 function openKpiModal(cardId) {
   var d = window._kpiSnap;
-  if (!d) return;
+  var isQualityCard = (cardId === 'rating' || cardId === 'osv' || cardId === 'docs');
+  if (!d && !isQualityCard) return;
   var el = document.getElementById('km-pn');
   var modal = document.getElementById('kpi-modal');
   if (!el || !modal) return;
@@ -3109,7 +3154,7 @@ function openKpiModal(cardId) {
   }
 
   var content = '', title = '', subtitle = '', iconHtml = '';
-  var vs = d.vs, vb = d.vb;
+  var vs = d ? d.vs : {}, vb = d ? d.vb : {};
 
   if (cardId === 'total') {
     title = 'Total Cases';
@@ -3210,6 +3255,153 @@ function openKpiModal(cardId) {
         );
   }
 
+  // ── Quality card modals ──────────────────────────────────────
+  var isQuality = (cardId === 'rating' || cardId === 'osv' || cardId === 'docs');
+  if (isQuality) {
+    var qd = qualityData || { success: false };
+    var S2 = '#34C759', B2 = '#007AFF';
+
+    // Reusable star-distribution builder
+    function starBarsHtml(dist, rated) {
+      var maxD  = Math.max.apply(null, dist) || 1;
+      var ratedD = rated || 1;
+      var h = '';
+      for (var si = 5; si >= 1; si--) {
+        var rc   = dist[si - 1] || 0;
+        var bpct = Math.round(rc / maxD * 100);
+        var dpct = Math.round(rc / ratedD * 100);
+        var bcol = si >= 4 ? '#22C55E' : si === 3 ? '#F59E0B' : '#EF4444';
+        h += '<div class="km-star-row">'
+          + '<span class="km-star-n">' + si + '★</span>'
+          + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
+          + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
+          + '<span class="km-star-pct">' + dpct + '%</span>'
+          + '</div>';
+      }
+      return h;
+    }
+
+    // Segmented progress bar
+    function progBar(segs) {
+      var tot = segs.reduce(function(a, s) { return a + s.w; }, 0);
+      if (!tot) return '';
+      return '<div class="km-prog">'
+        + segs.filter(function(s) { return s.w > 0; }).map(function(s) {
+            return '<div class="km-prog-seg" style="flex:' + s.w + ';background:' + s.color + '"></div>';
+          }).join('')
+        + '</div>';
+    }
+
+    var noDataMsg = '<div style="padding:32px 18px;text-align:center;color:var(--txt3);font-size:13px">Quality data is loading — check back shortly.</div>';
+
+    if (cardId === 'rating') {
+      title    = 'Vendor Rating';
+      subtitle = 'Average rating score across all onboarded vendors';
+      iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+      if (!qd.success) {
+        content = noDataMsg;
+      } else {
+        var qcR  = qd.combined || {}, qSR = qd.seller || {}, qBR = qd.buyer || {};
+        var r    = qcR.rating || {}, rS = qSR.rating || {}, rB = qBR.rating || {};
+        var avg  = r.avg  != null ? r.avg.toFixed(1)  : '—';
+        var avgS = rS.avg != null ? rS.avg.toFixed(1) : '—';
+        var avgB = rB.avg != null ? rB.avg.toFixed(1) : '—';
+        var rT   = r.total || 0, rRated = r.rated || 0;
+        content =
+          hero(avg + (r.avg != null ? '★' : ''), 'Average Vendor Rating')
+          + srow([
+              {v: avgS + (rS.avg != null ? '★' : ''), l: 'Sellers', c: S2, s: fmt(rS.rated || 0) + ' rated'},
+              {v: avgB + (rB.avg != null ? '★' : ''), l: 'Buyers',  c: B2, s: fmt(rB.rated || 0) + ' rated'},
+            ])
+          + srow([
+              {v: fmt(rRated),   l: 'Vendors Rated',  s: 'have a score'},
+              {v: fmt(rT - rRated), l: 'Unrated',     s: 'no score yet'},
+              {v: rT > 0 ? Math.round(rRated / rT * 100) + '%' : '—', l: 'Coverage'},
+            ])
+          + (rRated > 0 ? sec('Rating Distribution', starBarsHtml(r.dist || [0,0,0,0,0], rRated)) : '');
+      }
+
+    } else if (cardId === 'osv') {
+      title    = 'OSV Status';
+      subtitle = 'On-Site Verification completion across all vendors';
+      iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+      if (!qd.success) {
+        content = noDataMsg;
+      } else {
+        var qcO  = qd.combined || {}, qSO = qd.seller || {}, qBO = qd.buyer || {};
+        var o    = qcO.osv || {}, oS2 = qSO.osv || {}, oB2 = qBO.osv || {};
+        var oT2  = o.total || 0;
+        var oPct = oT2 > 0 ? Math.round((o.completed || 0) / oT2 * 100) : 0;
+        var oSplitItems = [];
+        if (oS2.total > 0) oSplitItems.push({v: Math.round(((oS2.completed||0)/oS2.total)*100) + '%', l: 'Sellers Verified', c: S2, s: fmt(oS2.completed||0) + ' of ' + fmt(oS2.total)});
+        if (oB2.total > 0) oSplitItems.push({v: Math.round(((oB2.completed||0)/oB2.total)*100) + '%', l: 'Buyers Verified',  c: B2, s: fmt(oB2.completed||0) + ' of ' + fmt(oB2.total)});
+        content =
+          hero(fmt(o.completed || 0), 'Vendors Verified')
+          + srow([
+              {v: oPct + '%', l: 'Verification Rate', s: 'of total vendors'},
+              {v: fmt(oT2),   l: 'Total Vendors'},
+            ])
+          + (oSplitItems.length > 0 ? srow(oSplitItems) : '')
+          + sec('Status Breakdown',
+              progBar([
+                {w: o.completed    || 0, color: 'var(--st-onboarded)'},
+                {w: o.pending      || 0, color: 'var(--st-review)'},
+                {w: o.failed       || 0, color: 'var(--st-rejected)'},
+                {w: o.notInitiated || 0, color: 'var(--st-draft)'},
+              ])
+              + sgrid([
+                  {v: fmt(o.completed    || 0), l: 'Verified',      c: 'var(--st-onboarded)'},
+                  {v: fmt(o.pending      || 0), l: 'Pending',       c: 'var(--st-review)'},
+                  {v: fmt(o.failed       || 0), l: 'Failed',        c: 'var(--st-rejected)'},
+                  {v: fmt(o.notInitiated || 0), l: 'Not Initiated', c: 'var(--st-draft)'},
+                ])
+            );
+      }
+
+    } else { // docs
+      title    = 'Document Completeness';
+      subtitle = 'KYC & onboarding document collection status';
+      iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+      if (!qd.success) {
+        content = noDataMsg;
+      } else {
+        var qcD  = qd.combined || {}, qSD = qd.seller || {}, qBD = qd.buyer || {};
+        var d2   = qcD.docs || {}, dS2 = qSD.docs || {}, dB2 = qBD.docs || {};
+        var dT2  = d2.total || 0;
+        var dPct = dT2 > 0 ? Math.round((d2.complete || 0) / dT2 * 100) : 0;
+        var dSplitItems = [];
+        if (dS2.total > 0) dSplitItems.push({v: Math.round(((dS2.complete||0)/dS2.total)*100) + '%', l: 'Sellers Complete', c: S2, s: fmt(dS2.complete||0) + ' of ' + fmt(dS2.total)});
+        if (dB2.total > 0) dSplitItems.push({v: Math.round(((dB2.complete||0)/dB2.total)*100) + '%', l: 'Buyers Complete',  c: B2, s: fmt(dB2.complete||0) + ' of ' + fmt(dB2.total)});
+        content =
+          hero(dPct + '%', 'Document Completeness Rate')
+          + srow([
+              {v: fmt(d2.complete || 0), l: 'Complete Docs',  s: 'all docs submitted'},
+              {v: fmt(dT2),              l: 'Total Vendors'},
+            ])
+          + (dSplitItems.length > 0 ? srow(dSplitItems) : '')
+          + sec('Status Breakdown',
+              progBar([
+                {w: d2.complete   || 0, color: 'var(--st-onboarded)'},
+                {w: d2.partial    || 0, color: 'var(--st-review)'},
+                {w: d2.incomplete || 0, color: 'var(--st-draft)'},
+                {w: d2.missing    || 0, color: 'var(--st-rejected)'},
+              ])
+              + sgrid([
+                  {v: fmt(d2.complete   || 0), l: 'Complete',   c: 'var(--st-onboarded)'},
+                  {v: fmt(d2.partial    || 0), l: 'Partial',    c: 'var(--st-review)'},
+                  {v: fmt(d2.incomplete || 0), l: 'Incomplete', c: 'var(--st-draft)'},
+                  {v: fmt(d2.missing    || 0), l: 'Missing',    c: 'var(--st-rejected)'},
+                ])
+            );
+      }
+    }
+  }
+
+  var footAction = isQuality
+    ? 'closeKpiModal();(function(){var p=document.getElementById(\'vert-pipeline-pair\');if(p)p.scrollIntoView({behavior:\'smooth\',block:\'start\'});})();'
+    : 'closeKpiModal();vkpiOpen(\'' + (cardId === 'onboarded' ? 'onboarded' : 'all') + '\')';
+  var footLabel  = isQuality ? 'View quality detail in pipeline cards ↓' : 'View vendor detail ↓';
+
   el.innerHTML =
     '<div class="km-head">'
     + '<div style="display:flex;align-items:center;min-width:0">'
@@ -3222,7 +3414,7 @@ function openKpiModal(cardId) {
     + '</div>'
     + content
     + '<div class="km-foot">'
-    + '<button class="km-foot-link" onclick="closeKpiModal();vkpiOpen(\'' + (cardId === 'onboarded' ? 'onboarded' : 'all') + '\')">View vendor detail ↓</button>'
+    + '<button class="km-foot-link" onclick="' + footAction + '">' + footLabel + '</button>'
     + '</div>';
 
   modal.classList.add('km-open');
@@ -3263,6 +3455,40 @@ function _patchQualitySects() {
     if (!el) return;
     el.innerHTML = buildQualitySect(qualityData, aud);
   });
+  _patchQualityKpiCards();
+}
+
+function _patchQualityKpiCards() {
+  var qd = qualityData;
+  if (!qd || !qd.success) return;
+  var qc = qd.combined || {};
+
+  var rEl = document.getElementById('qkpi-rating');
+  if (rEl) {
+    var r   = qc.rating || {};
+    var avg = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
+    var rsb = r.total > 0 ? (r.total > r.rated ? fmt(r.rated) + ' of ' + fmt(r.total) + ' rated' : fmt(r.rated) + ' rated') : 'No data';
+    var rv  = rEl.querySelector('.vkpi-val'); if (rv) rv.textContent = avg;
+    var rs  = rEl.querySelector('.vkpi-sub'); if (rs) rs.textContent = rsb;
+  }
+
+  var oEl = document.getElementById('qkpi-osv');
+  if (oEl) {
+    var o   = qc.osv || {}, oT = o.total || 0;
+    var opct = oT > 0 ? Math.round((o.completed || 0) / oT * 100) + '%' : '—';
+    var osb  = oT > 0 ? fmt(o.completed || 0) + ' of ' + fmt(oT) + ' verified' : 'No data';
+    var ov  = oEl.querySelector('.vkpi-val'); if (ov) ov.textContent = opct;
+    var os  = oEl.querySelector('.vkpi-sub'); if (os) os.textContent = osb;
+  }
+
+  var dEl = document.getElementById('qkpi-docs');
+  if (dEl) {
+    var d   = qc.docs || {}, dT = d.total || 0;
+    var dpct = dT > 0 ? Math.round((d.complete || 0) / dT * 100) + '%' : '—';
+    var dsb  = dT > 0 ? fmt(d.complete || 0) + ' of ' + fmt(dT) + ' complete' : 'No data';
+    var dv  = dEl.querySelector('.vkpi-val'); if (dv) dv.textContent = dpct;
+    var ds  = dEl.querySelector('.vkpi-sub'); if (ds) ds.textContent = dsb;
+  }
 }
 
 // Build in-card quality HTML — shows count + % for every item.
