@@ -2857,7 +2857,7 @@ function renderVertKPIs(key) {
     mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                    'vk-total',     'all',       spTotal, matLine(pTotal, mTotal), [{v:fmt(totalS),t:'sellers'+matBracket(vs.plasticTotal||0,vs.metalTotal||0),c:S},{v:fmt(totalB),t:'buyers'+matBracket(vb.plasticTotal||0,vb.metalTotal||0),c:B}]),
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% onboarded', 'vk-onboarded', 'onboarded', spOnb, meter + matLine(pOnb, mOnb), [{v:fmt(compS),t:'sellers'+matBracket(vs.plasticOnboarded||0,vs.metalOnboarded||0),c:'#30D158'},{v:fmt(compB),t:'buyers'+matBracket(vb.plasticOnboarded||0,vb.metalOnboarded||0),c:'rgba(255,255,255,.55)'}]),
     mk(icZap,    'Transacted',  fmt(txnTotal),         null,                   'vk-transacted', 'all',       spTxn, nonTxnSub + matLine(pTxn, mTxn), txnS != null ? [{v:fmt(txnS),t:'sellers'+matBracket(vs.plasticTransacted||0,vs.metalTransacted||0),c:S},{v:fmt(txnB),t:'buyers'+matBracket(vb.plasticTransacted||0,vb.metalTransacted||0),c:B}] : null),
-    mk(icUsers,  'Old vs New',  fmt(newS + newB),      null,                   'vk-total',      'all',       '', oldTotalSub + matLine(pNew, mNew),
+    mk(icUsers,  'Old vs New',  fmt((newS + oldS) + (newB + oldB)), null,   'vk-total',      'all',       '', oldTotalSub + matLine(pNew, mNew),
        [{v:fmt(newS),t:'new sellers'+matBracket(vs.plasticNew||0,vs.metalNew||0),c:S},{v:fmt(oldS),t:'old sellers'+matBracket(vs.plasticOld||0,vs.metalOld||0),c:G2},{v:fmt(newB),t:'new buyers'+matBracket(vb.plasticNew||0,vb.metalNew||0),c:B},{v:fmt(oldB),t:'old buyers'+matBracket(vb.plasticOld||0,vb.metalOld||0),c:B2}]),
   ].join('');
   animateCounters(el);
