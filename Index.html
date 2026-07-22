@@ -3154,7 +3154,7 @@ function openKpiModal(cardId) {
         ])
       + srow([
           {v: d.compPct + '%', l: 'Completion Rate', s: 'of total pipeline'},
-          {v: fmt(d.totalS + d.totalB - d.compS - d.compB), l: 'Still Pending', s: 'draft + in review'},
+          {v: fmt(((d.vs.draft||0)+(d.vb.draft||0))+((d.vs.inReview||0)+(d.vb.inReview||0))), l: 'Active Pipeline', s: 'draft + in review'},
         ])
       + (d.pOnb + d.mOnb > 0 ? sec('Material Mix', matBadges(d.pOnb, d.mOnb)) : '');
 
@@ -3281,13 +3281,13 @@ function buildQualitySect(qd, aud) {
   if (q.rating && q.rating.total > 0) {
     var r    = q.rating;
     var avg  = r.avg != null ? r.avg.toFixed(1) : '—';
-    var rTot = r.total || r.rated || 1;
+    var rRated = r.rated || r.total || 1;
     var maxD = Math.max.apply(null, r.dist) || 1;
     var bars = '';
     for (var i = 5; i >= 1; i--) {
       var rc   = r.dist[i - 1] || 0;
       var bpct = Math.round(rc / maxD * 100);
-      var dpct = Math.round(rc / rTot * 100);
+      var dpct = Math.round(rc / rRated * 100);
       var bcol = i >= 4 ? '#22C55E' : i === 3 ? '#F59E0B' : '#EF4444';
       bars += '<div class="cc-qsect-sbar">'
         + '<span class="cc-qsect-sbar-n">' + i + '</span>'
