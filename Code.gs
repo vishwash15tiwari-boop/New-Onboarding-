@@ -413,17 +413,14 @@ function buildDashboard(audience, cfg, allRows, f) {
   var byVert = {};
   rows.forEach(function(r) { (byVert[r.vertical] = byVert[r.vertical] || []).push(r); });
 
-  // Old vs New (OMP only): a vendor is "old" if they are already COMPLETED in any
-  // other vertical. Build an ID set from all non-OMP completed rows, then tag OMP.
-  var nonOmpDoneIds = {};
-  VERTICALS.forEach(function(vc) {
-    if (vc.key === 'OMP') return;
-    (byVert[vc.key] || []).forEach(function(r) {
-      if (r.status === 'COMPLETED' && r.id) nonOmpDoneIds[r.id] = true;
-    });
+  // Old vs New (OMP only): a vendor is "old" if they already have a COMPLETED
+  // record in the Marketplace vertical. Only Marketplace is the source of truth.
+  var marketplaceDoneIds = {};
+  (byVert['Marketplace'] || []).forEach(function(r) {
+    if (r.status === 'COMPLETED' && r.id) marketplaceDoneIds[r.id] = true;
   });
   (byVert['OMP'] || []).forEach(function(r) {
-    r.isOldVendor = !!(r.id && nonOmpDoneIds[r.id]);
+    r.isOldVendor = !!(r.id && marketplaceDoneIds[r.id]);
   });
 
   // Always emit all seven verticals, in fixed order (empty ones render "No records").
@@ -558,7 +555,8 @@ function vStats(data) {
     .sort(function(a, b) { return b.fyStart - a.fyStart; });
 
   // Old vs New (OMP only): uses isOldVendor flag set by buildDashboard.
-  // For other verticals data.isOldVendor is always undefined → all count as new.
+  // Old = already COMPLETED in Marketplace; New = first OMP onboarding.
+  // For other verticals isOldVendor is always undefined → all count as new.
   var newVendors = countFn(data, function(r) { return r.status === 'COMPLETED' && !r.isOldVendor; });
   var oldVendors = countFn(data, function(r) { return r.status === 'COMPLETED' && !!r.isOldVendor; });
 
