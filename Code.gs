@@ -1141,3 +1141,115 @@ function diagnoseGSTPayables() {
       + '\n(If this is a permissions error, share the sheet with the deploying account.)');
   }
 }
+
+
+// ════════════════════════════════════════════════════════════════
+// QUALITY DATA — Vendor Rating · OSV Status · Doc Completeness
+// Reads from the three visible sheets created by Metabase.gs
+// (syncRating / syncOSV / syncDocs) and returns aggregated metrics.
+// Called from the frontend when the OMP vertical is active.
+// ════════════════════════════════════════════════════════════════
+function getQualityData() {
+  var CACHE_KEY = 'quality_data_v1';
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get(CACHE_KEY);
+  if (cached) return cached;
+
+  var result = {
+    success:     true,
+    lastUpdated: new Date().toISOString(),
+    rating: { avg: null, total: 0, rated: 0, dist: [0, 0, 0, 0, 0] },
+    osv:    { completed: 0, pending: 0, failed: 0, notInitiated: 0, total: 0 },
+    docs:   { complete: 0, partial: 0, incomplete: 0, missing: 0, total: 0 },
+  };
+
+  try {
+    var ratingData = qualityReadSheet_('Vendor Rating');
+    if (ratingData.rows.length) {
+      var rh = ratingData.headers;
+      var ratingCol = qualityFindCol_(rh, ['rating','vendor_rating','average_rating','avg_rating','score','overall_rating','stars']);
+      var countCol  = qualityFindCol_(rh, ['count','vendor_count','total','total_vendors','no_of_vendors']);
+      var weightedSum = 0, rated = 0, total = 0;
+      var dist = [0, 0, 0, 0, 0];
+      ratingData.rows.forEach(function(row) {
+        var rv  = ratingCol >= 0 ? parseFloat(row[ratingCol])   : NaN;
+        var cnt = countCol  >= 0 ? parseInt(row[countCol],  10) : 1;
+        if (isNaN(cnt) || cnt < 0) cnt = 1;
+        total += cnt;
+        if (!isNaN(rv) && rv > 0) {
+          weightedSum += rv * cnt;
+          rated       += cnt;
+          dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += cnt;
+        }
+      });
+      result.rating.total = total || rated;
+      result.rating.rated = rated;
+      result.rating.avg   = rated > 0 ? Math.round(weightedSum / rated * 10) / 10 : null;
+      result.rating.dist  = dist;
+    }
+  } catch (e) { Logger.log('getQualityData rating error: ' + e.message); }
+
+  try {
+    var osvData = qualityReadSheet_('OSV Status');
+    if (osvData.rows.length) {
+      var oh = osvData.headers;
+      var stCol  = qualityFindCol_(oh, ['osv_status','status','verification_status','site_verification_status','osv','field_verification_status']);
+      var cntCol = qualityFindCol_(oh, ['count','vendor_count','total','no_of_vendors']);
+      osvData.rows.forEach(function(row) {
+        var st  = stCol  >= 0 ? String(row[stCol]  || '').trim().toUpperCase().replace(/\s+/g, '_') : '';
+        var cnt = cntCol >= 0 ? parseInt(row[cntCol], 10) : 1;
+        if (isNaN(cnt) || cnt < 0) cnt = 1;
+        result.osv.total += cnt;
+        if      (st === 'COMPLETED' || st === 'DONE'        || st === 'COMPLETE')       result.osv.completed    += cnt;
+        else if (st === 'PENDING'   || st === 'IN_PROGRESS' || st === 'IN_REVIEW')      result.osv.pending      += cnt;
+        else if (st === 'FAILED'    || st === 'REJECTED'    || st === 'FAIL')           result.osv.failed       += cnt;
+        else                                                                              result.osv.notInitiated += cnt;
+      });
+    }
+  } catch (e) { Logger.log('getQualityData osv error: ' + e.message); }
+
+  try {
+    var docsData = qualityReadSheet_('Doc Completeness');
+    if (docsData.rows.length) {
+      var dh = docsData.headers;
+      var dsCol  = qualityFindCol_(dh, ['doc_status','document_status','completeness_status','document_completeness','completeness','status','doc_completeness']);
+      var dcCol  = qualityFindCol_(dh, ['count','vendor_count','total','no_of_vendors']);
+      docsData.rows.forEach(function(row) {
+        var st  = dsCol >= 0 ? String(row[dsCol] || '').trim().toUpperCase().replace(/[\s\-]+/g, '_') : '';
+        var cnt = dcCol >= 0 ? parseInt(row[dcCol], 10) : 1;
+        if (isNaN(cnt) || cnt < 0) cnt = 1;
+        result.docs.total += cnt;
+        if      (st === 'COMPLETE'   || st === 'COMPLETED'         || st === 'FULL')    result.docs.complete   += cnt;
+        else if (st === 'PARTIAL'    || st === 'PARTIALLY_COMPLETE' || st === 'PARTIAL_COMPLETE') result.docs.partial += cnt;
+        else if (st === 'INCOMPLETE')                                                    result.docs.incomplete += cnt;
+        else                                                                             result.docs.missing    += cnt;
+      });
+    }
+  } catch (e) { Logger.log('getQualityData docs error: ' + e.message); }
+
+  var out = JSON.stringify(result);
+  try { cache.put(CACHE_KEY, out, 300); } catch (e) {}
+  return out;
+}
+
+function qualityFindCol_(headers, candidates) {
+  for (var i = 0; i < candidates.length; i++) {
+    var idx = headers.indexOf(candidates[i]);
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function qualityReadSheet_(name) {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(name);
+  if (!sheet || sheet.getLastRow() < 2) return { headers: [], rows: [] };
+  var vals    = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
+  var headers = vals[0].map(function(h) {
+    return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  });
+  var rows = vals.slice(1).filter(function(row) {
+    return row.some(function(c) { return c !== '' && c !== null && c !== undefined; });
+  });
+  return { headers: headers, rows: rows };
+}

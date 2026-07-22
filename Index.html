@@ -1563,6 +1563,7 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
    PIPELINE PAIR (Seller + Buyer side by side)
    ══════════════════════════════════════════════════ */
 .vpipe-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.vpipe-pair.three-col{grid-template-columns:1fr 1fr 1fr}
 .vpipe-card{cursor:pointer;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
 .vpipe-card:hover{transform:scale(1.015);box-shadow:var(--shadow-lg)!important}
 .vpipe-card.det-active{
@@ -1577,6 +1578,58 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
   color:var(--blue-ink);background:var(--accent-soft);
   padding:3px 10px;border-radius:var(--pill);white-space:nowrap;
 }
+
+/* ══════════════════════════════════════════════════
+   QUALITY CARD (3rd card in OMP vpipe-pair row)
+   ══════════════════════════════════════════════════ */
+.qcard{
+  background:linear-gradient(150deg,#FFFFFF 58%,#F5F3FF 100%);
+  border:1px solid var(--border);border-radius:var(--r);
+  box-shadow:var(--shadow-sm);padding:18px 20px;
+  display:flex;flex-direction:column;gap:14px;
+  pointer-events:none;   /* non-interactive — info only */
+}
+@media(prefers-color-scheme:dark){
+  .qcard{background:linear-gradient(150deg,var(--card) 60%,rgba(110,95,200,.08) 100%)}
+}
+:root[data-theme="dark"] .qcard{background:linear-gradient(150deg,var(--card) 60%,rgba(110,95,200,.08) 100%)}
+:root[data-theme="light"] .qcard{background:linear-gradient(150deg,#FFFFFF 58%,#F5F3FF 100%)}
+.qcard-head{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.qcard-dot{width:8px;height:8px;border-radius:50%;background:#7C5CFA;flex-shrink:0}
+.qcard-title{font-size:15px;font-weight:700;letter-spacing:-.25px;color:var(--txt)}
+.qcard-badge{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.04em;
+  color:#7C5CFA;background:rgba(124,92,250,.1);
+  padding:3px 9px;border-radius:var(--pill)}
+.qcard-sec{border-top:1px solid var(--border);padding-top:11px}
+.qcard-sec-lbl{font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.07em;
+  text-transform:uppercase;margin-bottom:9px}
+/* Rating */
+.qcard-stars{font-size:16px;letter-spacing:1px;line-height:1}
+.qcard-avg{font-size:22px;font-weight:800;letter-spacing:-.6px;color:var(--txt);
+  font-variant-numeric:tabular-nums}
+.qcard-avg-sub{font-size:11px;color:var(--txt3);margin-top:2px}
+.qcard-star-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.qcard-star-bar-wrap{flex:1;height:5px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.qcard-star-bar-fill{height:100%;border-radius:3px;background:#F59E0B;transition:width .8s var(--ease-out)}
+.qcard-star-cnt{font-size:10px;color:var(--txt3);min-width:26px;text-align:right;
+  font-variant-numeric:tabular-nums}
+/* OSV / Docs rows */
+.qcard-rows{}
+.qcard-row{display:flex;align-items:center;gap:8px;padding:4px 0;
+  border-bottom:1px solid var(--border)}
+.qcard-row:last-child{border-bottom:none}
+.qcard-row-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.qcard-row-lbl{flex:1;font-size:11.5px;font-weight:500;color:var(--txt2)}
+.qcard-row-val{font-size:12.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+.qcard-row-pct{font-size:10.5px;color:var(--txt3);min-width:36px;text-align:right}
+/* Doc progress bar */
+.qcard-prog-wrap{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden;
+  display:flex;gap:1px;margin-bottom:6px}
+.qcard-prog-seg{height:100%;transition:flex .8s var(--ease-out)}
+/* Loading skeleton */
+.qcard-sk{height:12px;border-radius:4px;background:var(--bg2);margin-bottom:6px;
+  animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%,100%{opacity:.6}50%{opacity:1}}
 
 /* ══════════════════════════════════════════════════
    INLINE DETAIL SECTION — polished header
@@ -1622,6 +1675,10 @@ tr.cc-fy-bad .cc-fy-td{color:var(--st-rejected-tx)}
 @media(max-width:1100px){
   .vkpi-grid{grid-template-columns:repeat(2,1fr)}
   .vpipe-pair{grid-template-columns:1fr}
+  .vpipe-pair.three-col{grid-template-columns:1fr 1fr}
+}
+@media(max-width:700px){
+  .vpipe-pair.three-col{grid-template-columns:1fr}
 }
 @media(max-width:600px){
   .vkpi-grid{grid-template-columns:1fr}
@@ -2426,6 +2483,8 @@ var _vertRowsGen = 0;       // incremented on each loadVertRows call; stale call
 var _vertRowsPKey = null;   // period key when vertRows were last fetched; used to detect stale rows
 var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
 var vdSort = { key: '', dir: 1 };   // detail table sort state (dir: 1 asc, -1 desc)
+var qualityData    = null;   // result of getQualityData() — loaded once for OMP
+var qualityLoading = false;
 var VD_MAX_RENDER = 200;   // rows rendered at once in the detail table
 var KB_MAX_PER_COL = 50;   // cards rendered per Kanban column
 var vdView = 'board';      // records view in the detail panel: 'board' | 'table'
@@ -3140,6 +3199,141 @@ function closeKpiModal() {
 
 function _kpiEsc(e) { if (e.key === 'Escape') closeKpiModal(); }
 
+// ── Quality card: load once for OMP, refresh on bust ─────────────
+function loadQualityData() {
+  if (qualityLoading || qualityData) return;
+  qualityLoading = true;
+  google.script.run
+    .withSuccessHandler(function(json) {
+      qualityLoading = false;
+      try { qualityData = JSON.parse(json); } catch (e) { qualityData = { success: false }; }
+      var el = document.getElementById('vert-pipeline-pair');
+      if (el && activeVertKey === 'OMP') {
+        var qSlot = el.querySelector('.qcard-slot');
+        if (qSlot) qSlot.outerHTML = buildQualityCard();
+        animateCounters(el);
+      }
+    })
+    .withFailureHandler(function() {
+      qualityLoading = false;
+      qualityData = { success: false };
+    })
+    .getQualityData();
+}
+
+function buildQualityCard() {
+  if (qualityLoading && !qualityData) {
+    return '<div class="qcard qcard-slot">'
+      + '<div class="qcard-head"><span class="qcard-dot"></span>'
+      + '<span class="qcard-title">Quality & Compliance</span>'
+      + '<span class="qcard-badge">OMP</span></div>'
+      + '<div class="qcard-sk" style="width:80%"></div>'
+      + '<div class="qcard-sk" style="width:60%"></div>'
+      + '<div class="qcard-sk" style="width:70%"></div>'
+      + '</div>';
+  }
+  if (!qualityData || !qualityData.success) {
+    return '<div class="qcard qcard-slot">'
+      + '<div class="qcard-head"><span class="qcard-dot"></span>'
+      + '<span class="qcard-title">Quality & Compliance</span>'
+      + '<span class="qcard-badge">OMP</span></div>'
+      + '<div style="font-size:12px;color:var(--txt3);padding:12px 0">Data syncing…<br>Run <code>syncQualityData()</code> in Apps Script to populate.</div>'
+      + '</div>';
+  }
+
+  var q = qualityData;
+
+  // ── Vendor Rating section ────────────────────────────────────
+  var ratingHtml = '';
+  if (q.rating) {
+    var r = q.rating;
+    var avgVal = r.avg != null ? r.avg.toFixed(1) : '—';
+    var maxDist = Math.max.apply(null, r.dist) || 1;
+    var stars = '';
+    for (var i = 5; i >= 1; i--) {
+      var cnt  = r.dist[i - 1] || 0;
+      var pct  = Math.round(cnt / maxDist * 100);
+      var dotCol = i >= 4 ? '#22C55E' : i === 3 ? '#F59E0B' : '#EF4444';
+      stars += '<div class="qcard-star-row">'
+        + '<span style="font-size:10px;color:var(--txt3);min-width:8px">' + i + '</span>'
+        + '<div class="qcard-star-bar-wrap"><div class="qcard-star-bar-fill" style="width:' + pct + '%;background:' + dotCol + '"></div></div>'
+        + '<span class="qcard-star-cnt">' + (cnt > 999 ? Math.round(cnt / 1000) + 'k' : cnt) + '</span>'
+        + '</div>';
+    }
+    ratingHtml = '<div class="qcard-sec">'
+      + '<div class="qcard-sec-lbl">Vendor Rating</div>'
+      + '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">'
+      + '<span class="qcard-avg">' + avgVal + '</span>'
+      + '<span class="qcard-stars">★★★★★</span>'
+      + '</div>'
+      + '<div class="qcard-avg-sub">' + fmt(r.rated) + ' rated of ' + fmt(r.total) + ' vendors</div>'
+      + '<div style="margin-top:8px">' + stars + '</div>'
+      + '</div>';
+  }
+
+  // ── OSV section ───────────────────────────────────────────────
+  var osvHtml = '';
+  if (q.osv) {
+    var o = q.osv, oT = o.total || 1;
+    var osvRows = [
+      { lbl: 'Completed',    val: o.completed,    col: 'var(--st-onboarded)' },
+      { lbl: 'Pending',      val: o.pending,      col: 'var(--st-review)' },
+      { lbl: 'Failed',       val: o.failed,       col: 'var(--st-rejected)' },
+      { lbl: 'Not Initiated',val: o.notInitiated, col: 'var(--st-draft)' },
+    ].filter(function(x) { return x.val > 0; });
+    osvHtml = '<div class="qcard-sec">'
+      + '<div class="qcard-sec-lbl">OSV Verification</div>'
+      + '<div class="qcard-rows">'
+      + osvRows.map(function(row) {
+          var p = Math.round(row.val / oT * 100);
+          return '<div class="qcard-row">'
+            + '<span class="qcard-row-dot" style="background:' + row.col + '"></span>'
+            + '<span class="qcard-row-lbl">' + row.lbl + '</span>'
+            + '<span class="qcard-row-val">' + fmt(row.val) + '</span>'
+            + '<span class="qcard-row-pct">(' + p + '%)</span>'
+            + '</div>';
+        }).join('')
+      + '</div></div>';
+  }
+
+  // ── Doc Completeness section ──────────────────────────────────
+  var docsHtml = '';
+  if (q.docs) {
+    var d = q.docs, dT = d.total || 1;
+    var segs = [
+      { lbl: 'Complete',   val: d.complete,   col: 'var(--st-onboarded)' },
+      { lbl: 'Partial',    val: d.partial,    col: 'var(--st-review)' },
+      { lbl: 'Incomplete', val: d.incomplete, col: 'var(--st-draft)' },
+      { lbl: 'Missing',    val: d.missing,    col: 'var(--st-rejected)' },
+    ].filter(function(x) { return x.val > 0; });
+    var progBar = '<div class="qcard-prog-wrap">'
+      + segs.map(function(s) {
+          return '<div class="qcard-prog-seg" style="flex:' + (s.val / dT * 100).toFixed(1) + ';background:' + s.col + '"></div>';
+        }).join('') + '</div>';
+    docsHtml = '<div class="qcard-sec">'
+      + '<div class="qcard-sec-lbl">Document Completeness</div>'
+      + progBar
+      + '<div class="qcard-rows">'
+      + segs.map(function(s) {
+          var p = Math.round(s.val / dT * 100);
+          return '<div class="qcard-row">'
+            + '<span class="qcard-row-dot" style="background:' + s.col + '"></span>'
+            + '<span class="qcard-row-lbl">' + s.lbl + '</span>'
+            + '<span class="qcard-row-val">' + fmt(s.val) + '</span>'
+            + '<span class="qcard-row-pct">(' + p + '%)</span>'
+            + '</div>';
+        }).join('')
+      + '</div></div>';
+  }
+
+  return '<div class="qcard qcard-slot">'
+    + '<div class="qcard-head"><span class="qcard-dot"></span>'
+    + '<span class="qcard-title">Quality & Compliance</span>'
+    + '<span class="qcard-badge">OMP</span></div>'
+    + ratingHtml + osvHtml + docsHtml
+    + '</div>';
+}
+
 function renderPipelinePair(key) {
   var el = document.getElementById('vert-pipeline-pair');
   if (!el) return;
@@ -3147,9 +3341,13 @@ function renderPipelinePair(key) {
   if (!cfg || !DS || !DS.verticals) { el.innerHTML = ''; return; }
   var vs = (DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
+  var isOMP = key === 'OMP';
+  el.classList.toggle('three-col', isOMP);
   el.innerHTML = buildInlinePipeCard(cfg, vs, 'Seller Pipeline', 'seller', 0)
-    + buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1);
+    + buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1)
+    + (isOMP ? buildQualityCard() : '');
   animateCounters(el);
+  if (isOMP) loadQualityData();
 }
 
 function buildInlinePipeCard(cfg, v, label, aud, idx) {
