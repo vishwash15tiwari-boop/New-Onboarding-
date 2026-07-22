@@ -3283,6 +3283,9 @@ function buildQualitySect(qd, aud) {
     var avg  = r.avg != null ? r.avg.toFixed(1) : '—';
     var rRated = r.rated || r.total || 1;
     var maxD = Math.max.apply(null, r.dist) || 1;
+    var rSub = (r.total > r.rated && r.total > 0)
+      ? fmt(r.rated) + ' of ' + fmt(r.total) + ' rated'
+      : fmt(r.rated) + ' rated';
     var bars = '';
     for (var i = 5; i >= 1; i--) {
       var rc   = r.dist[i - 1] || 0;
@@ -3299,7 +3302,7 @@ function buildQualitySect(qd, aud) {
     html += '<div class="cc-qsect-row">'
       + '<span class="cc-qsect-ic">★</span>'
       + '<span class="cc-qsect-lb">Vendor Rating</span>'
-      + '<span class="cc-qsect-vl">' + avg + '&thinsp;<span class="cc-qsect-sub">avg · ' + fmt(r.rated) + ' rated</span></span>'
+      + '<span class="cc-qsect-vl">' + avg + '&thinsp;<span class="cc-qsect-sub">avg · ' + rSub + '</span></span>'
       + '</div>'
       + '<div class="cc-qsect-bars">' + bars + '</div>';
   }
@@ -3309,8 +3312,9 @@ function buildQualitySect(qd, aud) {
   // Rows: [●col] [label] [count] [pct%]
   if (q.osv && q.osv.total > 0) {
     var o  = q.osv, oT = o.total || 1;
+    var osvPct = Math.round(o.completed / oT * 100);
     var or_ = [
-      { col: 'var(--st-onboarded)', v: o.completed,    lbl: 'Completed'    },
+      { col: 'var(--st-onboarded)', v: o.completed,    lbl: 'Verified'     },
       { col: 'var(--st-review)',    v: o.pending,       lbl: 'Pending'      },
       { col: 'var(--st-rejected)',  v: o.failed,        lbl: 'Failed'       },
       { col: 'var(--st-draft)',     v: o.notInitiated,  lbl: 'Not Initiated'},
@@ -3318,7 +3322,7 @@ function buildQualitySect(qd, aud) {
     html += '<div class="cc-qsect-row cc-qsect-mt">'
       + '<span class="cc-qsect-ic">◎</span>'
       + '<span class="cc-qsect-lb">OSV Verification</span>'
-      + '<span class="cc-qsect-vl">' + fmt(oT) + '&thinsp;<span class="cc-qsect-sub">total</span></span>'
+      + '<span class="cc-qsect-vl">' + fmt(o.completed) + '&thinsp;<span class="cc-qsect-sub">' + osvPct + '% verified</span></span>'
       + '</div>'
       + or_.map(function(x) {
           if (!x.v) return '';

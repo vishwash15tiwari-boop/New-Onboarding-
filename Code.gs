@@ -1188,14 +1188,14 @@ function getQualityData() {
     var rd = qualityReadSheet_('Vendor Rating');
     if (rd.rows.length) {
       var rh  = rd.headers;
-      var rc  = qualityFindCol_(rh, ['rating','vendor_rating','average_rating','avg_rating','score','overall_rating','stars']);
-      var rcc = qualityFindCol_(rh, ['count','vendor_count','total','total_vendors','no_of_vendors']);
+      var rc  = qualityFindCol_(rh, ['rating','vendor_rating','average_rating','avg_rating','score','overall_rating','stars','avg_vendor_rating']);
+      var rcc = qualityFindCol_(rh, ['count','vendor_count','total','total_vendors','no_of_vendors','number_of_vendors']);
       var rid = qualityFindCol_(rh, ['vendor_id','id','seller_id','buyer_id','vendorid']);
       var rau = qualityFindCol_(rh, ['audience','type','aud','seller_buyer','vendor_type_aud']);
       rd.rows.forEach(function(row) {
         var rv  = rc  >= 0 ? parseFloat(row[rc])    : NaN;
         var cnt = rcc >= 0 ? parseInt(row[rcc], 10) : 1;
-        if (isNaN(cnt) || cnt < 0) cnt = 1;
+        if (rcc >= 0 && (isNaN(cnt) || cnt <= 0)) return;
         tgts_(resolveAud_(row, rh, rid, rau)).forEach(function(t) {
           acc[t].r.total += cnt;
           if (!isNaN(rv) && rv > 0) {
@@ -1213,20 +1213,22 @@ function getQualityData() {
     var od = qualityReadSheet_('OSV Status');
     if (od.rows.length) {
       var oh  = od.headers;
-      var osc = qualityFindCol_(oh, ['osv_status','status','verification_status','site_verification_status','osv','field_verification_status']);
-      var occ = qualityFindCol_(oh, ['count','vendor_count','total','no_of_vendors']);
+      var osc = qualityFindCol_(oh, ['osv_status','status','verification_status','site_verification_status','osv','field_verification_status','site_visit_status','field_verification','osv_verification_status']);
+      var occ = qualityFindCol_(oh, ['count','vendor_count','total','no_of_vendors','number_of_vendors']);
       var oid = qualityFindCol_(oh, ['vendor_id','id','seller_id','buyer_id','vendorid']);
       var oau = qualityFindCol_(oh, ['audience','type','aud','seller_buyer']);
       od.rows.forEach(function(row) {
         var st  = osc >= 0 ? String(row[osc] || '').trim().toUpperCase().replace(/\s+/g, '_') : '';
         var cnt = occ >= 0 ? parseInt(row[occ], 10) : 1;
-        if (isNaN(cnt) || cnt < 0) cnt = 1;
+        if (occ >= 0 && (isNaN(cnt) || cnt <= 0)) return;
         tgts_(resolveAud_(row, oh, oid, oau)).forEach(function(t) {
           acc[t].o.total += cnt;
-          if      (st === 'COMPLETED' || st === 'DONE' || st === 'COMPLETE')         acc[t].o.completed    += cnt;
-          else if (st === 'PENDING'   || st === 'IN_PROGRESS' || st === 'IN_REVIEW') acc[t].o.pending      += cnt;
-          else if (st === 'FAILED'    || st === 'REJECTED'    || st === 'FAIL')      acc[t].o.failed       += cnt;
-          else                                                                         acc[t].o.notInitiated += cnt;
+          if      (st === 'COMPLETED'  || st === 'DONE'        || st === 'COMPLETE'  ||
+                   st === 'VERIFIED'   || st === 'APPROVED'    || st === 'PASSED'    || st === 'PASS')    acc[t].o.completed    += cnt;
+          else if (st === 'PENDING'    || st === 'IN_PROGRESS' || st === 'IN_REVIEW' ||
+                   st === 'SCHEDULED'  || st === 'IN_QUEUE'    || st === 'QUEUED'    || st === 'PROCESSING') acc[t].o.pending   += cnt;
+          else if (st === 'FAILED'     || st === 'REJECTED'    || st === 'FAIL')                           acc[t].o.failed       += cnt;
+          else                                                                                              acc[t].o.notInitiated += cnt;
         });
       });
     }
@@ -1237,20 +1239,22 @@ function getQualityData() {
     var dd = qualityReadSheet_('Doc Completeness');
     if (dd.rows.length) {
       var dh  = dd.headers;
-      var dsc = qualityFindCol_(dh, ['doc_status','document_status','completeness_status','document_completeness','completeness','status','doc_completeness']);
-      var dcc = qualityFindCol_(dh, ['count','vendor_count','total','no_of_vendors']);
+      var dsc = qualityFindCol_(dh, ['doc_status','document_status','completeness_status','document_completeness','completeness','status','doc_completeness','document_collection_status','collection_status','kyc_status']);
+      var dcc = qualityFindCol_(dh, ['count','vendor_count','total','no_of_vendors','number_of_vendors']);
       var did = qualityFindCol_(dh, ['vendor_id','id','seller_id','buyer_id','vendorid']);
       var dau = qualityFindCol_(dh, ['audience','type','aud','seller_buyer']);
       dd.rows.forEach(function(row) {
         var st  = dsc >= 0 ? String(row[dsc] || '').trim().toUpperCase().replace(/[\s\-]+/g, '_') : '';
         var cnt = dcc >= 0 ? parseInt(row[dcc], 10) : 1;
-        if (isNaN(cnt) || cnt < 0) cnt = 1;
+        if (dcc >= 0 && (isNaN(cnt) || cnt <= 0)) return;
         tgts_(resolveAud_(row, dh, did, dau)).forEach(function(t) {
           acc[t].d.total += cnt;
-          if      (st === 'COMPLETE' || st === 'COMPLETED' || st === 'FULL')                     acc[t].d.complete   += cnt;
-          else if (st === 'PARTIAL'  || st === 'PARTIALLY_COMPLETE' || st === 'PARTIAL_COMPLETE') acc[t].d.partial    += cnt;
-          else if (st === 'INCOMPLETE')                                                            acc[t].d.incomplete += cnt;
-          else                                                                                     acc[t].d.missing    += cnt;
+          if      (st === 'COMPLETE'   || st === 'COMPLETED'          || st === 'FULL')                   acc[t].d.complete   += cnt;
+          else if (st === 'PARTIAL'    || st === 'PARTIALLY_COMPLETE' || st === 'PARTIAL_COMPLETE' ||
+                   st === 'IN_REVIEW'  || st === 'UNDER_REVIEW'       || st === 'REVIEWING')               acc[t].d.partial    += cnt;
+          else if (st === 'INCOMPLETE' || st === 'PENDING'            || st === 'IN_PROGRESS'     ||
+                   st === 'PROCESSING')                                                                    acc[t].d.incomplete += cnt;
+          else                                                                                             acc[t].d.missing    += cnt;
         });
       });
     }
@@ -1282,20 +1286,24 @@ function getQualityData() {
             var os = String(row[doC] || '').trim().toUpperCase().replace(/\s+/g, '_');
             ts.forEach(function(t) {
               acc[t].o.total += 1;
-              if      (os === 'COMPLETED' || os === 'DONE')        acc[t].o.completed    += 1;
-              else if (os === 'PENDING'   || os === 'IN_PROGRESS') acc[t].o.pending      += 1;
-              else if (os === 'FAILED'    || os === 'REJECTED')    acc[t].o.failed       += 1;
-              else                                                   acc[t].o.notInitiated += 1;
+              if      (os === 'COMPLETED' || os === 'DONE'        || os === 'COMPLETE' ||
+                       os === 'VERIFIED'  || os === 'APPROVED'    || os === 'PASSED'   || os === 'PASS')    acc[t].o.completed    += 1;
+              else if (os === 'PENDING'   || os === 'IN_PROGRESS' || os === 'IN_REVIEW' ||
+                       os === 'SCHEDULED' || os === 'IN_QUEUE'    || os === 'QUEUED'   || os === 'PROCESSING') acc[t].o.pending   += 1;
+              else if (os === 'FAILED'    || os === 'REJECTED'    || os === 'FAIL')                         acc[t].o.failed       += 1;
+              else                                                                                           acc[t].o.notInitiated += 1;
             });
           }
           if (ddC >= 0) {
             var ds = String(row[ddC] || '').trim().toUpperCase().replace(/[\s\-]+/g, '_');
             ts.forEach(function(t) {
               acc[t].d.total += 1;
-              if      (ds === 'COMPLETE' || ds === 'COMPLETED')         acc[t].d.complete   += 1;
-              else if (ds === 'PARTIAL'  || ds === 'PARTIALLY_COMPLETE') acc[t].d.partial   += 1;
-              else if (ds === 'INCOMPLETE')                              acc[t].d.incomplete += 1;
-              else                                                        acc[t].d.missing   += 1;
+              if      (ds === 'COMPLETE'   || ds === 'COMPLETED'          || ds === 'FULL')                  acc[t].d.complete   += 1;
+              else if (ds === 'PARTIAL'    || ds === 'PARTIALLY_COMPLETE' || ds === 'PARTIAL_COMPLETE' ||
+                       ds === 'IN_REVIEW'  || ds === 'UNDER_REVIEW'       || ds === 'REVIEWING')              acc[t].d.partial    += 1;
+              else if (ds === 'INCOMPLETE' || ds === 'PENDING'            || ds === 'IN_PROGRESS'    ||
+                       ds === 'PROCESSING')                                                                   acc[t].d.incomplete += 1;
+              else                                                                                            acc[t].d.missing    += 1;
             });
           }
         });
