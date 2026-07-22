@@ -3710,19 +3710,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
         }).join('') + '</div>'
       : '';
   }
-  // ── Quality & Compliance section (OMP only) ─────────────────
-  var qualSect = '';
-  if (cfg.key === 'OMP') {
-    // Skeleton shown immediately; _patchQualitySects() fills it after the async load.
-    var qSkel = '<div class="cc-qsect-hd">Quality &amp; Compliance</div>'
-      + '<div class="cc-qsect-sk" style="width:75%"></div>'
-      + '<div class="cc-qsect-sk" style="width:55%"></div>'
-      + '<div class="cc-qsect-sk" style="width:65%"></div>';
-    qualSect = '<div id="qsect-' + aud + '" class="cc-qsect">'
-      + (qualityData ? buildQualitySect(qualityData, aud) : qSkel)
-      + '</div>';
-  }
-  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + catRows + statsList + qualSect + '</div>';
+  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + catRows + statsList + '</div>';
 }
 
 // Render the inline detailed view section (replaces the full-screen overlay).
@@ -4516,7 +4504,7 @@ function renderCatDetailCard(c) {
     { key: 'draft',     n: c.draft     || 0 },
     { key: 'review',    n: c.inReview  || 0 },
     { key: 'rejected',  n: c.rejected  || 0 },
-  ].filter(function(s) { return s.n > 0; });
+  ];
 
   var vtCols = ['#007AFF', '#34C759', '#FF9F0A', '#AF52DE', '#5AC8FA', '#8E8E93'];
   var vts    = (c.vendorTypes || []).filter(function(v) { return v.count > 0; });
