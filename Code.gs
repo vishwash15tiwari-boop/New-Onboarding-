@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v28_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v29_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -136,7 +136,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v12_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v13_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var dash = buildDashboard(audience, cfg, rows, f);
@@ -168,7 +168,7 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v28_cmb_' + periodKey;
+    var cacheKey  = 'dash_v29_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -205,7 +205,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v12_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v13_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -361,6 +361,7 @@ function normalizeRows(raw, cfg) {
       vendorType:    String(gv(row, idx, cfg.vendorCol) || '').trim(),
       category:      category,
       vertical:      vertical,
+      bizVertical:   String(bizVert || '').trim(),
       gstin:         gstin,
       status:        status,
       createdDate:   created,
@@ -413,13 +414,17 @@ function buildDashboard(audience, cfg, allRows, f) {
   var byVert = {};
   rows.forEach(function(r) { (byVert[r.vertical] = byVert[r.vertical] || []).push(r); });
 
-  // Old vs New (OMP only): a vendor is "old" if they have a COMPLETED record in
-  // Marketplace at ANY point in history — so build the ID set from allRows (not
-  // date-filtered rows), otherwise Marketplace completions outside the current
-  // date window are invisible and entities are wrongly counted as New.
+  // Old vs New (OMP only): a vendor is "old" if they have ANY COMPLETED record
+  // where business_vertical = 'Marketplace' (the raw Metabase column value).
+  // IMPORTANT: check bizVertical (raw), NOT r.vertical (mapped) — mapToVertical()
+  // never returns 'Marketplace'; it splits that column into AFR/DRS/Recommerce/
+  // InfraBusiness/Others, so r.vertical === 'Marketplace' always matches zero rows.
+  // Scan allRows (unfiltered) so historical completions outside the date window
+  // are captured regardless of the current period filter.
   var marketplaceDoneIds = {};
   allRows.forEach(function(r) {
-    if (r.vertical === 'Marketplace' && r.status === 'COMPLETED' && r.id) {
+    if (String(r.bizVertical || '').trim().toLowerCase() === 'marketplace'
+        && r.status === 'COMPLETED' && r.id) {
       marketplaceDoneIds[r.id] = true;
     }
   });
