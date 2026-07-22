@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v29_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v30_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -136,7 +136,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v13_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v14_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var dash = buildDashboard(audience, cfg, rows, f);
@@ -168,7 +168,7 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v29_cmb_' + periodKey;
+    var cacheKey  = 'dash_v30_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -205,7 +205,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v13_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v14_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -414,22 +414,18 @@ function buildDashboard(audience, cfg, allRows, f) {
   var byVert = {};
   rows.forEach(function(r) { (byVert[r.vertical] = byVert[r.vertical] || []).push(r); });
 
-  // Old vs New (OMP only): a vendor is "old" if they have ANY COMPLETED record
-  // where business_vertical = 'Marketplace' (the raw Metabase column value).
-  // IMPORTANT: check bizVertical (raw), NOT r.vertical (mapped) — mapToVertical()
-  // never returns 'Marketplace'; it splits that column into AFR/DRS/Recommerce/
-  // InfraBusiness/Others, so r.vertical === 'Marketplace' always matches zero rows.
-  // Scan allRows (unfiltered) so historical completions outside the date window
-  // are captured regardless of the current period filter.
-  var marketplaceDoneIds = {};
+  // Existing vs New (OMP only): a vendor is "existing" if their name appears with
+  // COMPLETED status in ANY non-OMP vertical. Matched by name (case-insensitive
+  // trim) because the same entity may carry different IDs across verticals.
+  // Scans allRows (unfiltered) so historical completions from any period count.
+  var existingNames = {};
   allRows.forEach(function(r) {
-    if (String(r.bizVertical || '').trim().toLowerCase() === 'marketplace'
-        && r.status === 'COMPLETED' && r.id) {
-      marketplaceDoneIds[r.id] = true;
+    if (r.vertical !== 'OMP' && r.status === 'COMPLETED' && r.name) {
+      existingNames[r.name.trim().toLowerCase()] = true;
     }
   });
   (byVert['OMP'] || []).forEach(function(r) {
-    r.isOldVendor = !!(r.id && marketplaceDoneIds[r.id]);
+    r.isOldVendor = !!(r.name && existingNames[r.name.trim().toLowerCase()]);
   });
 
   // Always emit all seven verticals, in fixed order (empty ones render "No records").
@@ -451,59 +447,50 @@ function buildDashboard(audience, cfg, allRows, f) {
   };
 }
 
-// ─── DIAGNOSTIC — run this from the Apps Script editor to debug Old vs New ───
-// Check: Logger → View logs after running.
-function debugOldVsNew() {
-  Logger.log('=== Old vs New Debug ===');
+// ─── DIAGNOSTIC — run from Apps Script editor → View logs ───────────────────
+function debugExistingVsNew() {
+  Logger.log('=== Existing vs New Debug ===');
   ['seller', 'buyer'].forEach(function(aud) {
     Logger.log('\n--- ' + aud.toUpperCase() + ' ---');
-    var cfg = AUDIENCE_CFG[aud];
-    var raw  = readData(aud);
-    var rows = normalizeRows(raw, cfg);
+    var cfg  = AUDIENCE_CFG[aud];
+    var rows = normalizeRows(readData(aud), cfg);
     Logger.log('Total rows: ' + rows.length);
 
-    // Count rows by bizVertical
-    var bvCounts = {};
+    // Rows by mapped vertical
+    var vCounts = {};
     rows.forEach(function(r) {
-      var bv = String(r.bizVertical || '(blank)').trim() || '(blank)';
-      bvCounts[bv] = (bvCounts[bv] || 0) + 1;
+      vCounts[r.vertical] = (vCounts[r.vertical] || 0) + 1;
     });
-    Logger.log('Rows by bizVertical:');
-    Object.keys(bvCounts).sort().forEach(function(k) {
-      Logger.log('  "' + k + '" → ' + bvCounts[k]);
-    });
+    Logger.log('Rows by vertical:');
+    Object.keys(vCounts).sort().forEach(function(k) { Logger.log('  ' + k + ' → ' + vCounts[k]); });
 
-    // IDs that appear with bizVertical = 'Marketplace' and COMPLETED
-    var mktIds = {};
+    // Names COMPLETED in any non-OMP vertical
+    var existingNames = {};
     rows.forEach(function(r) {
-      if (String(r.bizVertical || '').trim().toLowerCase() === 'marketplace'
-          && r.status === 'COMPLETED' && r.id) {
-        mktIds[r.id] = true;
+      if (r.vertical !== 'OMP' && r.status === 'COMPLETED' && r.name) {
+        existingNames[r.name.trim().toLowerCase()] = true;
       }
     });
-    Logger.log('Marketplace COMPLETED IDs: ' + Object.keys(mktIds).length);
-    if (Object.keys(mktIds).length > 0) {
-      Logger.log('  Sample IDs: ' + Object.keys(mktIds).slice(0, 5).join(', '));
+    Logger.log('Non-OMP COMPLETED unique names: ' + Object.keys(existingNames).length);
+    if (Object.keys(existingNames).length > 0) {
+      Logger.log('  Sample: ' + Object.keys(existingNames).slice(0, 5).join(' | '));
     }
 
     // OMP rows
     var ompRows = rows.filter(function(r) { return r.vertical === 'OMP'; });
-    Logger.log('OMP rows total: ' + ompRows.length);
-    Logger.log('OMP COMPLETED rows: ' + ompRows.filter(function(r) { return r.status === 'COMPLETED'; }).length);
+    Logger.log('OMP total: ' + ompRows.length + '  COMPLETED: ' + ompRows.filter(function(r) { return r.status === 'COMPLETED'; }).length);
 
-    // Overlap: OMP COMPLETED who are also in Marketplace COMPLETED
-    var oldCount = ompRows.filter(function(r) {
-      return r.status === 'COMPLETED' && mktIds[r.id];
+    // Overlap by name
+    var existingCount = ompRows.filter(function(r) {
+      return r.status === 'COMPLETED' && r.name && existingNames[r.name.trim().toLowerCase()];
     }).length;
-    Logger.log('OMP COMPLETED also in Marketplace COMPLETED (=Old): ' + oldCount);
+    Logger.log('OMP COMPLETED matched as Existing (by name): ' + existingCount);
 
-    if (oldCount === 0 && Object.keys(mktIds).length === 0) {
-      // Check the raw bizVertical values for OMP rows to see if ID column is right
-      Logger.log('\nSample OMP row IDs (first 5):');
-      ompRows.slice(0, 5).forEach(function(r) {
-        Logger.log('  id="' + r.id + '" bizVertical="' + r.bizVertical + '" status=' + r.status);
-      });
-    }
+    // Sample OMP names for comparison
+    Logger.log('Sample OMP COMPLETED names (first 5):');
+    ompRows.filter(function(r) { return r.status === 'COMPLETED'; }).slice(0, 5).forEach(function(r) {
+      Logger.log('  "' + r.name + '" → inExisting=' + !!(existingNames[r.name.trim().toLowerCase()]));
+    });
   });
   Logger.log('\n=== Done ===');
 }
@@ -620,8 +607,8 @@ function vStats(data) {
   }).filter(function(f) { return f.fyStart >= 2019; })
     .sort(function(a, b) { return b.fyStart - a.fyStart; });
 
-  // Old vs New (OMP only): uses isOldVendor flag set by buildDashboard.
-  // Old = already COMPLETED in Marketplace; New = first OMP onboarding.
+  // Existing vs New (OMP only): uses isOldVendor flag set by buildDashboard.
+  // Existing = name found COMPLETED in any non-OMP vertical; New = first time.
   // For other verticals isOldVendor is always undefined → all count as new.
   var newVendors = countFn(data, function(r) { return r.status === 'COMPLETED' && !r.isOldVendor; });
   var oldVendors = countFn(data, function(r) { return r.status === 'COMPLETED' && !!r.isOldVendor; });

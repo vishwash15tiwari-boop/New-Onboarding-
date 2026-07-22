@@ -2895,7 +2895,7 @@ function renderVertKPIs(key) {
     mk(icZap,    'Transacted',  fmt(txnTotal),         txnPct > 0 ? txnPct + '% of onboarded' : null, 'vk-transacted', 'transacted'),
   ];
   if (key === 'OMP') {
-    cards.push(mk(icUsers, 'Old vs New', fmt((newS + oldS) + (newB + oldB)), fmt(newS + newB) + ' new this vertical', 'vk-total', 'oldvsnew'));
+    cards.push(mk(icUsers, 'Existing vs New', fmt((newS + oldS) + (newB + oldB)), fmt(oldS + oldB) + ' existing · ' + fmt(newS + newB) + ' new', 'vk-total', 'oldvsnew'));
   }
   el.style.gridTemplateColumns = 'repeat(' + cards.length + ',1fr)';
   el.innerHTML = cards.join('');
@@ -3029,8 +3029,8 @@ function openKpiModal(cardId) {
       + (gmvCombined > 0 ? cell(fmtINR(gmvCombined), 'Total GMV') : '')
       + '</div>';
   } else if (cardId === 'oldvsnew') {
-    title = 'Old vs New';
-    subtitle = 'Breakdown of onboarded vendors by first-time status';
+    title = 'Existing vs New';
+    subtitle = 'Vendors onboarded in OMP — existing (in any other vertical) vs first-time';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
     var pOldS = vs.plasticOld || 0, mOldS = vs.metalOld || 0;
     var pOldB = vb.plasticOld || 0, mOldB = vb.metalOld || 0;
