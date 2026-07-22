@@ -2926,11 +2926,9 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
   var fys = (v.fyBreakdown || []).filter(function(f) { return !f.fyStart || f.fyStart >= 2019; });
   var statsList = '';
   if (fys.length) {
-    var aggTAT   = v.avgTAT        != null ? v.avgTAT + 'd'           : null;
-    var aggPct   = v.pctTransacted  != null ? v.pctTransacted + '%'   : null;
-    var aggGMV   = v.totalTxnValue  != null ? fmtINR(v.totalTxnValue) : null;
-    var aggGSTon = v.withGST        != null ? fmt(v.withGST)          : null;
-    var aggGSTof = v.missingGST     != null ? fmt(v.missingGST)       : null;
+    var aggTAT   = v.avgTAT       != null ? v.avgTAT + 'd'           : null;
+    var aggGMV   = v.totalTxnValue != null ? fmtINR(v.totalTxnValue) : null;
+    var aggGSTon = v.withGST      != null ? fmt(v.withGST)           : null;
     var fyTr = function(label, valFn, aggVal, badCls) {
       var cells = fys.map(valFn);
       var allEmpty = cells.every(function(c){ return c === null || c === undefined || c === '—'; }) && aggVal == null;
@@ -2941,13 +2939,10 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
         + '<td class="cc-fy-td cc-fy-all">' + (aggVal != null ? aggVal : '—') + '</td>'
         + '</tr>';
     };
-    var hasMissingGST = fys.some(function(f) { return (f.missingGST || 0) > 0; });
     var fyTbody = [
-      fyTr('Avg TAT',       function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
-      fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
-      fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
-      fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
-      fyTr('GSTIN missing', function(f){ return f.missingGST    != null ? fmt(f.missingGST)       : null; }, aggGSTof, hasMissingGST ? 'cc-fy-bad' : ''),
+      fyTr('Avg TAT',      function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
+      fyTr('Total GMV',    function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
+      fyTr('GSTIN active', function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
     ].filter(Boolean).join('');
     if (fyTbody) {
       var fyThead = '<thead><tr><th class="cc-fy-th-lbl"></th>'
@@ -2960,11 +2955,9 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     }
   } else {
     var statRows = [];
-    if (v.avgTAT        != null) statRows.push(['Avg TAT',       v.avgTAT + 'd',              '']);
-    if (v.pctTransacted != null) statRows.push(['% Transacted',  v.pctTransacted + '%',        '']);
+    if (v.avgTAT        != null) statRows.push(['Avg TAT',  v.avgTAT + 'd',              '']);
     if (v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '']);
-    if (v.withGST       != null) statRows.push(['GSTIN Active',  fmt(v.withGST),               '']);
-    if (v.missingGST    != null) statRows.push(['GSTIN Missing', fmt(v.missingGST),            v.missingGST > 0 ? 'cc-stat-bad' : '']);
+    if (v.withGST       != null) statRows.push(['GSTIN Active', fmt(v.withGST),              '']);
     statsList = statRows.length
       ? '<div class="cc-stat-list">' + statRows.map(function(r) {
           return '<div class="cc-stat-row' + (r[2] ? ' ' + r[2] : '') + '">' + r[0] + '<b>' + r[1] + '</b></div>';
@@ -3137,11 +3130,9 @@ function buildCard(cfg, v, pipelineLabel) {
     var statsList = '';
     if (fys.length) {
       // Aggregate values from v (totals across all FYs)
-      var aggTAT   = v.avgTAT        != null ? v.avgTAT + 'd'           : null;
-      var aggPct   = v.pctTransacted  != null ? v.pctTransacted + '%'   : null;
-      var aggGMV   = v.totalTxnValue  != null ? fmtINR(v.totalTxnValue) : null;
-      var aggGSTon = v.withGST        != null ? fmt(v.withGST)          : null;
-      var aggGSTof = v.missingGST     != null ? fmt(v.missingGST)       : null;
+      var aggTAT   = v.avgTAT       != null ? v.avgTAT + 'd'           : null;
+      var aggGMV   = v.totalTxnValue != null ? fmtINR(v.totalTxnValue) : null;
+      var aggGSTon = v.withGST      != null ? fmt(v.withGST)           : null;
 
       function fyTr(label, valFn, aggVal, badCls) {
         var cells = fys.map(valFn);
@@ -3153,13 +3144,10 @@ function buildCard(cfg, v, pipelineLabel) {
           + '<td class="cc-fy-td cc-fy-all">' + (aggVal != null ? aggVal : '—') + '</td>'
           + '</tr>';
       }
-      var hasMissingGST = fys.some(function(f) { return (f.missingGST || 0) > 0; });
       var fyTbody = [
-        fyTr('Avg TAT',       function(f){ return f.avgTAT       != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
-        fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
-        fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
-        fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
-        fyTr('GSTIN missing', function(f){ return f.missingGST    != null ? fmt(f.missingGST)       : null; }, aggGSTof, hasMissingGST ? 'cc-fy-bad' : ''),
+        fyTr('Avg TAT',      function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
+        fyTr('Total GMV',    function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
+        fyTr('GSTIN active', function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
       ].filter(Boolean).join('');
 
       if (fyTbody) {
@@ -3356,9 +3344,7 @@ function renderVertStory() {
     var metArr = [
       ['Avg TAT',        dOr(v.avgTAT, 'd'), ''],
       v.completedThisWeek ? ['Onboarded (7d)', fmt(v.completedThisWeek), ''] : null,
-      v.transacted != null ? ['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)', ''] : null,
-      v.withGST    != null ? ['GST Active',   fmt(v.withGST),   ''] : null,
-      v.missingGST != null ? ['GST Missing',  fmt(v.missingGST), 'm-warn'] : null,
+      v.withGST    != null ? ['GST Active', fmt(v.withGST), ''] : null,
     ].filter(Boolean);
     var metricsHtml = (metArr.length || gmvMetric)
       ? '<div class="vs-metrics">'
