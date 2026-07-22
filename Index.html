@@ -3013,25 +3013,28 @@ function openKpiModal(cardId) {
     title = 'Transacted';
     subtitle = 'Onboarded vendors who have made a transaction';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
-    var gmvS = vs.totalTxnValue != null ? fmtINR(vs.totalTxnValue) : null;
-    var gmvB = vb.totalTxnValue != null ? fmtINR(vb.totalTxnValue) : null;
     var gmvCombined = (vs.totalTxnValue || 0) + (vb.totalTxnValue || 0);
+    var sPMSub = (vs.plasticTransacted || vs.metalTransacted)
+      ? fmt(vs.plasticTransacted || 0) + 'P · ' + fmt(vs.metalTransacted || 0) + 'M'
+      : null;
+    var bPMSub = (vb.plasticTransacted || vb.metalTransacted)
+      ? fmt(vb.plasticTransacted || 0) + 'P · ' + fmt(vb.metalTransacted || 0) + 'M'
+      : null;
     content = '<div class="km-grid">'
-      + cell(fmt(d.txnTotal), 'Transacted total', null, true)
+      + '<div class="km-cell km-full">'
+      + '<div class="km-cv">' + fmt(d.txnTotal) + '</div>'
+      + '<div class="km-cl">Transacted total</div>'
+      + (d.pTxn + d.mTxn > 0
+          ? '<div class="km-row" style="margin-top:8px">' + dotChip(PC, fmt(d.pTxn), 'plastic') + dotChip(MC, fmt(d.mTxn), 'metal') + '</div>'
+          : '')
+      + '</div>'
       + (d.txnS != null
-          ? cell('<span style="color:' + S + '">' + fmt(d.txnS) + '</span>', 'Sellers', gmvS)
-            + cell('<span style="color:' + B + '">' + fmt(d.txnB) + '</span>', 'Buyers', gmvB)
+          ? cell('<span style="color:' + S + '">' + fmt(d.txnS) + '</span>', 'Sellers', sPMSub)
+            + cell('<span style="color:' + B + '">' + fmt(d.txnB) + '</span>', 'Buyers', bPMSub)
           : '')
       + '<div class="km-sep"></div>'
       + cell(fmt(d.nonTxnTotal), 'Not yet transacted', 'onboarded but no txn')
       + (gmvCombined > 0 ? cell(fmtINR(gmvCombined), 'Total GMV') : '')
-      + (d.pTxn + d.mTxn > 0
-          ? '<div class="km-sep"></div>'
-            + '<div class="km-cell km-full">'
-            + '<div class="km-cl">Material split (transacted)</div>'
-            + '<div class="km-row" style="margin-top:8px">' + dotChip(PC, fmt(d.pTxn), 'plastic') + dotChip(MC, fmt(d.mTxn), 'metal') + '</div>'
-            + '</div>'
-          : '')
       + '</div>';
   } else if (cardId === 'oldvsnew') {
     title = 'Old vs New';
@@ -3973,14 +3976,13 @@ function renderCatDetailCard(c) {
   var ctot = c.total || 0;
   if (!ctot) return '';
 
-  // Build segment list: Onboarded first, then Draft, In Review, Transacted (if any), Rejected.
+  // Build segment list: Onboarded, Draft, In Review, Rejected (no Transacted).
   var segs = [
     { key: 'onboarded', n: c.onboarded || 0 },
     { key: 'draft',     n: c.draft     || 0 },
     { key: 'review',    n: c.inReview  || 0 },
     { key: 'rejected',  n: c.rejected  || 0 },
   ];
-  if (c.hasTxn) segs.splice(3, 0, { key: 'transacted', n: c.transacted || 0 });
   segs = segs.filter(function(s) { return s.n > 0; });
 
   // SVG donut chart — each segment is a circle with stroke-dasharray.
@@ -4019,7 +4021,23 @@ function renderCatDetailCard(c) {
   var svg = '<svg width="136" height="136" viewBox="0 0 136 136" style="flex-shrink:0;display:block">'
     + rings + centerTxt + '</svg>';
 
-  // Legend: each row shows colour swatch, stage label, count, percentage
+  // Legend: stage rows + Vendor Type distribution below
+  var vtCols = ['#007AFF', '#34C759', '#FF9F0A', '#AF52DE', '#5AC8FA', '#8E8E93'];
+  var vtSection = (c.vendorTypes && c.vendorTypes.length > 0)
+    ? '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">'
+      + '<div style="font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px">Vendor Type</div>'
+      + c.vendorTypes.map(function(vt, vi) {
+          var col = vtCols[vi % vtCols.length];
+          var pc2 = ctot > 0 ? Math.round((vt.count / ctot) * 100) : 0;
+          return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border)">'
+            + '<span style="width:11px;height:11px;border-radius:2px;flex-shrink:0;background:' + col + ';opacity:0.8"></span>'
+            + '<span style="flex:1;font-size:12px;font-weight:600;color:var(--txt2)">' + esc(vt.type) + '</span>'
+            + '<span style="font-size:13px;font-weight:700;color:' + col + ';font-variant-numeric:tabular-nums">' + fmt(vt.count) + '</span>'
+            + '<span style="font-size:11px;color:var(--txt3);min-width:40px;text-align:right">(' + pc2 + '%)</span>'
+            + '</div>';
+        }).join('')
+      + '</div>'
+    : '';
   var leg = '<div style="flex:1;min-width:150px">'
     + segs.map(function(s, i) {
         var st = STAGE[s.key];
@@ -4032,6 +4050,7 @@ function renderCatDetailCard(c) {
           + '<span style="font-size:11px;color:var(--txt3);min-width:40px;text-align:right">(' + pc + '%)</span>'
           + '</div>';
       }).join('')
+    + vtSection
     + '</div>';
 
   return '<div class="chart-card mt-16">'

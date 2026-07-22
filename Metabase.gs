@@ -199,16 +199,16 @@ function bustDashboardCache_() {
   ['seller', 'buyer'].forEach(function(aud) {
     periods.forEach(function(p) {
       var pk = JSON.stringify([p, '', '']);
-      keys.push('dash_v26_' + aud + '_' + pk);
+      keys.push('dash_v27_' + aud + '_' + pk);
       vertKeys.forEach(function(vk) {
-        keys.push('vrows_v10_' + aud + '_' + vk + '_' + pk);
+        keys.push('vrows_v11_' + aud + '_' + vk + '_' + pk);
       });
     });
   });
 
   // Combined dashboard cache (getCombinedDashboard)
   periods.forEach(function(p) {
-    keys.push('dash_v26_cmb_' + JSON.stringify([p, '', '']));
+    keys.push('dash_v27_cmb_' + JSON.stringify([p, '', '']));
   });
 
   keys.forEach(function(k) { try { cache.remove(k); } catch (e) {} });

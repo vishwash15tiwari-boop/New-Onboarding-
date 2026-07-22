@@ -117,7 +117,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v26_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v27_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -136,7 +136,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v10_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v11_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var dash = buildDashboard(audience, cfg, rows, f);
@@ -168,7 +168,7 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v26_cmb_' + periodKey;
+    var cacheKey  = 'dash_v27_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -205,7 +205,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v10_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v11_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -489,6 +489,7 @@ function vStats(data) {
       category: c, total: 0, onboarded: 0,
       draft: 0, inReview: 0, rejected: 0,
       transacted: 0, hasTxn: false,
+      vendorTypes: {},
     };
     var cs = catMap[c];
     cs.total++;
@@ -498,9 +499,23 @@ function vStats(data) {
     if (r.status === 'REJECTED')   cs.rejected++;
     if (r.hasTxn)                  cs.hasTxn = true;
     if (r.hasTransacted)           cs.transacted++;
+    var vt = (r.vendorType || '').trim() || 'Unknown';
+    cs.vendorTypes[vt] = (cs.vendorTypes[vt] || 0) + 1;
   });
-  var categories = Object.keys(catMap).map(function(k) { return catMap[k]; })
-    .sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });
+  var categories = Object.keys(catMap).map(function(k) {
+    var cat = catMap[k];
+    var vtArr = Object.keys(cat.vendorTypes)
+      .map(function(vt) { return { type: vt, count: cat.vendorTypes[vt] }; })
+      .filter(function(x) { return x.type !== 'Unknown' && x.type; })
+      .sort(function(a, b) { return b.count - a.count; });
+    if (cat.vendorTypes['Unknown']) vtArr.push({ type: 'Unknown', count: cat.vendorTypes['Unknown'] });
+    return {
+      category: cat.category, total: cat.total, onboarded: cat.onboarded,
+      draft: cat.draft, inReview: cat.inReview, rejected: cat.rejected,
+      transacted: cat.transacted, hasTxn: cat.hasTxn,
+      vendorTypes: vtArr,
+    };
+  }).sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });
 
   // Per-financial-year breakdown (India FY: Apr 1 – Mar 31), newest FY first.
   var fyMap = {};
