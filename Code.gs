@@ -544,8 +544,8 @@ function vStats(data) {
 
   // Old vs New (OMP only): uses isOldVendor flag set by buildDashboard.
   // For other verticals data.isOldVendor is always undefined → all count as new.
-  var newVendors = countFn(data, function(r) { return !r.isOldVendor; });
-  var oldVendors = countFn(data, function(r) { return !!r.isOldVendor; });
+  var newVendors = countFn(data, function(r) { return r.status === 'COMPLETED' && !r.isOldVendor; });
+  var oldVendors = countFn(data, function(r) { return r.status === 'COMPLETED' && !!r.isOldVendor; });
 
   // Plastic vs Metal — OMP business_category values; zero for other verticals.
   function catLC(r) { return String(r.category || '').trim().toLowerCase(); }
@@ -555,8 +555,10 @@ function vStats(data) {
   var metalOnboarded    = countFn(data, function(r) { return catLC(r) === 'metal'   && r.status === 'COMPLETED'; });
   var plasticTransacted = countFn(data, function(r) { return catLC(r) === 'plastic' && r.hasTransacted; });
   var metalTransacted   = countFn(data, function(r) { return catLC(r) === 'metal'   && r.hasTransacted; });
-  var plasticNew        = countFn(data, function(r) { return catLC(r) === 'plastic' && !r.isOldVendor; });
-  var metalNew          = countFn(data, function(r) { return catLC(r) === 'metal'   && !r.isOldVendor; });
+  var plasticNew        = countFn(data, function(r) { return catLC(r) === 'plastic' && r.status === 'COMPLETED' && !r.isOldVendor; });
+  var metalNew          = countFn(data, function(r) { return catLC(r) === 'metal'   && r.status === 'COMPLETED' && !r.isOldVendor; });
+  var plasticOld        = countFn(data, function(r) { return catLC(r) === 'plastic' && r.status === 'COMPLETED' && !!r.isOldVendor; });
+  var metalOld          = countFn(data, function(r) { return catLC(r) === 'metal'   && r.status === 'COMPLETED' && !!r.isOldVendor; });
 
   return {
     total: total,
@@ -580,6 +582,7 @@ function vStats(data) {
     plasticOnboarded: plasticOnboarded, metalOnboarded: metalOnboarded,
     plasticTransacted: plasticTransacted, metalTransacted: metalTransacted,
     plasticNew: plasticNew,           metalNew: metalNew,
+    plasticOld: plasticOld,           metalOld: metalOld,
     fyBreakdown: fyBreakdown,
     categories:  categories,
     rowsTotal: total,
