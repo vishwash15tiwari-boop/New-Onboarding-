@@ -1151,7 +1151,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v2';
+  var CACHE_KEY = 'quality_data_v3';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1183,133 +1183,82 @@ function getQualityData() {
   }
   function tgts_(aud) { return aud === 'combined' ? ['combined'] : [aud, 'combined']; }
 
-  // ── Vendor Rating ─────────────────────────────────────────────
+  // ── Single pass: read "Vendor Rating" sheet for all three metrics
+  // Col AE (index 30) = seller_rating (float, 1-5)
+  // Col AF (index 31) = osv_consent   (CONSENT_ACCEPTED / CONSENT_PENDING / etc.)
+  // Cols 32-42        = per-document 0/1 flags (11 documents)
   try {
-    var rd = qualityReadSheet_('Vendor Rating');
-    if (rd.rows.length) {
-      var rh  = rd.headers;
-      var rc  = qualityFindCol_(rh, ['rating','vendor_rating','average_rating','avg_rating','score','overall_rating','stars','avg_vendor_rating']);
-      var rcc = qualityFindCol_(rh, ['count','vendor_count','total','total_vendors','no_of_vendors','number_of_vendors']);
-      var rid = qualityFindCol_(rh, ['vendor_id','id','seller_id','buyer_id','vendorid']);
-      var rau = qualityFindCol_(rh, ['audience','type','aud','seller_buyer','vendor_type_aud']);
-      rd.rows.forEach(function(row) {
-        var rv  = rc  >= 0 ? parseFloat(row[rc])    : NaN;
-        var cnt = rcc >= 0 ? parseInt(row[rcc], 10) : 1;
-        if (rcc >= 0 && (isNaN(cnt) || cnt <= 0)) return;
-        tgts_(resolveAud_(row, rh, rid, rau)).forEach(function(t) {
-          acc[t].r.total += cnt;
-          if (!isNaN(rv) && rv > 0) {
-            acc[t].r.ws   += rv * cnt;
-            acc[t].r.rated += cnt;
-            acc[t].r.dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += cnt;
-          }
-        });
-      });
-    }
-  } catch (e) { Logger.log('getQualityData rating: ' + e.message); }
+    var vrd = qualityReadSheet_('Vendor Rating');
+    if (vrd.rows.length) {
+      var vrh = vrd.headers;
 
-  // ── OSV Status ───────────────────────────────────────────────
-  try {
-    var od = qualityReadSheet_('OSV Status');
-    if (od.rows.length) {
-      var oh  = od.headers;
-      var osc = qualityFindCol_(oh, ['osv_status','status','verification_status','site_verification_status','osv','field_verification_status','site_visit_status','field_verification','osv_verification_status']);
-      var occ = qualityFindCol_(oh, ['count','vendor_count','total','no_of_vendors','number_of_vendors']);
-      var oid = qualityFindCol_(oh, ['vendor_id','id','seller_id','buyer_id','vendorid']);
-      var oau = qualityFindCol_(oh, ['audience','type','aud','seller_buyer']);
-      od.rows.forEach(function(row) {
-        var st  = osc >= 0 ? String(row[osc] || '').trim().toUpperCase().replace(/\s+/g, '_') : '';
-        var cnt = occ >= 0 ? parseInt(row[occ], 10) : 1;
-        if (occ >= 0 && (isNaN(cnt) || cnt <= 0)) return;
-        tgts_(resolveAud_(row, oh, oid, oau)).forEach(function(t) {
-          acc[t].o.total += cnt;
-          if      (st === 'COMPLETED'  || st === 'DONE'        || st === 'COMPLETE'  ||
-                   st === 'VERIFIED'   || st === 'APPROVED'    || st === 'PASSED'    || st === 'PASS')    acc[t].o.completed    += cnt;
-          else if (st === 'PENDING'    || st === 'IN_PROGRESS' || st === 'IN_REVIEW' ||
-                   st === 'SCHEDULED'  || st === 'IN_QUEUE'    || st === 'QUEUED'    || st === 'PROCESSING') acc[t].o.pending   += cnt;
-          else if (st === 'FAILED'     || st === 'REJECTED'    || st === 'FAIL')                           acc[t].o.failed       += cnt;
-          else                                                                                              acc[t].o.notInitiated += cnt;
-        });
-      });
-    }
-  } catch (e) { Logger.log('getQualityData osv: ' + e.message); }
+      var vidC = qualityFindCol_(vrh, ['seller_id','id','vendor_id','vendorid']);
+      var vauC = qualityFindCol_(vrh, ['audience','type','aud','seller_buyer']);
 
-  // ── Doc Completeness ─────────────────────────────────────────
-  try {
-    var dd = qualityReadSheet_('Doc Completeness');
-    if (dd.rows.length) {
-      var dh  = dd.headers;
-      var dsc = qualityFindCol_(dh, ['doc_status','document_status','completeness_status','document_completeness','completeness','status','doc_completeness','document_collection_status','collection_status','kyc_status']);
-      var dcc = qualityFindCol_(dh, ['count','vendor_count','total','no_of_vendors','number_of_vendors']);
-      var did = qualityFindCol_(dh, ['vendor_id','id','seller_id','buyer_id','vendorid']);
-      var dau = qualityFindCol_(dh, ['audience','type','aud','seller_buyer']);
-      dd.rows.forEach(function(row) {
-        var st  = dsc >= 0 ? String(row[dsc] || '').trim().toUpperCase().replace(/[\s\-]+/g, '_') : '';
-        var cnt = dcc >= 0 ? parseInt(row[dcc], 10) : 1;
-        if (dcc >= 0 && (isNaN(cnt) || cnt <= 0)) return;
-        tgts_(resolveAud_(row, dh, did, dau)).forEach(function(t) {
-          acc[t].d.total += cnt;
-          if      (st === 'COMPLETE'   || st === 'COMPLETED'          || st === 'FULL')                   acc[t].d.complete   += cnt;
-          else if (st === 'PARTIAL'    || st === 'PARTIALLY_COMPLETE' || st === 'PARTIAL_COMPLETE' ||
-                   st === 'IN_REVIEW'  || st === 'UNDER_REVIEW'       || st === 'REVIEWING')               acc[t].d.partial    += cnt;
-          else if (st === 'INCOMPLETE' || st === 'PENDING'            || st === 'IN_PROGRESS'     ||
-                   st === 'PROCESSING')                                                                    acc[t].d.incomplete += cnt;
-          else                                                                                             acc[t].d.missing    += cnt;
-        });
-      });
-    }
-  } catch (e) { Logger.log('getQualityData docs: ' + e.message); }
+      // Rating: seller_rating is col AE; positional fallback index 30
+      var rC = qualityFindCol_(vrh, ['seller_rating','rating','vendor_rating','average_rating','avg_rating','score','overall_rating','stars']);
+      if (rC < 0) rC = 30;
 
-  // ── Fallback: scan _mb_detail for inline quality columns ─────
-  var cEmpty = acc.combined.r.total === 0 && acc.combined.o.total === 0 && acc.combined.d.total === 0;
-  if (cEmpty) {
-    try {
-      var det = qualityReadSheet_('_mb_detail');
-      if (det.rows.length) {
-        var deth = det.headers;
-        var drC  = qualityFindCol_(deth, ['rating','vendor_rating','score']);
-        var doC  = qualityFindCol_(deth, ['osv_status','verification_status','site_verification_status']);
-        var ddC  = qualityFindCol_(deth, ['doc_status','document_status','doc_completeness']);
-        var diC  = qualityFindCol_(deth, ['seller_id','buyer_id','vendor_id','id']);
-        var daC  = qualityFindCol_(deth, ['audience','type','aud','seller_buyer']);
-        det.rows.forEach(function(row) {
-          var aud = resolveAud_(row, deth, diC, daC);
-          var ts  = tgts_(aud);
-          if (drC >= 0) {
-            var rv = parseFloat(row[drC]);
-            ts.forEach(function(t) {
-              acc[t].r.total += 1;
-              if (!isNaN(rv) && rv > 0) { acc[t].r.ws += rv; acc[t].r.rated += 1; acc[t].r.dist[Math.min(4,Math.max(0,Math.round(rv)-1))] += 1; }
-            });
-          }
-          if (doC >= 0) {
-            var os = String(row[doC] || '').trim().toUpperCase().replace(/\s+/g, '_');
-            ts.forEach(function(t) {
-              acc[t].o.total += 1;
-              if      (os === 'COMPLETED' || os === 'DONE'        || os === 'COMPLETE' ||
-                       os === 'VERIFIED'  || os === 'APPROVED'    || os === 'PASSED'   || os === 'PASS')    acc[t].o.completed    += 1;
-              else if (os === 'PENDING'   || os === 'IN_PROGRESS' || os === 'IN_REVIEW' ||
-                       os === 'SCHEDULED' || os === 'IN_QUEUE'    || os === 'QUEUED'   || os === 'PROCESSING') acc[t].o.pending   += 1;
-              else if (os === 'FAILED'    || os === 'REJECTED'    || os === 'FAIL')                         acc[t].o.failed       += 1;
-              else                                                                                           acc[t].o.notInitiated += 1;
-            });
-          }
-          if (ddC >= 0) {
-            var ds = String(row[ddC] || '').trim().toUpperCase().replace(/[\s\-]+/g, '_');
-            ts.forEach(function(t) {
-              acc[t].d.total += 1;
-              if      (ds === 'COMPLETE'   || ds === 'COMPLETED'          || ds === 'FULL')                  acc[t].d.complete   += 1;
-              else if (ds === 'PARTIAL'    || ds === 'PARTIALLY_COMPLETE' || ds === 'PARTIAL_COMPLETE' ||
-                       ds === 'IN_REVIEW'  || ds === 'UNDER_REVIEW'       || ds === 'REVIEWING')              acc[t].d.partial    += 1;
-              else if (ds === 'INCOMPLETE' || ds === 'PENDING'            || ds === 'IN_PROGRESS'    ||
-                       ds === 'PROCESSING')                                                                   acc[t].d.incomplete += 1;
-              else                                                                                            acc[t].d.missing    += 1;
-            });
-          }
-        });
+      // OSV: osv_consent is col AF; positional fallback index 31
+      var oC = qualityFindCol_(vrh, ['osv_consent','osv_status','osv','site_visit_status','field_verification_status','verification_status']);
+      if (oC < 0) oC = 31;
+
+      // Doc columns: 11 individual document flags (present from col 32 onward)
+      var DOC_NAMES = [
+        'additional_documents','proof_of_premises','electricity_bill',
+        'kyc_document','gst_portal_screenshot_bank_details','cancelled_cheque',
+        'msme_certificate','aadhaar','owner_pan','entity_pan','gst_certificate'
+      ];
+      var docIdx = DOC_NAMES.map(function(n) { return qualityFindCol_(vrh, [n]); });
+      // Positional fallback: use indices 32-42 if none found by name
+      if (docIdx.every(function(i) { return i < 0; })) {
+        docIdx = [32,33,34,35,36,37,38,39,40,41,42];
       }
-    } catch (e) { Logger.log('getQualityData detail fallback: ' + e.message); }
-  }
+
+      vrd.rows.forEach(function(row) {
+        var ts = tgts_(resolveAud_(row, vrh, vidC, vauC));
+
+        // — Rating —
+        var rv = parseFloat(row[rC]);
+        ts.forEach(function(t) {
+          acc[t].r.total += 1;
+          if (!isNaN(rv) && rv > 0 && rv <= 5) {
+            acc[t].r.ws    += rv;
+            acc[t].r.rated += 1;
+            acc[t].r.dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += 1;
+          }
+        });
+
+        // — OSV consent —
+        var os = String(row[oC] || '').trim().toUpperCase().replace(/\s+/g, '_');
+        ts.forEach(function(t) {
+          acc[t].o.total += 1;
+          if      (os === 'CONSENT_ACCEPTED' || os === 'COMPLETED' || os === 'VERIFIED' ||
+                   os === 'APPROVED' || os === 'DONE' || os === 'PASSED' || os === 'PASS') acc[t].o.completed   += 1;
+          else if (os === 'CONSENT_PENDING'  || os === 'PENDING'   || os === 'IN_PROGRESS' ||
+                   os === 'SCHEDULED'        || os === 'IN_REVIEW' || os === 'IN_QUEUE')   acc[t].o.pending     += 1;
+          else if (os === 'CONSENT_REJECTED' || os === 'REJECTED'  || os === 'FAILED' ||
+                   os === 'FAIL')                                                           acc[t].o.failed      += 1;
+          else                                                                              acc[t].o.notInitiated+= 1;
+        });
+
+        // — Doc completeness: count how many of 11 docs are submitted (value > 0) —
+        var submitted = 0, totalDocs = 0;
+        docIdx.forEach(function(idx) {
+          if (idx < 0 || idx >= row.length) return;
+          totalDocs++;
+          var v = parseInt(row[idx], 10);
+          if (!isNaN(v) && v > 0) submitted++;
+        });
+        ts.forEach(function(t) {
+          acc[t].d.total += 1;
+          if      (totalDocs > 0 && submitted === totalDocs) acc[t].d.complete   += 1;
+          else if (submitted > 0)                            acc[t].d.partial    += 1;
+          else                                               acc[t].d.incomplete += 1;
+        });
+      });
+    }
+  } catch (e) { Logger.log('getQualityData vendor-rating: ' + e.message); }
 
   // ── Finalize accumulators → output shape ─────────────────────
   function fR(r) { return { avg: r.rated>0?Math.round(r.ws/r.rated*10)/10:null, total:r.total||r.rated, rated:r.rated, dist:r.dist }; }
