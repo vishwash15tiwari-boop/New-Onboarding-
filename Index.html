@@ -2205,6 +2205,8 @@ function loadData(silent) {
     var hash = D.lastUpdated || '';
     if (_lastDashHash['combined'] !== hash) {
       _lastDashHash['combined'] = hash;
+      qualityData = null;
+      qualityLoading = false;
       var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
       if (selectedVert && _vertRowsPKey !== newPKey) {
         vertRows = []; vertRowsLoading = false; vertRowsError = null;
