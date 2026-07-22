@@ -87,7 +87,7 @@ function mapToVertical(businessVertical, category, audience) {
   var cat = String(category || '').trim().toLowerCase();
   if (bv === 'epr') return 'EPR';
   if (bv === 'open marketplace' || bv === 'openmarketplace') {
-    return (cat === 'metal' || cat === 'plastic') ? 'OMP' : 'Others';
+    return 'OMP';  // All Open Marketplace entries belong to OMP regardless of category
   }
   if (bv === 'marketplace') {
     if (cat === 'afr') return 'AFR';
@@ -396,11 +396,15 @@ function normalizeRows(raw, cfg) {
     return (b.hasTransacted ? 1 : 0) - (a.hasTransacted ? 1 : 0)
         || (b.txnValue || 0) - (a.txnValue || 0);
   });
+  // Dedup key = id + vertical so the same entity can appear in multiple verticals
+  // (e.g. a seller in both OMP and Marketplace keeps both rows for Existing vs New).
+  // Intra-vertical duplicates (same id, same vertical — Metabase join artifacts) are still removed.
   var seen = {};
   return normalized.filter(function(r) {
     if (!r.id) return true;
-    if (seen[r.id]) return false;
-    seen[r.id] = true;
+    var key = r.id + '\x00' + r.vertical;
+    if (seen[key]) return false;
+    seen[key] = true;
     return true;
   });
 }
@@ -453,16 +457,32 @@ function debugExistingVsNew() {
   ['seller', 'buyer'].forEach(function(aud) {
     Logger.log('\n--- ' + aud.toUpperCase() + ' ---');
     var cfg  = AUDIENCE_CFG[aud];
-    var rows = normalizeRows(readData(aud), cfg);
-    Logger.log('Total rows: ' + rows.length);
+    var raw  = readData(aud);
+    Logger.log('Data source: ' + raw.source + '  Raw rows: ' + raw.rows.length);
+    var rows = normalizeRows(raw, cfg);
+    Logger.log('Normalized rows (post-dedup): ' + rows.length);
+
+    // Raw business_vertical values (before mapping) — confirms what the card returns
+    var bvCounts = {};
+    rows.forEach(function(r) {
+      var bv = String(r.bizVertical || '(blank)').trim() || '(blank)';
+      bvCounts[bv] = (bvCounts[bv] || 0) + 1;
+    });
+    Logger.log('Rows by raw business_vertical:');
+    Object.keys(bvCounts).sort().forEach(function(k) { Logger.log('  "' + k + '" → ' + bvCounts[k]); });
 
     // Rows by mapped vertical
     var vCounts = {};
-    rows.forEach(function(r) {
-      vCounts[r.vertical] = (vCounts[r.vertical] || 0) + 1;
-    });
-    Logger.log('Rows by vertical:');
+    rows.forEach(function(r) { vCounts[r.vertical] = (vCounts[r.vertical] || 0) + 1; });
+    Logger.log('Rows by mapped vertical:');
     Object.keys(vCounts).sort().forEach(function(k) { Logger.log('  ' + k + ' → ' + vCounts[k]); });
+
+    // Sample OMP categories (to verify category values)
+    var ompRows = rows.filter(function(r) { return r.vertical === 'OMP'; });
+    var ompCats = {};
+    ompRows.forEach(function(r) { ompCats[r.category] = (ompCats[r.category] || 0) + 1; });
+    Logger.log('OMP category breakdown:');
+    Object.keys(ompCats).sort().forEach(function(k) { Logger.log('  "' + k + '" → ' + ompCats[k]); });
 
     // Names COMPLETED in any non-OMP vertical
     var existingNames = {};
@@ -474,22 +494,27 @@ function debugExistingVsNew() {
     Logger.log('Non-OMP COMPLETED unique names: ' + Object.keys(existingNames).length);
     if (Object.keys(existingNames).length > 0) {
       Logger.log('  Sample: ' + Object.keys(existingNames).slice(0, 5).join(' | '));
+    } else {
+      Logger.log('  ⚠ ZERO non-OMP COMPLETED names — card may only contain OMP data.');
+      Logger.log('  ⚠ If so, use card 5292 (Onboarding Detail) for cross-vertical lookup.');
     }
 
     // OMP rows
-    var ompRows = rows.filter(function(r) { return r.vertical === 'OMP'; });
-    Logger.log('OMP total: ' + ompRows.length + '  COMPLETED: ' + ompRows.filter(function(r) { return r.status === 'COMPLETED'; }).length);
+    var ompCompleted = ompRows.filter(function(r) { return r.status === 'COMPLETED'; });
+    Logger.log('OMP total: ' + ompRows.length + '  COMPLETED: ' + ompCompleted.length);
 
     // Overlap by name
-    var existingCount = ompRows.filter(function(r) {
-      return r.status === 'COMPLETED' && r.name && existingNames[r.name.trim().toLowerCase()];
+    var existingCount = ompCompleted.filter(function(r) {
+      return r.name && existingNames[r.name.trim().toLowerCase()];
     }).length;
     Logger.log('OMP COMPLETED matched as Existing (by name): ' + existingCount);
 
-    // Sample OMP names for comparison
-    Logger.log('Sample OMP COMPLETED names (first 5):');
-    ompRows.filter(function(r) { return r.status === 'COMPLETED'; }).slice(0, 5).forEach(function(r) {
-      Logger.log('  "' + r.name + '" → inExisting=' + !!(existingNames[r.name.trim().toLowerCase()]));
+    // Search for the specific vendor the user mentioned
+    var testName = 'shriman narayan fiber udhog private limited';
+    var testRows = rows.filter(function(r) { return r.name && r.name.trim().toLowerCase() === testName; });
+    Logger.log('Rows for "SHRIMAN NARAYAN FIBER UDHOG PRIVATE LIMITED": ' + testRows.length);
+    testRows.forEach(function(r) {
+      Logger.log('  vertical=' + r.vertical + ' bizVertical="' + r.bizVertical + '" status=' + r.status + ' id=' + r.id);
     });
   });
   Logger.log('\n=== Done ===');
