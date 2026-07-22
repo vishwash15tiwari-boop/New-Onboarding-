@@ -701,6 +701,16 @@ tbody td{padding:12px 16px;color:var(--txt);vertical-align:middle;white-space:no
 .km-star-fill{height:100%;border-radius:3px;transition:width .8s var(--ease-out)}
 .km-star-cnt{font-size:11px;font-weight:600;color:var(--txt);font-variant-numeric:tabular-nums;text-align:right}
 .km-star-pct{font-size:10px;color:var(--txt3);text-align:right}
+.km-star-clickable{cursor:pointer;border-radius:4px;padding:1px 2px;margin:-1px -2px}
+.km-star-clickable:hover{background:var(--bg2)}
+.km-star-arr{font-size:8px;margin-left:2px;display:inline-block;transition:transform .2s}
+.km-star-open .km-star-arr{transform:rotate(90deg)}
+.km-star-vlist{padding:4px 0 8px 34px;margin-bottom:2px}
+.km-vrow{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:11.5px;border-bottom:1px solid var(--border)}
+.km-vrow:last-child{border-bottom:none}
+.km-vid{font-size:9.5px;font-weight:600;color:var(--txt3);background:var(--bg2);border-radius:4px;padding:1px 5px;flex-shrink:0;font-variant-numeric:tabular-nums;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.km-vname{flex:1;color:var(--txt);font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.km-vrating{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0}
 /* Segmented progress bar (OSV / docs modal) */
 .km-prog{display:flex;height:6px;border-radius:3px;overflow:hidden;gap:2px;margin:8px 0 4px}
 .km-prog-seg{border-radius:3px;transition:flex .8s var(--ease-out)}
@@ -3262,8 +3272,9 @@ function openKpiModal(cardId) {
     var S2 = '#34C759', B2 = '#007AFF';
 
     // Reusable star-distribution builder
-    function starBarsHtml(dist, rated) {
-      var maxD  = Math.max.apply(null, dist) || 1;
+    function starBarsHtml(dist, rated, vendors) {
+      vendors = vendors || [];
+      var maxD   = Math.max.apply(null, dist) || 1;
       var ratedD = rated || 1;
       var h = '';
       for (var si = 5; si >= 1; si--) {
@@ -3271,12 +3282,35 @@ function openKpiModal(cardId) {
         var bpct = Math.round(rc / maxD * 100);
         var dpct = Math.round(rc / ratedD * 100);
         var bcol = si >= 4 ? '#22C55E' : si === 3 ? '#F59E0B' : '#EF4444';
-        h += '<div class="km-star-row">'
-          + '<span class="km-star-n">' + si + '★</span>'
-          + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
-          + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
-          + '<span class="km-star-pct">' + dpct + '%</span>'
-          + '</div>';
+        var sv   = vendors.filter(function(v) { return Math.round(v.rating) === si; })
+                          .sort(function(a, b) { return b.rating - a.rating; });
+        var tid  = 'km-svl-' + si;
+        if (sv.length > 0) {
+          h += '<div class="km-star-row km-star-clickable" role="button" tabindex="0"'
+            + ' onclick="_kmStarToggle(\'' + tid + '\',this)"'
+            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmStarToggle(\'' + tid + '\',this)}">'
+            + '<span class="km-star-n">' + si + '★</span>'
+            + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
+            + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
+            + '<span class="km-star-pct">' + dpct + '% <span class="km-star-arr">▶</span></span>'
+            + '</div>'
+            + '<div id="' + tid + '" class="km-star-vlist" style="display:none">'
+            + sv.map(function(v) {
+                return '<div class="km-vrow">'
+                  + (v.id ? '<span class="km-vid">' + esc(v.id) + '</span>' : '')
+                  + '<span class="km-vname">' + esc(v.name || 'Unknown') + '</span>'
+                  + '<span class="km-vrating" style="color:' + bcol + '">' + v.rating.toFixed(1) + '★</span>'
+                  + '</div>';
+              }).join('')
+            + '</div>';
+        } else {
+          h += '<div class="km-star-row">'
+            + '<span class="km-star-n">' + si + '★</span>'
+            + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
+            + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
+            + '<span class="km-star-pct">' + dpct + '%</span>'
+            + '</div>';
+        }
       }
       return h;
     }
@@ -3318,7 +3352,7 @@ function openKpiModal(cardId) {
               {v: fmt(rT - rRated), l: 'Unrated',     s: 'no score yet'},
               {v: rT > 0 ? Math.round(rRated / rT * 100) + '%' : '—', l: 'Coverage'},
             ])
-          + (rRated > 0 ? sec('Rating Distribution', starBarsHtml(r.dist || [0,0,0,0,0], rRated)) : '');
+          + (rRated > 0 ? sec('Rating Distribution', starBarsHtml(r.dist || [0,0,0,0,0], rRated, qd.vendorRatings || [])) : '');
       }
 
     } else if (cardId === 'osv') {
@@ -3426,6 +3460,13 @@ function closeKpiModal() {
   var modal = document.getElementById('kpi-modal');
   if (modal) modal.classList.remove('km-open');
   document.removeEventListener('keydown', _kpiEsc);
+}
+function _kmStarToggle(id, row) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : '';
+  if (row) row.classList.toggle('km-star-open', !open);
 }
 
 function _kpiEsc(e) { if (e.key === 'Escape') closeKpiModal(); }

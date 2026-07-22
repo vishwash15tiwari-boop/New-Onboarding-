@@ -1151,7 +1151,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v3';
+  var CACHE_KEY = 'quality_data_v4';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1192,8 +1192,10 @@ function getQualityData() {
     if (vrd.rows.length) {
       var vrh = vrd.headers;
 
-      var vidC = qualityFindCol_(vrh, ['seller_id','id','vendor_id','vendorid']);
-      var vauC = qualityFindCol_(vrh, ['audience','type','aud','seller_buyer']);
+      var vidC  = qualityFindCol_(vrh, ['seller_id','id','vendor_id','vendorid']);
+      var vauC  = qualityFindCol_(vrh, ['audience','type','aud','seller_buyer']);
+      var nameC = qualityFindCol_(vrh, ['seller_name','name','vendor_name','business_name','company_name']);
+      if (nameC < 0) nameC = 1;
 
       // Rating: seller_rating is col AE; positional fallback index 30
       var rC = qualityFindCol_(vrh, ['seller_rating','rating','vendor_rating','average_rating','avg_rating','score','overall_rating','stars']);
@@ -1215,8 +1217,11 @@ function getQualityData() {
         docIdx = [32,33,34,35,36,37,38,39,40,41,42];
       }
 
+      var vendorRatings = [];
+
       vrd.rows.forEach(function(row) {
-        var ts = tgts_(resolveAud_(row, vrh, vidC, vauC));
+        var rowAud = resolveAud_(row, vrh, vidC, vauC);
+        var ts = tgts_(rowAud);
 
         // — Rating —
         var rv = parseFloat(row[rC]);
@@ -1228,6 +1233,14 @@ function getQualityData() {
             acc[t].r.dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += 1;
           }
         });
+        if (!isNaN(rv) && rv > 0 && rv <= 5) {
+          vendorRatings.push({
+            id:     String(row[vidC] || '').trim().slice(0, 30),
+            name:   String(row[nameC] || '').trim().slice(0, 60),
+            rating: Math.round(rv * 10) / 10,
+            aud:    rowAud
+          });
+        }
 
         // — OSV consent —
         var os = String(row[oC] || '').trim().toUpperCase().replace(/\s+/g, '_');
@@ -1276,7 +1289,7 @@ function getQualityData() {
   if (buyer.rating.total === 0 && buyer.osv.total === 0 && buyer.docs.total === 0)
     buyer  = JSON.parse(JSON.stringify(combined));
 
-  var result = { success: true, lastUpdated: new Date().toISOString(), combined: combined, seller: seller, buyer: buyer };
+  var result = { success: true, lastUpdated: new Date().toISOString(), combined: combined, seller: seller, buyer: buyer, vendorRatings: vendorRatings || [] };
   var out = JSON.stringify(result);
   try { cache.put(CACHE_KEY, out, 300); } catch (e) {}
   return out;
