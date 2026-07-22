@@ -698,27 +698,51 @@ tbody td{padding:12px 16px;color:var(--txt);vertical-align:middle;white-space:no
 #kpi-modal.km-open{pointer-events:all;opacity:1}
 @media(min-width:600px){#kpi-modal{align-items:center;padding:20px}}
 .km-bd{position:absolute;inset:0;background:rgba(0,0,0,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.km-pn{position:relative;z-index:1;background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;padding:20px 20px 32px;box-shadow:0 -4px 40px rgba(0,0,0,.18);animation:kmUp .22s var(--ease-out,cubic-bezier(.25,.46,.45,.94)) both}
+.km-pn{position:relative;z-index:1;background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;box-shadow:0 -4px 40px rgba(0,0,0,.18);animation:kmUp .22s var(--ease-out,cubic-bezier(.25,.46,.45,.94)) both}
 @media(min-width:600px){.km-pn{border-radius:20px}}
-.km-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.km-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:10px}
-.km-icon svg{width:16px;height:16px}
-.km-htxt{flex:1}
-.km-title{font-size:16px;font-weight:700;color:var(--txt);letter-spacing:-.2px;line-height:1.2}
-.km-sub{font-size:11.5px;color:var(--txt2);margin-top:2px}
-.km-close{width:28px;height:28px;border-radius:50%;background:var(--g100,#F2F2F7);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--txt2);flex-shrink:0;transition:background .12s}
+/* Header */
+.km-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)}
+.km-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:10px;background:var(--bg2)}
+.km-icon svg{width:14px;height:14px;display:block;stroke:var(--txt2)}
+.km-htxt{flex:1;min-width:0}
+.km-title{font-size:15px;font-weight:700;color:var(--txt);letter-spacing:-.2px;line-height:1.2}
+.km-sub{font-size:10.5px;color:var(--txt3);margin-top:2px;line-height:1.35}
+.km-close{width:28px;height:28px;border-radius:50%;background:var(--bg2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--txt3);flex-shrink:0;transition:background .12s}
 .km-close:hover{background:var(--border)}
-.km-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.km-cell{background:var(--bg2,#F5F5F7);border-radius:12px;padding:13px 14px}
-.km-cell.km-full{grid-column:1/-1}
-.km-cv{font-size:22px;font-weight:700;color:var(--txt);letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1.1}
-.km-cl{font-size:11px;color:var(--txt2);margin-top:3px;line-height:1.35}
-.km-sub2{font-size:11px;color:var(--txt3);margin-top:5px;font-style:italic}
-.km-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;vertical-align:middle}
-.km-row{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
-.km-chip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:500;color:var(--txt2);background:var(--card);border-radius:20px;padding:3px 8px;border:1px solid var(--border)}
-.km-sep{grid-column:1/-1;height:1px;background:var(--border);margin:2px 0}
-.km-foot{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);text-align:center}
+/* Hero — primary metric */
+.km-hero{padding:16px 18px 14px;border-bottom:1px solid var(--border)}
+.km-hero-num{font-size:34px;font-weight:700;color:var(--txt);letter-spacing:-1.2px;line-height:1;font-variant-numeric:tabular-nums}
+.km-hero-lbl{font-size:10px;font-weight:600;color:var(--txt3);letter-spacing:.07em;text-transform:uppercase;margin-top:4px}
+/* Stat rows — horizontal split with dividers */
+.km-srow{display:grid;gap:0;border-bottom:1px solid var(--border)}
+.km-srow-2{grid-template-columns:1fr 1fr}
+.km-srow-3{grid-template-columns:1fr 1fr 1fr}
+.km-s{padding:12px 16px;border-right:1px solid var(--border)}
+.km-s:last-child{border-right:none}
+.km-sv{font-size:18px;font-weight:700;letter-spacing:-.4px;color:var(--txt);line-height:1.1;font-variant-numeric:tabular-nums}
+.km-sl{font-size:10px;font-weight:600;color:var(--txt3);margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
+.km-sb{font-size:10px;color:var(--txt3);margin-top:3px;font-variant-numeric:tabular-nums}
+/* Labeled section */
+.km-sec{padding:14px 18px;border-bottom:1px solid var(--border)}
+.km-sec:last-child{border-bottom:none}
+.km-sec-t{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px}
+/* Mini status bar */
+.km-sbar{display:flex;height:4px;border-radius:2px;overflow:hidden;gap:2px;margin-bottom:10px}
+/* Status grid — 4 tiles */
+.km-sg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.km-sg-2{grid-template-columns:repeat(2,1fr)}
+.km-sg-item{padding:8px 10px;background:var(--bg2);border-radius:8px}
+.km-sg-v{font-size:15px;font-weight:700;color:var(--txt);letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.km-sg-l{font-size:9.5px;font-weight:600;color:var(--txt3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:3px}
+.km-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;display:inline-block}
+/* Material badges */
+.km-mat{display:flex;gap:8px}
+.km-mb{flex:1;display:flex;align-items:center;gap:9px;background:var(--bg2);border-radius:10px;padding:10px 12px}
+.km-mb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.km-mb-v{font-size:15px;font-weight:700;color:var(--txt);letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.km-mb-l{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-top:1px}
+/* Footer */
+.km-foot{padding:12px 18px 20px;border-top:1px solid var(--border);text-align:center}
 .km-foot-link{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:var(--accent,#007AFF);cursor:pointer;text-decoration:none;background:none;border:none;padding:0}
 /* ===== Record Detail Modal — Apple sheet style ===== */
 @keyframes rmUp{from{opacity:0;transform:translateY(32px) scale(.97)}to{opacity:1;transform:none}}
@@ -2875,12 +2899,13 @@ function renderVertKPIs(key) {
 
   var nonTxnSub   = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
   var oldTotalSub = '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>';
+  var txnPct = (compS + compB) > 0 ? Math.round(txnTotal / (compS + compB) * 100) : 0;
   // Save snapshot so openKpiModal() can read it without recomputing
   window._kpiSnap = {
     key: key,
     totalS: totalS, totalB: totalB,
     compS: compS, compB: compB, compPct: compPct,
-    txnS: txnS, txnB: txnB, txnTotal: txnTotal, nonTxnTotal: nonTxnTotal,
+    txnS: txnS, txnB: txnB, txnTotal: txnTotal, txnPct: txnPct, nonTxnTotal: nonTxnTotal,
     newS: newS, oldS: oldS, newB: newB, oldB: oldB,
     vs: vs, vb: vb,
     pTotal: pTotal, mTotal: mTotal,
@@ -2888,7 +2913,6 @@ function renderVertKPIs(key) {
     pTxn: pTxn, mTxn: mTxn,
     pNew: pNew, mNew: mNew,
   };
-  var txnPct = (compS + compB) > 0 ? Math.round(txnTotal / (compS + compB) * 100) : 0;
   var cards = [
     mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                           'vk-total',     'total'),
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% completion rate',  'vk-onboarded', 'onboarded'),
@@ -2938,19 +2962,52 @@ function openKpiModal(cardId) {
   var S = '#34C759', B = '#007AFF';
   var PC = '#FF9F0A', MC = '#8E8E93';
 
-  function cell(val, lbl, sub, full) {
-    return '<div class="km-cell' + (full ? ' km-full' : '') + '">'
-      + '<div class="km-cv">' + val + '</div>'
-      + '<div class="km-cl">' + lbl + '</div>'
-      + (sub ? '<div class="km-sub2">' + sub + '</div>' : '')
+  // ── layout primitives ────────────────────────────────────────
+  function hero(num, lbl) {
+    return '<div class="km-hero">'
+      + '<div class="km-hero-num">' + num + '</div>'
+      + '<div class="km-hero-lbl">' + lbl + '</div>'
       + '</div>';
   }
-  function dotChip(color, val, lbl) {
-    return '<span class="km-chip"><i class="km-dot" style="background:' + color + '"></i>' + val + ' ' + lbl + '</span>';
+  function srow(items) {
+    var cols = Math.min(items.length, 3);
+    return '<div class="km-srow km-srow-' + cols + '">'
+      + items.map(function(it) {
+          return '<div class="km-s">'
+            + '<div class="km-sv"' + (it.c ? ' style="color:' + it.c + '"' : '') + '>' + it.v + '</div>'
+            + '<div class="km-sl">' + it.l + '</div>'
+            + (it.s ? '<div class="km-sb">' + it.s + '</div>' : '')
+            + '</div>';
+        }).join('') + '</div>';
   }
-  function matChips(p, m) {
+  function sec(title, inner) {
+    return '<div class="km-sec"><div class="km-sec-t">' + title + '</div>' + inner + '</div>';
+  }
+  function sbar(segs) {
+    var tot = segs.reduce(function(a, s) { return a + s.w; }, 0);
+    if (!tot) return '';
+    return '<div class="km-sbar">'
+      + segs.map(function(s) {
+          return s.w > 0 ? '<div style="flex:' + s.w + ';background:' + s.color + '"></div>' : '';
+        }).join('') + '</div>';
+  }
+  function sgrid(items, two) {
+    return '<div class="km-sg' + (two ? ' km-sg-2' : '') + '">'
+      + items.map(function(it) {
+          return '<div class="km-sg-item">'
+            + '<div class="km-sg-v">' + it.v + '</div>'
+            + '<div class="km-sg-l"><i class="km-dot" style="background:' + it.c + '"></i>' + it.l + '</div>'
+            + '</div>';
+        }).join('') + '</div>';
+  }
+  function matBadges(p, m) {
     if (!p && !m) return '';
-    return '<div class="km-row">' + dotChip(PC, fmt(p), 'plastic') + dotChip(MC, fmt(m), 'metal') + '</div>';
+    return '<div class="km-mat">'
+      + '<div class="km-mb"><div class="km-mb-dot" style="background:' + PC + '"></div>'
+      + '<div><div class="km-mb-v">' + fmt(p) + '</div><div class="km-mb-l">Plastic</div></div></div>'
+      + '<div class="km-mb"><div class="km-mb-dot" style="background:' + MC + '"></div>'
+      + '<div><div class="km-mb-v">' + fmt(m) + '</div><div class="km-mb-l">Metal</div></div></div>'
+      + '</div>';
   }
 
   var content = '', title = '', subtitle = '', iconHtml = '';
@@ -2960,100 +3017,105 @@ function openKpiModal(cardId) {
     title = 'Total Cases';
     subtitle = 'All pipeline entries across sellers & buyers';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>';
-    var dS = vs.draft || 0, dB = vb.draft || 0;
-    var rS = vs.inReview || 0, rB = vb.inReview || 0;
-    var jS = vs.rejected || 0, jB = vb.rejected || 0;
-    content = '<div class="km-grid">'
-      + cell(fmt(d.totalS + d.totalB), 'Total pipeline', null, true)
-      + cell('<span style="color:' + S + '">' + fmt(d.totalS) + '</span>', 'Sellers')
-      + cell('<span style="color:' + B + '">' + fmt(d.totalB) + '</span>', 'Buyers')
-      + '<div class="km-sep"></div>'
-      + cell(fmt(d.compS + d.compB), 'Completed', null)
-      + cell(fmt(dS + dB), 'Draft')
-      + cell(fmt(rS + rB), 'In Review')
-      + cell(fmt(jS + jB), 'Rejected')
-      + (d.pTotal + d.mTotal > 0
-          ? '<div class="km-sep"></div>'
-            + '<div class="km-cell km-full">'
-            + '<div class="km-cl">Material split</div>'
-            + '<div class="km-row" style="margin-top:8px">' + dotChip(PC, fmt(d.pTotal), 'plastic') + dotChip(MC, fmt(d.mTotal), 'metal') + '</div>'
-            + '</div>'
-          : '')
-      + '</div>';
+    var dComb = (vs.draft || 0) + (vb.draft || 0);
+    var rComb = (vs.inReview || 0) + (vb.inReview || 0);
+    var jComb = (vs.rejected || 0) + (vb.rejected || 0);
+    content =
+      hero(fmt(d.totalS + d.totalB), 'Total Pipeline')
+      + srow([
+          {v: fmt(d.totalS), l: 'Sellers', c: S},
+          {v: fmt(d.totalB), l: 'Buyers',  c: B},
+        ])
+      + sec('Pipeline Status',
+          sbar([
+            {w: d.compS + d.compB, color: 'var(--st-onboarded)'},
+            {w: dComb,             color: 'var(--st-draft)'},
+            {w: rComb,             color: 'var(--st-review)'},
+            {w: jComb,             color: 'var(--st-rejected)'},
+          ])
+          + sgrid([
+              {v: fmt(d.compS + d.compB), l: 'Onboarded', c: 'var(--st-onboarded)'},
+              {v: fmt(dComb),             l: 'Draft',      c: 'var(--st-draft)'},
+              {v: fmt(rComb),             l: 'In Review',  c: 'var(--st-review)'},
+              {v: fmt(jComb),             l: 'Rejected',   c: 'var(--st-rejected)'},
+            ])
+        )
+      + (d.pTotal + d.mTotal > 0 ? sec('Material Mix', matBadges(d.pTotal, d.mTotal)) : '');
+
   } else if (cardId === 'onboarded') {
     title = 'Onboarded';
     subtitle = 'Vendors who completed onboarding';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M8.6 12.4l2.4 2.4 4.4-5"/></svg>';
-    var tatS = vs.avgTAT !== null && vs.avgTAT !== undefined ? vs.avgTAT + 'd avg TAT' : null;
-    var tatB = vb.avgTAT !== null && vb.avgTAT !== undefined ? vb.avgTAT + 'd avg TAT' : null;
-    content = '<div class="km-grid">'
-      + cell(fmt(d.compS + d.compB), 'Onboarded total', null, true)
-      + cell('<span style="color:' + S + '">' + fmt(d.compS) + '</span>', 'Sellers', tatS)
-      + cell('<span style="color:' + B + '">' + fmt(d.compB) + '</span>', 'Buyers', tatB)
-      + '<div class="km-sep"></div>'
-      + cell(d.compPct + '%', 'Completion rate', 'of total pipeline')
-      + cell(fmt(d.totalS + d.totalB - d.compS - d.compB), 'Still pending', 'draft + in review')
-      + (d.pOnb + d.mOnb > 0
-          ? '<div class="km-sep"></div>'
-            + '<div class="km-cell km-full">'
-            + '<div class="km-cl">Material split (onboarded)</div>'
-            + '<div class="km-row" style="margin-top:8px">' + dotChip(PC, fmt(d.pOnb), 'plastic') + dotChip(MC, fmt(d.mOnb), 'metal') + '</div>'
-            + '</div>'
-          : '')
-      + '</div>';
+    var tatS = vs.avgTAT != null ? vs.avgTAT + 'd avg TAT' : null;
+    var tatB = vb.avgTAT != null ? vb.avgTAT + 'd avg TAT' : null;
+    content =
+      hero(fmt(d.compS + d.compB), 'Onboarded')
+      + srow([
+          {v: fmt(d.compS), l: 'Sellers', c: S, s: tatS},
+          {v: fmt(d.compB), l: 'Buyers',  c: B, s: tatB},
+        ])
+      + srow([
+          {v: d.compPct + '%', l: 'Completion Rate', s: 'of total pipeline'},
+          {v: fmt(d.totalS + d.totalB - d.compS - d.compB), l: 'Still Pending', s: 'draft + in review'},
+        ])
+      + (d.pOnb + d.mOnb > 0 ? sec('Material Mix', matBadges(d.pOnb, d.mOnb)) : '');
+
   } else if (cardId === 'transacted') {
     title = 'Transacted';
     subtitle = 'Onboarded vendors who have made a transaction';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
     var gmvCombined = (vs.totalTxnValue || 0) + (vb.totalTxnValue || 0);
     var sPMSub = (vs.plasticTransacted || vs.metalTransacted)
-      ? fmt(vs.plasticTransacted || 0) + 'P · ' + fmt(vs.metalTransacted || 0) + 'M'
-      : null;
+      ? fmt(vs.plasticTransacted || 0) + 'P · ' + fmt(vs.metalTransacted || 0) + 'M' : null;
     var bPMSub = (vb.plasticTransacted || vb.metalTransacted)
-      ? fmt(vb.plasticTransacted || 0) + 'P · ' + fmt(vb.metalTransacted || 0) + 'M'
-      : null;
-    content = '<div class="km-grid">'
-      + '<div class="km-cell km-full">'
-      + '<div class="km-cv">' + fmt(d.txnTotal) + '</div>'
-      + '<div class="km-cl">Transacted total</div>'
-      + (d.pTxn + d.mTxn > 0
-          ? '<div class="km-row" style="margin-top:8px">' + dotChip(PC, fmt(d.pTxn), 'plastic') + dotChip(MC, fmt(d.mTxn), 'metal') + '</div>'
-          : '')
-      + '</div>'
-      + (d.txnS != null
-          ? cell('<span style="color:' + S + '">' + fmt(d.txnS) + '</span>', 'Sellers', sPMSub)
-            + cell('<span style="color:' + B + '">' + fmt(d.txnB) + '</span>', 'Buyers', bPMSub)
-          : '')
-      + '<div class="km-sep"></div>'
-      + cell(fmt(d.nonTxnTotal), 'Not yet transacted', 'onboarded but no txn')
-      + (gmvCombined > 0 ? cell(fmtINR(gmvCombined), 'Total GMV') : '')
-      + '</div>';
+      ? fmt(vb.plasticTransacted || 0) + 'P · ' + fmt(vb.metalTransacted || 0) + 'M' : null;
+    var metricItems = [{v: d.txnPct > 0 ? d.txnPct + '%' : '—', l: 'Txn Rate', s: 'of onboarded'}];
+    if (gmvCombined > 0) metricItems.push({v: fmtINR(gmvCombined), l: 'Total GMV'});
+    metricItems.push({v: fmt(d.nonTxnTotal), l: 'Not Transacted', s: 'onboarded · no txn'});
+    content =
+      hero(fmt(d.txnTotal), 'Transacted')
+      + srow([
+          {v: fmt(d.txnS != null ? d.txnS : 0), l: 'Sellers', c: S, s: sPMSub},
+          {v: fmt(d.txnB != null ? d.txnB : 0), l: 'Buyers',  c: B, s: bPMSub},
+        ])
+      + srow(metricItems)
+      + (d.pTxn + d.mTxn > 0 ? sec('Material Split', matBadges(d.pTxn, d.mTxn)) : '');
+
   } else if (cardId === 'oldvsnew') {
     title = 'Existing vs New';
-    subtitle = 'Vendors onboarded in OMP — existing (in any other vertical) vs first-time';
+    subtitle = 'OMP vendors — existing in other verticals vs first-time';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
-    var pOldS = vs.plasticOld || 0, mOldS = vs.metalOld || 0;
-    var pOldB = vb.plasticOld || 0, mOldB = vb.metalOld || 0;
-    content = '<div class="km-grid">'
-      + cell(fmt((d.newS + d.oldS) + (d.newB + d.oldB)), 'Total onboarded', null, true)
-      + cell('<span style="color:' + S + '">' + fmt(d.newS) + '</span>', 'New sellers', (vs.plasticNew || vs.metalNew) ? fmt(vs.plasticNew||0) + 'P · ' + fmt(vs.metalNew||0) + 'M' : null)
-      + cell('<span style="color:rgba(52,199,89,.7)">' + fmt(d.oldS) + '</span>', 'Existing sellers', (pOldS || mOldS) ? fmt(pOldS) + 'P · ' + fmt(mOldS) + 'M' : null)
-      + cell('<span style="color:' + B + '">' + fmt(d.newB) + '</span>', 'New buyers', (vb.plasticNew || vb.metalNew) ? fmt(vb.plasticNew||0) + 'P · ' + fmt(vb.metalNew||0) + 'M' : null)
-      + cell('<span style="color:rgba(0,122,255,.7)">' + fmt(d.oldB) + '</span>', 'Existing buyers', (pOldB || mOldB) ? fmt(pOldB) + 'P · ' + fmt(mOldB) + 'M' : null)
-      + (d.pNew + d.mNew > 0
-          ? '<div class="km-sep"></div>'
-            + '<div class="km-cell km-full">'
-            + '<div class="km-cl">New vendor material split</div>'
-            + '<div class="km-row" style="margin-top:8px">' + dotChip(PC, fmt(d.pNew), 'plastic') + dotChip(MC, fmt(d.mNew), 'metal') + '</div>'
-            + '</div>'
-          : '')
-      + '</div>';
+    var totalOnb  = (d.newS + d.oldS) + (d.newB + d.oldB);
+    var totalNew  = d.newS + d.newB;
+    var totalExst = d.oldS + d.oldB;
+    content =
+      hero(fmt(totalOnb), 'Total Onboarded in OMP')
+      + srow([
+          {v: fmt(totalNew),  l: 'New'},
+          {v: fmt(totalExst), l: 'Existing'},
+        ])
+      + sec('Sellers',
+          sgrid([
+            {v: fmt(d.newS), l: 'New',      c: S},
+            {v: fmt(d.oldS), l: 'Existing', c: 'rgba(52,199,89,.55)'},
+          ], true)
+          + ((vs.plasticNew || vs.metalNew)
+              ? '<div style="margin-top:8px">' + matBadges(vs.plasticNew || 0, vs.metalNew || 0) + '</div>' : '')
+        )
+      + sec('Buyers',
+          sgrid([
+            {v: fmt(d.newB), l: 'New',      c: B},
+            {v: fmt(d.oldB), l: 'Existing', c: 'rgba(0,122,255,.55)'},
+          ], true)
+          + ((vb.plasticNew || vb.metalNew)
+              ? '<div style="margin-top:8px">' + matBadges(vb.plasticNew || 0, vb.metalNew || 0) + '</div>' : '')
+        );
   }
 
   el.innerHTML =
     '<div class="km-head">'
-    + '<div style="display:flex;align-items:center;gap:10px;min-width:0">'
-    + '<div class="km-icon" style="background:var(--bg2)">' + iconHtml + '</div>'
+    + '<div style="display:flex;align-items:center;min-width:0">'
+    + '<div class="km-icon">' + iconHtml + '</div>'
     + '<div class="km-htxt">'
     + '<div class="km-title">' + title + '</div>'
     + '<div class="km-sub">' + subtitle + '</div>'
@@ -3068,6 +3130,7 @@ function openKpiModal(cardId) {
   modal.classList.add('km-open');
   document.addEventListener('keydown', _kpiEsc);
 }
+
 
 function closeKpiModal() {
   var modal = document.getElementById('kpi-modal');
