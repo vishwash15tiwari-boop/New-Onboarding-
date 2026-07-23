@@ -3089,15 +3089,14 @@ function renderVertKPIs(key) {
     var rQ     = qc ? (qc.rating || {}) : null;
     var oQ     = qc ? (qc.osv    || {}) : null;
     var dQ     = qc ? (qc.docs   || {}) : null;
-    var oQT    = oQ ? (oQ.total  || 0) : 0;
-    var dQT    = dQ ? (dQ.total  || 0) : 0;
+    var selOnb = compS || 0; // total sellers onboarded on OMP — the correct denominator
 
     var rVal = rQ && rQ.avg != null ? rQ.avg.toFixed(1) + '★' : '—';
-    var rSub = rQ ? (rQ.total > rQ.rated ? fmt(rQ.rated) + ' of ' + fmt(rQ.total) + ' rated' : fmt(rQ.rated) + ' rated') : 'Syncing…';
-    var oVal = oQT > 0 ? Math.round(oQ.completed / oQT * 100) + '%' : '—';
-    var oSub = oQ ? fmt(oQ.completed || 0) + ' of ' + fmt(oQT) + ' verified' : 'Syncing…';
-    var dVal = dQT > 0 ? Math.round(dQ.complete  / dQT * 100) + '%' : '—';
-    var dSub = dQ ? fmt(dQ.complete  || 0) + ' of ' + fmt(dQT) + ' complete' : 'Syncing…';
+    var rSub = rQ ? fmt(rQ.rated || 0) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' rated' : 'Syncing…';
+    var oVal = selOnb > 0 && oQ ? Math.round((oQ.completed || 0) / selOnb * 100) + '%' : '—';
+    var oSub = oQ ? fmt(oQ.completed || 0) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' verified' : 'Syncing…';
+    var dVal = selOnb > 0 && dQ ? Math.round((dQ.complete  || 0) / selOnb * 100) + '%' : '—';
+    var dSub = dQ ? fmt(dQ.complete  || 0) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' complete' : 'Syncing…';
 
     cards.push(mk(icStar,   'Vendor Rating', rVal, rSub, 'vk-rating', 'rating', 'qkpi-rating'));
     cards.push(mk(icShield, 'OSV Status',    oVal, oSub, 'vk-osv',    'osv',    'qkpi-osv'));
@@ -3646,31 +3645,32 @@ function _patchQualitySects() {
 function _patchQualityKpiCards() {
   var qd = qualityData;
   if (!qd || !qd.success) return;
-  var qc = qd.seller || {};
+  var qc     = qd.seller || {};
+  var selOnb = (window._kpiSnap && window._kpiSnap.compS) || 0;
 
   var rEl = document.getElementById('qkpi-rating');
   if (rEl) {
     var r   = qc.rating || {};
     var avg = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
-    var rsb = r.total > 0 ? (r.total > r.rated ? fmt(r.rated) + ' of ' + fmt(r.total) + ' rated' : fmt(r.rated) + ' rated') : 'No data';
+    var rsb = fmt(r.rated || 0) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' rated';
     var rv  = rEl.querySelector('.vkpi-val'); if (rv) rv.textContent = avg;
     var rs  = rEl.querySelector('.vkpi-sub'); if (rs) rs.textContent = rsb;
   }
 
   var oEl = document.getElementById('qkpi-osv');
   if (oEl) {
-    var o   = qc.osv || {}, oT = o.total || 0;
-    var opct = oT > 0 ? Math.round((o.completed || 0) / oT * 100) + '%' : '—';
-    var osb  = oT > 0 ? fmt(o.completed || 0) + ' of ' + fmt(oT) + ' verified' : 'No data';
+    var o    = qc.osv || {}, oCmp = o.completed || 0;
+    var opct = selOnb > 0 ? Math.round(oCmp / selOnb * 100) + '%' : '—';
+    var osb  = fmt(oCmp) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' verified';
     var ov  = oEl.querySelector('.vkpi-val'); if (ov) ov.textContent = opct;
     var os  = oEl.querySelector('.vkpi-sub'); if (os) os.textContent = osb;
   }
 
   var dEl = document.getElementById('qkpi-docs');
   if (dEl) {
-    var d   = qc.docs || {}, dT = d.total || 0;
-    var dpct = dT > 0 ? Math.round((d.complete || 0) / dT * 100) + '%' : '—';
-    var dsb  = dT > 0 ? fmt(d.complete || 0) + ' of ' + fmt(dT) + ' complete' : 'No data';
+    var d    = qc.docs || {}, dCmp = d.complete || 0;
+    var dpct = selOnb > 0 ? Math.round(dCmp / selOnb * 100) + '%' : '—';
+    var dsb  = fmt(dCmp) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' complete';
     var dv  = dEl.querySelector('.vkpi-val'); if (dv) dv.textContent = dpct;
     var ds  = dEl.querySelector('.vkpi-sub'); if (ds) ds.textContent = dsb;
   }
