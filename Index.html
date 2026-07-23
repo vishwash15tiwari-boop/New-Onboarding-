@@ -980,6 +980,25 @@ body.view-gst #main{background:transparent}
 .gp-fy-brow{display:flex;align-items:center;gap:3px;font-size:10.5px;line-height:1.3}
 .gp-fy-blbl{color:var(--gp-ink2);font-weight:400;min-width:90px;flex-shrink:0}
 .gp-fy-bamt{font-weight:700;font-variant-numeric:tabular-nums;flex:1;text-align:right;min-width:0;overflow:hidden;word-break:break-all}
+.gp-fy-drill{cursor:pointer;border-radius:5px;margin:0 -4px;padding:2px 4px;transition:background .12s}
+.gp-fy-drill:hover{background:rgba(120,120,128,.14)}
+.gp-fy-drill:hover .gp-fy-blbl{color:var(--gp-ink)}
+
+/* GST FY Drill-down Modal */
+#gp-modal{position:fixed;inset:0;z-index:801;display:flex;align-items:center;justify-content:center;padding:20px;pointer-events:none;opacity:0;transition:opacity .18s}
+#gp-modal.gm-open{pointer-events:all;opacity:1}
+.gm-bd{position:absolute;inset:0;background:rgba(0,0,0,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.gm-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.gm-tbl th{padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gp-ink2);border-bottom:1.5px solid var(--gp-border);white-space:nowrap}
+.gm-tbl th.r,.gm-tbl td.r{text-align:right}
+.gm-tbl td{padding:9px 12px;border-bottom:1px solid var(--gp-border);color:var(--gp-ink);vertical-align:middle}
+.gm-tbl tbody tr:hover td{background:var(--gp-card2)}
+.gm-tbl tfoot td{font-weight:700;border-top:2px solid var(--gp-border)!important;border-bottom:none!important;background:var(--gp-card2)!important}
+.gm-rank{font-size:10px;color:var(--gp-ink3);font-variant-numeric:tabular-nums;width:24px;min-width:24px}
+.gm-vname{font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gm-gstin{font-size:10.5px;color:var(--gp-ink2);font-family:monospace;margin-top:1px}
+.gm-hi{color:var(--gp-ink);font-weight:700;font-variant-numeric:tabular-nums}
+.gm-dim{color:var(--gp-ink2);font-variant-numeric:tabular-nums}
 
 /* ── Charts row: donut / bars / compliance ── */
 .gp-charts-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
@@ -2054,6 +2073,12 @@ body.view-gst #vert-tabs-bar{display:none}
 <div id="kpi-modal" role="dialog" aria-modal="true" aria-label="KPI details">
   <div class="km-bd" onclick="closeKpiModal()"></div>
   <div class="km-pn" id="km-pn"></div>
+</div>
+
+<!-- GST FY Drill-down Modal -->
+<div id="gp-modal" role="dialog" aria-modal="true" aria-label="Vendor balance details">
+  <div class="gm-bd" onclick="closeGpModal()"></div>
+  <div class="km-pn" id="gm-pn" style="max-width:620px"></div>
 </div>
 
 <script>
@@ -4945,6 +4970,103 @@ function gstEmptyState() {
     + '</div>';
 }
 
+function closeGpModal() {
+  var el = document.getElementById('gp-modal');
+  if (el) el.classList.remove('gm-open');
+  document.removeEventListener('keydown', _gpModalEsc);
+}
+function _gpModalEsc(e) { if (e.key === 'Escape') closeGpModal(); }
+
+function gpFyDrillModal(fy, field, evt) {
+  if (evt) evt.stopPropagation();
+  var LABELS = { total: 'Total Balance', material: 'Material Balance', gst: 'GST Balance' };
+  var label = LABELS[field] || field;
+
+  var vendors;
+  if (gpYear === fy) {
+    vendors = (GST.rows || []).filter(function(r) { return r.total > 0; })
+      .map(function(r) { return { name: r.name, gstNo: r.gstNo, vertical: r.vertical, total: r.total, material: r.material, gst: r.gst }; });
+  } else if (gpYear === 'All') {
+    vendors = (GST.rows || []).filter(function(r) { return ((r.yearAmounts || {})[fy] || 0) > 0; })
+      .map(function(r) {
+        var ya = (r.yearAmounts || {})[fy] || 0;
+        var mR = r.total > 0 ? r.material / r.total : 0;
+        var mA = Math.round(ya * mR);
+        return { name: r.name, gstNo: r.gstNo, vertical: r.vertical, total: ya, material: mA, gst: ya - mA };
+      });
+  } else {
+    vendors = null;
+  }
+
+  if (vendors) vendors.sort(function(a, b) { return b[field] - a[field]; });
+
+  var tMat = vendors ? vendors.reduce(function(s, r) { return s + r.material; }, 0) : 0;
+  var tGst = vendors ? vendors.reduce(function(s, r) { return s + r.gst; }, 0) : 0;
+  var tTot = vendors ? vendors.reduce(function(s, r) { return s + r.total; }, 0) : 0;
+
+  var content;
+  if (!vendors) {
+    content = '<div style="padding:28px 20px;text-align:center">'
+      + '<div style="color:var(--gp-ink2);margin-bottom:16px;line-height:1.5">Per-vendor detail for a year not currently loaded.<br>Switch to ' + esc(fyFull(fy)) + ' to see the breakdown.</div>'
+      + '<button onclick="closeGpModal();gpSetYear(\'' + fy + '\')" style="font-family:inherit;font-size:13px;font-weight:600;padding:9px 22px;border-radius:999px;border:none;background:var(--blue);color:#fff;cursor:pointer">Switch to ' + esc(fyFull(fy)) + '</button>'
+      + '</div>';
+  } else if (!vendors.length) {
+    content = '<div style="padding:32px 20px;text-align:center;color:var(--gp-ink2)">No vendors with outstanding ' + esc(label.toLowerCase()) + ' in ' + esc(fyFull(fy)) + '</div>';
+  } else {
+    var rows = vendors.map(function(r, i) {
+      var matCell = '<span class="' + (field==='material'?'gm-hi':'gm-dim') + '">' + fmtRupee(r.material) + '</span>';
+      var gstCell = '<span class="' + (field==='gst'     ?'gm-hi':'gm-dim') + '">' + fmtRupee(r.gst) + '</span>';
+      var totCell = '<span class="' + (field==='total'   ?'gm-hi':'gm-dim') + '">' + fmtRupee(r.total) + '</span>';
+      return '<tr>'
+        + '<td class="gm-rank">' + (i + 1) + '</td>'
+        + '<td><div class="gm-vname" title="' + esc(r.name) + '">' + esc(r.name || '—') + '</div>'
+        + (r.gstNo ? '<div class="gm-gstin">' + esc(r.gstNo) + '</div>' : '') + '</td>'
+        + '<td style="font-size:11px;color:var(--gp-ink2)">' + esc(r.vertical || '—') + '</td>'
+        + '<td class="r">' + matCell + '</td>'
+        + '<td class="r">' + gstCell + '</td>'
+        + '<td class="r">' + totCell + '</td>'
+        + '</tr>';
+    }).join('');
+    content = '<div style="overflow-x:auto;padding-bottom:4px">'
+      + '<table class="gm-tbl">'
+      + '<thead><tr>'
+      + '<th class="gm-rank"></th>'
+      + '<th>Vendor</th>'
+      + '<th>Vertical</th>'
+      + '<th class="r">Material</th>'
+      + '<th class="r">GST</th>'
+      + '<th class="r">Total</th>'
+      + '</tr></thead>'
+      + '<tbody>' + rows + '</tbody>'
+      + '<tfoot><tr>'
+      + '<td></td>'
+      + '<td style="color:var(--gp-ink2);font-size:11px">' + fmt(vendors.length) + ' vendors</td>'
+      + '<td></td>'
+      + '<td class="r"><span class="' + (field==='material'?'gm-hi':'gm-dim') + '">' + fmtRupee(tMat) + '</span></td>'
+      + '<td class="r"><span class="' + (field==='gst'     ?'gm-hi':'gm-dim') + '">' + fmtRupee(tGst) + '</span></td>'
+      + '<td class="r"><span class="' + (field==='total'   ?'gm-hi':'gm-dim') + '">' + fmtRupee(tTot) + '</span></td>'
+      + '</tr></tfoot>'
+      + '</table></div>';
+  }
+
+  var fieldTotal = field === 'material' ? tMat : field === 'gst' ? tGst : tTot;
+  var el = document.getElementById('gp-modal');
+  var pn = document.getElementById('gm-pn');
+  if (!el || !pn) return;
+  pn.innerHTML =
+    '<div class="km-head">'
+    + '<div class="km-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>'
+    + '<div class="km-htxt">'
+    + '<div class="km-title">' + esc(fyFull(fy)) + ' — ' + esc(label) + '</div>'
+    + '<div class="km-sub">' + (vendors ? fmt(vendors.length) + ' vendors · ' + fmtRupee(fieldTotal) + ' outstanding' : 'Switch year to view vendor details') + '</div>'
+    + '</div>'
+    + '<button class="km-close" onclick="closeGpModal()" aria-label="Close">✕</button>'
+    + '</div>'
+    + content;
+  el.classList.add('gm-open');
+  document.addEventListener('keydown', _gpModalEsc);
+}
+
 function gpSetYear(y) {
   if (y === gpYear) return;
   gpYear = y;
@@ -4996,11 +5118,11 @@ function gstAgingSection() {
         + '<div class="gp-fy-label">' + esc(fyFull(r.fy)) + '</div>'
         + '<div style="border-top:1.5px solid var(--gp-border);margin:7px 0 8px"></div>'
         + '<div class="gp-fy-breakdown">'
-        +   '<div class="gp-fy-brow"><span class="gp-fy-blbl">GST Balance</span>'
+        +   '<div class="gp-fy-brow gp-fy-drill" onclick="gpFyDrillModal(\'' + r.fy + '\',\'gst\',event)" title="View vendor breakdown"><span class="gp-fy-blbl">GST Balance</span>'
         +     '<span class="gp-fy-bamt" style="color:var(--gp-ink)">' + fmtRupee(r.gst) + '</span></div>'
-        +   '<div class="gp-fy-brow"><span class="gp-fy-blbl">Material Balance</span>'
+        +   '<div class="gp-fy-brow gp-fy-drill" onclick="gpFyDrillModal(\'' + r.fy + '\',\'material\',event)" title="View vendor breakdown"><span class="gp-fy-blbl">Material Balance</span>'
         +     '<span class="gp-fy-bamt" style="color:var(--gp-ink)">' + fmtRupee(r.material) + '</span></div>'
-        +   '<div class="gp-fy-brow" style="margin-top:4px;padding-top:5px;border-top:1px solid var(--gp-border)"><span class="gp-fy-blbl" style="color:var(--gp-ink);font-weight:700">Total Balance</span>'
+        +   '<div class="gp-fy-brow gp-fy-drill" style="margin-top:4px;padding-top:5px;border-top:1px solid var(--gp-border)" onclick="gpFyDrillModal(\'' + r.fy + '\',\'total\',event)" title="View vendor breakdown"><span class="gp-fy-blbl" style="color:var(--gp-ink);font-weight:700">Total Balance</span>'
         +     '<span class="gp-fy-bamt" style="color:var(--gp-ink);font-size:12px;font-weight:800">' + fmtRupee(r.total) + '</span></div>'
         + '</div>'
         + '</div>';
