@@ -5020,9 +5020,15 @@ function gpFyDrillModal(fy, field, evt) {
 
   if (vendors) vendors.sort(function(a, b) { return b[field] - a[field]; });
 
-  var tMat = vendors ? vendors.reduce(function(s, r) { return s + r.material; }, 0) : 0;
-  var tGst = vendors ? vendors.reduce(function(s, r) { return s + r.gst; }, 0) : 0;
-  var tTot = vendors ? vendors.reduce(function(s, r) { return s + r.total; }, 0) : 0;
+  // Single pass over vendors for all three column totals
+  var tots = (vendors || []).reduce(function(s, r) {
+    s.material += r.material; s.gst += r.gst; s.total += r.total; return s;
+  }, { material: 0, gst: 0, total: 0 });
+
+  // Highlight the sorted-by column, dim the others
+  function cell(f, v) {
+    return '<span class="' + (field === f ? 'gm-hi' : 'gm-dim') + '">' + fmtRupee(v) + '</span>';
+  }
 
   var content;
   if (!vendors) {
@@ -5034,17 +5040,14 @@ function gpFyDrillModal(fy, field, evt) {
     content = '<div style="padding:32px 20px;text-align:center;color:var(--gp-ink2)">No vendors with outstanding ' + esc(label.toLowerCase()) + ' in ' + esc(fyFull(fy)) + '</div>';
   } else {
     var rows = vendors.map(function(r, i) {
-      var matCell = '<span class="' + (field==='material'?'gm-hi':'gm-dim') + '">' + fmtRupee(r.material) + '</span>';
-      var gstCell = '<span class="' + (field==='gst'     ?'gm-hi':'gm-dim') + '">' + fmtRupee(r.gst) + '</span>';
-      var totCell = '<span class="' + (field==='total'   ?'gm-hi':'gm-dim') + '">' + fmtRupee(r.total) + '</span>';
       return '<tr>'
         + '<td class="gm-rank">' + (i + 1) + '</td>'
         + '<td><div class="gm-vname" title="' + esc(r.name) + '">' + esc(r.name || '—') + '</div>'
         + (r.gstNo ? '<div class="gm-gstin">' + esc(r.gstNo) + '</div>' : '') + '</td>'
         + '<td style="font-size:11px;color:var(--gp-ink2)">' + esc(r.vertical || '—') + '</td>'
-        + '<td class="r">' + matCell + '</td>'
-        + '<td class="r">' + gstCell + '</td>'
-        + '<td class="r">' + totCell + '</td>'
+        + '<td class="r">' + cell('material', r.material) + '</td>'
+        + '<td class="r">' + cell('gst',      r.gst)      + '</td>'
+        + '<td class="r">' + cell('total',    r.total)    + '</td>'
         + '</tr>';
     }).join('');
     content = '<div style="overflow-x:auto;padding-bottom:4px">'
@@ -5062,14 +5065,14 @@ function gpFyDrillModal(fy, field, evt) {
       + '<td></td>'
       + '<td style="color:var(--gp-ink2);font-size:11px">' + fmt(vendors.length) + ' vendors</td>'
       + '<td></td>'
-      + '<td class="r"><span class="' + (field==='material'?'gm-hi':'gm-dim') + '">' + fmtRupee(tMat) + '</span></td>'
-      + '<td class="r"><span class="' + (field==='gst'     ?'gm-hi':'gm-dim') + '">' + fmtRupee(tGst) + '</span></td>'
-      + '<td class="r"><span class="' + (field==='total'   ?'gm-hi':'gm-dim') + '">' + fmtRupee(tTot) + '</span></td>'
+      + '<td class="r">' + cell('material', tots.material) + '</td>'
+      + '<td class="r">' + cell('gst',      tots.gst)      + '</td>'
+      + '<td class="r">' + cell('total',    tots.total)    + '</td>'
       + '</tr></tfoot>'
       + '</table></div>';
   }
 
-  var fieldTotal = field === 'material' ? tMat : field === 'gst' ? tGst : tTot;
+  var fieldTotal = tots[field];
   var el = document.getElementById('gp-modal');
   var pn = document.getElementById('gm-pn');
   if (!el || !pn) return;
