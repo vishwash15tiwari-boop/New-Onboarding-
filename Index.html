@@ -3468,16 +3468,17 @@ function openKpiModal(cardId) {
       if (!qd.success) {
         content = noDataMsg;
       } else {
-        var r    = (qd.seller || {}).rating || {};
-        var avg  = r.avg != null ? r.avg.toFixed(1) : '—';
-        var rT   = r.total || 0, rRated = r.rated || 0;
-        var selVR = (qd.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
+        var r      = (qd.seller || {}).rating || {};
+        var avg    = r.avg != null ? r.avg.toFixed(1) : '—';
+        var rRated = r.rated || 0;
+        var rTotal = (d && d.compS) || 0; // total sellers onboarded on OMP
+        var selVR  = (qd.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
         content =
           hero(avg + (r.avg != null ? '★' : ''), 'Average Seller Rating')
           + srow([
-              {v: fmt(rRated),      l: 'Sellers Rated', s: 'have a score'},
-              {v: fmt(rT - rRated), l: 'Unrated',       s: 'no score yet'},
-              {v: rT > 0 ? Math.round(rRated / rT * 100) + '%' : '—', l: 'Coverage'},
+              {v: fmt(rRated),                  l: 'Sellers Rated', s: 'have a score'},
+              {v: fmt(rTotal - rRated),          l: 'Unrated',       s: 'no score yet'},
+              {v: rTotal > 0 ? Math.round(rRated / rTotal * 100) + '%' : '—', l: 'Coverage'},
             ])
           + (rRated > 0 ? sec('Rating Distribution', starBarsHtml(r.dist || [0,0,0,0,0], rRated, selVR)) : '');
       }
