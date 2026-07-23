@@ -3090,9 +3090,9 @@ function renderVertKPIs(key) {
     pNew: pNew, mNew: mNew,
   };
   var cards = [
-    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                           'vk-total',     'total'),
+    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                           'vk-total',     'total',      null, 'In the System'),
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% completion rate',  'vk-onboarded', 'onboarded'),
-    mk(icZap,    'Transacted',  fmt(txnTotal),         txnPct > 0 ? txnPct + '% of onboarded' : null, 'vk-transacted', 'transacted', null, 'In the System'),
+    mk(icZap,    'Transacted',  fmt(txnTotal),         txnPct > 0 ? txnPct + '% of onboarded' : null, 'vk-transacted', 'transacted'),
   ];
   if (key === 'OMP') {
     cards.push(mk(icUsers, 'Existing vs New', fmt((newS + oldS) + (newB + oldB)), fmt(oldS + oldB) + ' existing · ' + fmt(newS + newB) + ' new', 'vk-total', 'oldvsnew'));
@@ -3115,9 +3115,9 @@ function renderVertKPIs(key) {
     var dVal = selOnb > 0 && dQ ? Math.round((dQ.complete  || 0) / selOnb * 100) + '%' : '—';
     var dSub = dQ ? fmt(dQ.complete  || 0) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' complete' : 'Syncing…';
 
-    cards.push(mk(icStar,   'Vendor Rating', rVal, rSub, 'vk-rating', 'rating', 'qkpi-rating', 'In the System'));
-    cards.push(mk(icShield, 'OSV Status',    oVal, oSub, 'vk-osv',    'osv',    'qkpi-osv',    'In the System'));
-    cards.push(mk(icDocFl,  'Doc Status',    dVal, dSub, 'vk-docs',   'docs',   'qkpi-docs',   'In the System'));
+    cards.push(mk(icStar,   'Vendor Rating', rVal, rSub, 'vk-rating', 'rating', 'qkpi-rating'));
+    cards.push(mk(icShield, 'OSV Status',    oVal, oSub, 'vk-osv',    'osv',    'qkpi-osv'));
+    cards.push(mk(icDocFl,  'Doc Status',    dVal, dSub, 'vk-docs',   'docs',   'qkpi-docs'));
   }
   // Wrap cards naturally by minimum width instead of forcing fixed columns per card count.
   // This ensures OMP's 7 cards (or any count) stays readable — wraps 4+3 or best fit.
