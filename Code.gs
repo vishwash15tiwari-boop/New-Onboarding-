@@ -523,39 +523,70 @@ function debugExistingVsNew() {
 // Per-vertical KPIs + onboarded-by-category breakdown + detail rows.
 function vStats(data) {
   var now = new Date(), weekAgo = new Date(now.getTime() - 7 * 86400000);
-  var total     = data.length;
-  var completed = count(data, 'status', 'COMPLETED');
-  // GST Active/Inactive are counted over onboarded (completed) cases only.
-  var withGST   = countFn(data, function(r) { return r.status === 'COMPLETED' && r.hasGST; });
-  var tats      = data.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS; }).map(function(r) { return r.onbTAT; });
-  // Transacted is null (shown as "—") for a vertical whose rows carry no
-  // transaction signal at all (e.g. EPR); otherwise it's the TRANSACTED count.
-  var hasTxnData = data.some(function(r) { return r.hasTxn; });
-  var transacted = hasTxnData ? countFn(data, function(r) { return r.hasTransacted; }) : null;
+  var nowMs = now.getTime();
+  var AGE_WARN_MS = 14 * 86400000, AGE_DUE_MS = 30 * 86400000;
 
-  // GMV: only positive transaction values count — zero means no transaction occurred.
-  var txnValSum = 0, hasTxnValData = false;
+  // Single pass: all status / GST / new-vs-old / material / TAT / GMV / aging counts.
+  var total = data.length;
+  var completed = 0, draft = 0, inReview = 0, rejected = 0;
+  var withGST = 0, newVendors = 0, oldVendors = 0, completedThisWeek = 0;
+  var hasTxnData = false, transactedCount = 0;
+  var hasTxnValData = false, txnValSum = 0;
+  var agingCount = 0, overdueCount = 0;
+  var tats = [];
+  var plasticTotal = 0, metalTotal = 0;
+  var plasticOnboarded = 0, metalOnboarded = 0;
+  var plasticTransacted = 0, metalTransacted = 0;
+  var plasticNew = 0, metalNew = 0, plasticOld = 0, metalOld = 0;
+
   data.forEach(function(r) {
+    var isDone = r.status === 'COMPLETED';
+    var isOld  = !!r.isOldVendor, isNew = !r.isOldVendor;
+    var cat    = String(r.category || '').trim().toLowerCase();
+    var isPl   = cat === 'plastic', isMt = cat === 'metal';
+
+    if (isDone)                    completed++;
+    else if (r.status === 'DRAFT')      draft++;
+    else if (r.status === 'IN_REVIEW')  inReview++;
+    else if (r.status === 'REJECTED')   rejected++;
+
+    if (isDone && r.hasGST)                                       withGST++;
+    if (isDone && isNew)                                           newVendors++;
+    if (isDone && isOld)                                           oldVendors++;
+    if (isDone && r.onboardedDate && r.onboardedDate >= weekAgo)  completedThisWeek++;
+
+    if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) tats.push(r.onbTAT);
+
+    if (r.hasTxn)        hasTxnData = true;
+    if (r.hasTransacted) transactedCount++;
     if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
-      hasTxnValData = true;
-      txnValSum += r.txnValue;
+      hasTxnValData = true; txnValSum += r.txnValue;
+    }
+
+    if (!isDone && r.status !== 'REJECTED' && r.createdDate) {
+      var elapsed = nowMs - r.createdDate.getTime();
+      if (elapsed > AGE_DUE_MS)       { overdueCount++; agingCount++; }
+      else if (elapsed > AGE_WARN_MS) { agingCount++; }
+    }
+
+    if (isPl) {
+      plasticTotal++;
+      if (isDone)          plasticOnboarded++;
+      if (r.hasTransacted) plasticTransacted++;
+      if (isDone && isNew) plasticNew++;
+      if (isDone && isOld) plasticOld++;
+    }
+    if (isMt) {
+      metalTotal++;
+      if (isDone)          metalOnboarded++;
+      if (r.hasTransacted) metalTransacted++;
+      if (isDone && isNew) metalNew++;
+      if (isDone && isOld) metalOld++;
     }
   });
-  var totalTxnValue = hasTxnValData ? txnValSum : null;
 
-  // Pipeline aging: open records (DRAFT or IN_REVIEW) that haven't completed yet.
-  // Aging = open > 14 days; Overdue = open > 30 days.
-  var AGE_WARN_MS  = 14 * 86400000;
-  var AGE_DUE_MS   = 30 * 86400000;
-  var nowMs = now.getTime();
-  var agingCount = 0, overdueCount = 0;
-  data.forEach(function(r) {
-    if (r.status === 'COMPLETED' || r.status === 'REJECTED') return;
-    if (!r.createdDate) return;
-    var elapsed = nowMs - r.createdDate.getTime();
-    if (elapsed > AGE_DUE_MS)  { overdueCount++; agingCount++; }
-    else if (elapsed > AGE_WARN_MS) { agingCount++; }
-  });
+  var transacted    = hasTxnData    ? transactedCount : null;
+  var totalTxnValue = hasTxnValData ? txnValSum       : null;
 
   var catMap = {};
   data.forEach(function(r) {
@@ -626,41 +657,20 @@ function vStats(data) {
       pctTransacted: fyTransacted === null ? null : pct(fyTransacted, fyCompleted),
       totalTxnValue: fyHasTxnVal ? fyTxnSum : null,
       withGST:       fyWithGST,
-      missingGST:    fyWithGST !== null ? fyCompleted - fyWithGST : null,
       avgTAT:        fyTats.length ? Math.round(avg(fyTats)) : null,
     };
   }).filter(function(f) { return f.fyStart >= 2019; })
     .sort(function(a, b) { return b.fyStart - a.fyStart; });
 
-  // Existing vs New (OMP only): uses isOldVendor flag set by buildDashboard.
-  // Existing = name found COMPLETED in any non-OMP vertical; New = first time.
-  // For other verticals isOldVendor is always undefined → all count as new.
-  var newVendors = countFn(data, function(r) { return r.status === 'COMPLETED' && !r.isOldVendor; });
-  var oldVendors = countFn(data, function(r) { return r.status === 'COMPLETED' && !!r.isOldVendor; });
-
-  // Plastic vs Metal — OMP business_category values; zero for other verticals.
-  function catLC(r) { return String(r.category || '').trim().toLowerCase(); }
-  var plasticTotal      = countFn(data, function(r) { return catLC(r) === 'plastic'; });
-  var metalTotal        = countFn(data, function(r) { return catLC(r) === 'metal'; });
-  var plasticOnboarded  = countFn(data, function(r) { return catLC(r) === 'plastic' && r.status === 'COMPLETED'; });
-  var metalOnboarded    = countFn(data, function(r) { return catLC(r) === 'metal'   && r.status === 'COMPLETED'; });
-  var plasticTransacted = countFn(data, function(r) { return catLC(r) === 'plastic' && r.hasTransacted; });
-  var metalTransacted   = countFn(data, function(r) { return catLC(r) === 'metal'   && r.hasTransacted; });
-  var plasticNew        = countFn(data, function(r) { return catLC(r) === 'plastic' && r.status === 'COMPLETED' && !r.isOldVendor; });
-  var metalNew          = countFn(data, function(r) { return catLC(r) === 'metal'   && r.status === 'COMPLETED' && !r.isOldVendor; });
-  var plasticOld        = countFn(data, function(r) { return catLC(r) === 'plastic' && r.status === 'COMPLETED' && !!r.isOldVendor; });
-  var metalOld          = countFn(data, function(r) { return catLC(r) === 'metal'   && r.status === 'COMPLETED' && !!r.isOldVendor; });
-
   return {
     total: total,
     completed: completed,
-    draft: count(data, 'status', 'DRAFT'),
-    inReview: count(data, 'status', 'IN_REVIEW'),
-    rejected: count(data, 'status', 'REJECTED'),
+    draft: draft,
+    inReview: inReview,
+    rejected: rejected,
     withGST: withGST,
-    missingGST: completed - withGST,
     completionPct: pct(completed, total),
-    completedThisWeek: countFn(data, function(r) { return r.onboardedDate && r.onboardedDate >= weekAgo; }),
+    completedThisWeek: completedThisWeek,
     avgTAT: tats.length ? Math.round(avg(tats)) : null,
     transacted: transacted,
     pctTransacted: transacted === null ? null : pct(transacted, completed),
