@@ -3149,9 +3149,14 @@ function renderVertKPIs(key) {
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% completion rate',  'vk-onboarded', 'onboarded'),
     mk(icZap,    'Transacted',  fmt(txnTotal),         txnPct > 0 ? txnPct + '% of onboarded' : null, 'vk-transacted', 'transacted'),
   ];
-  // Three KPI cards, matching every other vertical. auto-fit keeps them readable and
-  // lets them fill the row (or wrap gracefully on narrow screens).
-  el.style.gridTemplateColumns = 'repeat(auto-fit, minmax(240px, 1fr))';
+  if (key === 'OMP') {
+    var enTotal = (oldS + oldB) + (newS + newB);
+    cards.push(mk(icUsers, 'Existing / New', fmt(enTotal),
+      fmt(oldS + oldB) + ' existing · ' + fmt(newS + newB) + ' new',
+      'vk-oldvsnew', 'oldvsnew'));
+  }
+  // auto-fit keeps cards readable on wide screens and wraps gracefully on narrow ones.
+  el.style.gridTemplateColumns = 'repeat(auto-fit, minmax(' + (key === 'OMP' ? '200' : '240') + 'px, 1fr))';
   el.innerHTML = cards.join('');
   animateCounters(el);
 }
@@ -4085,7 +4090,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
   }).join('');
   if (catRows) catRows = '<div class="cc-cat-rows">' + catRows + '</div>';
   var newV = v.newVendors || 0, oldV = v.oldVendors || 0;
-  var enVal = (cfg.key === 'OMP' && (newV > 0 || oldV > 0)) ? fmt(oldV) + ' existing · ' + fmt(newV) + ' new' : null;
+  var enVal = null; // shown in the top KPI row for OMP, not in pipeline cards
   var fys = (v.fyBreakdown || []).filter(function(f) { return !f.fyStart || f.fyStart >= 2019; });
   var statsList = '';
   if (fys.length) {
