@@ -1228,7 +1228,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v6';
+  var CACHE_KEY = 'quality_data_v7';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1238,9 +1238,17 @@ function getQualityData() {
   var buyerIds  = buildQualityIdSet_('_mb_buyers',  ['buyer_id', 'id','vendor_id','vendorid']);
   var hasSplit  = Object.keys(sellerIds).length > 0 || Object.keys(buyerIds).length > 0;
 
-  // OMP-onboarded map: { id → { name, gstin, category, onboardingStatus } }
+  // OMP-onboarded map keyed by ID (for OSV matching)
   var ompMap   = buildOmpOnboardedMap_();
   var ompTotal = Object.keys(ompMap).length;
+
+  // OMP-onboarded maps keyed by GSTIN (for Vendor Rating matching)
+  var ompGstinSellers = buildOmpGstinMap_('_mb_sellers', 'seller');
+  var ompGstinBuyers  = buildOmpGstinMap_('_mb_buyers',  'buyer');
+  // Merged map — seller wins on GSTIN collision
+  var ompGstinMap = {};
+  Object.keys(ompGstinBuyers).forEach(function(g)  { ompGstinMap[g] = ompGstinBuyers[g]; });
+  Object.keys(ompGstinSellers).forEach(function(g) { ompGstinMap[g] = ompGstinSellers[g]; });
 
   function mkR()  { return { ws: 0, rated: 0, total: 0, dist: [0,0,0,0,0] }; }
   function mkO()  { return { completed: 0, pending: 0, failed: 0, notInitiated: 0, total: 0 }; }
@@ -1278,6 +1286,9 @@ function getQualityData() {
       var nameC = qualityFindCol_(vrh, ['seller_name','name','vendor_name','business_name','company_name']);
       if (nameC < 0) nameC = 1;
 
+      // GSTIN column for rating GSTIN-match lookup
+      var vrGstC = qualityFindCol_(vrh, ['gstin','gst_number','gst_no','gstin_number','gst']);
+
       // Rating: seller_rating is col AE; positional fallback index 30
       var rC = qualityFindCol_(vrh, ['seller_rating','rating','vendor_rating','average_rating','avg_rating','score','overall_rating','stars']);
       if (rC < 0) rC = 30;
@@ -1311,23 +1322,30 @@ function getQualityData() {
         var rowAud = resolveAud_(row, vrh, vidC, vauC);
         var ts = tgts_(rowAud);
 
-        // — Rating —
-        var rv = parseFloat(row[rC]);
-        ts.forEach(function(t) {
-          acc[t].r.total += 1;
-          if (!isNaN(rv) && rv > 0 && rv <= 5) {
-            acc[t].r.ws    += rv;
-            acc[t].r.rated += 1;
-            acc[t].r.dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += 1;
-          }
-        });
-        if (!isNaN(rv) && rv > 0 && rv <= 5) {
-          vendorRatings.push({
-            id:     String(row[vidC] || '').trim().slice(0, 30),
-            name:   String(row[nameC] || '').trim().slice(0, 60),
-            rating: Math.round(rv * 10) / 10,
-            aud:    rowAud
+        // — Rating (OMP-onboarded only, matched by GSTIN) —
+        var vrGstin   = vrGstC >= 0 ? String(row[vrGstC] || '').trim() : '';
+        var ompRInfo  = vrGstin ? ompGstinMap[vrGstin] : null;
+        if (ompRInfo) {
+          var rv   = parseFloat(row[rC]);
+          var rAud = ompRInfo.aud;
+          ['seller' === rAud ? 'seller' : 'buyer', 'combined'].forEach(function(t) {
+            if (!isNaN(rv) && rv > 0 && rv <= 5) {
+              acc[t].r.ws    += rv;
+              acc[t].r.rated += 1;
+              acc[t].r.dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += 1;
+            }
           });
+          if (!isNaN(rv) && rv > 0 && rv <= 5) {
+            vendorRatings.push({
+              id:               ompRInfo.id   || String(row[vidC] || '').trim().slice(0, 30),
+              name:             ompRInfo.name || String(row[nameC] || '').trim().slice(0, 60),
+              gstin:            vrGstin.slice(0, 20),
+              rating:           Math.round(rv * 10) / 10,
+              onboardingStatus: ompRInfo.onboardingStatus,
+              category:         ompRInfo.category,
+              aud:              rAud
+            });
+          }
         }
 
         // — OSV consent (OMP-onboarded sellers only; binary: verified vs not_initiated) —
@@ -1381,6 +1399,11 @@ function getQualityData() {
     }
   } catch (e) { Logger.log('getQualityData vendor-rating: ' + e.message); }
 
+  // Rating denominator = OMP-onboarded count per audience (GSTIN-matched)
+  acc['seller'].r.total   = Object.keys(ompGstinSellers).length;
+  acc['buyer'].r.total    = Object.keys(ompGstinBuyers).length;
+  acc['combined'].r.total = Object.keys(ompGstinSellers).length + Object.keys(ompGstinBuyers).length;
+
   // OSV denominator = OMP-onboarded count; not_initiated fills the gap
   ['seller', 'combined'].forEach(function(t) {
     acc[t].o.total        = ompTotal;
@@ -1390,7 +1413,7 @@ function getQualityData() {
   });
 
   // ── Finalize accumulators → output shape ─────────────────────
-  function fR(r) { return { avg: r.rated>0?Math.round(r.ws/r.rated*10)/10:null, total:r.total||r.rated, rated:r.rated, dist:r.dist }; }
+  function fR(r) { return { avg: r.rated>0?Math.round(r.ws/r.rated*10)/10:null, total:r.total, rated:r.rated, dist:r.dist }; }
   function fO(o) { return { completed:o.completed, pending:o.pending, failed:o.failed, notInitiated:o.notInitiated, total:o.total }; }
   function fD(d) { return { complete:d.complete, partial:d.partial, incomplete:d.incomplete, missing:d.missing, total:d.total }; }
   function fA(a) { return { rating:fR(a.r), osv:fO(a.o), docs:fD(a.d) }; }
@@ -1462,6 +1485,43 @@ function buildOmpOnboardedMap_() {
       gstin:            gstC >= 0 ? String(row[gstC] || '').trim().slice(0, 20) : '',
       category:         catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
       onboardingStatus: st
+    };
+  });
+  return map;
+}
+
+// Returns { gstin: { id, name, category, onboardingStatus, aud } } for OMP-onboarded records.
+// sheetName = '_mb_sellers' or '_mb_buyers'; aud = 'seller' or 'buyer'.
+function buildOmpGstinMap_(sheetName, aud) {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet || sheet.getLastRow() < 2) return {};
+  var maxCol  = Math.min(sheet.getLastColumn(), 60);
+  var vals    = sheet.getRange(1, 1, sheet.getLastRow(), maxCol).getValues();
+  var headers = vals[0].map(function(h) {
+    return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  });
+  function fc(cands) { return qualityFindCol_(headers, cands); }
+  var idC  = fc(['seller_id','buyer_id','id','vendor_id','vendorid']);
+  var nmC  = fc(['seller_name','buyer_name','name','vendor_name','business_name','company_name']);
+  var gstC = fc(['gstin','gst_number','gst_no','gstin_number','gst']);
+  var catC = fc(['business_category','category','vertical_category','cat']);
+  var bvC  = fc(['business_vertical','vertical','biz_vertical']);
+  var stC  = fc(['onboarding_status','status','onboard_status']);
+  if (gstC < 0) return {};
+  var map = {};
+  vals.slice(1).forEach(function(row) {
+    var gstin = String(row[gstC] || '').trim(); if (!gstin) return;
+    var bv = bvC >= 0 ? String(row[bvC] || '').trim().toLowerCase() : '';
+    var st = stC >= 0 ? String(row[stC] || '').trim().toUpperCase()  : '';
+    if (bv.indexOf('open marketplace') < 0 && bv.indexOf('open_marketplace') < 0 && bv !== 'omp') return;
+    if (st !== 'COMPLETED') return;
+    map[gstin] = {
+      id:               idC  >= 0 ? String(row[idC]  || '').trim().slice(0, 30) : '',
+      name:             nmC  >= 0 ? String(row[nmC]  || '').trim().slice(0, 60) : '',
+      category:         catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
+      onboardingStatus: st,
+      aud:              aud
     };
   });
   return map;

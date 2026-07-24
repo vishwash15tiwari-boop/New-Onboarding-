@@ -3486,10 +3486,11 @@ function openKpiModal(cardId) {
             + '</div>'
             + '<div id="' + tid + '" class="km-star-vlist" style="display:none">'
             + sv.map(function(v) {
-                return '<div class="km-vrow">'
-                  + (v.id ? '<span class="km-vid">' + esc(v.id) + '</span>' : '')
-                  + '<span class="km-vname">' + esc(v.name || 'Unknown') + '</span>'
+                return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
+                  + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
+                  + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
                   + '<span class="km-vrating" style="color:' + bcol + '">' + v.rating.toFixed(1) + '★</span>'
+                  + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#0066CC;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.category) + '</span>' : '')
                   + '</div>';
               }).join('')
             + '</div>';
@@ -3520,7 +3521,7 @@ function openKpiModal(cardId) {
 
     if (cardId === 'rating') {
       title    = 'Vendor Rating';
-      subtitle = 'Average rating score across onboarded sellers';
+      subtitle = 'Average Seller Rating — Onboarded Open Marketplace sellers only';
       iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
       if (!qd.success) {
         content = noDataMsg;
@@ -3528,14 +3529,14 @@ function openKpiModal(cardId) {
         var r      = (qd.seller || {}).rating || {};
         var avg    = r.avg != null ? r.avg.toFixed(1) : '—';
         var rRated = r.rated || 0;
-        var rTotal = (d && d.compS) || 0; // total sellers onboarded on OMP
+        var rTotal = r.total || 0;
         var selVR  = (qd.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
         content =
           hero(avg + (r.avg != null ? '★' : ''), 'Average Seller Rating')
           + srow([
-              {v: fmt(rRated),                  l: 'Sellers Rated', s: 'have a score'},
-              {v: fmt(rTotal - rRated),          l: 'Unrated',       s: 'no score yet'},
-              {v: rTotal > 0 ? Math.round(rRated / rTotal * 100) + '%' : '—', l: 'Coverage'},
+              {v: fmt(rRated),                  l: 'Sellers Rated',       s: 'have a score'},
+              {v: fmt(rTotal - rRated),          l: 'Unrated',             s: 'no score yet'},
+              {v: rTotal > 0 ? Math.round(rRated / rTotal * 100) + '%' : '—', l: 'Coverage', s: 'of OMP onboarded'},
             ])
           + (rRated > 0 ? sec('Rating Distribution', starBarsHtml(r.dist || [0,0,0,0,0], rRated, selVR)) : '');
       }
@@ -3829,11 +3830,12 @@ function _patchQualityKpiCards() {
 
   var rEl = document.getElementById('qkpi-rating');
   if (rEl) {
-    var r   = qc.rating || {};
-    var avg = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
-    var rsb = fmt(r.rated || 0) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' rated';
-    var rv  = rEl.querySelector('.vkpi-val'); if (rv) rv.textContent = avg;
-    var rs  = rEl.querySelector('.vkpi-sub'); if (rs) rs.textContent = rsb;
+    var r    = qc.rating || {};
+    var avg  = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
+    var rOmp = r.total || 0;
+    var rsb  = fmt(r.rated || 0) + (rOmp > 0 ? ' of ' + fmt(rOmp) + ' OMP' : '') + ' rated';
+    var rv   = rEl.querySelector('.vkpi-val'); if (rv) rv.textContent = avg;
+    var rs   = rEl.querySelector('.vkpi-sub'); if (rs) rs.textContent = rsb;
   }
 
   var oEl = document.getElementById('qkpi-osv');
