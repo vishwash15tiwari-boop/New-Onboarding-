@@ -3163,6 +3163,7 @@ function vkpiOpen(action) {
 }
 
 function openKpiModal(cardId) {
+  window._lastKpiCardId = cardId;
   var d = window._kpiSnap;
   var isQualityCard = (cardId === 'rating' || cardId === 'osv' || cardId === 'docs');
   if (!d && !isQualityCard) return;
@@ -3409,7 +3410,7 @@ function openKpiModal(cardId) {
             + '<div style="font-size:11px;color:var(--txt3);margin-bottom:8px">'
             + audLabel + ' detail is not loaded yet</div>'
             + '<button class="km-foot-link" style="font-size:11px" '
-            + 'onclick="closeKpiModal();setDetailAud(\'' + aud + '\');event.stopPropagation()">'
+            + 'onclick="event.stopPropagation();_kvnLoadAud(\'' + aud + '\')">'
             + 'Load ' + audLabel + ' detail ↓</button>'
             + '</div>';
         } else {
@@ -3637,6 +3638,61 @@ function closeKpiModal() {
   if (modal) modal.classList.remove('km-open');
   document.removeEventListener('keydown', _kpiEsc);
 }
+
+// Load rows for `aud` in the background and re-render the open KPI modal when done.
+// Called by the "Load Buyers/Sellers detail" button inside the modal tiles.
+function _kvnLoadAud(aud) {
+  selectedAud = aud;
+  vertRows = []; vertRowsLoading = true; vertRowsError = null;
+  var myGen = ++_vertRowsGen;
+  var key = activeVertKey || selectedVert;
+  if (!key) return;
+  var f = { audience: aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var lsVKey = STORE_PFX + 'vr_' + aud + '_' + key;
+  // SWR: serve from localStorage immediately, then refresh from server
+  var swrDone = false;
+  try {
+    var sv = JSON.parse(localStorage.getItem(lsVKey) || 'null');
+    if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
+      vertRows = sv.rows; vertRowsLoading = false; swrDone = true;
+      if (window._lastKpiCardId) openKpiModal(window._lastKpiCardId);
+    }
+  } catch (e) {}
+  if (!swrDone) {
+    // Show "Loading…" inside any currently-open tile panels while we wait
+    var pn = document.getElementById('km-pn');
+    if (pn) {
+      var pvs = pn.querySelectorAll('.km-tile-vlist');
+      for (var pi = 0; pi < pvs.length; pi++) {
+        if (pvs[pi].style.display !== 'none') {
+          pvs[pi].innerHTML = '<div style="padding:12px 4px;text-align:center;color:var(--txt3);font-size:11px">Loading…</div>';
+        }
+      }
+    }
+  }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (myGen !== _vertRowsGen) return;
+      vertRowsLoading = false;
+      try {
+        var data = JSON.parse(res);
+        if (data.success) {
+          vertRows = data.rows || [];
+          try { localStorage.setItem(lsVKey, JSON.stringify({ pKey: myPKey, rows: data.rows || [] })); } catch (e) {}
+        }
+      } catch (e) {}
+      if (window._lastKpiCardId) openKpiModal(window._lastKpiCardId);
+    })
+    .withFailureHandler(function() {
+      if (myGen !== _vertRowsGen) return;
+      vertRowsLoading = false;
+      if (window._lastKpiCardId) openKpiModal(window._lastKpiCardId);
+    })
+    .getVerticalRows(key, JSON.stringify(f));
+}
+
 function _kmStarToggle(id, row) {
   var el = document.getElementById(id);
   if (!el) return;
