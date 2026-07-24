@@ -1228,7 +1228,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v5';
+  var CACHE_KEY = 'quality_data_v6';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1237,6 +1237,10 @@ function getQualityData() {
   var sellerIds = buildQualityIdSet_('_mb_sellers', ['seller_id','id','vendor_id','vendorid']);
   var buyerIds  = buildQualityIdSet_('_mb_buyers',  ['buyer_id', 'id','vendor_id','vendorid']);
   var hasSplit  = Object.keys(sellerIds).length > 0 || Object.keys(buyerIds).length > 0;
+
+  // OMP-onboarded map: { id → { name, gstin, category, onboardingStatus } }
+  var ompMap   = buildOmpOnboardedMap_();
+  var ompTotal = Object.keys(ompMap).length;
 
   function mkR()  { return { ws: 0, rated: 0, total: 0, dist: [0,0,0,0,0] }; }
   function mkO()  { return { completed: 0, pending: 0, failed: 0, notInitiated: 0, total: 0 }; }
@@ -1326,32 +1330,29 @@ function getQualityData() {
           });
         }
 
-        // — OSV consent —
-        var os = String(row[oC] || '').trim().toUpperCase().replace(/\s+/g, '_');
-        ts.forEach(function(t) {
-          acc[t].o.total += 1;
-          if      (os === 'CONSENT_ACCEPTED' || os === 'COMPLETED' || os === 'VERIFIED' ||
-                   os === 'APPROVED' || os === 'DONE' || os === 'PASSED' || os === 'PASS') acc[t].o.completed   += 1;
-          else if (os === 'CONSENT_PENDING'  || os === 'PENDING'   || os === 'IN_PROGRESS' ||
-                   os === 'SCHEDULED'        || os === 'IN_REVIEW' || os === 'IN_QUEUE')   acc[t].o.pending     += 1;
-          else if (os === 'CONSENT_REJECTED' || os === 'REJECTED'  || os === 'FAILED' ||
-                   os === 'FAIL')                                                           acc[t].o.failed      += 1;
-          else                                                                              acc[t].o.notInitiated+= 1;
-        });
-        var osvStatus;
-        if      (os === 'CONSENT_ACCEPTED' || os === 'COMPLETED' || os === 'VERIFIED' ||
-                 os === 'APPROVED' || os === 'DONE' || os === 'PASSED' || os === 'PASS') osvStatus = 'verified';
-        else if (os === 'CONSENT_PENDING'  || os === 'PENDING'   || os === 'IN_PROGRESS' ||
-                 os === 'SCHEDULED'        || os === 'IN_REVIEW' || os === 'IN_QUEUE')   osvStatus = 'pending';
-        else if (os === 'CONSENT_REJECTED' || os === 'REJECTED'  || os === 'FAILED' ||
-                 os === 'FAIL')                                                           osvStatus = 'failed';
-        else                                                                              osvStatus = 'not_initiated';
-        vendorOSV.push({
-          id:     String(row[vidC] || '').trim().slice(0, 30),
-          name:   String(row[nameC] || '').trim().slice(0, 60),
-          status: osvStatus,
-          aud:    rowAud
-        });
+        // — OSV consent (OMP-onboarded sellers only; binary: verified vs not_initiated) —
+        var vid_ = String(row[vidC] || '').trim();
+        var ompInfo = ompMap[vid_];
+        if (ompInfo) {
+          var osRaw = String(row[oC] || '').trim();
+          var osUp  = osRaw.toUpperCase().replace(/\s+/g, '_');
+          var osvStatus = (osUp === 'CONSENT_ACCEPTED' || osUp === 'YES' || osUp === 'Y' || osUp === 'TRUE')
+            ? 'verified' : 'not_initiated';
+          if (osvStatus === 'verified') {
+            acc['seller'].o.completed   += 1;
+            acc['combined'].o.completed += 1;
+          }
+          vendorOSV.push({
+            id:               vid_.slice(0, 30),
+            name:             ompInfo.name || String(row[nameC] || '').trim().slice(0, 60),
+            gstin:            ompInfo.gstin,
+            consentRaw:       osRaw.slice(0, 30),
+            status:           osvStatus,
+            onboardingStatus: ompInfo.onboardingStatus,
+            category:         ompInfo.category,
+            aud:              'seller'
+          });
+        }
 
         // — Doc completeness: count how many of 11 docs are submitted (value > 0) —
         var submitted = 0, totalDocs = 0, missingDocNames = [];
@@ -1379,6 +1380,14 @@ function getQualityData() {
       });
     }
   } catch (e) { Logger.log('getQualityData vendor-rating: ' + e.message); }
+
+  // OSV denominator = OMP-onboarded count; not_initiated fills the gap
+  ['seller', 'combined'].forEach(function(t) {
+    acc[t].o.total        = ompTotal;
+    acc[t].o.notInitiated = Math.max(0, ompTotal - acc[t].o.completed);
+    acc[t].o.pending      = 0;
+    acc[t].o.failed       = 0;
+  });
 
   // ── Finalize accumulators → output shape ─────────────────────
   function fR(r) { return { avg: r.rated>0?Math.round(r.ws/r.rated*10)/10:null, total:r.total||r.rated, rated:r.rated, dist:r.dist }; }
@@ -1421,6 +1430,41 @@ function buildQualityIdSet_(sheetName, idCols) {
   var set = {};
   vals.slice(1).forEach(function(row) { var id = String(row[idCol]||'').trim(); if (id) set[id] = true; });
   return set;
+}
+
+// Returns { id: { name, gstin, category, onboardingStatus } } for OMP-onboarded sellers.
+function buildOmpOnboardedMap_() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('_mb_sellers');
+  if (!sheet || sheet.getLastRow() < 2) return {};
+  var maxCol  = Math.min(sheet.getLastColumn(), 60);
+  var vals    = sheet.getRange(1, 1, sheet.getLastRow(), maxCol).getValues();
+  var headers = vals[0].map(function(h) {
+    return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  });
+  function fc(cands) { return qualityFindCol_(headers, cands); }
+  var idC  = fc(['seller_id','id','vendor_id','vendorid']);
+  var nmC  = fc(['seller_name','name','vendor_name','business_name','company_name']);
+  var gstC = fc(['gstin','gst_number','gst_no','gstin_number','gst']);
+  var catC = fc(['business_category','category','vertical_category','cat']);
+  var bvC  = fc(['business_vertical','vertical','biz_vertical']);
+  var stC  = fc(['onboarding_status','status','onboard_status']);
+  if (idC < 0) return {};
+  var map = {};
+  vals.slice(1).forEach(function(row) {
+    var id = String(row[idC] || '').trim(); if (!id) return;
+    var bv = bvC >= 0 ? String(row[bvC] || '').trim().toLowerCase() : '';
+    var st = stC >= 0 ? String(row[stC] || '').trim().toUpperCase()  : '';
+    if (bv.indexOf('open marketplace') < 0 && bv.indexOf('open_marketplace') < 0 && bv !== 'omp') return;
+    if (st !== 'COMPLETED') return;
+    map[id] = {
+      name:             nmC  >= 0 ? String(row[nmC]  || '').trim().slice(0, 60) : '',
+      gstin:            gstC >= 0 ? String(row[gstC] || '').trim().slice(0, 20) : '',
+      category:         catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
+      onboardingStatus: st
+    };
+  });
+  return map;
 }
 
 function qualityFindCol_(headers, candidates) {

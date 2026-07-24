@@ -3239,6 +3239,18 @@ function openKpiModal(cardId) {
       h += '<div id="' + tid + '" class="km-tile-vlist" style="display:none">';
       var shown = vendors.slice(0, 60);
       h += shown.map(function(v) {
+        if (sp.mode === 'osv') {
+          var isV  = v.status === 'verified';
+          var cBg  = isV ? 'rgba(48,209,88,.15)' : 'var(--bg2)';
+          var cClr = isV ? '#248A3D' : 'var(--txt3)';
+          var cLbl = v.consentRaw ? esc(v.consentRaw) : (isV ? 'Yes' : 'No / Blank');
+          return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
+            + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
+            + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
+            + '<span class="km-vbadge" style="background:' + cBg + ';color:' + cClr + '">' + cLbl + '</span>'
+            + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#0066CC;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.category) + '</span>' : '')
+            + '</div>';
+        }
         var vr = '<div class="km-vrow"' + (sp.mode === 'docs' && v.missingDocs && v.missingDocs.length ? ' style="flex-wrap:wrap;align-items:flex-start"' : '') + '>';
         if (v.id) vr += '<span class="km-vid">' + esc(v.id) + '</span>';
         vr += '<span class="km-vname">' + esc(v.name || 'Unknown') + '</span>';
@@ -3529,34 +3541,30 @@ function openKpiModal(cardId) {
 
     } else if (cardId === 'osv') {
       title    = 'OSV Status';
-      subtitle = 'On-Site Verification completion across onboarded sellers';
+      subtitle = 'Based on OSV Consent field — Onboarded Open Marketplace sellers only';
       iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
       if (!qd.success) {
         content = noDataMsg;
       } else {
         var o    = (qd.seller || {}).osv || {};
-        var oT   = (d && d.compS) || 0;
+        var oT   = o.total || 0;
         var oPct = oT > 0 ? Math.round((o.completed || 0) / oT * 100) : 0;
         content =
-          hero(fmt(o.completed || 0), 'Sellers Verified')
+          hero(fmt(o.completed || 0), 'Consent Verified (OSV)')
           + srow([
-              {v: oPct + '%', l: 'Verification Rate', s: 'of total sellers'},
-              {v: fmt(oT),    l: 'Total Sellers'},
+              {v: oPct + '%', l: 'Verification Rate',   s: 'of OMP onboarded'},
+              {v: fmt(oT),    l: 'Total OMP Onboarded', s: 'COMPLETED status'},
             ])
-          + sec('Status Breakdown',
+          + sec('Consent Status',
               progBar([
                 {w: o.completed    || 0, color: 'var(--st-onboarded)'},
-                {w: o.pending      || 0, color: 'var(--st-review)'},
-                {w: o.failed       || 0, color: 'var(--st-rejected)'},
                 {w: o.notInitiated || 0, color: 'var(--st-draft)'},
               ])
               + (function() {
-                  var vl = (qd.vendorOSV || []).filter(function(v){ return v.aud !== 'buyer'; });
+                  var vl = qd.vendorOSV || [];
                   return expandTileGrid([
-                    {v: fmt(o.completed    || 0), l: 'Verified',      c: 'var(--st-onboarded)', vendors: vl.filter(function(v){return v.status==='verified';})},
-                    {v: fmt(o.pending      || 0), l: 'Pending',       c: 'var(--st-review)',    vendors: vl.filter(function(v){return v.status==='pending';})},
-                    {v: fmt(o.failed       || 0), l: 'Failed',        c: 'var(--st-rejected)',  vendors: vl.filter(function(v){return v.status==='failed';})},
-                    {v: fmt(o.notInitiated || 0), l: 'Not Initiated', c: 'var(--st-draft)',     vendors: vl.filter(function(v){return v.status==='not_initiated';})},
+                    {v: fmt(o.completed    || 0), l: 'Verified',      c: 'var(--st-onboarded)', vendors: vl.filter(function(v){return v.status==='verified';}),      mode:'osv'},
+                    {v: fmt(o.notInitiated || 0), l: 'Not Initiated', c: 'var(--st-draft)',     vendors: vl.filter(function(v){return v.status==='not_initiated';}), mode:'osv'},
                   ]);
                 })()
             );
@@ -3774,11 +3782,11 @@ function _patchQualityKpiCards() {
 
   var oEl = document.getElementById('qkpi-osv');
   if (oEl) {
-    var o    = qc.osv || {}, oCmp = o.completed || 0;
-    var opct = selOnb > 0 ? Math.round(oCmp / selOnb * 100) + '%' : '—';
-    var osb  = fmt(oCmp) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' verified';
-    var ov  = oEl.querySelector('.vkpi-val'); if (ov) ov.textContent = opct;
-    var os  = oEl.querySelector('.vkpi-sub'); if (os) os.textContent = osb;
+    var o    = qc.osv || {}, oCmp = o.completed || 0, oOmp = o.total || 0;
+    var opct = oOmp > 0 ? Math.round(oCmp / oOmp * 100) + '%' : '—';
+    var osb  = fmt(oCmp) + (oOmp > 0 ? ' of ' + fmt(oOmp) + ' OMP' : '') + ' verified';
+    var ov   = oEl.querySelector('.vkpi-val'); if (ov)  ov.textContent  = opct;
+    var oSub = oEl.querySelector('.vkpi-sub'); if (oSub) oSub.textContent = osb;
   }
 
   var dEl = document.getElementById('qkpi-docs');
@@ -3838,17 +3846,15 @@ function buildQualitySect(qd, aud) {
   // Rows: [●col] [label] [count] [pct%]
   if (q.osv && q.osv.total > 0) {
     var o  = q.osv, oT = o.total || 1;
-    var osvPct = Math.round(o.completed / oT * 100);
+    var osvPct = Math.round((o.completed || 0) / oT * 100);
     var or_ = [
-      { col: 'var(--st-onboarded)', v: o.completed,    lbl: 'Verified'     },
-      { col: 'var(--st-review)',    v: o.pending,       lbl: 'Pending'      },
-      { col: 'var(--st-rejected)',  v: o.failed,        lbl: 'Failed'       },
-      { col: 'var(--st-draft)',     v: o.notInitiated,  lbl: 'Not Initiated'},
+      { col: 'var(--st-onboarded)', v: o.completed,   lbl: 'Verified'      },
+      { col: 'var(--st-draft)',     v: o.notInitiated, lbl: 'Not Initiated' },
     ];
     html += '<div class="cc-qsect-row cc-qsect-mt">'
       + '<span class="cc-qsect-ic">◎</span>'
-      + '<span class="cc-qsect-lb">OSV Verification</span>'
-      + '<span class="cc-qsect-vl">' + fmt(o.completed) + '&thinsp;<span class="cc-qsect-sub">' + osvPct + '% verified</span></span>'
+      + '<span class="cc-qsect-lb">OSV Consent</span>'
+      + '<span class="cc-qsect-vl">' + fmt(o.completed) + '&thinsp;<span class="cc-qsect-sub">' + osvPct + '% of OMP</span></span>'
       + '</div>'
       + or_.map(function(x) {
           if (!x.v) return '';
