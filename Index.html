@@ -715,6 +715,17 @@ tbody td{padding:12px 16px;color:var(--txt);vertical-align:middle;white-space:no
 .km-sg-xp:hover{filter:brightness(.93)}
 .km-sg-open .km-star-arr{transform:rotate(90deg)}
 .km-tile-vlist{padding:4px 0 6px;margin-top:2px}
+.km-txn-tbl{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:14px}
+.km-txn-tbl th{font-size:10px;font-weight:600;color:var(--txt2);padding:5px 4px;border-bottom:2px solid var(--border);text-align:left;white-space:nowrap}
+.km-txn-tbl td{padding:5px 4px;border-bottom:1px solid var(--border);vertical-align:middle}
+.km-txn-tbl tr:last-child td{border-bottom:none}
+.km-txn-aud{font-size:12px;font-weight:600;color:var(--txt);margin:10px 0 4px}
+.km-txn-smry{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 12px;background:var(--bg2);border-radius:10px;margin:8px 0 14px}
+.km-txn-smry-item{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.km-txn-smry-val{font-size:16px;font-weight:700;color:var(--txt);letter-spacing:-0.5px;font-variant-numeric:tabular-nums}
+.km-txn-smry-lbl{font-size:9px;color:var(--txt3);line-height:1.3}
+.km-txn-expand{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);text-align:center}
+.km-txn-empty{font-size:11px;color:var(--txt3);padding:8px 0;text-align:center}
 .km-vbadge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;flex-shrink:0;letter-spacing:.02em}
 .km-vaud{font-size:10px;color:var(--txt3);flex-shrink:0;font-variant-numeric:tabular-nums}
 .km-vmissing{font-size:10px;color:var(--txt3);line-height:1.5;padding:2px 0 2px 0;width:100%}
@@ -3082,6 +3093,7 @@ function renderVertKPIs(key) {
     totalS: totalS, totalB: totalB,
     compS: compS, compB: compB, compPct: compPct,
     txnS: txnS, txnB: txnB, txnTotal: txnTotal, txnPct: txnPct, nonTxnTotal: nonTxnTotal,
+    txnUniqueTotal: (vs.totalTxnCount || 0) + (vb.totalTxnCount || 0),
     newS: newS, oldS: oldS, newB: newB, oldB: oldB,
     vs: vs, vb: vb,
     pTotal: pTotal, mTotal: mTotal,
@@ -3318,20 +3330,28 @@ function openKpiModal(cardId) {
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
     var gmvCombined = (vs.totalTxnValue || 0) + (vb.totalTxnValue || 0);
     var sPMSub = (vs.plasticTransacted || vs.metalTransacted)
-      ? fmt(vs.plasticTransacted || 0) + 'P · ' + fmt(vs.metalTransacted || 0) + 'M' : null;
+      ? fmt(vs.plasticTransacted || 0) + 'P · ' + fmt(vs.metalTransacted || 0) + 'M' : 'sellers transacted';
     var bPMSub = (vb.plasticTransacted || vb.metalTransacted)
-      ? fmt(vb.plasticTransacted || 0) + 'P · ' + fmt(vb.metalTransacted || 0) + 'M' : null;
+      ? fmt(vb.plasticTransacted || 0) + 'P · ' + fmt(vb.metalTransacted || 0) + 'M' : 'buyers transacted';
     var metricItems = [{v: d.txnPct > 0 ? d.txnPct + '%' : '—', l: 'Txn Rate', s: 'of onboarded'}];
     if (gmvCombined > 0) metricItems.push({v: fmtINR(gmvCombined), l: 'Total GMV'});
     metricItems.push({v: fmt(d.nonTxnTotal), l: 'Not Transacted', s: 'onboarded · no txn'});
+    var txnUnique = d.txnUniqueTotal || d.txnTotal;
     content =
       hero(fmt(d.txnTotal), 'Transacted')
       + srow([
-          {v: fmt(d.txnS != null ? d.txnS : 0), l: 'Sellers', c: S, s: sPMSub},
-          {v: fmt(d.txnB != null ? d.txnB : 0), l: 'Buyers',  c: B, s: bPMSub},
+          {v: fmt(txnUnique),                          l: 'Unique Transactions', s: 'distinct txns completed'},
+          {v: fmt(d.txnS != null ? d.txnS : 0), c: S, l: 'Unique Sellers',      s: sPMSub},
+          {v: fmt(d.txnB != null ? d.txnB : 0), c: B, l: 'Unique Buyers',       s: bPMSub},
         ])
       + srow(metricItems)
-      + (d.pTxn + d.mTxn > 0 ? sec('Material Split', matBadges(d.pTxn, d.mTxn)) : '');
+      + (d.pTxn + d.mTxn > 0 ? sec('Material Split', matBadges(d.pTxn, d.mTxn)) : '')
+      + '<div class="km-txn-expand">'
+      + '<button class="km-foot-link" onclick="_txnDetailToggle(this)">'
+      + 'View Transaction Details ↓'
+      + '</button>'
+      + '</div>'
+      + '<div id="txn-detail-wrap" style="display:none;margin-top:4px"></div>';
 
   } else if (cardId === 'oldvsnew') {
     title = 'Existing vs New';
@@ -3633,6 +3653,76 @@ function _kmTileToggle(panelId, groupId, tile) {
 }
 
 function _kpiEsc(e) { if (e.key === 'Escape') closeKpiModal(); }
+
+function _txnDetailToggle(btn) {
+  var wrap = document.getElementById('txn-detail-wrap');
+  if (!wrap) return;
+  var isOpen = wrap.style.display !== 'none';
+  if (isOpen) {
+    wrap.style.display = 'none';
+    if (btn) btn.textContent = 'View Transaction Details ↓';
+    return;
+  }
+  wrap.style.display = '';
+  if (btn) btn.textContent = 'Hide Transaction Details ↑';
+  if (wrap.dataset.loaded) return;
+  wrap.dataset.loaded = '1';
+  wrap.innerHTML = '<div style="padding:12px 0;text-align:center;font-size:11px;color:var(--txt3)">Loading transaction details…</div>';
+  var f = { period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      try {
+        var data = JSON.parse(res);
+        if (!data.success) { wrap.innerHTML = '<div class="km-txn-empty" style="color:#c00">Failed: ' + esc(data.error || 'Unknown error') + '</div>'; return; }
+        _renderTxnDetail(wrap, data);
+      } catch (e) {
+        wrap.innerHTML = '<div class="km-txn-empty" style="color:#c00">Error parsing response</div>';
+      }
+    })
+    .withFailureHandler(function() {
+      wrap.innerHTML = '<div class="km-txn-empty" style="color:#c00">Could not load transaction details</div>';
+    })
+    .getTransactedVendors(JSON.stringify(f));
+}
+
+function _renderTxnDetail(wrap, data) {
+  var sellers = data.sellers || [];
+  var buyers  = data.buyers  || [];
+  var totalTxns = 0, totalGMV = 0;
+  sellers.forEach(function(r) { totalTxns += (r.txnCount || 1); totalGMV += (r.txnValue || 0); });
+  buyers.forEach(function(r)  { totalTxns += (r.txnCount || 1); totalGMV += (r.txnValue || 0); });
+
+  var smry = '<div class="km-txn-smry">'
+    + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + fmt(totalTxns) + '</div><div class="km-txn-smry-lbl">Total Unique Txns</div></div>'
+    + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + fmt(sellers.length) + '</div><div class="km-txn-smry-lbl">Total Unique Sellers</div></div>'
+    + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + fmt(buyers.length) + '</div><div class="km-txn-smry-lbl">Total Unique Buyers</div></div>'
+    + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + (totalGMV > 0 ? fmtINR(totalGMV) : '—') + '</div><div class="km-txn-smry-lbl">Total GMV</div></div>'
+    + '</div>';
+
+  function tblSection(label, rows) {
+    var h = '<div class="km-txn-aud">' + esc(label) + '</div>';
+    if (!rows.length) return h + '<div class="km-txn-empty">No records</div>';
+    h += '<table class="km-txn-tbl"><thead><tr>'
+      + '<th>Name</th><th>GSTIN</th>'
+      + '<th style="text-align:right"># Unique Txns</th>'
+      + '<th style="text-align:right">Total GMV</th>'
+      + '</tr></thead><tbody>';
+    rows.slice(0, 100).forEach(function(r) {
+      h += '<tr>'
+        + '<td style="font-weight:500;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name || '—') + '</td>'
+        + '<td style="font-family:monospace;font-size:10px;color:var(--txt3)">' + esc(r.gstin || '—') + '</td>'
+        + '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmt(r.txnCount || 1) + '</td>'
+        + '<td style="text-align:right;font-weight:600;color:var(--st-transacted-tx);font-variant-numeric:tabular-nums">' + (r.txnValue > 0 ? fmtINR(r.txnValue) : '—') + '</td>'
+        + '</tr>';
+    });
+    if (rows.length > 100) h += '<tr><td colspan="4" style="color:var(--txt3);font-size:10px">… and ' + (rows.length - 100) + ' more records</td></tr>';
+    h += '</tbody></table>';
+    return h;
+  }
+
+  wrap.innerHTML = smry + tblSection('Seller-wise Details', sellers) + tblSection('Buyer-wise Details', buyers);
+}
 
 // ── Quality data: load once for OMP, patch into Seller + Buyer cards ─
 function loadQualityData() {

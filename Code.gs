@@ -227,6 +227,42 @@ function getVerticalRows(vertKey, filtersJson) {
   }
 }
 
+// Returns transacted OMP vendors (both seller + buyer) for the drill-down table.
+// Uses the vertical-rows cache populated by getDashboardData so no extra reads occur.
+function getTransactedVendors(filtersJson) {
+  try {
+    var f = filtersJson ? JSON.parse(filtersJson) : {};
+    var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cache = CacheService.getScriptCache();
+
+    function fetchOmpTxn(aud) {
+      var cacheKey = 'vrows_v14_' + aud + '_OMP_' + periodKey;
+      var hit = cache.get(cacheKey);
+      if (hit) {
+        try {
+          var d = JSON.parse(hit);
+          if (d && d.rows) return d.rows.filter(function(r) { return r.hasTransacted; });
+        } catch (e) {}
+      }
+      // Cache miss: read from source
+      var cfg = AUDIENCE_CFG[aud];
+      var raw = readData(aud);
+      var all = normalizeRows(raw, cfg);
+      return all.filter(function(r) {
+        return r.vertical === 'OMP' && r.hasTransacted && applyDateFilter(r, f);
+      }).map(vertRow);
+    }
+
+    return JSON.stringify({
+      success: true,
+      sellers: fetchOmpTxn('seller'),
+      buyers:  fetchOmpTxn('buyer'),
+    });
+  } catch (err) {
+    return JSON.stringify({ success: false, error: (err && err.message) ? err.message : String(err) });
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // DATA READ + NORMALIZATION
 // ─────────────────────────────────────────────────────────────
@@ -389,6 +425,14 @@ function normalizeRows(raw, cfg) {
       onbTAT:        tat,
     };
   }).filter(function(r) { return r.id || r.name; });
+  // Count pre-dedup rows per (id+vertical) as per-vendor transaction count.
+  // Metabase emits one row per transaction via joins; this count captures that.
+  var txnCounts = {};
+  normalized.forEach(function(r) {
+    if (!r.id) return;
+    var key = r.id + '\x00' + r.vertical;
+    txnCounts[key] = (txnCounts[key] || 0) + 1;
+  });
   // Deduplicate by ID — Metabase can emit the same entity multiple times when joins
   // produce multiple transaction rows. Sort so hasTransacted=true rows come first so
   // the dedup keeps the transacted version; break ties by txnValue descending.
@@ -405,6 +449,7 @@ function normalizeRows(raw, cfg) {
     var key = r.id + '\x00' + r.vertical;
     if (seen[key]) return false;
     seen[key] = true;
+    r.txnCount = txnCounts[key] || 1;
     return true;
   });
 }
@@ -530,7 +575,7 @@ function vStats(data) {
   var total = data.length;
   var completed = 0, draft = 0, inReview = 0, rejected = 0;
   var withGST = 0, newVendors = 0, oldVendors = 0, completedThisWeek = 0;
-  var hasTxnData = false, transactedCount = 0;
+  var hasTxnData = false, transactedCount = 0, txnCountSum = 0;
   var hasTxnValData = false, txnValSum = 0;
   var agingCount = 0, overdueCount = 0;
   var tats = [];
@@ -558,7 +603,7 @@ function vStats(data) {
     if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) tats.push(r.onbTAT);
 
     if (r.hasTxn)        hasTxnData = true;
-    if (r.hasTransacted) transactedCount++;
+    if (r.hasTransacted) { transactedCount++; txnCountSum += (r.txnCount || 1); }
     if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
       hasTxnValData = true; txnValSum += r.txnValue;
     }
@@ -674,6 +719,7 @@ function vStats(data) {
     avgTAT: tats.length ? Math.round(avg(tats)) : null,
     transacted: transacted,
     pctTransacted: transacted === null ? null : pct(transacted, completed),
+    totalTxnCount: hasTxnData ? txnCountSum : null,
     totalTxnValue: totalTxnValue,
     aging:       agingCount   > 0 ? agingCount   : null,
     overdue:     overdueCount > 0 ? overdueCount : null,
@@ -698,6 +744,7 @@ function vertRow(r) {
     tat: (r.onbTAT === null ? '—' : r.onbTAT),
     hasTxn:       r.hasTxn,
     hasTransacted: r.hasTransacted,
+    txnCount:     r.txnCount || 1,
     txnValue:     r.txnValue !== null && r.txnValue !== undefined ? r.txnValue : null,
     txnDate:      fmtDate(r.txnDate),
     isOldVendor:  !!r.isOldVendor,
