@@ -1486,6 +1486,14 @@ body.view-gst #vert-tabs-bar{display:none}
 .cc-fy-td-lbl{border-top:1px solid var(--border)}
 /* "All" aggregate column — slightly stronger, acts as a summary */
 .cc-fy-all{border-left:2px solid var(--border)!important;font-weight:600!important}
+/* Clickable FY table row (Existing / New) */
+.cc-fy-row-btn{cursor:pointer;transition:background .13s}
+.cc-fy-row-btn:hover td{background:var(--hover)}
+.cc-fy-row-btn:active td{background:var(--seg-track)}
+/* Clickable stat list row */
+.cc-stat-row-btn{cursor:pointer;border-radius:4px;margin:0 -4px;padding-left:4px;padding-right:4px;transition:background .13s}
+.cc-stat-row-btn:hover{background:var(--hover)}
+.cc-stat-row-btn:active{background:var(--seg-track)}
 
 /* Responsive */
 @media(max-width:1100px){
@@ -3157,7 +3165,7 @@ function renderVertKPIs(key) {
     var dSub = dQ ? fmt(dQ.complete  || 0) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' complete' : 'Syncing…';
 
     cards.push(mk(icStar,   'Vendor Rating', rVal, rSub, 'vk-rating', 'rating', 'qkpi-rating'));
-    cards.push(mk(icShield, 'OSV Status',    oVal, oSub, 'vk-osv',    'osv',    'qkpi-osv'));
+    cards.push(mk(icShield, 'OSV Consent',   oVal, oSub, 'vk-osv',    'osv',    'qkpi-osv'));
   }
   // Wrap cards naturally by minimum width instead of forcing fixed columns per card count.
   // This ensures OMP's 7 cards (or any count) stays readable — wraps 4+3 or best fit.
@@ -3570,7 +3578,7 @@ function openKpiModal(cardId) {
       }
 
     } else if (cardId === 'osv') {
-      title    = 'OSV Status';
+      title    = 'OSV Consent';
       subtitle = 'Based on OSV Consent field — Onboarded Open Marketplace sellers only';
       iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
       if (!qd.success) {
@@ -4116,7 +4124,13 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
       isOMP ? null : fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
       fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
       fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
-      enVal ? fyTr('Existing / New', function(f){ return null; }, enVal, '') : null,
+      enVal ? '<tr class="cc-fy-row-btn" role="button" tabindex="0"'
+        + ' onclick="event.stopPropagation();openKpiModal(\'oldvsnew\')"'
+        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();openKpiModal(\'oldvsnew\')}">'
+        + '<td class="cc-fy-td-lbl">Existing / New</td>'
+        + fys.map(function(){ return '<td class="cc-fy-td" style="color:var(--txt3)">—</td>'; }).join('')
+        + '<td class="cc-fy-td cc-fy-all">' + enVal + '</td>'
+        + '</tr>' : null,
     ].filter(Boolean).join('');
     if (fyTbody) {
       var fyThead = '<thead><tr><th class="cc-fy-th-lbl"></th>'
@@ -4134,12 +4148,14 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     if (!isOMP2 && v.pctTransacted != null) statRows.push(['% Transacted', v.pctTransacted + '%', '']);
     if (v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '']);
     if (v.withGST       != null) statRows.push(['GSTIN Active', fmt(v.withGST),          '']);
-    if (enVal)                   statRows.push(['Existing / New', enVal,                  '']);
-    statsList = statRows.length
-      ? '<div class="cc-stat-list">' + statRows.map(function(r) {
-          return '<div class="cc-stat-row' + (r[2] ? ' ' + r[2] : '') + '">' + r[0] + '<b>' + r[1] + '</b></div>';
-        }).join('') + '</div>'
-      : '';
+    var rowsHtml = statRows.map(function(r) {
+      return '<div class="cc-stat-row' + (r[2] ? ' ' + r[2] : '') + '">' + r[0] + '<b>' + r[1] + '</b></div>';
+    }).join('');
+    if (enVal) rowsHtml += '<div class="cc-stat-row cc-stat-row-btn" role="button" tabindex="0"'
+      + ' onclick="event.stopPropagation();openKpiModal(\'oldvsnew\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();openKpiModal(\'oldvsnew\')}">'
+      + 'Existing / New<b>' + enVal + '</b></div>';
+    statsList = rowsHtml ? '<div class="cc-stat-list">' + rowsHtml + '</div>' : '';
   }
   // Quality strip for seller OMP cards (async — patched by _patchQualityKpiCards)
   var qualStrip = '';
