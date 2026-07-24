@@ -695,12 +695,12 @@ tbody td{padding:12px 16px;color:var(--txt);vertical-align:middle;white-space:no
 /* ===== KPI Card Detail Modal ===== */
 @keyframes kmUp{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
 /* Star-distribution bars inside quality modals */
-.km-star-row{display:grid;grid-template-columns:28px 1fr 34px 32px;align-items:center;gap:6px;margin-bottom:5px}
+.km-star-row{display:grid;grid-template-columns:28px 1fr 34px 46px;align-items:center;gap:6px;margin-bottom:5px}
 .km-star-n{font-size:11px;font-weight:600;color:var(--txt2);text-align:right;white-space:nowrap}
 .km-star-track{height:5px;border-radius:3px;background:var(--bg2);overflow:hidden}
 .km-star-fill{height:100%;border-radius:3px;transition:width .8s var(--ease-out)}
 .km-star-cnt{font-size:11px;font-weight:600;color:var(--txt);font-variant-numeric:tabular-nums;text-align:right}
-.km-star-pct{font-size:10px;color:var(--txt3);text-align:right}
+.km-star-pct{font-size:10px;color:var(--txt3);text-align:right;white-space:nowrap}
 .km-star-clickable{cursor:pointer;border-radius:4px;padding:1px 2px;margin:-1px -2px}
 .km-star-clickable:hover{background:var(--bg2)}
 .km-star-arr{font-size:8px;margin-left:2px;display:inline-block;transition:transform .2s}
@@ -1594,13 +1594,11 @@ body.view-gst #vert-tabs-bar{display:none}
 /* ══════════════════════════════════════════════════
    HERO KPI ROW — Apple large-number cards
    ══════════════════════════════════════════════════
-   Uses repeat(auto-fit, minmax(240px, 1fr)) to wrap cards into rows instead of
-   forcing all onto one line. OMP shows 7 cards (Total, Onboarded, Transacted,
-   Existing vs New, Vendor Rating, OSV, Doc Status) which would need ~1680px on one
-   line; at typical 1180px width, forcing repeat(7,1fr) squeezed each to ~160px,
-   clipping labels and value+subtitle beneath overflow:hidden. Now wraps naturally
-   (4 cards first row, 3 second row) with all text fully visible. Non-OMP verticals
-   with 3 cards fill the row as before since auto-fit collapses empty tracks. */
+   Three cards for every vertical (Total Cases · Onboarded · Transacted).
+   repeat(auto-fit, minmax(240px, 1fr)) fills the row on wide screens and wraps
+   gracefully on narrow ones without shrinking text or clipping subtitles.
+   The richer OMP metrics (Existing/New, Vendor Rating, OSV Consent) live in the
+   Seller/Buyer pipeline cards below. */
 .vkpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:16px}
 .vkpi-card{
   background:var(--card);border:none;
@@ -1680,6 +1678,14 @@ body.view-gst #vert-tabs-bar{display:none}
 .vpipe-card.det-active{
   box-shadow:0 0 0 1.5px rgba(0,113,227,.45),var(--shadow)!important;
 }
+/* Pipeline pair: top-pack the content so the Seller/Buyer FY tables line up
+   row-for-row across the pair. Any height difference (e.g. the Seller's quality
+   strip) then collects as quiet breathing room at the bottom of the shorter card
+   instead of an awkward gap in the middle. Only affects the side-by-side layout;
+   stacked cards (≤1200px) size to their own content. */
+.vpipe-card .cc-cat-rows{flex:0 0 auto}
+.vpipe-card .cc-fy-wrap,
+.vpipe-card .cc-stat-list{margin-top:0}
 /* Pipeline card header — plain audience title, no repeated vertical name */
 .pipe-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .pipe-title{font-size:15px;font-weight:700;letter-spacing:-.25px;color:var(--txt)}
@@ -3139,12 +3145,12 @@ function renderVertKPIs(key) {
     pNew: pNew, mNew: mNew,
   };
   var cards = [
-    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), null,                           'vk-total',     'total',      null, 'In the System'),
+    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',     'total',      null),
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% completion rate',  'vk-onboarded', 'onboarded'),
     mk(icZap,    'Transacted',  fmt(txnTotal),         txnPct > 0 ? txnPct + '% of onboarded' : null, 'vk-transacted', 'transacted'),
   ];
-  // Wrap cards naturally by minimum width instead of forcing fixed columns per card count.
-  // This ensures OMP's 7 cards (or any count) stays readable — wraps 4+3 or best fit.
+  // Three KPI cards, matching every other vertical. auto-fit keeps them readable and
+  // lets them fill the row (or wrap gracefully on narrow screens).
   el.style.gridTemplateColumns = 'repeat(auto-fit, minmax(240px, 1fr))';
   el.innerHTML = cards.join('');
   animateCounters(el);
@@ -3226,7 +3232,10 @@ function openKpiModal(cardId) {
   }
   function expandTileGrid(specs) {
     var gid = 'etg' + Math.random().toString(36).slice(2, 8);
-    var h = '<div class="km-sg" id="' + gid + '-g">'
+    // Fill the row: N tiles → N equal columns (capped at 4) instead of always 4,
+    // so a 2-tile grid (e.g. OSV Verified / Not Initiated) stretches full-width.
+    var cols = Math.max(1, Math.min(specs.length, 4));
+    var h = '<div class="km-sg" id="' + gid + '-g" style="grid-template-columns:repeat(' + cols + ',1fr)">'
       + specs.map(function(sp, si) {
           var vendors = sp.vendors || [];
           if (vendors.length === 0) {
