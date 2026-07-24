@@ -4085,7 +4085,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
   }).join('');
   if (catRows) catRows = '<div class="cc-cat-rows">' + catRows + '</div>';
   var newV = v.newVendors || 0, oldV = v.oldVendors || 0;
-  var enVal = (newV > 0 || oldV > 0) ? fmt(oldV) + ' existing · ' + fmt(newV) + ' new' : null;
+  var enVal = (cfg.key === 'OMP' && (newV > 0 || oldV > 0)) ? fmt(oldV) + ' existing · ' + fmt(newV) + ' new' : null;
   var fys = (v.fyBreakdown || []).filter(function(f) { return !f.fyStart || f.fyStart >= 2019; });
   var statsList = '';
   if (fys.length) {
