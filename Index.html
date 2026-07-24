@@ -2338,6 +2338,7 @@ function loadData(silent) {
       var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
       if (selectedVert && _vertRowsPKey !== newPKey) {
         vertRows = []; vertRowsLoading = false; vertRowsError = null;
+        _ovnRows = {};
         loadVertRows(selectedVert);
       }
       try { renderAll(); } catch (e) { console.error('renderAll error', e); }
@@ -2648,6 +2649,7 @@ var vertRowsLoading = false;
 var vertRowsError = null;   // backend error message when the last row fetch failed
 var _vertRowsGen = 0;       // incremented on each loadVertRows call; stale callbacks are discarded
 var _vertRowsPKey = null;   // period key when vertRows were last fetched; used to detect stale rows
+var _ovnRows = {};          // per-audience row cache for the Existing/New modal {seller:[],buyer:[]}
 var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
 var vdSort = { key: '', dir: 1 };   // detail table sort state (dir: 1 asc, -1 desc)
 var qualityData    = null;   // result of getQualityData() — loaded once for OMP
@@ -2918,6 +2920,7 @@ function renderVerticals() {
     selectedVert  = activeVertKey;
     selectedAud   = 'seller';
     vertRows = []; vertRowsLoading = true; vertRowsError = null;
+    _ovnRows = {};
     _vertRowsPKey = null; ++_vertRowsGen;
     loadVertRows(activeVertKey);
   }
@@ -2995,6 +2998,7 @@ function selectVertTab(key) {
   vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
   vdSort = { key: '', dir: 1 };
   vertRows = []; vertRowsLoading = true; vertRowsError = null;
+  _ovnRows = {};
   _vertRowsPKey = null; ++_vertRowsGen;
   // Update tab active states in-place (faster than full re-render)
   var actTab = null;
@@ -3394,13 +3398,17 @@ function openKpiModal(cardId) {
     title = 'Existing vs New';
     subtitle = 'OMP vendors — existing in other verticals vs first-time';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+    // Auto-load rows for both audiences in parallel (no manual button needed)
+    _ovnEnsureAud('seller');
+    _ovnEnsureAud('buyer');
     var totalOnb  = (d.newS + d.oldS) + (d.newB + d.oldB);
     var totalNew  = d.newS + d.newB;
     var totalExst = d.oldS + d.oldB;
 
     function ovnBlock(aud, nCount, eCount) {
       var gid     = 'ovn-' + aud;
-      var hasRows = vertRows.length > 0 && !vertRowsLoading && selectedAud === aud;
+      var audRows = _ovnRows[aud];               // null = loading, array = ready
+      var hasRows = Array.isArray(audRows);
       var acNew   = aud === 'seller' ? S : B;
       var acExst  = aud === 'seller' ? '#22c55e' : '#60a5fa';
 
@@ -3431,26 +3439,19 @@ function openKpiModal(cardId) {
         var pid = gid + '-' + k;
         h += '<div id="' + pid + '" class="km-tile-vlist" style="display:none">';
         if (!hasRows) {
-          var audLabel = aud === 'seller' ? 'Sellers' : 'Buyers';
-          h += '<div style="padding:10px 4px;text-align:center">'
-            + '<div style="font-size:11px;color:var(--txt3);margin-bottom:8px">'
-            + audLabel + ' detail is not loaded yet</div>'
-            + '<button class="km-foot-link" style="font-size:11px" '
-            + 'onclick="event.stopPropagation();_kvnLoadAud(\'' + aud + '\')">'
-            + 'Load ' + audLabel + ' detail ↓</button>'
-            + '</div>';
+          // still loading — show spinner; data will arrive and re-render the modal
+          h += '<div style="padding:12px 4px;text-align:center;color:var(--txt3);font-size:11px">Loading…</div>';
         } else {
-          var filtered = vertRows.filter(function(r) {
+          var filtered = audRows.filter(function(r) {
             return r.status === 'COMPLETED' && !!r.isOldVendor === isOld;
           });
           if (filtered.length === 0) {
             h += '<div class="km-vrow" style="color:var(--txt3);font-size:11px">No vendors in this segment</div>';
           } else {
-            var audLabel  = aud === 'seller' ? 'Seller' : 'Buyer';
-            var audClr    = aud === 'seller' ? acNew    : acNew;
-            var stLbl     = isOld ? 'Existing' : 'New';
-            var stBg      = isOld ? 'rgba(142,142,147,.15)' : (aud === 'seller' ? 'rgba(48,209,88,.14)' : 'rgba(0,122,255,.12)');
-            var stClr     = isOld ? 'var(--txt2)'           : (aud === 'seller' ? '#248A3D'             : '#0066CC');
+            var audLabel = aud === 'seller' ? 'Seller' : 'Buyer';
+            var stLbl    = isOld ? 'Existing' : 'New';
+            var stBg     = isOld ? 'rgba(142,142,147,.15)' : (aud === 'seller' ? 'rgba(48,209,88,.14)' : 'rgba(0,122,255,.12)');
+            var stClr    = isOld ? 'var(--txt2)'           : (aud === 'seller' ? '#248A3D'             : '#0066CC');
             h += filtered.slice(0, 80).map(function(r) {
               return '<div class="km-vrow" style="flex-wrap:wrap;gap:4px 8px;align-items:center">'
                 + '<span class="km-vname" style="flex:1;min-width:120px">' + esc(r.name || 'Unknown') + '</span>'
@@ -3716,6 +3717,41 @@ function _kvnLoadAud(aud) {
       if (myGen !== _vertRowsGen) return;
       vertRowsLoading = false;
       if (window._lastKpiCardId) openKpiModal(window._lastKpiCardId);
+    })
+    .getVerticalRows(key, JSON.stringify(f));
+}
+
+// Load rows for `aud` into _ovnRows[aud] (per-audience cache for Existing/New modal).
+// Reuses the same localStorage key as _kvnLoadAud for zero-cost SWR hits.
+function _ovnEnsureAud(aud) {
+  if (_ovnRows[aud] !== undefined) return; // already loaded or in-flight
+  _ovnRows[aud] = null; // mark as in-flight
+  var key = activeVertKey || selectedVert;
+  if (!key) return;
+  var f = { audience: aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var lsVKey = STORE_PFX + 'vr_' + aud + '_' + key;
+  try {
+    var sv = JSON.parse(localStorage.getItem(lsVKey) || 'null');
+    if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
+      _ovnRows[aud] = sv.rows;
+      if (window._lastKpiCardId === 'oldvsnew') openKpiModal('oldvsnew');
+      return;
+    }
+  } catch (e) {}
+  google.script.run
+    .withSuccessHandler(function(res) {
+      try {
+        var data = JSON.parse(res);
+        _ovnRows[aud] = data.success ? (data.rows || []) : [];
+        try { localStorage.setItem(lsVKey, JSON.stringify({ pKey: myPKey, rows: _ovnRows[aud] })); } catch (e) {}
+      } catch (e) { _ovnRows[aud] = []; }
+      if (window._lastKpiCardId === 'oldvsnew') openKpiModal('oldvsnew');
+    })
+    .withFailureHandler(function() {
+      _ovnRows[aud] = [];
+      if (window._lastKpiCardId === 'oldvsnew') openKpiModal('oldvsnew');
     })
     .getVerticalRows(key, JSON.stringify(f));
 }
