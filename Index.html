@@ -4091,14 +4091,8 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
       + '<span class="cc-cat-detail">' + parts.join(' · ') + '</span></div>';
   }).join('');
   if (catRows) catRows = '<div class="cc-cat-rows">' + catRows + '</div>';
-  // Existing vs New row
   var newV = v.newVendors || 0, oldV = v.oldVendors || 0;
-  var enRow = (newV > 0 || oldV > 0)
-    ? '<div class="cc-en-row">'
-      + '<div class="cc-en-chip"><span>Existing</span><b>' + fmt(oldV) + '</b></div>'
-      + '<div class="cc-en-chip"><span>New</span><b>' + fmt(newV) + '</b></div>'
-      + '</div>'
-    : '';
+  var enVal = (newV > 0 || oldV > 0) ? fmt(oldV) + ' existing · ' + fmt(newV) + ' new' : null;
   var fys = (v.fyBreakdown || []).filter(function(f) { return !f.fyStart || f.fyStart >= 2019; });
   var statsList = '';
   if (fys.length) {
@@ -4122,6 +4116,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
       isOMP ? null : fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
       fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
       fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
+      enVal ? fyTr('Existing / New', function(f){ return null; }, enVal, '') : null,
     ].filter(Boolean).join('');
     if (fyTbody) {
       var fyThead = '<thead><tr><th class="cc-fy-th-lbl"></th>'
@@ -4139,6 +4134,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     if (!isOMP2 && v.pctTransacted != null) statRows.push(['% Transacted', v.pctTransacted + '%', '']);
     if (v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '']);
     if (v.withGST       != null) statRows.push(['GSTIN Active', fmt(v.withGST),          '']);
+    if (enVal)                   statRows.push(['Existing / New', enVal,                  '']);
     statsList = statRows.length
       ? '<div class="cc-stat-list">' + statRows.map(function(r) {
           return '<div class="cc-stat-row' + (r[2] ? ' ' + r[2] : '') + '">' + r[0] + '<b>' + r[1] + '</b></div>';
@@ -4151,7 +4147,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     var sqc = qualityData && qualityData.success ? (qualityData.seller || {}) : null;
     qualStrip = '<div id="ipc-qual-seller">' + _buildSellerQualStrip(sqc) + '</div>';
   }
-  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + catRows + enRow + statsList + qualStrip + '</div>';
+  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + catRows + statsList + qualStrip + '</div>';
 }
 
 // Render the inline detailed view section (replaces the full-screen overlay).
