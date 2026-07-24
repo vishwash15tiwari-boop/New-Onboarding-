@@ -769,6 +769,7 @@ tbody td{padding:12px 16px;color:var(--txt);vertical-align:middle;white-space:no
 /* Status grid — 4 tiles */
 .km-sg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .km-sg-2{grid-template-columns:repeat(2,1fr)}
+.km-sg-1{grid-template-columns:1fr}
 .km-sg-item{padding:8px 10px;background:var(--bg2);border-radius:8px}
 .km-sg-v{font-size:15px;font-weight:700;color:var(--txt);letter-spacing:-.3px;font-variant-numeric:tabular-nums}
 .km-sg-l{font-size:9.5px;font-weight:600;color:var(--txt3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:3px}
@@ -3370,6 +3371,9 @@ function openKpiModal(cardId) {
     title = 'Transacted';
     subtitle = 'Onboarded vendors who have made a transaction';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
+    // Pre-load rows for both audiences so vendor tiles render immediately
+    _ovnEnsureAud('seller');
+    _ovnEnsureAud('buyer');
     var gmvCombined = (vs.totalTxnValue || 0) + (vb.totalTxnValue || 0);
     var sPMSub = (vs.plasticTransacted || vs.metalTransacted)
       ? fmt(vs.plasticTransacted || 0) + 'P · ' + fmt(vs.metalTransacted || 0) + 'M' : 'sellers transacted';
@@ -3379,6 +3383,51 @@ function openKpiModal(cardId) {
     if (gmvCombined > 0) metricItems.push({v: fmtINR(gmvCombined), l: 'Total GMV'});
     metricItems.push({v: fmt(d.nonTxnTotal), l: 'Not Transacted', s: 'onboarded · no txn'});
     var txnUnique = d.txnUniqueTotal || d.txnTotal;
+
+    function txnAudTile(aud, count, acColor) {
+      var gid = 'txn-' + aud;
+      var pid = gid + '-p';
+      var audRows = _ovnRows[aud];
+      var hasRows = Array.isArray(audRows);
+      var tileHtml = count === 0
+        ? '<div class="km-sg-item"><div class="km-sg-v">' + fmt(count) + '</div>'
+          + '<div class="km-sg-l"><i class="km-dot" style="background:' + acColor + '"></i>'
+          + (aud === 'seller' ? 'Sellers' : 'Buyers') + '</div></div>'
+        : '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
+          + ' onclick="_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)"'
+          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)}">'
+          + '<div class="km-sg-v">' + fmt(count) + '</div>'
+          + '<div class="km-sg-l"><i class="km-dot" style="background:' + acColor + '"></i>'
+          + (aud === 'seller' ? 'Sellers' : 'Buyers') + ' <span class="km-star-arr">▶</span></div>'
+          + '</div>';
+      var panelHtml = '<div id="' + pid + '" class="km-tile-vlist" style="display:none">';
+      if (!hasRows) {
+        panelHtml += '<div style="padding:12px 4px;text-align:center;color:var(--txt3);font-size:11px">Loading…</div>';
+      } else {
+        var filtered = audRows.filter(function(r) { return !!r.hasTransacted; });
+        if (filtered.length === 0) {
+          panelHtml += '<div class="km-vrow" style="color:var(--txt3);font-size:11px">No transacted vendors found</div>';
+        } else {
+          panelHtml += filtered.slice(0, 80).map(function(r) {
+            var catBg  = r.category === 'Plastic' ? 'rgba(255,159,10,.15)' : 'rgba(142,142,147,.15)';
+            var catClr = r.category === 'Plastic' ? '#B25000' : '#636366';
+            var gmvStr = r.txnValue ? fmtINR(r.txnValue) : null;
+            return '<div class="km-vrow" style="flex-wrap:wrap;gap:4px 8px;align-items:center">'
+              + '<span class="km-vname" style="flex:1;min-width:120px">' + esc(r.name || 'Unknown') + '</span>'
+              + '<span style="font-size:9.5px;font-family:monospace;color:var(--txt3);flex-shrink:0">' + esc(r.gstin || '—') + '</span>'
+              + (r.category ? '<span class="km-vbadge" style="background:' + catBg + ';color:' + catClr + '">' + esc(r.category) + '</span>' : '')
+              + (gmvStr ? '<span class="km-vbadge" style="background:rgba(52,199,89,.12);color:#248A3D">' + gmvStr + '</span>' : '')
+              + '</div>';
+          }).join('');
+          if (filtered.length > 80) {
+            panelHtml += '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (filtered.length - 80) + ' more</span></div>';
+          }
+        }
+      }
+      panelHtml += '</div>';
+      return '<div id="' + gid + '-g" class="km-sg km-sg-1">' + tileHtml + '</div>' + panelHtml;
+    }
+
     content =
       hero(fmt(d.txnTotal), 'Transacted')
       + srow([
@@ -3404,7 +3453,10 @@ function openKpiModal(cardId) {
               : '')
           + '</div></div>'
           + '</div>'
-        ) : '');
+        ) : '')
+      + sec('Vendors',
+          txnAudTile('seller', d.txnS != null ? d.txnS : 0, S)
+          + txnAudTile('buyer',  d.txnB != null ? d.txnB : 0, B));
 
   } else if (cardId === 'oldvsnew') {
     title = 'Existing vs New';
@@ -3748,7 +3800,7 @@ function _ovnEnsureAud(aud) {
     var sv = JSON.parse(localStorage.getItem(lsVKey) || 'null');
     if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
       _ovnRows[aud] = sv.rows;
-      if (window._lastKpiCardId === 'oldvsnew') openKpiModal('oldvsnew');
+      if (window._lastKpiCardId === 'oldvsnew' || window._lastKpiCardId === 'transacted') openKpiModal(window._lastKpiCardId);
       return;
     }
   } catch (e) {}
@@ -3759,11 +3811,11 @@ function _ovnEnsureAud(aud) {
         _ovnRows[aud] = data.success ? (data.rows || []) : [];
         try { localStorage.setItem(lsVKey, JSON.stringify({ pKey: myPKey, rows: _ovnRows[aud] })); } catch (e) {}
       } catch (e) { _ovnRows[aud] = []; }
-      if (window._lastKpiCardId === 'oldvsnew') openKpiModal('oldvsnew');
+      if (window._lastKpiCardId === 'oldvsnew' || window._lastKpiCardId === 'transacted') openKpiModal(window._lastKpiCardId);
     })
     .withFailureHandler(function() {
       _ovnRows[aud] = [];
-      if (window._lastKpiCardId === 'oldvsnew') openKpiModal('oldvsnew');
+      if (window._lastKpiCardId === 'oldvsnew' || window._lastKpiCardId === 'transacted') openKpiModal(window._lastKpiCardId);
     })
     .getVerticalRows(key, JSON.stringify(f));
 }
