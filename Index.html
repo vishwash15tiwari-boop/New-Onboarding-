@@ -3143,30 +3143,6 @@ function renderVertKPIs(key) {
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% completion rate',  'vk-onboarded', 'onboarded'),
     mk(icZap,    'Transacted',  fmt(txnTotal),         txnPct > 0 ? txnPct + '% of onboarded' : null, 'vk-transacted', 'transacted'),
   ];
-  if (key === 'OMP') {
-    cards.push(mk(icUsers, 'Existing vs New', fmt((newS + oldS) + (newB + oldB)), fmt(oldS + oldB) + ' existing · ' + fmt(newS + newB) + ' new', 'vk-total', 'oldvsnew'));
-
-    // ── Quality summary cards (patched async after loadQualityData) ──
-    var icStar   = svg('<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>');
-    var icShield = svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>');
-    var icDocFl  = svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>');
-
-    var qc     = qualityData && qualityData.success ? (qualityData.seller || {}) : null;
-    var rQ     = qc ? (qc.rating || {}) : null;
-    var oQ     = qc ? (qc.osv    || {}) : null;
-    var dQ     = qc ? (qc.docs   || {}) : null;
-    var selOnb = compS || 0; // total sellers onboarded on OMP — the correct denominator
-
-    var rVal = rQ && rQ.avg != null ? rQ.avg.toFixed(1) + '★' : '—';
-    var rSub = rQ ? fmt(rQ.rated || 0) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' rated' : 'Syncing…';
-    var oVal = selOnb > 0 && oQ ? Math.round((oQ.completed || 0) / selOnb * 100) + '%' : '—';
-    var oSub = oQ ? fmt(oQ.completed || 0) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' verified' : 'Syncing…';
-    var dVal = selOnb > 0 && dQ ? Math.round((dQ.complete  || 0) / selOnb * 100) + '%' : '—';
-    var dSub = dQ ? fmt(dQ.complete  || 0) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' complete' : 'Syncing…';
-
-    cards.push(mk(icStar,   'Vendor Rating', rVal, rSub, 'vk-rating', 'rating', 'qkpi-rating'));
-    cards.push(mk(icShield, 'OSV Consent',   oVal, oSub, 'vk-osv',    'osv',    'qkpi-osv'));
-  }
   // Wrap cards naturally by minimum width instead of forcing fixed columns per card count.
   // This ensures OMP's 7 cards (or any count) stays readable — wraps 4+3 or best fit.
   el.style.gridTemplateColumns = 'repeat(auto-fit, minmax(240px, 1fr))';
