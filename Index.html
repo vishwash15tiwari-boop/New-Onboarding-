@@ -1334,6 +1334,9 @@ body.view-gst #vert-tabs-bar{display:none}
 .cc-qs-val{font-size:11px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;text-align:right}
 .cc-qs-val em{font-style:normal;font-size:10px;font-weight:500;color:var(--txt3)}
 .cc-qs-sync{font-size:10px;font-weight:500;color:var(--txt3);font-style:italic}
+.cc-qs-row-btn{cursor:pointer;border-radius:5px;margin:0 -4px;padding-left:4px;padding-right:4px;transition:background .13s}
+.cc-qs-row-btn:hover{background:var(--hover)}
+.cc-qs-row-btn:active{background:var(--seg-track)}
 
 /* ══════════════════════════════════════════════════
    VERTICAL STORY SECTION — full editorial layout
@@ -4003,10 +4006,15 @@ function buildQualitySect(qd, aud) {
 }
 
 function _buildSellerQualStrip(qc) {
+  var rowAttrs = function(cardId) {
+    return ' class="cc-qs-row cc-qs-row-btn" role="button" tabindex="0"'
+      + ' onclick="event.stopPropagation();openKpiModal(\'' + cardId + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();openKpiModal(\'' + cardId + '\')}"';
+  };
   if (!qc) {
     return '<div class="cc-qual-strip">'
-      + '<div class="cc-qs-row"><span class="cc-qs-lbl">★ Vendor Rating</span><span class="cc-qs-sync">Syncing…</span></div>'
-      + '<div class="cc-qs-row"><span class="cc-qs-lbl">✓ OSV Consent</span><span class="cc-qs-sync">Syncing…</span></div>'
+      + '<div' + rowAttrs('rating') + '><span class="cc-qs-lbl">★ Vendor Rating</span><span class="cc-qs-sync">Syncing…</span></div>'
+      + '<div' + rowAttrs('osv') + '><span class="cc-qs-lbl">✓ OSV Consent</span><span class="cc-qs-sync">Syncing…</span></div>'
       + '</div>';
   }
   var r = qc.rating || {}, o = qc.osv || {};
@@ -4015,9 +4023,9 @@ function _buildSellerQualStrip(qc) {
   var oPct = o.total > 0 ? Math.round((o.completed || 0) / o.total * 100) + '%' : '—';
   var oSub = fmt(o.completed || 0) + (o.total > 0 ? ' of ' + fmt(o.total) + ' OMP' : '') + ' verified';
   return '<div class="cc-qual-strip">'
-    + '<div class="cc-qs-row"><span class="cc-qs-lbl">★ Vendor Rating</span>'
+    + '<div' + rowAttrs('rating') + '><span class="cc-qs-lbl">★ Vendor Rating</span>'
     + '<span class="cc-qs-val">' + rAvg + ' <em>' + rSub + '</em></span></div>'
-    + '<div class="cc-qs-row"><span class="cc-qs-lbl">✓ OSV Consent</span>'
+    + '<div' + rowAttrs('osv') + '><span class="cc-qs-lbl">✓ OSV Consent</span>'
     + '<span class="cc-qs-val">' + oPct + ' <em>' + oSub + '</em></span></div>'
     + '</div>';
 }
