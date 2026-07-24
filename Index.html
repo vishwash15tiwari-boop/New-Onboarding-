@@ -3774,19 +3774,29 @@ function _renderTxnDetail(wrap, data) {
     var h = '<div class="km-txn-aud">' + esc(label) + '</div>';
     if (!rows.length) return h + '<div class="km-txn-empty">No records</div>';
     h += '<table class="km-txn-tbl"><thead><tr>'
-      + '<th>Name</th><th>GSTIN</th>'
+      + '<th>Name</th><th>GSTIN</th><th>Category</th>'
       + '<th style="text-align:right"># Unique Txns</th>'
       + '<th style="text-align:right">Total GMV</th>'
       + '</tr></thead><tbody>';
     rows.slice(0, 100).forEach(function(r) {
+      var cat   = String(r.category || '').trim();
+      var catLc = cat.toLowerCase();
+      var catBg  = catLc.indexOf('plastic') >= 0 ? 'rgba(255,159,10,.15)'
+                 : catLc.indexOf('metal')   >= 0 ? 'rgba(142,142,147,.15)' : 'var(--bg2)';
+      var catClr = catLc.indexOf('plastic') >= 0 ? '#B25000'
+                 : catLc.indexOf('metal')   >= 0 ? '#636366' : 'var(--txt3)';
+      var catHtml = cat
+        ? '<span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:9.5px;font-weight:600;background:' + catBg + ';color:' + catClr + '">' + esc(cat) + '</span>'
+        : '<span style="color:var(--txt3)">—</span>';
       h += '<tr>'
-        + '<td style="font-weight:500;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name || '—') + '</td>'
+        + '<td style="font-weight:500;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name || '—') + '</td>'
         + '<td style="font-family:monospace;font-size:10px;color:var(--txt3)">' + esc(r.gstin || '—') + '</td>'
+        + '<td>' + catHtml + '</td>'
         + '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmt(r.txnCount || 1) + '</td>'
         + '<td style="text-align:right;font-weight:600;color:var(--st-transacted-tx);font-variant-numeric:tabular-nums">' + (r.txnValue > 0 ? fmtINR(r.txnValue) : '—') + '</td>'
         + '</tr>';
     });
-    if (rows.length > 100) h += '<tr><td colspan="4" style="color:var(--txt3);font-size:10px">… and ' + (rows.length - 100) + ' more records</td></tr>';
+    if (rows.length > 100) h += '<tr><td colspan="5" style="color:var(--txt3);font-size:10px">… and ' + (rows.length - 100) + ' more records</td></tr>';
     h += '</tbody></table>';
     return h;
   }
