@@ -125,20 +125,9 @@ function getDashboardData(filtersJson) {
     var raw  = readData(audience);
     var rows = normalizeRows(raw, cfg);
 
-    // Pre-populate per-vertical row caches from this single data read so
-    // getVerticalRows() always gets a cache hit and never re-reads the source.
-    // Collected into one putAll() call (single CacheService RPC vs 9 sequential puts).
-    var filtered = rows.filter(function(r) { return applyDateFilter(r, f); });
-    var batchCache = {};
-    VERTICALS.forEach(function(vc) {
-      var vrows = filtered.filter(function(r) { return r.vertical === vc.key; })
-        .sort(function(a, b) {
-          return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
-        });
-      var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v14_' + audience + '_' + vc.key + '_' + periodKey] = v;
-    });
-
+    // buildDashboard must run first — it mutates OMP rows in-place to set isOldVendor.
+    // Caching vertical rows before this call would store rows without isOldVendor, so
+    // the Existing vs New drill-down would always be wrong.
     var dash = buildDashboard(audience, cfg, rows, f);
     dash.success = true;
 
@@ -149,6 +138,19 @@ function getDashboardData(filtersJson) {
     } else if (raw.source === 'metabase_sync') {
       try { dash.mbSyncedAt = getMBSyncTime(CONFIG.MB_LOCAL_SHEETS[audience]); } catch (e) {}
     }
+
+    // Pre-populate per-vertical row caches NOW (after buildDashboard has set isOldVendor
+    // on OMP rows) so getVerticalRows() always gets a correct cache hit.
+    var filtered = rows.filter(function(r) { return applyDateFilter(r, f); });
+    var batchCache = {};
+    VERTICALS.forEach(function(vc) {
+      var vrows = filtered.filter(function(r) { return r.vertical === vc.key; })
+        .sort(function(a, b) {
+          return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
+        });
+      var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
+      if (v.length <= 100000) batchCache['vrows_v14_' + audience + '_' + vc.key + '_' + periodKey] = v;
+    });
 
     var out = JSON.stringify(dash);
     if (out.length <= 100000) batchCache[cacheKey] = out;
@@ -213,6 +215,23 @@ function getVerticalRows(vertKey, filtersJson) {
 
     var raw  = readData(audience);
     var all  = normalizeRows(raw, cfg);
+
+    // For OMP, replicate the isOldVendor logic from buildDashboard so the drill-down
+    // shows correct New vs Existing flags even when called independently.
+    if (vertKey === 'OMP') {
+      var existingNames = {};
+      all.forEach(function(r) {
+        if (r.vertical !== 'OMP' && r.status === 'COMPLETED' && r.name) {
+          existingNames[r.name.trim().toLowerCase()] = true;
+        }
+      });
+      all.forEach(function(r) {
+        if (r.vertical === 'OMP') {
+          r.isOldVendor = !!(r.name && existingNames[r.name.trim().toLowerCase()]);
+        }
+      });
+    }
+
     var vrows = all.filter(function(r) {
       return r.vertical === vertKey && applyDateFilter(r, f);
     }).sort(function(a, b) {

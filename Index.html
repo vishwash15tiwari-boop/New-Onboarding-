@@ -3409,15 +3409,22 @@ function openKpiModal(cardId) {
           if (filtered.length === 0) {
             h += '<div class="km-vrow" style="color:var(--txt3);font-size:11px">No vendors in this segment</div>';
           } else {
-            h += filtered.slice(0, 60).map(function(r) {
-              return '<div class="km-vrow">'
-                + (r.id ? '<span class="km-vid">' + esc(String(r.id)) + '</span>' : '')
-                + '<span class="km-vname">' + esc(r.name || 'Unknown') + '</span>'
-                + (r.category ? '<span class="km-vaud">' + esc(r.category) + '</span>' : '')
+            var audLabel  = aud === 'seller' ? 'Seller' : 'Buyer';
+            var audClr    = aud === 'seller' ? acNew    : acNew;
+            var stLbl     = isOld ? 'Existing' : 'New';
+            var stBg      = isOld ? 'rgba(142,142,147,.15)' : (aud === 'seller' ? 'rgba(48,209,88,.14)' : 'rgba(0,122,255,.12)');
+            var stClr     = isOld ? 'var(--txt2)'           : (aud === 'seller' ? '#248A3D'             : '#0066CC');
+            h += filtered.slice(0, 80).map(function(r) {
+              return '<div class="km-vrow" style="flex-wrap:wrap;gap:4px 8px;align-items:center">'
+                + '<span class="km-vname" style="flex:1;min-width:120px">' + esc(r.name || 'Unknown') + '</span>'
+                + '<span style="font-size:9.5px;font-family:monospace;color:var(--txt3);flex-shrink:0">' + esc(r.gstin || '—') + '</span>'
+                + '<span class="km-vbadge" style="background:' + (aud === 'seller' ? 'rgba(48,209,88,.14)' : 'rgba(0,122,255,.12)') + ';color:' + (aud === 'seller' ? '#248A3D' : '#0066CC') + '">' + esc(audLabel) + '</span>'
+                + '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#0066CC">' + esc(r.vertical || 'OMP') + '</span>'
+                + '<span class="km-vbadge" style="background:' + stBg + ';color:' + stClr + '">' + stLbl + '</span>'
                 + '</div>';
             }).join('');
-            if (filtered.length > 60) {
-              h += '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (filtered.length - 60) + ' more</span></div>';
+            if (filtered.length > 80) {
+              h += '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (filtered.length - 80) + ' more</span></div>';
             }
           }
         }
