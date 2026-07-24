@@ -1309,6 +1309,32 @@ body.view-gst #vert-tabs-bar{display:none}
 .cc-stat-row.cc-stat-warn b{color:var(--st-review-tx)}
 .cc-stat-row.cc-stat-bad b{color:var(--st-rejected-tx)}
 
+/* ── Existing vs New chips inside pipeline cards ── */
+.cc-en-row{display:flex;gap:6px;margin-bottom:8px}
+.cc-en-chip{
+  flex:1;display:flex;align-items:center;justify-content:space-between;
+  padding:5px 8px;border-radius:6px;background:var(--bg2);
+  font-size:10.5px;color:var(--txt2);font-weight:500;
+}
+.cc-en-chip b{font-size:13px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+
+/* ── Quality strip (Rating + OSV) inside seller pipeline card ── */
+.cc-qual-strip{
+  border-top:1px solid var(--border);
+  padding-top:6px;margin-top:6px;
+  display:flex;flex-direction:column;gap:0;
+}
+.cc-qs-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:4px 2px;border-bottom:1px solid var(--border);
+  font-size:10.5px;color:var(--txt3);font-weight:500;
+}
+.cc-qs-row:last-child{border-bottom:none}
+.cc-qs-lbl{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.cc-qs-val{font-size:11px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;text-align:right}
+.cc-qs-val em{font-style:normal;font-size:10px;font-weight:500;color:var(--txt3)}
+.cc-qs-sync{font-size:10px;font-weight:500;color:var(--txt3);font-style:italic}
+
 /* ══════════════════════════════════════════════════
    VERTICAL STORY SECTION — full editorial layout
    ══════════════════════════════════════════════════ */
@@ -3864,6 +3890,10 @@ function _patchQualityKpiCards() {
     var dv  = dEl.querySelector('.vkpi-val'); if (dv) dv.textContent = dpct;
     var ds  = dEl.querySelector('.vkpi-sub'); if (ds) ds.textContent = dsb;
   }
+
+  // Patch inline seller pipeline card quality strip
+  var ipcEl = document.getElementById('ipc-qual-seller');
+  if (ipcEl) ipcEl.innerHTML = _buildSellerQualStrip(qc);
 }
 
 // Build in-card quality HTML — shows count + % for every item.
@@ -3972,6 +4002,26 @@ function buildQualitySect(qd, aud) {
   return html;
 }
 
+function _buildSellerQualStrip(qc) {
+  if (!qc) {
+    return '<div class="cc-qual-strip">'
+      + '<div class="cc-qs-row"><span class="cc-qs-lbl">★ Vendor Rating</span><span class="cc-qs-sync">Syncing…</span></div>'
+      + '<div class="cc-qs-row"><span class="cc-qs-lbl">✓ OSV Consent</span><span class="cc-qs-sync">Syncing…</span></div>'
+      + '</div>';
+  }
+  var r = qc.rating || {}, o = qc.osv || {};
+  var rAvg = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
+  var rSub = fmt(r.rated || 0) + (r.total > 0 ? ' of ' + fmt(r.total) + ' OMP' : '') + ' rated';
+  var oPct = o.total > 0 ? Math.round((o.completed || 0) / o.total * 100) + '%' : '—';
+  var oSub = fmt(o.completed || 0) + (o.total > 0 ? ' of ' + fmt(o.total) + ' OMP' : '') + ' verified';
+  return '<div class="cc-qual-strip">'
+    + '<div class="cc-qs-row"><span class="cc-qs-lbl">★ Vendor Rating</span>'
+    + '<span class="cc-qs-val">' + rAvg + ' <em>' + rSub + '</em></span></div>'
+    + '<div class="cc-qs-row"><span class="cc-qs-lbl">✓ OSV Consent</span>'
+    + '<span class="cc-qs-val">' + oPct + ' <em>' + oSub + '</em></span></div>'
+    + '</div>';
+}
+
 function renderPipelinePair(key) {
   var el = document.getElementById('vert-pipeline-pair');
   if (!el) return;
@@ -4033,6 +4083,14 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
       + '<span class="cc-cat-detail">' + parts.join(' · ') + '</span></div>';
   }).join('');
   if (catRows) catRows = '<div class="cc-cat-rows">' + catRows + '</div>';
+  // Existing vs New row
+  var newV = v.newVendors || 0, oldV = v.oldVendors || 0;
+  var enRow = (newV > 0 || oldV > 0)
+    ? '<div class="cc-en-row">'
+      + '<div class="cc-en-chip"><span>Existing</span><b>' + fmt(oldV) + '</b></div>'
+      + '<div class="cc-en-chip"><span>New</span><b>' + fmt(newV) + '</b></div>'
+      + '</div>'
+    : '';
   var fys = (v.fyBreakdown || []).filter(function(f) { return !f.fyStart || f.fyStart >= 2019; });
   var statsList = '';
   if (fys.length) {
@@ -4079,7 +4137,13 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
         }).join('') + '</div>'
       : '';
   }
-  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + catRows + statsList + '</div>';
+  // Quality strip for seller OMP cards (async — patched by _patchQualityKpiCards)
+  var qualStrip = '';
+  if (aud === 'seller' && cfg.key === 'OMP') {
+    var sqc = qualityData && qualityData.success ? (qualityData.seller || {}) : null;
+    qualStrip = '<div id="ipc-qual-seller">' + _buildSellerQualStrip(sqc) + '</div>';
+  }
+  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + catRows + enRow + statsList + qualStrip + '</div>';
 }
 
 // Render the inline detailed view section (replaces the full-screen overlay).
