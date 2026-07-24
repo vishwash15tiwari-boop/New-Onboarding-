@@ -779,6 +779,7 @@ tbody td{padding:12px 16px;color:var(--txt);vertical-align:middle;white-space:no
 .km-mb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .km-mb-v{font-size:15px;font-weight:700;color:var(--txt);letter-spacing:-.3px;font-variant-numeric:tabular-nums}
 .km-mb-l{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-top:1px}
+.km-mb-sub{font-size:10px;color:var(--txt3);margin-top:2px}
 /* Footer */
 .km-foot{padding:12px 18px 20px;border-top:1px solid var(--border);text-align:center}
 .km-foot-link{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:var(--accent,#007AFF);cursor:pointer;text-decoration:none;background:none;border:none;padding:0}
@@ -3386,13 +3387,24 @@ function openKpiModal(cardId) {
           {v: fmt(d.txnB != null ? d.txnB : 0), c: B, l: 'Unique Buyers',       s: bPMSub},
         ])
       + srow(metricItems)
-      + (d.pTxn + d.mTxn > 0 ? sec('Material Split', matBadges(d.pTxn, d.mTxn)) : '')
-      + '<div class="km-txn-expand">'
-      + '<button class="km-foot-link" onclick="_txnDetailToggle(this)">'
-      + 'View Transaction Details ↓'
-      + '</button>'
-      + '</div>'
-      + '<div id="txn-detail-wrap" style="display:none;margin-top:4px"></div>';
+      + (d.pTxn + d.mTxn > 0 ? sec('Material Split',
+          '<div class="km-mat">'
+          + '<div class="km-mb"><div class="km-mb-dot" style="background:' + PC + '"></div>'
+          + '<div><div class="km-mb-v">' + fmt(d.pTxn) + '</div>'
+          + '<div class="km-mb-l">Plastic</div>'
+          + ((vs.plasticTransacted || vb.plasticTransacted)
+              ? '<div class="km-mb-sub">' + fmt(vs.plasticTransacted || 0) + ' sellers · ' + fmt(vb.plasticTransacted || 0) + ' buyers</div>'
+              : '')
+          + '</div></div>'
+          + '<div class="km-mb"><div class="km-mb-dot" style="background:' + MC + '"></div>'
+          + '<div><div class="km-mb-v">' + fmt(d.mTxn) + '</div>'
+          + '<div class="km-mb-l">Metal</div>'
+          + ((vs.metalTransacted || vb.metalTransacted)
+              ? '<div class="km-mb-sub">' + fmt(vs.metalTransacted || 0) + ' sellers · ' + fmt(vb.metalTransacted || 0) + ' buyers</div>'
+              : '')
+          + '</div></div>'
+          + '</div>'
+        ) : '');
 
   } else if (cardId === 'oldvsnew') {
     title = 'Existing vs New';
