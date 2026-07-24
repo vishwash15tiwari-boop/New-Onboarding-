@@ -3143,7 +3143,6 @@ function vkpiOpen(action) {
   var detEl = document.getElementById('vert-detail-section');
   var rowsReady = vertRows.length > 0 && !vertRowsLoading;
   if (rowsReady && detEl) {
-    // Rows already loaded — apply filter shortcut then scroll
     vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
     ['vdf-category','vdf-vendor','vdf-status','vdf-gst'].forEach(function(id) {
       var e = document.getElementById(id); if (e) e.value = 'All';
@@ -3159,7 +3158,6 @@ function vkpiOpen(action) {
     renderVdRecords();
     detEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } else {
-    // Open detail section (loads rows); scroll handled inside setDetailAud
     setDetailAud(aud);
   }
 }
@@ -4914,6 +4912,22 @@ function showCatDetail(catName, quiet) {
 
 function filterByCategory(cat) {
   vdF.category = cat;
+
+  // If rows haven't loaded yet, open the detail section to trigger loading.
+  // renderInlineDetail() will call renderVdRecords() with vdF.category set
+  // once rows arrive — so we just need to make sure the section is loading.
+  if (vertRows.length === 0) {
+    if (!vertRowsLoading) {
+      // Not loading at all — trigger the detail section (starts the load).
+      setDetailAud(selectedAud || 'seller');
+      vdF.category = cat;  // setDetailAud resets vdF; re-apply the category
+    }
+    // If already loading, vdF.category is already set above; renderInlineDetail
+    // will apply it once rows arrive. Nothing more to do here.
+    return;
+  }
+
+  // Rows are loaded — apply filter immediately.
   var el = document.getElementById('vdf-category');
   if (el) {
     var found = false;
