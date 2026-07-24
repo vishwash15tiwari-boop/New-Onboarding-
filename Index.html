@@ -3156,7 +3156,7 @@ function renderVertKPIs(key) {
   ];
   if (key === 'OMP') {
     var enTotal = (oldS + oldB) + (newS + newB);
-    cards.push(mk(icUsers, 'Existing / New', fmt(enTotal),
+    cards.push(mk(icUsers, 'New Vendors Onboarded', fmt(enTotal),
       fmt(oldS + oldB) + ' existing · ' + fmt(newS + newB) + ' new',
       'vk-oldvsnew', 'oldvsnew'));
   }
@@ -3407,7 +3407,7 @@ function openKpiModal(cardId) {
         ) : '');
 
   } else if (cardId === 'oldvsnew') {
-    title = 'Existing vs New';
+    title = 'New Vendors Onboarded';
     subtitle = 'OMP vendors — existing in other verticals vs first-time';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
     // Auto-load rows for both audiences in parallel (no manual button needed)
@@ -4165,7 +4165,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
       enVal ? '<tr class="cc-fy-row-btn" role="button" tabindex="0"'
         + ' onclick="event.stopPropagation();openKpiModal(\'oldvsnew\')"'
         + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();openKpiModal(\'oldvsnew\')}">'
-        + '<td class="cc-fy-td-lbl">Existing / New</td>'
+        + '<td class="cc-fy-td-lbl">New Vendors Onboarded</td>'
         + fys.map(function(){ return '<td class="cc-fy-td" style="color:var(--txt3)">—</td>'; }).join('')
         + '<td class="cc-fy-td cc-fy-all">' + enVal + '</td>'
         + '</tr>' : null,
@@ -4192,7 +4192,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     if (enVal) rowsHtml += '<div class="cc-stat-row cc-stat-row-btn" role="button" tabindex="0"'
       + ' onclick="event.stopPropagation();openKpiModal(\'oldvsnew\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();openKpiModal(\'oldvsnew\')}">'
-      + 'Existing / New<b>' + enVal + '</b></div>';
+      + 'New Vendors Onboarded<b>' + enVal + '</b></div>';
     statsList = rowsHtml ? '<div class="cc-stat-list">' + rowsHtml + '</div>' : '';
   }
   // Quality strip for seller OMP cards (async — patched by _patchQualityKpiCards)
