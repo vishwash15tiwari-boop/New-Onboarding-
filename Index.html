@@ -2668,7 +2668,7 @@ var KB_COLS = [            // workflow order, left to right
 
 // ── Pipeline stage palette — mirrors the CSS --st-* tokens, one set everywhere ──
 var STAGE = {
-  total:      { fill: 'var(--st-total)',      bg: 'var(--st-total-bg)',      tx: 'var(--st-total-tx)',      lbl: 'Total Cases' },
+  total:      { fill: 'var(--st-total)',      bg: 'var(--st-total-bg)',      tx: 'var(--st-total-tx)',      lbl: 'Logged In Cases' },
   draft:      { fill: 'var(--st-draft)',      bg: 'var(--st-draft-bg)',      tx: 'var(--st-draft-tx)',      lbl: 'Draft' },
   review:     { fill: 'var(--st-review)',     bg: 'var(--st-review-bg)',     tx: 'var(--st-review-tx)',     lbl: 'In Review' },
   onboarded:  { fill: 'var(--st-onboarded)',  bg: 'var(--st-onboarded-bg)',  tx: 'var(--st-onboarded-tx)',  lbl: 'Onboarded' },
@@ -3151,7 +3151,7 @@ function renderVertKPIs(key) {
     pNew: pNew, mNew: mNew,
   };
   var cards = [
-    mk(icFunnel, 'Total Cases', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',     'total',      null),
+    mk(icFunnel, 'Logged In Cases', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',     'total',      null),
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   compPct + '% completion rate',  'vk-onboarded', 'onboarded'),
     mk(icZap,    'Transacted',  fmt(txnTotal),         txnPct > 0 ? txnPct + '% of onboarded' : null, 'vk-transacted', 'transacted'),
   ];
@@ -3321,14 +3321,14 @@ function openKpiModal(cardId) {
   var vs = d ? d.vs : {}, vb = d ? d.vb : {};
 
   if (cardId === 'total') {
-    title = 'Total Cases';
+    title = 'Logged In Cases';
     subtitle = 'All pipeline entries across sellers & buyers';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>';
     var dComb = (vs.draft || 0) + (vb.draft || 0);
     var rComb = (vs.inReview || 0) + (vb.inReview || 0);
     var jComb = (vs.rejected || 0) + (vb.rejected || 0);
     content =
-      hero(fmt(d.totalS + d.totalB), 'Total Cases in the System')
+      hero(fmt(d.totalS + d.totalB), 'Logged In Cases')
       + srow([
           {v: fmt(d.totalS), l: 'Sellers', c: S},
           {v: fmt(d.totalB), l: 'Buyers',  c: B},
@@ -5129,7 +5129,7 @@ function renderCatDetailCard(c) {
     +   '<button onclick="filterByCategory(\'All\')" style="margin-left:auto;background:rgba(120,120,128,.12);border:none;border-radius:999px;font-size:11px;font-weight:500;color:var(--txt2);padding:4px 12px;cursor:pointer;font-family:inherit;text-transform:none;letter-spacing:0">✕ Clear</button>'
     + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr">'
-    +   half('Total Cases Breakdown', statusDonut, statusLeg, true)
+    +   half('Logged In Cases Breakdown', statusDonut, statusLeg, true)
     +   half('Vendor Type Breakdown', vtDonut, vtLeg, false)
     + '</div>'
     + '</div>';
