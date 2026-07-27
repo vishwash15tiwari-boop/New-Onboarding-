@@ -3669,13 +3669,13 @@ function openKpiModal(cardId) {
   }
 
   // ── Quality card modals ──────────────────────────────────────
-  var isQuality = (cardId === 'rating' || cardId === 'osv' || cardId === 'docs');
+  var isQuality = isQualityCard;
   if (isQuality) {
     var qd = qualityData || { success: false };
     var S2 = '#34C759', B2 = '#007AFF';
 
     // Reusable star-distribution builder
-    function starBarsHtml(dist, rated, vendors) {
+    var starBarsHtml = function(dist, rated, vendors) {
       vendors = vendors || [];
       var maxD   = Math.max.apply(null, dist) || 1;
       var ratedD = rated || 1;
@@ -3717,10 +3717,10 @@ function openKpiModal(cardId) {
         }
       }
       return h;
-    }
+    };
 
     // Segmented progress bar
-    function progBar(segs) {
+    var progBar = function(segs) {
       var tot = segs.reduce(function(a, s) { return a + s.w; }, 0);
       if (!tot) return '';
       return '<div class="km-prog">'
@@ -3728,7 +3728,7 @@ function openKpiModal(cardId) {
             return '<div class="km-prog-seg" style="flex:' + s.w + ';background:' + s.color + '"></div>';
           }).join('')
         + '</div>';
-    }
+    };
 
     var noDataMsg = '<div style="padding:32px 18px;text-align:center;color:var(--txt3);font-size:13px">Quality data is loading — check back shortly.</div>';
 
@@ -3828,7 +3828,7 @@ function openKpiModal(cardId) {
 
   var footAction = isQuality
     ? 'closeKpiModal();(function(){var p=document.getElementById(\'vert-pipeline-pair\');if(p)p.scrollIntoView({behavior:\'smooth\',block:\'start\'});})();'
-    : 'closeKpiModal();vkpiOpen(\'' + (cardId === 'onboarded' ? 'onboarded' : 'all') + '\')';
+    : (cardId !== 'transacted' && cardId !== 'oldvsnew' ? 'closeKpiModal();vkpiOpen(\'' + (cardId === 'onboarded' ? 'onboarded' : 'all') + '\')' : null);
   var footLabel  = isQuality ? 'View quality detail in pipeline cards ↓' : 'View vendor detail ↓';
 
   el.innerHTML =
@@ -3842,9 +3842,9 @@ function openKpiModal(cardId) {
     + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
     + '</div>'
     + content
-    + '<div class="km-foot">'
-    + '<button class="km-foot-link" onclick="' + footAction + '">' + footLabel + '</button>'
-    + '</div>';
+    + (footAction !== null
+      ? '<div class="km-foot"><button class="km-foot-link" onclick="' + footAction + '">' + footLabel + '</button></div>'
+      : '');
 
   modal.classList.add('km-open');
   document.addEventListener('keydown', _kpiEsc);
@@ -3881,13 +3881,16 @@ function _gmvCatRender(aud, cats) {
       }).join('')
     : '<div style="padding:28px 18px;text-align:center;color:var(--txt3);font-size:13px">No category GMV data available</div>';
   el.innerHTML = '<div class="km-head">'
+    + '<div style="display:flex;align-items:center;min-width:0">'
+    + '<div class="km-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="18" y="13" width="4" height="8" rx="1"/></svg></div>'
     + '<div class="km-htxt">'
     + '<div class="km-title">GMV by Category</div>'
     + '<div class="km-sub">' + audLbl + ' · Total ' + fmtINR(total) + '</div>'
-    + '</div>'
+    + '</div></div>'
     + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
     + '</div>'
-    + rows;
+    + rows
+    + '<div class="km-foot"><button class="km-foot-link" onclick="closeKpiModal();vkpiOpen(\'all\')">View vendor detail ↓</button></div>';
   if (!modal.classList.contains('km-open')) {
     modal.classList.add('km-open');
     document.addEventListener('keydown', _kpiEsc);
@@ -3933,8 +3936,10 @@ function openGmvCatModal(aud) {
 
   var audLbl0 = aud === 'seller' ? 'Sellers' : 'Buyers';
   el.innerHTML = '<div class="km-head">'
+    + '<div style="display:flex;align-items:center;min-width:0">'
+    + '<div class="km-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="18" y="13" width="4" height="8" rx="1"/></svg></div>'
     + '<div class="km-htxt"><div class="km-title">GMV by Category</div>'
-    + '<div class="km-sub">' + audLbl0 + '</div></div>'
+    + '<div class="km-sub">' + audLbl0 + '</div></div></div>'
     + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
     + '</div>'
     + '<div style="padding:32px 18px;text-align:center;color:var(--txt3);font-size:13px">Loading…</div>';
@@ -5022,7 +5027,7 @@ function openVertDetail(key, aud) {
     vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
     vdSort = { key: '', dir: 1 };
     vertRows = []; vertRowsLoading = true; vertRowsError = null;
-    _vertRowsPKey = null; ++_vertRowsGen;
+    _vertRowsPKey = null; ++_vertRowsGen; _ovnRows = {};
     document.querySelectorAll('.vert-tab[data-key]').forEach(function(t) {
       t.classList.toggle('active', t.dataset.key === key);
     });
