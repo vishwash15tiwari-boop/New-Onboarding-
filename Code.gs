@@ -79,12 +79,51 @@ var DOC_LABELS = [
 ];
 // Alternate column spellings for documents whose header isn't the canonical key.
 var DOC_ALIASES = {
-  pwm_certificate: ['pwm_certificate','pwm','pwm_cert','pwm_certificate_document',
-                    'plastic_waste_management','plastic_waste_management_certificate','pwm_document']
+  gst_certificate: ['gst_certificate','gst_cert','gstin_certificate','gst_registration_certificate',
+                    'gst_certificate_url','gst_certificate_link','gst_certificate_document','gstcertificate'],
+  entity_pan:      ['entity_pan','entity_pan_card','entity_pancard','entitypan','company_pan',
+                    'business_pan','firm_pan','entity_pan_url','entity_pan_document'],
+  pwm_certificate: ['pwm_certificate','pwm','pwm_cert','pwm_certificate_document','pwm_certificate_url',
+                    'pwm_certificate_link','pwmcertificate','plastic_waste_management',
+                    'plastic_waste_management_certificate','pwm_document']
+};
+// Token sets for a last-resort fuzzy match of the buyer-mandatory documents
+// against whatever the source sheet names them (all tokens must appear).
+var DOC_TOKENS = {
+  gst_certificate: ['gst', 'cert'],
+  entity_pan:      ['entity', 'pan'],
+  pwm_certificate: ['pwm']
 };
 // Resolve a document's column index in a header list, honouring aliases.
 function docColIndex_(headers, key) {
   return qualityFindCol_(headers, DOC_ALIASES[key] || [key]);
+}
+// Alias match first; then a token-based fuzzy match (only for keys in DOC_TOKENS),
+// so e.g. "gst_certificate_status" or "pwm_cert_url" is still found.
+function docColFuzzy_(headers, key) {
+  var i = docColIndex_(headers, key);
+  if (i >= 0) return i;
+  var toks = DOC_TOKENS[key];
+  if (!toks) return -1;
+  for (var h = 0; h < headers.length; h++) {
+    var hh = headers[h];
+    var ok = true;
+    for (var t = 0; t < toks.length; t++) { if (hh.indexOf(toks[t]) === -1) { ok = false; break; } }
+    if (ok) return h;
+  }
+  return -1;
+}
+// A document cell counts as "submitted" when it holds a positive flag, an
+// affirmative word, or any content (URL / date / id) — but not a negative.
+function isDocSubmitted_(v) {
+  if (v === '' || v === null || v === undefined) return false;
+  if (typeof v === 'number') return v > 0;
+  var s = String(v).trim().toLowerCase();
+  if (!s) return false;
+  if (s === '0' || s === 'no' || s === 'n' || s === 'false' || s === 'na' || s === 'n/a'
+      || s === '-' || s === '—' || s === 'not submitted' || s === 'not_submitted'
+      || s === 'pending' || s === 'missing' || s === 'not uploaded' || s === 'not_uploaded') return false;
+  return true;
 }
 
 // Per-audience column mapping (field names differ slightly between Metabase cards and the fallback sheets).
@@ -1426,7 +1465,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v8';   // v8: buyer docs from Doc Completeness sheet
+  var CACHE_KEY = 'quality_data_v9';   // v9: buyer docs sourced from _mb_buyers
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1626,11 +1665,22 @@ function getQualityData() {
     }
   } catch (e) { Logger.log('getQualityData vendor-rating: ' + e.message); }
 
-  // Supplement with the dedicated "Doc Completeness" sheet (card 5674), which
-  // carries both Sellers AND Buyers. The Vendor Rating sheet above is
-  // seller-centric, so buyer documents come from here. Entities already present
-  // (matched by GSTIN, else id) are left as-is; new ones (esp. buyers) are added.
   if (typeof vendorDocs === 'undefined' || !vendorDocs) vendorDocs = [];
+
+  // Buyer documents come from the buyer onboarding sheet (_mb_buyers) — the
+  // authoritative source for every Open Marketplace buyer. When it yields buyer
+  // records, they REPLACE any buyer rows sourced above (Vendor Rating is
+  // seller-centric); if it yields none, existing buyer rows are kept (no
+  // regression).
+  try {
+    var buyerDocs = buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap);
+    if (buyerDocs.length) {
+      vendorDocs = vendorDocs.filter(function(v) { return v.aud !== 'buyer'; }).concat(buyerDocs);
+    }
+  } catch (e) { Logger.log('getQualityData buyer-docs (_mb_buyers): ' + e.message); }
+
+  // Supplement any remaining gaps from the dedicated "Doc Completeness" sheet
+  // (card 5674). Entities already present (matched by GSTIN, else id) are kept.
   try {
     appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds);
   } catch (e) { Logger.log('getQualityData doc-completeness: ' + e.message); }
@@ -1871,19 +1921,85 @@ function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, selle
   });
 }
 
+// Build buyer document records from the buyer onboarding sheet (_mb_buyers) —
+// the authoritative source for every Open Marketplace buyer. Detects the
+// document columns (canonical names, aliases, then a token-based fuzzy match for
+// the three buyer-mandatory docs) and marks a document submitted when its cell
+// holds a flag / URL / date. Returns [] when no document columns are present so
+// the caller can safely keep whatever it already had.
+function buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap) {
+  var out   = [];
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('_mb_buyers');
+  if (!sheet || sheet.getLastRow() < 2) return out;
+  var d = readSheetObj_(sheet);
+  var h = d.headers;
+  function fc(c) { return qualityFindCol_(h, c); }
+  var idC  = fc(['buyer_id','id','vendor_id','vendorid']);
+  var nmC  = fc(['buyer_name','name','vendor_name','business_name','company_name']);
+  var gstC = fc(['gstin','gst_number','gst_no','gstin_number','gst']);
+  var catC = fc(['business_category','category','vertical_category','cat']);
+  var bvC  = fc(['business_vertical','vertical','biz_vertical']);
+  var stC  = fc(['onboarding_status','status','onboard_status']);
+  var docIdx = DOC_NAMES.map(function(n) { return docColFuzzy_(h, n); });
+  if (docIdx.every(function(i) { return i < 0; })) return out;   // no document columns → nothing to build
+
+  d.rows.forEach(function(row) {
+    // Scope to Open Marketplace when the sheet carries a vertical column.
+    if (bvC >= 0) {
+      var bv = String(row[bvC] || '').trim().toLowerCase();
+      if (bv && bv.indexOf('open marketplace') < 0 && bv.indexOf('open_marketplace') < 0 && bv !== 'omp') return;
+    }
+    var id  = idC  >= 0 ? String(row[idC]  || '').trim() : '';
+    var gst = gstC >= 0 ? String(row[gstC] || '').trim() : '';
+    if (!id && !gst) return;
+
+    var submitted = 0, totalDocs = 0, missing = [], docList = [];
+    docIdx.forEach(function(di, i) {
+      if (di < 0 || di >= row.length) return;
+      totalDocs++;
+      var cell  = row[di];
+      var isSub = isDocSubmitted_(cell);
+      if (isSub) submitted++; else missing.push(DOC_LABELS[i]);
+      var url = (typeof cell === 'string' && /^https?:\/\//i.test(cell.trim())) ? cell.trim() : null;
+      docList.push({ key: DOC_NAMES[i], label: DOC_LABELS[i], submitted: isSub, verified: null, uploadDate: null, url: url });
+    });
+
+    var ompD = ompMap[id] || (gst ? ompGstinMap[gst] : null);
+    out.push({
+      id:               id.slice(0, 30),
+      name:             (nmC >= 0 ? String(row[nmC] || '').trim().slice(0, 60) : '') || (ompD && ompD.name) || '',
+      gstin:            gst.slice(0, 20) || (ompD && ompD.gstin) || '',
+      category:         (catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '') || (ompD ? ompD.category : ''),
+      onboardingStatus: (stC  >= 0 ? String(row[stC]  || '').trim().toUpperCase() : '') || (ompD ? ompD.onboardingStatus : ''),
+      omp:              true,
+      submitted:        submitted,
+      total:            totalDocs,
+      missingDocs:      missing,
+      docs:             docList,
+      aud:              'buyer'
+    });
+  });
+  return out;
+}
+
 // Manual diagnostic — run from the Apps Script editor to see where document
-// data lives and how it splits by audience. Logs the headers + counts of both
-// the Vendor Rating and Doc Completeness sheets and the final per-audience
-// vendorDocs breakdown, so buyer-document sourcing can be verified/mapped.
+// data lives and how it splits by audience. Logs the headers + counts of the
+// Vendor Rating, Doc Completeness and _mb_buyers sheets and the final
+// per-audience vendorDocs breakdown, so buyer-document sourcing can be verified.
 function debugDocs() {
   Logger.log('════ DOC DEBUG ════');
-  ['Vendor Rating', 'Doc Completeness'].forEach(function(nm) {
+  ['Vendor Rating', 'Doc Completeness', '_mb_buyers'].forEach(function(nm) {
     var s = qualityReadSheet_(nm);
     Logger.log('— "' + nm + '": ' + s.rows.length + ' rows');
     if (s.headers.length) {
       Logger.log('   headers: ' + s.headers.join(', '));
       var found = DOC_NAMES.filter(function(n) { return s.headers.indexOf(n) !== -1; });
-      Logger.log('   doc columns present: ' + (found.length ? found.join(', ') : '(none by name)'));
+      Logger.log('   doc columns present (by name): ' + (found.length ? found.join(', ') : '(none)'));
+      // Show how the three buyer-mandatory docs resolve (alias + fuzzy).
+      ['gst_certificate', 'entity_pan', 'pwm_certificate'].forEach(function(k) {
+        var ix = docColFuzzy_(s.headers, k);
+        Logger.log('   mandatory "' + k + '" → ' + (ix >= 0 ? 'col "' + s.headers[ix] + '"' : '(not found)'));
+      });
       Logger.log('   id cols → seller_id:' + (s.headers.indexOf('seller_id') !== -1)
         + ' buyer_id:' + (s.headers.indexOf('buyer_id') !== -1)
         + ' audience/type:' + (s.headers.indexOf('audience') !== -1 || s.headers.indexOf('type') !== -1));
