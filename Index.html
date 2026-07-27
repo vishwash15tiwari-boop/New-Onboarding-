@@ -3324,8 +3324,10 @@ function openKpiModal(cardId) {
 
   // ── layout primitives ────────────────────────────────────────
   function hero(num, lbl) {
+    var text = String(num);
+    var hasData = /[\d★%]/.test(text);
     return '<div class="km-hero">'
-      + '<div class="km-hero-num">' + num + '</div>'
+      + '<div class="km-hero-num"' + (!hasData ? ' style="font-size:20px;font-weight:400;letter-spacing:0;color:var(--txt3)"' : '') + '>' + text + '</div>'
       + '<div class="km-hero-lbl">' + lbl + '</div>'
       + '</div>';
   }
