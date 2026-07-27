@@ -59,6 +59,19 @@ var TAT_COLS = {
   name:      ['seller_name','buyer_name','vendor_name','business_name','name','entity_name'],
 };
 
+// Mandatory-document catalogue — shared by the Vendor Rating parse and the
+// Doc Completeness parse so both produce the same document keys/labels.
+var DOC_NAMES = [
+  'additional_documents','proof_of_premises','electricity_bill',
+  'kyc_document','gst_portal_screenshot_bank_details','cancelled_cheque',
+  'msme_certificate','aadhaar','owner_pan','entity_pan','gst_certificate'
+];
+var DOC_LABELS = [
+  'Additional Docs','Proof of Premises','Electricity Bill',
+  'KYC Document','GST Screenshot','Cancelled Cheque',
+  'MSME Certificate','Aadhaar','Owner PAN','Entity PAN','GST Certificate'
+];
+
 // Per-audience column mapping (field names differ slightly between Metabase cards and the fallback sheets).
 var AUDIENCE_CFG = {
   seller: { audience: 'seller', sheetId: CONFIG.SELLER_SHEET_ID, label: 'Sellers',
@@ -1398,7 +1411,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v7';
+  var CACHE_KEY = 'quality_data_v8';   // v8: buyer docs from Doc Completeness sheet
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1468,21 +1481,15 @@ function getQualityData() {
       if (oC < 0) oC = 31;
 
       // Doc columns: 11 individual document flags (present from col 32 onward)
-      var DOC_NAMES = [
-        'additional_documents','proof_of_premises','electricity_bill',
-        'kyc_document','gst_portal_screenshot_bank_details','cancelled_cheque',
-        'msme_certificate','aadhaar','owner_pan','entity_pan','gst_certificate'
-      ];
-      var DOC_LABELS = [
-        'Additional Docs','Proof of Premises','Electricity Bill',
-        'KYC Document','GST Screenshot','Cancelled Cheque',
-        'MSME Certificate','Aadhaar','Owner PAN','Entity PAN','GST Certificate'
-      ];
       var docIdx = DOC_NAMES.map(function(n) { return qualityFindCol_(vrh, [n]); });
       // Positional fallback: use indices 32-42 if none found by name
       if (docIdx.every(function(i) { return i < 0; })) {
         docIdx = [32,33,34,35,36,37,38,39,40,41,42];
       }
+      // Buyer id column — the Vendor Rating sheet keys sellers via seller_id and
+      // (when present) buyers via buyer_id. Detect it so buyer rows are labelled
+      // 'buyer' rather than falling through to 'seller'/'combined'.
+      var vBuyC = qualityFindCol_(vrh, ['buyer_id','buyerid']);
 
       var vendorRatings = [];
       var vendorOSV     = [];
@@ -1576,10 +1583,17 @@ function getQualityData() {
         });
         // Enrich with OMP entity info (GSTIN / category / onboarding status) so
         // the repository can show it without a second lookup. Matched by id, then GSTIN.
-        var docGst = vrGstC >= 0 ? String(row[vrGstC] || '').trim() : '';
-        var ompD   = ompMap[vid_] || (docGst ? ompGstinMap[docGst] : null);
+        var docGst    = vrGstC >= 0 ? String(row[vrGstC] || '').trim() : '';
+        var sellerIdV = String(row[vidC] || '').trim();
+        var buyerIdV  = vBuyC >= 0 ? String(row[vBuyC] || '').trim() : '';
+        // Prefer an explicit id column that is actually populated for this row.
+        var docVid    = buyerIdV || sellerIdV;
+        // Audience: buyer_id populated → buyer; else the row's resolved audience.
+        var docAud    = buyerIdV ? 'buyer' : (sellerIdV ? (rowAud === 'buyer' ? 'buyer' : 'seller') : rowAud);
+        var ompD      = ompMap[docVid] || (docGst ? ompGstinMap[docGst] : null);
+        if (ompD && ompD.aud) docAud = ompD.aud;
         vendorDocs.push({
-          id:               String(row[vidC] || '').trim().slice(0, 30),
+          id:               docVid.slice(0, 30),
           name:             (ompD && ompD.name) || String(row[nameC] || '').trim().slice(0, 60),
           gstin:            (ompD && ompD.gstin) || docGst.slice(0, 20),
           category:         ompD ? (ompD.category || '') : '',
@@ -1589,11 +1603,20 @@ function getQualityData() {
           total:            totalDocs,
           missingDocs:      missingDocNames,
           docs:             docList,
-          aud:              (ompD && ompD.aud) || rowAud
+          aud:              docAud
         });
       });
     }
   } catch (e) { Logger.log('getQualityData vendor-rating: ' + e.message); }
+
+  // Supplement with the dedicated "Doc Completeness" sheet (card 5674), which
+  // carries both Sellers AND Buyers. The Vendor Rating sheet above is
+  // seller-centric, so buyer documents come from here. Entities already present
+  // (matched by GSTIN, else id) are left as-is; new ones (esp. buyers) are added.
+  if (typeof vendorDocs === 'undefined' || !vendorDocs) vendorDocs = [];
+  try {
+    appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds);
+  } catch (e) { Logger.log('getQualityData doc-completeness: ' + e.message); }
 
   // Rating denominator = OMP-onboarded count per audience (GSTIN-matched)
   acc['seller'].r.total   = Object.keys(ompGstinSellers).length;
@@ -1743,4 +1766,122 @@ function qualityReadSheet_(name) {
     return row.some(function(c) { return c !== '' && c !== null && c !== undefined; });
   });
   return { headers: headers, rows: rows };
+}
+
+// Read the "Doc Completeness" sheet (card 5674) and add per-vendor document
+// records — importantly, BUYERS, which the seller-centric Vendor Rating sheet
+// lacks. Skips entities already present (matched by GSTIN, else id). Handles the
+// per-document-flag layout (one 0/1 column per document); if that layout isn't
+// present, adds nothing (safe) and debugDocs() will reveal the real schema.
+function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds) {
+  var d = qualityReadSheet_('Doc Completeness');
+  if (!d.rows.length) return;
+  var h = d.headers;
+  function fc(c) { return qualityFindCol_(h, c); }
+  var sIdC = fc(['seller_id']);
+  var bIdC = fc(['buyer_id']);
+  var idC  = fc(['vendor_id','id','vendorid','entity_id']);
+  var nmC  = fc(['seller_name','buyer_name','vendor_name','name','business_name','company_name']);
+  var gstC = fc(['gstin','gst_number','gst_no','gstin_number','gst']);
+  var audC = fc(['audience','type','aud','entity_type','seller_buyer','vendor_type']);
+  var catC = fc(['business_category','category','vertical_category','cat']);
+  var stC  = fc(['onboarding_status','status','onboard_status']);
+  var docIdx = DOC_NAMES.map(function(n) { return fc([n]); });
+  if (docIdx.every(function(i) { return i < 0; })) return;   // no per-document columns → nothing to add
+
+  // Index existing entities so we don't double-add sellers already parsed above.
+  var seen = {};
+  vendorDocs.forEach(function(v) {
+    if (v.gstin) seen['g\x00' + String(v.gstin).toLowerCase()] = true;
+    if (v.id)    seen['i\x00' + String(v.id)] = true;
+  });
+
+  d.rows.forEach(function(row) {
+    var sId = sIdC >= 0 ? String(row[sIdC] || '').trim() : '';
+    var bId = bIdC >= 0 ? String(row[bIdC] || '').trim() : '';
+    var gId = idC  >= 0 ? String(row[idC]  || '').trim() : '';
+    var gst = gstC >= 0 ? String(row[gstC] || '').trim() : '';
+    var vid = bId || sId || gId;
+    if (!vid && !gst) return;
+    if ((gst && seen['g\x00' + gst.toLowerCase()]) || (vid && seen['i\x00' + vid])) return;   // already have it
+
+    // Resolve audience: explicit column → id column → id-set membership → OMP map.
+    var aud = '';
+    if (audC >= 0) {
+      var av = String(row[audC] || '').toLowerCase();
+      if (av.indexOf('buy') !== -1) aud = 'buyer';
+      else if (av.indexOf('sell') !== -1) aud = 'seller';
+    }
+    if (!aud) aud = bId ? 'buyer' : (sId ? 'seller' : '');
+    if (!aud && vid) aud = buyerIds[vid] ? 'buyer' : (sellerIds[vid] ? 'seller' : '');
+    var ompD = ompMap[vid] || (gst ? ompGstinMap[gst] : null);
+    if (!aud && ompD) aud = ompD.aud;
+    if (!aud) aud = 'combined';
+
+    var submitted = 0, totalDocs = 0, missing = [], docList = [];
+    docIdx.forEach(function(di, i) {
+      if (di < 0 || di >= row.length) return;
+      totalDocs++;
+      var dv = parseInt(row[di], 10);
+      var isSub = (!isNaN(dv) && dv > 0);
+      if (isSub) submitted++; else missing.push(DOC_LABELS[i]);
+      var vC = fc([DOC_NAMES[i] + '_verified', DOC_NAMES[i] + '_verification', DOC_NAMES[i] + '_status']);
+      var dC = fc([DOC_NAMES[i] + '_date', DOC_NAMES[i] + '_uploaded_date', DOC_NAMES[i] + '_upload_date']);
+      var uC = fc([DOC_NAMES[i] + '_url', DOC_NAMES[i] + '_link', DOC_NAMES[i] + '_document_url']);
+      docList.push({
+        key: DOC_NAMES[i], label: DOC_LABELS[i], submitted: isSub,
+        verified:   vC >= 0 ? String(row[vC] || '').trim() : null,
+        uploadDate: dC >= 0 ? String(row[dC] || '').trim() : null,
+        url:        uC >= 0 ? String(row[uC] || '').trim() : null
+      });
+    });
+
+    vendorDocs.push({
+      id:               vid.slice(0, 30),
+      name:             (ompD && ompD.name) || (nmC >= 0 ? String(row[nmC] || '').trim().slice(0, 60) : ''),
+      gstin:            (ompD && ompD.gstin) || gst.slice(0, 20),
+      category:         (ompD && ompD.category) || (catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : ''),
+      onboardingStatus: (ompD && ompD.onboardingStatus) || (stC >= 0 ? String(row[stC] || '').trim().toUpperCase() : ''),
+      omp:              !!ompD,
+      submitted:        submitted,
+      total:            totalDocs,
+      missingDocs:      missing,
+      docs:             docList,
+      aud:              aud
+    });
+    if (gst) seen['g\x00' + gst.toLowerCase()] = true;
+    if (vid) seen['i\x00' + vid] = true;
+  });
+}
+
+// Manual diagnostic — run from the Apps Script editor to see where document
+// data lives and how it splits by audience. Logs the headers + counts of both
+// the Vendor Rating and Doc Completeness sheets and the final per-audience
+// vendorDocs breakdown, so buyer-document sourcing can be verified/mapped.
+function debugDocs() {
+  Logger.log('════ DOC DEBUG ════');
+  ['Vendor Rating', 'Doc Completeness'].forEach(function(nm) {
+    var s = qualityReadSheet_(nm);
+    Logger.log('— "' + nm + '": ' + s.rows.length + ' rows');
+    if (s.headers.length) {
+      Logger.log('   headers: ' + s.headers.join(', '));
+      var found = DOC_NAMES.filter(function(n) { return s.headers.indexOf(n) !== -1; });
+      Logger.log('   doc columns present: ' + (found.length ? found.join(', ') : '(none by name)'));
+      Logger.log('   id cols → seller_id:' + (s.headers.indexOf('seller_id') !== -1)
+        + ' buyer_id:' + (s.headers.indexOf('buyer_id') !== -1)
+        + ' audience/type:' + (s.headers.indexOf('audience') !== -1 || s.headers.indexOf('type') !== -1));
+    }
+  });
+  try {
+    var q = JSON.parse(getQualityData());
+    var vd = q.vendorDocs || [];
+    var byAud = { seller: 0, buyer: 0, combined: 0, other: 0 };
+    vd.forEach(function(v) { byAud[v.aud] = (byAud[v.aud] || 0) + 1; });
+    Logger.log('vendorDocs total: ' + vd.length + ' → seller:' + (byAud.seller || 0)
+      + ' buyer:' + (byAud.buyer || 0) + ' combined:' + (byAud.combined || 0));
+    var b = vd.filter(function(v) { return v.aud === 'buyer'; }).slice(0, 5);
+    b.forEach(function(v) { Logger.log('   buyer sample: ' + v.name + ' | ' + v.gstin + ' | ' + v.submitted + '/' + v.total); });
+    if (!(byAud.buyer)) Logger.log('   ⚠ No buyer document rows — check the sheets/columns logged above.');
+  } catch (e) { Logger.log('getQualityData failed: ' + e.message); }
+  Logger.log('════ END ════');
 }
