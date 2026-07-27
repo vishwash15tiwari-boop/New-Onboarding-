@@ -1835,6 +1835,109 @@ body.view-gst #vert-tabs-bar{display:none}
 /* Sidebar no longer needed — vertical tabs replace it */
 #side-nav{display:none!important}
 
+/* ══════════════════════════════════════════════════
+   DOCUMENT MANAGEMENT — Open Marketplace only
+   Reuses the card / table / modal language already in use. */
+.docs-wrap{
+  background:var(--card);border-radius:var(--r);
+  box-shadow:var(--shadow-card);margin-top:16px;overflow:hidden;
+}
+.docs-hd{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:18px 22px;border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(0,113,227,.035),transparent);
+}
+.docs-hd-ic{
+  width:34px;height:34px;border-radius:9px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--accent-soft);color:var(--blue);
+}
+.docs-hd-ic svg{width:17px;height:17px}
+.docs-hd-tt{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--txt);line-height:1.2}
+.docs-hd-sb{font-size:11.5px;color:var(--txt3);margin-top:1px}
+.docs-tools{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.docs-seg{display:inline-flex;background:var(--seg-track);border-radius:var(--pill);padding:3px}
+.docs-seg button{
+  font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 15px;
+  border:none;background:transparent;color:var(--txt2);cursor:pointer;
+  border-radius:var(--pill);white-space:nowrap;
+  transition:background .18s var(--ease),color .15s var(--ease),box-shadow .18s var(--ease);
+}
+.docs-seg button.on{background:var(--card);color:var(--txt);box-shadow:var(--shadow-sm)}
+.docs-search{position:relative;display:flex;align-items:center}
+.docs-search input{
+  font-family:inherit;font-size:12.5px;color:var(--txt);
+  background:var(--bg2);border:1px solid transparent;border-radius:9px;
+  padding:8px 12px 8px 32px;width:220px;outline:none;
+  transition:border-color .15s var(--ease),box-shadow .15s var(--ease),background .15s var(--ease);
+}
+.docs-search input::placeholder{color:var(--txt3)}
+.docs-search input:focus{background:var(--card);border-color:rgba(0,113,227,.35);box-shadow:var(--ring)}
+.docs-search svg{position:absolute;left:11px;width:14px;height:14px;color:var(--txt3);pointer-events:none}
+.docs-tbl-wrap{overflow-x:auto;max-height:520px;overflow-y:auto}
+.docs-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.docs-tbl thead th{
+  position:sticky;top:0;z-index:2;background:var(--card);
+  text-align:left;padding:11px 16px;font-size:10.5px;font-weight:700;
+  color:var(--txt2);text-transform:uppercase;letter-spacing:.06em;
+  white-space:nowrap;border-bottom:1px solid var(--border);
+}
+.docs-tbl thead th.num{text-align:right}
+.docs-tbl tbody td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--txt);vertical-align:middle;white-space:nowrap}
+.docs-tbl tbody tr:last-child td{border-bottom:none}
+.docs-tbl tbody tr{cursor:pointer;transition:background .15s var(--ease)}
+.docs-tbl tbody tr:hover{background:rgba(0,113,227,.05)}
+.docs-nm{font-weight:600;letter-spacing:-.1px}
+.docs-nm-sub{display:block;font-size:11px;color:var(--txt3);font-family:monospace;margin-top:2px;font-weight:400}
+.docs-cat{font-size:11px;font-weight:600;padding:2px 9px;border-radius:var(--pill);background:var(--seg-track);color:var(--txt2)}
+.docs-cat.plastic{background:rgba(255,159,10,.14);color:#B25000}
+.docs-cat.metal{background:rgba(142,142,147,.16);color:#5b5b60}
+/* Completeness meter cell */
+.docs-comp{display:flex;align-items:center;gap:9px;justify-content:flex-end;min-width:150px}
+.docs-comp-track{width:66px;height:6px;border-radius:3px;background:var(--seg-track);overflow:hidden;flex-shrink:0}
+.docs-comp-fill{height:100%;border-radius:3px;transition:width .8s var(--ease-out)}
+.docs-comp-pct{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.2px;min-width:38px;text-align:right}
+.docs-comp-sub{font-size:11px;color:var(--txt3);font-variant-numeric:tabular-nums;min-width:52px;text-align:right}
+.docs-empty{padding:40px 20px;text-align:center;color:var(--txt3);font-size:12.5px}
+/* Document detail modal — reuses .km-* modal chrome */
+#doc-modal{position:fixed;inset:0;z-index:802;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;opacity:0;transition:opacity .18s var(--ease)}
+#doc-modal.km-open{pointer-events:all;opacity:1}
+@media(min-width:600px){#doc-modal{align-items:center;padding:20px}}
+#doc-modal .km-pn{max-width:560px}
+.dm-ent{display:flex;flex-wrap:wrap;gap:8px 20px;padding:14px 18px;border-bottom:1px solid var(--border)}
+.dm-ent-item{display:flex;flex-direction:column;gap:2px}
+.dm-ent-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--txt3)}
+.dm-ent-val{font-size:12.5px;font-weight:600;color:var(--txt);letter-spacing:-.1px}
+/* Summary tiles */
+.dm-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:14px 18px;border-bottom:1px solid var(--border)}
+.dm-sum-item{background:var(--bg2);border-radius:8px;padding:9px 10px;text-align:center}
+.dm-sum-v{font-size:17px;font-weight:700;color:var(--txt);letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.dm-sum-l{font-size:9px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;line-height:1.25}
+.dm-sum-item.pct .dm-sum-v{color:var(--blue)}
+/* Document list */
+.dm-doc{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.dm-doc:last-child{border-bottom:none}
+.dm-doc-ic{width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px}
+.dm-doc-ic.yes{background:rgba(48,209,88,.15);color:#248A3D}
+.dm-doc-ic.no{background:var(--bg2);color:var(--txt3)}
+.dm-doc-main{flex:1;min-width:0}
+.dm-doc-nm{font-size:12.5px;font-weight:600;color:var(--txt);letter-spacing:-.1px}
+.dm-doc-meta{font-size:10.5px;color:var(--txt3);margin-top:1px}
+.dm-doc-badges{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.dm-badge{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:var(--pill);white-space:nowrap;letter-spacing:.02em}
+.dm-badge.sub{background:rgba(48,209,88,.14);color:#248A3D}
+.dm-badge.miss{background:var(--seg-track);color:var(--txt2)}
+.dm-badge.ver{background:rgba(0,122,255,.12);color:#0066CC}
+.dm-badge.pend{background:rgba(255,149,0,.14);color:#B25000}
+.dm-view{font-size:10.5px;font-weight:600;color:var(--blue);text-decoration:none;white-space:nowrap}
+.dm-view.off{color:var(--txt3);pointer-events:none;opacity:.5}
+/* Improvement checklist */
+.dm-fix{padding:14px 18px}
+.dm-fix-row{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:12.5px;color:var(--txt);border-bottom:1px solid var(--border)}
+.dm-fix-row:last-child{border-bottom:none}
+.dm-fix-row .dm-fix-dot{width:6px;height:6px;border-radius:50%;background:var(--st-review);flex-shrink:0}
+.dm-fix-done{display:flex;align-items:center;gap:8px;padding:10px 0;font-size:12.5px;font-weight:600;color:#248A3D}
+
 /* Responsive — cards keep minmax(240px) and wrap naturally rather than shrinking
    text or clipping subtitles on smaller screens. The 4-card OMP row steps down
    through 2×2 (never 3+1) to a single column. */
@@ -2122,6 +2225,8 @@ body.view-gst #vert-tabs-bar{display:none}
     <div id="vert-pipeline-pair" class="vpipe-pair"></div>
     <!-- Inline detailed view with SELLERS/BUYERS toggle -->
     <div id="vert-detail-section" class="vds-wrap" style="display:none"></div>
+    <!-- Document Management — Open Marketplace only -->
+    <div id="vert-docs-section" class="docs-wrap" style="display:none"></div>
   </div>
 
   <!-- ── VIEW: GST PAYABLES ── -->
@@ -2147,6 +2252,12 @@ body.view-gst #vert-tabs-bar{display:none}
 <div id="kpi-modal" role="dialog" aria-modal="true" aria-label="KPI details">
   <div class="km-bd" onclick="closeKpiModal()"></div>
   <div class="km-pn" id="km-pn"></div>
+</div>
+
+<!-- Document Detail Modal — Open Marketplace document management -->
+<div id="doc-modal" role="dialog" aria-modal="true" aria-label="Document details">
+  <div class="km-bd" onclick="closeDocModal()"></div>
+  <div class="km-pn" id="doc-pn"></div>
 </div>
 
 <!-- GST FY Drill-down Modal -->
@@ -3963,6 +4074,7 @@ function _patchQualitySects() {
     el.innerHTML = buildQualitySect(qualityData, aud);
   });
   _patchQualityKpiCards();
+  renderDocsSection();
 }
 
 function _patchQualityKpiCards() {
@@ -4003,6 +4115,246 @@ function _patchQualityKpiCards() {
   var ipcEl = document.getElementById('ipc-qual-seller');
   if (ipcEl) ipcEl.innerHTML = _buildSellerQualStrip(qc);
 }
+
+// ═══════════════════════════════════════════════════════════════
+// DOCUMENT MANAGEMENT — Open Marketplace only
+// Repository of every Seller/Buyer's submitted documents + completeness
+// against the mandatory checklist + an actionable "what's missing" list.
+// ═══════════════════════════════════════════════════════════════
+
+// Mandatory-document mapping. Replace these arrays with the official Seller /
+// Buyer mandatory lists (document keys, matching the backend DOC_NAMES) once
+// provided — completeness, pending counts and the improvement checklist all
+// recalculate from here automatically. null / empty = treat EVERY document on
+// the record as mandatory (safe default until the real lists are supplied).
+var MANDATORY_DOCS = {
+  seller: null,
+  buyer:  null,
+};
+
+var _docAud = 'seller';   // which entity type the repository is showing
+var _docSearch = '';       // repository search query
+var _docLookup = {};       // per-render key → entity, for the detail modal
+var _docLookupI = 0;
+
+// Human label for a document key not present on a record (missing mandatory doc).
+function prettyDocLabel(key) {
+  return String(key || '').replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+}
+
+// Mandatory document keys applicable to an entity (its audience's list, or all
+// documents on the record when no explicit list is configured).
+function mandatoryDocKeys(aud, docList) {
+  var cfg = MANDATORY_DOCS[aud];
+  if (cfg && cfg.length) return cfg.slice();
+  return (docList || []).map(function(d) { return d.key; });
+}
+
+// Completeness for one entity, computed against its mandatory checklist.
+function docCompleteness(entity) {
+  var docList = entity.docs || [];
+  var byKey = {};
+  docList.forEach(function(d) { byKey[d.key] = d; });
+  var mand = mandatoryDocKeys(entity.aud, docList);
+  var submitted = 0, pending = [];
+  mand.forEach(function(k) {
+    var d = byKey[k];
+    if (d && d.submitted) submitted++;
+    else pending.push(d || { key: k, label: prettyDocLabel(k), submitted: false });
+  });
+  var total = mand.length;
+  return { total: total, submitted: submitted, pending: pending,
+           pct: total > 0 ? Math.round(submitted / total * 100) : 0 };
+}
+
+// Completeness colour ramp (accent used only for meaningful emphasis).
+function docPctColor(pct) {
+  if (pct >= 100) return '#34C759';
+  if (pct >= 67)  return 'var(--blue)';
+  if (pct >= 34)  return '#FF9500';
+  return '#FF3B30';
+}
+
+function renderDocsSection() {
+  var el = document.getElementById('vert-docs-section');
+  if (!el) return;
+  if (activeVertKey !== 'OMP') { el.style.display = 'none'; return; }
+  var all = (qualityData && qualityData.vendorDocs) || [];
+  var omp = all.filter(function(d) { return d.omp; });
+  if (!omp.length) omp = all;            // fallback if the omp flag isn't set upstream
+  window._docEntities = omp;
+  el.style.display = '';
+  var icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
+    + '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>';
+  var searchIc = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
+  el.innerHTML =
+    '<div class="docs-hd">'
+    +   '<div class="docs-hd-ic">' + icon + '</div>'
+    +   '<div><div class="docs-hd-tt">Document Management</div>'
+    +     '<div class="docs-hd-sb">Uploaded documents &amp; completeness for every Open Marketplace vendor</div></div>'
+    +   '<div class="docs-tools">'
+    +     '<div class="docs-seg" id="docs-seg">'
+    +       '<button data-aud="seller"' + (_docAud === 'seller' ? ' class="on"' : '') + ' onclick="setDocAud(\'seller\')">Sellers</button>'
+    +       '<button data-aud="buyer"'  + (_docAud === 'buyer'  ? ' class="on"' : '') + ' onclick="setDocAud(\'buyer\')">Buyers</button>'
+    +     '</div>'
+    +     '<div class="docs-search">' + searchIc
+    +       '<input type="text" id="docs-search-input" placeholder="Search name or GSTIN…" oninput="onDocSearch(this.value)" value="' + esc(_docSearch) + '">'
+    +     '</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="docs-tbl-wrap"><table class="docs-tbl">'
+    +   '<thead><tr>'
+    +     '<th>Vendor</th><th>Category</th><th>Onboarding</th>'
+    +     '<th class="num">Completeness</th><th class="num">Submitted</th>'
+    +   '</tr></thead>'
+    +   '<tbody id="docs-tbody"></tbody>'
+    + '</table></div>';
+  renderDocsRows();
+}
+
+function renderDocsRows() {
+  var tbody = document.getElementById('docs-tbody');
+  if (!tbody) return;
+  var q = _docSearch.trim().toLowerCase();
+  var list = (window._docEntities || []).filter(function(d) {
+    if ((d.aud || 'seller') !== _docAud) return false;
+    if (!q) return true;
+    return (d.name || '').toLowerCase().indexOf(q) !== -1
+        || (d.gstin || '').toLowerCase().indexOf(q) !== -1;
+  });
+  // Least-complete first — the vendors that need attention surface at the top.
+  list = list.map(function(d) { return { d: d, c: docCompleteness(d) }; })
+             .sort(function(a, b) { return a.c.pct - b.c.pct || (a.d.name || '').localeCompare(b.d.name || ''); });
+  _docLookup = {}; _docLookupI = 0;
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="docs-empty">No ' + _docAud + 's match your search.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(function(o) {
+    var d = o.d, c = o.c, key = ++_docLookupI;
+    _docLookup[key] = d;
+    var clr = docPctColor(c.pct);
+    var catCls = (d.category || '').toLowerCase() === 'plastic' ? ' plastic'
+               : (d.category || '').toLowerCase() === 'metal'   ? ' metal' : '';
+    return '<tr onclick="openDocModal(' + key + ')" title="View documents">'
+      + '<td><span class="docs-nm">' + esc(d.name || '—') + '</span>'
+      +   '<span class="docs-nm-sub">' + esc(d.gstin || '—') + '</span></td>'
+      + '<td>' + (d.category ? '<span class="docs-cat' + catCls + '">' + esc(d.category) + '</span>' : '<span class="docs-nm-sub" style="font-family:inherit">—</span>') + '</td>'
+      + '<td>' + docStatusChip(d.onboardingStatus) + '</td>'
+      + '<td><div class="docs-comp">'
+      +   '<div class="docs-comp-track"><div class="docs-comp-fill" style="width:' + c.pct + '%;background:' + clr + '"></div></div>'
+      +   '<span class="docs-comp-pct" style="color:' + clr + '">' + c.pct + '%</span></div></td>'
+      + '<td><span class="docs-comp-sub">' + c.submitted + ' / ' + c.total + '</span></td>'
+      + '</tr>';
+  }).join('');
+}
+
+function docStatusChip(status) {
+  var s = String(status || '').toUpperCase();
+  var label = status ? (s.charAt(0) + s.slice(1).toLowerCase()).replace(/_/g, ' ') : '—';
+  var bg = 'var(--seg-track)', col = 'var(--txt2)';
+  if (s.indexOf('COMPLET') !== -1 || s === 'ONBOARDED' || s === 'ACTIVE') { bg = 'rgba(48,209,88,.14)'; col = '#248A3D'; }
+  else if (s.indexOf('REVIEW') !== -1 || s.indexOf('PROGRESS') !== -1)     { bg = 'rgba(255,149,0,.14)'; col = '#B25000'; }
+  else if (s.indexOf('REJECT') !== -1 || s.indexOf('DECLIN') !== -1)       { bg = 'rgba(255,59,48,.12)'; col = '#D70015'; }
+  if (!status) return '<span class="docs-nm-sub" style="font-family:inherit">—</span>';
+  return '<span class="dm-badge" style="background:' + bg + ';color:' + col + '">' + esc(label) + '</span>';
+}
+
+function setDocAud(aud) {
+  if (_docAud === aud) return;
+  _docAud = aud;
+  var seg = document.getElementById('docs-seg');
+  if (seg) seg.querySelectorAll('button').forEach(function(b) { b.classList.toggle('on', b.dataset.aud === aud); });
+  renderDocsRows();
+}
+
+function onDocSearch(v) { _docSearch = v || ''; renderDocsRows(); }
+
+function openDocModal(key) {
+  var d = _docLookup[key];
+  if (!d) return;
+  var pn = document.getElementById('doc-pn');
+  var modal = document.getElementById('doc-modal');
+  if (!pn || !modal) return;
+  var c = docCompleteness(d);
+  var clr = docPctColor(c.pct);
+  var docList = (d.docs || []).slice().sort(function(a, b) { return (b.submitted ? 1 : 0) - (a.submitted ? 1 : 0); });
+
+  function entItem(lbl, val) {
+    return '<div class="dm-ent-item"><span class="dm-ent-lbl">' + lbl + '</span>'
+      + '<span class="dm-ent-val">' + (val ? esc(val) : '—') + '</span></div>';
+  }
+  var entType = (d.aud === 'buyer') ? 'Buyer' : 'Seller';
+  var head =
+    '<div class="km-head">'
+    + '<div style="display:flex;align-items:center;min-width:0">'
+    +   '<div class="km-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>'
+    +   '<div class="km-htxt"><div class="km-title">' + esc(d.name || 'Vendor') + '</div>'
+    +     '<div class="km-sub">' + entType + ' · Document repository</div></div>'
+    + '</div>'
+    + '<button class="km-close" onclick="closeDocModal()" aria-label="Close">✕</button>'
+    + '</div>';
+
+  var ent =
+    '<div class="dm-ent">'
+    + entItem('GSTIN', d.gstin)
+    + entItem('Entity Type', entType)
+    + entItem('Category', d.category)
+    + entItem('Onboarding', d.onboardingStatus ? d.onboardingStatus.charAt(0) + d.onboardingStatus.slice(1).toLowerCase() : '')
+    + '</div>';
+
+  var summary =
+    '<div class="dm-sum">'
+    + '<div class="dm-sum-item"><div class="dm-sum-v">' + c.total + '</div><div class="dm-sum-l">Mandatory</div></div>'
+    + '<div class="dm-sum-item"><div class="dm-sum-v" style="color:#248A3D">' + c.submitted + '</div><div class="dm-sum-l">Submitted</div></div>'
+    + '<div class="dm-sum-item"><div class="dm-sum-v" style="color:' + (c.pending.length ? '#B25000' : 'var(--txt3)') + '">' + c.pending.length + '</div><div class="dm-sum-l">Pending</div></div>'
+    + '<div class="dm-sum-item pct"><div class="dm-sum-v" style="color:' + clr + '">' + c.pct + '%</div><div class="dm-sum-l">Complete</div></div>'
+    + '</div>';
+
+  var docsHtml = docList.map(function(doc) {
+    var meta = [];
+    if (doc.uploadDate) meta.push('Uploaded ' + esc(doc.uploadDate));
+    var verBadge = '';
+    if (doc.submitted && doc.verified) {
+      var vv = String(doc.verified).toUpperCase();
+      if (vv.indexOf('VERIF') !== -1 || vv === 'YES' || vv === 'TRUE' || vv === 'DONE')
+        verBadge = '<span class="dm-badge ver">Verified</span>';
+      else if (vv.indexOf('PEND') !== -1 || vv.indexOf('PROGRESS') !== -1)
+        verBadge = '<span class="dm-badge pend">Pending</span>';
+    }
+    var viewBtn = doc.url
+      ? '<a class="dm-view" href="' + esc(doc.url) + '" target="_blank" rel="noopener">View ↗</a>'
+      : '<span class="dm-view off">View</span>';
+    return '<div class="dm-doc">'
+      + '<div class="dm-doc-ic ' + (doc.submitted ? 'yes' : 'no') + '">' + (doc.submitted ? '✓' : '○') + '</div>'
+      + '<div class="dm-doc-main"><div class="dm-doc-nm">' + esc(doc.label || prettyDocLabel(doc.key)) + '</div>'
+      +   (meta.length ? '<div class="dm-doc-meta">' + meta.join(' · ') + '</div>' : '') + '</div>'
+      + '<div class="dm-doc-badges">'
+      +   (doc.submitted ? '<span class="dm-badge sub">Submitted</span>' : '<span class="dm-badge miss">Not submitted</span>')
+      +   verBadge + viewBtn
+      + '</div></div>';
+  }).join('');
+
+  var fixInner = c.pending.length
+    ? c.pending.map(function(p) {
+        return '<div class="dm-fix-row"><span class="dm-fix-dot"></span>' + esc(p.label || prettyDocLabel(p.key)) + '</div>';
+      }).join('')
+    : '<div class="dm-fix-done">✓ All mandatory documents submitted — 100% complete</div>';
+  var fixTitle = c.pending.length ? 'Upload these to reach 100% completeness' : 'Improvement checklist';
+
+  pn.innerHTML = head + ent + summary
+    + '<div class="km-sec"><div class="km-sec-t">Documents (' + c.submitted + ' of ' + docList.length + ' submitted)</div>' + docsHtml + '</div>'
+    + '<div class="km-sec"><div class="km-sec-t">' + fixTitle + '</div>' + fixInner + '</div>';
+  modal.classList.add('km-open');
+  document.addEventListener('keydown', _docEsc);
+}
+
+function closeDocModal() {
+  var modal = document.getElementById('doc-modal');
+  if (modal) modal.classList.remove('km-open');
+  document.removeEventListener('keydown', _docEsc);
+}
+function _docEsc(e) { if (e.key === 'Escape') closeDocModal(); }
 
 // Build in-card quality HTML — shows count + % for every item.
 // qd = { success, seller:{rating,osv,docs}, buyer:{...}, combined:{...} }
@@ -4146,7 +4498,12 @@ function renderPipelinePair(key) {
   el.innerHTML = buildInlinePipeCard(cfg, vs, 'Seller Pipeline', 'seller', 0)
     + buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1);
   animateCounters(el);
-  if (key === 'OMP') loadQualityData();
+  if (key === 'OMP') {
+    loadQualityData();       // populates the quality strips AND the Documents section
+  } else {
+    var de = document.getElementById('vert-docs-section');
+    if (de) de.style.display = 'none';   // Document Management is Open Marketplace only
+  }
 }
 
 function buildInlinePipeCard(cfg, v, label, aud, idx) {

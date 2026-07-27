@@ -1542,14 +1542,31 @@ function getQualityData() {
           });
         }
 
-        // — Doc completeness: count how many of 11 docs are submitted (value > 0) —
-        var submitted = 0, totalDocs = 0, missingDocNames = [];
+        // — Doc completeness: per-document submission list + counts —
+        // docList carries every document so the Document Management module can
+        // render the full checklist; submitted/total/missingDocs stay for the
+        // existing quality summaries. Verification status, upload date and a
+        // view URL are surfaced when the source provides them (columns named
+        // <doc>_verified / <doc>_date / <doc>_url), else left null.
+        var submitted = 0, totalDocs = 0, missingDocNames = [], docList = [];
         docIdx.forEach(function(didx, di) {
           if (didx < 0 || didx >= row.length) return;
           totalDocs++;
           var dv = parseInt(row[didx], 10);
-          if (!isNaN(dv) && dv > 0) submitted++;
+          var isSub = (!isNaN(dv) && dv > 0);
+          if (isSub) submitted++;
           else missingDocNames.push(DOC_LABELS[di]);
+          var vCol = qualityFindCol_(vrh, [DOC_NAMES[di] + '_verified', DOC_NAMES[di] + '_verification', DOC_NAMES[di] + '_status']);
+          var dCol = qualityFindCol_(vrh, [DOC_NAMES[di] + '_date', DOC_NAMES[di] + '_uploaded_date', DOC_NAMES[di] + '_upload_date']);
+          var uCol = qualityFindCol_(vrh, [DOC_NAMES[di] + '_url', DOC_NAMES[di] + '_link', DOC_NAMES[di] + '_document_url']);
+          docList.push({
+            key:        DOC_NAMES[di],
+            label:      DOC_LABELS[di],
+            submitted:  isSub,
+            verified:   vCol >= 0 ? String(row[vCol] || '').trim() : null,
+            uploadDate: dCol >= 0 ? String(row[dCol] || '').trim() : null,
+            url:        uCol >= 0 ? String(row[uCol] || '').trim() : null
+          });
         });
         ts.forEach(function(t) {
           acc[t].d.total += 1;
@@ -1557,13 +1574,22 @@ function getQualityData() {
           else if (submitted > 0)                            acc[t].d.partial    += 1;
           else                                               acc[t].d.incomplete += 1;
         });
+        // Enrich with OMP entity info (GSTIN / category / onboarding status) so
+        // the repository can show it without a second lookup. Matched by id, then GSTIN.
+        var docGst = vrGstC >= 0 ? String(row[vrGstC] || '').trim() : '';
+        var ompD   = ompMap[vid_] || (docGst ? ompGstinMap[docGst] : null);
         vendorDocs.push({
-          id:          String(row[vidC] || '').trim().slice(0, 30),
-          name:        String(row[nameC] || '').trim().slice(0, 60),
-          submitted:   submitted,
-          total:       totalDocs,
-          missingDocs: missingDocNames,
-          aud:         rowAud
+          id:               String(row[vidC] || '').trim().slice(0, 30),
+          name:             (ompD && ompD.name) || String(row[nameC] || '').trim().slice(0, 60),
+          gstin:            (ompD && ompD.gstin) || docGst.slice(0, 20),
+          category:         ompD ? (ompD.category || '') : '',
+          onboardingStatus: ompD ? (ompD.onboardingStatus || '') : '',
+          omp:              !!ompD,
+          submitted:        submitted,
+          total:            totalDocs,
+          missingDocs:      missingDocNames,
+          docs:             docList,
+          aud:              (ompD && ompD.aud) || rowAud
         });
       });
     }
