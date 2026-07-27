@@ -43,11 +43,14 @@ var CONFIG = {
 // Candidate column names in the 5292 detail tab (headers are normalized to
 // lower_snake_case by readSheetObj_). First populated match wins per record.
 var TAT_COLS = {
-  inReview:  ['in_review_date','in_review_at','in_review_on','in_review','inreview_date',
-              'inreview','review_date','review_at','under_review_date','submitted_date','submitted_at'],
-  // Fallback start when In Review is blank.
+  // TAT start = latest Level 1 date.
+  level1:    ['latest_level_1','latest_level_1_date','level_1_date','level_1_at','level_1_on',
+              'level_1','level1_date','level1','l1_date','l1','level_1_approval_date',
+              'level_1_review_date','level_1_updated_date','level_1_completed_date'],
+  // Fallback start when no Level 1 date exists.
   created:   ['onboarding_created_date','created_date','created_at','created_on',
               'onboarding_created_at','registration_date','signup_date'],
+  // TAT end = Onboarded date.
   completed: ['onboarding_completed_date','completed_date','completion_date','onboarded_date',
               'completed_at','onboarded_at','onboarding_updated_date','completed_on'],
   status:    ['onboarding_status','status','onboarding_state','state'],
@@ -368,11 +371,12 @@ function readSheetObj_(sheet) {
 // TAT LOOKUP — sourced exclusively from Metabase card 5292
 // ("Onboarding Detail"), synced into the _mb_detail tab every 5 min.
 //
-// TAT per record = whole days from the "In Review" date (or the Created
-// date when In Review is blank) up to the completion date (when the record
-// is onboarded) or, for records still in flight, up to the current date.
-// Rebuilt on every request, so the running TAT of open records advances
-// automatically and refreshes whenever the 5292 sync updates the tab.
+// TAT per record = whole days from the latest "Level 1" date (or the
+// Created date when no Level 1 exists) up to the Onboarded date, or — for
+// records still in flight — up to the current date. When a record spans
+// multiple detail rows, the LATEST Level 1 and the LATEST Onboarded dates
+// are used. Rebuilt on every request, so the running TAT of open records
+// advances automatically and refreshes whenever the 5292 sync updates the tab.
 // ─────────────────────────────────────────────────────────────
 var _tatLookupCache = null;   // per-execution cache; each request re-evaluates the module
 
@@ -398,33 +402,46 @@ function getTATLookup_() {
       var d   = readSheetObj_(sheet);
       var idx = buildIndex(d.headers);
       var now = new Date();
+
+      // Pass 1 — aggregate per record key so "latest Level 1" (and latest
+      // Onboarded) hold across multiple detail rows for the same entity.
+      // agg[key] = { level1, created, onboarded, done }
+      var agg = {};
+      function fold_(key, o) {
+        var a = agg[key];
+        if (!a) { agg[key] = { level1: o.level1, created: o.created, onboarded: o.onboarded, done: o.done }; return; }
+        if (o.level1    && (!a.level1    || o.level1    > a.level1))    a.level1    = o.level1;     // latest Level 1
+        if (o.created   && (!a.created   || o.created   < a.created))   a.created   = o.created;    // earliest Created
+        if (o.onboarded && (!a.onboarded || o.onboarded > a.onboarded)) a.onboarded = o.onboarded;  // latest Onboarded
+        if (o.done) a.done = true;
+      }
       d.rows.forEach(function(row) {
-        // TAT clock starts at the In Review date; when that is blank, fall back
-        // to the Created date so records that skipped/haven't logged review still
-        // get a TAT. No start date at all → record has no TAT yet.
-        var start = parseDate(firstVal_(row, idx, TAT_COLS.inReview))
-                 || parseDate(firstVal_(row, idx, TAT_COLS.created));
-        if (!start) return;
         var status = normStatus(firstVal_(row, idx, TAT_COLS.status));
         var comp   = parseDate(firstVal_(row, idx, TAT_COLS.completed));
-        var isDone = (status === 'COMPLETED') || (status === 'UNKNOWN' && !!comp);
-        // End the clock at the completion date when onboarded; otherwise "now".
-        var end = (isDone && comp) ? comp : now;
-        var tat = dateDiffDays(start, end);
-        if (tat === null || tat < 0) return;
+        var o = {
+          level1:    parseDate(firstVal_(row, idx, TAT_COLS.level1)),
+          created:   parseDate(firstVal_(row, idx, TAT_COLS.created)),
+          onboarded: comp,
+          done:      (status === 'COMPLETED') || (status === 'UNKNOWN' && !!comp),
+        };
         var id   = String(firstVal_(row, idx, TAT_COLS.id) || '').replace(/,/g, '').trim();
         var name = String(firstVal_(row, idx, TAT_COLS.name) || '').trim().toLowerCase();
-        // On duplicate keys, a settled (completed) TAT wins over a running one.
-        if (id) {
-          var ex = lk.byId[id];
-          if (!ex || (isDone && !ex.done)) lk.byId[id] = { tat: tat, done: isDone };
-        }
-        if (name) {
-          var exn = lk.byName[name];
-          if (!exn || (isDone && !exn.done)) lk.byName[name] = { tat: tat, done: isDone };
-        }
-        lk.count++;
+        if (id)   fold_('i\x00' + id, o);
+        if (name) fold_('n\x00' + name, o);
       });
+
+      // Pass 2 — resolve each aggregated record to a single TAT.
+      Object.keys(agg).forEach(function(key) {
+        var a = agg[key];
+        var start = a.level1 || a.created;            // latest Level 1, else Created
+        if (!start) return;                            // no start date → no TAT
+        var end = (a.done && a.onboarded) ? a.onboarded : now;  // Onboarded, else running to now
+        var tat = dateDiffDays(start, end);
+        if (tat === null || tat < 0) return;
+        if (key.charAt(0) === 'i') lk.byId[key.slice(2)]   = tat;
+        else                        lk.byName[key.slice(2)] = tat;
+      });
+      lk.count  = Object.keys(lk.byId).length + Object.keys(lk.byName).length;
       lk.loaded = lk.count > 0;
     }
   } catch (e) { Logger.log('TAT lookup build failed: ' + e.message); }
@@ -435,12 +452,12 @@ function getTATLookup_() {
 // Resolve a record's TAT from the 5292 lookup: match by id first, then name.
 //   undefined → detail tab unavailable (caller falls back to legacy TAT)
 //   null      → tab loaded but no match for this record (excluded from TAT)
-//   number    → days in review
+//   number    → days from latest Level 1 (or Created) to Onboarded/now
 function lookupTAT_(id, name) {
   var lk = getTATLookup_();
   if (!lk.loaded) return undefined;
-  if (id)   { var e  = lk.byId[String(id).replace(/,/g, '').trim()];  if (e)  return e.tat; }
-  if (name) { var en = lk.byName[String(name).trim().toLowerCase()];  if (en) return en.tat; }
+  if (id)   { var k = String(id).replace(/,/g, '').trim(); if (lk.byId[k]   !== undefined) return lk.byId[k]; }
+  if (name) { var n = String(name).trim().toLowerCase();   if (lk.byName[n] !== undefined) return lk.byName[n]; }
   return null;
 }
 
@@ -456,9 +473,10 @@ function normalizeRows(raw, cfg) {
     var recId    = String(gv(row, idx, cfg.idCol)   || '').replace(/,/g, '').trim();
     var recName  = String(gv(row, idx, cfg.nameCol) || '').trim();
     // TAT is sourced from Metabase card 5292 (the _mb_detail tab): days from the
-    // record's "In Review" date to its completion date (or "now" while in flight),
-    // matched by id then name. When that tab is unavailable, fall back to the legacy
-    // created→onboarded span so Avg TAT still renders (graceful degradation).
+    // record's latest Level 1 date (or Created when absent) to its Onboarded date
+    // (or "now" while in flight), matched by id then name. When that tab is
+    // unavailable, fall back to the legacy created→onboarded span so Avg TAT
+    // still renders (graceful degradation).
     var lkTat = lookupTAT_(recId, recName);
     var tat = (lkTat !== undefined)
       ? lkTat
@@ -725,9 +743,9 @@ function vStats(data) {
     if (isDone && isOld)                                           oldVendors++;
     if (isDone && r.onboardedDate && r.onboardedDate >= weekAgo)  completedThisWeek++;
 
-    // onbTAT is the 5292-derived In-Review→now/completion TAT (see getTATLookup_),
-    // so this average spans every record that has entered review — completed and
-    // still-in-flight alike. TAT_MAX_DAYS clamps re-import/outlier noise.
+    // onbTAT is the 5292-derived Level1→Onboarded/now TAT (see getTATLookup_),
+    // so this average spans completed and still-in-flight records alike.
+    // TAT_MAX_DAYS clamps re-import/outlier noise.
     if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) tats.push(r.onbTAT);
 
     if (r.hasTxn)        hasTxnData = true;
