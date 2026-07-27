@@ -44,7 +44,7 @@
   /* ── Ink — Apple's exact type hierarchy ── */
   --txt:     #1D1D1F;   /* Apple primary label */
   --txt2:    #6E6E73;   /* Apple secondary label */
-  --txt3:    #AEAEB2;   /* Apple tertiary label */
+  --txt3:    #86868B;   /* tertiary label — apple.com body-secondary grey, legible (was #AEAEB2) */
 
   /* ── Single accent — Apple blue. Brand green lives only in the logo badge. ── */
   --blue:      #0071E3;
@@ -1602,6 +1602,8 @@ body.view-gst #vert-tabs-bar{display:none}
    The richer OMP metrics (Existing/New, Vendor Rating, OSV Consent) live in the
    Seller/Buyer pipeline cards below. */
 .vkpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:16px}
+/* 4-card OMP row: explicit columns so it never wraps to a lone 3+1 card */
+.vkpi-grid.vkpi-grid-4{grid-template-columns:repeat(4,1fr)}
 .vkpi-card{
   background:var(--card);border:none;
   border-radius:var(--r);padding:12px 16px;
@@ -1831,19 +1833,19 @@ body.view-gst #vert-tabs-bar{display:none}
 /* Sidebar no longer needed — vertical tabs replace it */
 #side-nav{display:none!important}
 
-/* Responsive — !important overrides the JS inline gridTemplateColumns
-   Keeps minmax(240px) at all breakpoints so cards maintain readability and wrap
-   naturally rather than shrinking text or clipping subtitles on smaller screens. */
+/* Responsive — cards keep minmax(240px) and wrap naturally rather than shrinking
+   text or clipping subtitles on smaller screens. The 4-card OMP row steps down
+   through 2×2 (never 3+1) to a single column. */
 @media(max-width:1200px){
-  .vkpi-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))!important}
   .vpipe-pair{grid-template-columns:1fr}
+  .vkpi-grid.vkpi-grid-4{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:600px){
-  .vkpi-grid{grid-template-columns:repeat(2,1fr)!important}
+  .vkpi-grid{grid-template-columns:repeat(2,1fr)}
   .vert-tab{font-size:10px;padding:9px 11px;letter-spacing:.4px}
 }
 @media(max-width:440px){
-  .vkpi-grid{grid-template-columns:1fr!important}
+  .vkpi-grid,.vkpi-grid.vkpi-grid-4{grid-template-columns:1fr}
 }
 </style>
 
@@ -3161,8 +3163,11 @@ function renderVertKPIs(key) {
       fmt(oldS + oldB) + ' Existing vs ' + fmt(newS + newB) + ' New',
       'vk-oldvsnew', 'oldvsnew'));
   }
-  // auto-fit keeps cards readable on wide screens and wraps gracefully on narrow ones.
-  el.style.gridTemplateColumns = 'repeat(auto-fit, minmax(' + (key === 'OMP' ? '200' : '240') + 'px, 1fr))';
+  // 3-card verticals use auto-fit; the 4-card OMP row uses an explicit grid
+  // (class-driven, see .vkpi-grid-4) so it steps 4-up → 2×2 → 1-up and never
+  // breaks to an unbalanced 3 + lone card at intermediate widths.
+  el.style.gridTemplateColumns = '';
+  el.classList.toggle('vkpi-grid-4', cards.length === 4);
   el.innerHTML = cards.join('');
   animateCounters(el);
 }
@@ -4119,7 +4124,7 @@ function _buildSellerQualStrip(qc) {
   var rAvg = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
   var rSub = fmt(r.rated || 0) + (r.total > 0 ? ' of ' + fmt(r.total) + ' OMP' : '') + ' rated';
   var oPct = o.total > 0 ? Math.round((o.completed || 0) / o.total * 100) + '%' : '—';
-  var oSub = fmt(o.completed || 0) + (o.total > 0 ? ' of ' + fmt(o.total) + ' OMP' : '') + ' verified';
+  var oSub = fmt(o.completed || 0) + (o.total > 0 ? ' of ' + fmt(o.total) + ' OMP' : '') + ' OSV Consent given';
   return '<div class="cc-qual-strip">'
     + '<div' + rowAttrs('rating') + '><span class="cc-qs-lbl">★ Vendor Rating</span>'
     + '<span class="cc-qs-val">' + rAvg + ' <em>' + rSub + '</em></span></div>'
