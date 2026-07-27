@@ -36,7 +36,7 @@ var CONFIG = {
 
   // TAT source — dedicated tab holding Metabase card 5292 ("Onboarding Detail"),
   // synced by Metabase.gs (syncDetail) every 5 min. Every TAT metric is derived
-  // from this tab's Level 1 → Onboarded span; see getTATLookup_(). Run debugTAT()
+  // from this tab's Level 1 date; see getLevel1Lookup_(). Run debugTAT()
   // to inspect column detection and match rate against the live tab.
   TAT_DETAIL_SHEET: '_mb_detail',
 };
@@ -369,17 +369,18 @@ function readSheetObj_(sheet) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// TAT LOOKUP — sourced exclusively from Metabase card 5292
-// ("Onboarding Detail"), synced into the _mb_detail tab every 5 min.
+// LEVEL 1 LOOKUP — the latest "Level 1" date per record, read from Metabase
+// card 5292 ("Onboarding Detail"), synced into the _mb_detail tab every 5 min.
 //
-// TAT per record = whole days from the latest "Level 1" date (or the Created
-// date when no Level 1 exists) up to the Onboarded date. Only records that have
-// actually reached Onboarded get a TAT — records still in flight are excluded,
-// so a backlog of long-open cases never inflates the average. When a record
-// spans multiple detail rows, the LATEST Level 1 and LATEST Onboarded dates are
-// used. Rebuilt on every request so values refresh when the 5292 sync updates.
+// TAT is computed in normalizeRows as Level 1 → Onboarded. The Onboarded (end)
+// and Created (fallback start) dates come from the MAIN seller/buyer card — the
+// same trusted dates the dashboard has always used — so pulling the Level 1
+// date here only ever moves the start LATER, which can only REDUCE the TAT and
+// never inflate it beyond the legacy Created→Onboarded span. When no Level 1
+// date matches a record, TAT is exactly the legacy Created→Onboarded value.
+// Rebuilt on every request so values refresh when the 5292 sync updates.
 // ─────────────────────────────────────────────────────────────
-var _tatLookupCache = null;   // per-execution cache; each request re-evaluates the module
+var _level1LookupCache = null;   // per-execution cache; each request re-evaluates the module
 
 // First value among candidate columns that both EXISTS and is non-empty, so an
 // empty leading column (e.g. a blank generic `id`) never shadows a populated one.
@@ -394,83 +395,46 @@ function firstVal_(row, idx, keys) {
   return '';
 }
 
-function getTATLookup_() {
-  if (_tatLookupCache) return _tatLookupCache;
-  var lk = { byId: {}, byName: {}, loaded: false, count: 0 };
+function getLevel1Lookup_() {
+  if (_level1LookupCache) return _level1LookupCache;
+  var lk = { byId: {}, byName: {}, loaded: false };
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.TAT_DETAIL_SHEET);
     if (sheet && sheet.getLastRow() > 1) {
       var d   = readSheetObj_(sheet);
       var idx = buildIndex(d.headers);
-
-      // Pass 1 — aggregate per record key so "latest Level 1" (and latest
-      // Onboarded) hold across multiple detail rows for the same entity.
-      // agg[key] = { level1, created, onboarded, done }
-      var agg = {};
-      var nameIds = {};   // name → {id, ambiguous} — a name shared by >1 id is unusable for matching
-      function fold_(key, o) {
-        var a = agg[key];
-        if (!a) { agg[key] = { level1: o.level1, created: o.created, onboarded: o.onboarded, done: o.done }; return; }
-        if (o.level1    && (!a.level1    || o.level1    > a.level1))    a.level1    = o.level1;     // latest Level 1
-        if (o.created   && (!a.created   || o.created   < a.created))   a.created   = o.created;    // earliest Created
-        if (o.onboarded && (!a.onboarded || o.onboarded > a.onboarded)) a.onboarded = o.onboarded;  // latest Onboarded
-        if (o.done) a.done = true;
+      var nameIds = {};   // name → {id, ambiguous} — a name shared by >1 id can't be matched safely
+      function foldLatest_(map, key, dt) {
+        if (!map[key] || dt > map[key]) map[key] = dt;   // keep the LATEST Level 1 date
       }
       d.rows.forEach(function(row) {
-        var status = normStatus(firstVal_(row, idx, TAT_COLS.status));
-        var comp   = parseDate(firstVal_(row, idx, TAT_COLS.completed));
-        var o = {
-          level1:    parseDate(firstVal_(row, idx, TAT_COLS.level1)),
-          created:   parseDate(firstVal_(row, idx, TAT_COLS.created)),
-          onboarded: comp,
-          done:      (status === 'COMPLETED') || (status === 'UNKNOWN' && !!comp),
-        };
+        var l1 = parseDate(firstVal_(row, idx, TAT_COLS.level1));
+        if (!l1) return;
         var id   = String(firstVal_(row, idx, TAT_COLS.id) || '').replace(/,/g, '').trim();
         var name = String(firstVal_(row, idx, TAT_COLS.name) || '').trim().toLowerCase();
-        if (id)   fold_('i\x00' + id, o);
-        if (name) fold_('n\x00' + name, o);
-        // Flag names that map to more than one distinct id — matching on those
-        // would merge unrelated vendors and produce a wrong TAT.
+        if (id)   foldLatest_(lk.byId, id, l1);
+        if (name) foldLatest_(lk.byName, name, l1);
         if (name && id) {
           var ni = nameIds[name];
           if (!ni) nameIds[name] = { id: id, ambiguous: false };
           else if (ni.id !== id) ni.ambiguous = true;
         }
       });
-
-      // Pass 2 — resolve each aggregated record to a single TAT.
-      // TAT is only defined once a record has reached Onboarded; in-flight
-      // records are excluded so a backlog of open cases can't skew the average.
-      Object.keys(agg).forEach(function(key) {
-        var a       = agg[key];
-        var isName  = key.charAt(0) === 'n';
-        var raw     = key.slice(2);
-        if (isName && nameIds[raw] && nameIds[raw].ambiguous) return;  // skip ambiguous names
-        if (!a.done || !a.onboarded) return;           // not onboarded yet → no TAT
-        var start = a.level1 || a.created;             // latest Level 1, else Created
-        if (!start) return;                             // no start date → no TAT
-        var tat = dateDiffDays(start, a.onboarded);
-        if (tat === null || tat < 0) return;
-        if (isName) lk.byName[raw] = tat;
-        else        lk.byId[raw]   = tat;
-      });
-      lk.count  = Object.keys(lk.byId).length + Object.keys(lk.byName).length;
-      lk.loaded = lk.count > 0;
+      // Drop names shared by multiple distinct ids — matching them would pull a
+      // Level 1 date from an unrelated vendor.
+      Object.keys(nameIds).forEach(function(nm) { if (nameIds[nm].ambiguous) delete lk.byName[nm]; });
+      lk.loaded = Object.keys(lk.byId).length + Object.keys(lk.byName).length > 0;
     }
-  } catch (e) { Logger.log('TAT lookup build failed: ' + e.message); }
-  _tatLookupCache = lk;
+  } catch (e) { Logger.log('Level 1 lookup build failed: ' + e.message); }
+  _level1LookupCache = lk;
   return lk;
 }
 
-// Resolve a record's TAT from the 5292 lookup: match by id first, then name.
-//   undefined → detail tab unavailable (caller falls back to legacy TAT)
-//   null      → tab loaded but no match / not yet onboarded (excluded from TAT)
-//   number    → days from latest Level 1 (or Created) to Onboarded
-function lookupTAT_(id, name) {
-  var lk = getTATLookup_();
-  if (!lk.loaded) return undefined;
-  if (id)   { var k = String(id).replace(/,/g, '').trim(); if (lk.byId[k]   !== undefined) return lk.byId[k]; }
-  if (name) { var n = String(name).trim().toLowerCase();   if (lk.byName[n] !== undefined) return lk.byName[n]; }
+// Latest Level 1 date for a record (Date), matched by id first then name, or null.
+function lookupLevel1_(id, name) {
+  var lk = getLevel1Lookup_();
+  if (id)   { var k = String(id).replace(/,/g, '').trim(); if (lk.byId[k])   return lk.byId[k]; }
+  if (name) { var n = String(name).trim().toLowerCase();   if (lk.byName[n]) return lk.byName[n]; }
   return null;
 }
 
@@ -511,21 +475,29 @@ function debugTAT() {
   });
   Logger.log('Coverage — Level1:' + nL1 + '  Created:' + nCr + '  Onboarded:' + nOn + '  Completed-status:' + nDone);
 
-  _tatLookupCache = null;                 // force a fresh build
-  var lk = getTATLookup_();
-  Logger.log('Lookup entries — byId:' + Object.keys(lk.byId).length + '  byName:' + Object.keys(lk.byName).length);
-  Object.keys(lk.byId).slice(0, 10).forEach(function(k) { Logger.log('  sample id ' + k + ' → ' + lk.byId[k] + 'd'); });
+  _level1LookupCache = null;                 // force a fresh build
+  var lk = getLevel1Lookup_();
+  Logger.log('Level 1 lookup — byId:' + Object.keys(lk.byId).length + '  byName:' + Object.keys(lk.byName).length);
 
+  // Compare the live Avg TAT (Level1→Onboarded) against the Created→Onboarded
+  // baseline so the reduction from using Level 1 is visible, plus the Level 1
+  // match rate. If avg is high, check which columns were detected above.
   ['seller', 'buyer'].forEach(function(aud) {
     try {
       var cfg  = AUDIENCE_CFG[aud];
       var rows = normalizeRows(readData(aud), cfg);
-      var withTat = 0;
-      rows.forEach(function(r) { if (r.onbTAT !== null) withTat++; });
-      var avg = 0, n = 0;
-      rows.forEach(function(r) { if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) { avg += r.onbTAT; n++; } });
-      Logger.log(aud + ': ' + withTat + '/' + rows.length + ' records matched a TAT'
-        + (n ? ('  ·  avg ' + Math.round(avg / n) + 'd over ' + n) : ''));
+      var n = 0, sumTat = 0, l1matched = 0, sumBase = 0, nBase = 0;
+      rows.forEach(function(r) {
+        if (lookupLevel1_(r.id, r.name)) l1matched++;
+        if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) { sumTat += r.onbTAT; n++; }
+        if (r.status === 'COMPLETED' && r.createdDate && r.onboardedDate) {
+          var b = dateDiffDays(r.createdDate, r.onboardedDate);
+          if (b !== null && b >= 0 && b <= TAT_MAX_DAYS) { sumBase += b; nBase++; }
+        }
+      });
+      Logger.log(aud + ': ' + rows.length + ' records · Level 1 matched ' + l1matched
+        + ' · Avg TAT (Level1→Onb) ' + (n ? Math.round(sumTat / n) + 'd over ' + n : '—')
+        + ' · baseline (Created→Onb) ' + (nBase ? Math.round(sumBase / nBase) + 'd over ' + nBase : '—'));
     } catch (e) { Logger.log(aud + ' match check failed: ' + e.message); }
   });
   Logger.log('════ END ════');
@@ -542,14 +514,16 @@ function normalizeRows(raw, cfg) {
     var onboarded = cfg.onbCol ? parseDate(gv(row, idx, cfg.onbCol)) : null;
     var recId    = String(gv(row, idx, cfg.idCol)   || '').replace(/,/g, '').trim();
     var recName  = String(gv(row, idx, cfg.nameCol) || '').trim();
-    // TAT is sourced from Metabase card 5292 (the _mb_detail tab): days from the
-    // record's latest Level 1 date (or Created when absent) to its Onboarded date,
-    // matched by id then name. When that tab is unavailable, fall back to the
-    // legacy created→onboarded span so Avg TAT still renders (graceful degradation).
-    var lkTat = lookupTAT_(recId, recName);
-    var tat = (lkTat !== undefined)
-      ? lkTat
-      : ((status === 'COMPLETED' && created && onboarded) ? dateDiffDays(created, onboarded) : null);
+    // TAT = start → Onboarded, for completed records only. Start is the record's
+    // latest Level 1 date from card 5292 (moves the start later → lower TAT); when
+    // no Level 1 date matches, or it falls outside [created, onboarded], start is
+    // the Created date. End (onboarded) and the fallback start (created) are the
+    // trusted main-card dates, so TAT is never higher than the legacy span.
+    var level1   = lookupLevel1_(recId, recName);
+    var tatStart = (level1 && created && onboarded && level1 >= created && level1 <= onboarded)
+      ? level1 : created;
+    var tat = (status === 'COMPLETED' && tatStart && onboarded) ? dateDiffDays(tatStart, onboarded) : null;
+    if (tat !== null && tat < 0) tat = null;
 
     var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
@@ -812,8 +786,9 @@ function vStats(data) {
     if (isDone && isOld)                                           oldVendors++;
     if (isDone && r.onboardedDate && r.onboardedDate >= weekAgo)  completedThisWeek++;
 
-    // onbTAT is the 5292-derived Level1→Onboarded TAT (see getTATLookup_), defined
-    // only for records that reached Onboarded. TAT_MAX_DAYS clamps outlier noise.
+    // onbTAT is the Level1→Onboarded TAT (Level 1 from card 5292; Onboarded/Created
+    // from the main card — see normalizeRows), defined only for completed records.
+    // TAT_MAX_DAYS clamps outlier noise.
     if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) tats.push(r.onbTAT);
 
     if (r.hasTxn)        hasTxnData = true;
