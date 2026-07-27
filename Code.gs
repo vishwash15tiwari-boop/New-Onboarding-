@@ -33,6 +33,23 @@ var CONFIG = {
   // and no local synced sheets exist yet.  Dashboard always loads with real data.
   SELLER_SHEET_ID: '1qaG_GMvUrC7LJbKBma8-S3x2N6Ua4vDkUC5ZRx3znho',
   BUYER_SHEET_ID:  '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI',
+
+  // TAT source — dedicated tab holding Metabase card 5292 ("Onboarding Detail"),
+  // synced by Metabase.gs (syncDetail) every 5 min. Every TAT metric is derived
+  // from this tab's "In Review" column; see getTATLookup_().
+  TAT_DETAIL_SHEET: '_mb_detail',
+};
+
+// Candidate column names in the 5292 detail tab (headers are normalized to
+// lower_snake_case by readSheetObj_). First populated match wins per record.
+var TAT_COLS = {
+  inReview:  ['in_review_date','in_review_at','in_review_on','in_review','inreview_date',
+              'inreview','review_date','review_at','under_review_date','submitted_date','submitted_at'],
+  completed: ['onboarding_completed_date','completed_date','completion_date','onboarded_date',
+              'completed_at','onboarded_at','onboarding_updated_date','completed_on'],
+  status:    ['onboarding_status','status','onboarding_state','state'],
+  id:        ['seller_id','buyer_id','vendor_id','onboarding_id','id','entity_id','user_id','account_id'],
+  name:      ['seller_name','buyer_name','vendor_name','business_name','name','entity_name'],
 };
 
 // Per-audience column mapping (field names differ slightly between Metabase cards and the fallback sheets).
@@ -344,6 +361,82 @@ function readSheetObj_(sheet) {
   return { headers: headers, rows: rows };
 }
 
+// ─────────────────────────────────────────────────────────────
+// TAT LOOKUP — sourced exclusively from Metabase card 5292
+// ("Onboarding Detail"), synced into the _mb_detail tab every 5 min.
+//
+// TAT per record = whole days from the "In Review" date up to the
+// completion date (when the record is onboarded) or, for records still
+// in flight, up to the current date. Rebuilt on every request, so the
+// running TAT of open records advances automatically and refreshes
+// whenever the 5292 sync updates the tab.
+// ─────────────────────────────────────────────────────────────
+var _tatLookupCache = null;   // per-execution cache; each request re-evaluates the module
+
+// First value among candidate columns that both EXISTS and is non-empty, so an
+// empty leading column (e.g. a blank generic `id`) never shadows a populated one.
+function firstVal_(row, idx, keys) {
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    if (idx[k] !== undefined) {
+      var v = row[idx[k]];
+      if (v !== '' && v !== null && v !== undefined) return v;
+    }
+  }
+  return '';
+}
+
+function getTATLookup_() {
+  if (_tatLookupCache) return _tatLookupCache;
+  var lk = { byId: {}, byName: {}, loaded: false, count: 0 };
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.TAT_DETAIL_SHEET);
+    if (sheet && sheet.getLastRow() > 1) {
+      var d   = readSheetObj_(sheet);
+      var idx = buildIndex(d.headers);
+      var now = new Date();
+      d.rows.forEach(function(row) {
+        var inReview = parseDate(firstVal_(row, idx, TAT_COLS.inReview));
+        if (!inReview) return;   // no In Review timestamp → record has no TAT yet
+        var status = normStatus(firstVal_(row, idx, TAT_COLS.status));
+        var comp   = parseDate(firstVal_(row, idx, TAT_COLS.completed));
+        var isDone = (status === 'COMPLETED') || (status === 'UNKNOWN' && !!comp);
+        // End the clock at the completion date when onboarded; otherwise "now".
+        var end = (isDone && comp) ? comp : now;
+        var tat = dateDiffDays(inReview, end);
+        if (tat === null || tat < 0) return;
+        var id   = String(firstVal_(row, idx, TAT_COLS.id) || '').replace(/,/g, '').trim();
+        var name = String(firstVal_(row, idx, TAT_COLS.name) || '').trim().toLowerCase();
+        // On duplicate keys, a settled (completed) TAT wins over a running one.
+        if (id) {
+          var ex = lk.byId[id];
+          if (!ex || (isDone && !ex.done)) lk.byId[id] = { tat: tat, done: isDone };
+        }
+        if (name) {
+          var exn = lk.byName[name];
+          if (!exn || (isDone && !exn.done)) lk.byName[name] = { tat: tat, done: isDone };
+        }
+        lk.count++;
+      });
+      lk.loaded = lk.count > 0;
+    }
+  } catch (e) { Logger.log('TAT lookup build failed: ' + e.message); }
+  _tatLookupCache = lk;
+  return lk;
+}
+
+// Resolve a record's TAT from the 5292 lookup: match by id first, then name.
+//   undefined → detail tab unavailable (caller falls back to legacy TAT)
+//   null      → tab loaded but no match for this record (excluded from TAT)
+//   number    → days in review
+function lookupTAT_(id, name) {
+  var lk = getTATLookup_();
+  if (!lk.loaded) return undefined;
+  if (id)   { var e  = lk.byId[String(id).replace(/,/g, '').trim()];  if (e)  return e.tat; }
+  if (name) { var en = lk.byName[String(name).trim().toLowerCase()];  if (en) return en.tat; }
+  return null;
+}
+
 // Map each sheet row to the common record shape the dashboard renders from.
 function normalizeRows(raw, cfg) {
   var idx = buildIndex(raw.headers);
@@ -353,10 +446,16 @@ function normalizeRows(raw, cfg) {
     var bizVert  = gv(row, idx, 'business_vertical');
     var created  = parseDate(gv(row, idx, 'onboarding_created_date'));
     var onboarded = cfg.onbCol ? parseDate(gv(row, idx, cfg.onbCol)) : null;
-    // TAT = whole days from created to onboarded, for completed rows that have an
-    // onboarded_date. dateDiffDays() compares calendar dates only, so same-day
-    // onboarding (created/onboarded differ only by timezone) reads 0, not negative.
-    var tat = (status === 'COMPLETED' && created && onboarded) ? dateDiffDays(created, onboarded) : null;
+    var recId    = String(gv(row, idx, cfg.idCol)   || '').replace(/,/g, '').trim();
+    var recName  = String(gv(row, idx, cfg.nameCol) || '').trim();
+    // TAT is sourced from Metabase card 5292 (the _mb_detail tab): days from the
+    // record's "In Review" date to its completion date (or "now" while in flight),
+    // matched by id then name. When that tab is unavailable, fall back to the legacy
+    // created→onboarded span so Avg TAT still renders (graceful degradation).
+    var lkTat = lookupTAT_(recId, recName);
+    var tat = (lkTat !== undefined)
+      ? lkTat
+      : ((status === 'COMPLETED' && created && onboarded) ? dateDiffDays(created, onboarded) : null);
 
     var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
@@ -410,8 +509,8 @@ function normalizeRows(raw, cfg) {
       vertical = 'Marketplace';
     }
     return {
-      id:            String(gv(row, idx, cfg.idCol) || '').replace(/,/g, '').trim(),
-      name:          String(gv(row, idx, cfg.nameCol) || '').trim(),
+      id:            recId,
+      name:          recName,
       state:         String(gv(row, idx, 'state') || '').trim(),
       vendorType:    String(gv(row, idx, cfg.vendorCol) || '').trim(),
       category:      category,
@@ -619,6 +718,9 @@ function vStats(data) {
     if (isDone && isOld)                                           oldVendors++;
     if (isDone && r.onboardedDate && r.onboardedDate >= weekAgo)  completedThisWeek++;
 
+    // onbTAT is the 5292-derived In-Review→now/completion TAT (see getTATLookup_),
+    // so this average spans every record that has entered review — completed and
+    // still-in-flight alike. TAT_MAX_DAYS clamps re-import/outlier noise.
     if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) tats.push(r.onbTAT);
 
     if (r.hasTxn)        hasTxnData = true;

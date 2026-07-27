@@ -265,11 +265,19 @@ function syncBuyers() {
   Logger.log('✅ Buyers: ' + data.rows.length + ' rows → "' + MB_SHEETS.buyer + '"');
 }
 
+// Card 5292 is the dedicated TAT source (Code.gs getTATLookup_ reads its
+// "In Review" column). Kept as a VISIBLE tab so the imported query results can
+// be inspected and audited, and refreshed on every 5-min sync.
 function syncDetail() {
   Logger.log('▶ Syncing Onboarding Detail (card ' + MB_CARDS.detail + ')…');
   var data = fetchMBCard_(MB_CARDS.detail);
-  writeMBSheet_(data, MB_SHEETS.detail);
-  Logger.log('✅ Detail: ' + data.rows.length + ' rows → "' + MB_SHEETS.detail + '"');
+  writeMBSheetVisible_(data, MB_SHEETS.detail);
+  // Un-hide if an earlier build created it as a hidden helper sheet.
+  try {
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(MB_SHEETS.detail);
+    if (sh && sh.isSheetHidden()) sh.showSheet();
+  } catch (e) { /* non-fatal */ }
+  Logger.log('✅ Detail: ' + data.rows.length + ' rows → "' + MB_SHEETS.detail + '" (TAT source)');
 }
 
 function syncRating() {
