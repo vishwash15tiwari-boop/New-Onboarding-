@@ -3857,10 +3857,7 @@ function closeKpiModal() {
   document.removeEventListener('keydown', _kpiEsc);
 }
 
-function openGmvCatModal(aud) {
-  var cats = ((window._gmvCats || {})[aud] || [])
-    .filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
-    .slice().sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); });
+function _gmvCatRender(aud, cats) {
   var el = document.getElementById('km-pn');
   var modal = document.getElementById('kpi-modal');
   if (!el || !modal) return;
@@ -3891,8 +3888,81 @@ function openGmvCatModal(aud) {
     + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
     + '</div>'
     + rows;
+  if (!modal.classList.contains('km-open')) {
+    modal.classList.add('km-open');
+    document.addEventListener('keydown', _kpiEsc);
+  }
+}
+
+function _gmvCatFromRows(rows) {
+  var catValMap = {};
+  rows.forEach(function(r) {
+    var val = r.txnValue != null ? Number(r.txnValue) : 0;
+    if (val > 0) {
+      var c = r.category || 'Others';
+      catValMap[c] = (catValMap[c] || 0) + val;
+    }
+  });
+  return Object.keys(catValMap)
+    .map(function(c) { return { category: c, txnValue: catValMap[c] }; })
+    .sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); });
+}
+
+function openGmvCatModal(aud) {
+  // Primary: per-category txnValue supplied by server (available after Code.gs is re-deployed)
+  var rawCats = (window._gmvCats || {})[aud] || [];
+  var cats = rawCats
+    .filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
+    .slice().sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); });
+
+  // Fallback 1: sum txnValue per category from the already-loaded per-vendor detail rows.
+  // vertRows is loaded for selectedAud, so this only applies when audiences match.
+  if (!cats.length && aud === selectedAud && Array.isArray(vertRows) && vertRows.length) {
+    var fromActive = _gmvCatFromRows(vertRows);
+    if (fromActive.length) cats = fromActive;
+  }
+
+  // If we have data, render immediately
+  if (cats.length) { _gmvCatRender(aud, cats); return; }
+
+  // Fallback 2: audience doesn't match vertRows — fetch on-demand without switching mode
+  var key = activeVertKey || selectedVert;
+  var el = document.getElementById('km-pn');
+  var modal = document.getElementById('kpi-modal');
+  if (!el || !modal || !key) { _gmvCatRender(aud, []); return; }
+
+  var audLbl0 = aud === 'seller' ? 'Sellers' : 'Buyers';
+  el.innerHTML = '<div class="km-head">'
+    + '<div class="km-htxt"><div class="km-title">GMV by Category</div>'
+    + '<div class="km-sub">' + audLbl0 + '</div></div>'
+    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
+    + '</div>'
+    + '<div style="padding:32px 18px;text-align:center;color:var(--txt3);font-size:13px">Loading…</div>';
   modal.classList.add('km-open');
   document.addEventListener('keydown', _kpiEsc);
+
+  var f = { audience: aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!document.getElementById('kpi-modal').classList.contains('km-open')) return;
+      try {
+        var data = JSON.parse(res);
+        if (data.success && Array.isArray(data.rows)) {
+          var computed = _gmvCatFromRows(data.rows);
+          if (computed.length) {
+            window._gmvCats = window._gmvCats || {};
+            window._gmvCats[aud] = computed;
+            cats = computed;
+          }
+        }
+      } catch (e) {}
+      _gmvCatRender(aud, cats);
+    })
+    .withFailureHandler(function() {
+      _gmvCatRender(aud, []);
+    })
+    .getVerticalRows(key, JSON.stringify(f));
 }
 
 // Load rows for `aud` in the background and re-render the open KPI modal when done.
