@@ -45,6 +45,9 @@ var CONFIG = {
 var TAT_COLS = {
   inReview:  ['in_review_date','in_review_at','in_review_on','in_review','inreview_date',
               'inreview','review_date','review_at','under_review_date','submitted_date','submitted_at'],
+  // Fallback start when In Review is blank.
+  created:   ['onboarding_created_date','created_date','created_at','created_on',
+              'onboarding_created_at','registration_date','signup_date'],
   completed: ['onboarding_completed_date','completed_date','completion_date','onboarded_date',
               'completed_at','onboarded_at','onboarding_updated_date','completed_on'],
   status:    ['onboarding_status','status','onboarding_state','state'],
@@ -365,11 +368,11 @@ function readSheetObj_(sheet) {
 // TAT LOOKUP — sourced exclusively from Metabase card 5292
 // ("Onboarding Detail"), synced into the _mb_detail tab every 5 min.
 //
-// TAT per record = whole days from the "In Review" date up to the
-// completion date (when the record is onboarded) or, for records still
-// in flight, up to the current date. Rebuilt on every request, so the
-// running TAT of open records advances automatically and refreshes
-// whenever the 5292 sync updates the tab.
+// TAT per record = whole days from the "In Review" date (or the Created
+// date when In Review is blank) up to the completion date (when the record
+// is onboarded) or, for records still in flight, up to the current date.
+// Rebuilt on every request, so the running TAT of open records advances
+// automatically and refreshes whenever the 5292 sync updates the tab.
 // ─────────────────────────────────────────────────────────────
 var _tatLookupCache = null;   // per-execution cache; each request re-evaluates the module
 
@@ -396,14 +399,18 @@ function getTATLookup_() {
       var idx = buildIndex(d.headers);
       var now = new Date();
       d.rows.forEach(function(row) {
-        var inReview = parseDate(firstVal_(row, idx, TAT_COLS.inReview));
-        if (!inReview) return;   // no In Review timestamp → record has no TAT yet
+        // TAT clock starts at the In Review date; when that is blank, fall back
+        // to the Created date so records that skipped/haven't logged review still
+        // get a TAT. No start date at all → record has no TAT yet.
+        var start = parseDate(firstVal_(row, idx, TAT_COLS.inReview))
+                 || parseDate(firstVal_(row, idx, TAT_COLS.created));
+        if (!start) return;
         var status = normStatus(firstVal_(row, idx, TAT_COLS.status));
         var comp   = parseDate(firstVal_(row, idx, TAT_COLS.completed));
         var isDone = (status === 'COMPLETED') || (status === 'UNKNOWN' && !!comp);
         // End the clock at the completion date when onboarded; otherwise "now".
         var end = (isDone && comp) ? comp : now;
-        var tat = dateDiffDays(inReview, end);
+        var tat = dateDiffDays(start, end);
         if (tat === null || tat < 0) return;
         var id   = String(firstVal_(row, idx, TAT_COLS.id) || '').replace(/,/g, '').trim();
         var name = String(firstVal_(row, idx, TAT_COLS.name) || '').trim().toLowerCase();
