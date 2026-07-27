@@ -896,6 +896,7 @@ function vStats(data) {
       category: c, total: 0, onboarded: 0,
       draft: 0, inReview: 0, rejected: 0,
       transacted: 0, hasTxn: false,
+      txnValue: 0, hasTxnVal: false,
       vendorTypes: {},
     };
     var cs = catMap[c];
@@ -906,6 +907,9 @@ function vStats(data) {
     if (r.status === 'REJECTED')   cs.rejected++;
     if (r.hasTxn)                  cs.hasTxn = true;
     if (r.hasTransacted)           cs.transacted++;
+    if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
+      cs.txnValue += r.txnValue; cs.hasTxnVal = true;
+    }
     var vt = (r.vendorType || '').trim() || 'Unknown';
     cs.vendorTypes[vt] = (cs.vendorTypes[vt] || 0) + 1;
   });
@@ -920,6 +924,7 @@ function vStats(data) {
       category: cat.category, total: cat.total, onboarded: cat.onboarded,
       draft: cat.draft, inReview: cat.inReview, rejected: cat.rejected,
       transacted: cat.transacted, hasTxn: cat.hasTxn,
+      txnValue: cat.hasTxnVal ? cat.txnValue : null,
       vendorTypes: vtArr,
     };
   }).sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });

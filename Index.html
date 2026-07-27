@@ -3857,6 +3857,44 @@ function closeKpiModal() {
   document.removeEventListener('keydown', _kpiEsc);
 }
 
+function openGmvCatModal(aud) {
+  var cats = ((window._gmvCats || {})[aud] || [])
+    .filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
+    .slice().sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); });
+  var el = document.getElementById('km-pn');
+  var modal = document.getElementById('kpi-modal');
+  if (!el || !modal) return;
+  var total = cats.reduce(function(s, c) { return s + (c.txnValue || 0); }, 0);
+  var audLbl = aud === 'seller' ? 'Sellers' : 'Buyers';
+  var rows = cats.length
+    ? cats.map(function(c) {
+        var pct = total > 0 ? ((c.txnValue / total) * 100).toFixed(1) : '0.0';
+        return '<div style="display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border)">'
+          + '<div style="flex:1;min-width:0">'
+          + '<div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:5px">' + esc(c.category) + '</div>'
+          + '<div style="height:4px;border-radius:2px;background:var(--bg2);overflow:hidden">'
+          + '<div style="height:100%;width:' + pct + '%;background:var(--st-onboarded);border-radius:2px;transition:width .6s .05s"></div>'
+          + '</div>'
+          + '</div>'
+          + '<div style="text-align:right;flex-shrink:0">'
+          + '<div style="font-size:13px;font-weight:700;color:var(--txt)">' + fmtINR(c.txnValue) + '</div>'
+          + '<div style="font-size:10.5px;color:var(--txt3);margin-top:1px">' + pct + '%</div>'
+          + '</div>'
+          + '</div>';
+      }).join('')
+    : '<div style="padding:28px 18px;text-align:center;color:var(--txt3);font-size:13px">No category GMV data available</div>';
+  el.innerHTML = '<div class="km-head">'
+    + '<div class="km-htxt">'
+    + '<div class="km-title">GMV by Category</div>'
+    + '<div class="km-sub">' + audLbl + ' · Total ' + fmtINR(total) + '</div>'
+    + '</div>'
+    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
+    + '</div>'
+    + rows;
+  modal.classList.add('km-open');
+  document.addEventListener('keydown', _kpiEsc);
+}
+
 // Load rows for `aud` in the background and re-render the open KPI modal when done.
 // Called by the "Load Buyers/Sellers detail" button inside the modal tiles.
 function _kvnLoadAud(aud) {
@@ -4268,9 +4306,9 @@ function renderDocsRows() {
     return (d.name || '').toLowerCase().indexOf(q) !== -1
         || (d.gstin || '').toLowerCase().indexOf(q) !== -1;
   });
-  // Least-complete first — the vendors that need attention surface at the top.
+  // Most-complete first — highest completeness vendors surface at the top.
   list = list.map(function(d) { return { d: d, c: docCompleteness(d) }; })
-             .sort(function(a, b) { return a.c.pct - b.c.pct || (a.d.name || '').localeCompare(b.d.name || ''); });
+             .sort(function(a, b) { return b.c.pct - a.c.pct || (a.d.name || '').localeCompare(b.d.name || ''); });
   _docLookup = {}; _docLookupI = 0;
   if (!list.length) {
     var msg = q
@@ -4561,6 +4599,7 @@ function renderPipelinePair(key) {
   if (!cfg || !DS || !DS.verticals) { el.innerHTML = ''; return; }
   var vs = (DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
+  window._gmvCats = { seller: vs.categories || [], buyer: vb.categories || [] };
   el.classList.remove('three-col');
   el.innerHTML = buildInlinePipeCard(cfg, vs, 'Seller Pipeline', 'seller', 0)
     + buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1);
@@ -4630,11 +4669,16 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     var aggPct   = v.pctTransacted  != null ? v.pctTransacted + '%'   : null;
     var aggGMV   = v.totalTxnValue  != null ? fmtINR(v.totalTxnValue) : null;
     var aggGSTon = v.withGST        != null ? fmt(v.withGST)          : null;
-    var fyTr = function(label, valFn, aggVal, badCls) {
+    var fyTr = function(label, valFn, aggVal, badCls, onclickFn) {
       var cells = fys.map(valFn);
       var allEmpty = cells.every(function(c){ return c === null || c === undefined || c === '—'; }) && aggVal == null;
       if (allEmpty) return '';
-      return '<tr' + (badCls ? ' class="' + badCls + '"' : '') + '>'
+      var trCls = onclickFn ? ('cc-fy-row-btn' + (badCls ? ' ' + badCls : '')) : (badCls || '');
+      var trAttrs = trCls ? ' class="' + trCls + '"' : '';
+      if (onclickFn) trAttrs += ' role="button" tabindex="0"'
+        + ' onclick="event.stopPropagation();' + onclickFn + '"'
+        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();' + onclickFn + '}"';
+      return '<tr' + trAttrs + '>'
         + '<td class="cc-fy-td-lbl">' + label + '</td>'
         + cells.map(function(c){ return '<td class="cc-fy-td">' + (c != null ? c : '—') + '</td>'; }).join('')
         + '<td class="cc-fy-td cc-fy-all">' + (aggVal != null ? aggVal : '—') + '</td>'
@@ -4643,7 +4687,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     var fyTbody = [
       fyTr('Avg TAT',       function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
       isOMP ? null : fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
-      fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
+      fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   '', 'openGmvCatModal(\'' + aud + '\')'),
       fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
       enVal ? '<tr class="cc-fy-row-btn" role="button" tabindex="0"'
         + ' onclick="event.stopPropagation();openKpiModal(\'oldvsnew\')"'
@@ -4667,9 +4711,15 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     var statRows = [];
     if (v.avgTAT        != null) statRows.push(['Avg TAT',      v.avgTAT + 'd',          '']);
     if (!isOMP2 && v.pctTransacted != null) statRows.push(['% Transacted', v.pctTransacted + '%', '']);
-    if (v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '']);
+    if (v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '', 'openGmvCatModal(\'' + aud + '\')']);
     if (v.withGST       != null) statRows.push(['GSTIN Active', fmt(v.withGST),          '']);
     var rowsHtml = statRows.map(function(r) {
+      if (r[3]) {
+        return '<div class="cc-stat-row cc-stat-row-btn" role="button" tabindex="0"'
+          + ' onclick="event.stopPropagation();' + r[3] + '"'
+          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();' + r[3] + '}">'
+          + r[0] + '<b>' + r[1] + '</b></div>';
+      }
       return '<div class="cc-stat-row' + (r[2] ? ' ' + r[2] : '') + '">' + r[0] + '<b>' + r[1] + '</b></div>';
     }).join('');
     if (enVal) rowsHtml += '<div class="cc-stat-row cc-stat-row-btn" role="button" tabindex="0"'
