@@ -61,16 +61,31 @@ var TAT_COLS = {
 
 // Mandatory-document catalogue — shared by the Vendor Rating parse and the
 // Doc Completeness parse so both produce the same document keys/labels.
+// The first 11 are the historically fixed columns (positions 32-42 in the
+// Vendor Rating sheet). PWM Certificate (buyer-mandatory) is detected by name
+// only — see DOC_ALIASES — so the positional fallback stays tied to the 11.
+var DOC_FIXED_COUNT = 11;
 var DOC_NAMES = [
   'additional_documents','proof_of_premises','electricity_bill',
   'kyc_document','gst_portal_screenshot_bank_details','cancelled_cheque',
-  'msme_certificate','aadhaar','owner_pan','entity_pan','gst_certificate'
+  'msme_certificate','aadhaar','owner_pan','entity_pan','gst_certificate',
+  'pwm_certificate'
 ];
 var DOC_LABELS = [
   'Additional Docs','Proof of Premises','Electricity Bill',
   'KYC Document','GST Screenshot','Cancelled Cheque',
-  'MSME Certificate','Aadhaar','Owner PAN','Entity PAN','GST Certificate'
+  'MSME Certificate','Aadhaar','Owner PAN','Entity PAN','GST Certificate',
+  'PWM Certificate'
 ];
+// Alternate column spellings for documents whose header isn't the canonical key.
+var DOC_ALIASES = {
+  pwm_certificate: ['pwm_certificate','pwm','pwm_cert','pwm_certificate_document',
+                    'plastic_waste_management','plastic_waste_management_certificate','pwm_document']
+};
+// Resolve a document's column index in a header list, honouring aliases.
+function docColIndex_(headers, key) {
+  return qualityFindCol_(headers, DOC_ALIASES[key] || [key]);
+}
 
 // Per-audience column mapping (field names differ slightly between Metabase cards and the fallback sheets).
 var AUDIENCE_CFG = {
@@ -1480,11 +1495,13 @@ function getQualityData() {
       var oC = qualityFindCol_(vrh, ['osv_consent','osv_status','osv','site_visit_status','field_verification_status','verification_status']);
       if (oC < 0) oC = 31;
 
-      // Doc columns: 11 individual document flags (present from col 32 onward)
-      var docIdx = DOC_NAMES.map(function(n) { return qualityFindCol_(vrh, [n]); });
-      // Positional fallback: use indices 32-42 if none found by name
-      if (docIdx.every(function(i) { return i < 0; })) {
-        docIdx = [32,33,34,35,36,37,38,39,40,41,42];
+      // Doc columns: individual document flags (the fixed 11 sit at cols 32-42;
+      // PWM is detected by name via docColIndex_ aliases).
+      var docIdx = DOC_NAMES.map(function(n) { return docColIndex_(vrh, n); });
+      // Positional fallback for the fixed 11 only when none were found by name;
+      // never overwrites name-detected extras like PWM.
+      if (docIdx.slice(0, DOC_FIXED_COUNT).every(function(i) { return i < 0; })) {
+        for (var _pf = 0; _pf < DOC_FIXED_COUNT; _pf++) docIdx[_pf] = 32 + _pf;
       }
       // Buyer id column — the Vendor Rating sheet keys sellers via seller_id and
       // (when present) buyers via buyer_id. Detect it so buyer rows are labelled
@@ -1786,7 +1803,7 @@ function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, selle
   var audC = fc(['audience','type','aud','entity_type','seller_buyer','vendor_type']);
   var catC = fc(['business_category','category','vertical_category','cat']);
   var stC  = fc(['onboarding_status','status','onboard_status']);
-  var docIdx = DOC_NAMES.map(function(n) { return fc([n]); });
+  var docIdx = DOC_NAMES.map(function(n) { return docColIndex_(h, n); });
   if (docIdx.every(function(i) { return i < 0; })) return;   // no per-document columns → nothing to add
 
   // Index existing entities so we don't double-add sellers already parsed above.

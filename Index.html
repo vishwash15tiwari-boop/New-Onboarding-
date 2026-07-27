@@ -1929,6 +1929,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .dm-badge.miss{background:var(--seg-track);color:var(--txt2)}
 .dm-badge.ver{background:rgba(0,122,255,.12);color:#0066CC}
 .dm-badge.pend{background:rgba(255,149,0,.14);color:#B25000}
+.dm-badge.mand{background:rgba(88,86,214,.12);color:#4a48b5}
 .dm-view{font-size:10.5px;font-weight:600;color:var(--blue);text-decoration:none;white-space:nowrap}
 .dm-view.off{color:var(--txt3);pointer-events:none;opacity:.5}
 /* Improvement checklist */
@@ -4122,14 +4123,32 @@ function _patchQualityKpiCards() {
 // against the mandatory checklist + an actionable "what's missing" list.
 // ═══════════════════════════════════════════════════════════════
 
-// Mandatory-document mapping. Replace these arrays with the official Seller /
-// Buyer mandatory lists (document keys, matching the backend DOC_NAMES) once
-// provided — completeness, pending counts and the improvement checklist all
-// recalculate from here automatically. null / empty = treat EVERY document on
-// the record as mandatory (safe default until the real lists are supplied).
+// Mandatory-document mapping (document keys, matching the backend DOC_NAMES).
+// Completeness, pending counts and the improvement checklist all recalculate
+// from here. null / empty = treat EVERY document on the record as mandatory.
+//   Buyers: GST Certificate, Entity PAN, PWM Certificate.
+//   Sellers: full checklist until an official Seller list is provided.
 var MANDATORY_DOCS = {
   seller: null,
-  buyer:  null,
+  buyer:  ['gst_certificate', 'entity_pan', 'pwm_certificate'],
+};
+
+// Canonical display labels by document key — used for pending/mandatory docs
+// that may not be present in a record's own document list (e.g. PWM), and to
+// keep acronym casing correct (GST, PAN, PWM) rather than naive title-casing.
+var DOC_LABEL_MAP = {
+  additional_documents: 'Additional Docs',
+  proof_of_premises: 'Proof of Premises',
+  electricity_bill: 'Electricity Bill',
+  kyc_document: 'KYC Document',
+  gst_portal_screenshot_bank_details: 'GST Screenshot',
+  cancelled_cheque: 'Cancelled Cheque',
+  msme_certificate: 'MSME Certificate',
+  aadhaar: 'Aadhaar',
+  owner_pan: 'Owner PAN',
+  entity_pan: 'Entity PAN',
+  gst_certificate: 'GST Certificate',
+  pwm_certificate: 'PWM Certificate',
 };
 
 var _docAud = 'seller';   // which entity type the repository is showing
@@ -4137,8 +4156,9 @@ var _docSearch = '';       // repository search query
 var _docLookup = {};       // per-render key → entity, for the detail modal
 var _docLookupI = 0;
 
-// Human label for a document key not present on a record (missing mandatory doc).
+// Human label for a document key — canonical map first, then a title-cased fallback.
 function prettyDocLabel(key) {
+  if (DOC_LABEL_MAP[key]) return DOC_LABEL_MAP[key];
   return String(key || '').replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
 }
 
@@ -4300,7 +4320,23 @@ function openDocModal(key) {
   if (!pn || !modal) return;
   var c = docCompleteness(d);
   var clr = docPctColor(c.pct);
-  var docList = (d.docs || []).slice().sort(function(a, b) { return (b.submitted ? 1 : 0) - (a.submitted ? 1 : 0); });
+  // Build the display list: the record's own documents PLUS any mandatory
+  // document missing from it (e.g. PWM for buyers) shown as "Not submitted",
+  // so every mandatory doc is visible. Mandatory docs sort first, then submitted.
+  var mandKeys = mandatoryDocKeys(d.aud, d.docs || []);
+  var mandSet = {};
+  mandKeys.forEach(function(k) { mandSet[k] = true; });
+  var haveKeys = {};
+  (d.docs || []).forEach(function(x) { haveKeys[x.key] = true; });
+  var docList = (d.docs || []).slice();
+  mandKeys.forEach(function(k) {
+    if (!haveKeys[k]) docList.push({ key: k, label: prettyDocLabel(k), submitted: false, verified: null, uploadDate: null, url: null });
+  });
+  docList.sort(function(a, b) {
+    return (mandSet[b.key] ? 1 : 0) - (mandSet[a.key] ? 1 : 0)
+        || (b.submitted ? 1 : 0) - (a.submitted ? 1 : 0);
+  });
+  var listSubmitted = docList.filter(function(x) { return x.submitted; }).length;
 
   function entItem(lbl, val) {
     return '<div class="dm-ent-item"><span class="dm-ent-lbl">' + lbl + '</span>'
@@ -4347,11 +4383,13 @@ function openDocModal(key) {
     var viewBtn = doc.url
       ? '<a class="dm-view" href="' + esc(doc.url) + '" target="_blank" rel="noopener">View ↗</a>'
       : '<span class="dm-view off">View</span>';
+    var mandTag = mandSet[doc.key] ? '<span class="dm-badge mand">Mandatory</span>' : '';
     return '<div class="dm-doc">'
       + '<div class="dm-doc-ic ' + (doc.submitted ? 'yes' : 'no') + '">' + (doc.submitted ? '✓' : '○') + '</div>'
       + '<div class="dm-doc-main"><div class="dm-doc-nm">' + esc(doc.label || prettyDocLabel(doc.key)) + '</div>'
       +   (meta.length ? '<div class="dm-doc-meta">' + meta.join(' · ') + '</div>' : '') + '</div>'
       + '<div class="dm-doc-badges">'
+      +   mandTag
       +   (doc.submitted ? '<span class="dm-badge sub">Submitted</span>' : '<span class="dm-badge miss">Not submitted</span>')
       +   verBadge + viewBtn
       + '</div></div>';
@@ -4365,7 +4403,7 @@ function openDocModal(key) {
   var fixTitle = c.pending.length ? 'Upload these to reach 100% completeness' : 'Improvement checklist';
 
   pn.innerHTML = head + ent + summary
-    + '<div class="km-sec"><div class="km-sec-t">Documents (' + c.submitted + ' of ' + docList.length + ' submitted)</div>' + docsHtml + '</div>'
+    + '<div class="km-sec"><div class="km-sec-t">Documents (' + listSubmitted + ' of ' + docList.length + ' submitted)</div>' + docsHtml + '</div>'
     + '<div class="km-sec"><div class="km-sec-t">' + fixTitle + '</div>' + fixInner + '</div>';
   modal.classList.add('km-open');
   document.addEventListener('keydown', _docEsc);
