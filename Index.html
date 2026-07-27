@@ -4179,10 +4179,9 @@ function renderDocsSection() {
   var el = document.getElementById('vert-docs-section');
   if (!el) return;
   if (activeVertKey !== 'OMP') { el.style.display = 'none'; return; }
-  var all = (qualityData && qualityData.vendorDocs) || [];
-  var omp = all.filter(function(d) { return d.omp; });
-  if (!omp.length) omp = all;            // fallback if the omp flag isn't set upstream
-  window._docEntities = omp;
+  // Keep the full set; audience selection + OMP scoping happen per-audience in
+  // renderDocsRows so one audience matching OMP never hides the other.
+  window._docEntities = (qualityData && qualityData.vendorDocs) || [];
   el.style.display = '';
   var icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
     + '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>';
@@ -4212,12 +4211,32 @@ function renderDocsSection() {
   renderDocsRows();
 }
 
+// Normalize a doc row's audience to 'seller' | 'buyer' | 'combined'.
+function _docNormAud(a) {
+  var s = String(a || '').toLowerCase();
+  if (s.indexOf('sell') !== -1) return 'seller';
+  if (s.indexOf('buy')  !== -1) return 'buyer';
+  return 'combined';
+}
+
+// Rows applicable to the selected audience: exact-audience rows if any, else
+// unclassified/combined rows (so buyer docs still show when the source couldn't
+// split by audience). Within that, prefer OMP-matched rows but never return an
+// empty set just because the omp flag wasn't set upstream.
+function _docAudPool(aud) {
+  var all = window._docEntities || [];
+  var exact = all.filter(function(d) { return _docNormAud(d.aud) === aud; });
+  var base  = exact.length ? exact : all.filter(function(d) { return _docNormAud(d.aud) === 'combined'; });
+  if (!base.length) return [];
+  var omp = base.filter(function(d) { return d.omp; });
+  return omp.length ? omp : base;
+}
+
 function renderDocsRows() {
   var tbody = document.getElementById('docs-tbody');
   if (!tbody) return;
   var q = _docSearch.trim().toLowerCase();
-  var list = (window._docEntities || []).filter(function(d) {
-    if ((d.aud || 'seller') !== _docAud) return false;
+  var list = _docAudPool(_docAud).filter(function(d) {
     if (!q) return true;
     return (d.name || '').toLowerCase().indexOf(q) !== -1
         || (d.gstin || '').toLowerCase().indexOf(q) !== -1;
@@ -4227,7 +4246,10 @@ function renderDocsRows() {
              .sort(function(a, b) { return a.c.pct - b.c.pct || (a.d.name || '').localeCompare(b.d.name || ''); });
   _docLookup = {}; _docLookupI = 0;
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="docs-empty">No ' + _docAud + 's match your search.</td></tr>';
+    var msg = q
+      ? 'No ' + _docAud + 's match your search.'
+      : 'No ' + _docAud + ' document data available yet.';
+    tbody.innerHTML = '<tr><td colspan="5" class="docs-empty">' + msg + '</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(function(o) {
