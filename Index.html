@@ -3411,7 +3411,10 @@ function openKpiModal(cardId) {
           vr += '<span class="km-vbadge" style="background:' + ac + '20;color:' + ac + '">' + (v.aud === 'seller' ? 'S' : 'B') + '</span>';
         }
         if (sp.mode === 'docs') {
-          vr += '<span class="km-vaud">' + (v.submitted || 0) + '/' + (v.total || 0) + '</span>';
+          var docPct_ = v.total > 0 ? Math.round(v.submitted / v.total * 100) : 0;
+          vr += '<span class="km-vaud" style="font-weight:600;color:var(--txt)">' + docPct_ + '%'
+            + '<span style="font-weight:400;color:var(--txt3);font-size:9.5px;margin-left:3px">(' + (v.submitted || 0) + '/' + (v.total || 0) + ')</span>'
+            + '</span>';
           if (v.missingDocs && v.missingDocs.length > 0) {
             vr += '<span class="km-vmissing">Missing: ' + esc(v.missingDocs.join(' · ')) + '</span>';
           }
@@ -3789,29 +3792,33 @@ function openKpiModal(cardId) {
       if (!qd.success) {
         content = noDataMsg;
       } else {
-        var d2   = (qd.seller || {}).docs || {};
-        var dT2  = (d && d.compS) || 0;
-        var dPct = dT2 > 0 ? Math.round((d2.complete || 0) / dT2 * 100) : 0;
+        var dComb = (qd.combined || qd.seller || {}).docs || {};
+        var dT2   = (dComb.complete || 0) + (dComb.partial || 0) + (dComb.incomplete || 0) + (dComb.missing || 0);
+        var dPct  = dT2 > 0 ? Math.round((dComb.complete || 0) / dT2 * 100) : 0;
         content =
           hero(dPct + '%', 'Document Completeness Rate')
           + srow([
-              {v: fmt(d2.complete || 0), l: 'Complete Docs', s: 'all docs submitted'},
-              {v: fmt(dT2),              l: 'Total Sellers'},
+              {v: fmt(dComb.complete || 0), l: 'Complete Docs', s: 'all docs submitted'},
+              {v: fmt(dT2),                 l: 'Total Vendors'},
             ])
           + sec('Status Breakdown',
               progBar([
-                {w: d2.complete   || 0, color: 'var(--st-onboarded)'},
-                {w: d2.partial    || 0, color: 'var(--st-review)'},
-                {w: d2.incomplete || 0, color: 'var(--st-draft)'},
-                {w: d2.missing    || 0, color: 'var(--st-rejected)'},
+                {w: dComb.complete   || 0, color: 'var(--st-onboarded)'},
+                {w: dComb.partial    || 0, color: 'var(--st-review)'},
+                {w: dComb.incomplete || 0, color: 'var(--st-draft)'},
+                {w: dComb.missing    || 0, color: 'var(--st-rejected)'},
               ])
               + (function() {
-                  var vd = (qd.vendorDocs || []).filter(function(v){ return v.aud !== 'buyer'; });
+                  var vd = (qd.vendorDocs || []).slice().sort(function(a, b) {
+                    var pa = a.total > 0 ? a.submitted / a.total : -1;
+                    var pb = b.total > 0 ? b.submitted / b.total : -1;
+                    return pb - pa;
+                  });
                   return expandTileGrid([
-                    {v: fmt(d2.complete   || 0), l: 'Complete',   c: 'var(--st-onboarded)', vendors: vd.filter(function(v){return v.submitted===v.total&&v.total>0;})},
-                    {v: fmt(d2.partial    || 0), l: 'Partial',    c: 'var(--st-review)',    vendors: vd.filter(function(v){return v.submitted>0&&v.submitted<v.total;}), mode:'docs'},
-                    {v: fmt(d2.incomplete || 0), l: 'Incomplete', c: 'var(--st-draft)',     vendors: vd.filter(function(v){return v.submitted===0&&v.total>0;}),          mode:'docs'},
-                    {v: fmt(d2.missing    || 0), l: 'Missing',    c: 'var(--st-rejected)',  vendors: vd.filter(function(v){return v.total===0;})},
+                    {v: fmt(dComb.complete   || 0), l: 'Complete',   c: 'var(--st-onboarded)', vendors: vd.filter(function(v){return v.submitted===v.total&&v.total>0;})},
+                    {v: fmt(dComb.partial    || 0), l: 'Partial',    c: 'var(--st-review)',    vendors: vd.filter(function(v){return v.submitted>0&&v.submitted<v.total;}), mode:'docs'},
+                    {v: fmt(dComb.incomplete || 0), l: 'Incomplete', c: 'var(--st-draft)',     vendors: vd.filter(function(v){return v.submitted===0&&v.total>0;}),          mode:'docs'},
+                    {v: fmt(dComb.missing    || 0), l: 'Missing',    c: 'var(--st-rejected)',  vendors: vd.filter(function(v){return v.total===0;})},
                   ]);
                 })()
             );
