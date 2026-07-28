@@ -910,8 +910,12 @@ function vStats(data) {
     if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
       cs.txnValue += r.txnValue; cs.hasTxnVal = true;
     }
-    var vt = (r.vendorType || '').trim() || 'Unknown';
-    cs.vendorTypes[vt] = (cs.vendorTypes[vt] || 0) + 1;
+    // Vendor Type breakdown counts ONBOARDED vendors only (the donut reflects
+    // the vendor-type mix of onboarded Sellers/Buyers, not the full pipeline).
+    if (r.status === 'COMPLETED') {
+      var vt = (r.vendorType || '').trim() || 'Unknown';
+      cs.vendorTypes[vt] = (cs.vendorTypes[vt] || 0) + 1;
+    }
   });
   var categories = Object.keys(catMap).map(function(k) {
     var cat = catMap[k];

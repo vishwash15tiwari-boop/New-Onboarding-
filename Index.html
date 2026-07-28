@@ -5655,13 +5655,13 @@ function renderCatDetailCard(c) {
     return { n: vt.count, fill: vtCols[vi % vtCols.length], lbl: vt.type };
   });
   var vtDonut = vts.length > 0
-    ? mkDonut(vtSegs, vtTot, vts.length, 'TYPES')
+    ? mkDonut(vtSegs, vtTot, vtTot, 'ONBOARDED')
     : '<div style="height:108px;display:flex;align-items:center;justify-content:center;color:var(--txt3);font-size:12px">No data</div>';
 
   var vtLeg = vts.length > 0
     ? vts.map(function(vt, vi) {
         var col = vtCols[vi % vtCols.length];
-        var pc2 = ctot > 0 ? Math.round(vt.count / ctot * 100) : 0;
+        var pc2 = vtTot > 0 ? Math.round(vt.count / vtTot * 100) : 0;
         return '<div class="donut-leg-row" style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);animation-delay:' + (200 + vi * 60) + 'ms">'
           + '<span style="width:9px;height:9px;border-radius:2px;flex-shrink:0;background:' + col + '"></span>'
           + '<span style="flex:1;font-size:12px;font-weight:600;color:var(--txt2)">' + esc(vt.type) + '</span>'
@@ -5688,7 +5688,7 @@ function renderCatDetailCard(c) {
     + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr">'
     +   half('Logged In Cases Breakdown', statusDonut, statusLeg, true)
-    +   half('Vendor Type Breakdown', vtDonut, vtLeg, false)
+    +   half('Vendor Type Breakdown · Onboarded', vtDonut, vtLeg, false)
     + '</div>'
     + '</div>';
 }
