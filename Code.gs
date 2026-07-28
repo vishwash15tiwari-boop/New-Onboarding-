@@ -208,7 +208,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v31_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v32_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -240,7 +240,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v15_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v16_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -261,7 +261,7 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v31_cmb_' + periodKey;
+    var cacheKey  = 'dash_v32_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -298,7 +298,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v15_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v16_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -346,7 +346,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v15_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v16_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
@@ -1019,6 +1019,20 @@ function vertRow(r) {
 // ─────────────────────────────────────────────────────────────
 // DATE / PERIOD
 // ─────────────────────────────────────────────────────────────
+// India Standard Time = UTC+5:30, no DST. Period filtering compares IST CALENDAR
+// DAYS (yyyymmdd integers) rather than raw timestamps, so "Today" always means
+// today's actual date (e.g. 28.07.2026) regardless of the server/script timezone
+// — the previous logic used the server clock and could resolve "Today" to the
+// wrong calendar day (showing "No data").
+var IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
+// Calendar day (yyyymmdd) of a UTC-millisecond instant, read in UTC.
+function _ymdIntUTC_(ms) {
+  var t = new Date(ms);
+  return t.getUTCFullYear() * 10000 + (t.getUTCMonth() + 1) * 100 + t.getUTCDate();
+}
+// A record date → its IST calendar day (shift the absolute instant into IST).
+function istDayNum_(d) { return _ymdIntUTC_(d.getTime() + IST_OFFSET_MS); }
+
 function applyDateFilter(r, f) {
   if (!f || !f.period || f.period === 'All') return true;
   // Filter by the date the record reached its CURRENT stage, so period views
@@ -1027,37 +1041,41 @@ function applyDateFilter(r, f) {
   // still in the pipeline are matched on their created date.
   var d = (r.status === 'COMPLETED' && r.onboardedDate) ? r.onboardedDate : r.createdDate;
   if (!d) return false;
-  var now = new Date(), ps = null, pe = null;
+  var recDay = istDayNum_(d);
+
+  // "Now" in IST → calendar parts used to build the period's day-range.
+  var n = new Date(Date.now() + IST_OFFSET_MS);
+  var Y = n.getUTCFullYear(), M = n.getUTCMonth(), D = n.getUTCDate();
+  var todayDay = Y * 10000 + (M + 1) * 100 + D;
+  // Day-of parts already in IST → build boundary days without re-shifting.
+  function bDay(y, m, d0) { return _ymdIntUTC_(Date.UTC(y, m, d0)); }
+
+  var psDay = null, peDay = null;
   if (f.period === 'Today') {
-    ps = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  } else if (f.period === 'ThisWeek') {
-    // T-7: rolling last 7 days
-    ps = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-    pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  } else if (f.period === 'ThisMonth') {
-    // T-30: rolling last 30 days
-    ps = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
-    pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  } else if (f.period === 'MTD') {
-    // Month to date: 1st of current calendar month → today
-    ps = new Date(now.getFullYear(), now.getMonth(), 1);
-    pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  } else if (f.period === 'YTD') {
-    // Financial year to date: April 1 of current Indian FY → today
-    var fyS = (now.getMonth() >= 3) ? now.getFullYear() : now.getFullYear() - 1;
-    ps = new Date(fyS, 3, 1);
-    pe = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    psDay = peDay = todayDay;
+  } else if (f.period === 'ThisWeek') {           // rolling last 7 days
+    psDay = bDay(Y, M, D - 6); peDay = todayDay;
+  } else if (f.period === 'ThisMonth') {          // rolling last 30 days
+    psDay = bDay(Y, M, D - 29); peDay = todayDay;
+  } else if (f.period === 'MTD') {                // month to date
+    psDay = bDay(Y, M, 1); peDay = todayDay;
+  } else if (f.period === 'YTD') {                // Indian FY to date (Apr 1 →)
+    var fyS = (M >= 3) ? Y : Y - 1;
+    psDay = bDay(fyS, 3, 1); peDay = todayDay;
   } else if (f.period === 'Custom' && f.startDate && f.endDate) {
-    ps = parseYMD(f.startDate, false);
-    pe = parseYMD(f.endDate, true);
+    psDay = _ymdIntStr_(f.startDate); peDay = _ymdIntStr_(f.endDate);
   } else if (String(f.period).indexOf('FY') === 0) {
     var m = String(f.period).match(/FY(\d{2})-(\d{2})/);
-    if (m) { var y = 2000 + parseInt(m[1], 10); ps = new Date(y, 3, 1); pe = new Date(y + 1, 2, 31, 23, 59, 59, 999); }
+    if (m) { var y = 2000 + parseInt(m[1], 10); psDay = y * 10000 + 401; peDay = (y + 1) * 10000 + 331; }
   }
-  if (ps && d < ps) return false;
-  if (pe && d > pe) return false;
+  if (psDay !== null && recDay < psDay) return false;
+  if (peDay !== null && recDay > peDay) return false;
   return true;
+}
+// "yyyy-mm-dd" → yyyymmdd integer.
+function _ymdIntStr_(s) {
+  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(String(s || '').trim());
+  return m ? (+m[1]) * 10000 + (+m[2]) * 100 + (+m[3]) : null;
 }
 function parseYMD(s, endOfDay) {
   var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(s || '').trim());

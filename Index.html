@@ -4706,7 +4706,10 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     + '</div>';
   var tot = v.total || 0;
   if (!tot) {
-    return '<div' + attrs + '>' + ghost + hdr + '<div class="no-data" style="padding:24px 0">No data</div></div>';
+    var emptyMsg = (typeof currentPeriod !== 'undefined' && currentPeriod && currentPeriod !== 'All')
+      ? 'No ' + (aud === 'seller' ? 'seller' : 'buyer') + ' activity in the selected period'
+      : 'No data';
+    return '<div' + attrs + '>' + ghost + hdr + '<div class="no-data" style="padding:24px 0">' + emptyMsg + '</div></div>';
   }
   // Flow bar — the whole pipeline as one proportional strip
   var flowSegs = [
