@@ -156,15 +156,18 @@ select,input{font-family:inherit}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes ringIn{from{stroke-dasharray:0 999}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes shimmer-slide{from{background-position:200% 0}to{background-position:-200% 0}}
 
 /* ── Skeleton loading — shimmer placeholders while data arrives ── */
 .sk{position:relative;overflow:hidden;border-radius:var(--r);background:var(--card);box-shadow:var(--shadow-card);min-height:280px}
 .sk::after{content:'';position:absolute;inset:0;
   background:linear-gradient(100deg,transparent 32%,var(--hover) 50%,transparent 68%);
-  background-size:200% 100%;animation:shimmer 1.5s linear infinite}
+  background-size:200% 100%;animation:shimmer-slide 1.5s linear infinite}
 .sk-line{position:relative;overflow:hidden;height:13px;border-radius:6px;background:var(--bg2);margin:10px 0}
-.sk-line::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 32%,var(--card) 50%,transparent 68%);background-size:200% 100%;animation:shimmer 1.5s linear infinite}
+.sk-line::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 32%,var(--card) 50%,transparent 68%);background-size:200% 100%;animation:shimmer-slide 1.5s linear infinite}
+.sk-pipe{padding:12px 0 6px}
+.sk-kpi-card{border-radius:var(--r);background:var(--bg2);height:80px;position:relative;overflow:hidden}
+.sk-kpi-card::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 32%,var(--card) 50%,transparent 68%);background-size:200% 100%;animation:shimmer-slide 1.5s linear infinite}
 
 /* ===== Header — Apple frosted-glass nav bar ===== */
 #header{
@@ -2306,6 +2309,7 @@ var _rmD = {};  // key→row map for the record detail modal
 var _rmI = 0;   // auto-increment key, reset each board/table render
 var _prefetchedAuds  = {};  // tracks which audiences have been prefetched into localStorage
 var _lastDashHash    = {};  // per-audience response hash — skip re-render when unchanged
+var _dashLoading     = false; // true while getCombinedDashboard/fallback is in-flight
 var _countdownTimer  = null;
 var _nextAt          = 0;
 var _isFirstLoad     = true;
@@ -2411,6 +2415,11 @@ function refreshActive(silent) {
 // Fallback: two getDashboardData calls when the combined cache is cold and
 // the live read returns empty seller data (Metabase temporarily unreachable).
 function loadData(silent) {
+  // Deduplicate: if a background revalidation is already in-flight, skip.
+  // Manual refreshes (silent=false) always proceed and cancel the current fetch.
+  if (_dashLoading && silent) return;
+
+  _dashLoading = true;
   var btn = document.getElementById('btn-refresh');
   if (btn) btn.classList.add('spinning');
   clearTimeout(_refreshTimer);
@@ -2419,11 +2428,13 @@ function loadData(silent) {
   if (cd) cd.textContent = '…';
 
   function done() {
+    _dashLoading = false;
     if (btn) btn.classList.remove('spinning');
     if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
     scheduleNextRefresh();
   }
   function fail(msg) {
+    _dashLoading = false;
     if (_isFirstLoad) { _isFirstLoad = false; hideLoading(); showError(msg, true); }
     else if (!silent) showError(msg, false);
     if (btn) btn.classList.remove('spinning');
@@ -3170,6 +3181,13 @@ function sparkBars(vals, accent, dark) {
 function renderVertKPIs(key) {
   var el = document.getElementById('vert-kpi-row');
   if (!el) return;
+  // Show skeleton KPI cards during first load when there's no cached data
+  if (_dashLoading && !DS) {
+    var skCard = '<div class="sk-kpi-card"></div>';
+    el.classList.add('vkpi-grid-4');
+    el.innerHTML = skCard + skCard + skCard + skCard;
+    return;
+  }
   var vs = (DS && DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
   var totalS = vs.total || 0, totalB = vb.total || 0;
@@ -4673,7 +4691,24 @@ function renderPipelinePair(key) {
   var el = document.getElementById('vert-pipeline-pair');
   if (!el) return;
   var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
-  if (!cfg || !DS || !DS.verticals) { el.innerHTML = ''; return; }
+  if (!cfg || !DS || !DS.verticals) {
+    if (_dashLoading) {
+      var skBody = '<div class="sk-pipe" style="padding:16px">'
+        + '<div class="sk-line" style="width:40%;height:8px;border-radius:4px"></div>'
+        + '<div style="display:flex;gap:8px;margin:12px 0">'
+        + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
+        + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
+        + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
+        + '</div>'
+        + '<div class="sk-line" style="width:70%"></div>'
+        + '<div class="sk-line" style="width:50%"></div>'
+        + '</div>';
+      el.innerHTML = skBody + skBody;
+    } else {
+      el.innerHTML = '';
+    }
+    return;
+  }
   var vs = (DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
   window._gmvCats = { seller: vs.categories || [], buyer: vb.categories || [] };
@@ -4706,10 +4741,23 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     + '</div>';
   var tot = v.total || 0;
   if (!tot) {
-    var emptyMsg = (typeof currentPeriod !== 'undefined' && currentPeriod && currentPeriod !== 'All')
-      ? 'No ' + (aud === 'seller' ? 'seller' : 'buyer') + ' activity in the selected period'
-      : 'No data';
-    return '<div' + attrs + '>' + ghost + hdr + '<div class="no-data" style="padding:24px 0">' + emptyMsg + '</div></div>';
+    var noDataBody = _dashLoading
+      ? ('<div class="sk-pipe">'
+         + '<div class="sk-line" style="width:100%;height:8px;border-radius:4px"></div>'
+         + '<div style="display:flex;gap:8px;margin:10px 0">'
+         + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
+         + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
+         + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
+         + '</div>'
+         + '<div class="sk-line" style="width:65%"></div>'
+         + '<div class="sk-line" style="width:45%"></div>'
+         + '</div>')
+      : ('<div class="no-data" style="padding:24px 0">'
+         + ((typeof currentPeriod !== 'undefined' && currentPeriod && currentPeriod !== 'All')
+            ? 'No ' + (aud === 'seller' ? 'seller' : 'buyer') + ' activity in the selected period'
+            : 'No data')
+         + '</div>');
+    return '<div' + attrs + '>' + ghost + hdr + noDataBody + '</div>';
   }
   // Flow bar — the whole pipeline as one proportional strip
   var flowSegs = [
@@ -5095,6 +5143,8 @@ function loadVertRows(key) {
         if (!swrDone) vertRowsError = 'Could not read the server response: ' + e.message;
       }
       renderVertDetail();   // always re-render — never leave the panel stuck on the spinner
+      // Silently warm the cache for the next vertical tab (2 s delay avoids contention)
+      setTimeout(function() { _prefetchNextVert(key); }, 2000);
     })
     .withFailureHandler(function(err) {
       if (myGen !== _vertRowsGen) return;
@@ -5110,6 +5160,31 @@ function vdRetryRows() {
   if (!selectedVert) return;
   loadVertRows(selectedVert);
   renderVertDetail();   // show the loading state immediately
+}
+
+// Silently warm the localStorage cache for the next vertical tab so switching
+// feels instant. Only fires after the active vertical's rows have loaded and
+// the main dashboard fetch is idle.
+function _prefetchNextVert(doneKey) {
+  if (_dashLoading) return;
+  var cfg = getVertCfg();
+  var di = -1;
+  for (var i = 0; i < cfg.length; i++) { if (cfg[i].key === doneKey) { di = i; break; } }
+  if (di < 0 || cfg.length < 2) return;
+  var next = cfg[(di + 1) % cfg.length];
+  if (!next || next.key === doneKey) return;
+  var aud  = selectedAud;
+  var pKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var lsKey = STORE_PFX + 'vr_' + aud + '_' + next.key;
+  try { var sv = JSON.parse(localStorage.getItem(lsKey) || 'null'); if (sv && sv.pKey === pKey) return; } catch (e) {}
+  var f = { audience: aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      try { var d = JSON.parse(res); if (d.success) { localStorage.setItem(lsKey, JSON.stringify({ pKey: pKey, rows: d.rows || [] })); } } catch (e) {}
+    })
+    .withFailureHandler(function() {})
+    .getVerticalRows(next.key, JSON.stringify(f));
 }
 
 function closeVertDetail() {
