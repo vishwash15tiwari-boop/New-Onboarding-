@@ -3733,7 +3733,9 @@ function openKpiModal(cardId) {
     // Pre-load rows for both audiences so vendor tiles render immediately
     _ovnEnsureAud('seller');
     _ovnEnsureAud('buyer');
-    var gmvCombined = (vs.totalTxnValue || 0) + (vb.totalTxnValue || 0);
+    // GMV = seller transactions only. Seller→Buyer is one transaction; counting
+    // buyer-side values would double-count the same underlying transaction.
+    var gmvCombined = vs.totalTxnValue || 0;
     var sPMSub = (vs.plasticTransacted || vs.metalTransacted)
       ? fmt(vs.plasticTransacted || 0) + 'P · ' + fmt(vs.metalTransacted || 0) + 'M' : 'sellers transacted';
     var bPMSub = (vb.plasticTransacted || vb.metalTransacted)
@@ -4362,8 +4364,10 @@ function _renderTxnDetail(wrap, data) {
   var sellers = data.sellers || [];
   var buyers  = data.buyers  || [];
   var totalTxns = 0, totalGMV = 0;
+  // GMV is sourced from sellers only — Seller→Buyer is one transaction;
+  // adding buyer-side values would double-count the same transaction.
   sellers.forEach(function(r) { totalTxns += (r.txnCount || 1); totalGMV += (r.txnValue || 0); });
-  buyers.forEach(function(r)  { totalTxns += (r.txnCount || 1); totalGMV += (r.txnValue || 0); });
+  buyers.forEach(function(r)  { totalTxns += (r.txnCount || 1); /* buyer GMV excluded */ });
 
   var smry = '<div class="km-txn-smry">'
     + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + fmt(totalTxns) + '</div><div class="km-txn-smry-lbl">Total Unique Txns</div></div>'
@@ -5032,7 +5036,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     var fyTbody = [
       fyTr('Avg TAT',       function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
       isOMP ? null : fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
-      fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   '', 'openGmvCatModal(\'' + aud + '\')'),
+      aud === 'seller' ? fyTr('Total GMV', function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV, '', 'openGmvCatModal(\'seller\')') : null,
       fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
       enVal ? '<tr class="cc-fy-row-btn" role="button" tabindex="0"'
         + ' onclick="event.stopPropagation();openKpiModal(\'oldvsnew\')"'
@@ -5056,7 +5060,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     var statRows = [];
     if (v.avgTAT        != null) statRows.push(['Avg TAT',      v.avgTAT + 'd',          '']);
     if (!isOMP2 && v.pctTransacted != null) statRows.push(['% Transacted', v.pctTransacted + '%', '']);
-    if (v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '', 'openGmvCatModal(\'' + aud + '\')']);
+    if (aud === 'seller' && v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '', 'openGmvCatModal(\'seller\')']);
     if (v.withGST       != null) statRows.push(['GSTIN Active', fmt(v.withGST),          '']);
     var rowsHtml = statRows.map(function(r) {
       if (r[3]) {
@@ -5264,7 +5268,7 @@ function buildCard(cfg, v, pipelineLabel) {
       var fyTbody = [
         fyTr('Avg TAT',       function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
         isOMPc ? null : fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
-        fyTr('Total GMV',     function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV,   ''),
+        aud === 'seller' ? fyTr('Total GMV', function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV, '') : null,
         fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
       ].filter(Boolean).join('');
 
@@ -5473,9 +5477,9 @@ function renderVertStory() {
       + '</div>';
 
     // ── Compact key metrics strip ────────────────────────────────────────────
-    // GMV card: shows total GMV with aging/overdue as a sub-line when present
+    // GMV card: sellers only — buyers are the receiving side of the same transaction.
     var gmvMetric = '';
-    if (v.totalTxnValue != null) {
+    if (aud === 'seller' && v.totalTxnValue != null) {
       var agingSub = '';
       if (v.aging != null || v.overdue != null) {
         agingSub = '<div class="vs-aging-sub">';
