@@ -2657,9 +2657,11 @@ function loadData(silent) {
         _ovnRows = {};
         loadVertRows(selectedVert);
       }
+      done();
       try { renderAll(); } catch (e) { console.error('renderAll error', e); }
+    } else {
+      done();
     }
-    done();
   }
 
   // Returns true if seller verticals object has at least one non-zero total.
