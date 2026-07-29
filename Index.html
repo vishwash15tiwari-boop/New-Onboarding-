@@ -2786,27 +2786,6 @@ function switchView(view) {
   loadGSTData(swrDone);
 }
 
-// Switch to the GST Payables view (paint cached data instantly, then refresh).
-function switchView(view) {
-  if (view !== 'gst') { switchAudience(currentAudience); return; }
-  if (currentView === 'gst') return;
-  currentView = 'gst';
-  if (selectedVert) closeVertDetail();
-  document.body.style.overflow = '';
-  updateViewChrome();
-
-  var swrDone = false;
-  try {
-    var stored = localStorage.getItem(STORE_PFX + 'gst_' + gpYear);
-    if (stored) {
-      var parsed = JSON.parse(stored);
-      if (parsed && parsed.success) { GST = parsed; renderGST(); swrDone = true; }
-    }
-  } catch (e) {}
-  if (!swrDone) { GST = null; renderGSTSkeleton(); }
-  loadGSTData(swrDone);
-}
-
 function hideLoading() {
   var el = document.getElementById('loading-overlay');
   if (el) el.classList.add('hidden');
