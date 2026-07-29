@@ -2497,7 +2497,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var stored = localStorage.getItem(STORE_PFX + 'combined');
     if (stored) {
       var parsed = JSON.parse(stored);
-      if (parsed && parsed.success && parsed.seller && parsed.buyer) {
+      // Only restore if the stale data has actual non-zero seller totals.
+      // Restoring a zero-state would show 0s while the fresh fetch is in flight,
+      // making the user think there's no data when there is.
+      var sVerts = (parsed && parsed.seller && parsed.seller.verticals) || {};
+      var staleHasData = Object.keys(sVerts).some(function(k) { return (sVerts[k].total || 0) > 0; });
+      if (parsed && parsed.success && parsed.seller && parsed.buyer && staleHasData) {
         DS = parsed.seller;
         DB = parsed.buyer;
         D  = parsed;
@@ -2615,14 +2620,22 @@ function loadData(silent) {
     D.verticals      = DS.verticals;
     D.verticalConfig = meta.verticalConfig || [];
     D.fiscalYears    = (meta.seller && meta.seller.fiscalYears) || meta.fiscalYears || [];
-    try {
-      localStorage.setItem(STORE_PFX + 'combined', JSON.stringify({
-        success: true, lastUpdated: D.lastUpdated, dataSource: D.dataSource,
-        verticalConfig: D.verticalConfig, fiscalYears: D.fiscalYears,
-        seller: DS, buyer: DB,
-      }));
-    } catch (e) {}
-    var hash = D.lastUpdated || '';
+    // Only persist to localStorage when we have real data — never overwrite with zeros.
+    var freshHasData = Object.keys(DS.verticals || {}).some(function(k) {
+      return ((DS.verticals[k] && DS.verticals[k].total) || 0) > 0;
+    });
+    if (freshHasData) {
+      try {
+        localStorage.setItem(STORE_PFX + 'combined', JSON.stringify({
+          success: true, lastUpdated: D.lastUpdated, dataSource: D.dataSource,
+          verticalConfig: D.verticalConfig, fiscalYears: D.fiscalYears,
+          seller: DS, buyer: DB,
+        }));
+      } catch (e) {}
+    }
+    // Include the active period in the hash so switching periods always forces
+    // a re-render even if lastUpdated happens to be identical.
+    var hash = (D.lastUpdated || '') + '|' + currentPeriod;
     if (_lastDashHash['combined'] !== hash) {
       _lastDashHash['combined'] = hash;
       qualityData = null;
@@ -2649,8 +2662,14 @@ function loadData(silent) {
     var _sData = null, _bData = null, _pending = 2, _fbFailed = false;
     function tryFbMerge() {
       if (_fbFailed || --_pending > 0) return;
+      // If seller data came back empty after the fallback, treat it as a failure rather
+      // than rendering 0s — avoids saving a zero-state to localStorage.
+      if (!_sData || !hasSellerData(_sData.verticals || {})) {
+        fail('No data returned from seller source. Retrying in ' + AUTO_REFRESH_SEC + 's.');
+        return;
+      }
       applyAndRender(
-        _sData ? { verticals: _sData.verticals || {} } : { verticals: {} },
+        { verticals: _sData.verticals || {} },
         _bData ? { verticals: _bData.verticals || {} } : { verticals: {} },
         _sData || _bData || {}
       );
@@ -2844,6 +2863,9 @@ function onPeriodSelect(val) {
   customStart = '';
   customEnd   = '';
   _prefetchedAuds = {};  // period changed — re-prefetch other audience with new period
+  // Invalidate the render-dedup hash so the response for the new period always
+  // triggers a full re-render, even if lastUpdated happens to match the prior call.
+  _lastDashHash['combined'] = null;
   loadData();
 }
 
@@ -2852,7 +2874,7 @@ function onCustomDates() {
   var en = document.getElementById('top-end');
   customStart = st ? st.value : '';
   customEnd   = en ? en.value : '';
-  if (customStart && customEnd) loadData();
+  if (customStart && customEnd) { _lastDashHash['combined'] = null; loadData(); }
 }
 
 // ═══════════════════════════════════════════════════════════════
