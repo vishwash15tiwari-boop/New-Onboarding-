@@ -230,19 +230,28 @@ function bustDashboardCache_() {
   ['seller', 'buyer'].forEach(function(aud) {
     periods.forEach(function(p) {
       var pk = JSON.stringify([p, '', '']);
-      keys.push('dash_v30_' + aud + '_' + pk);
-      vertKeys.forEach(function(vk) {
-        keys.push('vrows_v14_' + aud + '_' + vk + '_' + pk);
+      // Clear all known historical versions so no stale entry survives a sync.
+      ['dash_v30_','dash_v31_','dash_v32_'].forEach(function(pfx) {
+        keys.push(pfx + aud + '_' + pk);
+      });
+      ['vrows_v14_','vrows_v15_','vrows_v16_'].forEach(function(pfx) {
+        vertKeys.forEach(function(vk) {
+          keys.push(pfx + aud + '_' + vk + '_' + pk);
+        });
       });
     });
   });
 
-  // Combined dashboard cache (getCombinedDashboard)
+  // Combined dashboard cache (getCombinedDashboard) — all historical versions
   periods.forEach(function(p) {
-    keys.push('dash_v30_cmb_' + JSON.stringify([p, '', '']));
+    var pk = JSON.stringify([p, '', '']);
+    ['dash_v30_cmb_','dash_v31_cmb_','dash_v32_cmb_'].forEach(function(pfx) {
+      keys.push(pfx + pk);
+    });
   });
 
-  keys.push('quality_data_v2');   // quality metrics cache (getQualityData in Code.gs)
+  // Quality metrics cache — all historical versions
+  ['quality_data_v2','quality_data_v8','quality_data_v9'].forEach(function(k) { keys.push(k); });
   keys.forEach(function(k) { try { cache.remove(k); } catch (e) {} });
   Logger.log('  Cache busted (' + keys.length + ' keys).');
 }
@@ -313,18 +322,20 @@ function syncAllOnboarding() {
   try { syncOSV();     } catch (e) { Logger.log('❌ OSV error: '     + e.message); }
   try { syncDocs();    } catch (e) { Logger.log('❌ Docs error: '    + e.message); }
   bustDashboardCache_();
-  // Pre-warm all caches so every user request is a cache hit.
-  // getCombinedDashboard must be warmed too — the frontend now calls it as its
-  // primary entry point, and its cache key differs from the individual audience keys.
-  try {
-    getDashboardData(JSON.stringify({ audience: 'seller', period: 'All' }));
-    getDashboardData(JSON.stringify({ audience: 'buyer',  period: 'All' }));
-    Logger.log('  Cache pre-warmed (seller + buyer individual).');
-  } catch (e) { Logger.log('  Individual cache pre-warm failed: ' + e.message); }
-  try {
-    getCombinedDashboard(JSON.stringify({ period: 'All' }));
-    Logger.log('  Cache pre-warmed (combined dashboard).');
-  } catch (e) { Logger.log('  Combined cache pre-warm failed: ' + e.message); }
+  // Pre-warm caches for every period the UI exposes so user requests are always cache hits.
+  // Individual getDashboardData calls are faster and also populate the vrows_v16_ caches
+  // used by getVerticalRows; getCombinedDashboard composes from those when available.
+  var warmPeriods = ['All', 'Today', 'ThisWeek', 'ThisMonth', 'MTD', 'YTD'];
+  warmPeriods.forEach(function(p) {
+    try {
+      getDashboardData(JSON.stringify({ audience: 'seller', period: p }));
+      getDashboardData(JSON.stringify({ audience: 'buyer',  period: p }));
+    } catch (e) { Logger.log('  Pre-warm seller/buyer ' + p + ' failed: ' + e.message); }
+    try {
+      getCombinedDashboard(JSON.stringify({ period: p }));
+    } catch (e) { Logger.log('  Pre-warm combined ' + p + ' failed: ' + e.message); }
+  });
+  Logger.log('  Cache pre-warmed (' + warmPeriods.length + ' periods × 3 calls each).');
   Logger.log('═══ Metabase sync complete — ' + new Date().toISOString() + ' ═══');
 }
 

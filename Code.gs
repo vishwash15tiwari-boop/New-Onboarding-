@@ -257,6 +257,9 @@ function getDashboardData(filtersJson) {
 
 // Returns seller + buyer dashboard data in one call so the frontend can
 // render both pipelines side-by-side without two round trips.
+// Fast path: compose from individual dash_v32_ cache entries when both are warm
+// (they are pre-warmed by syncAllOnboarding for every period). Only falls through
+// to the slow double-read when both individual caches are cold.
 function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
@@ -266,12 +269,41 @@ function getCombinedDashboard(filtersJson) {
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
+    // Try to compose from pre-warmed individual caches (zero extra reads).
+    var sIndKey = 'dash_v32_seller_' + periodKey;
+    var bIndKey = 'dash_v32_buyer_'  + periodKey;
+    var sInd = cache.get(sIndKey);
+    var bInd = cache.get(bIndKey);
+    if (sInd && bInd) {
+      try {
+        var sParsed = JSON.parse(sInd);
+        var bParsed = JSON.parse(bInd);
+        var sHasData = sParsed && sParsed.success && sParsed.verticals &&
+          Object.keys(sParsed.verticals).some(function(k) { return (sParsed.verticals[k].total || 0) > 0; });
+        if (sParsed && sParsed.success && bParsed && bParsed.success && sHasData) {
+          var composed = JSON.stringify({
+            success:        true,
+            lastUpdated:    sParsed.mbSyncedAt || new Date().toISOString(),
+            dataSource:     sParsed.dataSource || 'sheets',
+            verticalConfig: sParsed.verticalConfig,
+            seller: { verticals: sParsed.verticals, fiscalYears: sParsed.fiscalYears },
+            buyer:  { verticals: bParsed.verticals, fiscalYears: bParsed.fiscalYears },
+          });
+          try { cache.put(cacheKey, composed, CONFIG.CACHE_TTL); } catch (e) {}
+          return composed;
+        }
+      } catch (e) { /* fall through to full read */ }
+    }
+
+    // Full read — used only when both individual caches are cold.
     var sRaw  = readData('seller');
     var bRaw  = readData('buyer');
     var sCfg  = AUDIENCE_CFG.seller;
     var bCfg  = AUDIENCE_CFG.buyer;
-    var sDash = buildDashboard('seller', sCfg, normalizeRows(sRaw, sCfg), f);
-    var bDash = buildDashboard('buyer',  bCfg, normalizeRows(bRaw, bCfg), f);
+    var sRows = normalizeRows(sRaw, sCfg);
+    var bRows = normalizeRows(bRaw, bCfg);
+    var sDash = buildDashboard('seller', sCfg, sRows, f);
+    var bDash = buildDashboard('buyer',  bCfg, bRows, f);
 
     var out = JSON.stringify({
       success:        true,
@@ -635,6 +667,12 @@ function normalizeRows(raw, cfg) {
       gv(row, idx, 'txn_date')               ||
       gv(row, idx, 'activation_date')        || ''
     );
+
+    // Transacted = explicit positive status OR a positive transaction value:
+    // GMV only exists once a transaction has happened, so GMV > 0 is itself
+    // proof of a transaction even when no status column is present.
+    var txnStatusPositive = ({ 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 })[txn] === 1;
+    var transacted = txnStatusPositive || (txnVal !== null && txnVal > 0);
 
     var vertical = mapToVertical(bizVert, category, cfg.audience);
     // Marketplace infra rows: before April 1 2026 → 'Marketplace' card (historical);
