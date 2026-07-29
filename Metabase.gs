@@ -26,11 +26,25 @@ var MB_CARDS = {
   detail: 5292,   // Onboarding Detail (enriched)
 };
 
+// ── Quality / compliance card IDs (OMP-specific metrics) ─────────
+var MB_CARDS_QUALITY = {
+  rating: 5662,   // Vendor Rating
+  osv:    5670,   // OSV (On-Site Verification) Status
+  docs:   5674,   // Document Completeness
+};
+
 // ── Local sheet names (created hidden in this spreadsheet) ────────
 var MB_SHEETS = {
   seller: '_mb_sellers',
   buyer:  '_mb_buyers',
   detail: '_mb_detail',
+};
+
+// ── Visible sheet names for quality data (shown as spreadsheet tabs)
+var MB_SHEETS_QUALITY = {
+  rating: 'Vendor Rating',
+  osv:    'OSV Status',
+  docs:   'Doc Completeness',
 };
 
 var MB_HOST = 'https://meta.recykal.com';
@@ -149,6 +163,23 @@ function fetchMBCard_(cardId) {
 // visible during a write.  Sync metadata goes to Script Properties,
 // not to the sheet, so it never leaks into the dashboard data.
 // ════════════════════════════════════════════════════════════════
+function writeMBSheetVisible_(data, sheetName) {
+  if (!data.headers.length) return;
+  var payload = [data.headers].concat(data.rows);
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);   // NOT hidden — visible as a spreadsheet tab
+    Logger.log('  Created visible sheet "' + sheetName + '".');
+  }
+  var usedRows = sheet.getLastRow();
+  var usedCols = Math.max(sheet.getLastColumn(), payload[0].length);
+  if (usedRows > 0) sheet.getRange(1, 1, usedRows, usedCols).clearContent();
+  sheet.getRange(1, 1, payload.length, payload[0].length).setValues(payload);
+  PropertiesService.getScriptProperties()
+    .setProperty('MB_SYNC_' + sheetName, new Date().toISOString());
+}
+
 function writeMBSheet_(data, sheetName) {
   if (!data.headers.length) return;
 
@@ -186,7 +217,7 @@ function writeMBSheet_(data, sheetName) {
 function bustDashboardCache_() {
   var cache = CacheService.getScriptCache();
   var keys  = [];
-  var periods = ['All', 'Today', 'ThisWeek', 'ThisMonth'];
+  var periods = ['All', 'Today', 'ThisWeek', 'ThisMonth', 'MTD', 'YTD'];
 
   // Add FY keys for the last 5 years
   var nowYear = new Date().getFullYear();
@@ -198,13 +229,20 @@ function bustDashboardCache_() {
 
   ['seller', 'buyer'].forEach(function(aud) {
     periods.forEach(function(p) {
-      keys.push('dash_v19_' + aud + '_' + JSON.stringify([p, '', '']));
+      var pk = JSON.stringify([p, '', '']);
+      keys.push('dash_v30_' + aud + '_' + pk);
       vertKeys.forEach(function(vk) {
-        keys.push('vrows_v5_' + aud + '_' + vk + '_' + JSON.stringify([p, '', '']));
+        keys.push('vrows_v14_' + aud + '_' + vk + '_' + pk);
       });
     });
   });
 
+  // Combined dashboard cache (getCombinedDashboard)
+  periods.forEach(function(p) {
+    keys.push('dash_v30_cmb_' + JSON.stringify([p, '', '']));
+  });
+
+  keys.push('quality_data_v2');   // quality metrics cache (getQualityData in Code.gs)
   keys.forEach(function(k) { try { cache.remove(k); } catch (e) {} });
   Logger.log('  Cache busted (' + keys.length + ' keys).');
 }
@@ -227,12 +265,42 @@ function syncBuyers() {
   Logger.log('✅ Buyers: ' + data.rows.length + ' rows → "' + MB_SHEETS.buyer + '"');
 }
 
+// Card 5292 is the dedicated TAT source (Code.gs getTATLookup_ reads its
+// "In Review" column). Kept as a VISIBLE tab so the imported query results can
+// be inspected and audited, and refreshed on every 5-min sync.
 function syncDetail() {
   Logger.log('▶ Syncing Onboarding Detail (card ' + MB_CARDS.detail + ')…');
   var data = fetchMBCard_(MB_CARDS.detail);
-  writeMBSheet_(data, MB_SHEETS.detail);
-  Logger.log('✅ Detail: ' + data.rows.length + ' rows → "' + MB_SHEETS.detail + '"');
+  writeMBSheetVisible_(data, MB_SHEETS.detail);
+  // Un-hide if an earlier build created it as a hidden helper sheet.
+  try {
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(MB_SHEETS.detail);
+    if (sh && sh.isSheetHidden()) sh.showSheet();
+  } catch (e) { /* non-fatal */ }
+  Logger.log('✅ Detail: ' + data.rows.length + ' rows → "' + MB_SHEETS.detail + '" (TAT source)');
 }
+
+function syncRating() {
+  Logger.log('▶ Syncing Vendor Rating (card ' + MB_CARDS_QUALITY.rating + ')…');
+  var data = fetchMBCard_(MB_CARDS_QUALITY.rating);
+  writeMBSheetVisible_(data, MB_SHEETS_QUALITY.rating);
+  Logger.log('✅ Rating: ' + data.rows.length + ' rows → "' + MB_SHEETS_QUALITY.rating + '"');
+}
+
+function syncOSV() {
+  Logger.log('▶ Syncing OSV Status (card ' + MB_CARDS_QUALITY.osv + ')…');
+  var data = fetchMBCard_(MB_CARDS_QUALITY.osv);
+  writeMBSheetVisible_(data, MB_SHEETS_QUALITY.osv);
+  Logger.log('✅ OSV: ' + data.rows.length + ' rows → "' + MB_SHEETS_QUALITY.osv + '"');
+}
+
+function syncDocs() {
+  Logger.log('▶ Syncing Doc Completeness (card ' + MB_CARDS_QUALITY.docs + ')…');
+  var data = fetchMBCard_(MB_CARDS_QUALITY.docs);
+  writeMBSheetVisible_(data, MB_SHEETS_QUALITY.docs);
+  Logger.log('✅ Docs: ' + data.rows.length + ' rows → "' + MB_SHEETS_QUALITY.docs + '"');
+}
+
 
 // Master sync — called every 5 minutes by the installed trigger.
 // Each card is wrapped independently so one failure doesn't block others.
@@ -241,13 +309,22 @@ function syncAllOnboarding() {
   try { syncSellers(); } catch (e) { Logger.log('❌ Sellers error: ' + e.message); }
   try { syncBuyers();  } catch (e) { Logger.log('❌ Buyers error: '  + e.message); }
   try { syncDetail();  } catch (e) { Logger.log('❌ Detail error: '  + e.message); }
+  try { syncRating();  } catch (e) { Logger.log('❌ Rating error: '  + e.message); }
+  try { syncOSV();     } catch (e) { Logger.log('❌ OSV error: '     + e.message); }
+  try { syncDocs();    } catch (e) { Logger.log('❌ Docs error: '    + e.message); }
   bustDashboardCache_();
-  // Pre-warm both audience caches so the next user request is always a cache hit.
+  // Pre-warm all caches so every user request is a cache hit.
+  // getCombinedDashboard must be warmed too — the frontend now calls it as its
+  // primary entry point, and its cache key differs from the individual audience keys.
   try {
     getDashboardData(JSON.stringify({ audience: 'seller', period: 'All' }));
     getDashboardData(JSON.stringify({ audience: 'buyer',  period: 'All' }));
-    Logger.log('  Cache pre-warmed (seller + buyer).');
-  } catch (e) { Logger.log('  Cache pre-warm failed: ' + e.message); }
+    Logger.log('  Cache pre-warmed (seller + buyer individual).');
+  } catch (e) { Logger.log('  Individual cache pre-warm failed: ' + e.message); }
+  try {
+    getCombinedDashboard(JSON.stringify({ period: 'All' }));
+    Logger.log('  Cache pre-warmed (combined dashboard).');
+  } catch (e) { Logger.log('  Combined cache pre-warm failed: ' + e.message); }
   Logger.log('═══ Metabase sync complete — ' + new Date().toISOString() + ' ═══');
 }
 
@@ -291,9 +368,12 @@ function testMetabaseConnection() {
   }
 
   [
-    { label: 'Sellers',            id: MB_CARDS.seller },
-    { label: 'Buyers',             id: MB_CARDS.buyer  },
-    { label: 'Onboarding Detail',  id: MB_CARDS.detail },
+    { label: 'Sellers',            id: MB_CARDS.seller         },
+    { label: 'Buyers',             id: MB_CARDS.buyer          },
+    { label: 'Onboarding Detail',  id: MB_CARDS.detail         },
+    { label: 'Vendor Rating',      id: MB_CARDS_QUALITY.rating },
+    { label: 'OSV Status',         id: MB_CARDS_QUALITY.osv    },
+    { label: 'Doc Completeness',   id: MB_CARDS_QUALITY.docs   },
   ].forEach(function(card) {
     try {
       var d = fetchMBCard_(card.id);
