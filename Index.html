@@ -5664,13 +5664,20 @@ function kbAge(r) {
     var cls = t <= 2 ? 'text-green' : t <= 5 ? 'text-amber' : 'text-red';
     return '<span class="kb-age ' + cls + '" title="Onboarding TAT">' + t + 'd TAT</span>';
   }
-  var d = parseDMY(r.createdDate);
+  // IN_REVIEW: count from when the case entered review, not from creation.
+  // Fall back to createdDate if the backend doesn't supply a review entry timestamp.
+  var isInReview = r.status === 'IN_REVIEW';
+  var dateStr = (isInReview && r.reviewDate) ? r.reviewDate : r.createdDate;
+  var d = parseDMY(dateStr);
   if (!d) return '<span class="kb-age text-muted">—</span>';
   var days = Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
   if (r.status === 'REJECTED') {
     return '<span class="kb-age text-muted" title="Days since created">' + days + 'd</span>';
   }
   var cls2 = days <= 3 ? 'text-muted' : days <= 7 ? 'text-amber' : 'text-red';
+  if (isInReview && r.reviewDate) {
+    return '<span class="kb-age ' + cls2 + '" title="Days in review — entered review ' + esc(r.reviewDate) + '">' + days + 'd waiting</span>';
+  }
   return '<span class="kb-age ' + cls2 + '" title="Days since created — created ' + esc(r.createdDate) + '">' + days + 'd waiting</span>';
 }
 
@@ -5819,7 +5826,9 @@ function openRecModal(key) {
     + '</div>'
     + '<div class="rm-sec"><div class="rm-sec-ttl">Onboarding</div>'
     +   '<div class="rm-g">'
-    +     '<div class="rm-f"><div class="rm-fl">Onboarded Date</div><div class="rm-fv mu">' + esc(r.onbDate || '—') + '</div></div>'
+    +     (r.status === 'IN_REVIEW' && r.reviewDate
+           ? '<div class="rm-f"><div class="rm-fl">In Review Since</div><div class="rm-fv mu">' + esc(r.reviewDate) + '</div></div>'
+           : '<div class="rm-f"><div class="rm-fl">Onboarded Date</div><div class="rm-fv mu">' + esc(r.onbDate || '—') + '</div></div>')
     +     '<div class="rm-f"><div class="rm-fl">TAT (days)</div><div class="rm-fv">' + tatChip(r.tat) + '</div></div>'
     +   '</div>'
     + '</div>'

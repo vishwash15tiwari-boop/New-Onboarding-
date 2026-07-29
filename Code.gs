@@ -667,6 +667,21 @@ function normalizeRows(raw, cfg) {
       gv(row, idx, 'txn_date')               ||
       gv(row, idx, 'activation_date')        || ''
     );
+    // Timestamp when the case entered the IN_REVIEW stage. Used for accurate review-age
+    // calculation on Kanban cards ("Xd waiting" counts from here, not from created date).
+    var reviewDate = parseDate(
+      gv(row, idx, 'in_review_date')      ||
+      gv(row, idx, 'in_review_at')        ||
+      gv(row, idx, 'submitted_date')      ||
+      gv(row, idx, 'submitted_at')        ||
+      gv(row, idx, 'review_date')         ||
+      gv(row, idx, 'review_at')           ||
+      gv(row, idx, 'review_started_date') ||
+      gv(row, idx, 'review_started_at')   ||
+      gv(row, idx, 'level_2_date')        ||
+      gv(row, idx, 'level2_date')         ||
+      gv(row, idx, 'l2_date')            || ''
+    );
 
     // Transacted = explicit positive status OR a positive transaction value:
     // GMV only exists once a transaction has happened, so GMV > 0 is itself
@@ -714,6 +729,7 @@ function normalizeRows(raw, cfg) {
       txnValue:      txnVal,
       txnDate:       txnDate,
       onbTAT:        tat,
+      reviewDate:    reviewDate,
     };
   }).filter(function(r) { return r.id || r.name; });
   // Count pre-dedup rows per (id+vertical) as per-vendor transaction count.
@@ -1044,6 +1060,7 @@ function vertRow(r) {
     id: r.id, name: r.name, category: r.category, vendorType: r.vendorType,
     status: r.status, gstin: r.gstin, hasGST: r.hasGST, state: r.state,
     createdDate: fmtDate(r.createdDate), onbDate: fmtDate(r.onboardedDate),
+    reviewDate:  fmtDate(r.reviewDate),
     tat: (r.onbTAT === null ? '—' : r.onbTAT),
     hasTxn:       r.hasTxn,
     hasTransacted: r.hasTransacted,
