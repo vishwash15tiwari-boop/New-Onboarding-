@@ -2673,10 +2673,11 @@ function loadData(silent) {
     var _sData = null, _bData = null, _pending = 2, _fbFailed = false;
     function tryFbMerge() {
       if (_fbFailed || --_pending > 0) return;
-      // If seller data came back empty after the fallback, treat it as a failure rather
-      // than rendering 0s — avoids saving a zero-state to localStorage.
-      if (!_sData || !hasSellerData(_sData.verticals || {})) {
-        fail('No data returned from seller source. Retrying in ' + AUTO_REFRESH_SEC + 's.');
+      // Fail only when the seller fetch truly returned nothing (null = network/parse
+      // error). A valid response with 0 totals is a legitimate empty state for
+      // period filters like "Today" or "MTD" — render it, don't treat as an error.
+      if (!_sData) {
+        fail('Seller data unavailable. Retrying in ' + AUTO_REFRESH_SEC + 's.');
         return;
       }
       applyAndRender(
@@ -2705,9 +2706,12 @@ function loadData(silent) {
         var d = JSON.parse(res);
         if (!d || !d.success || !d.seller) { fail((d && d.error) || 'Data error'); return; }
         var sVerts = (d.seller && d.seller.verticals) || {};
-        // If combined returned empty seller data (cold cache + Metabase unreachable),
-        // fall back to individual calls which may hit the pre-warmed getDashboardData cache.
-        if (!hasSellerData(sVerts)) { loadFallback(); return; }
+        // "All" period must always have records when Metabase is reachable.
+        // Empty seller data under "All" means a cold cache + unreachable source —
+        // fall back to individual getDashboardData calls which may have a warm cache.
+        // For every other period (Today, MTD, etc.) zero records is a valid result;
+        // falling back would just make two more round-trips and still return zero.
+        if (currentPeriod === 'All' && !hasSellerData(sVerts)) { loadFallback(); return; }
         applyAndRender(
           { verticals: sVerts },
           { verticals: (d.buyer && d.buyer.verticals) || {} },
