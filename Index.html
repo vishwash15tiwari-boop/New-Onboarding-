@@ -5137,41 +5137,29 @@ function renderBizRail(cfg, vs) {
 }
 
 // Fixed accent per region so the split reads as a consistent legend.
-var REGION_COLORS = {
-  North: '#007AFF', South: '#34C759', West: '#AF52DE',
-  East: '#FF9500', Central: '#FF2D55', Northeast: '#5856D6', Other: '#8E8E93',
-};
-// Frontend mirror of the backend stateToRegion_ — lets the Regional Split card
-// populate from loaded detail rows even before Code.gs (with its `regions`
-// field) is redeployed, exactly like the GMV-by-category fallback.
-var REGION_BY_STATE_FE = (function() {
-  var m = {}, add = function(reg, names) { names.forEach(function(n) { m[n] = reg; }); };
-  add('North',     ['jammukashmir','jammuandkashmir','jandk','jk','ladakh','himachalpradesh','hp','punjab','chandigarh','uttarakhand','uttaranchal','haryana','delhi','newdelhi','nctofdelhi','nctdelhi','rajasthan','uttarpradesh','up']);
-  add('South',     ['andhrapradesh','ap','karnataka','kerala','tamilnadu','tn','telangana','ts','tg','puducherry','pondicherry','lakshadweep','andamannicobar','andamanandnicobar','andamanandnicobarislands']);
-  add('East',      ['bihar','jharkhand','odisha','orissa','westbengal','wb','sikkim']);
-  add('West',      ['goa','gujarat','gj','maharashtra','mh','dadranagarhaveli','dadraandnagarhaveli','damananddiu','dadraandnagarhavelianddamananddiu','dnh']);
-  add('Central',   ['chhattisgarh','chattisgarh','madhyapradesh','mp']);
-  add('Northeast', ['assam','arunachalpradesh','manipur','meghalaya','mizoram','nagaland','tripura']);
-  return m;
+var REGION_COLORS = { North: '#007AFF', South: '#34C759', Other: '#8E8E93' };
+// Frontend mirror of the backend stateToRegion_ (two-way North / South split) —
+// lets the Regional Split card populate from loaded detail rows even before
+// Code.gs is redeployed, exactly like the GMV-by-category fallback.
+var SOUTH_STATES_FE = (function() {
+  var s = {};
+  ['andhrapradesh','ap','karnataka','ka','kerala','kl','tamilnadu','tn','telangana','ts','tg',
+   'puducherry','pondicherry','py','lakshadweep','ld',
+   'andamannicobar','andamanandnicobar','andamanandnicobarislands','an']
+    .forEach(function(n) { s[n] = true; });
+  return s;
 }());
-var REGION_BY_GST_CODE_FE = {
-  '01':'North','02':'North','03':'North','04':'North','05':'North','06':'North','07':'North','08':'North','09':'North','38':'North',
-  '10':'East','11':'East','19':'East','20':'East','21':'East',
-  '12':'Northeast','13':'Northeast','14':'Northeast','15':'Northeast','16':'Northeast','17':'Northeast','18':'Northeast',
-  '22':'Central','23':'Central',
-  '24':'West','25':'West','26':'West','27':'West','30':'West',
-  '28':'South','29':'South','31':'South','32':'South','33':'South','34':'South','35':'South','36':'South','37':'South',
-};
+var SOUTH_GST_CODES_FE = { '28':1,'29':1,'31':1,'32':1,'33':1,'34':1,'35':1,'36':1,'37':1 };
 function _stateToRegionFE(state) {
   var raw = String(state || '').trim();
   if (!raw) return '';
   var digits = raw.match(/^\s*(\d{1,2})\b/);
   if (digits) {
     var code = digits[1].length === 1 ? '0' + digits[1] : digits[1];
-    if (REGION_BY_GST_CODE_FE[code]) return REGION_BY_GST_CODE_FE[code];
+    return SOUTH_GST_CODES_FE[code] ? 'South' : 'North';
   }
   var key = raw.toLowerCase().replace(/&/g, 'and').replace(/[^a-z]/g, '');
-  return REGION_BY_STATE_FE[key] || 'Other';
+  return SOUTH_STATES_FE[key] ? 'South' : 'North';
 }
 // Aggregate per-vendor detail rows into the same shape the backend `regions`
 // field uses (region, total, onboarded, txnValue).
