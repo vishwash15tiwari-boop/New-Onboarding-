@@ -1854,7 +1854,7 @@ body.view-gst #vert-tabs-bar{display:none}
    PIPELINE PAIR (Seller + Buyer side by side)
    ══════════════════════════════════════════════════ */
 /* Two-column section: stacked pipeline cards on the left, insights rail on the right */
-.vpipe-layout{display:grid;grid-template-columns:minmax(0,1fr) 312px;gap:12px;align-items:start;margin-bottom:16px}
+.vpipe-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start;margin-bottom:16px}
 .vpipe-pair{display:grid;grid-template-columns:1fr;gap:12px}
 .vpipe-card{cursor:pointer;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
 .vpipe-card:hover{transform:scale(1.015);box-shadow:var(--shadow-lg)!important}
@@ -1878,25 +1878,21 @@ body.view-gst #vert-tabs-bar{display:none}
   color:var(--blue-ink);background:var(--accent-soft);
   padding:3px 10px;border-radius:var(--pill);white-space:nowrap;
 }
-/* ── Prominent pipeline card header: "Sellers' Onboarding Pipeline" ── */
-.pipe-hdr{margin:0 0 14px}
-.pipe-title2{font-size:18px;font-weight:700;letter-spacing:-.4px;color:var(--txt);line-height:1.15}
+/* ── Pipeline card header: "Sellers' Onboarding Pipeline" ── */
+.pipe-hdr{margin:0 0 12px}
+.pipe-title2{font-size:15px;font-weight:700;letter-spacing:-.3px;color:var(--txt);line-height:1.15}
 
-/* ── Gradient flow bar: draft→review gradient + green completed ── */
-.cc-flow2{display:flex;gap:3px;height:8px;margin:0 0 18px}
-.cc-flow2 i{border-radius:4px;min-width:8px}
-.cc-flow2 .flow-open{background:linear-gradient(90deg,var(--st-draft),var(--st-review))}
-.cc-flow2 .flow-done{background:var(--st-onboarded)}
-.cc-flow2 .flow-rej{background:var(--st-rejected)}
-
-/* ── Box-less pipeline numbers with dot+label beneath ── */
-.pipe-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
-.pipe-num b{display:block;font-size:32px;font-weight:700;letter-spacing:-1.4px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
-.pipe-num .pn-lbl{display:inline-flex;align-items:center;gap:5px;margin-top:7px;font-size:11px;font-weight:500;color:var(--txt2)}
-.pipe-num .pn-lbl::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--st-total);flex-shrink:0}
-.pipe-num .pn-draft::before {background:var(--st-draft)}
-.pipe-num .pn-review::before{background:var(--st-review)}
-.pipe-num .pn-done::before  {background:var(--st-onboarded)}
+/* ── Stage row: label + count on one line, proportional bar beneath ── */
+.pipe-stages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:0 0 14px}
+.pipe-stage{min-width:0}
+.ps-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px}
+.ps-lbl{font-size:11.5px;font-weight:500;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps-num{font-size:19px;font-weight:700;color:var(--txt);letter-spacing:-.6px;font-variant-numeric:tabular-nums;line-height:1;flex-shrink:0}
+.ps-bar{height:6px;border-radius:3px;background:var(--bg2);overflow:hidden}
+.ps-fill{display:block;height:100%;border-radius:3px;transition:width .6s var(--ease-out)}
+.ps-draft{background:#3A3A3C}
+.ps-review{background:var(--st-review)}
+.ps-done{background:var(--st-onboarded)}
 
 /* ── Two-column card footer: category rows | stats table, divided ── */
 .pipe-btm{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);padding-top:12px;margin-top:auto}
@@ -1922,15 +1918,22 @@ body.view-gst #vert-tabs-bar{display:none}
   border-radius:var(--r);box-shadow:var(--shadow);
   padding:18px 18px 16px;
 }
-.biz-hd{margin-bottom:14px}
-.biz-hd-ttl{font-size:16px;font-weight:700;letter-spacing:-.3px;color:var(--txt);line-height:1.15}
-.biz-hd-sub{font-size:11.5px;font-weight:500;color:var(--txt3);margin-top:2px}
+.biz-hd{margin-bottom:12px}
+.biz-hd-ttl{font-size:14px;font-weight:700;letter-spacing:-.2px;color:var(--txt);line-height:1.15}
+.biz-hd-sub{font-size:11px;font-weight:500;color:var(--txt3);margin-top:2px}
+/* Consolidated card: GMV (+ categories) left, quality right, region below */
+.biz-main{padding:18px 18px 14px}
+.biz-split{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:20px;align-items:start}
+.biz-split-l{min-width:0}
+.biz-split-r{min-width:0;display:flex;flex-direction:column;gap:2px}
+.biz-region{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+@media(max-width:640px){.biz-split{grid-template-columns:1fr;gap:14px}}
 .biz-gmv{
   border:1px solid var(--border);border-radius:var(--r2);
-  padding:14px 15px 15px;margin-bottom:12px;background:var(--bg2);
+  padding:13px 14px 14px;margin-bottom:10px;background:var(--bg2);
 }
 .biz-gmv-lb{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
-.biz-gmv-vl{font-size:30px;font-weight:800;letter-spacing:-1.2px;color:var(--txt);line-height:1.05;margin-top:6px;font-variant-numeric:tabular-nums}
+.biz-gmv-vl{font-size:27px;font-weight:800;letter-spacing:-1.1px;color:var(--txt);line-height:1.05;margin-top:5px;font-variant-numeric:tabular-nums}
 .biz-catrow{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding:9px 2px;border-bottom:1px solid var(--border);cursor:pointer;
@@ -1987,6 +1990,10 @@ body.view-gst #vert-tabs-bar{display:none}
   cursor:pointer;transition:box-shadow .2s var(--ease-out),transform .2s var(--ease-out);
 }
 .biz-q:hover{transform:scale(1.01);box-shadow:var(--shadow-lg)}
+/* Inside the consolidated card the quality items read as clean rows, not cards */
+.biz-split-r .biz-q{background:transparent;border:none;box-shadow:none;border-radius:8px;padding:8px 8px;gap:11px}
+.biz-split-r .biz-q:hover{transform:none;box-shadow:none;background:var(--hover)}
+.biz-split-r .biz-q + .biz-q{border-top:1px solid var(--border);border-radius:0}
 .biz-q-ic{
   width:34px;height:34px;border-radius:9px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
@@ -5077,21 +5084,20 @@ function renderBizRail(cfg, vs) {
   // Loading / no-vertical state → skeleton so the rail never flashes empty.
   if (!vs) {
     var sk = _dashLoading
-      ? ('<div class="biz-card">'
-         + '<div class="biz-hd"><div class="biz-sk" style="width:55%;height:14px"></div>'
-         + '<div class="biz-sk" style="width:35%"></div></div>'
-         + '<div class="biz-gmv"><div class="biz-sk" style="width:40%"></div>'
-         + '<div class="biz-sk" style="width:70%;height:22px;margin-top:8px"></div></div>'
-         + '<div class="biz-sk" style="width:100%"></div>'
-         + '<div class="biz-sk" style="width:100%"></div></div>'
-         + '<div class="biz-card">'
-         + '<div class="biz-hd"><div class="biz-sk" style="width:45%;height:14px"></div>'
-         + '<div class="biz-sk" style="width:60%"></div></div>'
-         + '<div class="biz-sk" style="width:100%;height:16px;margin:8px 0"></div>'
-         + '<div class="biz-sk" style="width:100%;height:16px;margin:8px 0"></div>'
-         + '<div class="biz-sk" style="width:100%;height:16px;margin:8px 0"></div></div>')
+      ? ('<div class="biz-card biz-main">'
+         + '<div class="biz-split">'
+         +   '<div class="biz-split-l"><div class="biz-gmv"><div class="biz-sk" style="width:40%"></div>'
+         +     '<div class="biz-sk" style="width:72%;height:22px;margin-top:8px"></div></div>'
+         +     '<div class="biz-sk" style="width:100%"></div><div class="biz-sk" style="width:100%"></div></div>'
+         +   '<div class="biz-split-r">' + (isOMP ? _buildRailQual(null, vname) : '') + '</div>'
+         + '</div>'
+         + '<div class="biz-region"><div class="biz-hd"><div class="biz-sk" style="width:35%;height:13px"></div>'
+         +   '<div class="biz-sk" style="width:55%"></div></div>'
+         +   '<div class="biz-sk" style="width:100%;height:14px;margin:8px 0"></div>'
+         +   '<div class="biz-sk" style="width:100%;height:14px;margin:8px 0"></div></div>'
+         + '</div>')
       : '';
-    rail.innerHTML = sk + (isOMP ? _buildRailQual(null, vname) : '');
+    rail.innerHTML = sk;
     return;
   }
 
@@ -5121,19 +5127,22 @@ function renderBizRail(cfg, vs) {
        + catRows)
     : '<div class="biz-empty">No GMV recorded for this segment yet</div>';
 
-  var card = '<div class="biz-card">'
-    + gmvBlock
-    + '</div>';
-
-  // Region-wise bifurcation card — onboarded sellers by zonal region.
-  var regionCard = _buildRailRegions(vs);
-
   // Vendor Rating / OSV Consent — OMP only (that's where the fields exist).
   var qual = isOMP
     ? _buildRailQual(qualityData && qualityData.success ? (qualityData.seller || {}) : null, vname)
     : '';
+  // Region-wise bifurcation section (North / South), rendered inside the card.
+  var regionSection = _buildRailRegions(vs);
 
-  rail.innerHTML = card + regionCard + qual;
+  // Top of the card: GMV (+ categories) on the left, quality on the right.
+  var top = qual
+    ? ('<div class="biz-split">'
+       + '<div class="biz-split-l">' + gmvBlock + '</div>'
+       + '<div class="biz-split-r">' + qual + '</div>'
+       + '</div>')
+    : gmvBlock;
+
+  rail.innerHTML = '<div class="biz-card biz-main">' + top + regionSection + '</div>';
 }
 
 // Fixed accent per region so the split reads as a consistent legend.
@@ -5225,7 +5234,7 @@ function _buildRailRegions(vs) {
       + '<div class="biz-reg-bar"><div class="biz-reg-fill" style="width:' + p.toFixed(1) + '%;background:' + col + '"></div></div>'
       + '</div>';
   }).join('');
-  return '<div class="biz-card">'
+  return '<div class="biz-region">'
     + '<div class="biz-hd">'
     +   '<div class="biz-hd-ttl">Regional Split</div>'
     +   '<div class="biz-hd-sub">' + (useOnb ? 'Onboarded sellers by region' : 'Pipeline by region') + '</div>'
@@ -5447,25 +5456,23 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
          + '</div>');
     return '<div' + attrs + '>' + ghost + hdr + noDataBody + '</div>';
   }
-  // Flow bar — draft→review gradient portion + a solid green completed portion
-  // (+ a thin red rejected sliver when present). One proportional strip.
-  var vDraft = v.draft || 0, vReview = v.inReview || 0, vDone = v.completed || 0, vRej = v.rejected || 0;
-  var vOpen = vDraft + vReview;
-  var flowTot = vOpen + vDone + vRej;
-  var flowSegs2 = [];
-  if (vOpen > 0) flowSegs2.push(['flow-open', vOpen, 'In pipeline (Draft + In Review) — ' + fmt(vOpen)]);
-  if (vDone > 0) flowSegs2.push(['flow-done', vDone, 'Completed — ' + fmt(vDone)]);
-  if (vRej  > 0) flowSegs2.push(['flow-rej',  vRej,  'Rejected — ' + fmt(vRej)]);
-  var flowBar = flowTot > 0
-    ? '<div class="cc-flow2" aria-hidden="true">' + flowSegs2.map(function(s) {
-        return '<i class="' + s[0] + '" style="flex:' + (s[1] / flowTot * 100).toFixed(2) + '" title="' + s[2] + '"></i>';
-      }).join('') + '</div>'
-    : '';
-  var pipeBoxes = '<div class="pipe-nums">'
-    + '<div class="pipe-num"><b>' + fmt(vDraft)  + '</b><span class="pn-lbl pn-draft">Draft</span></div>'
-    + '<div class="pipe-num"><b>' + fmt(vReview) + '</b><span class="pn-lbl pn-review">In Review</span></div>'
-    + '<div class="pipe-num"><b>' + fmt(vDone)   + '</b><span class="pn-lbl pn-done">Completed</span></div>'
-    + '</div>';
+  // Stage row — each stage shows its label + count on one line with a
+  // proportional bar beneath (bar length relative to the largest stage).
+  var vDraft = v.draft || 0, vReview = v.inReview || 0, vDone = v.completed || 0;
+  var stageMax = Math.max(vDraft, vReview, vDone, 1);
+  var stageDef = [
+    ['Draft',     vDraft,  'ps-draft'],
+    ['In Review', vReview, 'ps-review'],
+    ['Completed', vDone,   'ps-done'],
+  ];
+  var pipeBoxes = '<div class="pipe-stages">' + stageDef.map(function(s) {
+    var w = s[1] > 0 ? Math.max(5, s[1] / stageMax * 100) : 0;
+    return '<div class="pipe-stage">'
+      + '<div class="ps-top"><span class="ps-lbl">' + s[0] + '</span><span class="ps-num">' + fmt(s[1]) + '</span></div>'
+      + '<div class="ps-bar"><i class="ps-fill ' + s[2] + '" style="width:' + w.toFixed(1) + '%"></i></div>'
+      + '</div>';
+  }).join('') + '</div>';
+  var flowBar = '';   // stage bars now live inline within pipeBoxes
   var topCats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; }).slice(0, 3);
   var catRows = topCats.map(function(c) {
     var parts = [];
