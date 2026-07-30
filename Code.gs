@@ -208,7 +208,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v33_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v34_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -257,21 +257,21 @@ function getDashboardData(filtersJson) {
 
 // Returns seller + buyer dashboard data in one call so the frontend can
 // render both pipelines side-by-side without two round trips.
-// Fast path: compose from individual dash_v33_ cache entries when both are warm
+// Fast path: compose from individual dash_v34_ cache entries when both are warm
 // (they are pre-warmed by syncAllOnboarding for every period). Only falls through
 // to the slow double-read when both individual caches are cold.
 function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v33_cmb_' + periodKey;
+    var cacheKey  = 'dash_v34_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v33_seller_' + periodKey;
-    var bIndKey = 'dash_v33_buyer_'  + periodKey;
+    var sIndKey = 'dash_v34_seller_' + periodKey;
+    var bIndKey = 'dash_v34_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -1225,50 +1225,36 @@ function normStatus(v) {
 }
 function normCategory(v) { var s = String(v || '').trim(); return s || 'Others'; }
 
-// ── State → Region (Indian zonal council grouping) ──────────────────
-// Maps a raw `state` value to one of six regions used by the Business
-// Insights "Regional Split" card. Handles full state/UT names (case- and
-// punctuation-insensitive), common aliases/spellings, and 2-digit GST state
-// codes. A non-empty value that matches nothing falls into 'Other'; an empty
-// value returns '' so the caller can skip it (never counted as a region).
-var REGION_BY_STATE = (function() {
-  var m = {};
-  var add = function(region, names) { names.forEach(function(n) { m[n] = region; }); };
-  add('North',     ['jammukashmir','jammuandkashmir','jandk','jk','ladakh','himachalpradesh','hp',
-                     'punjab','chandigarh','uttarakhand','uttaranchal','haryana','delhi','newdelhi',
-                     'nctofdelhi','nctdelhi','rajasthan','uttarpradesh','up']);
-  add('South',     ['andhrapradesh','ap','karnataka','kerala','tamilnadu','tn','telangana','ts','tg',
-                     'puducherry','pondicherry','lakshadweep','andamannicobar','andamanandnicobar',
-                     'andamanandnicobarislands']);
-  add('East',      ['bihar','jharkhand','odisha','orissa','westbengal','wb','sikkim']);
-  add('West',      ['goa','gujarat','gj','maharashtra','mh','dadranagarhaveli','dadraandnagarhaveli',
-                     'damananddiu','dadraandnagarhavelianddamananddiu','dnh']);
-  add('Central',   ['chhattisgarh','chattisgarh','madhyapradesh','mp']);
-  add('Northeast', ['assam','arunachalpradesh','manipur','meghalaya','mizoram','nagaland','tripura']);
-  return m;
+// ── State → Region (two-way North / South split) ────────────────────
+// The Business Insights "Regional Split" card buckets every vendor into just
+// North or South. South = the five southern states and their UTs; North =
+// every other state/UT. Handles full names (case- & punctuation-insensitive),
+// common aliases, and 2-digit GST state codes. Empty state → '' (skipped, never
+// counted); any non-empty value that isn't recognised as South falls to North.
+var SOUTH_STATES = (function() {
+  var s = {};
+  ['andhrapradesh','ap','karnataka','ka','kerala','kl','tamilnadu','tn','telangana','ts','tg',
+   'puducherry','pondicherry','py','lakshadweep','ld',
+   'andamannicobar','andamanandnicobar','andamanandnicobarislands','an']
+    .forEach(function(n) { s[n] = true; });
+  return s;
 }());
-// GST 2-digit state code → region.
-var REGION_BY_GST_CODE = {
-  '01':'North','02':'North','03':'North','04':'North','05':'North','06':'North','07':'North','08':'North','09':'North','38':'North',
-  '10':'East','11':'East','19':'East','20':'East','21':'East',
-  '12':'Northeast','13':'Northeast','14':'Northeast','15':'Northeast','16':'Northeast','17':'Northeast','18':'Northeast',
-  '22':'Central','23':'Central',
-  '24':'West','25':'West','26':'West','27':'West','30':'West',
-  '28':'South','29':'South','31':'South','32':'South','33':'South','34':'South','35':'South','36':'South','37':'South',
+// GST 2-digit codes for the southern states/UTs.
+var SOUTH_GST_CODES = {
+  '28': true, '29': true, '31': true, '32': true, '33': true, '34': true, '35': true, '36': true, '37': true,
 };
 function stateToRegion_(state) {
   var raw = String(state || '').trim();
   if (!raw) return '';
-  // GST state code, e.g. "27" or "27-Maharashtra" → take the leading digits.
+  // GST state code, e.g. "27" or "33-Tamil Nadu" → take the leading digits.
   var digits = raw.match(/^\s*(\d{1,2})\b/);
   if (digits) {
     var code = digits[1].length === 1 ? '0' + digits[1] : digits[1];
-    if (REGION_BY_GST_CODE[code]) return REGION_BY_GST_CODE[code];
+    return SOUTH_GST_CODES[code] ? 'South' : 'North';
   }
   // Normalise to a lookup key: lowercase, strip everything but a-z.
   var key = raw.toLowerCase().replace(/&/g, 'and').replace(/[^a-z]/g, '');
-  if (REGION_BY_STATE[key]) return REGION_BY_STATE[key];
-  return 'Other';
+  return SOUTH_STATES[key] ? 'South' : 'North';
 }
 
 function count(arr, field, val) { return arr.filter(function(r) { return r[field] === val; }).length; }
