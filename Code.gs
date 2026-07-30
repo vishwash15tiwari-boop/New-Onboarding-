@@ -987,6 +987,34 @@ function vStats(data) {
     };
   }).sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });
 
+  // Region-wise bifurcation (zonal grouping of the vendor's state). Rows with
+  // no resolvable state are skipped so shares reflect located vendors only.
+  var regionMap = {};
+  data.forEach(function(r) {
+    var reg = stateToRegion_(r.state);
+    if (!reg) return;
+    if (!regionMap[reg]) regionMap[reg] = {
+      region: reg, total: 0, onboarded: 0, draft: 0, inReview: 0,
+      txnValue: 0, hasTxnVal: false,
+    };
+    var rs = regionMap[reg];
+    rs.total++;
+    if (r.status === 'COMPLETED') rs.onboarded++;
+    if (r.status === 'DRAFT')     rs.draft++;
+    if (r.status === 'IN_REVIEW') rs.inReview++;
+    if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
+      rs.txnValue += r.txnValue; rs.hasTxnVal = true;
+    }
+  });
+  var regions = Object.keys(regionMap).map(function(k) {
+    var g = regionMap[k];
+    return {
+      region: g.region, total: g.total, onboarded: g.onboarded,
+      draft: g.draft, inReview: g.inReview,
+      txnValue: g.hasTxnVal ? g.txnValue : null,
+    };
+  }).sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });
+
   // Per-financial-year breakdown (India FY: Apr 1 – Mar 31), newest FY first.
   var fyMap = {};
   data.forEach(function(r) {
@@ -1051,6 +1079,7 @@ function vStats(data) {
     plasticOld: plasticOld,           metalOld: metalOld,
     fyBreakdown: fyBreakdown,
     categories:  categories,
+    regions:     regions,
     rowsTotal: total,
   };
 }
@@ -1195,6 +1224,52 @@ function normStatus(v) {
   return map[s] || s;
 }
 function normCategory(v) { var s = String(v || '').trim(); return s || 'Others'; }
+
+// ── State → Region (Indian zonal council grouping) ──────────────────
+// Maps a raw `state` value to one of six regions used by the Business
+// Insights "Regional Split" card. Handles full state/UT names (case- and
+// punctuation-insensitive), common aliases/spellings, and 2-digit GST state
+// codes. A non-empty value that matches nothing falls into 'Other'; an empty
+// value returns '' so the caller can skip it (never counted as a region).
+var REGION_BY_STATE = (function() {
+  var m = {};
+  var add = function(region, names) { names.forEach(function(n) { m[n] = region; }); };
+  add('North',     ['jammukashmir','jammuandkashmir','jandk','jk','ladakh','himachalpradesh','hp',
+                     'punjab','chandigarh','uttarakhand','uttaranchal','haryana','delhi','newdelhi',
+                     'nctofdelhi','nctdelhi','rajasthan','uttarpradesh','up']);
+  add('South',     ['andhrapradesh','ap','karnataka','kerala','tamilnadu','tn','telangana','ts','tg',
+                     'puducherry','pondicherry','lakshadweep','andamannicobar','andamanandnicobar',
+                     'andamanandnicobarislands']);
+  add('East',      ['bihar','jharkhand','odisha','orissa','westbengal','wb','sikkim']);
+  add('West',      ['goa','gujarat','gj','maharashtra','mh','dadranagarhaveli','dadraandnagarhaveli',
+                     'damananddiu','dadraandnagarhavelianddamananddiu','dnh']);
+  add('Central',   ['chhattisgarh','chattisgarh','madhyapradesh','mp']);
+  add('Northeast', ['assam','arunachalpradesh','manipur','meghalaya','mizoram','nagaland','tripura']);
+  return m;
+}());
+// GST 2-digit state code → region.
+var REGION_BY_GST_CODE = {
+  '01':'North','02':'North','03':'North','04':'North','05':'North','06':'North','07':'North','08':'North','09':'North','38':'North',
+  '10':'East','11':'East','19':'East','20':'East','21':'East',
+  '12':'Northeast','13':'Northeast','14':'Northeast','15':'Northeast','16':'Northeast','17':'Northeast','18':'Northeast',
+  '22':'Central','23':'Central',
+  '24':'West','25':'West','26':'West','27':'West','30':'West',
+  '28':'South','29':'South','31':'South','32':'South','33':'South','34':'South','35':'South','36':'South','37':'South',
+};
+function stateToRegion_(state) {
+  var raw = String(state || '').trim();
+  if (!raw) return '';
+  // GST state code, e.g. "27" or "27-Maharashtra" → take the leading digits.
+  var digits = raw.match(/^\s*(\d{1,2})\b/);
+  if (digits) {
+    var code = digits[1].length === 1 ? '0' + digits[1] : digits[1];
+    if (REGION_BY_GST_CODE[code]) return REGION_BY_GST_CODE[code];
+  }
+  // Normalise to a lookup key: lowercase, strip everything but a-z.
+  var key = raw.toLowerCase().replace(/&/g, 'and').replace(/[^a-z]/g, '');
+  if (REGION_BY_STATE[key]) return REGION_BY_STATE[key];
+  return 'Other';
+}
 
 function count(arr, field, val) { return arr.filter(function(r) { return r[field] === val; }).length; }
 function countFn(arr, fn) { return arr.filter(fn).length; }
