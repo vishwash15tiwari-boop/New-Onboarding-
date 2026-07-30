@@ -3279,7 +3279,7 @@ var qualityData    = null;   // result of getQualityData() — loaded once for O
 var qualityLoading = false;
 var VD_MAX_RENDER = 200;   // kept for board view compatibility
 var KB_MAX_PER_COL = 50;   // cards rendered per Kanban column
-var vdView = 'board';      // records view in the detail panel: 'board' | 'table'
+var vdView = 'table';      // records view in the detail panel: 'table' only
 var KB_COLS = [            // workflow order, left to right
   { key: 'DRAFT',     cls: 'draft'    },
   { key: 'IN_REVIEW', cls: 'review'   },
@@ -5934,17 +5934,12 @@ function renderInlineDetail(key) {
       +   '<div style="flex:1"></div>'
       +   '<button class="vd-export-btn" onclick="vdExportCSV()">↓ Export CSV</button>'
       +   '<button class="vd-clear-btn" onclick="vdfClear()">Clear Filters</button>'
-      +   '<div class="vd-toggle">'
-      +     '<button class="vd-toggle-btn' + (vdView === 'board' ? ' active' : '') + '" onclick="vdSetView(\'board\')">▦ Board</button>'
-      +     '<button class="vd-toggle-btn' + (vdView === 'table' ? ' active' : '') + '" onclick="vdSetView(\'table\')">☰ Table</button>'
-      +   '</div>'
       + '</div>'
       + '<div id="vd-summary"></div>'
       + '</div>';
     bodyContent = catSection
       + '<div id="cat-detail-wrap" style="display:none"></div>'
       + filtersHtml
-      + '<div class="kb-wrap mt-16" id="vd-board-view"><div class="kb-board" id="vd-board"></div></div>'
       + '<div class="vd-tbl-wrap" id="vd-table-view"><table class="vd-tbl"><thead><tr>'
       + cols.map(function(c) {
           return '<th data-key="' + c[0] + '" onclick="vdSortBy(\'' + c[0] + '\')">' + c[1] + '</th>';
@@ -6413,15 +6408,8 @@ function vdSetView(view) {
   renderVdRecords();
 }
 
-// Shows whichever records view is active and renders it from the filtered rows.
 function renderVdRecords() {
-  var boardEl = document.getElementById('vd-board-view');
-  var tableEl = document.getElementById('vd-table-view');
-  if (!boardEl || !tableEl) return;
-  var board = vdView === 'board';
-  boardEl.style.display = board ? '' : 'none';
-  tableEl.style.display = board ? 'none' : '';
-  if (board) renderVdBoard(); else renderVdTable();
+  renderVdTable();
 }
 
 function renderVdBoard() {
@@ -6998,7 +6986,7 @@ function filterByCategory(cat) {
   // Scroll to the category detail card if visible, otherwise to the records.
   var target = document.getElementById('cat-detail-wrap');
   if (!target || target.style.display === 'none') {
-    target = document.getElementById('vd-board-view') || document.getElementById('vd-table-view');
+    target = document.getElementById('vd-table-view');
   }
   if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
