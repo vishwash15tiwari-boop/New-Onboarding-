@@ -3646,7 +3646,7 @@ function renderVertKPIs(key) {
   var cards = [
     mk(icFunnel, 'Logged In Cases', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',     'total',      null),
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   fmt(compS) + ' sellers · ' + fmt(compB) + ' buyers',  'vk-onboarded', 'onboarded'),
-    mk(icZap,    'Transacted',  fmt(txnTotal),         txnPct > 0 ? txnPct + '% of onboarded' : null, 'vk-transacted', 'transacted'),
+    mk(icZap,    'Transacted',  fmt(txnTotal),         fmt(pTxn) + ' Plastic · ' + fmt(mTxn) + ' Metal', 'vk-transacted', 'transacted'),
   ];
   if (key === 'OMP') {
     var enTotal = (oldS + oldB) + (newS + newB);
