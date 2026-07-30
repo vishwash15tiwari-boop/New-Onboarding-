@@ -1862,22 +1862,45 @@ body.view-gst #vert-tabs-bar{display:none}
 .vkpi-meter i{display:block;height:100%;background:#30D158;border-radius:2px;transition:width 1s var(--ease-out)}
 
 /* ══════════════════════════════════════════════════
-   PIPELINE PAIR (Seller + Buyer side by side)
+   PIPELINE PAIR — left stacked cards + right insights
    ══════════════════════════════════════════════════ */
 .vpipe-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+/* Left column: Seller + Buyer stacked */
+.vpipe-left{display:flex;flex-direction:column;gap:12px;min-width:0}
+/* Right column: Business Insights fills full height */
+.vpipe-right{display:flex;flex-direction:column;min-width:0}
 .vpipe-card{cursor:pointer;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
 .vpipe-card:hover{transform:scale(1.015);box-shadow:var(--shadow-lg)!important}
 .vpipe-card.det-active{
   box-shadow:0 0 0 1.5px rgba(0,113,227,.45),var(--shadow)!important;
 }
-/* Pipeline pair: top-pack the content so the Seller/Buyer FY tables line up
-   row-for-row across the pair. Any height difference (e.g. the Seller's quality
-   strip) then collects as quiet breathing room at the bottom of the shorter card
-   instead of an awkward gap in the middle. Only affects the side-by-side layout;
-   stacked cards (≤1200px) size to their own content. */
 .vpipe-card .cc-cat-rows{flex:0 0 auto}
 .vpipe-card .cc-fy-wrap,
 .vpipe-card .cc-stat-list{margin-top:0}
+/* ── Business Insights card ── */
+.biz-ins-card{
+  flex:1;cursor:default;
+  background:linear-gradient(150deg,#FFFFFF 58%,#F5F3FF 100%);
+}
+.biz-ins-card:hover{transform:none!important;box-shadow:var(--shadow-card)!important}
+@media(prefers-color-scheme:dark){
+  .biz-ins-card{background:linear-gradient(150deg,var(--card) 60%,rgba(124,92,250,.08) 100%)}
+}
+:root[data-theme="dark"] .biz-ins-card{background:linear-gradient(150deg,var(--card) 60%,rgba(124,92,250,.08) 100%)}
+:root[data-theme="light"] .biz-ins-card{background:linear-gradient(150deg,#FFFFFF 58%,#F5F3FF 100%)}
+/* Sections inside the insights card */
+.biz-ins-sect{border-top:1px solid var(--border);padding-top:14px;margin-top:14px}
+.biz-ins-lbl{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px}
+.biz-ins-big{font-size:24px;font-weight:700;color:var(--txt);letter-spacing:-.7px;line-height:1.1;font-variant-numeric:tabular-nums;margin-bottom:4px}
+.biz-ins-sub{font-size:10.5px;color:var(--txt3);margin-bottom:0}
+.biz-cat-rows{margin-top:8px}
+.biz-cat-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)}
+.biz-cat-row:last-child{border-bottom:none}
+.biz-cat-val{margin-left:auto;font-size:12px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+/* Interactive sections inside the insights card */
+.biz-ins-sect-btn{cursor:pointer;border-radius:6px;margin:-6px -6px 0;padding:6px 6px 0;transition:background .13s}
+.biz-ins-sect-btn:hover{background:var(--hover)}
+.biz-ins-sect-btn:active{background:var(--seg-track)}
 /* Pipeline card header — plain audience title, no repeated vertical name */
 .pipe-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .pipe-title{font-size:15px;font-weight:700;letter-spacing:-.25px;color:var(--txt)}
@@ -4443,6 +4466,9 @@ function _patchQualitySects() {
   });
   _patchQualityKpiCards();
   renderDocsSection();
+  // Patch Business Insights card quality sections (Rating + OSV)
+  var bizQ = document.getElementById('biz-ins-quality');
+  if (bizQ) bizQ.innerHTML = _buildBizQualSects(qualityData && qualityData.success ? qualityData.seller : null);
 }
 
 function _patchQualityKpiCards() {
@@ -4930,7 +4956,17 @@ function renderPipelinePair(key) {
         + '<div class="sk-line" style="width:70%"></div>'
         + '<div class="sk-line" style="width:50%"></div>'
         + '</div>';
-      el.innerHTML = skBody + skBody;
+      var skRight = '<div class="compare-card biz-ins-card" style="padding:16px">'
+        + '<div class="sk-line" style="width:45%;height:9px;border-radius:4px"></div>'
+        + '<div class="sk-line" style="width:65%;height:20px;border-radius:5px;margin:14px 0 8px"></div>'
+        + '<div class="sk-line" style="width:50%"></div>'
+        + '<div class="sk-line" style="width:80%;margin-top:20px"></div>'
+        + '<div class="sk-line" style="width:40%;height:16px;border-radius:4px;margin:8px 0"></div>'
+        + '<div class="sk-line" style="width:70%;margin-top:20px"></div>'
+        + '<div class="sk-line" style="width:40%;height:16px;border-radius:4px;margin:8px 0"></div>'
+        + '</div>';
+      el.innerHTML = '<div class="vpipe-left">' + skBody + skBody + '</div>'
+        + '<div class="vpipe-right">' + skRight + '</div>';
     } else {
       el.innerHTML = '';
     }
@@ -4940,8 +4976,13 @@ function renderPipelinePair(key) {
   var vb = (DB && DB.verticals || {})[key] || {};
   window._gmvCats = { seller: vs.categories || [], buyer: vb.categories || [] };
   el.classList.remove('three-col');
-  el.innerHTML = buildInlinePipeCard(cfg, vs, 'Seller Pipeline', 'seller', 0)
-    + buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1);
+  el.innerHTML = '<div class="vpipe-left">'
+    + buildInlinePipeCard(cfg, vs, 'Seller Pipeline', 'seller', 0)
+    + buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1)
+    + '</div>'
+    + '<div class="vpipe-right">'
+    + buildBizInsightsCard(cfg, vs)
+    + '</div>';
   animateCounters(el);
   if (key === 'OMP') {
     loadQualityData();       // populates the quality strips AND the Documents section
@@ -5042,7 +5083,6 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     var fyTbody = [
       fyTr('Avg TAT',       function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
       isOMP ? null : fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
-      aud === 'seller' ? fyTr('Total GMV', function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV, '', 'openGmvCatModal(\'seller\')') : null,
       fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
       enVal ? '<tr class="cc-fy-row-btn" role="button" tabindex="0"'
         + ' onclick="event.stopPropagation();openKpiModal(\'oldvsnew\')"'
@@ -5066,7 +5106,6 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     var statRows = [];
     if (v.avgTAT        != null) statRows.push(['Avg TAT',      v.avgTAT + 'd',          '']);
     if (!isOMP2 && v.pctTransacted != null) statRows.push(['% Transacted', v.pctTransacted + '%', '']);
-    if (aud === 'seller' && v.totalTxnValue != null && v.totalTxnValue > 0) statRows.push(['Total GMV', fmtINR(v.totalTxnValue), '', 'openGmvCatModal(\'seller\')']);
     if (v.withGST       != null) statRows.push(['GSTIN Active', fmt(v.withGST),          '']);
     var rowsHtml = statRows.map(function(r) {
       if (r[3]) {
@@ -5083,13 +5122,78 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
       + 'New Vendors Onboarded<b>' + enVal + '</b></div>';
     statsList = rowsHtml ? '<div class="cc-stat-list">' + rowsHtml + '</div>' : '';
   }
-  // Quality strip for seller OMP cards (async — patched by _patchQualityKpiCards)
-  var qualStrip = '';
-  if (aud === 'seller' && cfg.key === 'OMP') {
-    var sqc = qualityData && qualityData.success ? (qualityData.seller || {}) : null;
-    qualStrip = '<div id="ipc-qual-seller">' + _buildSellerQualStrip(sqc) + '</div>';
+  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + catRows + statsList + '</div>';
+}
+
+// ── Business Insights card (right column) ──────────────────────────
+// Shows Total GMV (with Plastic/Metal breakdown), Vendor Rating and
+// OSV Consent. GMV is synchronous; Rating/OSV are patched async.
+function buildBizInsightsCard(cfg, vs) {
+  var isOMP = cfg && cfg.key === 'OMP';
+
+  // GMV section — available synchronously from vertical data
+  var totalGMV = vs.totalTxnValue || 0;
+  var gmvVal   = totalGMV > 0 ? fmtINR(totalGMV) : '—';
+  var cats     = (vs.categories || []).filter(function(c){ return c.txnValue != null && c.txnValue > 0; });
+  var catHtml  = cats.map(function(c){
+    return '<div class="biz-cat-row">'
+      + '<span class="cc-cat-badge">' + esc(c.category) + '</span>'
+      + '<span class="biz-cat-val">' + fmtINR(c.txnValue) + '</span>'
+      + '</div>';
+  }).join('');
+  var gmvSect = '<div class="biz-ins-sect">'
+    + '<div class="biz-ins-lbl">Total GMV</div>'
+    + '<div class="biz-ins-big" style="cursor:pointer" role="button" tabindex="0"'
+    + ' onclick="openGmvCatModal(\'seller\')"'
+    + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openGmvCatModal(\'seller\')}">'
+    + gmvVal + '</div>'
+    + (catHtml ? '<div class="biz-cat-rows">' + catHtml + '</div>' : '')
+    + '</div>';
+
+  // Rating + OSV — async, container patched when qualityData arrives
+  var qc = qualityData && qualityData.success ? (qualityData.seller || {}) : null;
+  var body = isOMP
+    ? (gmvSect + '<div id="biz-ins-quality">' + _buildBizQualSects(qc) + '</div>')
+    : '<div class="no-data" style="padding:24px 0">OMP only</div>';
+
+  return '<div class="compare-card biz-ins-card" style="--i:2;' + vcVars(cfg.key) + '">'
+    + '<span class="cc-ghost" aria-hidden="true">◆</span>'
+    + '<div class="cc-hdr2" style="align-items:center;gap:8px;margin-bottom:14px">'
+    + '<span class="pipe-dot" style="background:#7C5CFA"></span>'
+    + '<span class="pipe-title">Business Insights</span>'
+    + '<span class="pipe-sub">OMP · Sellers</span>'
+    + '</div>'
+    + body
+    + '</div>';
+}
+
+// Build (or re-build) the Vendor Rating and OSV Consent sections inside
+// the Business Insights card. Called both at render time and when
+// qualityData arrives asynchronously.
+function _buildBizQualSects(qc) {
+  function sect(lbl, bigVal, subTxt, onclk) {
+    var clkAttrs = onclk
+      ? (' class="biz-ins-sect biz-ins-sect-btn" role="button" tabindex="0"'
+         + ' onclick="' + onclk + '"'
+         + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + onclk + '}"')
+      : ' class="biz-ins-sect"';
+    return '<div' + clkAttrs + '>'
+      + '<div class="biz-ins-lbl">' + lbl + '</div>'
+      + '<div class="biz-ins-big">' + bigVal + '</div>'
+      + '<div class="biz-ins-sub">' + subTxt + '</div>'
+      + '</div>';
   }
-  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + catRows + statsList + qualStrip + '</div>';
+  if (!qc) {
+    return sect('★ Vendor Rating', '<span style="color:var(--txt3);font-size:14px;font-weight:500">Syncing…</span>', '', '')
+      + sect('◎ OSV Consent',    '<span style="color:var(--txt3);font-size:14px;font-weight:500">Syncing…</span>', '', '');
+  }
+  var r = qc.rating || {}, o = qc.osv || {};
+  var rAvg = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
+  var rSub = fmt(r.rated || 0) + (r.total > 0 ? ' of ' + fmt(r.total) + ' OMP' : '') + ' rated';
+  var oPct = o.total > 0 ? Math.round((o.completed || 0) / o.total * 100) + '%' : '—';
+  var oSub = fmt(o.completed || 0) + (o.total > 0 ? ' of ' + fmt(o.total) + ' OMP' : '') + ' OSV Consent given';
+  return sect('★ Vendor Rating', rAvg, rSub, "openKpiModal('rating')")
+    + sect('◎ OSV Consent', oPct, oSub, "openKpiModal('osv')");
 }
 
 // Render the inline detailed view section (replaces the full-screen overlay).
