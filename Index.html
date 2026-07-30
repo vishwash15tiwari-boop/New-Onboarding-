@@ -281,7 +281,7 @@ select,input{font-family:inherit}
 
 /* ===== Main — flex-row shell ===== */
 #main{display:flex;flex-direction:row;align-items:flex-start;background:transparent;min-height:calc(100vh - 56px)}
-#dash-content{flex:1;min-width:0;padding:12px 36px 64px;max-width:1340px;margin:0 auto}
+#dash-content{flex:1;min-width:0;padding:10px 28px 32px;max-width:1340px;margin:0 auto}
 
 /* ===== Section Titles — Apple large title style ===== */
 .section-title{
@@ -339,7 +339,7 @@ select,input{font-family:inherit}
   background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--r);
-  padding:16px 16px 14px;
+  padding:13px 14px 12px;
   box-shadow:var(--shadow-card);
   cursor:pointer;
   transition:box-shadow .35s var(--ease-out),border-color .25s var(--ease),transform .35s var(--ease-out);
@@ -1873,14 +1873,14 @@ body.view-gst #vert-tabs-bar{display:none}
    gracefully on narrow ones without shrinking text or clipping subtitles.
    The richer OMP metrics (Existing/New, Vendor Rating, OSV Consent) live in the
    Seller/Buyer pipeline cards below. */
-.vkpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:16px;align-items:stretch}
+.vkpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-bottom:12px;align-items:stretch}
 /* 4-card OMP row: explicit columns so it never wraps to a lone 3+1 card */
 .vkpi-grid.vkpi-grid-4{grid-template-columns:repeat(4,1fr)}
 .vkpi-card{
   background:var(--card);border:none;
-  border-radius:var(--r);padding:14px 16px;min-height:88px;
+  border-radius:var(--r);padding:11px 14px;min-height:72px;
   box-shadow:var(--shadow-card);
-  display:flex;flex-direction:row;align-items:center;gap:12px;
+  display:flex;flex-direction:row;align-items:center;gap:10px;
   position:relative;overflow:hidden;
   cursor:pointer;
   transition:box-shadow .22s var(--ease-out),transform .22s var(--ease-out);
@@ -1948,9 +1948,9 @@ body.view-gst #vert-tabs-bar{display:none}
 /* ══════════════════════════════════════════════════
    PIPELINE PAIR (Seller + Buyer side by side)
    ══════════════════════════════════════════════════ */
-/* Two-column section: pipeline (wider) on the left, insights rail on the right */
-.vpipe-layout{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;align-items:stretch;margin-bottom:16px}
-.vpipe-pair{display:grid;grid-template-columns:1fr;gap:12px}
+/* Two-column section: pipeline (wider) on the left, compact insights rail on the right */
+.vpipe-layout{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:14px;align-items:start;margin-bottom:16px}
+.vpipe-pair{display:grid;grid-template-columns:1fr;gap:10px}
 .vpipe-card{cursor:pointer;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
 .vpipe-card:hover{transform:scale(1.015);box-shadow:var(--shadow-lg)!important}
 .vpipe-card.det-active{
@@ -1977,34 +1977,34 @@ body.view-gst #vert-tabs-bar{display:none}
 .pipe-hdr{margin:0 0 12px}
 .pipe-title2{font-size:15px;font-weight:700;letter-spacing:-.3px;color:var(--txt);line-height:1.15}
 
-/* ── Pipeline KPI cards: Draft / In Review / Completed ── */
-.pipe-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
+/* ── Pipeline KPI cards: Draft / In Review / Completed — compact horizontal strip ── */
+.pipe-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 10px}
 .pipe-kpi{
-  position:relative;border-radius:12px;padding:15px 16px 13px;
+  position:relative;border-radius:8px;padding:8px 10px 8px 14px;
   border:1px solid var(--border);background:var(--card);
-  display:flex;flex-direction:column;overflow:hidden;
+  display:flex;flex-direction:row;align-items:center;gap:9px;overflow:hidden;
   box-shadow:var(--shadow-sm);transition:box-shadow .2s var(--ease-out);
 }
 .pipe-kpi::before{
-  content:'';position:absolute;inset:0 0 auto 0;height:3px;border-radius:12px 12px 0 0;
+  content:'';position:absolute;inset:0 auto 0 0;width:3px;border-radius:8px 0 0 8px;
 }
 .pipe-kpi-draft::before  {background:var(--st-draft)}
 .pipe-kpi-review::before {background:var(--st-review)}
 .pipe-kpi-done::before   {background:var(--st-onboarded)}
 .pipe-kpi-icon{
-  width:28px;height:28px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  margin-bottom:9px;flex-shrink:0;
+  width:24px;height:24px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
 .pipe-kpi-draft  .pipe-kpi-icon{background:var(--st-draft-bg)}
 .pipe-kpi-review .pipe-kpi-icon{background:var(--st-review-bg)}
 .pipe-kpi-done   .pipe-kpi-icon{background:var(--st-onboarded-bg)}
+.pipe-kpi-body{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
 .pipe-kpi-count{
-  font-size:30px;font-weight:700;letter-spacing:-1.2px;
-  line-height:1;font-variant-numeric:tabular-nums;color:var(--txt);margin-bottom:5px;
+  font-size:20px;font-weight:700;letter-spacing:-.8px;
+  line-height:1;font-variant-numeric:tabular-nums;color:var(--txt);
 }
 .pipe-kpi-label{
-  font-size:10px;font-weight:600;letter-spacing:.06em;
+  font-size:9px;font-weight:600;letter-spacing:.06em;
   text-transform:uppercase;color:var(--txt3);
 }
 
@@ -2021,9 +2021,9 @@ body.view-gst #vert-tabs-bar{display:none}
   .pipe-btm{grid-template-columns:1fr;gap:12px}
   .pipe-btm-r{padding-left:0;border-left:none;border-top:1px solid var(--border);padding-top:12px}
   .pipe-num b{font-size:26px;letter-spacing:-1px}
-  .pipe-kpi-row{gap:6px}
-  .pipe-kpi-count{font-size:24px;letter-spacing:-1px}
-  .pipe-kpi{padding:13px 12px 11px}
+  .pipe-kpi-row{gap:5px}
+  .pipe-kpi-count{font-size:17px;letter-spacing:-.6px}
+  .pipe-kpi{padding:7px 8px 7px 12px}
 }
 
 /* ══════════════════════════════════════════════════
@@ -2038,35 +2038,34 @@ body.view-gst #vert-tabs-bar{display:none}
 .biz-hd{margin-bottom:12px}
 .biz-hd-ttl{font-size:14px;font-weight:700;letter-spacing:-.2px;color:var(--txt);line-height:1.15}
 .biz-hd-sub{font-size:11px;font-weight:500;color:var(--txt3);margin-top:2px}
-/* Unified analytics panel — single container with internal 2×2 dividers */
+/* Unified analytics panel — single vertical column */
 .biz-panel{
   background:var(--card);border:1px solid var(--border);border-radius:var(--r);
   box-shadow:var(--shadow);overflow:hidden;
-  display:grid;grid-template-columns:1fr 1fr;
-  flex:1;min-height:0;
+  display:flex;flex-direction:column;
 }
 .biz-tile{
-  padding:14px 16px;display:flex;flex-direction:column;
-  gap:4px;overflow:hidden;cursor:pointer;
+  padding:10px 13px;display:flex;flex-direction:column;
+  gap:3px;overflow:hidden;cursor:pointer;
   transition:background .18s var(--ease-out);
 }
 .biz-tile:hover{background:var(--hover)}
 .biz-tile:active{background:rgba(0,0,0,.06);transition-duration:.06s}
-/* Internal dividers: right column gets left border, bottom row gets top border */
-.biz-tile--right{border-left:1px solid var(--border)}
+/* Vertical stack: every tile after the first gets a top divider */
+.biz-tile--right{border-left:none;border-top:1px solid var(--border)}
 .biz-tile--bottom{border-top:1px solid var(--border)}
 .biz-tile-region{cursor:default}
 .biz-tile-region:hover,.biz-tile-region:active{background:transparent}
-.biz-t-lb{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:4px}
-.biz-t-val{font-size:22px;font-weight:800;letter-spacing:-.8px;color:var(--txt);line-height:1.1;font-variant-numeric:tabular-nums}
-.biz-t-sub{font-size:10.5px;color:var(--txt3);font-weight:500;line-height:1.4}
+.biz-t-lb{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:3px}
+.biz-t-val{font-size:18px;font-weight:800;letter-spacing:-.6px;color:var(--txt);line-height:1.1;font-variant-numeric:tabular-nums}
+.biz-t-sub{font-size:10px;color:var(--txt3);font-weight:500;line-height:1.4}
 /* OSV Status two-column layout */
-.biz-osv-cols{display:flex;gap:14px;flex:1;margin-top:6px}
+.biz-osv-cols{display:flex;gap:12px;flex:1;margin-top:4px}
 .biz-osv-col{flex:1;display:flex;flex-direction:column;gap:1px}
-.biz-osv-lbl{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
-.biz-osv-num{font-size:21px;font-weight:800;letter-spacing:-.6px;font-variant-numeric:tabular-nums;line-height:1}
-.biz-osv-pct{font-size:11px;font-weight:500;color:var(--txt3);margin-top:1px}
-.biz-osv-tot{font-size:10px;color:var(--txt3);margin-top:auto;padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.biz-osv-lbl{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:1px}
+.biz-osv-num{font-size:17px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums;line-height:1}
+.biz-osv-pct{font-size:10px;font-weight:500;color:var(--txt3);margin-top:1px}
+.biz-osv-tot{font-size:9.5px;color:var(--txt3);margin-top:6px;padding-top:5px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .biz-osv-tot b{color:var(--txt);font-weight:700}
 /* Legacy split layout kept for backward compatibility; grid is preferred */
 .biz-main{padding:18px 18px 14px}
@@ -2082,8 +2081,8 @@ body.view-gst #vert-tabs-bar{display:none}
 .biz-gmv-lb{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
 .biz-gmv-vl{font-size:27px;font-weight:800;letter-spacing:-1.1px;color:var(--txt);line-height:1.05;margin-top:5px;font-variant-numeric:tabular-nums}
 .biz-catrow{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:9px 2px;border-bottom:1px solid var(--border);cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:6px 2px;border-bottom:1px solid var(--border);cursor:pointer;
   border-radius:5px;transition:background .13s;
 }
 .biz-catrow:last-of-type{border-bottom:none}
@@ -2095,9 +2094,9 @@ body.view-gst #vert-tabs-bar{display:none}
 .biz-catrow .bc-val{font-size:13px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
 .biz-empty{font-size:12px;color:var(--txt3);padding:14px 2px;text-align:center}
 /* Regional Split rows — label + share value + proportional bar */
-.biz-reg{padding:8px 2px 9px;border-bottom:1px solid var(--border)}
+.biz-reg{padding:6px 2px 7px;border-bottom:1px solid var(--border)}
 .biz-reg:last-of-type{border-bottom:none}
-.biz-reg-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.biz-reg-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
 .biz-reg-nm{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--txt);min-width:0}
 .biz-reg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .biz-reg-vl{font-size:12px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0}
@@ -2397,11 +2396,7 @@ body.view-gst #vert-tabs-bar{display:none}
 @media(max-width:1200px){
   .vpipe-layout{grid-template-columns:1fr}
   .biz-rail{position:static}
-  .biz-panel{grid-template-columns:1fr 1fr}
   .vkpi-grid.vkpi-grid-4{grid-template-columns:repeat(2,1fr)}
-}
-@media(max-width:640px){
-  .biz-panel{grid-template-columns:1fr}
 }
 @media(max-width:600px){
   .vkpi-grid{grid-template-columns:repeat(2,1fr)}
@@ -5684,7 +5679,7 @@ function _buildRailQual(qc, vname) {
       + ' onclick="openKpiModal(\'rating\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'rating\')}">'
       + '<div class="biz-t-lb">Vendor Rating (out of 10)</div>'
-      + '<div class="biz-t-val" style="color:#E48800;font-size:22px">' + rVal + '</div>'
+      + '<div class="biz-t-val" style="color:#E48800;font-size:18px">' + rVal + '</div>'
       + '<div class="biz-t-sub">' + rSub + '</div>'
       + '</div>';
 
@@ -5774,8 +5769,10 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
   var pipeBoxes = '<div class="pipe-kpi-row">' + kpiDef.map(function(k) {
     return '<div class="pipe-kpi ' + k.cls + '">'
       + '<div class="pipe-kpi-icon">' + k.icon + '</div>'
-      + '<div class="pipe-kpi-count">' + fmt(k.count) + '</div>'
-      + '<div class="pipe-kpi-label">' + k.label + '</div>'
+      + '<div class="pipe-kpi-body">'
+      +   '<div class="pipe-kpi-count">' + fmt(k.count) + '</div>'
+      +   '<div class="pipe-kpi-label">' + k.label + '</div>'
+      + '</div>'
       + '</div>';
   }).join('') + '</div>';
   var topCats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; }).slice(0, 3);
