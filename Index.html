@@ -1791,12 +1791,12 @@ body.view-gst #vert-tabs-bar{display:none}
    gracefully on narrow ones without shrinking text or clipping subtitles.
    The richer OMP metrics (Existing/New, Vendor Rating, OSV Consent) live in the
    Seller/Buyer pipeline cards below. */
-.vkpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:16px}
+.vkpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:16px;align-items:stretch}
 /* 4-card OMP row: explicit columns so it never wraps to a lone 3+1 card */
 .vkpi-grid.vkpi-grid-4{grid-template-columns:repeat(4,1fr)}
 .vkpi-card{
   background:var(--card);border:none;
-  border-radius:var(--r);padding:12px 16px;
+  border-radius:var(--r);padding:14px 16px;min-height:88px;
   box-shadow:var(--shadow-card);
   display:flex;flex-direction:row;align-items:center;gap:12px;
   position:relative;overflow:hidden;
@@ -1867,7 +1867,7 @@ body.view-gst #vert-tabs-bar{display:none}
    PIPELINE PAIR (Seller + Buyer side by side)
    ══════════════════════════════════════════════════ */
 /* Two-column section: stacked pipeline cards on the left, insights rail on the right */
-.vpipe-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start;margin-bottom:16px}
+.vpipe-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:stretch;margin-bottom:16px}
 .vpipe-pair{display:grid;grid-template-columns:1fr;gap:12px}
 .vpipe-card{cursor:pointer;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
 .vpipe-card:hover{transform:scale(1.015);box-shadow:var(--shadow-lg)!important}
@@ -1925,7 +1925,7 @@ body.view-gst #vert-tabs-bar{display:none}
 /* ══════════════════════════════════════════════════
    BUSINESS INSIGHTS RAIL (right column)
    ══════════════════════════════════════════════════ */
-.biz-rail{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px}
+.biz-rail{position:relative;display:flex;flex-direction:column;min-height:0}
 .biz-card{
   background:var(--card,#fff);border:1px solid var(--border);
   border-radius:var(--r);box-shadow:var(--shadow);
@@ -1934,7 +1934,22 @@ body.view-gst #vert-tabs-bar{display:none}
 .biz-hd{margin-bottom:12px}
 .biz-hd-ttl{font-size:14px;font-weight:700;letter-spacing:-.2px;color:var(--txt);line-height:1.15}
 .biz-hd-sub{font-size:11px;font-weight:500;color:var(--txt3);margin-top:2px}
-/* Consolidated card: GMV (+ categories) left, quality right, region below */
+/* 2×2 grid inside the Business Insights rail */
+.biz-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;min-height:0}
+.biz-tile{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;
+  gap:4px;overflow:hidden;cursor:pointer;
+  transition:box-shadow .2s var(--ease-out),transform .2s var(--ease-out);
+}
+.biz-tile:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+.biz-tile:active{transform:scale(.98);transition-duration:.08s}
+.biz-tile-region{cursor:default}
+.biz-tile-region:hover,.biz-tile-region:active{transform:none;box-shadow:var(--shadow)}
+.biz-t-lb{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:4px}
+.biz-t-val{font-size:22px;font-weight:800;letter-spacing:-.8px;color:var(--txt);line-height:1.1;font-variant-numeric:tabular-nums}
+.biz-t-sub{font-size:10.5px;color:var(--txt3);font-weight:500;line-height:1.4}
+/* Legacy split layout kept for backward compatibility; grid is preferred */
 .biz-main{padding:18px 18px 14px}
 .biz-split{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:20px;align-items:start}
 .biz-split-l{min-width:0}
@@ -2263,7 +2278,11 @@ body.view-gst #vert-tabs-bar{display:none}
 @media(max-width:1200px){
   .vpipe-layout{grid-template-columns:1fr}
   .biz-rail{position:static}
+  .biz-grid{grid-template-columns:1fr 1fr}
   .vkpi-grid.vkpi-grid-4{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:640px){
+  .biz-grid{grid-template-columns:1fr}
 }
 @media(max-width:600px){
   .vkpi-grid{grid-template-columns:repeat(2,1fr)}
@@ -5104,68 +5123,57 @@ function renderBizRail(cfg, vs) {
   var isOMP = cfg && cfg.key === 'OMP';
   var vname = (cfg && cfg.code) || (cfg && cfg.key) || '';
 
-  // Loading / no-vertical state → skeleton so the rail never flashes empty.
+  // Skeleton while loading
   if (!vs) {
-    var sk = _dashLoading
-      ? ('<div class="biz-card biz-main">'
-         + '<div class="biz-split">'
-         +   '<div class="biz-split-l"><div class="biz-gmv"><div class="biz-sk" style="width:40%"></div>'
-         +     '<div class="biz-sk" style="width:72%;height:22px;margin-top:8px"></div></div>'
-         +     '<div class="biz-sk" style="width:100%"></div><div class="biz-sk" style="width:100%"></div></div>'
-         +   '<div class="biz-split-r">' + (isOMP ? _buildRailQual(null, vname) : '') + '</div>'
-         + '</div>'
-         + '<div class="biz-region"><div class="biz-hd"><div class="biz-sk" style="width:35%;height:13px"></div>'
-         +   '<div class="biz-sk" style="width:55%"></div></div>'
-         +   '<div class="biz-sk" style="width:100%;height:14px;margin:8px 0"></div>'
-         +   '<div class="biz-sk" style="width:100%;height:14px;margin:8px 0"></div></div>'
+    rail.innerHTML = _dashLoading
+      ? ('<div class="biz-grid">'
+         + [0,1,2,3].map(function() {
+             return '<div class="biz-tile">'
+               + '<div class="biz-sk" style="width:55%;height:10px"></div>'
+               + '<div class="biz-sk" style="width:80%;height:22px;margin-top:8px"></div>'
+               + '<div class="biz-sk" style="width:65%"></div></div>';
+           }).join('')
          + '</div>')
       : '';
-    rail.innerHTML = sk;
     return;
   }
 
+  // ── Tile 1: Total GMV ──
   var gmv = vs.totalTxnValue;
   var cats = (vs.categories || [])
     .filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
     .slice().sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); })
-    .slice(0, 6);
+    .slice(0, 4);
+  var catRows = cats.map(function(c) {
+    return '<div class="biz-catrow" role="button" tabindex="0"'
+      + ' onclick="openGmvCatModal(\'seller\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openGmvCatModal(\'seller\')}">'
+      + '<span class="bc-badge">' + esc(c.category) + '</span>'
+      + '<span class="bc-val">' + fmtINR(c.txnValue) + '</span></div>';
+  }).join('');
+  var gmvTile = '<div class="biz-tile biz-tile-gmv" role="button" tabindex="0"'
+    + ' onclick="openGmvCatModal(\'seller\')"'
+    + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openGmvCatModal(\'seller\')}">'
+    + '<div class="biz-t-lb">Total GMV</div>'
+    + ((gmv != null && gmv > 0)
+        ? '<div class="biz-t-val">' + fmtINR(gmv) + '</div>' + (catRows ? '<div style="margin-top:8px">' + catRows + '</div>' : '')
+        : '<div class="biz-empty" style="padding:8px 0;font-size:11px">No GMV recorded</div>')
+    + '</div>';
 
-  var catRows = cats.length
-    ? cats.map(function(c) {
-        return '<div class="biz-catrow" role="button" tabindex="0"'
-          + ' onclick="openGmvCatModal(\'seller\')"'
-          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openGmvCatModal(\'seller\')}">'
-          + '<span class="bc-badge">' + esc(c.category) + '</span>'
-          + '<span class="bc-val">' + fmtINR(c.txnValue) + '</span></div>';
-      }).join('')
-    : '';
+  // ── Tiles 2 & 3: Vendor Rating + OSV Consent (OMP only, patched async) ──
+  var qc = (qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
+  var qualTiles = _buildRailQual(isOMP ? qc : null, vname);
 
-  var gmvBlock = (gmv != null && gmv > 0)
-    ? ('<div class="biz-gmv" role="button" tabindex="0"'
-       + ' onclick="openGmvCatModal(\'seller\')"'
-       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openGmvCatModal(\'seller\')}"'
-       + ' style="cursor:pointer">'
-       + '<div class="biz-gmv-lb">Total GMV</div>'
-       + '<div class="biz-gmv-vl">' + fmtINR(gmv) + '</div></div>'
-       + catRows)
-    : '<div class="biz-empty">No GMV recorded for this segment yet</div>';
+  // ── Tile 4: Regional Split ──
+  var regionRows = _buildRailRegions(vs);
+  var regionTile = '<div class="biz-tile biz-tile-region">'
+    + '<div class="biz-t-lb">Regional Split</div>'
+    + (regionRows
+        ? regionRows
+        : '<div class="biz-empty" style="padding:8px 0;font-size:11px">No region data yet</div>')
+    + '</div>';
 
-  // Vendor Rating / OSV Consent — OMP only (that's where the fields exist).
-  var qual = isOMP
-    ? _buildRailQual(qualityData && qualityData.success ? (qualityData.seller || {}) : null, vname)
-    : '';
-  // Region-wise bifurcation section (North / South), rendered inside the card.
-  var regionSection = _buildRailRegions(vs);
-
-  // Top of the card: GMV (+ categories) on the left, quality on the right.
-  var top = qual
-    ? ('<div class="biz-split">'
-       + '<div class="biz-split-l">' + gmvBlock + '</div>'
-       + '<div class="biz-split-r">' + qual + '</div>'
-       + '</div>')
-    : gmvBlock;
-
-  rail.innerHTML = '<div class="biz-card biz-main">' + top + regionSection + '</div>';
+  rail.innerHTML = '<div class="biz-grid">' + gmvTile + qualTiles + regionTile + '</div>';
 }
 
 // Fixed accent per region so the split reads as a consistent legend.
@@ -5257,13 +5265,8 @@ function _buildRailRegions(vs) {
       + '<div class="biz-reg-bar"><div class="biz-reg-fill" style="width:' + p.toFixed(1) + '%;background:' + col + '"></div></div>'
       + '</div>';
   }).join('');
-  return '<div class="biz-region">'
-    + '<div class="biz-hd">'
-    +   '<div class="biz-hd-ttl">Regional Split</div>'
-    +   '<div class="biz-hd-sub">' + (useOnb ? 'Onboarded sellers by region' : 'Pipeline by region') + '</div>'
-    + '</div>'
-    + rows
-    + '</div>';
+  var sub = useOnb ? 'Onboarded by region' : 'Pipeline by region';
+  return '<div class="biz-t-sub" style="margin-bottom:6px">' + sub + '</div>' + rows;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -5421,7 +5424,6 @@ function _regionRender(loading) {
 
 // Vendor Rating + OSV Consent mini-cards for the rail. qc null → "Syncing…".
 function _buildRailQual(qc, vname) {
-  var wrap = '<div id="biz-qual">';
   var ratingVal, ratingSub, osvVal, osvSub;
   if (qc) {
     var r = qc.rating || {}, o = qc.osv || {};
@@ -5430,19 +5432,20 @@ function _buildRailQual(qc, vname) {
     osvVal    = o.total > 0 ? Math.round((o.completed || 0) / o.total * 100) + '%' : '—';
     osvSub    = fmt(o.completed || 0) + (o.total > 0 ? ' of ' + fmt(o.total) + ' OMP' : '') + ' consent given';
   }
-  var card = function(cardId, icon, label, val, sub) {
+  function tile(cardId, label, val, sub, valColor) {
     var body = val != null
-      ? '<div class="biz-q-vl">' + val + '</div><div class="biz-q-sub">' + sub + '</div>'
+      ? '<div class="biz-t-val"' + (valColor ? ' style="color:' + valColor + '"' : '') + '>' + val + '</div>'
+        + (sub ? '<div class="biz-t-sub">' + sub + '</div>' : '')
       : '<div class="biz-q-sync">Syncing</div>';
-    return '<div class="biz-q" role="button" tabindex="0"'
+    return '<div class="biz-tile" role="button" tabindex="0"'
       + ' onclick="openKpiModal(\'' + cardId + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'' + cardId + '\')}">'
-      + '<div class="biz-q-ic">' + icon + '</div>'
-      + '<div class="biz-q-tx"><div class="biz-q-lb">' + label + '</div>' + body + '</div></div>';
-  };
-  return wrap
-    + card('rating', '★', 'Vendor Rating', ratingVal, ratingSub)
-    + card('osv',    '✓', 'OSV Consent',   osvVal,    osvSub)
+      + '<div class="biz-t-lb">' + label + '</div>'
+      + body + '</div>';
+  }
+  return '<div id="biz-qual" style="display:contents">'
+    + tile('rating', 'Vendor Rating', ratingVal, ratingSub, '#E48800')
+    + tile('osv',    'OSV Consent',   osvVal,    osvSub,    '#005DFF')
     + '</div>';
 }
 
