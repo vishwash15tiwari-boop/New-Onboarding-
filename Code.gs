@@ -34,6 +34,11 @@ var CONFIG = {
   SELLER_SHEET_ID: '1qaG_GMvUrC7LJbKBma8-S3x2N6Ua4vDkUC5ZRx3znho',
   BUYER_SHEET_ID:  '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI',
 
+  // External quality data source: Vendor Rating (Col G = Demonitor score) and
+  // OSV Status (Col M = on-site visit result). Replaces the Vendor Rating sheet
+  // cols AE/AF for rating and OSV accumulation; docs still come from that sheet.
+  DEMONITOR_SHEET_ID: '1wRYs0cB5APbbCozTFKW9w-1l5E6aVXPeg4nAF-5hKMM',
+
   // TAT source — dedicated tab holding Metabase card 5292 ("Onboarding Detail"),
   // synced by Metabase.gs (syncDetail) every 5 min. Every TAT metric is derived
   // from this tab's Level 1 date; see getLevel1Lookup_(). Run debugTAT()
@@ -1612,7 +1617,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v9';   // v9: buyer docs sourced from _mb_buyers
+  var CACHE_KEY = 'quality_data_v10';  // v10: rating+OSV sourced from Demonitor sheet
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1702,19 +1707,15 @@ function getQualityData() {
         var rowAud = resolveAud_(row, vrh, vidC, vauC);
         var ts = tgts_(rowAud);
 
-        // — Rating (OMP-onboarded only, matched by GSTIN) —
+        // Rating and OSV accumulation now handled by the Demonitor sheet block below.
+        // We keep vendorRatings / vendorOSV population here as a fallback in case
+        // the Demonitor sheet is inaccessible, but do NOT add to acc[t].r / acc[t].o
+        // so the Demonitor values always take precedence in the final metrics.
         var vrGstin   = vrGstC >= 0 ? String(row[vrGstC] || '').trim() : '';
         var ompRInfo  = vrGstin ? ompGstinMap[vrGstin] : null;
         if (ompRInfo) {
           var rv   = parseFloat(row[rC]);
           var rAud = ompRInfo.aud;
-          ['seller' === rAud ? 'seller' : 'buyer', 'combined'].forEach(function(t) {
-            if (!isNaN(rv) && rv > 0 && rv <= 5) {
-              acc[t].r.ws    += rv;
-              acc[t].r.rated += 1;
-              acc[t].r.dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += 1;
-            }
-          });
           if (!isNaN(rv) && rv > 0 && rv <= 5) {
             vendorRatings.push({
               id:               ompRInfo.id   || String(row[vidC] || '').trim().slice(0, 30),
@@ -1723,12 +1724,11 @@ function getQualityData() {
               rating:           Math.round(rv * 10) / 10,
               onboardingStatus: ompRInfo.onboardingStatus,
               category:         ompRInfo.category,
-              aud:              rAud
+              aud:              rAud,
+              source:           'vendor_rating_sheet'
             });
           }
         }
-
-        // — OSV consent (OMP-onboarded sellers only; binary: verified vs not_initiated) —
         var vid_ = String(row[vidC] || '').trim();
         var ompInfo = ompMap[vid_];
         if (ompInfo) {
@@ -1736,10 +1736,6 @@ function getQualityData() {
           var osUp  = osRaw.toUpperCase().replace(/\s+/g, '_');
           var osvStatus = (osUp === 'CONSENT_ACCEPTED' || osUp === 'YES' || osUp === 'Y' || osUp === 'TRUE')
             ? 'verified' : 'not_initiated';
-          if (osvStatus === 'verified') {
-            acc['seller'].o.completed   += 1;
-            acc['combined'].o.completed += 1;
-          }
           vendorOSV.push({
             id:               vid_.slice(0, 30),
             name:             ompInfo.name || String(row[nameC] || '').trim().slice(0, 60),
@@ -1748,7 +1744,8 @@ function getQualityData() {
             status:           osvStatus,
             onboardingStatus: ompInfo.onboardingStatus,
             category:         ompInfo.category,
-            aud:              'seller'
+            aud:              'seller',
+            source:           'vendor_rating_sheet'
           });
         }
 
@@ -1812,6 +1809,157 @@ function getQualityData() {
     }
   } catch (e) { Logger.log('getQualityData vendor-rating: ' + e.message); }
 
+  // ══════════════════════════════════════════════════════════════════
+  // DEMONITOR SHEET — primary source for Vendor Rating + OSV Status
+  //   Sheet ID : CONFIG.DEMONITOR_SHEET_ID
+  //   Col G (index 6)  = Demonitor score (numeric, typically 1-5 or 0-100)
+  //   Col M (index 12) = OSV Status (text: Done / Pending / etc.)
+  //
+  // Matching strategy (first hit wins per row):
+  //   1. seller_id / vendor_id header → ompMap lookup
+  //   2. gstin / gst_number header    → ompGstinMap lookup
+  //   3. No match → row still counted in aggregate (sheet is already scoped to OMP)
+  // ══════════════════════════════════════════════════════════════════
+  var _demonitorRatingCount = 0;
+  var _demonitorOsvCount    = 0;
+  try {
+    var dmSheet = SpreadsheetApp.openById(CONFIG.DEMONITOR_SHEET_ID).getSheets()[0];
+    var dmVals  = dmSheet.getDataRange().getValues();
+    if (dmVals.length > 1) {
+      var dmRawHdrs = dmVals[0];
+      var dmh = dmRawHdrs.map(function(h) {
+        return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      });
+
+      // Identifier columns — find by name, no positional fallback (too risky)
+      var dmIdC   = qualityFindCol_(dmh, ['seller_id','vendor_id','id','vendorid','entity_id','s_id']);
+      var dmGstC  = qualityFindCol_(dmh, ['gstin','gst_number','gst_no','gstin_number','gst']);
+      var dmNameC = qualityFindCol_(dmh, ['seller_name','vendor_name','name','business_name','company_name']);
+
+      // Rating: Col G = index 6. Also search by header name for robustness.
+      var dmRatC = qualityFindCol_(dmh, ['demonitor','demonitor_score','demonitor_rating',
+                                          'rating_score','vendor_score','score','overall_score']);
+      if (dmRatC < 0) dmRatC = 6;   // positional fallback: Column G
+
+      // OSV: Col M = index 12. Also search by header name.
+      var dmOsvC = qualityFindCol_(dmh, ['osv_status','osv_consent','osv','site_visit_status',
+                                          'field_verification_status','on_site_verification',
+                                          'onsite_verification_status','verification_status']);
+      if (dmOsvC < 0) dmOsvC = 12;  // positional fallback: Column M
+
+      // Clear acc rating/OSV so only Demonitor values contribute
+      ['seller','buyer','combined'].forEach(function(t) {
+        acc[t].r = mkR();
+        acc[t].o = mkO();
+      });
+      // Clear fallback lists populated by the Vendor Rating sheet
+      vendorRatings = [];
+      vendorOSV     = [];
+
+      var dmRows = dmVals.slice(1).filter(function(r) {
+        return r.some(function(c) { return c !== '' && c !== null && c !== undefined; });
+      });
+
+      dmRows.forEach(function(row) {
+        var dmId    = (dmIdC   >= 0 && row[dmIdC]   != null) ? String(row[dmIdC]).trim()   : '';
+        var dmGstin = (dmGstC  >= 0 && row[dmGstC]  != null) ? String(row[dmGstC]).trim()  : '';
+        var dmName  = (dmNameC >= 0 && row[dmNameC] != null) ? String(row[dmNameC]).trim() : '';
+
+        // Match to OMP onboarded vendor (id → GSTIN → unmatched)
+        var ompInfo = (dmId    && ompMap[dmId])           ? ompMap[dmId]
+                    : (dmGstin && ompGstinMap[dmGstin])   ? ompGstinMap[dmGstin]
+                    : null;
+        var rAud = (ompInfo && ompInfo.aud) ? ompInfo.aud : 'seller';
+
+        // ── Vendor Rating (Col G) ──────────────────────────────────────────
+        var ratRaw = row[dmRatC];
+        var rv = parseFloat(String(ratRaw == null ? '' : ratRaw).replace(/[^0-9.]/g, ''));
+        // Normalise scores > 5 to a 5-point scale (e.g. 0-100 → 0-5)
+        if (!isNaN(rv) && rv > 5 && rv <= 100) rv = rv / 20;
+        if (!isNaN(rv) && rv > 0 && rv <= 5) {
+          var tRat = rAud === 'buyer' ? ['buyer','combined'] : ['seller','combined'];
+          tRat.forEach(function(t) {
+            acc[t].r.ws    += rv;
+            acc[t].r.rated += 1;
+            acc[t].r.dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += 1;
+          });
+          vendorRatings.push({
+            id:               (ompInfo && ompInfo.id) || dmId.slice(0, 30),
+            name:             (ompInfo && ompInfo.name) || dmName.slice(0, 60),
+            gstin:            (ompInfo && ompInfo.gstin) || dmGstin.slice(0, 20),
+            rating:           Math.round(rv * 10) / 10,
+            onboardingStatus: ompInfo ? ompInfo.onboardingStatus : '',
+            category:         ompInfo ? ompInfo.category : '',
+            aud:              rAud,
+            source:           'demonitor'
+          });
+          _demonitorRatingCount++;
+        }
+
+        // ── OSV Status (Col M) ────────────────────────────────────────────
+        var osvRaw = row[dmOsvC] != null ? String(row[dmOsvC]).trim() : '';
+        if (!osvRaw) return;
+        var osvUp  = osvRaw.toUpperCase().replace(/[\s\-\/]+/g, '_');
+        var osvVerified = (
+          osvUp === 'DONE'          || osvUp === 'COMPLETED'      || osvUp === 'VERIFIED'  ||
+          osvUp === 'CONSENT_ACCEPTED' || osvUp === 'ACCEPTED'    || osvUp === 'YES'       ||
+          osvUp === 'Y'             || osvUp === 'TRUE'           || osvUp === '1'         ||
+          osvUp === 'OSV_DONE'      || osvUp === 'OSV_COMPLETED'  || osvUp === 'PASSED'    ||
+          osvUp === 'APPROVED'      || osvUp === 'SUCCESS'        || osvUp === 'COMPLETE'
+        );
+        var osvStatus = osvVerified ? 'verified' : 'not_initiated';
+        if (osvVerified) {
+          acc['seller'].o.completed   += 1;
+          acc['combined'].o.completed += 1;
+          _demonitorOsvCount++;
+        }
+        vendorOSV.push({
+          id:               (ompInfo && ompInfo.id) || dmId.slice(0, 30),
+          name:             (ompInfo && ompInfo.name) || dmName.slice(0, 60),
+          gstin:            (ompInfo && ompInfo.gstin) || dmGstin.slice(0, 20),
+          consentRaw:       osvRaw.slice(0, 30),
+          status:           osvStatus,
+          onboardingStatus: ompInfo ? ompInfo.onboardingStatus : '',
+          category:         ompInfo ? ompInfo.category : '',
+          aud:              rAud,
+          source:           'demonitor'
+        });
+      });
+
+      // Denominator: rows with any data in the rating column (matched or not),
+      // capped by OMP total when available for percentage accuracy.
+      var dmRatTotal = dmRows.filter(function(r) {
+        var rv2 = parseFloat(String(r[dmRatC] == null ? '' : r[dmRatC]).replace(/[^0-9.]/g, ''));
+        return !isNaN(rv2) && rv2 > 0;
+      }).length;
+      var dmOsvTotal = dmRows.filter(function(r) {
+        return r[dmOsvC] != null && String(r[dmOsvC]).trim() !== '';
+      }).length;
+
+      // Use OMP total as denominator when the sheet is scoped to OMP vendors;
+      // fall back to sheet-row count so percentages are always meaningful.
+      acc['seller'].r.total   = ompTotal > 0 ? ompTotal : Math.max(dmRatTotal, _demonitorRatingCount);
+      acc['combined'].r.total = acc['seller'].r.total;
+      acc['seller'].o.total   = ompTotal > 0 ? ompTotal : Math.max(dmOsvTotal, _demonitorOsvCount);
+      acc['combined'].o.total = acc['seller'].o.total;
+      acc['seller'].o.notInitiated   = Math.max(0, acc['seller'].o.total - acc['seller'].o.completed);
+      acc['combined'].o.notInitiated = Math.max(0, acc['combined'].o.total - acc['combined'].o.completed);
+
+      Logger.log('Demonitor: ' + dmRows.length + ' rows · rating col=' + dmRatC
+        + ' osv col=' + dmOsvC + ' · rated=' + _demonitorRatingCount
+        + ' osv_done=' + _demonitorOsvCount);
+    }
+  } catch (e) {
+    Logger.log('getQualityData demonitor sheet: ' + e.message);
+    // Fall back to OMP totals so denominators are still correct even when the
+    // Demonitor sheet is temporarily inaccessible.
+    ['seller','combined'].forEach(function(t) {
+      acc[t].r.total = acc[t].r.total || ompTotal;
+      acc[t].o.total = acc[t].o.total || ompTotal;
+      acc[t].o.notInitiated = Math.max(0, (acc[t].o.total || 0) - (acc[t].o.completed || 0));
+    });
+  }
+
   if (typeof vendorDocs === 'undefined' || !vendorDocs) vendorDocs = [];
 
   // Buyer documents come from the buyer onboarding sheet (_mb_buyers) — the
@@ -1832,18 +1980,21 @@ function getQualityData() {
     appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds);
   } catch (e) { Logger.log('getQualityData doc-completeness: ' + e.message); }
 
-  // Rating denominator = OMP-onboarded count per audience (GSTIN-matched)
-  acc['seller'].r.total   = Object.keys(ompGstinSellers).length;
-  acc['buyer'].r.total    = Object.keys(ompGstinBuyers).length;
-  acc['combined'].r.total = Object.keys(ompGstinSellers).length + Object.keys(ompGstinBuyers).length;
-
-  // OSV denominator = OMP-onboarded count; not_initiated fills the gap
-  ['seller', 'combined'].forEach(function(t) {
-    acc[t].o.total        = ompTotal;
-    acc[t].o.notInitiated = Math.max(0, ompTotal - acc[t].o.completed);
-    acc[t].o.pending      = 0;
-    acc[t].o.failed       = 0;
-  });
+  // Rating + OSV denominators are set by the Demonitor block above when that sheet
+  // is reachable. Only fall back to OMP-GSTIN counts when Demonitor returned nothing.
+  if (_demonitorRatingCount === 0) {
+    acc['seller'].r.total   = Object.keys(ompGstinSellers).length;
+    acc['buyer'].r.total    = Object.keys(ompGstinBuyers).length;
+    acc['combined'].r.total = Object.keys(ompGstinSellers).length + Object.keys(ompGstinBuyers).length;
+  }
+  if (_demonitorOsvCount === 0) {
+    ['seller', 'combined'].forEach(function(t) {
+      acc[t].o.total        = ompTotal;
+      acc[t].o.notInitiated = Math.max(0, ompTotal - acc[t].o.completed);
+      acc[t].o.pending      = 0;
+      acc[t].o.failed       = 0;
+    });
+  }
 
   // ── Finalize accumulators → output shape ─────────────────────
   function fR(r) { return { avg: r.rated>0?Math.round(r.ws/r.rated*10)/10:null, total:r.total, rated:r.rated, dist:r.dist }; }
@@ -2163,5 +2314,80 @@ function debugDocs() {
     b.forEach(function(v) { Logger.log('   buyer sample: ' + v.name + ' | ' + v.gstin + ' | ' + v.submitted + '/' + v.total); });
     if (!(byAud.buyer)) Logger.log('   ⚠ No buyer document rows — check the sheets/columns logged above.');
   } catch (e) { Logger.log('getQualityData failed: ' + e.message); }
+  Logger.log('════ END ════');
+}
+
+// ════════════════════════════════════════════════════════════════
+// DEMONITOR CACHE INVALIDATION
+// Install this as an onChange trigger on the Demonitor sheet so the
+// dashboard refreshes immediately when the sheet is edited, rather
+// than waiting for the 5-min TTL to expire.
+//
+// Setup (one time, in the Demonitor spreadsheet's Apps Script editor):
+//   Triggers → Add trigger → bustQualityCache → From spreadsheet → On change
+//   (or run installDemonitorTrigger() here to install it programmatically)
+// ════════════════════════════════════════════════════════════════
+function bustQualityCache() {
+  var cache = CacheService.getScriptCache();
+  cache.remove('quality_data_v10');
+  Logger.log('Quality cache cleared — next getQualityData() call will re-read Demonitor sheet.');
+}
+
+function debugDemonitor() {
+  Logger.log('════ DEMONITOR DEBUG ════');
+  try {
+    var ss    = SpreadsheetApp.openById(CONFIG.DEMONITOR_SHEET_ID);
+    var sheet = ss.getSheets()[0];
+    var vals  = sheet.getDataRange().getValues();
+    Logger.log('Sheet name: ' + sheet.getName() + '  rows (incl header): ' + vals.length);
+    if (vals.length < 1) { Logger.log('Empty sheet'); return; }
+
+    var hdrs = vals[0].map(function(h) {
+      return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    });
+    Logger.log('Headers (' + hdrs.length + '): ' + hdrs.join(', '));
+    Logger.log('Column G (index 6) header: "' + (vals[0][6] || '(empty)') + '"');
+    Logger.log('Column M (index 12) header: "' + (vals[0][12] || '(empty)') + '"');
+
+    var ratC = qualityFindCol_(hdrs, ['demonitor','demonitor_score','demonitor_rating',
+                                       'rating_score','vendor_score','score','overall_score']);
+    var osvC = qualityFindCol_(hdrs, ['osv_status','osv_consent','osv','site_visit_status',
+                                       'field_verification_status','on_site_verification',
+                                       'onsite_verification_status','verification_status']);
+    Logger.log('Detected rating col: ' + (ratC >= 0 ? ratC + ' ("' + hdrs[ratC] + '")' : 'none → using positional 6'));
+    Logger.log('Detected OSV col: '    + (osvC >= 0 ? osvC + ' ("' + hdrs[osvC] + '")' : 'none → using positional 12'));
+    if (ratC < 0) ratC = 6;
+    if (osvC < 0) osvC = 12;
+
+    var dataRows = vals.slice(1).filter(function(r) {
+      return r.some(function(c) { return c !== '' && c !== null && c !== undefined; });
+    });
+    Logger.log('Data rows: ' + dataRows.length);
+
+    var nRat = 0, sumRat = 0, nOsv = 0;
+    dataRows.forEach(function(r) {
+      var rv = parseFloat(String(r[ratC] == null ? '' : r[ratC]).replace(/[^0-9.]/g, ''));
+      if (!isNaN(rv) && rv > 0) {
+        if (rv > 5 && rv <= 100) rv = rv / 20;
+        if (rv <= 5) { nRat++; sumRat += rv; }
+      }
+      var os = String(r[osvC] == null ? '' : r[osvC]).trim().toUpperCase().replace(/[\s\-\/]+/g, '_');
+      var done = (os === 'DONE' || os === 'COMPLETED' || os === 'VERIFIED' || os === 'YES'
+               || os === 'CONSENT_ACCEPTED' || os === 'ACCEPTED' || os === 'TRUE' || os === '1'
+               || os === 'OSV_DONE' || os === 'PASSED' || os === 'APPROVED' || os === 'SUCCESS' || os === 'COMPLETE');
+      if (done) nOsv++;
+    });
+    Logger.log('Vendor Rating (Col ' + String.fromCharCode(65 + ratC) + '): '
+      + nRat + ' valid scores · avg = ' + (nRat ? Math.round(sumRat / nRat * 10) / 10 : '—'));
+    Logger.log('OSV Status (Col ' + String.fromCharCode(65 + osvC) + '): '
+      + nOsv + ' verified out of ' + dataRows.length + ' rows ('
+      + (dataRows.length ? Math.round(nOsv / dataRows.length * 100) : '—') + '%)');
+
+    if (dataRows.length) {
+      Logger.log('Sample row 1 — Col G: "' + (dataRows[0][6] || '') + '"  Col M: "' + (dataRows[0][12] || '') + '"');
+    }
+  } catch (e) {
+    Logger.log('ERROR: ' + e.message);
+  }
   Logger.log('════ END ════');
 }
