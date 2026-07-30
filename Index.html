@@ -1948,8 +1948,11 @@ body.view-gst #vert-tabs-bar{display:none}
 /* ══════════════════════════════════════════════════
    PIPELINE PAIR (Seller + Buyer side by side)
    ══════════════════════════════════════════════════ */
-/* Two-column section: pipeline (3/4) aligns with first 3 KPI cards, rail (1/4) aligns with 4th */
-.vpipe-layout{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);gap:8px;align-items:start;margin-bottom:12px}
+/* Shared 4-column grid — KPI cards, pipeline, and rail share identical column boundaries */
+.vert-dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;align-items:start}
+.vert-dash-grid #vert-kpi-row{grid-column:1/-1;margin-bottom:0}
+.vert-dash-grid #vert-pipeline-pair{grid-column:1/4}
+.vert-dash-grid #vert-biz-rail{grid-column:4/5}
 .vpipe-pair{display:grid;grid-template-columns:1fr;gap:10px}
 .vpipe-card{cursor:pointer;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
 .vpipe-card:hover{transform:scale(1.015);box-shadow:var(--shadow-lg)!important}
@@ -2394,7 +2397,8 @@ body.view-gst #vert-tabs-bar{display:none}
    text or clipping subtitles on smaller screens. The 4-card OMP row steps down
    through 2×2 (never 3+1) to a single column. */
 @media(max-width:1200px){
-  .vpipe-layout{grid-template-columns:1fr}
+  .vert-dash-grid{grid-template-columns:repeat(2,1fr)}
+  .vert-dash-grid #vert-kpi-row,.vert-dash-grid #vert-pipeline-pair,.vert-dash-grid #vert-biz-rail{grid-column:1/-1}
   .biz-rail{position:static}
   .vkpi-grid.vkpi-grid-4{grid-template-columns:repeat(2,1fr)}
 }
@@ -2676,9 +2680,9 @@ body.view-gst #vert-tabs-bar{display:none}
   <!-- ── VIEW: ONBOARDING ── -->
   <div id="tab-overview">
     <!-- Combined KPI hero row (4 cards, S+B merged) -->
-    <div id="vert-kpi-row" class="vkpi-grid"></div>
-    <!-- Left: stacked Seller + Buyer pipelines · Right: Business Insights rail -->
-    <div class="vpipe-layout">
+    <div class="vert-dash-grid">
+      <div id="vert-kpi-row" class="vkpi-grid"></div>
+      <!-- Left: stacked Seller + Buyer pipelines · Right: Business Insights rail -->
       <div id="vert-pipeline-pair" class="vpipe-pair"></div>
       <aside id="vert-biz-rail" class="biz-rail"></aside>
     </div>
