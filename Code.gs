@@ -1617,7 +1617,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v11';  // v11: rating 0-10 scale; OSV only 'Done'=done
+  var CACHE_KEY = 'quality_data_v12';  // v12: read Denominator col (G) not Score col (F)
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1821,7 +1821,9 @@ function getQualityData() {
   var _demonitorRatingCount = 0;
   var _demonitorOsvCount    = 0;
   try {
-    var dmSheet = SpreadsheetApp.openById(CONFIG.DEMONITOR_SHEET_ID).getSheets()[0];
+    var dmSS = SpreadsheetApp.openById(CONFIG.DEMONITOR_SHEET_ID);
+    // Prefer the "Scoring" tab by name; fall back to first sheet.
+    var dmSheet = dmSS.getSheetByName('Scoring') || dmSS.getSheets()[0];
     var dmVals  = dmSheet.getDataRange().getValues();
     if (dmVals.length > 1) {
       var dmRawHdrs = dmVals[0];
@@ -1830,14 +1832,18 @@ function getQualityData() {
       });
 
       // Identifier columns — find by name, no positional fallback (too risky)
-      var dmIdC   = qualityFindCol_(dmh, ['seller_id','vendor_id','id','vendorid','entity_id','s_id']);
+      var dmIdC   = qualityFindCol_(dmh, ['seller_id','vendor_id','vendor_reference_no',
+                                          'id','vendorid','entity_id','s_id']);
       var dmGstC  = qualityFindCol_(dmh, ['gstin','gst_number','gst_no','gstin_number','gst']);
       var dmNameC = qualityFindCol_(dmh, ['seller_name','vendor_name','name','business_name','company_name']);
 
-      // Rating: Col G = index 6. Also search by header name for robustness.
-      var dmRatC = qualityFindCol_(dmh, ['demonitor','demonitor_score','demonitor_rating',
-                                          'rating_score','vendor_score','score','overall_score']);
-      if (dmRatC < 0) dmRatC = 6;   // positional fallback: Column G
+      // Rating: Col G = index 6 ("Denominator" = Score/10, the 0-10 rating).
+      // "denominator" must come before "score" — "Score" (col F) holds raw 0-100 values
+      // that exceed the rv<=10 guard and would produce zero rated vendors.
+      var dmRatC = qualityFindCol_(dmh, ['denominator','demonitor','demonitor_score',
+                                          'demonitor_rating','rating_score','vendor_score',
+                                          'score','overall_score']);
+      if (dmRatC < 0) dmRatC = 6;   // positional fallback: Column G (Denominator)
 
       // OSV: Col M = index 12. Also search by header name.
       var dmOsvC = qualityFindCol_(dmh, ['osv_status','osv_consent','osv','site_visit_status',
@@ -2326,7 +2332,7 @@ function debugDemonitor() {
   Logger.log('════ DEMONITOR DEBUG ════');
   try {
     var ss    = SpreadsheetApp.openById(CONFIG.DEMONITOR_SHEET_ID);
-    var sheet = ss.getSheets()[0];
+    var sheet = ss.getSheetByName('Scoring') || ss.getSheets()[0];
     var vals  = sheet.getDataRange().getValues();
     Logger.log('Sheet name: ' + sheet.getName() + '  rows (incl header): ' + vals.length);
     if (vals.length < 1) { Logger.log('Empty sheet'); return; }
@@ -2338,8 +2344,9 @@ function debugDemonitor() {
     Logger.log('Column G (index 6) header: "' + (vals[0][6] || '(empty)') + '"');
     Logger.log('Column M (index 12) header: "' + (vals[0][12] || '(empty)') + '"');
 
-    var ratC = qualityFindCol_(hdrs, ['demonitor','demonitor_score','demonitor_rating',
-                                       'rating_score','vendor_score','score','overall_score']);
+    var ratC = qualityFindCol_(hdrs, ['denominator','demonitor','demonitor_score',
+                                       'demonitor_rating','rating_score','vendor_score',
+                                       'score','overall_score']);
     var osvC = qualityFindCol_(hdrs, ['osv_status','osv_consent','osv','site_visit_status',
                                        'field_verification_status','on_site_verification',
                                        'onsite_verification_status','verification_status']);
