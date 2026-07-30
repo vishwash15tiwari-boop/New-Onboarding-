@@ -265,6 +265,19 @@ select,input{font-family:inherit}
 .filter-select:focus,.filter-input:focus{border-color:var(--blue);box-shadow:var(--ring)}
 .filter-input{width:220px}
 .filter-input::placeholder{color:var(--txt3);font-weight:400}
+/* "All" quick-button inside the custom date picker */
+.cust-all-btn{
+  font-family:inherit;font-size:11px;font-weight:600;
+  padding:5px 12px;border:1px solid var(--border);border-radius:var(--pill);
+  cursor:pointer;background:transparent;color:var(--txt2);
+  transition:background .18s var(--ease),color .15s,border-color .15s,box-shadow .2s;
+  white-space:nowrap;line-height:1.4;
+}
+.cust-all-btn.active{background:var(--card);color:var(--txt);border-color:transparent;box-shadow:0 1px 4px rgba(0,0,0,.10),0 0 0 .5px rgba(0,0,0,.06)}
+.cust-all-btn:not(.active):hover{color:var(--txt);border-color:var(--border2)}
+.cust-all-btn:active{transform:scale(.95)}
+/* subtle divider between "All" button and date inputs */
+.cust-all-sep{width:1px;height:18px;background:var(--border);flex-shrink:0;border-radius:1px}
 
 /* ===== Main — flex-row shell ===== */
 #main{display:flex;flex-direction:row;align-items:flex-start;background:transparent;min-height:calc(100vh - 56px)}
@@ -2383,9 +2396,11 @@ body.view-gst #vert-tabs-bar{display:none}
         <button class="qf-chip" data-qf="YTD"       onclick="onPeriodSelect('YTD')">YTD</button>
       </div>
       <select class="filter-select" id="top-period" onchange="onPeriodSelect(this.value)">
-        <option value="All">All Time</option>
+        <option value="Custom">Custom</option>
       </select>
-      <span id="top-custom" style="display:none">
+      <span id="top-custom" style="display:inline-flex">
+        <button class="cust-all-btn active" id="top-all-btn" onclick="onPeriodSelect('All')">All</button>
+        <span class="cust-all-sep"></span>
         <input type="date" class="filter-select" id="top-start" onchange="onCustomDates()">
         <input type="date" class="filter-select" id="top-end" onchange="onCustomDates()">
       </span>
@@ -2831,25 +2846,31 @@ function renderPeriodControl() {
   renderQFChips();
   var sel = document.getElementById('top-period');
   if (!sel) return;
+  // 'All' is no longer a standalone dropdown option — it lives inside the custom picker
   var pairs = [
-    ['All',       'All Time'],
     ['Today',     'Today'],
     ['MTD',       'MTD (Month to Date)'],
     ['YTD',       'YTD (Apr 1 – Today)'],
   ];
   ((D && D.fiscalYears) || []).forEach(function(fy) { pairs.push([fy, fy.replace(/^FY/, 'FY ')]); });
-  pairs.push(['Custom', 'Custom Range']);
+  pairs.push(['Custom', 'Custom']);
   sel.innerHTML = pairs.map(function(o) {
     return '<option value="' + o[0] + '">' + o[1] + '</option>';
   }).join('');
-  sel.value = currentPeriod;
-  if (!sel.value) { sel.value = 'All'; currentPeriod = 'All'; }
+  // 'All' (all-time) is surfaced via the "All" button inside the picker;
+  // map it to the "Custom" dropdown entry so the picker stays visible.
+  sel.value = (currentPeriod === 'All' || currentPeriod === 'Custom') ? 'Custom' : currentPeriod;
+  if (!sel.value) sel.value = 'Custom';
+  var showPicker = currentPeriod === 'All' || currentPeriod === 'Custom';
   var cu = document.getElementById('top-custom');
-  if (cu) cu.style.display = currentPeriod === 'Custom' ? 'inline-flex' : 'none';
+  if (cu) cu.style.display = showPicker ? 'inline-flex' : 'none';
   var st = document.getElementById('top-start');
   var en = document.getElementById('top-end');
   if (st) st.value = customStart;
   if (en) en.value = customEnd;
+  // Sync "All" button active state
+  var allBtn = document.getElementById('top-all-btn');
+  if (allBtn) allBtn.classList.toggle('active', currentPeriod === 'All');
 }
 
 function onPeriodSelect(val) {
@@ -2870,7 +2891,12 @@ function onCustomDates() {
   var en = document.getElementById('top-end');
   customStart = st ? st.value : '';
   customEnd   = en ? en.value : '';
-  if (customStart && customEnd) { _lastDashHash['combined'] = null; loadData(); }
+  if (customStart && customEnd) {
+    currentPeriod = 'Custom';
+    _prefetchedAuds = {};
+    _lastDashHash['combined'] = null;
+    loadData();
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
