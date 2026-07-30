@@ -7,27 +7,28 @@
 <title>Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 /* ===== Reset & Base ===== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-/* ── Apple-grade design system ──
-   Monochrome-first: white cards on #F5F5F7 wash, near-black ink, one blue accent (#0071E3).
-   iOS system colors appear ONLY as small dots, thin chips and chart fills.
-   Recykal green lives in the logo badge alone. */
+/* ── Recykal brand design system ──
+   Poppins typeface. Monochrome-first: white cards on #F5F5F7 wash, near-black
+   ink, Recykal Bright Blue accent (#005DFF). Brand hues (Bright Green #1DC797,
+   Medium Purple #8460D4, Midnight Blue #024C8A) appear as dots, chips & chart
+   fills; amber/red kept for functional review/rejected states. */
 /* Registered aura colors — lets the page's ambient hue crossfade smoothly
    when the vertical changes (browsers without @property simply snap). */
-@property --aura-a{syntax:'<color>';inherits:true;initial-value:#0071E322}
-@property --aura-b{syntax:'<color>';inherits:true;initial-value:#0071E312}
+@property --aura-a{syntax:'<color>';inherits:true;initial-value:#005DFF22}
+@property --aura-b{syntax:'<color>';inherits:true;initial-value:#005DFF12}
 
 :root{
   color-scheme:light;
   transition:--aura-a .9s cubic-bezier(.25,.1,.25,1),--aura-b .9s cubic-bezier(.25,.1,.25,1);
 
-  /* ── Ambient vertical aura — faint wash behind the cards ── */
-  --aura-a: rgba(0,113,227,.13);
-  --aura-b: rgba(0,113,227,.07);
+  /* ── Ambient vertical aura — faint wash behind the cards (Recykal blue) ── */
+  --aura-a: rgba(0,93,255,.12);
+  --aura-b: rgba(0,93,255,.06);
 
   /* ── Surfaces — Apple SF palette ── */
   --bg:      #FFFFFF;
@@ -46,26 +47,28 @@
   --txt2:    #6E6E73;   /* Apple secondary label */
   --txt3:    #86868B;   /* tertiary label — apple.com body-secondary grey, legible (was #AEAEB2) */
 
-  /* ── Single accent — Apple blue. Brand green lives only in the logo badge. ── */
-  --blue:      #0071E3;
-  --blue-ink:  #0066CC;
-  --blue2:     #0066CC;
-  --purple:    #AF52DE;
-  --duke:      #5856D6;
-  --accent-soft: rgba(0,113,227,.08);
+  /* ── Recykal brand palette — Bright Blue accent, brand green for success. ──
+        Bright Blue #005DFF · Midnight Blue #024C8A · Medium Purple #8460D4 ·
+        Bright Green #1DC797 · Dark Green #049769 (per Recykal Brand Guidelines). */
+  --blue:      #005DFF;   /* Bright Blue — primary accent */
+  --blue-ink:  #024C8A;   /* Midnight Blue — blue text/ink */
+  --blue2:     #024C8A;
+  --purple:    #8460D4;   /* Medium Purple */
+  --duke:      #8460D4;
+  --accent-soft: rgba(0,93,255,.08);
 
   /* ── Status ink (TAT / deltas) ── */
-  --green:   #049769;
+  --green:   #049769;   /* Dark Green — brand */
   --amber:   #B25000;
   --red:     #D70015;
 
-  /* ── Stage palette — iOS system colors: dots, chips & chart fills ONLY.
-        Never whole-card tints, never big numbers. ── */
+  /* ── Stage palette — brand hues as dots, chips & chart fills.
+        Amber/red kept for functional review/rejected states. ── */
   --st-total:      #8E8E93;   --st-total-bg:     #F2F2F7;   --st-total-tx:     #636366;
-  --st-draft:      #5856D6;   --st-draft-bg:     #EEEEFB;   --st-draft-tx:     #3634A3;
+  --st-draft:      #8460D4;   --st-draft-bg:     #F1ECFB;   --st-draft-tx:     #5B3FA8;
   --st-review:     #FF9500;   --st-review-bg:    #FFF4E5;   --st-review-tx:    #B25000;
-  --st-onboarded:  #34C759;   --st-onboarded-bg: #E9F9EE;   --st-onboarded-tx: #248A3D;
-  --st-transacted: #007AFF;   --st-transacted-bg:#E9F2FF;   --st-transacted-tx:#0066CC;
+  --st-onboarded:  #1DC797;   --st-onboarded-bg: #E3F8F1;   --st-onboarded-tx: #049769;
+  --st-transacted: #005DFF;   --st-transacted-bg:#E6EFFF;   --st-transacted-tx:#024C8A;
   --st-rejected:   #FF3B30;   --st-rejected-bg:  #FDECEB;   --st-rejected-tx:  #D70015;
 
   /* ── Elevation — borderless cards, one soft shadow ── */
@@ -73,7 +76,7 @@
   --shadow:      0 2px 6px rgba(0,0,0,.04), 0 8px 28px rgba(0,0,0,.07);
   --shadow-lg:   0 4px 12px rgba(0,0,0,.05), 0 20px 48px rgba(0,0,0,.10);
   --shadow-card: 0 0 0 .5px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.05), 0 6px 20px rgba(0,0,0,.05);
-  --ring:        0 0 0 3px rgba(0,113,227,.22);
+  --ring:        0 0 0 3px rgba(0,93,255,.22);
 
   /* ── Geometry & motion — Apple 8-pt grid, easing curves ── */
   --r:    18px;   /* card radius — Apple.com card */
@@ -89,15 +92,14 @@
 }
 
 html{
-  font-family:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+  font-family:'Poppins','Inter',system-ui,-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
   background:var(--bg2);
   color:var(--txt);
-  font-size:14px;
+  font-size:13.5px;   /* Poppins runs slightly larger than Inter — trim base to keep density */
   scroll-behavior:smooth;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   text-rendering:optimizeLegibility;
-  font-feature-settings:'cv02','cv03','cv04','cv11';  /* Inter optical features */
 }
 body{min-height:100vh;background:transparent;position:relative}
 
@@ -122,7 +124,7 @@ body{min-height:100vh;background:transparent;position:relative}
 a{color:var(--blue);text-decoration:none}
 button{cursor:pointer;font-family:inherit;color:inherit}
 select,input{font-family:inherit}
-::selection{background:rgba(0,113,227,.16)}
+::selection{background:rgba(0,93,255,.16)}
 
 /* ── Accessibility: visible keyboard focus, everywhere ── */
 :focus{outline:none}
@@ -536,7 +538,7 @@ thead th.sort-desc::after{content:' ↓';color:var(--txt)}
 tbody tr{border-bottom:1px solid var(--border);transition:background .15s var(--ease)}
 tbody tr:last-child{border-bottom:none}
 tbody tr:nth-child(even){background:rgba(120,120,128,.05)}
-tbody tr:hover,tbody tr.vd-tr:hover{background:rgba(0,113,227,.05)}
+tbody tr:hover,tbody tr.vd-tr:hover{background:rgba(0,93,255,.05)}
 tbody td{padding:13px 16px;color:var(--txt);vertical-align:middle;white-space:nowrap;font-weight:400;font-size:13.5px}
 /* Primary column (record name) — semibold reads cleaner than browser-default bold */
 tbody td strong{font-weight:600;letter-spacing:-.1px}
@@ -799,7 +801,7 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .km-mb-sub{font-size:10px;color:var(--txt3);margin-top:2px}
 /* Footer */
 .km-foot{padding:12px 18px 20px;border-top:1px solid var(--border);text-align:center}
-.km-foot-link{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:var(--accent,#007AFF);cursor:pointer;text-decoration:none;background:none;border:none;padding:0}
+.km-foot-link{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:var(--accent,#005DFF);cursor:pointer;text-decoration:none;background:none;border:none;padding:0}
 /* ===== Record Detail Modal — Apple sheet style ===== */
 @keyframes rmUp{from{opacity:0;transform:translateY(32px) scale(.97)}to{opacity:1;transform:none}}
 #rec-modal{position:fixed;inset:0;z-index:700;display:flex;align-items:flex-end;justify-content:center;padding:0}
@@ -1070,13 +1072,13 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
   --gp-orange:      #FF9500;
   --gp-orange-ink:  #B25000;
   --gp-orange-bg:   #FFF4E5;
-  --gp-green:       #34C759;
+  --gp-green:       #1DC797;
   --gp-green-bg:    #E9F9EE;
   --gp-gold:        #FFCC00;
   --gp-gold-bg:     #FFF8DE;
   --gp-gold-ink:    #997404;
-  --gp-blue:        #007AFF;
-  --gp-purple:      #AF52DE;
+  --gp-blue:        #005DFF;
+  --gp-purple:      #8460D4;
   --gp-red:         #FF3B30;
   --gp-red-bg:      #FDECEB;
   --gp-red-ink:     #D70015;
@@ -1243,7 +1245,7 @@ body.view-gst #main{background:transparent}
 .gp-table tbody tr{border-bottom:1px solid var(--gp-border);transition:background .15s}
 .gp-table tbody tr:last-child{border-bottom:none}
 .gp-table tbody tr:nth-child(even){background:rgba(120,120,128,.05)}
-.gp-table tbody tr:hover{background:rgba(0,113,227,.05)}
+.gp-table tbody tr:hover{background:rgba(0,93,255,.05)}
 .gp-table td{padding:11px 14px;color:var(--gp-ink);vertical-align:middle;white-space:nowrap;font-size:13.5px}
 .gp-vname{font-weight:650;color:var(--gp-ink)}
 .gp-gstno{font-size:11px;color:var(--gp-ink2);font-variant-numeric:tabular-nums}
@@ -1615,7 +1617,7 @@ body.view-gst #vert-tabs-bar{display:none}
 
 /* Flash ring when scrolled-to */
 @keyframes vsFlash{
-  0%  {box-shadow:0 0 0 0 rgba(0,113,227,.20)}
+  0%  {box-shadow:0 0 0 0 rgba(0,93,255,.20)}
   40% {box-shadow:0 0 0 14px transparent}
   100%{box-shadow:none}
 }
@@ -1849,10 +1851,10 @@ body.view-gst #vert-tabs-bar{display:none}
 .vkpi-card.vk-warn .vkpi-val{color:var(--st-rejected-tx)}
 /* Quality summary cards */
 .vkpi-card.vk-rating .vkpi-icon{background:rgba(255,159,10,.14);color:#FF9F0A}
-.vkpi-card.vk-osv    .vkpi-icon{background:rgba(0,122,255,.12);color:#007AFF}
+.vkpi-card.vk-osv    .vkpi-icon{background:rgba(0,122,255,.12);color:#005DFF}
 .vkpi-card.vk-docs   .vkpi-icon{background:rgba(48,209,88,.13);color:#30D158}
 .vkpi-card.vk-rating .vkpi-val{color:#E48800;font-size:21px}
-.vkpi-card.vk-osv    .vkpi-val{color:#007AFF;font-size:21px}
+.vkpi-card.vk-osv    .vkpi-val{color:#005DFF;font-size:21px}
 .vkpi-card.vk-docs   .vkpi-val{color:var(--st-onboarded-tx);font-size:21px}
 @media(prefers-color-scheme:dark){.vkpi-card.vk-rating .vkpi-val{color:#FF9F0A}}
 /* FY sparkline — three mini bars, latest year accented */
@@ -1870,7 +1872,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .vpipe-card{cursor:pointer;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
 .vpipe-card:hover{transform:scale(1.015);box-shadow:var(--shadow-lg)!important}
 .vpipe-card.det-active{
-  box-shadow:0 0 0 1.5px rgba(0,113,227,.45),var(--shadow)!important;
+  box-shadow:0 0 0 1.5px rgba(0,93,255,.45),var(--shadow)!important;
 }
 /* Pipeline pair: top-pack the content so the Seller/Buyer FY tables line up
    row-for-row across the pair. Any height difference (e.g. the Seller's quality
@@ -2126,7 +2128,7 @@ body.view-gst #vert-tabs-bar{display:none}
   border-bottom:1px solid var(--border);
   background-color:var(--card);
   /* tint sweep in the vertical's hue — marks this as the workspace card */
-  background-image:linear-gradient(90deg,var(--vc-soft,rgba(0,113,227,.07)),rgba(255,255,255,0) 58%);
+  background-image:linear-gradient(90deg,var(--vc-soft,rgba(0,93,255,.07)),rgba(255,255,255,0) 58%);
   flex-wrap:wrap;
   position:relative;
 }
@@ -2161,7 +2163,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .docs-hd{
   display:flex;align-items:center;gap:12px;flex-wrap:wrap;
   padding:18px 22px;border-bottom:1px solid var(--border);
-  background:linear-gradient(180deg,rgba(0,113,227,.035),transparent);
+  background:linear-gradient(180deg,rgba(0,93,255,.035),transparent);
 }
 .docs-hd-ic{
   width:34px;height:34px;border-radius:9px;flex-shrink:0;
@@ -2188,7 +2190,7 @@ body.view-gst #vert-tabs-bar{display:none}
   transition:border-color .15s var(--ease),box-shadow .15s var(--ease),background .15s var(--ease);
 }
 .docs-search input::placeholder{color:var(--txt3)}
-.docs-search input:focus{background:var(--card);border-color:rgba(0,113,227,.35);box-shadow:var(--ring)}
+.docs-search input:focus{background:var(--card);border-color:rgba(0,93,255,.35);box-shadow:var(--ring)}
 .docs-search svg{position:absolute;left:11px;width:14px;height:14px;color:var(--txt3);pointer-events:none}
 .docs-tbl-wrap{overflow-x:auto;max-height:520px;overflow-y:auto}
 .docs-tbl{width:100%;border-collapse:collapse;font-size:13px}
@@ -2202,7 +2204,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .docs-tbl tbody td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--txt);vertical-align:middle;white-space:nowrap}
 .docs-tbl tbody tr:last-child td{border-bottom:none}
 .docs-tbl tbody tr{cursor:pointer;transition:background .15s var(--ease)}
-.docs-tbl tbody tr:hover{background:rgba(0,113,227,.05)}
+.docs-tbl tbody tr:hover{background:rgba(0,93,255,.05)}
 .docs-nm{font-weight:600;letter-spacing:-.1px}
 .docs-nm-sub{display:block;font-size:11px;color:var(--txt3);font-family:monospace;margin-top:2px;font-weight:400}
 .docs-cat{font-size:11px;font-weight:600;padding:2px 9px;border-radius:var(--pill);background:var(--seg-track);color:var(--txt2)}
@@ -2243,7 +2245,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .dm-badge{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:var(--pill);white-space:nowrap;letter-spacing:.02em}
 .dm-badge.sub{background:rgba(48,209,88,.14);color:#248A3D}
 .dm-badge.miss{background:var(--seg-track);color:var(--txt2)}
-.dm-badge.ver{background:rgba(0,122,255,.12);color:#0066CC}
+.dm-badge.ver{background:rgba(0,122,255,.12);color:#024C8A}
 .dm-badge.pend{background:rgba(255,149,0,.14);color:#B25000}
 .dm-badge.mand{background:rgba(88,86,214,.12);color:#4a48b5}
 .dm-view{font-size:10.5px;font-weight:600;color:var(--blue);text-decoration:none;white-space:nowrap}
@@ -2421,7 +2423,7 @@ body.view-gst #vert-tabs-bar{display:none}
   padding:10px 12px;border-radius:10px;cursor:pointer;
   transition:background .12s;
 }
-.sp-item:hover,.sp-item.sp-active{background:rgba(0,113,227,.08)}
+.sp-item:hover,.sp-item.sp-active{background:rgba(0,93,255,.08)}
 .sp-item.sp-active{background:var(--blue);color:#fff}
 .sp-item-ic{
   width:32px;height:32px;border-radius:8px;flex-shrink:0;
@@ -2613,8 +2615,8 @@ var gpYear = 'All';         // active financial-year filter ('All' | 'FY 21-22' 
 var gpFilters = { search: '', status: 'All', vertical: 'All', msme: 'All', itc: 'All' };
 var gpSort = { key: 'total', dir: -1 };  // vendor table sort (default: largest balance first)
 /* iOS system palette — fixed categorical order, never cycled */
-var GP_STATUS_COLORS = ['#0071E3', '#34C759', '#AF52DE', '#FF9500', '#00C7BE', '#5856D6', '#A2845E'];
-var GP_VERT_COLORS   = ['#0071E3', '#34C759', '#AF52DE', '#5856D6', '#FF9500', '#00C7BE', '#A2845E', '#8E8E93'];
+var GP_STATUS_COLORS = ['#005DFF', '#1DC797', '#8460D4', '#FF9500', '#00C7BE', '#8460D4', '#A2845E'];
+var GP_VERT_COLORS   = ['#005DFF', '#1DC797', '#8460D4', '#8460D4', '#FF9500', '#00C7BE', '#A2845E', '#8E8E93'];
 var GP_MAX_ROWS = 300;      // vendor rows rendered at once
 
 // Display names for raw pipeline statuses (values stay raw for filtering)
@@ -3094,11 +3096,11 @@ function getVertCfg() {
 // ── Signature colour per vertical — the eight Recykal primary-palette hues.
 //    c = accent · ink = darker text-safe variant of the same hue.
 var VERT_COLORS = {
-  OMP:           { c: '#0071E3', ink: '#0066CC' },   // Apple blue
-  EPR:           { c: '#AF52DE', ink: '#8944AB' },   // iOS purple
-  Marketplace:   { c: '#5856D6', ink: '#3634A3' },   // iOS indigo
+  OMP:           { c: '#005DFF', ink: '#024C8A' },   // Apple blue
+  EPR:           { c: '#8460D4', ink: '#8944AB' },   // iOS purple
+  Marketplace:   { c: '#8460D4', ink: '#3634A3' },   // iOS indigo
   InfraBusiness: { c: '#32ADE6', ink: '#0071A4' },   // iOS cyan
-  AFR:           { c: '#34C759', ink: '#248A3D' },   // iOS green
+  AFR:           { c: '#1DC797', ink: '#248A3D' },   // iOS green
   Recommerce:    { c: '#00C7BE', ink: '#0C817B' },   // iOS mint
   DRS:           { c: '#A2845E', ink: '#7A6248' },   // iOS brown
   Others:        { c: '#8E8E93', ink: '#636366' },   // iOS gray
@@ -3591,7 +3593,7 @@ function renderVertKPIs(key) {
   var icUsers  = svg('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>');
 
   // FY sparklines from real breakdown data (skipped when <2 years exist)
-  var spTotal = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'total'),      'var(--vc, #0071E3)', false);
+  var spTotal = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'total'),      'var(--vc, #005DFF)', false);
   var spOnb   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'onboarded'),  '#30D158', true);
   var spTxn   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'transacted'), 'var(--st-transacted)', false);
 
@@ -3600,7 +3602,7 @@ function renderVertKPIs(key) {
   var compPct = totAll > 0 ? Math.round(((compS + compB) / totAll) * 100) : 0;
   var meter   = '<div class="vkpi-meter" title="' + compPct + '% of pipeline onboarded"><i style="width:' + compPct + '%"></i></div>';
 
-  var S = '#34C759', B = '#007AFF';
+  var S = '#1DC797', B = '#005DFF';
   var G2 = 'rgba(52,199,89,.38)', B2 = 'rgba(0,122,255,.38)';
   // Plastic vs Metal combined (S + B) per metric
   var PC = '#FF9F0A', MC = '#8E8E93';
@@ -3694,7 +3696,7 @@ function openKpiModal(cardId) {
   var modal = document.getElementById('kpi-modal');
   if (!el || !modal) return;
 
-  var S = '#34C759', B = '#007AFF';
+  var S = '#1DC797', B = '#005DFF';
   var PC = '#FF9F0A', MC = '#8E8E93';
 
   // ── layout primitives ────────────────────────────────────────
@@ -3777,7 +3779,7 @@ function openKpiModal(cardId) {
             + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
             + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
             + '<span class="km-vbadge" style="background:' + cBg + ';color:' + cClr + '">' + cLbl + '</span>'
-            + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#0066CC;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.category) + '</span>' : '')
+            + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.category) + '</span>' : '')
             + '</div>';
         }
         var vr = '<div class="km-vrow"' + (sp.mode === 'docs' && v.missingDocs && v.missingDocs.length ? ' style="flex-wrap:wrap;align-items:flex-start"' : '') + '>';
@@ -4016,13 +4018,13 @@ function openKpiModal(cardId) {
             var audLabel = aud === 'seller' ? 'Seller' : 'Buyer';
             var stLbl    = isOld ? 'Existing' : 'New';
             var stBg     = isOld ? 'rgba(142,142,147,.15)' : (aud === 'seller' ? 'rgba(48,209,88,.14)' : 'rgba(0,122,255,.12)');
-            var stClr    = isOld ? 'var(--txt2)'           : (aud === 'seller' ? '#248A3D'             : '#0066CC');
+            var stClr    = isOld ? 'var(--txt2)'           : (aud === 'seller' ? '#248A3D'             : '#024C8A');
             h += filtered.slice(0, 80).map(function(r) {
               return '<div class="km-vrow" style="flex-wrap:wrap;gap:4px 8px;align-items:center">'
                 + '<span class="km-vname" style="flex:1;min-width:120px">' + esc(r.name || 'Unknown') + '</span>'
                 + '<span style="font-size:9.5px;font-family:monospace;color:var(--txt3);flex-shrink:0">' + esc(r.gstin || '—') + '</span>'
-                + '<span class="km-vbadge" style="background:' + (aud === 'seller' ? 'rgba(48,209,88,.14)' : 'rgba(0,122,255,.12)') + ';color:' + (aud === 'seller' ? '#248A3D' : '#0066CC') + '">' + esc(audLabel) + '</span>'
-                + '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#0066CC">' + esc(r.vertical || 'OMP') + '</span>'
+                + '<span class="km-vbadge" style="background:' + (aud === 'seller' ? 'rgba(48,209,88,.14)' : 'rgba(0,122,255,.12)') + ';color:' + (aud === 'seller' ? '#248A3D' : '#024C8A') + '">' + esc(audLabel) + '</span>'
+                + '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A">' + esc(r.vertical || 'OMP') + '</span>'
                 + '<span class="km-vbadge" style="background:' + stBg + ';color:' + stClr + '">' + stLbl + '</span>'
                 + '</div>';
             }).join('');
@@ -4051,7 +4053,7 @@ function openKpiModal(cardId) {
   var isQuality = isQualityCard;
   if (isQuality) {
     var qd = qualityData || { success: false };
-    var S2 = '#34C759', B2 = '#007AFF';
+    var S2 = '#1DC797', B2 = '#005DFF';
 
     // Reusable star-distribution builder
     var starBarsHtml = function(dist, rated, vendors) {
@@ -4082,7 +4084,7 @@ function openKpiModal(cardId) {
                   + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
                   + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
                   + '<span class="km-vrating" style="color:' + bcol + '">' + v.rating.toFixed(1) + '★</span>'
-                  + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#0066CC;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.category) + '</span>' : '')
+                  + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.category) + '</span>' : '')
                   + '</div>';
               }).join('')
             + '</div>';
@@ -4136,7 +4138,7 @@ function openKpiModal(cardId) {
     } else if (cardId === 'osv') {
       title    = 'OSV Consent';
       subtitle = 'Based on OSV Consent field — Onboarded Open Marketplace sellers only';
-      iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+      iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#005DFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
       if (!qd.success) {
         content = noDataMsg;
       } else {
@@ -4694,7 +4696,7 @@ function docCompleteness(entity) {
 
 // Completeness colour ramp (accent used only for meaningful emphasis).
 function docPctColor(pct) {
-  if (pct >= 100) return '#34C759';
+  if (pct >= 100) return '#1DC797';
   if (pct >= 67)  return 'var(--blue)';
   if (pct >= 34)  return '#FF9500';
   return '#FF3B30';
@@ -5167,7 +5169,7 @@ function renderBizRail(cfg, vs) {
 }
 
 // Fixed accent per region so the split reads as a consistent legend.
-var REGION_COLORS = { North: '#007AFF', South: '#34C759', Other: '#8E8E93' };
+var REGION_COLORS = { North: '#005DFF', South: '#1DC797', Other: '#8E8E93' };
 // Frontend mirror of the backend stateToRegion_ (two-way North / South split) —
 // lets the Regional Split card populate from loaded detail rows even before
 // Code.gs is redeployed, exactly like the GMV-by-category fallback.
@@ -6417,7 +6419,7 @@ function renderCatDetailCard(c) {
     { key: 'rejected',  n: c.rejected  || 0 },
   ];
 
-  var vtCols = ['#007AFF', '#34C759', '#FF9F0A', '#AF52DE', '#5AC8FA', '#8E8E93'];
+  var vtCols = ['#005DFF', '#1DC797', '#FF9F0A', '#8460D4', '#567DE8', '#8E8E93'];
   var vts    = (c.vendorTypes || []).filter(function(v) { return v.count > 0; });
   var vtTot  = vts.reduce(function(s, v) { return s + v.count; }, 0) || ctot;
 
