@@ -1965,6 +1965,31 @@ body.view-gst #vert-tabs-bar{display:none}
 .biz-reg-vl em{font-style:normal;font-weight:500;color:var(--txt3);font-size:10px;margin-left:5px}
 .biz-reg-bar{height:5px;border-radius:3px;background:var(--bg2);overflow:hidden}
 .biz-reg-fill{height:100%;border-radius:3px;transition:width .6s var(--ease-out)}
+.biz-reg-btn{cursor:pointer;margin:0 -6px;padding-left:6px;padding-right:6px;border-radius:7px;transition:background .13s}
+.biz-reg-btn:hover{background:var(--hover)}
+.biz-reg-btn:active{background:var(--seg-track)}
+/* ── Region detail modal ── */
+.rgn-aud{display:flex;gap:6px;padding:12px 18px}
+.rgn-aud-btn{flex:1;font-size:12px;font-weight:600;padding:8px 0;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--txt2);cursor:pointer;transition:all .15s}
+.rgn-aud-btn.on{background:var(--txt);color:#fff;border-color:var(--txt)}
+.rgn-tiles{display:flex;flex-wrap:wrap;gap:8px;padding:4px 18px 14px;border-bottom:1px solid var(--border)}
+.rgn-tile{flex:1 1 auto;min-width:58px;background:var(--bg2);border-radius:10px;padding:10px 10px;text-align:center}
+.rgn-tile-v{font-size:16px;font-weight:700;color:var(--txt);letter-spacing:-.3px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rgn-tile-l{font-size:9.5px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em;margin-top:3px;white-space:nowrap}
+.rgn-group{padding:0}
+.rgn-group-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 6px;position:sticky;top:0;background:var(--card);z-index:1}
+.rgn-group-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt2)}
+.rgn-group-ct{font-size:11px;font-weight:700;color:var(--txt3);font-variant-numeric:tabular-nums}
+.rgn-row{display:flex;align-items:center;gap:10px;padding:9px 18px;border-top:1px solid var(--border)}
+.rgn-row-main{flex:1;min-width:0}
+.rgn-row-nm{font-size:13px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rgn-row-sub{font-size:11px;color:var(--txt3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.rgn-row-side{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.rgn-gmv{font-size:11.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+.rgn-gst{font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.rgn-gst.ok{background:var(--st-onboarded-bg);color:var(--st-onboarded-tx)}
+.rgn-gst.bad{background:var(--st-rejected-bg);color:var(--st-rejected-tx)}
+.rgn-more{font-size:11px;color:var(--txt3);padding:8px 18px;text-align:center}
 /* Vendor Rating / OSV Consent mini-cards */
 .biz-q{
   display:flex;align-items:center;gap:12px;
@@ -5209,10 +5234,13 @@ function _buildRailRegions(vs) {
     var p   = denom > 0 ? (v / denom * 100) : 0;
     var col = REGION_COLORS[r.region] || REGION_COLORS.Other;
     var gmv = (r.txnValue != null && r.txnValue > 0) ? ' · ' + fmtINR(r.txnValue) : '';
-    return '<div class="biz-reg" title="' + esc(r.region) + ' — ' + fmt(v)
-      + (useOnb ? ' onboarded' : ' in pipeline') + gmv + '">'
+    var rg  = esc(r.region);
+    return '<div class="biz-reg biz-reg-btn" role="button" tabindex="0"'
+      + ' title="' + rg + ' — ' + fmt(v) + (useOnb ? ' onboarded' : ' in pipeline') + gmv + ' · click for details"'
+      + ' onclick="openRegionModal(\'' + rg + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openRegionModal(\'' + rg + '\')}">'
       + '<div class="biz-reg-top">'
-      +   '<span class="biz-reg-nm"><i class="biz-reg-dot" style="background:' + col + '"></i>' + esc(r.region) + '</span>'
+      +   '<span class="biz-reg-nm"><i class="biz-reg-dot" style="background:' + col + '"></i>' + rg + '</span>'
       +   '<span class="biz-reg-vl">' + fmt(v) + '<em>' + p.toFixed(0) + '%</em></span>'
       + '</div>'
       + '<div class="biz-reg-bar"><div class="biz-reg-fill" style="width:' + p.toFixed(1) + '%;background:' + col + '"></div></div>'
@@ -5225,6 +5253,159 @@ function _buildRailRegions(vs) {
     + '</div>'
     + rows
     + '</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REGION DETAIL MODAL — click a North/South row to see the vendors
+// in that region, grouped by onboarding stage, with a Sellers/Buyers
+// toggle. Rows are fetched per audience on demand (cached), mirroring
+// the GMV-by-category modal.
+// ═══════════════════════════════════════════════════════════════
+var _rgn = { region: '', key: '', pKey: '', aud: 'seller', rows: { seller: null, buyer: null } };
+
+function openRegionModal(region) {
+  var key = (typeof activeVertKey !== 'undefined' && activeVertKey) || selectedVert;
+  if (!key) return;
+  var pKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  // Reset the row cache when the vertical or period changed since last open.
+  if (_rgn.key !== key || _rgn.pKey !== pKey) _rgn.rows = { seller: null, buyer: null };
+  _rgn.region = region;
+  _rgn.key    = key;
+  _rgn.pKey   = pKey;
+  _rgn.aud    = (selectedAud === 'buyer') ? 'buyer' : 'seller';
+  // Seed from already-loaded detail rows when they match the active audience.
+  if (_rgn.rows[_rgn.aud] == null && selectedVert === key
+      && Array.isArray(vertRows) && vertRows.length
+      && (selectedAud === 'buyer' ? 'buyer' : 'seller') === _rgn.aud) {
+    _rgn.rows[_rgn.aud] = vertRows.slice();
+  }
+  _regionShow();
+}
+
+function _regionSetAud(aud) {
+  if (_rgn.aud === aud) return;
+  _rgn.aud = aud;
+  _regionShow();
+}
+
+// Render if rows for the active audience are available, else fetch them first.
+function _regionShow() {
+  if (_rgn.rows[_rgn.aud] == null) { _regionFetch(_rgn.aud); return; }
+  _regionRender(false);
+}
+
+function _regionFetch(aud) {
+  _regionRender(true);   // paint the loading state immediately
+  var f = { audience: aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      try {
+        var d = JSON.parse(res);
+        _rgn.rows[aud] = (d && d.success && Array.isArray(d.rows)) ? d.rows : [];
+      } catch (e) { _rgn.rows[aud] = []; }
+      if (_rgn.aud === aud) _regionShow();
+    })
+    .withFailureHandler(function() {
+      _rgn.rows[aud] = [];
+      if (_rgn.aud === aud) _regionRender(false);
+    })
+    .getVerticalRows(_rgn.key, JSON.stringify(f));
+}
+
+function _regionRender(loading) {
+  var el = document.getElementById('km-pn');
+  var modal = document.getElementById('kpi-modal');
+  if (!el || !modal) return;
+  var region = _rgn.region, aud = _rgn.aud;
+  var cfg = getVertCfg().filter(function(c) { return c.key === _rgn.key; })[0];
+  var vname = (cfg && cfg.name) || _rgn.key || '';
+  var audLbl = aud === 'seller' ? 'Sellers' : 'Buyers';
+  var col = REGION_COLORS[region] || REGION_COLORS.Other;
+
+  var head = '<div class="km-head">'
+    + '<div style="display:flex;align-items:center;min-width:0">'
+    + '<div class="km-icon" style="color:' + col + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>'
+    + '<div class="km-htxt"><div class="km-title">' + esc(region) + ' Region</div>'
+    + '<div class="km-sub">' + esc(vname) + ' · ' + audLbl + '</div></div></div>'
+    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
+    + '</div>';
+
+  var audToggle = '<div class="rgn-aud">'
+    + '<button class="rgn-aud-btn' + (aud === 'seller' ? ' on' : '') + '" onclick="_regionSetAud(\'seller\')">Sellers</button>'
+    + '<button class="rgn-aud-btn' + (aud === 'buyer'  ? ' on' : '') + '" onclick="_regionSetAud(\'buyer\')">Buyers</button>'
+    + '</div>';
+
+  if (loading) {
+    el.innerHTML = head + audToggle
+      + '<div style="padding:40px 18px;text-align:center;color:var(--txt3);font-size:13px">Loading ' + esc(audLbl.toLowerCase()) + '…</div>';
+    if (!modal.classList.contains('km-open')) { modal.classList.add('km-open'); document.addEventListener('keydown', _kpiEsc); }
+    return;
+  }
+
+  var all = (_rgn.rows[aud] || []).filter(function(r) { return _stateToRegionFE(r.state) === region; });
+  // Summary stats for this region + audience.
+  var sm = { total: all.length, onb: 0, rev: 0, draft: 0, rej: 0, gmv: 0, hasGmv: false };
+  all.forEach(function(r) {
+    if (r.status === 'COMPLETED') sm.onb++;
+    else if (r.status === 'IN_REVIEW') sm.rev++;
+    else if (r.status === 'DRAFT') sm.draft++;
+    else if (r.status === 'REJECTED') sm.rej++;
+    if (r.txnValue != null && r.txnValue > 0) { sm.gmv += Number(r.txnValue); sm.hasGmv = true; }
+  });
+  var tile = function(v, l) {
+    return '<div class="rgn-tile"><div class="rgn-tile-v">' + v + '</div><div class="rgn-tile-l">' + l + '</div></div>';
+  };
+  var tiles = '<div class="rgn-tiles">'
+    + tile(fmt(sm.total), 'Total')
+    + tile(fmt(sm.onb), 'Onboarded')
+    + tile(fmt(sm.rev), 'In Review')
+    + tile(fmt(sm.draft), 'Draft')
+    + (aud === 'seller' && sm.hasGmv ? tile(fmtINR(sm.gmv), 'GMV') : '')
+    + '</div>';
+
+  var body;
+  if (!all.length) {
+    body = '<div style="padding:36px 18px;text-align:center;color:var(--txt3);font-size:13px">No '
+      + esc(audLbl.toLowerCase()) + ' in ' + esc(region) + ' for the selected period</div>';
+  } else {
+    // Group by onboarding stage — onboarded first — for an at-a-glance structure.
+    var groups = [
+      ['COMPLETED', 'Onboarded'], ['IN_REVIEW', 'In Review'],
+      ['DRAFT', 'Draft'], ['REJECTED', 'Rejected'],
+    ];
+    var MAXG = 60;   // cap rows per group so the modal stays snappy
+    body = groups.map(function(g) {
+      var list = all.filter(function(r) { return r.status === g[0]; })
+        .sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0) || String(a.name || '').localeCompare(String(b.name || '')); });
+      if (!list.length) return '';
+      var shown = list.slice(0, MAXG);
+      var rowsHtml = shown.map(function(r) {
+        var meta = [r.id ? '#' + esc(r.id) : '', esc(r.category || ''), esc(r.state || '')]
+          .filter(Boolean).join(' · ');
+        var gstChip = r.hasGST
+          ? '<span class="rgn-gst ok" title="' + esc(r.gstin || '') + '">✓ GST</span>'
+          : '<span class="rgn-gst bad">✗ GST</span>';
+        var gmvChip = (r.txnValue != null && r.txnValue > 0)
+          ? '<span class="rgn-gmv">' + fmtINR(r.txnValue) + '</span>' : '';
+        return '<div class="rgn-row">'
+          + '<div class="rgn-row-main"><div class="rgn-row-nm">' + esc(r.name || '—') + '</div>'
+          +   '<div class="rgn-row-sub">' + meta + '</div></div>'
+          + '<div class="rgn-row-side">' + gmvChip + gstChip + '</div>'
+          + '</div>';
+      }).join('');
+      var more = list.length > MAXG
+        ? '<div class="rgn-more">+ ' + fmt(list.length - MAXG) + ' more</div>' : '';
+      return '<div class="rgn-group">'
+        + '<div class="rgn-group-hd"><span class="rgn-group-ttl">' + g[1] + '</span>'
+        +   '<span class="rgn-group-ct">' + fmt(list.length) + '</span></div>'
+        + rowsHtml + more
+        + '</div>';
+    }).join('');
+  }
+
+  el.innerHTML = head + audToggle + tiles + body;
+  if (!modal.classList.contains('km-open')) { modal.classList.add('km-open'); document.addEventListener('keydown', _kpiEsc); }
 }
 
 // Vendor Rating + OSV Consent mini-cards for the rail. qc null → "Syncing…".
