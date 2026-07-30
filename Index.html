@@ -1944,6 +1944,16 @@ body.view-gst #vert-tabs-bar{display:none}
 }
 .biz-catrow .bc-val{font-size:13px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
 .biz-empty{font-size:12px;color:var(--txt3);padding:14px 2px;text-align:center}
+/* Regional Split rows — label + share value + proportional bar */
+.biz-reg{padding:8px 2px 9px;border-bottom:1px solid var(--border)}
+.biz-reg:last-of-type{border-bottom:none}
+.biz-reg-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.biz-reg-nm{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--txt);min-width:0}
+.biz-reg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.biz-reg-vl{font-size:12px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0}
+.biz-reg-vl em{font-style:normal;font-weight:500;color:var(--txt3);font-size:10px;margin-left:5px}
+.biz-reg-bar{height:5px;border-radius:3px;background:var(--bg2);overflow:hidden}
+.biz-reg-fill{height:100%;border-radius:3px;transition:width .6s var(--ease-out)}
 /* Vendor Rating / OSV Consent mini-cards */
 .biz-q{
   display:flex;align-items:center;gap:12px;
@@ -5048,7 +5058,13 @@ function renderBizRail(cfg, vs) {
          + '<div class="biz-gmv"><div class="biz-sk" style="width:40%"></div>'
          + '<div class="biz-sk" style="width:70%;height:22px;margin-top:8px"></div></div>'
          + '<div class="biz-sk" style="width:100%"></div>'
-         + '<div class="biz-sk" style="width:100%"></div></div>')
+         + '<div class="biz-sk" style="width:100%"></div></div>'
+         + '<div class="biz-card">'
+         + '<div class="biz-hd"><div class="biz-sk" style="width:45%;height:14px"></div>'
+         + '<div class="biz-sk" style="width:60%"></div></div>'
+         + '<div class="biz-sk" style="width:100%;height:16px;margin:8px 0"></div>'
+         + '<div class="biz-sk" style="width:100%;height:16px;margin:8px 0"></div>'
+         + '<div class="biz-sk" style="width:100%;height:16px;margin:8px 0"></div></div>')
       : '';
     rail.innerHTML = sk + (isOMP ? _buildRailQual(null, vname) : '');
     return;
@@ -5088,12 +5104,56 @@ function renderBizRail(cfg, vs) {
     + gmvBlock
     + '</div>';
 
+  // Region-wise bifurcation card — onboarded sellers by zonal region.
+  var regionCard = _buildRailRegions(vs);
+
   // Vendor Rating / OSV Consent — OMP only (that's where the fields exist).
   var qual = isOMP
     ? _buildRailQual(qualityData && qualityData.success ? (qualityData.seller || {}) : null, vname)
     : '';
 
-  rail.innerHTML = card + qual;
+  rail.innerHTML = card + regionCard + qual;
+}
+
+// Fixed accent per region so the split reads as a consistent legend.
+var REGION_COLORS = {
+  North: '#007AFF', South: '#34C759', West: '#AF52DE',
+  East: '#FF9500', Central: '#FF2D55', Northeast: '#5856D6', Other: '#8E8E93',
+};
+// Region-wise bifurcation card for the Business Insights rail. Shows onboarded
+// sellers per region with a proportional share bar; empty when no region data.
+function _buildRailRegions(vs) {
+  var regs = (vs && vs.regions ? vs.regions : [])
+    .filter(function(r) { return (r.total || 0) > 0; });
+  if (!regs.length) return '';
+  // Prefer onboarded counts; fall back to total pipeline if nothing onboarded yet.
+  var onbSum = regs.reduce(function(s, r) { return s + (r.onboarded || 0); }, 0);
+  var useOnb = onbSum > 0;
+  var metric = function(r) { return useOnb ? (r.onboarded || 0) : (r.total || 0); };
+  var sorted = regs.slice().sort(function(a, b) { return metric(b) - metric(a); });
+  var denom  = sorted.reduce(function(s, r) { return s + metric(r); }, 0);
+  var top    = sorted.slice(0, 6);
+  var rows = top.map(function(r) {
+    var v   = metric(r);
+    var p   = denom > 0 ? (v / denom * 100) : 0;
+    var col = REGION_COLORS[r.region] || REGION_COLORS.Other;
+    var gmv = (r.txnValue != null && r.txnValue > 0) ? ' · ' + fmtINR(r.txnValue) : '';
+    return '<div class="biz-reg" title="' + esc(r.region) + ' — ' + fmt(v)
+      + (useOnb ? ' onboarded' : ' in pipeline') + gmv + '">'
+      + '<div class="biz-reg-top">'
+      +   '<span class="biz-reg-nm"><i class="biz-reg-dot" style="background:' + col + '"></i>' + esc(r.region) + '</span>'
+      +   '<span class="biz-reg-vl">' + fmt(v) + '<em>' + p.toFixed(0) + '%</em></span>'
+      + '</div>'
+      + '<div class="biz-reg-bar"><div class="biz-reg-fill" style="width:' + p.toFixed(1) + '%;background:' + col + '"></div></div>'
+      + '</div>';
+  }).join('');
+  return '<div class="biz-card">'
+    + '<div class="biz-hd">'
+    +   '<div class="biz-hd-ttl">Regional Split</div>'
+    +   '<div class="biz-hd-sub">' + (useOnb ? 'Onboarded sellers by region' : 'Pipeline by region') + '</div>'
+    + '</div>'
+    + rows
+    + '</div>';
 }
 
 // Vendor Rating + OSV Consent mini-cards for the rail. qc null → "Syncing…".
