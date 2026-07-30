@@ -678,6 +678,74 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .aud-tab{transition:background .18s var(--ease),color .18s ease,box-shadow .18s ease,transform .25s var(--ease-spring)}
 .aud-tab:active{transform:scale(.96)}
 
+/* ── Enterprise Detailed View — Filter bar ── */
+.vd-filterbar{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+.vd-filterbar-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.vd-fi-search{
+  flex:1;min-width:220px;font-family:inherit;font-size:12.5px;color:var(--txt);
+  background:var(--seg-track);border:1.5px solid transparent;border-radius:8px;
+  padding:7px 14px;outline:none;transition:border-color .15s,background .15s;
+}
+.vd-fi-search::placeholder{color:var(--txt3)}
+.vd-fi-search:focus{background:var(--card);border-color:var(--accent)}
+.vd-fi-num{
+  width:68px;font-family:inherit;font-size:12px;color:var(--txt);
+  background:var(--seg-track);border:1.5px solid transparent;border-radius:8px;
+  padding:7px 10px;outline:none;transition:border-color .15s,background .15s;
+  -moz-appearance:textfield;
+}
+.vd-fi-num::-webkit-outer-spin-button,.vd-fi-num::-webkit-inner-spin-button{-webkit-appearance:none}
+.vd-fi-num:focus{background:var(--card);border-color:var(--accent)}
+.vd-rat-label{font-size:12px;color:var(--txt2);white-space:nowrap;font-weight:500}
+.vd-export-btn{
+  font-family:inherit;font-size:12px;font-weight:600;color:var(--txt2);
+  background:var(--seg-track);border:none;border-radius:8px;
+  padding:7px 13px;cursor:pointer;transition:background .15s,color .15s;white-space:nowrap;
+}
+.vd-export-btn:hover{background:rgba(120,120,128,.18);color:var(--txt)}
+.vd-clear-btn{
+  font-family:inherit;font-size:12px;font-weight:600;color:var(--accent);
+  background:rgba(0,122,255,.08);border:none;border-radius:8px;
+  padding:7px 13px;cursor:pointer;transition:background .15s;white-space:nowrap;
+}
+.vd-clear-btn:hover{background:rgba(0,122,255,.15)}
+/* Summary metrics strip */
+.vd-summary{display:flex;flex-wrap:wrap;gap:0;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin:12px 0 0;overflow:hidden}
+.vd-summ-item{flex:1;min-width:100px;padding:10px 16px;border-right:1px solid var(--border)}
+.vd-summ-item:last-child{border-right:none}
+.vd-summ-val{font-size:18px;font-weight:700;letter-spacing:-.5px;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1}
+.vd-summ-lbl{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3);margin-top:3px}
+/* Enterprise table */
+.vd-tbl-wrap{max-height:520px;overflow:auto;border:1px solid var(--border);border-radius:10px;margin-top:12px}
+.vd-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.vd-tbl thead{position:sticky;top:0;z-index:3;background:var(--bg2)}
+.vd-tbl thead th{padding:9px 12px;text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;transition:color .12s}
+.vd-tbl thead th:hover{color:var(--txt)}
+.vd-tbl thead th.sort-asc::after{content:' ↑';color:var(--accent)}
+.vd-tbl thead th.sort-desc::after{content:' ↓';color:var(--accent)}
+.vd-tbl thead th:first-child{padding-left:16px}
+.vd-tbl tbody tr{border-bottom:1px solid rgba(120,120,128,.08);transition:background .12s}
+.vd-tbl tbody tr:nth-child(even){background:rgba(120,120,128,.03)}
+.vd-tbl tbody tr:hover{background:rgba(0,122,255,.055);cursor:pointer}
+.vd-tbl tbody td{padding:9px 12px;color:var(--txt);vertical-align:middle}
+.vd-tbl tbody td:first-child{padding-left:16px}
+.vd-tbl tbody tr.no-data-row:hover{background:none;cursor:default}
+/* Rating chip */
+.vd-rat-chip{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;font-variant-numeric:tabular-nums}
+.vd-rat-chip.high{background:rgba(29,199,151,.15);color:#1DC797}
+.vd-rat-chip.mid{background:rgba(255,149,0,.15);color:#FF9500}
+.vd-rat-chip.low{background:rgba(255,59,48,.15);color:#FF3B30}
+.vd-rat-chip.none{background:var(--seg-track);color:var(--txt3)}
+/* Pagination */
+.vd-pagination{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.vd-pg-info{font-size:12px;color:var(--txt2);flex:1;min-width:180px}
+.vd-pg-size{font-family:inherit;font-size:12px;color:var(--txt);background:var(--seg-track);border:none;border-radius:7px;padding:5px 24px 5px 10px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236E6E73' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;outline:none}
+.vd-pg-btns{display:flex;gap:4px}
+.vd-pg-btn{font-family:inherit;font-size:12px;font-weight:600;padding:5px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--txt);cursor:pointer;transition:background .12s,color .12s}
+.vd-pg-btn:hover:not(:disabled){background:var(--seg-track)}
+.vd-pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.vd-pg-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
 /* ── Kanban board — Apple card grid ── */
 .kb-wrap{overflow-x:auto;padding-bottom:4px}
 .kb-board{display:grid;grid-template-columns:repeat(4,minmax(200px,1fr));gap:12px;min-width:820px}
@@ -3208,11 +3276,13 @@ var vertRowsError = null;   // backend error message when the last row fetch fai
 var _vertRowsGen = 0;       // incremented on each loadVertRows call; stale callbacks are discarded
 var _vertRowsPKey = null;   // period key when vertRows were last fetched; used to detect stale rows
 var _ovnRows = {};          // per-audience row cache for the Existing/New modal {seller:[],buyer:[]}
-var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '', region: 'All', ratingMin: '', ratingMax: '' };
 var vdSort = { key: '', dir: 1 };   // detail table sort state (dir: 1 asc, -1 desc)
+var vdPage = 0;       // current page index (0-based) for the detail table
+var vdPageSize = 50;  // rows per page
 var qualityData    = null;   // result of getQualityData() — loaded once for OMP
 var qualityLoading = false;
-var VD_MAX_RENDER = 200;   // rows rendered at once in the detail table
+var VD_MAX_RENDER = 200;   // kept for board view compatibility
 var KB_MAX_PER_COL = 50;   // cards rendered per Kanban column
 var vdView = 'board';      // records view in the detail panel: 'board' | 'table'
 var KB_COLS = [            // workflow order, left to right
@@ -3553,7 +3623,7 @@ function selectVertTab(key) {
   activeVertKey = key;
   selectedVert  = key;
   // Reset rows — new vertical, fresh load
-  vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+  vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '', region: 'All', ratingMin: '', ratingMax: '' }; vdPage = 0;
   vdSort = { key: '', dir: 1 };
   vertRows = []; vertRowsLoading = true; vertRowsError = null;
   _ovnRows = {};
@@ -3738,7 +3808,7 @@ function vkpiOpen(action) {
   var detEl = document.getElementById('vert-detail-section');
   var rowsReady = vertRows.length > 0 && !vertRowsLoading;
   if (rowsReady && detEl) {
-    vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+    vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '', region: 'All', ratingMin: '', ratingMax: '' }; vdPage = 0;
     ['vdf-category','vdf-vendor','vdf-status','vdf-gst'].forEach(function(id) {
       var e = document.getElementById(id); if (e) e.value = 'All';
     });
@@ -5846,32 +5916,44 @@ function renderInlineDetail(key) {
       ? '<div class="cc-cap vd-cat-cap">Onboarded by Category</div>' + cardCategories(vD, 12)
       : '';
     var cols = [
-      ['name', 'Business'], ['category', 'Category'], ['vendorType', 'Vendor Type'],
-      ['status', 'Status'], ['gstin', 'GSTIN'], ['state', 'State'], ['createdDate', 'Created'],
-      ['onbDate', 'Onboarded'], ['tat', 'TAT'], ['txn', 'Transaction'],
+      ['name', 'Vendor'], ['category', 'Category'], ['status', 'Status'],
+      ['rating', 'Rating'], ['txn', 'GMV'], ['gstin', 'GSTIN'],
+      ['state', 'Region'], ['onbDate', 'Onboarded'], ['tat', 'TAT'],
     ];
-    var filtersHtml = '<div class="vd-filters">'
-      + '<div class="vd-toggle">'
-      + '<button class="vd-toggle-btn' + (vdView === 'board' ? ' active' : '') + '" onclick="vdSetView(\'board\')">▦ Board</button>'
-      + '<button class="vd-toggle-btn' + (vdView === 'table' ? ' active' : '') + '" onclick="vdSetView(\'table\')">☰ Table</button>'
+    var filtersHtml = '<div class="vd-filterbar">'
+      + '<div class="vd-filterbar-row">'
+      +   '<input type="text" class="vd-fi-search" id="vdf-search" placeholder="Search vendor name, GSTIN or ID…" value="' + esc(vdF.search) + '" oninput="vdfSearchDeb()">'
+      +   vdSelect('vdf-category', 'Category',    vdUnique(vertRows, 'category'),   vdF.category, null)
+      +   vdSelect('vdf-status',   'Status',      vdUnique(vertRows, 'status'),     vdF.status,   STATUS_LABELS)
+      +   vdSelect('vdf-region',   'Region',      ['North', 'South'],               vdF.region,   null)
       + '</div>'
-      + vdSelect('vdf-category', 'Category',    vdUnique(vertRows, 'category'),   vdF.category, null)
-      + vdSelect('vdf-vendor',   'Vendor Type', vdUnique(vertRows, 'vendorType'), vdF.vendor,   null)
-      + vdSelect('vdf-status',   'Status',      vdUnique(vertRows, 'status'),     vdF.status,   STATUS_LABELS)
-      + vdSelect('vdf-gst',      'GST',         ['Active', 'Inactive'],           vdF.gst,      null)
-      + '<input type="text" class="filter-input vd-search" id="vdf-search" placeholder="Search name, GSTIN or ID" value="' + esc(vdF.search) + '" oninput="vdfSearchDeb()">'
-      + '<button class="vd-close" onclick="vdfClear()">Clear</button>'
+      + '<div class="vd-filterbar-row">'
+      +   vdSelect('vdf-vendor', 'Vendor Type', vdUnique(vertRows, 'vendorType'), vdF.vendor, null)
+      +   vdSelect('vdf-gst',    'GST',         ['Active', 'Inactive'],            vdF.gst,    null)
+      +   '<span class="vd-rat-label">Rating:</span>'
+      +   '<input type="number" class="vd-fi-num" id="vdf-rat-min" min="0" max="10" step="0.1" placeholder="Min" value="' + esc(vdF.ratingMin) + '" oninput="vdfRatChange()">'
+      +   '<span class="vd-rat-label">–</span>'
+      +   '<input type="number" class="vd-fi-num" id="vdf-rat-max" min="0" max="10" step="0.1" placeholder="Max" value="' + esc(vdF.ratingMax) + '" oninput="vdfRatChange()">'
+      +   '<div style="flex:1"></div>'
+      +   '<button class="vd-export-btn" onclick="vdExportCSV()">↓ Export CSV</button>'
+      +   '<button class="vd-clear-btn" onclick="vdfClear()">Clear Filters</button>'
+      +   '<div class="vd-toggle">'
+      +     '<button class="vd-toggle-btn' + (vdView === 'board' ? ' active' : '') + '" onclick="vdSetView(\'board\')">▦ Board</button>'
+      +     '<button class="vd-toggle-btn' + (vdView === 'table' ? ' active' : '') + '" onclick="vdSetView(\'table\')">☰ Table</button>'
+      +   '</div>'
+      + '</div>'
+      + '<div id="vd-summary"></div>'
       + '</div>';
     bodyContent = catSection
       + '<div id="cat-detail-wrap" style="display:none"></div>'
       + filtersHtml
       + '<div class="kb-wrap mt-16" id="vd-board-view"><div class="kb-board" id="vd-board"></div></div>'
-      + '<div class="table-wrap vd-table-wrap mt-16" id="vd-table-view"><table><thead><tr>'
+      + '<div class="vd-tbl-wrap" id="vd-table-view"><table class="vd-tbl"><thead><tr>'
       + cols.map(function(c) {
-          return '<th data-key="' + c[0] + '" onclick="vdSortBy(\'' + c[0] + '\')" title="Sort by ' + esc(c[1]) + '">' + c[1] + '</th>';
+          return '<th data-key="' + c[0] + '" onclick="vdSortBy(\'' + c[0] + '\')">' + c[1] + '</th>';
         }).join('')
       + '</tr></thead><tbody id="vd-tbody"></tbody></table></div>'
-      + '<div class="vd-note" id="vd-note"></div>';
+      + '<div class="vd-pagination" id="vd-pagination"></div>';
   } else {
     bodyContent = '<div class="no-data">No records for this vertical</div>';
   }
@@ -5894,7 +5976,7 @@ function setDetailAud(aud) {
   selectedAud = aud;
   renderPipelinePair(key);   // updates .det-active class on the cards
   // Reset and reload rows for the new audience
-  vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+  vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '', region: 'All', ratingMin: '', ratingMax: '' }; vdPage = 0;
   vdSort = { key: '', dir: 1 };
   vertRows = []; vertRowsLoading = true; vertRowsError = null;
   _vertRowsPKey = null; ++_vertRowsGen;
@@ -6016,7 +6098,7 @@ function openVertDetail(key, aud) {
     selectedAud = aud;
     activeVertKey = key;
     selectedVert  = key;
-    vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+    vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '', region: 'All', ratingMin: '', ratingMax: '' }; vdPage = 0;
     vdSort = { key: '', dir: 1 };
     vertRows = []; vertRowsLoading = true; vertRowsError = null;
     _vertRowsPKey = null; ++_vertRowsGen; _ovnRows = {};
@@ -6301,12 +6383,22 @@ function vdFilteredRows() {
   if (!selectedVert || !_fvd || !_fvd[selectedVert]) return [];
   var rows = vertRows;
   var q = (vdF.search || '').toLowerCase();
+  var useRating = vdF.ratingMin !== '' || vdF.ratingMax !== '';
+  var rMap = useRating ? _vdBuildRatingMap() : null;
+  var rMin = useRating && vdF.ratingMin !== '' ? parseFloat(vdF.ratingMin) : null;
+  var rMax = useRating && vdF.ratingMax !== '' ? parseFloat(vdF.ratingMax) : null;
   return rows.filter(function(r) {
     if (vdF.category !== 'All' && r.category   !== vdF.category) return false;
     if (vdF.vendor   !== 'All' && r.vendorType !== vdF.vendor)   return false;
     if (vdF.status   !== 'All' && r.status     !== vdF.status)   return false;
     if (vdF.gst === 'Active'   && !r.hasGST) return false;
     if (vdF.gst === 'Inactive' &&  r.hasGST) return false;
+    if (vdF.region !== 'All'   && _stateToRegionFE(r.state) !== vdF.region) return false;
+    if (rMap) {
+      var rat = _vdGetRating(r, rMap);
+      if (rMin !== null && (rat === null || rat < rMin)) return false;
+      if (rMax !== null && (rat === null || rat > rMax)) return false;
+    }
     if (q && (r.name  || '').toLowerCase().indexOf(q) === -1
           && (r.gstin || '').toLowerCase().indexOf(q) === -1
           && String(r.id || '').toLowerCase().indexOf(q) === -1) return false;
@@ -6431,29 +6523,34 @@ function vdSortBy(key) {
 }
 
 // Comparable value for a row under a given column key.
-function vdSortVal(r, key) {
+function vdSortVal(r, key, rMap) {
   if (key === 'tat') {
     var n = parseInt(r.tat, 10);
-    return isNaN(n) ? -1 : n;                       // rows without a TAT sort first (asc)
+    return isNaN(n) ? -1 : n;
   }
   if (key === 'createdDate' || key === 'onbDate') {
     var d = parseDMY(r[key]);
-    return d ? d.getTime() : 0;                     // undated rows sort first (asc)
+    return d ? d.getTime() : 0;
   }
   if (key === 'txn') {
-    // Transacted (by value) > onboarded-but-not-transacted > not applicable
     if (r.hasTransacted) return 1 + (r.txnValue || 0);
     return r.status === 'COMPLETED' ? 0 : -1;
   }
+  if (key === 'rating') {
+    var rat = _vdGetRating(r, rMap || {});
+    return rat !== null ? rat : -1;
+  }
   if (key === 'gstin') return (r.hasGST ? '1' : '0') + String(r.gstin || '').toLowerCase();
+  if (key === 'state') return _stateToRegionFE(r.state) + String(r.state || '').toLowerCase();
   return String(r[key] || '').toLowerCase();
 }
 
 function vdSortedRows(filtered) {
   if (!vdSort.key) return filtered;
   var key = vdSort.key, dir = vdSort.dir;
+  var rMap = key === 'rating' ? _vdBuildRatingMap() : null;
   return filtered.slice().sort(function(a, b) {
-    var va = vdSortVal(a, key), vb = vdSortVal(b, key);
+    var va = vdSortVal(a, key, rMap), vb = vdSortVal(b, key, rMap);
     if (va < vb) return -dir;
     if (va > vb) return dir;
     return 0;
@@ -6461,56 +6558,169 @@ function vdSortedRows(filtered) {
 }
 
 function renderVdTable() {
-  var tbody = document.getElementById('vd-tbody');
-  var note  = document.getElementById('vd-note');
-  var _tvd = selectedAud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
+  var tbody  = document.getElementById('vd-tbody');
+  var pgEl   = document.getElementById('vd-pagination');
+  var summEl = document.getElementById('vd-summary');
+  var _tvd   = selectedAud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
   if (!tbody || !selectedVert || !_tvd || !_tvd[selectedVert]) return;
-  _rmD = {}; _rmI = 0;   // fresh lookup for the modal
+  _rmD = {}; _rmI = 0;
+
+  var rMap     = _vdBuildRatingMap();
   var all      = vertRows;
   var filtered = vdSortedRows(vdFilteredRows());
-  var shown    = filtered.slice(0, VD_MAX_RENDER);
+  var totalPg  = Math.max(1, Math.ceil(filtered.length / vdPageSize));
+  if (vdPage >= totalPg) vdPage = Math.max(0, totalPg - 1);
+  var start = vdPage * vdPageSize;
+  var shown = filtered.slice(start, start + vdPageSize);
 
-  // Sync the ↑/↓ indicator on the column headers with the active sort.
-  document.querySelectorAll('#vd-table-view thead th').forEach(function(th) {
+  // Sort indicators on column headers
+  document.querySelectorAll('.vd-tbl thead th').forEach(function(th) {
     th.classList.remove('sort-asc', 'sort-desc');
     if (th.dataset.key === vdSort.key) th.classList.add(vdSort.dir === 1 ? 'sort-asc' : 'sort-desc');
   });
 
+  // Summary strip
+  if (summEl) {
+    var ratSum = 0, ratCount = 0, totalGMV = 0;
+    filtered.forEach(function(r) {
+      var rat = _vdGetRating(r, rMap);
+      if (rat !== null) { ratSum += rat; ratCount++; }
+      if (r.hasTransacted && r.txnValue) totalGMV += r.txnValue;
+    });
+    var avgRat = ratCount > 0 ? (ratSum / ratCount).toFixed(1) : null;
+    var cats = {};
+    filtered.forEach(function(r) { if (r.category) cats[r.category] = (cats[r.category] || 0) + 1; });
+    var catStr = Object.keys(cats).sort().map(function(k) { return k + ': ' + fmt(cats[k]); }).join(' · ');
+    summEl.innerHTML = '<div class="vd-summary">'
+      + '<div class="vd-summ-item"><div class="vd-summ-val">' + fmt(all.length) + '</div><div class="vd-summ-lbl">Total</div></div>'
+      + '<div class="vd-summ-item"><div class="vd-summ-val">' + fmt(filtered.length) + '</div><div class="vd-summ-lbl">Filtered</div></div>'
+      + '<div class="vd-summ-item"><div class="vd-summ-val">' + (avgRat !== null ? avgRat + ' ★' : '—') + '</div><div class="vd-summ-lbl">Avg Rating</div></div>'
+      + '<div class="vd-summ-item"><div class="vd-summ-val">' + (totalGMV > 0 ? fmtINR(totalGMV) : '—') + '</div><div class="vd-summ-lbl">Total GMV</div></div>'
+      + (catStr ? '<div class="vd-summ-item"><div class="vd-summ-val" style="font-size:12px;line-height:1.4">' + catStr + '</div><div class="vd-summ-lbl">By Category</div></div>' : '')
+      + '</div>';
+  }
+
+  // Table rows
   tbody.innerHTML = shown.length
     ? shown.map(function(r) {
         var key = ++_rmI;
         _rmD[key] = r;
         var txnCell;
         if (r.hasTransacted) {
-          var txnTip = 'Transacted' + (r.txnDate && r.txnDate !== '—' ? ' · ' + r.txnDate : '');
-          txnCell = '<span class="txn-chip" title="' + esc(txnTip) + '">'
-            + (r.txnValue !== null ? fmtINR(r.txnValue) : 'Transacted') + '</span>';
+          txnCell = '<span class="txn-chip">' + (r.txnValue !== null ? fmtINR(r.txnValue) : 'Transacted') + '</span>';
         } else if (r.status === 'COMPLETED') {
-          txnCell = '<span style="color:var(--txt3);font-size:11.5px;font-weight:500">Not yet</span>';
+          txnCell = '<span style="color:var(--txt3);font-size:11.5px">Not yet</span>';
         } else {
           txnCell = '<span class="text-muted">—</span>';
         }
-        return '<tr class="vd-tr" onclick="openRecModal(' + key + ')" title="View details">'
-          + '<td><strong>' + esc(r.name || '—') + '</strong>'
-          +   '<span class="td-sub">' + esc(r.id) + '</span></td>'
+        var rat = _vdGetRating(r, rMap);
+        var ratChip;
+        if (rat !== null) {
+          var rc = rat >= 7 ? 'high' : rat >= 4 ? 'mid' : 'low';
+          ratChip = '<span class="vd-rat-chip ' + rc + '">' + rat.toFixed(1) + ' ★</span>';
+        } else {
+          ratChip = '<span class="vd-rat-chip none">—</span>';
+        }
+        var region = _stateToRegionFE(r.state) || '—';
+        return '<tr class="vd-tr" onclick="openRecModal(' + key + ')">'
+          + '<td><strong style="font-size:13px">' + esc(r.name || '—') + '</strong>'
+          +   '<div class="td-sub" style="margin-top:2px">' + esc(r.id || '—') + '</div></td>'
           + '<td>' + esc(r.category || '—') + '</td>'
-          + '<td class="td-dim">' + esc(r.vendorType || '—') + '</td>'
           + '<td>' + statusChip(r.status) + '</td>'
-          + '<td>' + (r.hasGST ? '<span class="gst-ok">' + esc(r.gstin) + '</span>' : '<span class="gst-bad">Missing</span>') + '</td>'
-          + '<td class="td-dim">' + esc(r.state || '—') + '</td>'
-          + '<td class="td-dim td-num">' + esc(r.createdDate) + '</td>'
-          + '<td class="td-dim td-num">' + esc(r.onbDate) + '</td>'
-          + '<td>' + tatChip(r.tat) + '</td>'
+          + '<td>' + ratChip + '</td>'
           + '<td>' + txnCell + '</td>'
+          + '<td>' + (r.hasGST ? '<span class="gst-ok" style="font-size:11px">' + esc(r.gstin) + '</span>' : '<span class="gst-bad" style="font-size:11px">Missing</span>') + '</td>'
+          + '<td class="td-dim">' + esc(region) + '</td>'
+          + '<td class="td-dim td-num">' + esc(r.onbDate || r.createdDate || '—') + '</td>'
+          + '<td>' + tatChip(r.tat) + '</td>'
           + '</tr>';
       }).join('')
-    : '<tr><td colspan="10" class="no-data">No records match the selected filters</td></tr>';
+    : '<tr class="no-data-row"><td colspan="9" class="no-data">No records match the selected filters</td></tr>';
 
-  if (note) {
-    note.textContent = 'Showing ' + fmt(shown.length) + ' of ' + fmt(filtered.length)
-      + ' matching · ' + fmt(all.length) + ' total · '
-      + (vdSort.key ? 'sorted by ' + vdSort.key + (vdSort.dir === 1 ? ' ↑' : ' ↓') : 'latest first');
+  // Pagination controls
+  if (pgEl) {
+    if (filtered.length === 0) { pgEl.innerHTML = ''; return; }
+    var half = 3, pgStart = Math.max(0, Math.min(vdPage - half, totalPg - 7));
+    var pgEnd = Math.min(totalPg, pgStart + 7);
+    var pgBtns = '';
+    for (var p = pgStart; p < pgEnd; p++) {
+      pgBtns += '<button class="vd-pg-btn' + (p === vdPage ? ' active' : '') + '" onclick="vdGoPage(' + p + ')">' + (p + 1) + '</button>';
+    }
+    pgEl.innerHTML = '<div class="vd-pg-info">Showing ' + fmt(start + 1) + '–' + fmt(Math.min(start + vdPageSize, filtered.length)) + ' of ' + fmt(filtered.length) + ' records</div>'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<select class="vd-pg-size" onchange="vdChangePageSize(+this.value)">'
+      + [25,50,100].map(function(s) { return '<option value="' + s + '"' + (s === vdPageSize ? ' selected' : '') + '>' + s + ' / page</option>'; }).join('')
+      + '</select>'
+      + '<div class="vd-pg-btns">'
+      + '<button class="vd-pg-btn" onclick="vdGoPage(' + (vdPage - 1) + ')"' + (vdPage === 0 ? ' disabled' : '') + '>‹ Prev</button>'
+      + pgBtns
+      + '<button class="vd-pg-btn" onclick="vdGoPage(' + (vdPage + 1) + ')"' + (vdPage >= totalPg - 1 ? ' disabled' : '') + '>Next ›</button>'
+      + '</div></div>';
   }
+}
+
+// ─── Rating lookup helpers ────────────────────────────────────
+function _vdBuildRatingMap() {
+  var map = {};
+  if (!qualityData) return map;
+  var ratings = qualityData.vendorRatings || [];
+  var aud = selectedAud || 'seller';
+  ratings.forEach(function(rv) {
+    if (rv.aud && rv.aud !== aud) return;
+    if (rv.gstin) map['g:' + String(rv.gstin).toUpperCase()] = rv.rating;
+    if (rv.id)    map['i:' + String(rv.id).toLowerCase()]    = rv.rating;
+  });
+  return map;
+}
+function _vdGetRating(r, rMap) {
+  if (!rMap) return null;
+  var byGST = r.gstin ? rMap['g:' + String(r.gstin).toUpperCase()] : undefined;
+  if (byGST !== undefined) return typeof byGST === 'number' ? byGST : null;
+  var byId  = r.id    ? rMap['i:' + String(r.id).toLowerCase()]    : undefined;
+  if (byId  !== undefined) return typeof byId  === 'number' ? byId  : null;
+  return null;
+}
+
+// ─── Pagination ───────────────────────────────────────────────
+function vdGoPage(page) {
+  var totalPg = Math.max(1, Math.ceil(vdFilteredRows().length / vdPageSize));
+  vdPage = Math.max(0, Math.min(page, totalPg - 1));
+  renderVdRecords();
+}
+function vdChangePageSize(size) {
+  vdPageSize = size; vdPage = 0;
+  renderVdRecords();
+}
+
+// ─── CSV export ───────────────────────────────────────────────
+function vdExportCSV() {
+  var rMap = _vdBuildRatingMap();
+  var rows = vdSortedRows(vdFilteredRows());
+  var hdr  = ['Vendor Name','Vendor ID','GSTIN','Category','Vendor Type','Status',
+               'Rating (/10)','GMV','Region','State','Created Date','Onboarded Date','TAT (days)'];
+  function csvCell(v) {
+    var s = String(v == null ? '' : v);
+    return (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1)
+      ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  var lines = [hdr.map(csvCell).join(',')];
+  rows.forEach(function(r) {
+    var rat = _vdGetRating(r, rMap);
+    var gmv = r.hasTransacted && r.txnValue != null ? r.txnValue : '';
+    lines.push([
+      r.name || '', r.id || '', r.gstin || '',
+      r.category || '', r.vendorType || '', r.status || '',
+      rat !== null ? rat.toFixed(1) : '',
+      gmv, _stateToRegionFE(r.state) || '', r.state || '',
+      r.createdDate || '', r.onbDate || '', r.tat || ''
+    ].map(csvCell).join(','));
+  });
+  var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url; a.download = 'vendors_' + (selectedVert || 'export') + '.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -6600,12 +6810,24 @@ function vdfChange() {
   vdF.vendor   = vdVal('vdf-vendor');
   vdF.status   = vdVal('vdf-status');
   vdF.gst      = vdVal('vdf-gst');
+  vdF.region   = vdVal('vdf-region');
+  vdPage = 0;
   renderVdRecords();
 }
 var vdfDebTimer;
 function vdfSearchDeb() {
   var el = document.getElementById('vdf-search');
   vdF.search = el ? el.value : '';
+  vdPage = 0;
+  clearTimeout(vdfDebTimer);
+  vdfDebTimer = setTimeout(renderVdRecords, 300);
+}
+function vdfRatChange() {
+  var mn = document.getElementById('vdf-rat-min');
+  var mx = document.getElementById('vdf-rat-max');
+  vdF.ratingMin = mn ? mn.value : '';
+  vdF.ratingMax = mx ? mx.value : '';
+  vdPage = 0;
   clearTimeout(vdfDebTimer);
   vdfDebTimer = setTimeout(renderVdRecords, 300);
 }
@@ -6785,11 +7007,13 @@ function filterByCategory(cat) {
 }
 
 function vdfClear() {
-  vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
-  ['vdf-category','vdf-vendor','vdf-status','vdf-gst'].forEach(function(id) {
+  vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '', region: 'All', ratingMin: '', ratingMax: '' }; vdPage = 0;
+  ['vdf-category','vdf-vendor','vdf-status','vdf-gst','vdf-region'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.value = 'All';
   });
-  var s = document.getElementById('vdf-search'); if (s) s.value = '';
+  ['vdf-search','vdf-rat-min','vdf-rat-max'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
   showCatDetail('All');
   renderVdRecords();
 }
