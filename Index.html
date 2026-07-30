@@ -1880,8 +1880,8 @@ body.view-gst #vert-tabs-bar{display:none}
 /* ══════════════════════════════════════════════════
    PIPELINE PAIR (Seller + Buyer side by side)
    ══════════════════════════════════════════════════ */
-/* Two-column section: stacked pipeline cards on the left, insights rail on the right */
-.vpipe-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:stretch;margin-bottom:16px}
+/* Two-column section: pipeline (wider) on the left, insights rail on the right */
+.vpipe-layout{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;align-items:stretch;margin-bottom:16px}
 .vpipe-pair{display:grid;grid-template-columns:1fr;gap:12px}
 .vpipe-card{cursor:pointer;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
 .vpipe-card:hover{transform:scale(1.015);box-shadow:var(--shadow-lg)!important}
@@ -1909,17 +1909,36 @@ body.view-gst #vert-tabs-bar{display:none}
 .pipe-hdr{margin:0 0 12px}
 .pipe-title2{font-size:15px;font-weight:700;letter-spacing:-.3px;color:var(--txt);line-height:1.15}
 
-/* ── Stage row: label + count on one line, proportional bar beneath ── */
-.pipe-stages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:0 0 14px}
-.pipe-stage{min-width:0}
-.ps-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px}
-.ps-lbl{font-size:11.5px;font-weight:500;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ps-num{font-size:19px;font-weight:700;color:var(--txt);letter-spacing:-.6px;font-variant-numeric:tabular-nums;line-height:1;flex-shrink:0}
-.ps-bar{height:6px;border-radius:3px;background:var(--bg2);overflow:hidden}
-.ps-fill{display:block;height:100%;border-radius:3px;transition:width .6s var(--ease-out)}
-.ps-draft{background:#3A3A3C}
-.ps-review{background:var(--st-review)}
-.ps-done{background:var(--st-onboarded)}
+/* ── Pipeline KPI cards: Draft / In Review / Completed ── */
+.pipe-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
+.pipe-kpi{
+  position:relative;border-radius:12px;padding:15px 16px 13px;
+  border:1px solid var(--border);background:var(--card);
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:var(--shadow-sm);transition:box-shadow .2s var(--ease-out);
+}
+.pipe-kpi::before{
+  content:'';position:absolute;inset:0 0 auto 0;height:3px;border-radius:12px 12px 0 0;
+}
+.pipe-kpi-draft::before  {background:var(--st-draft)}
+.pipe-kpi-review::before {background:var(--st-review)}
+.pipe-kpi-done::before   {background:var(--st-onboarded)}
+.pipe-kpi-icon{
+  width:28px;height:28px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:9px;flex-shrink:0;
+}
+.pipe-kpi-draft  .pipe-kpi-icon{background:var(--st-draft-bg)}
+.pipe-kpi-review .pipe-kpi-icon{background:var(--st-review-bg)}
+.pipe-kpi-done   .pipe-kpi-icon{background:var(--st-onboarded-bg)}
+.pipe-kpi-count{
+  font-size:30px;font-weight:700;letter-spacing:-1.2px;
+  line-height:1;font-variant-numeric:tabular-nums;color:var(--txt);margin-bottom:5px;
+}
+.pipe-kpi-label{
+  font-size:10px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--txt3);
+}
 
 /* ── Two-column card footer: category rows | stats table, divided ── */
 .pipe-btm{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);padding-top:12px;margin-top:auto}
@@ -1934,6 +1953,9 @@ body.view-gst #vert-tabs-bar{display:none}
   .pipe-btm{grid-template-columns:1fr;gap:12px}
   .pipe-btm-r{padding-left:0;border-left:none;border-top:1px solid var(--border);padding-top:12px}
   .pipe-num b{font-size:26px;letter-spacing:-1px}
+  .pipe-kpi-row{gap:6px}
+  .pipe-kpi-count{font-size:24px;letter-spacing:-1px}
+  .pipe-kpi{padding:13px 12px 11px}
 }
 
 /* ══════════════════════════════════════════════════
@@ -5651,11 +5673,8 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
   if (!tot) {
     var noDataBody = _dashLoading
       ? ('<div class="sk-pipe">'
-         + '<div class="sk-line" style="width:100%;height:8px;border-radius:4px"></div>'
-         + '<div style="display:flex;gap:8px;margin:10px 0">'
-         + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
-         + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
-         + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
+         + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 16px">'
+         + '<div class="sk-kpi-card"></div><div class="sk-kpi-card"></div><div class="sk-kpi-card"></div>'
          + '</div>'
          + '<div class="sk-line" style="width:65%"></div>'
          + '<div class="sk-line" style="width:45%"></div>'
@@ -5667,23 +5686,28 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
          + '</div>');
     return '<div' + attrs + '>' + ghost + hdr + noDataBody + '</div>';
   }
-  // Stage row — each stage shows its label + count on one line with a
-  // proportional bar beneath (bar length relative to the largest stage).
+  // KPI cards: Draft / In Review / Completed — prominent count + icon + label.
   var vDraft = v.draft || 0, vReview = v.inReview || 0, vDone = v.completed || 0;
-  var stageMax = Math.max(vDraft, vReview, vDone, 1);
-  var stageDef = [
-    ['Draft',     vDraft,  'ps-draft'],
-    ['In Review', vReview, 'ps-review'],
-    ['Completed', vDone,   'ps-done'],
+  var flowBar = '';
+  var _ic = function(path, color) {
+    return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + color + '"'
+      + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
+  };
+  var kpiDef = [
+    { label: 'Draft',     count: vDraft,  cls: 'pipe-kpi-draft',
+      icon: _ic('<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>', 'var(--st-draft)') },
+    { label: 'In Review', count: vReview, cls: 'pipe-kpi-review',
+      icon: _ic('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>', 'var(--st-review)') },
+    { label: 'Completed', count: vDone,   cls: 'pipe-kpi-done',
+      icon: _ic('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>', 'var(--st-onboarded)') },
   ];
-  var pipeBoxes = '<div class="pipe-stages">' + stageDef.map(function(s) {
-    var w = s[1] > 0 ? Math.max(5, s[1] / stageMax * 100) : 0;
-    return '<div class="pipe-stage">'
-      + '<div class="ps-top"><span class="ps-lbl">' + s[0] + '</span><span class="ps-num">' + fmt(s[1]) + '</span></div>'
-      + '<div class="ps-bar"><i class="ps-fill ' + s[2] + '" style="width:' + w.toFixed(1) + '%"></i></div>'
+  var pipeBoxes = '<div class="pipe-kpi-row">' + kpiDef.map(function(k) {
+    return '<div class="pipe-kpi ' + k.cls + '">'
+      + '<div class="pipe-kpi-icon">' + k.icon + '</div>'
+      + '<div class="pipe-kpi-count">' + fmt(k.count) + '</div>'
+      + '<div class="pipe-kpi-label">' + k.label + '</div>'
       + '</div>';
   }).join('') + '</div>';
-  var flowBar = '';   // stage bars now live inline within pipeBoxes
   var topCats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; }).slice(0, 3);
   var catRows = topCats.map(function(c) {
     var parts = [];
