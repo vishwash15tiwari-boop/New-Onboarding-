@@ -750,6 +750,20 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 /* Segmented progress bar (OSV / docs modal) */
 .km-prog{display:flex;height:6px;border-radius:3px;overflow:hidden;gap:2px;margin:8px 0 4px}
 .km-prog-seg{border-radius:3px;transition:flex .8s var(--ease-out)}
+/* Filter bar + Detail table (Vendor Rating / OSV Status modals) */
+.km-fbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center}
+.km-fi{flex:1;min-width:110px;padding:5px 8px;font-size:11.5px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--txt);outline:none}
+.km-fi:focus{border-color:var(--border2)}
+.km-fs{padding:5px 7px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--txt);outline:none;cursor:pointer}
+.km-dtbl-wrap{overflow-x:auto;max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px}
+.km-dtbl{width:100%;border-collapse:collapse}
+.km-dtbl th{padding:6px 10px;text-align:left;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--txt3);background:var(--bg2);position:sticky;top:0;z-index:1;border-bottom:1px solid var(--border)}
+.km-dtbl td{padding:6px 10px;font-size:11.5px;border-bottom:1px solid var(--border);color:var(--txt);vertical-align:middle}
+.km-dtbl tbody tr:last-child td{border-bottom:none}
+.km-dtbl tbody tr:hover td{background:var(--hover)}
+.km-dtbl-name{font-weight:600;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Range-bar rows — wider label column than star bars */
+.km-rng-row{display:grid;grid-template-columns:46px 1fr 34px 44px;align-items:center;gap:6px;margin-bottom:5px}
 #kpi-modal{position:fixed;inset:0;z-index:800;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;opacity:0;transition:opacity .18s}
 #kpi-modal.km-open{pointer-events:all;opacity:1}
 @media(min-width:600px){#kpi-modal{align-items:center;padding:20px}}
@@ -3797,10 +3811,10 @@ function openKpiModal(cardId) {
       var shown = vendors.slice(0, 60);
       h += shown.map(function(v) {
         if (sp.mode === 'osv') {
-          var isV  = v.status === 'verified';
-          var cBg  = isV ? 'rgba(48,209,88,.15)' : 'var(--bg2)';
-          var cClr = isV ? '#248A3D' : 'var(--txt3)';
-          var cLbl = v.consentRaw ? esc(v.consentRaw) : (isV ? 'Yes' : 'No / Blank');
+          var isV  = v.status === 'done';
+          var cBg  = isV ? 'rgba(29,199,151,.15)' : 'var(--bg2)';
+          var cClr = isV ? '#0A7044' : 'var(--txt3)';
+          var cLbl = isV ? 'Done' : (v.osvRaw ? esc(v.osvRaw) : 'Not Done');
           return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
             + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
             + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
@@ -4141,7 +4155,7 @@ function openKpiModal(cardId) {
 
     if (cardId === 'rating') {
       title    = 'Vendor Rating';
-      subtitle = 'Average Seller Rating — Onboarded Open Marketplace sellers only';
+      subtitle = 'Demonitor score (0 – 10 scale) — OMP sellers';
       iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
       if (!qd.success) {
         content = noDataMsg;
@@ -4151,45 +4165,127 @@ function openKpiModal(cardId) {
         var rRated = r.rated || 0;
         var rTotal = r.total || 0;
         var selVR  = (qd.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
+        selVR.sort(function(a, b) { return b.rating - a.rating; });
+
+        // Range distribution bars (0-2, 2-4, 4-6, 6-8, 8-10)
+        var dist      = r.dist || [0,0,0,0,0];
+        var rngLabels = ['0 – 2','2 – 4','4 – 6','6 – 8','8 – 10'];
+        var rngCols   = ['#EF4444','#FB923C','#F59E0B','#84CC16','#22C55E'];
+        var maxD      = Math.max.apply(null, dist) || 1;
+        var rangeBarsHtml = '';
+        for (var ri = 4; ri >= 0; ri--) {
+          var rc   = dist[ri] || 0;
+          var bpct = Math.round(rc / maxD * 100);
+          var dpct = rRated > 0 ? Math.round(rc / rRated * 100) : 0;
+          rangeBarsHtml += '<div class="km-rng-row">'
+            + '<span class="km-star-n" style="text-align:left;font-size:9px">' + rngLabels[ri] + '</span>'
+            + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + rngCols[ri] + '"></div></div>'
+            + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
+            + '<span class="km-star-pct">' + dpct + '%</span>'
+            + '</div>';
+        }
+
+        // Filterable vendor table
+        var tblId = 'km-rat-tbl';
+        var cats  = [];
+        selVR.forEach(function(v) { if (v.category && cats.indexOf(v.category) < 0) cats.push(v.category); });
+        cats.sort();
+        var filterBar = '<div class="km-fbar">'
+          + '<input type="text" class="km-fi" id="' + tblId + '-s" placeholder="Search vendor…" oninput="_kmRatFilter(\'' + tblId + '\')">'
+          + '<select class="km-fs" id="' + tblId + '-c" onchange="_kmRatFilter(\'' + tblId + '\')">'
+          + '<option value="">All Categories</option>'
+          + cats.map(function(c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('')
+          + '</select>'
+          + '<select class="km-fs" id="' + tblId + '-r" onchange="_kmRatFilter(\'' + tblId + '\')">'
+          + '<option value="">All Ranges</option>'
+          + '<option value="8-10">8 – 10</option><option value="6-8">6 – 8</option>'
+          + '<option value="4-6">4 – 6</option><option value="2-4">2 – 4</option>'
+          + '<option value="0-2">0 – 2</option>'
+          + '</select>'
+          + '<select class="km-fs" id="' + tblId + '-o" onchange="_kmRatFilter(\'' + tblId + '\')">'
+          + '<option value="desc">High → Low</option><option value="asc">Low → High</option>'
+          + '<option value="az">Name A – Z</option><option value="za">Name Z – A</option>'
+          + '</select>'
+          + '</div>';
+        var tblRows = selVR.map(function(v) {
+          var rColor = v.rating >= 8 ? '#22C55E' : v.rating >= 6 ? '#84CC16' : v.rating >= 4 ? '#F59E0B' : v.rating >= 2 ? '#FB923C' : '#EF4444';
+          return '<tr data-n="' + esc((v.name||'').toLowerCase()) + '" data-c="' + esc(v.category||'') + '" data-r="' + (v.rating||0) + '">'
+            + '<td class="km-dtbl-name">' + esc(v.name || 'Unknown') + '</td>'
+            + '<td>' + (v.category ? '<span class="km-vbadge" style="background:rgba(0,93,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '<span style="color:var(--txt3)">—</span>') + '</td>'
+            + '<td style="font-weight:700;color:' + rColor + ';font-variant-numeric:tabular-nums">' + (v.rating||0).toFixed(1) + '</td>'
+            + '</tr>';
+        }).join('');
+        var tblHtml = selVR.length > 0
+          ? '<div class="km-dtbl-wrap"><table class="km-dtbl" id="' + tblId + '">'
+              + '<thead><tr><th>Vendor Name</th><th>Category</th><th>Rating (/10)</th></tr></thead>'
+              + '<tbody>' + tblRows + '</tbody></table></div>'
+          : '<div style="padding:16px;text-align:center;color:var(--txt3);font-size:12px">No vendor rating data available.</div>';
+
         content =
-          hero(avg + (r.avg != null ? '★' : ''), 'Average Seller Rating')
+          hero(avg !== '—' ? avg + ' / 10' : '—', 'Average Rating (0 – 10 scale)')
           + srow([
-              {v: fmt(rRated),                  l: 'Sellers Rated',       s: 'have a score'},
-              {v: fmt(rTotal - rRated),          l: 'Unrated',             s: 'no score yet'},
-              {v: rTotal > 0 ? Math.round(rRated / rTotal * 100) + '%' : '—', l: 'Coverage', s: 'of OMP onboarded'},
+              {v: fmt(rRated),                   l: 'Vendors Rated',  s: 'have a score'},
+              {v: fmt(rTotal - rRated),           l: 'Unrated',        s: 'no score yet'},
+              {v: rTotal > 0 ? Math.round(rRated / rTotal * 100) + '%' : '—', l: 'Coverage'},
             ])
-          + (rRated > 0 ? sec('Rating Distribution', starBarsHtml(r.dist || [0,0,0,0,0], rRated, selVR)) : '');
+          + (rRated > 0 ? sec('Distribution by Range', rangeBarsHtml) : '')
+          + sec('Vendor Details', filterBar + tblHtml);
       }
 
     } else if (cardId === 'osv') {
-      title    = 'OSV Consent';
-      subtitle = 'Based on OSV Consent field — Onboarded Open Marketplace sellers only';
+      title    = 'OSV Status';
+      subtitle = 'Column M from Demonitor sheet — Done vs Not Done';
       iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#005DFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
       if (!qd.success) {
         content = noDataMsg;
       } else {
-        var o    = (qd.seller || {}).osv || {};
-        var oT   = o.total || 0;
-        var oPct = oT > 0 ? Math.round((o.completed || 0) / oT * 100) : 0;
+        var o       = (qd.seller || {}).osv || {};
+        var oT      = o.total || 0;
+        var oDone   = o.completed || 0;
+        var oNotDone = Math.max(0, oT - oDone);
+        var oPct    = oT > 0 ? Math.round(oDone / oT * 100) : 0;
+
+        // Filterable OSV table
+        var vl       = qd.vendorOSV || [];
+        var osvTblId = 'km-osv-tbl';
+        var osvCats  = [];
+        vl.forEach(function(v) { if (v.category && osvCats.indexOf(v.category) < 0) osvCats.push(v.category); });
+        osvCats.sort();
+        var osvFilterBar = '<div class="km-fbar">'
+          + '<input type="text" class="km-fi" id="' + osvTblId + '-s" placeholder="Search vendor…" oninput="_kmOsvFilter(\'' + osvTblId + '\')">'
+          + '<select class="km-fs" id="' + osvTblId + '-c" onchange="_kmOsvFilter(\'' + osvTblId + '\')">'
+          + '<option value="">All Categories</option>'
+          + osvCats.map(function(c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('')
+          + '</select>'
+          + '<select class="km-fs" id="' + osvTblId + '-o" onchange="_kmOsvFilter(\'' + osvTblId + '\')">'
+          + '<option value="">All Statuses</option>'
+          + '<option value="done">Done</option><option value="not_done">Not Done</option>'
+          + '</select>'
+          + '</div>';
+        var osvRows = vl.map(function(v) {
+          var isDoneV = v.status === 'done';
+          var cBg  = isDoneV ? 'rgba(29,199,151,.15)' : 'var(--bg2)';
+          var cClr = isDoneV ? '#0A7044' : 'var(--txt3)';
+          return '<tr data-n="' + esc((v.name||'').toLowerCase()) + '" data-c="' + esc(v.category||'') + '" data-s="' + esc(v.status||'not_done') + '">'
+            + '<td class="km-dtbl-name">' + esc(v.name || 'Unknown') + '</td>'
+            + '<td>' + (v.category ? '<span class="km-vbadge" style="background:rgba(0,93,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '<span style="color:var(--txt3)">—</span>') + '</td>'
+            + '<td><span class="km-vbadge" style="background:' + cBg + ';color:' + cClr + '">' + (isDoneV ? 'Done' : 'Not Done') + '</span></td>'
+            + '</tr>';
+        }).join('');
+        var osvTbl = vl.length > 0
+          ? '<div class="km-dtbl-wrap"><table class="km-dtbl" id="' + osvTblId + '">'
+              + '<thead><tr><th>Vendor Name</th><th>Category</th><th>OSV Status</th></tr></thead>'
+              + '<tbody>' + osvRows + '</tbody></table></div>'
+          : '<div style="padding:16px;text-align:center;color:var(--txt3);font-size:12px">No OSV data available.</div>';
+
         content =
-          hero(fmt(o.completed || 0), 'Consent Verified (OSV)')
+          hero(fmt(oDone), 'Vendors with OSV Done')
           + srow([
-              {v: oPct + '%', l: 'Verification Rate',   s: 'of OMP onboarded'},
-              {v: fmt(oT),    l: 'Total OMP Onboarded', s: 'COMPLETED status'},
+              {v: oPct + '%',     l: 'Done Rate',   s: 'of total vendors'},
+              {v: fmt(oDone),     l: 'Done'},
+              {v: fmt(oNotDone),  l: 'Not Done'},
             ])
-          + sec('Consent Status',
-              progBar([
-                {w: o.completed    || 0, color: 'var(--st-onboarded)'},
-                {w: o.notInitiated || 0, color: 'var(--st-draft)'},
-              ])
-              + (function() {
-                  var vl = qd.vendorOSV || [];
-                  return expandTileGrid([
-                    {v: fmt(o.completed    || 0), l: 'Verified',      c: 'var(--st-onboarded)', vendors: vl.filter(function(v){return v.status==='verified';}),      mode:'osv'},
-                    {v: fmt(o.notInitiated || 0), l: 'Not Initiated', c: 'var(--st-draft)',     vendors: vl.filter(function(v){return v.status==='not_initiated';}), mode:'osv'},
-                  ]);
-                })()
-            );
+          + sec('OSV Status Detail', osvFilterBar + osvTbl);
       }
 
     } else { // docs
@@ -4473,6 +4569,53 @@ function _kmStarToggle(id, row) {
   el.style.display = open ? 'none' : '';
   if (row) row.classList.toggle('km-star-open', !open);
 }
+function _kmRatFilter(tblId) {
+  var tbl    = document.getElementById(tblId);
+  if (!tbl) return;
+  var search = ((document.getElementById(tblId + '-s') || {}).value || '').toLowerCase();
+  var cat    = (document.getElementById(tblId + '-c') || {}).value || '';
+  var range  = (document.getElementById(tblId + '-r') || {}).value || '';
+  var sort   = (document.getElementById(tblId + '-o') || {}).value || 'desc';
+  var tbody  = tbl.querySelector('tbody');
+  var rows   = Array.prototype.slice.call(tbl.querySelectorAll('tbody tr'));
+  rows.forEach(function(tr) {
+    var name   = tr.getAttribute('data-n') || '';
+    var trCat  = tr.getAttribute('data-c') || '';
+    var rating = parseFloat(tr.getAttribute('data-r') || '0');
+    var show   = (!search || name.indexOf(search) >= 0)
+              && (!cat    || trCat === cat)
+              && (!range  || (function() {
+                    var p = range.split('-');
+                    return rating >= parseFloat(p[0]) && rating <= parseFloat(p[1]);
+                  })());
+    tr.style.display = show ? '' : 'none';
+  });
+  var vis = rows.filter(function(tr) { return tr.style.display !== 'none'; });
+  vis.sort(function(a, b) {
+    if (sort === 'asc') return parseFloat(a.getAttribute('data-r')) - parseFloat(b.getAttribute('data-r'));
+    if (sort === 'az')  return (a.getAttribute('data-n')||'').localeCompare(b.getAttribute('data-n')||'');
+    if (sort === 'za')  return (b.getAttribute('data-n')||'').localeCompare(a.getAttribute('data-n')||'');
+    return parseFloat(b.getAttribute('data-r')) - parseFloat(a.getAttribute('data-r'));
+  });
+  vis.forEach(function(tr) { tbody.appendChild(tr); });
+}
+function _kmOsvFilter(tblId) {
+  var tbl = document.getElementById(tblId);
+  if (!tbl) return;
+  var search = ((document.getElementById(tblId + '-s') || {}).value || '').toLowerCase();
+  var cat    = (document.getElementById(tblId + '-c') || {}).value || '';
+  var status = (document.getElementById(tblId + '-o') || {}).value || '';
+  var rows = Array.prototype.slice.call(tbl.querySelectorAll('tbody tr'));
+  rows.forEach(function(tr) {
+    var name   = tr.getAttribute('data-n') || '';
+    var trCat  = tr.getAttribute('data-c') || '';
+    var trStat = tr.getAttribute('data-s') || '';
+    var show   = (!search || name.indexOf(search) >= 0)
+              && (!cat    || trCat === cat)
+              && (!status || trStat === status);
+    tr.style.display = show ? '' : 'none';
+  });
+}
 function _kmTileToggle(panelId, groupId, tile) {
   var panel = document.getElementById(panelId);
   if (!panel) return;
@@ -4616,18 +4759,17 @@ function _patchQualityKpiCards() {
   var rEl = document.getElementById('qkpi-rating');
   if (rEl) {
     var r    = qc.rating || {};
-    var avg  = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
-    var rOmp = r.total || 0;
-    var rsb  = fmt(r.rated || 0) + (rOmp > 0 ? ' of ' + fmt(rOmp) + ' OMP' : '') + ' rated';
+    var avg  = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
+    var rsb  = fmt(r.rated || 0) + ' rated · ' + fmt(Math.max(0, (r.total || 0) - (r.rated || 0))) + ' unrated';
     var rv   = rEl.querySelector('.vkpi-val'); if (rv) rv.textContent = avg;
     var rs   = rEl.querySelector('.vkpi-sub'); if (rs) rs.textContent = rsb;
   }
 
   var oEl = document.getElementById('qkpi-osv');
   if (oEl) {
-    var o    = qc.osv || {}, oCmp = o.completed || 0, oOmp = o.total || 0;
-    var opct = oOmp > 0 ? Math.round(oCmp / oOmp * 100) + '%' : '—';
-    var osb  = fmt(oCmp) + (oOmp > 0 ? ' of ' + fmt(oOmp) + ' OMP' : '') + ' OSV Consent given';
+    var o    = qc.osv || {}, oDn = o.completed || 0, oOmp = o.total || 0;
+    var opct = oOmp > 0 ? Math.round(oDn / oOmp * 100) + '%' : '—';
+    var osb  = fmt(oDn) + ' Done | ' + fmt(Math.max(0, oOmp - oDn)) + ' Not Done';
     var ov   = oEl.querySelector('.vkpi-val'); if (ov)  ov.textContent  = opct;
     var oSub = oEl.querySelector('.vkpi-sub'); if (oSub) oSub.textContent = osb;
   }
@@ -4965,20 +5107,19 @@ function buildQualitySect(qd, aud) {
   if (q.rating && q.rating.total > 0) {
     var r    = q.rating;
     var avg  = r.avg != null ? r.avg.toFixed(1) : '—';
-    var rRated = r.rated || r.total || 1;
-    var maxD = Math.max.apply(null, r.dist) || 1;
-    var rSub = (r.total > r.rated && r.total > 0)
-      ? fmt(r.rated) + ' of ' + fmt(r.total) + ' rated'
-      : fmt(r.rated) + ' rated';
+    var rRated = r.rated || 1;
+    var maxD = Math.max.apply(null, r.dist || [0]) || 1;
+    var rSub = fmt(r.rated) + ' rated · ' + fmt(Math.max(0, (r.total||0)-(r.rated||0))) + ' unrated';
+    var rngLabels = ['0-2','2-4','4-6','6-8','8-10'];
+    var rngCols   = ['#EF4444','#FB923C','#F59E0B','#84CC16','#22C55E'];
     var bars = '';
-    for (var i = 5; i >= 1; i--) {
-      var rc   = r.dist[i - 1] || 0;
+    for (var i = 4; i >= 0; i--) {
+      var rc   = (r.dist || [])[i] || 0;
       var bpct = Math.round(rc / maxD * 100);
       var dpct = Math.round(rc / rRated * 100);
-      var bcol = i >= 4 ? '#22C55E' : i === 3 ? '#F59E0B' : '#EF4444';
       bars += '<div class="cc-qsect-sbar">'
-        + '<span class="cc-qsect-sbar-n">' + i + '</span>'
-        + '<div class="cc-qsect-sbar-t"><div class="cc-qsect-sbar-f" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
+        + '<span class="cc-qsect-sbar-n" style="min-width:26px;font-size:8.5px">' + rngLabels[i] + '</span>'
+        + '<div class="cc-qsect-sbar-t"><div class="cc-qsect-sbar-f" style="width:' + bpct + '%;background:' + rngCols[i] + '"></div></div>'
         + '<span class="cc-qsect-sbar-c">' + (rc > 999 ? Math.round(rc / 1000) + 'k' : rc) + '</span>'
         + '<span class="cc-qsect-sbar-p">' + dpct + '%</span>'
         + '</div>';
@@ -4986,7 +5127,7 @@ function buildQualitySect(qd, aud) {
     html += '<div class="cc-qsect-row">'
       + '<span class="cc-qsect-ic">★</span>'
       + '<span class="cc-qsect-lb">Vendor Rating</span>'
-      + '<span class="cc-qsect-vl">' + avg + '&thinsp;<span class="cc-qsect-sub">avg · ' + rSub + '</span></span>'
+      + '<span class="cc-qsect-vl">' + avg + '&thinsp;<span class="cc-qsect-sub">/ 10 avg · ' + rSub + '</span></span>'
       + '</div>'
       + '<div class="cc-qsect-bars">' + bars + '</div>';
   }
@@ -4998,13 +5139,13 @@ function buildQualitySect(qd, aud) {
     var o  = q.osv, oT = o.total || 1;
     var osvPct = Math.round((o.completed || 0) / oT * 100);
     var or_ = [
-      { col: 'var(--st-onboarded)', v: o.completed,   lbl: 'Verified'      },
-      { col: 'var(--st-draft)',     v: o.notInitiated, lbl: 'Not Initiated' },
+      { col: 'var(--st-onboarded)', v: o.completed,   lbl: 'Done'     },
+      { col: 'var(--st-draft)',     v: Math.max(0, oT - (o.completed||0)), lbl: 'Not Done' },
     ];
     html += '<div class="cc-qsect-row cc-qsect-mt">'
       + '<span class="cc-qsect-ic">◎</span>'
-      + '<span class="cc-qsect-lb">OSV Consent</span>'
-      + '<span class="cc-qsect-vl">' + fmt(o.completed) + '&thinsp;<span class="cc-qsect-sub">' + osvPct + '% of OMP</span></span>'
+      + '<span class="cc-qsect-lb">OSV Status</span>'
+      + '<span class="cc-qsect-vl">' + fmt(o.completed) + '&thinsp;<span class="cc-qsect-sub">' + osvPct + '% Done</span></span>'
       + '</div>'
       + or_.map(function(x) {
           if (!x.v) return '';
@@ -5064,18 +5205,18 @@ function _buildSellerQualStrip(qc) {
   if (!qc) {
     return '<div class="cc-qual-strip">'
       + '<div' + rowAttrs('rating') + '><span class="cc-qs-lbl">★ Vendor Rating</span><span class="cc-qs-sync">Syncing…</span></div>'
-      + '<div' + rowAttrs('osv') + '><span class="cc-qs-lbl">✓ OSV Consent</span><span class="cc-qs-sync">Syncing…</span></div>'
+      + '<div' + rowAttrs('osv') + '><span class="cc-qs-lbl">✓ OSV Status</span><span class="cc-qs-sync">Syncing…</span></div>'
       + '</div>';
   }
   var r = qc.rating || {}, o = qc.osv || {};
-  var rAvg = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
-  var rSub = fmt(r.rated || 0) + (r.total > 0 ? ' of ' + fmt(r.total) + ' OMP' : '') + ' rated';
+  var rAvg = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
+  var rSub = fmt(r.rated || 0) + ' rated · ' + fmt(Math.max(0, (r.total||0)-(r.rated||0))) + ' unrated';
   var oPct = o.total > 0 ? Math.round((o.completed || 0) / o.total * 100) + '%' : '—';
-  var oSub = fmt(o.completed || 0) + (o.total > 0 ? ' of ' + fmt(o.total) + ' OMP' : '') + ' OSV Consent given';
+  var oSub = fmt(o.completed || 0) + ' Done | ' + fmt(Math.max(0, (o.total||0)-(o.completed||0))) + ' Not Done';
   return '<div class="cc-qual-strip">'
     + '<div' + rowAttrs('rating') + '><span class="cc-qs-lbl">★ Vendor Rating</span>'
     + '<span class="cc-qs-val">' + rAvg + ' <em>' + rSub + '</em></span></div>'
-    + '<div' + rowAttrs('osv') + '><span class="cc-qs-lbl">✓ OSV Consent</span>'
+    + '<div' + rowAttrs('osv') + '><span class="cc-qs-lbl">✓ OSV Status</span>'
     + '<span class="cc-qs-val">' + oPct + ' <em>' + oSub + '</em></span></div>'
     + '</div>';
 }
@@ -5435,10 +5576,12 @@ function _buildRailQual(qc, vname) {
   var ratingVal, ratingSub, osvVal, osvSub;
   if (qc) {
     var r = qc.rating || {}, o = qc.osv || {};
-    ratingVal = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
-    ratingSub = fmt(r.rated || 0) + (r.total > 0 ? ' of ' + fmt(r.total) + ' OMP' : '') + ' rated';
-    osvVal    = o.total > 0 ? Math.round((o.completed || 0) / o.total * 100) + '%' : '—';
-    osvSub    = fmt(o.completed || 0) + (o.total > 0 ? ' of ' + fmt(o.total) + ' OMP' : '') + ' consent given';
+    ratingVal = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
+    ratingSub = fmt(r.rated || 0) + ' rated · ' + fmt(Math.max(0, (r.total || 0) - (r.rated || 0))) + ' unrated';
+    var osvDone    = o.completed || 0;
+    var osvNotDone = Math.max(0, (o.total || 0) - osvDone);
+    osvVal = o.total > 0 ? Math.round(osvDone / o.total * 100) + '%' : '—';
+    osvSub = fmt(osvDone) + ' Done | ' + fmt(osvNotDone) + ' Not Done';
   }
   function tile(cardId, label, val, sub, valColor, extraCls) {
     var body = val != null
@@ -5453,7 +5596,7 @@ function _buildRailQual(qc, vname) {
   }
   return '<div id="biz-qual" style="display:contents">'
     + tile('rating', 'Vendor Rating', ratingVal, ratingSub, '#E48800', 'biz-tile--right')
-    + tile('osv',    'OSV Consent',   osvVal,    osvSub,    '#005DFF', 'biz-tile--bottom')
+    + tile('osv',    'OSV Status',    osvVal,    osvSub,    '#005DFF', 'biz-tile--bottom')
     + '</div>';
 }
 

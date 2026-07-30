@@ -1617,7 +1617,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v10';  // v10: rating+OSV sourced from Demonitor sheet
+  var CACHE_KEY = 'quality_data_v11';  // v11: rating 0-10 scale; OSV only 'Done'=done
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1733,14 +1733,12 @@ function getQualityData() {
         var ompInfo = ompMap[vid_];
         if (ompInfo) {
           var osRaw = String(row[oC] || '').trim();
-          var osUp  = osRaw.toUpperCase().replace(/\s+/g, '_');
-          var osvStatus = (osUp === 'CONSENT_ACCEPTED' || osUp === 'YES' || osUp === 'Y' || osUp === 'TRUE')
-            ? 'verified' : 'not_initiated';
+          var osvStatus = osRaw.toUpperCase() === 'DONE' ? 'done' : 'not_done';
           vendorOSV.push({
             id:               vid_.slice(0, 30),
             name:             ompInfo.name || String(row[nameC] || '').trim().slice(0, 60),
             gstin:            ompInfo.gstin,
-            consentRaw:       osRaw.slice(0, 30),
+            osvRaw:           osRaw.slice(0, 30),
             status:           osvStatus,
             onboardingStatus: ompInfo.onboardingStatus,
             category:         ompInfo.category,
@@ -1874,14 +1872,14 @@ function getQualityData() {
         // ── Vendor Rating (Col G) ──────────────────────────────────────────
         var ratRaw = row[dmRatC];
         var rv = parseFloat(String(ratRaw == null ? '' : ratRaw).replace(/[^0-9.]/g, ''));
-        // Normalise scores > 5 to a 5-point scale (e.g. 0-100 → 0-5)
-        if (!isNaN(rv) && rv > 5 && rv <= 100) rv = rv / 20;
-        if (!isNaN(rv) && rv > 0 && rv <= 5) {
+        // Scale is 0–10 (max rating per requirement). Accept values 0.1–10.
+        if (!isNaN(rv) && rv > 0 && rv <= 10) {
           var tRat = rAud === 'buyer' ? ['buyer','combined'] : ['seller','combined'];
           tRat.forEach(function(t) {
             acc[t].r.ws    += rv;
             acc[t].r.rated += 1;
-            acc[t].r.dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += 1;
+            // dist buckets: index 0=[0-2), 1=[2-4), 2=[4-6), 3=[6-8), 4=[8-10]
+            acc[t].r.dist[rv < 2 ? 0 : rv < 4 ? 1 : rv < 6 ? 2 : rv < 8 ? 3 : 4] += 1;
           });
           vendorRatings.push({
             id:               (ompInfo && ompInfo.id) || dmId.slice(0, 30),
@@ -1897,18 +1895,11 @@ function getQualityData() {
         }
 
         // ── OSV Status (Col M) ────────────────────────────────────────────
+        // Only "Done" (case-insensitive) = Done; blank/null/empty/any-other = Not Done.
         var osvRaw = row[dmOsvC] != null ? String(row[dmOsvC]).trim() : '';
-        if (!osvRaw) return;
-        var osvUp  = osvRaw.toUpperCase().replace(/[\s\-\/]+/g, '_');
-        var osvVerified = (
-          osvUp === 'DONE'          || osvUp === 'COMPLETED'      || osvUp === 'VERIFIED'  ||
-          osvUp === 'CONSENT_ACCEPTED' || osvUp === 'ACCEPTED'    || osvUp === 'YES'       ||
-          osvUp === 'Y'             || osvUp === 'TRUE'           || osvUp === '1'         ||
-          osvUp === 'OSV_DONE'      || osvUp === 'OSV_COMPLETED'  || osvUp === 'PASSED'    ||
-          osvUp === 'APPROVED'      || osvUp === 'SUCCESS'        || osvUp === 'COMPLETE'
-        );
-        var osvStatus = osvVerified ? 'verified' : 'not_initiated';
-        if (osvVerified) {
+        var isDone = osvRaw.toUpperCase() === 'DONE';
+        var osvStatus = isDone ? 'done' : 'not_done';
+        if (isDone) {
           acc['seller'].o.completed   += 1;
           acc['combined'].o.completed += 1;
           _demonitorOsvCount++;
@@ -1917,7 +1908,7 @@ function getQualityData() {
           id:               (ompInfo && ompInfo.id) || dmId.slice(0, 30),
           name:             (ompInfo && ompInfo.name) || dmName.slice(0, 60),
           gstin:            (ompInfo && ompInfo.gstin) || dmGstin.slice(0, 20),
-          consentRaw:       osvRaw.slice(0, 30),
+          osvRaw:           osvRaw.slice(0, 30),
           status:           osvStatus,
           onboardingStatus: ompInfo ? ompInfo.onboardingStatus : '',
           category:         ompInfo ? ompInfo.category : '',
@@ -1932,9 +1923,7 @@ function getQualityData() {
         var rv2 = parseFloat(String(r[dmRatC] == null ? '' : r[dmRatC]).replace(/[^0-9.]/g, ''));
         return !isNaN(rv2) && rv2 > 0;
       }).length;
-      var dmOsvTotal = dmRows.filter(function(r) {
-        return r[dmOsvC] != null && String(r[dmOsvC]).trim() !== '';
-      }).length;
+      var dmOsvTotal = dmRows.length;  // all rows; blank/empty = Not Done
 
       // Use OMP total as denominator when the sheet is scoped to OMP vendors;
       // fall back to sheet-row count so percentages are always meaningful.
@@ -2329,7 +2318,7 @@ function debugDocs() {
 // ════════════════════════════════════════════════════════════════
 function bustQualityCache() {
   var cache = CacheService.getScriptCache();
-  cache.remove('quality_data_v10');
+  cache.remove('quality_data_v11');
   Logger.log('Quality cache cleared — next getQualityData() call will re-read Demonitor sheet.');
 }
 
@@ -2367,15 +2356,9 @@ function debugDemonitor() {
     var nRat = 0, sumRat = 0, nOsv = 0;
     dataRows.forEach(function(r) {
       var rv = parseFloat(String(r[ratC] == null ? '' : r[ratC]).replace(/[^0-9.]/g, ''));
-      if (!isNaN(rv) && rv > 0) {
-        if (rv > 5 && rv <= 100) rv = rv / 20;
-        if (rv <= 5) { nRat++; sumRat += rv; }
-      }
-      var os = String(r[osvC] == null ? '' : r[osvC]).trim().toUpperCase().replace(/[\s\-\/]+/g, '_');
-      var done = (os === 'DONE' || os === 'COMPLETED' || os === 'VERIFIED' || os === 'YES'
-               || os === 'CONSENT_ACCEPTED' || os === 'ACCEPTED' || os === 'TRUE' || os === '1'
-               || os === 'OSV_DONE' || os === 'PASSED' || os === 'APPROVED' || os === 'SUCCESS' || os === 'COMPLETE');
-      if (done) nOsv++;
+      if (!isNaN(rv) && rv > 0 && rv <= 10) { nRat++; sumRat += rv; }
+      var os = String(r[osvC] == null ? '' : r[osvC]).trim().toUpperCase();
+      if (os === 'DONE') nOsv++;
     });
     Logger.log('Vendor Rating (Col ' + String.fromCharCode(65 + ratC) + '): '
       + nRat + ' valid scores · avg = ' + (nRat ? Math.round(sumRat / nRat * 10) / 10 : '—'));
