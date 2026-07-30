@@ -2390,7 +2390,7 @@ body.view-gst #vert-tabs-bar{display:none}
     <span id="onb-period-controls" style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div class="qf-chips" id="qf-chips">
         <button class="qf-chip" data-qf="Today"     onclick="onPeriodSelect('Today')">Today</button>
-        <button class="qf-chip" data-qf="MTD"       onclick="onPeriodSelect('MTD')">MTD</button>
+        <button class="qf-chip" data-qf="MTD"       onclick="onPeriodSelect('MTD')">For the Month</button>
         <button class="qf-chip" data-qf="YTD"       onclick="onPeriodSelect('YTD')">YTD</button>
       </div>
       <select class="filter-select" id="top-period" onchange="onPeriodSelect(this.value)">
@@ -2845,7 +2845,7 @@ function renderPeriodControl() {
   if (!sel) return;
   var pairs = [
     ['Today',     'Today'],
-    ['MTD',       'MTD (Month to Date)'],
+    ['MTD',       'For the Month'],
     ['YTD',       'YTD (Apr 1 – Today)'],
   ];
   ((D && D.fiscalYears) || []).forEach(function(fy) { pairs.push([fy, fy.replace(/^FY/, 'FY ')]); });
@@ -6814,7 +6814,7 @@ function spBuildItems(query) {
   // ── Period filters (shown when on overview) ──
   var periodItems = [
     { ic:'D', title:'Today', sub:'Onboarding activity for today', action:function(){onPeriodSelect('Today')}, badge:'Period' },
-    { ic:'MTD', title:'MTD – Month to Date', sub:'From 1st of current month to today', action:function(){onPeriodSelect('MTD')}, badge:'Period' },
+    { ic:'MTD', title:'For the Month', sub:'From 1st of current month to today', action:function(){onPeriodSelect('MTD')}, badge:'Period' },
     { ic:'YTD', title:'YTD – Year to Date', sub:'From Apr 1 of current financial year', action:function(){onPeriodSelect('YTD')}, badge:'Period' },
     { ic:'All', title:'All Time', sub:'Complete onboarding history', action:function(){onPeriodSelect('All')}, badge:'Period' },
   ];
