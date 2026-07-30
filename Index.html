@@ -1888,17 +1888,29 @@ body.view-gst #vert-tabs-bar{display:none}
 }
 :root[data-theme="dark"] .biz-ins-card{background:linear-gradient(150deg,var(--card) 60%,rgba(124,92,250,.08) 100%)}
 :root[data-theme="light"] .biz-ins-card{background:linear-gradient(150deg,#FFFFFF 58%,#F5F3FF 100%)}
-/* Sections inside the insights card */
-.biz-ins-sect{border-top:1px solid var(--border);padding-top:14px;margin-top:14px}
-.biz-ins-lbl{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px}
-.biz-ins-big{font-size:24px;font-weight:700;color:var(--txt);letter-spacing:-.7px;line-height:1.1;font-variant-numeric:tabular-nums;margin-bottom:4px}
-.biz-ins-sub{font-size:10.5px;color:var(--txt3);margin-bottom:0}
-.biz-cat-rows{margin-top:8px}
-.biz-cat-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)}
+/* Body fills the card height; the three metric bands share it evenly so the
+   card never shows a large empty void under the last metric. */
+.biz-ins-body{display:flex;flex-direction:column;flex:1;min-height:0}
+#biz-ins-quality{display:flex;flex-direction:column;flex:2;min-height:0}
+/* Sections inside the insights card — each an equal, vertically-centred band */
+.biz-ins-sect{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  border-top:1px solid var(--border);padding:16px 0;min-height:0;
+}
+.biz-ins-lbl{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:9px;display:flex;align-items:center;gap:5px}
+.biz-ins-lbl .biz-ins-gly{font-size:12px;line-height:1;color:var(--txt3)}
+.biz-ins-big{font-size:28px;font-weight:800;color:var(--txt);letter-spacing:-.9px;line-height:1.05;font-variant-numeric:tabular-nums;margin-bottom:5px}
+.biz-ins-big .biz-ins-unit{font-size:15px;font-weight:700;color:var(--txt3);letter-spacing:0}
+.biz-ins-sub{font-size:11px;color:var(--txt3);margin:0}
+.biz-cat-rows{margin-top:11px}
+.biz-cat-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
 .biz-cat-row:last-child{border-bottom:none}
-.biz-cat-val{margin-left:auto;font-size:12px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
-/* Interactive sections inside the insights card */
-.biz-ins-sect-btn{cursor:pointer;border-radius:6px;margin:-6px -6px 0;padding:6px 6px 0;transition:background .13s}
+.biz-cat-val{margin-left:auto;font-size:13px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+/* Coverage meter under Vendor Rating / OSV Consent */
+.biz-ins-meter{height:5px;border-radius:3px;background:var(--seg-track);overflow:hidden;margin-top:12px}
+.biz-ins-meter>i{display:block;height:100%;border-radius:3px;transition:width 1s var(--ease-out)}
+/* Interactive sections inside the insights card — full-band hover target */
+.biz-ins-sect-btn{cursor:pointer;transition:background .15s var(--ease)}
 .biz-ins-sect-btn:hover{background:var(--hover)}
 .biz-ins-sect-btn:active{background:var(--seg-track)}
 /* Pipeline card header — plain audience title, no repeated vertical name */
@@ -5141,24 +5153,25 @@ function buildBizInsightsCard(cfg, vs) {
       + '<span class="biz-cat-val">' + fmtINR(c.txnValue) + '</span>'
       + '</div>';
   }).join('');
-  var gmvSect = '<div class="biz-ins-sect">'
-    + '<div class="biz-ins-lbl">Total GMV</div>'
-    + '<div class="biz-ins-big" style="cursor:pointer" role="button" tabindex="0"'
+  var gmvSect = '<div class="biz-ins-sect biz-ins-sect-btn" role="button" tabindex="0"'
     + ' onclick="openGmvCatModal(\'seller\')"'
     + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openGmvCatModal(\'seller\')}">'
-    + gmvVal + '</div>'
+    + '<div class="biz-ins-lbl"><span class="biz-ins-gly">₹</span>Total GMV</div>'
+    + '<div class="biz-ins-big">' + gmvVal + '</div>'
     + (catHtml ? '<div class="biz-cat-rows">' + catHtml + '</div>' : '')
     + '</div>';
 
   // Rating + OSV — async, container patched when qualityData arrives
   var qc = qualityData && qualityData.success ? (qualityData.seller || {}) : null;
   var body = isOMP
-    ? (gmvSect + '<div id="biz-ins-quality">' + _buildBizQualSects(qc) + '</div>')
-    : '<div class="no-data" style="padding:24px 0">OMP only</div>';
+    ? ('<div class="biz-ins-body">' + gmvSect
+       + '<div id="biz-ins-quality">' + _buildBizQualSects(qc) + '</div></div>')
+    : '<div class="biz-ins-body" style="justify-content:center">'
+      + '<div class="no-data" style="text-align:center;padding:0 12px;line-height:1.6">Business insights are available for Open&nbsp;Marketplace only</div></div>';
 
   return '<div class="compare-card biz-ins-card" style="--i:2;' + vcVars(cfg.key) + '">'
     + '<span class="cc-ghost" aria-hidden="true">◆</span>'
-    + '<div class="cc-hdr2" style="align-items:center;gap:8px;margin-bottom:14px">'
+    + '<div class="cc-hdr2" style="align-items:center;gap:8px;margin-bottom:2px">'
     + '<span class="pipe-dot" style="background:#7C5CFA"></span>'
     + '<span class="pipe-title">Business Insights</span>'
     + '<span class="pipe-sub">OMP · Sellers</span>'
@@ -5171,29 +5184,39 @@ function buildBizInsightsCard(cfg, vs) {
 // the Business Insights card. Called both at render time and when
 // qualityData arrives asynchronously.
 function _buildBizQualSects(qc) {
-  function sect(lbl, bigVal, subTxt, onclk) {
+  function sect(gly, lbl, bigVal, subTxt, meter, onclk) {
     var clkAttrs = onclk
       ? (' class="biz-ins-sect biz-ins-sect-btn" role="button" tabindex="0"'
          + ' onclick="' + onclk + '"'
          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + onclk + '}"')
       : ' class="biz-ins-sect"';
     return '<div' + clkAttrs + '>'
-      + '<div class="biz-ins-lbl">' + lbl + '</div>'
+      + '<div class="biz-ins-lbl"><span class="biz-ins-gly">' + gly + '</span>' + lbl + '</div>'
       + '<div class="biz-ins-big">' + bigVal + '</div>'
-      + '<div class="biz-ins-sub">' + subTxt + '</div>'
+      + (subTxt ? '<div class="biz-ins-sub">' + subTxt + '</div>' : '')
+      + (meter || '')
       + '</div>';
   }
+  function meterBar(pct, color) {
+    pct = Math.max(0, Math.min(100, Math.round(pct || 0)));
+    return '<div class="biz-ins-meter" title="' + pct + '%"><i style="width:' + pct + '%;background:' + color + '"></i></div>';
+  }
   if (!qc) {
-    return sect('★ Vendor Rating', '<span style="color:var(--txt3);font-size:14px;font-weight:500">Syncing…</span>', '', '')
-      + sect('◎ OSV Consent',    '<span style="color:var(--txt3);font-size:14px;font-weight:500">Syncing…</span>', '', '');
+    var syn = '<span style="color:var(--txt3);font-size:15px;font-weight:600">Syncing…</span>';
+    return sect('★', 'Vendor Rating', syn, '', '', '')
+      + sect('◎', 'OSV Consent', syn, '', '', '');
   }
   var r = qc.rating || {}, o = qc.osv || {};
-  var rAvg = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
+  var rAvg = r.avg != null
+    ? r.avg.toFixed(1) + '<span class="biz-ins-unit">★ / 5.0</span>'
+    : '—';
+  var rCov = (r.total > 0) ? (r.rated || 0) / r.total * 100 : 0;
   var rSub = fmt(r.rated || 0) + (r.total > 0 ? ' of ' + fmt(r.total) + ' OMP' : '') + ' rated';
-  var oPct = o.total > 0 ? Math.round((o.completed || 0) / o.total * 100) + '%' : '—';
+  var oPct = o.total > 0 ? Math.round((o.completed || 0) / o.total * 100) : null;
   var oSub = fmt(o.completed || 0) + (o.total > 0 ? ' of ' + fmt(o.total) + ' OMP' : '') + ' OSV Consent given';
-  return sect('★ Vendor Rating', rAvg, rSub, "openKpiModal('rating')")
-    + sect('◎ OSV Consent', oPct, oSub, "openKpiModal('osv')");
+  return sect('★', 'Vendor Rating', rAvg, rSub, r.total > 0 ? meterBar(rCov, '#FF9F0A') : '', "openKpiModal('rating')")
+    + sect('◎', 'OSV Consent', oPct != null ? oPct + '<span class="biz-ins-unit">%</span>' : '—', oSub,
+           oPct != null ? meterBar(oPct, '#30D158') : '', "openKpiModal('osv')");
 }
 
 // Render the inline detailed view section (replaces the full-screen overlay).
