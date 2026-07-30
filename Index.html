@@ -5120,11 +5120,77 @@ var REGION_COLORS = {
   North: '#007AFF', South: '#34C759', West: '#AF52DE',
   East: '#FF9500', Central: '#FF2D55', Northeast: '#5856D6', Other: '#8E8E93',
 };
+// Frontend mirror of the backend stateToRegion_ — lets the Regional Split card
+// populate from loaded detail rows even before Code.gs (with its `regions`
+// field) is redeployed, exactly like the GMV-by-category fallback.
+var REGION_BY_STATE_FE = (function() {
+  var m = {}, add = function(reg, names) { names.forEach(function(n) { m[n] = reg; }); };
+  add('North',     ['jammukashmir','jammuandkashmir','jandk','jk','ladakh','himachalpradesh','hp','punjab','chandigarh','uttarakhand','uttaranchal','haryana','delhi','newdelhi','nctofdelhi','nctdelhi','rajasthan','uttarpradesh','up']);
+  add('South',     ['andhrapradesh','ap','karnataka','kerala','tamilnadu','tn','telangana','ts','tg','puducherry','pondicherry','lakshadweep','andamannicobar','andamanandnicobar','andamanandnicobarislands']);
+  add('East',      ['bihar','jharkhand','odisha','orissa','westbengal','wb','sikkim']);
+  add('West',      ['goa','gujarat','gj','maharashtra','mh','dadranagarhaveli','dadraandnagarhaveli','damananddiu','dadraandnagarhavelianddamananddiu','dnh']);
+  add('Central',   ['chhattisgarh','chattisgarh','madhyapradesh','mp']);
+  add('Northeast', ['assam','arunachalpradesh','manipur','meghalaya','mizoram','nagaland','tripura']);
+  return m;
+}());
+var REGION_BY_GST_CODE_FE = {
+  '01':'North','02':'North','03':'North','04':'North','05':'North','06':'North','07':'North','08':'North','09':'North','38':'North',
+  '10':'East','11':'East','19':'East','20':'East','21':'East',
+  '12':'Northeast','13':'Northeast','14':'Northeast','15':'Northeast','16':'Northeast','17':'Northeast','18':'Northeast',
+  '22':'Central','23':'Central',
+  '24':'West','25':'West','26':'West','27':'West','30':'West',
+  '28':'South','29':'South','31':'South','32':'South','33':'South','34':'South','35':'South','36':'South','37':'South',
+};
+function _stateToRegionFE(state) {
+  var raw = String(state || '').trim();
+  if (!raw) return '';
+  var digits = raw.match(/^\s*(\d{1,2})\b/);
+  if (digits) {
+    var code = digits[1].length === 1 ? '0' + digits[1] : digits[1];
+    if (REGION_BY_GST_CODE_FE[code]) return REGION_BY_GST_CODE_FE[code];
+  }
+  var key = raw.toLowerCase().replace(/&/g, 'and').replace(/[^a-z]/g, '');
+  return REGION_BY_STATE_FE[key] || 'Other';
+}
+// Aggregate per-vendor detail rows into the same shape the backend `regions`
+// field uses (region, total, onboarded, txnValue).
+function _regionsFromRows(rows) {
+  var map = {};
+  rows.forEach(function(r) {
+    var reg = _stateToRegionFE(r.state);
+    if (!reg) return;
+    if (!map[reg]) map[reg] = { region: reg, total: 0, onboarded: 0, txnValue: 0, hasTxnVal: false };
+    var g = map[reg];
+    g.total++;
+    if (r.status === 'COMPLETED') g.onboarded++;
+    var tv = r.txnValue;
+    if (tv != null && tv > 0) { g.txnValue += Number(tv); g.hasTxnVal = true; }
+  });
+  return Object.keys(map).map(function(k) {
+    var g = map[k];
+    return { region: g.region, total: g.total, onboarded: g.onboarded, txnValue: g.hasTxnVal ? g.txnValue : null };
+  });
+}
+// Recompute cfg + seller summary for the active vertical and repaint the rail.
+// Called after detail rows load so the region fallback can fill the card.
+function refreshBizRail() {
+  var key = (typeof activeVertKey !== 'undefined' && activeVertKey) || selectedVert;
+  if (!key) return;
+  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  if (!cfg) return;
+  var vs = (DS && DS.verticals) ? DS.verticals[key] : null;
+  renderBizRail(cfg, vs || null);
+}
 // Region-wise bifurcation card for the Business Insights rail. Shows onboarded
 // sellers per region with a proportional share bar; empty when no region data.
 function _buildRailRegions(vs) {
   var regs = (vs && vs.regions ? vs.regions : [])
     .filter(function(r) { return (r.total || 0) > 0; });
+  // Fallback: derive from loaded seller detail rows when the backend response
+  // predates the `regions` field (e.g. before Code.gs is redeployed).
+  if (!regs.length && selectedAud === 'seller' && Array.isArray(vertRows) && vertRows.length) {
+    regs = _regionsFromRows(vertRows).filter(function(r) { return (r.total || 0) > 0; });
+  }
   if (!regs.length) return '';
   // Prefer onboarded counts; fall back to total pipeline if nothing onboarded yet.
   var onbSum = regs.reduce(function(s, r) { return s + (r.onboarded || 0); }, 0);
@@ -5584,6 +5650,7 @@ function loadVertRows(key) {
       vertRowsLoading = false;
       vertRowsError = null;
       renderVertDetail();
+      if (selectedAud === 'seller') refreshBizRail();  // fill Regional Split from detail rows
       swrDone = true;
     }
   } catch (e) {}
@@ -5600,6 +5667,7 @@ function loadVertRows(key) {
         if (data.success && data.vertKey === selectedVert) {
           vertRows = data.rows || [];
           _vertRowsPKey = myPKey;
+          if (selectedAud === 'seller') refreshBizRail();  // fill Regional Split from detail rows
           // Persist so the next open is instant
           try { localStorage.setItem(lsVKey, JSON.stringify({ pKey: myPKey, rows: data.rows || [] })); } catch (e) {}
         } else if (!data.success && !swrDone) {
