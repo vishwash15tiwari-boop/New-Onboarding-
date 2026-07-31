@@ -6877,9 +6877,8 @@ function renderCatDetailCard(c) {
     vtHtml = '<div style="padding:10px 0;font-size:12px;color:var(--txt3)">No vendor type data</div>';
   } else {
     var vtBodyRows = vts.map(function(vt, vi) {
-      var col  = vtCols[vi % vtCols.length];
-      var txd  = vt.transacted || 0;
-      var rate = vt.count > 0 ? Math.round(txd / vt.count * 100) : 0;
+      var col = vtCols[vi % vtCols.length];
+      var txd = vt.transacted || 0;
       var vtJs = JSON.stringify(vt.type);
       return '<tr onclick="filterByVendorType(' + vtJs + ')" class="vt-tr" style="cursor:pointer;transition:background .14s">'
         + '<td style="padding:7px 0;border-bottom:1px solid var(--border)">'
@@ -6887,13 +6886,7 @@ function renderCatDetailCard(c) {
         +   '<span style="font-size:11.5px;font-weight:600;color:var(--txt2)">' + esc(vt.type) + '</span>'
         + '</td>'
         + '<td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt)">' + fmt(vt.count) + '</td>'
-        + '<td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--st-onboarded-tx)">' + fmt(txd) + '</td>'
-        + '<td style="padding:7px 0 7px 8px;border-bottom:1px solid var(--border);min-width:80px">'
-        +   '<div style="display:flex;align-items:center;gap:5px">'
-        +     '<div style="flex:1;height:5px;background:var(--bg2);border-radius:3px;overflow:hidden"><div style="height:100%;width:' + rate + '%;background:' + col + ';border-radius:3px;transition:width .7s"></div></div>'
-        +     '<span style="font-size:11px;font-weight:700;color:var(--txt);min-width:30px;text-align:right;font-variant-numeric:tabular-nums">' + rate + '%</span>'
-        +   '</div>'
-        + '</td>'
+        + '<td style="padding:7px 0 7px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--st-onboarded-tx)">' + fmt(txd) + '</td>'
         + '</tr>';
     }).join('');
     vtHtml = '<table style="width:100%;border-collapse:collapse">'
@@ -6901,7 +6894,6 @@ function renderCatDetailCard(c) {
       +   '<th style="font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding-bottom:7px;text-align:left;border-bottom:1px solid var(--border)">Vendor Type</th>'
       +   '<th style="font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding-bottom:7px;text-align:right;border-bottom:1px solid var(--border);padding-left:8px">Onboarded</th>'
       +   '<th style="font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding-bottom:7px;text-align:right;border-bottom:1px solid var(--border);padding-left:8px">Transacted</th>'
-      +   '<th style="font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding-bottom:7px;text-align:left;border-bottom:1px solid var(--border);padding-left:8px">Rate</th>'
       + '</tr></thead>'
       + '<tbody>' + vtBodyRows + '</tbody>'
       + '</table>';
