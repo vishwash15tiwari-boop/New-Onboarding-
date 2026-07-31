@@ -80,13 +80,16 @@
 
   /* ── Geometry & motion — Apple 8-pt grid, easing curves ── */
   --r:    18px;   /* card radius — Apple.com card */
-  --r2:   12px;
+  --r2:   12px;   /* inner card / control radius */
+  --r-card: 14px; /* pipeline & feature card tier */
   --seg-track: rgba(120,120,128,.12);   /* iOS segmented-control track */
   --pill: 999px;
   --ease:        cubic-bezier(.25,.1,.25,1);    /* Apple default */
   --ease-out:    cubic-bezier(.16,1,.3,1);      /* expo decelerate — entrances */
   --ease-sheet:  cubic-bezier(.32,.72,0,1);     /* iOS sheet spring */
   --ease-spring: cubic-bezier(.34,1.35,.62,1);  /* gentle overshoot — micro-presses */
+  /* ── Standard card hover transition — no layout-shifting transforms ── */
+  --t-card: box-shadow .18s ease-in-out, border-color .18s ease-in-out;
 
   --wash: none;
 }
@@ -340,11 +343,11 @@ select,input{font-family:inherit}
   position:relative;overflow:hidden;
   background:var(--card);
   border:1px solid var(--border);
-  border-radius:10px;
+  border-radius:var(--r2);
   padding:14px 16px;
-  box-shadow:0 1px 2px rgba(0,0,0,.04);
+  box-shadow:var(--shadow-sm);
   cursor:pointer;
-  transition:box-shadow .2s var(--ease-out),border-color .18s;
+  transition:var(--t-card);
 }
 .compare-card::before{display:none}
 .compare-card::after{display:none}
@@ -429,9 +432,9 @@ select,input{font-family:inherit}
 .cc-cat-track{flex:1;height:4px;border-radius:3px;background:rgba(120,120,128,.18);overflow:hidden}
 .cc-cat-fill{height:100%;border-radius:3px;background:var(--st-onboarded);transition:width .9s var(--ease-out)}
 .cc-cat-meter em{font-style:normal;font-size:11px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;min-width:32px;text-align:right}
-.cc-cat-click{cursor:pointer;transition:transform .3s var(--ease-out),box-shadow .3s var(--ease-out)}
-.cc-cat-click:hover{box-shadow:var(--shadow-lg);transform:scale(1.02)}
-.cc-cat-click:active{transform:scale(.98);transition-duration:.12s}
+.cc-cat-click{cursor:pointer;transition:var(--t-card)}
+.cc-cat-click:hover{box-shadow:var(--shadow);border-color:rgba(0,0,0,.14)}
+.cc-cat-click:active{opacity:.88;transition-duration:.08s}
 #cat-detail-wrap{animation:riseIn .55s var(--ease-sheet) both;margin-top:16px;margin-bottom:32px}
 #cat-detail-wrap.no-anim,#cat-detail-wrap.no-anim *{animation:none!important}
 /* (link-line hint removed — the ::after chevron carries the affordance) */
@@ -569,13 +572,13 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .vd-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:22px}
 .vd-kpi{
   background:var(--card);
-  border:none;
+  border:1px solid var(--border);
   border-radius:var(--r2);
   padding:14px 16px 12px;
-  box-shadow:var(--shadow-card);
-  transition:transform .3s var(--ease-out),box-shadow .3s var(--ease-out);
+  box-shadow:var(--shadow-sm);
+  transition:var(--t-card);
 }
-.vd-kpi:hover{transform:scale(1.02);box-shadow:var(--shadow)}
+.vd-kpi:hover{box-shadow:var(--shadow);border-color:rgba(0,0,0,.14)}
 .vd-kpi-val{font-size:19px;font-weight:700;color:var(--txt);letter-spacing:-.4px;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1}
 .vd-kpi-lbl{font-size:10.5px;color:var(--txt2);font-weight:500;margin-top:6px;line-height:1.4;display:flex;align-items:center;gap:5px}
 /* Status identity — a small dot, never a tinted card */
@@ -757,9 +760,9 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .kb-col-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt2);white-space:nowrap}
 .kb-count{margin-left:auto;font-size:11px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;background:none;border:none;padding:0}
 .kb-cards{padding:8px;display:flex;flex-direction:column;gap:7px;overflow-y:auto;max-height:420px}
-.kb-card{background:var(--card);border:none;border-radius:10px;padding:10px 12px;box-shadow:var(--shadow-sm);transition:box-shadow .25s var(--ease-out),transform .25s var(--ease-out)}
-.kb-card:hover{box-shadow:var(--shadow);transform:scale(1.02)}
-.kb-card:active{transform:scale(.97);transition-duration:.1s}
+.kb-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;box-shadow:var(--shadow-sm);transition:var(--t-card)}
+.kb-card:hover{box-shadow:var(--shadow);border-color:rgba(0,0,0,.14)}
+.kb-card:active{opacity:.88;transition-duration:.08s}
 .kb-card-name{font-size:12.5px;font-weight:600;color:var(--txt);line-height:1.35}
 .kb-card-meta{font-size:11px;color:var(--txt2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kb-card-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px}
@@ -993,8 +996,8 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 
 /* Year filter chips */
 .gp-year-chips{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}
-.gp-year-chip{font-family:inherit;font-size:12px;font-weight:600;padding:5px 13px;border:1.5px solid var(--gp-border2);border-radius:20px;cursor:pointer;background:var(--gp-card);color:var(--gp-ink2);transition:background .18s,border-color .18s,color .18s,transform .18s;white-space:nowrap;line-height:1.35}
-.gp-year-chip:hover{border-color:var(--gp-orange);color:var(--gp-orange-ink);transform:translateY(-1px)}
+.gp-year-chip{font-family:inherit;font-size:12px;font-weight:600;padding:5px 13px;border:1.5px solid var(--gp-border2);border-radius:20px;cursor:pointer;background:var(--gp-card);color:var(--gp-ink2);transition:border-color .18s ease-in-out,color .18s ease-in-out;white-space:nowrap;line-height:1.35}
+.gp-year-chip:hover{border-color:var(--gp-orange);color:var(--gp-orange-ink)}
 .gp-year-chip.active{background:var(--gp-orange);border-color:var(--gp-orange);color:#fff}
 
 /* Staggered reveal for cards */
@@ -1008,9 +1011,9 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 
 /* ── KPI row ── */
 .gp-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
-.gp-kpi{position:relative;background:var(--gp-card);border:1px solid var(--gp-border);border-radius:20px;padding:22px 24px 20px;box-shadow:var(--gp-shadow-sm);overflow:hidden;transition:box-shadow .22s ease,transform .22s ease,border-color .22s}
+.gp-kpi{position:relative;background:var(--gp-card);border:1px solid var(--gp-border);border-radius:20px;padding:22px 24px 20px;box-shadow:var(--gp-shadow-sm);overflow:hidden;transition:box-shadow .18s ease-in-out,border-color .18s ease-in-out}
 .gp-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gp-orange)}
-.gp-kpi:hover{box-shadow:var(--gp-shadow);transform:translateY(-3px)}
+.gp-kpi:hover{box-shadow:var(--gp-shadow);border-color:var(--gp-border2)}
 .gp-kpi.gp-orange::before{background:var(--gp-orange)}
 .gp-kpi.gp-green::before{background:var(--gp-green)}
 .gp-kpi.gp-gold::before{background:var(--gp-gold)}
@@ -1041,8 +1044,8 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .gp-line-svg{width:100%;height:auto;display:block}
 .gp-axis-txt{fill:var(--gp-ink3);font-size:10.5px;font-weight:500;font-family:inherit}
 .gp-fy-list{display:flex;flex-direction:column;gap:10px;max-height:none;overflow-y:auto;padding-right:2px}
-.gp-fy-card{background:var(--gp-card);border:1px solid var(--gp-border);border-radius:14px;padding:12px 15px;cursor:pointer;transition:box-shadow .18s,border-color .18s,transform .18s}
-.gp-fy-card:hover{box-shadow:var(--gp-shadow);border-color:var(--gp-border2);transform:translateX(2px)}
+.gp-fy-card{background:var(--gp-card);border:1px solid var(--gp-border);border-radius:14px;padding:12px 15px;cursor:pointer;transition:box-shadow .18s ease-in-out,border-color .18s ease-in-out}
+.gp-fy-card:hover{box-shadow:var(--gp-shadow);border-color:var(--gp-border2)}
 .gp-fy-card.active{border-color:var(--gp-orange);background:var(--gp-orange-bg)}
 .gp-fy-label{font-size:11.5px;font-weight:600;color:var(--gp-ink3);letter-spacing:.2px}
 .gp-fy-val{font-size:18px;font-weight:750;color:var(--gp-ink);letter-spacing:-.6px;margin:3px 0 8px;font-variant-numeric:tabular-nums}
@@ -1189,12 +1192,12 @@ body.view-gst #main{background:transparent}
 /* ── KPI row — Apple large number cards ── */
 .gp-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 .gp-kpi{
-  position:relative;background:var(--gp-card);border:none;
+  position:relative;background:var(--gp-card);border:1px solid var(--border);
   border-radius:var(--r);padding:20px 22px 18px;
   box-shadow:var(--shadow-card);overflow:hidden;min-width:0;
-  transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)
+  transition:var(--t-card)
 }
-.gp-kpi:hover{box-shadow:var(--shadow-lg);transform:scale(1.02)}
+.gp-kpi:hover{box-shadow:var(--shadow-lg);border-color:rgba(0,0,0,.14)}
 /* Label — quiet sentence-case with a status dot */
 .gp-kpi-tag{
   display:flex;align-items:center;gap:6px;
@@ -1234,12 +1237,12 @@ body.view-gst #main{background:transparent}
 
 /* ── Generic GST card — Apple card ── */
 .gp-card{
-  background:var(--gp-card);border:none;
+  background:var(--gp-card);border:1px solid var(--border);
   border-radius:var(--r);padding:20px 22px 18px;
   box-shadow:var(--shadow-card);
-  transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)
+  transition:var(--t-card)
 }
-.gp-card:hover{box-shadow:var(--shadow-lg);transform:scale(1.012)}
+.gp-card:hover{box-shadow:var(--shadow-lg);border-color:rgba(0,0,0,.14)}
 .gp-card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
 .gp-card-title{font-size:13px;font-weight:600;color:var(--gp-ink);letter-spacing:-.1px}
 .gp-card-sub{font-size:11px;color:var(--gp-ink2);font-weight:400;margin-top:2px}
@@ -1875,12 +1878,12 @@ body.view-gst #vert-tabs-bar{display:none}
 .vkpi-card{
   background:var(--card);
   border:1px solid var(--border);
-  border-radius:10px;padding:10px 14px;min-height:62px;
-  box-shadow:0 1px 2px rgba(0,0,0,.04);
+  border-radius:var(--r2);padding:10px 14px;min-height:62px;
+  box-shadow:var(--shadow-sm);
   display:flex;flex-direction:column;justify-content:space-between;
   position:relative;overflow:hidden;
   cursor:pointer;
-  transition:box-shadow .18s var(--ease-out),border-color .18s;
+  transition:var(--t-card);
 }
 .vkpi-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);border-color:rgba(0,0,0,.15)}
 .vkpi-card:active{opacity:.85;transition-duration:.06s}
@@ -1940,7 +1943,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .vert-dash-grid #vert-pipeline-pair{grid-column:1/4}
 .vert-dash-grid #vert-biz-rail{grid-column:4/5;align-self:stretch}
 .vpipe-pair{display:grid;grid-template-columns:1fr;gap:2px}
-.vpipe-card{cursor:pointer;border-radius:16px!important;padding:8px 14px!important;box-shadow:0 4px 16px rgba(0,0,0,.04)!important;border:1px solid var(--border)!important;transition:box-shadow .18s ease-in-out,border-color .18s ease-in-out}
+.vpipe-card{cursor:pointer;border-radius:var(--r-card)!important;padding:8px 14px!important;box-shadow:var(--shadow-sm)!important;border:1px solid var(--border)!important;transition:var(--t-card)}
 .vpipe-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.09)!important;border-color:rgba(0,0,0,.14)!important}
 .vpipe-card.det-active{
   box-shadow:0 0 0 1.5px rgba(0,93,255,.45),0 4px 16px rgba(0,0,0,.04)!important;
@@ -2014,12 +2017,12 @@ body.view-gst #vert-tabs-bar{display:none}
 .vpipe-kpi-section{display:flex;gap:5px;margin-bottom:5px}
 .vpipe-status-grid{display:flex;flex:4;gap:4px}
 .vpipe-ops-col{display:flex;flex:1;flex-direction:column;gap:3px;min-width:76px}
-.vpipe-stat-card{flex:1;min-width:0;border:1px solid var(--border);border-radius:10px;padding:4px 7px 5px;display:flex;flex-direction:column;gap:0;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden}
+.vpipe-stat-card{flex:1;min-width:0;border:1px solid var(--border);border-radius:10px;padding:4px 7px 5px;display:flex;flex-direction:column;gap:0;background:var(--card);box-shadow:var(--shadow-sm);overflow:hidden}
 .vpipe-stat-icon{width:14px;height:14px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-bottom:1px}
 .vpipe-stat-name{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
 .vpipe-stat-num{font-size:16px;font-weight:800;letter-spacing:-.5px;line-height:1.05;color:var(--txt);font-variant-numeric:tabular-nums}
 .vpipe-stat-pct{font-size:9.5px;font-weight:500;color:var(--txt3)}
-.vpipe-ops-card{flex:1;border:1px solid var(--border);border-radius:9px;padding:3px 9px;display:flex;flex-direction:column;justify-content:center;gap:0;background:var(--card)}
+.vpipe-ops-card{flex:1;border:1px solid var(--border);border-radius:10px;padding:3px 9px;display:flex;flex-direction:column;justify-content:center;gap:0;background:var(--card)}
 .vpipe-ops-lbl{font-size:8px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
 .vpipe-ops-val{font-size:12px;font-weight:800;letter-spacing:-.3px;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.1}
 .vpipe-mats{display:flex;flex-direction:column;gap:4px;padding-top:5px;border-top:1px solid var(--border)}
@@ -2054,8 +2057,8 @@ body.view-gst #vert-tabs-bar{display:none}
 .biz-hd-sub{font-size:11px;font-weight:500;color:var(--txt3);margin-top:2px}
 /* Unified analytics panel — single vertical column */
 .biz-panel{
-  background:var(--card);border:1px solid var(--border);border-radius:10px;
-  box-shadow:0 1px 2px rgba(0,0,0,.04);overflow:hidden;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r2);
+  box-shadow:var(--shadow-sm);overflow:hidden;
   display:flex;flex-direction:column;flex:1;height:100%;
 }
 .biz-tile{
@@ -2296,7 +2299,7 @@ body.view-gst #vert-tabs-bar{display:none}
    pattern) — they lift back to white + shadow on hover. White-on-white
    card nesting is how hierarchy dies. */
 .vds-body .cc-cat{background:var(--bg2);box-shadow:none}
-.vds-body .cc-cat-click:hover{background:var(--card);box-shadow:var(--shadow);transform:scale(1.02)}
+.vds-body .cc-cat-click:hover{background:var(--card);box-shadow:var(--shadow);border-color:rgba(0,0,0,.14)}
 
 /* Sidebar no longer needed — vertical tabs replace it */
 #side-nav{display:none!important}
