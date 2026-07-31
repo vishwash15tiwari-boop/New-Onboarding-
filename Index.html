@@ -2058,26 +2058,27 @@ body.view-gst #vert-tabs-bar{display:none}
 .biz-hd{margin-bottom:12px}
 .biz-hd-ttl{font-size:14px;font-weight:700;letter-spacing:-.2px;color:var(--txt);line-height:1.15}
 .biz-hd-sub{font-size:11px;font-weight:500;color:var(--txt3);margin-top:2px}
-/* Unified analytics panel — 2×2 mini-card grid */
+/* Unified analytics panel — vertical stack */
 .biz-panel{
-  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r2);
   box-shadow:var(--shadow-sm);overflow:hidden;
-  display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
-  gap:4px;padding:4px;flex:1;height:100%;box-sizing:border-box;
+  display:flex;flex-direction:column;
+  gap:0;flex:1;height:100%;
 }
 .biz-tile{
-  padding:9px 11px;display:flex;flex-direction:column;
-  justify-content:flex-start;gap:0;overflow:hidden;cursor:pointer;
-  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
-  transition:box-shadow .18s var(--ease-out),border-color .18s;min-height:0;
+  flex:1;min-height:0;
+  padding:10px 13px;display:flex;flex-direction:column;
+  justify-content:flex-start;overflow:hidden;cursor:pointer;
+  background:transparent;
+  transition:background .15s var(--ease-out);
 }
-.biz-tile:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);border-color:rgba(0,0,0,.14)}
-.biz-tile:active{opacity:.86;transition-duration:.06s}
-/* In the 2×2 grid each tile has its own full border; grid gap handles spacing */
-.biz-tile--right{border-left:1px solid var(--border);border-top:1px solid var(--border)}
+.biz-tile:hover{background:var(--hover)}
+.biz-tile:active{background:rgba(0,0,0,.05);transition-duration:.06s}
+/* Dividers between stacked tiles */
+.biz-tile--right{border-left:none;border-top:1px solid var(--border)}
 .biz-tile--bottom{border-top:1px solid var(--border)}
 .biz-tile-region{cursor:default}
-.biz-tile-region:hover,.biz-tile-region:active{box-shadow:none;border-color:var(--border);opacity:1}
+.biz-tile-region:hover,.biz-tile-region:active{background:transparent}
 .biz-t-lb{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:3px}
 .biz-t-val{font-size:15px;font-weight:800;letter-spacing:-.5px;color:var(--txt);line-height:1.1;font-variant-numeric:tabular-nums;margin-bottom:1px}
 .biz-t-sub{font-size:10px;color:var(--txt3);font-weight:500;line-height:1.35;margin-bottom:0}
@@ -5603,8 +5604,7 @@ function renderBizRail(cfg, vs) {
     + '<div class="biz-t-lb">Total GMV</div>'
     + ((gmv != null && gmv > 0)
         ? '<div class="biz-t-val">' + fmtINR(gmv) + '</div>'
-          + '<div style="flex:1"></div>'
-          + (catRows ? '<div style="margin-top:4px">' + catRows + '</div>' : '')
+          + (catRows ? '<div style="margin-top:6px">' + catRows + '</div>' : '')
         : '<div class="biz-empty" style="padding:8px 0;font-size:11px">No GMV recorded</div>')
     + '</div>';
 
@@ -5884,11 +5884,10 @@ function _buildRailQual(qc, vname) {
       + ' onclick="openKpiModal(\'rating\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'rating\')}">'
       + '<div class="biz-t-lb">Vendor Rating</div>'
-      + '<div class="biz-t-val" style="color:#E48800;font-size:18px;margin-bottom:1px">' + rVal + '</div>'
-      + '<div style="height:3px;border-radius:2px;background:var(--bg2);overflow:hidden;margin:4px 0 5px">'
+      + '<div class="biz-t-val" style="color:#E48800;font-size:19px;letter-spacing:-.6px">' + rVal + '</div>'
+      + '<div style="height:3px;border-radius:2px;background:var(--bg2);overflow:hidden;margin:5px 0 4px">'
       +   '<div style="width:' + rPct + '%;height:100%;background:#E48800;border-radius:2px;transition:width .6s var(--ease-out)"></div>'
       + '</div>'
-      + '<div style="flex:1"></div>'
       + '<div class="biz-t-sub">' + rSub + '</div>'
       + '</div>';
 
@@ -5900,7 +5899,7 @@ function _buildRailQual(qc, vname) {
     var donePct   = osvTotal > 0 ? Math.round(osvDone   / osvTotal * 100) : 0;
     var ipPct     = osvTotal > 0 ? Math.round(osvInProg / osvTotal * 100) : 0;
     var niPct     = osvTotal > 0 ? Math.round(osvNI     / osvTotal * 100) : 0;
-    osvTile = '<div class="biz-tile biz-tile--bottom" role="button" tabindex="0"'
+    osvTile = '<div class="biz-tile biz-tile--right" role="button" tabindex="0"'
       + ' onclick="openKpiModal(\'osv\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'osv\')}">'
       + '<div class="biz-t-lb">OSV Status</div>'
@@ -5921,7 +5920,6 @@ function _buildRailQual(qc, vname) {
       +     '<div class="biz-osv-pct">' + niPct + '%</div>'
       +   '</div>'
       + '</div>'
-      + '<div style="flex:1"></div>'
       + '<div class="biz-osv-tot"><span>Total Vendors</span><b>' + fmt(osvTotal) + '</b></div>'
       + '</div>';
   } else {
@@ -5929,7 +5927,7 @@ function _buildRailQual(qc, vname) {
       + '<div class="biz-t-lb">Vendor Rating</div>'
       + '<div class="biz-q-sync">Syncing</div>'
       + '</div>';
-    osvTile = '<div class="biz-tile biz-tile--bottom">'
+    osvTile = '<div class="biz-tile biz-tile--right">'
       + '<div class="biz-t-lb">OSV Status</div>'
       + '<div class="biz-q-sync">Syncing</div>'
       + '</div>';
