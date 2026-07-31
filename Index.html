@@ -106,21 +106,8 @@ body{min-height:100vh;background:transparent;position:relative}
 /* ── Ambient aura — a faint field of the active vertical's colour washing
       the top of the page. Cards float above it in solid white; switching
       verticals crossfades the hue. The quietest possible identity system. ── */
-#aura{
-  position:absolute;top:0;left:0;right:0;height:min(62vh,580px);
-  z-index:-1;pointer-events:none;
-  background:
-    radial-gradient(760px 400px at 12% -14%, var(--aura-a), transparent 64%),
-    radial-gradient(680px 340px at 88% -18%, var(--aura-b), transparent 62%);
-}
-/* Precision dot grid — engineering-paper texture dissolving downward */
-#aura::after{
-  content:'';position:absolute;inset:0;
-  background-image:radial-gradient(circle, rgba(29,29,31,.055) 1px, transparent 1.5px);
-  background-size:20px 20px;
-  -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,.85), transparent 76%);
-  mask-image:linear-gradient(to bottom, rgba(0,0,0,.85), transparent 76%);
-}
+#aura{display:none}
+#aura::after{display:none}
 a{color:var(--blue);text-decoration:none}
 button{cursor:pointer;font-family:inherit;color:inherit}
 select,input{font-family:inherit}
@@ -301,6 +288,21 @@ select,input{font-family:inherit}
   border:1px solid var(--border);
   letter-spacing:.05px;
 }
+/* ── Filter overview bar — flat enterprise header above KPI row ── */
+.dash-filter-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:10px 0 14px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:14px;
+}
+.dfb-title{
+  font-size:14px;font-weight:700;letter-spacing:-.2px;color:var(--txt);white-space:nowrap;
+}
+.dfb-sep{flex:1}
+.dfb-label{
+  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--txt3);white-space:nowrap;
+}
 /* Sellers / Buyers audience switcher — Apple segmented control */
 .aud-tabs{display:inline-flex;background:var(--seg-track);border:none;border-radius:var(--pill);padding:3px;gap:2px;vertical-align:middle}
 .aud-tab{font-family:inherit;font-size:11px;font-weight:600;padding:5px 16px;border:none;background:transparent;color:var(--txt2);cursor:pointer;border-radius:var(--pill);transition:background .2s var(--ease),color .15s,transform .2s var(--ease-spring),box-shadow .2s;white-space:nowrap}
@@ -338,22 +340,16 @@ select,input{font-family:inherit}
   position:relative;overflow:hidden;
   background:var(--card);
   border:1px solid var(--border);
-  border-radius:var(--r);
-  padding:13px 14px 12px;
-  box-shadow:var(--shadow-card);
+  border-radius:10px;
+  padding:14px 16px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);
   cursor:pointer;
-  transition:box-shadow .35s var(--ease-out),border-color .25s var(--ease),transform .35s var(--ease-out);
+  transition:box-shadow .2s var(--ease-out),border-color .18s;
 }
-/* Thin color crown — identity without heavy gradient wash */
-.compare-card::before{
-  content:'';position:absolute;inset:0 0 auto 0;height:3px;pointer-events:none;
-  background:var(--vc,var(--border2));
-  border-radius:var(--r) var(--r) 0 0;
-}
+.compare-card::before{display:none}
 .compare-card::after{display:none}
 .compare-card>*{position:relative}
-/* Apple hover: scale 1.02 + deeper shadow — no large vertical lift */
-.compare-card:hover{box-shadow:var(--shadow-lg);border-color:rgba(0,0,0,.12);transform:scale(1.018)}
+.compare-card:hover{box-shadow:var(--shadow);border-color:rgba(0,0,0,.12)}
 .compare-card:active{transform:scale(.982);transition-duration:.12s}
 .compare-card.selected{box-shadow:var(--ring),var(--shadow)}
 /* Entrance — staggered rise */
@@ -1877,34 +1873,24 @@ body.view-gst #vert-tabs-bar{display:none}
 /* 4-card OMP row: explicit columns so it never wraps to a lone 3+1 card */
 .vkpi-grid.vkpi-grid-4{grid-template-columns:repeat(4,1fr)}
 .vkpi-card{
-  background:var(--card);border:none;
-  border-radius:var(--r);padding:11px 14px;min-height:72px;
-  box-shadow:var(--shadow-card);
-  display:flex;flex-direction:row;align-items:center;gap:10px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;padding:14px 16px;min-height:80px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);
+  display:flex;flex-direction:column;justify-content:space-between;
   position:relative;overflow:hidden;
   cursor:pointer;
-  transition:box-shadow .22s var(--ease-out),transform .22s var(--ease-out);
+  transition:box-shadow .18s var(--ease-out),border-color .18s;
 }
-.vkpi-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
-.vkpi-card:active{transform:scale(.98);transition-duration:.08s}
-.vkpi-icon{
-  display:flex;align-items:center;justify-content:center;
-  width:30px;height:30px;border-radius:8px;flex-shrink:0;
-  background:var(--bg2);color:var(--txt2);
-}
-.vkpi-icon svg{width:14px;height:14px;display:block}
-.vkpi-card.vk-onboarded  .vkpi-icon{background:var(--st-onboarded-bg);color:var(--st-onboarded-tx)}
-.vkpi-card.vk-transacted .vkpi-icon{background:var(--st-transacted-bg);color:var(--st-transacted-tx)}
-.vkpi-card.vk-warn       .vkpi-icon{background:var(--st-review-bg);color:var(--st-review-tx)}
-.vkpi-text{flex:1;min-width:0}
-.vkpi-lbl{font-size:11px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--txt2);margin-bottom:0;line-height:1.2}
-/* vkpi-numgrp: value + subtitle grouped on right side. Keeps "92 of 207 rated" and
-   "58 of 207 complete" right-aligned as a unit, improving scannability when cards wrap. */
-.vkpi-numgrp{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;gap:1px}
-.vkpi-val{font-size:24px;font-weight:700;letter-spacing:-0.8px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
-.vkpi-sub{font-size:10px;color:var(--txt3);font-weight:400;line-height:1.3;text-align:right;white-space:nowrap}
-.vkpi-note{font-size:9px;color:var(--txt3);font-weight:500;text-align:right;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;opacity:.7}
-.vkpi-card.vk-onboarded .vkpi-note{color:rgba(255,255,255,.30)}
+.vkpi-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);border-color:rgba(0,0,0,.15)}
+.vkpi-card:active{opacity:.85;transition-duration:.06s}
+.vkpi-icon{display:none}
+.vkpi-text{display:contents}
+.vkpi-lbl{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);line-height:1.2;margin-bottom:5px}
+.vkpi-numgrp{display:contents}
+.vkpi-val{font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
+.vkpi-sub{font-size:10.5px;color:var(--txt3);font-weight:400;line-height:1.35;text-align:left;white-space:normal;margin-top:8px}
+.vkpi-note{display:none}
 .vkpi-mat{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
 .vkpi-mat-chip{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:500;color:var(--txt2);white-space:nowrap}
 .vkpi-mat-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
@@ -1918,32 +1904,32 @@ body.view-gst #vert-tabs-bar{display:none}
 .vkpi-side-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;display:inline-block}
 .vkpi-side-num{font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--txt);letter-spacing:-.3px}
 .vkpi-side-tag{font-size:10.5px;font-style:normal;color:var(--txt2);font-weight:400}
-/* ── Bento hierarchy — one graphite jewel anchors the row ── */
+/* Onboarded card — clean green accent instead of dark gradient */
 .vkpi-card.vk-onboarded{
-  background:linear-gradient(155deg,#38383C 0%,#1D1D1F 42%,#0B0B0D 100%);
-  box-shadow:inset 0 0 0 .5px rgba(255,255,255,.10),
-             0 2px 8px rgba(0,0,0,.18),0 14px 36px rgba(0,0,0,.22);
+  background:var(--card);
+  border-color:rgba(29,199,151,.28);
+  box-shadow:inset 0 0 0 1px rgba(29,199,151,.08);
 }
-.vkpi-card.vk-onboarded:hover{box-shadow:0 4px 12px rgba(0,0,0,.22),0 22px 48px rgba(0,0,0,.28)}
-.vkpi-card.vk-onboarded .vkpi-lbl{color:rgba(255,255,255,.60)}
-.vkpi-card.vk-onboarded .vkpi-val{color:#FFFFFF}
-.vkpi-card.vk-onboarded .vkpi-sub{color:rgba(255,255,255,.45)}
-.vkpi-card.vk-onboarded .vkpi-icon{background:rgba(48,209,88,.18);color:#30D158}
-.vkpi-card.vk-transacted .vkpi-val{color:var(--txt)}
+.vkpi-card.vk-onboarded:hover{border-color:rgba(29,199,151,.45)}
+.vkpi-card.vk-onboarded .vkpi-val{color:var(--st-onboarded-tx)}
+.vkpi-card.vk-onboarded .vkpi-lbl{color:var(--st-onboarded-tx);opacity:.7}
+.vkpi-card.vk-transacted .vkpi-val{color:var(--st-transacted-tx)}
 .vkpi-card.vk-warn .vkpi-val{color:var(--st-rejected-tx)}
 /* Quality summary cards */
-.vkpi-card.vk-rating .vkpi-icon{background:rgba(255,159,10,.14);color:#FF9F0A}
-.vkpi-card.vk-osv    .vkpi-icon{background:rgba(0,122,255,.12);color:#005DFF}
-.vkpi-card.vk-docs   .vkpi-icon{background:rgba(48,209,88,.13);color:#30D158}
 .vkpi-card.vk-rating .vkpi-val{color:#E48800;font-size:21px}
 .vkpi-card.vk-osv    .vkpi-val{color:#005DFF;font-size:21px}
 .vkpi-card.vk-docs   .vkpi-val{color:var(--st-onboarded-tx);font-size:21px}
 @media(prefers-color-scheme:dark){.vkpi-card.vk-rating .vkpi-val{color:#FF9F0A}}
-/* FY sparkline — three mini bars, latest year accented */
-.vkpi-spark{position:absolute;top:20px;right:20px;width:46px;height:26px;display:block}
-/* Completion meter — hairline progress inside the ink card */
-.vkpi-meter{height:3px;border-radius:2px;background:rgba(255,255,255,.14);margin-top:12px;overflow:hidden}
-.vkpi-meter i{display:block;height:100%;background:#30D158;border-radius:2px;transition:width 1s var(--ease-out)}
+.vkpi-spark{display:none}
+.vkpi-meter{display:none}
+
+/* ── Pipeline stage progress bars (enterprise funnel) ── */
+.pipe-stage-list{display:flex;flex-direction:column;gap:7px;padding:10px 0 4px}
+.pipe-stage-row{display:flex;align-items:center;gap:9px}
+.pipe-stage-lbl{font-size:10.5px;font-weight:600;color:var(--txt2);min-width:74px;flex-shrink:0}
+.pipe-stage-bar-wrap{flex:1;height:5px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.pipe-stage-bar{height:100%;border-radius:3px;transition:width .7s var(--ease-out)}
+.pipe-stage-count{font-size:12px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;min-width:40px;text-align:right;flex-shrink:0}
 
 /* ══════════════════════════════════════════════════
    PIPELINE PAIR (Seller + Buyer side by side)
@@ -2043,8 +2029,8 @@ body.view-gst #vert-tabs-bar{display:none}
 .biz-hd-sub{font-size:11px;font-weight:500;color:var(--txt3);margin-top:2px}
 /* Unified analytics panel — single vertical column */
 .biz-panel{
-  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
-  box-shadow:var(--shadow);overflow:hidden;
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);overflow:hidden;
   display:flex;flex-direction:column;flex:1;
 }
 .biz-tile{
@@ -2650,14 +2636,15 @@ body.view-gst #vert-tabs-bar{display:none}
   <!-- Vertical tab navigation — the page's top nav -->
   <div id="vert-tabs-bar" class="vert-tabs-bar"></div>
 
-  <!-- Hero row: vertical identity left · period controls right -->
-  <div class="section-title reveal" style="flex-wrap:wrap">
-    <span id="view-title">Business Verticals</span>
+  <!-- Filter overview bar -->
+  <div class="dash-filter-bar reveal">
+    <span id="view-title" class="dfb-title">Business Verticals</span>
     <div id="vert-ctx-hdr" class="vert-ctx-hdr"></div>
-    <span style="flex:1"></span>
+    <span class="dfb-sep"></span>
+    <span class="dfb-label">FILTER OVERVIEW:</span>
 
     <!-- Onboarding period controls -->
-    <span id="onb-period-controls" style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span id="onb-period-controls" style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div class="qf-chips" id="qf-chips">
         <button class="qf-chip" data-qf="Today"     onclick="onPeriodSelect('Today')">Today</button>
         <button class="qf-chip" data-qf="MTD"       onclick="onPeriodSelect('MTD')">For the Month</button>
@@ -3712,15 +3699,9 @@ function renderVertKPIs(key) {
       + ' role="button" tabindex="0"'
       + ' onclick="openKpiModal(\'' + action + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'' + action + '\')}">'
-      + '<div class="vkpi-icon">' + icon + '</div>'
-      + '<div class="vkpi-text">'
       + '<div class="vkpi-lbl">' + lbl + '</div>'
-      + '</div>'
-      + '<div class="vkpi-numgrp">'
       + '<div class="vkpi-val">' + val + '</div>'
-      + (sub  != null ? '<div class="vkpi-sub">'  + (sub  || '') + '</div>' : '')
-      + (note != null ? '<div class="vkpi-note">' + (note || '') + '</div>' : '')
-      + '</div>'
+      + (sub != null ? '<div class="vkpi-sub">' + (sub || '') + '</div>' : '')
       + '</div>';
   }
   function svg(paths) {
@@ -5762,23 +5743,23 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + color + '"'
       + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
   };
-  var kpiDef = [
-    { label: 'Draft',     count: vDraft,  cls: 'pipe-kpi-draft',
-      icon: _ic('<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>', 'var(--st-draft)') },
-    { label: 'In Review', count: vReview, cls: 'pipe-kpi-review',
-      icon: _ic('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>', 'var(--st-review)') },
-    { label: 'Completed', count: vDone,   cls: 'pipe-kpi-done',
-      icon: _ic('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>', 'var(--st-onboarded)') },
+  var stageDef = [
+    { label: 'Draft',     count: vDraft,          color: 'var(--st-draft)' },
+    { label: 'In Review', count: vReview,         color: 'var(--st-review)' },
+    { label: 'Completed', count: vDone,           color: 'var(--st-onboarded)' },
+    { label: 'Rejected',  count: v.rejected || 0, color: 'var(--st-rejected)' },
   ];
-  var pipeBoxes = '<div class="pipe-kpi-row">' + kpiDef.map(function(k) {
-    return '<div class="pipe-kpi ' + k.cls + '">'
-      + '<div class="pipe-kpi-icon">' + k.icon + '</div>'
-      + '<div class="pipe-kpi-body">'
-      +   '<div class="pipe-kpi-count">' + fmt(k.count) + '</div>'
-      +   '<div class="pipe-kpi-label">' + k.label + '</div>'
-      + '</div>'
-      + '</div>';
-  }).join('') + '</div>';
+  var stageMax = Math.max.apply(null, stageDef.map(function(s){return s.count})) || 1;
+  var pipeBoxes = '<div class="pipe-stage-list">'
+    + stageDef.map(function(s) {
+        var pct = Math.round(s.count / stageMax * 100);
+        return '<div class="pipe-stage-row">'
+          + '<span class="pipe-stage-lbl">' + s.label + '</span>'
+          + '<div class="pipe-stage-bar-wrap"><div class="pipe-stage-bar" style="width:' + pct + '%;background:' + s.color + '"></div></div>'
+          + '<span class="pipe-stage-count">' + fmt(s.count) + '</span>'
+          + '</div>';
+      }).join('')
+    + '</div>';
   var topCats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; }).slice(0, 3);
   var catRows = topCats.map(function(c) {
     var parts = [];
