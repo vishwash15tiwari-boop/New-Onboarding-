@@ -5883,25 +5883,32 @@ function _buildRailQual(qc, vname) {
       + '</div>';
 
     // OSV tile
-    var osvDone    = o.completed || 0;
-    var osvTotal   = o.total || 0;
-    var osvNotDone = Math.max(0, osvTotal - osvDone);
-    var donePct    = osvTotal > 0 ? Math.round(osvDone    / osvTotal * 100) : 0;
-    var notPct     = osvTotal > 0 ? Math.round(osvNotDone / osvTotal * 100) : 0;
+    var osvDone    = o.completed    || 0;
+    var osvInProg  = o.pending      || 0;
+    var osvTotal   = o.total        || 0;
+    var osvNotInit = o.notInitiated != null ? o.notInitiated : Math.max(0, osvTotal - osvDone - osvInProg);
+    var donePct    = osvTotal > 0 ? Math.round(osvDone   / osvTotal * 100) : 0;
+    var inProgPct  = osvTotal > 0 ? Math.round(osvInProg / osvTotal * 100) : 0;
+    var notInitPct = osvTotal > 0 ? Math.round(osvNotInit/ osvTotal * 100) : 0;
     osvTile = '<div class="biz-tile biz-tile--right biz-tile--bottom biz-tile-region" role="button" tabindex="0"'
       + ' onclick="openKpiModal(\'osv\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'osv\')}">'
       + '<div class="biz-t-lb">OSV Status</div>'
-      + '<div class="biz-osv-cols">'
+      + '<div class="biz-osv-cols" style="gap:5px">'
       +   '<div class="biz-osv-col">'
-      +     '<div class="biz-osv-lbl" style="color:#1DC797">Done</div>'
-      +     '<div class="biz-osv-num" style="color:#1DC797">' + fmt(osvDone) + '</div>'
+      +     '<div class="biz-osv-lbl" style="color:#049769">Done</div>'
+      +     '<div class="biz-osv-num" style="color:#049769">' + fmt(osvDone) + '</div>'
       +     '<div class="biz-osv-pct">' + donePct + '%</div>'
       +   '</div>'
       +   '<div class="biz-osv-col">'
-      +     '<div class="biz-osv-lbl" style="color:#FF3B30">Not Done</div>'
-      +     '<div class="biz-osv-num" style="color:#FF3B30">' + fmt(osvNotDone) + '</div>'
-      +     '<div class="biz-osv-pct">' + notPct + '%</div>'
+      +     '<div class="biz-osv-lbl" style="color:#B25000">In Progress</div>'
+      +     '<div class="biz-osv-num" style="color:#B25000">' + fmt(osvInProg) + '</div>'
+      +     '<div class="biz-osv-pct">' + inProgPct + '%</div>'
+      +   '</div>'
+      +   '<div class="biz-osv-col">'
+      +     '<div class="biz-osv-lbl" style="color:#8460D4">Not Initiated</div>'
+      +     '<div class="biz-osv-num" style="color:#8460D4">' + fmt(osvNotInit) + '</div>'
+      +     '<div class="biz-osv-pct">' + notInitPct + '%</div>'
       +   '</div>'
       + '</div>'
       + '<div class="biz-osv-tot"><span>Total Vendors</span><b>' + fmt(osvTotal) + '</b></div>'

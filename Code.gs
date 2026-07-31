@@ -1619,7 +1619,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v12';  // v12: read Denominator col (G) not Score col (F)
+  var CACHE_KEY = 'quality_data_v13';  // v13: three-state OSV (done/in_progress/not_initiated)
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1735,7 +1735,9 @@ function getQualityData() {
         var ompInfo = ompMap[vid_];
         if (ompInfo) {
           var osRaw = String(row[oC] || '').trim();
-          var osvStatus = osRaw.toUpperCase() === 'DONE' ? 'done' : 'not_done';
+          var osUp = osRaw.toUpperCase();
+          var osvStatus = osUp === 'DONE' ? 'done'
+            : (['IN PROGRESS','IN_PROGRESS','PENDING','ONGOING','IN-PROGRESS','INPROGRESS'].indexOf(osUp) >= 0 ? 'in_progress' : 'not_initiated');
           vendorOSV.push({
             id:               vid_.slice(0, 30),
             name:             ompInfo.name || String(row[nameC] || '').trim().slice(0, 60),
@@ -1905,12 +1907,17 @@ function getQualityData() {
         // ── OSV Status (Col M) ────────────────────────────────────────────
         // Only "Done" (case-insensitive) = Done; blank/null/empty/any-other = Not Done.
         var osvRaw = row[dmOsvC] != null ? String(row[dmOsvC]).trim() : '';
-        var isDone = osvRaw.toUpperCase() === 'DONE';
-        var osvStatus = isDone ? 'done' : 'not_done';
+        var osvUp  = osvRaw.toUpperCase();
+        var isDone       = osvUp === 'DONE';
+        var isInProgress = ['IN PROGRESS','IN_PROGRESS','PENDING','ONGOING','IN-PROGRESS','INPROGRESS'].indexOf(osvUp) >= 0;
+        var osvStatus = isDone ? 'done' : (isInProgress ? 'in_progress' : 'not_initiated');
         if (isDone) {
           acc['seller'].o.completed   += 1;
           acc['combined'].o.completed += 1;
           _demonitorOsvCount++;
+        } else if (isInProgress) {
+          acc['seller'].o.pending   += 1;
+          acc['combined'].o.pending += 1;
         }
         vendorOSV.push({
           id:               (ompInfo && ompInfo.id) || dmId.slice(0, 30),
@@ -1939,8 +1946,8 @@ function getQualityData() {
       acc['combined'].r.total = acc['seller'].r.total;
       acc['seller'].o.total   = ompTotal > 0 ? ompTotal : Math.max(dmOsvTotal, _demonitorOsvCount);
       acc['combined'].o.total = acc['seller'].o.total;
-      acc['seller'].o.notInitiated   = Math.max(0, acc['seller'].o.total - acc['seller'].o.completed);
-      acc['combined'].o.notInitiated = Math.max(0, acc['combined'].o.total - acc['combined'].o.completed);
+      acc['seller'].o.notInitiated   = Math.max(0, acc['seller'].o.total - acc['seller'].o.completed - acc['seller'].o.pending);
+      acc['combined'].o.notInitiated = Math.max(0, acc['combined'].o.total - acc['combined'].o.completed - acc['combined'].o.pending);
 
       Logger.log('Demonitor: ' + dmRows.length + ' rows · rating col=' + dmRatC
         + ' osv col=' + dmOsvC + ' · rated=' + _demonitorRatingCount
@@ -1953,7 +1960,7 @@ function getQualityData() {
     ['seller','combined'].forEach(function(t) {
       acc[t].r.total = acc[t].r.total || ompTotal;
       acc[t].o.total = acc[t].o.total || ompTotal;
-      acc[t].o.notInitiated = Math.max(0, (acc[t].o.total || 0) - (acc[t].o.completed || 0));
+      acc[t].o.notInitiated = Math.max(0, (acc[t].o.total || 0) - (acc[t].o.completed || 0) - (acc[t].o.pending || 0));
     });
   }
 
