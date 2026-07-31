@@ -2865,6 +2865,7 @@ thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
         <button class="qf-chip" data-qf="Today"     onclick="onPeriodSelect('Today')">Today</button>
         <button class="qf-chip" data-qf="MTD"       onclick="onPeriodSelect('MTD')">For the Month</button>
         <button class="qf-chip" data-qf="YTD"       onclick="onPeriodSelect('YTD')">YTD</button>
+        <button class="qf-chip" data-qf="All"       onclick="onPeriodSelect('All')">All</button>
       </div>
       <select class="filter-select" id="top-period" onchange="onPeriodSelect(this.value)">
         <option value="Custom">Custom</option>
@@ -2873,7 +2874,6 @@ thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
         <input type="date" class="filter-select" id="top-start" onchange="onCustomDates()">
         <input type="date" class="filter-select" id="top-end" onchange="onCustomDates()">
       </span>
-      <button class="cust-all-btn active" id="top-all-btn" onclick="onPeriodSelect('All')">All</button>
     </span>
 
     <!-- GST Payables financial-year filter -->
@@ -3329,8 +3329,7 @@ function renderPeriodControl() {
   sel.innerHTML = pairs.map(function(o) {
     return '<option value="' + o[0] + '">' + o[1] + '</option>';
   }).join('');
-  // 'All' has no dropdown entry — the always-visible "All" button handles it.
-  // Leave the dropdown with no selection when currentPeriod is 'All'.
+  // 'All' is a chip, not a dropdown entry — leave dropdown unselected when active.
   sel.value = (currentPeriod !== 'All') ? currentPeriod : '';
   // Date inputs only show when the user is in an explicit custom date range.
   var cu = document.getElementById('top-custom');
@@ -3339,9 +3338,6 @@ function renderPeriodControl() {
   var en = document.getElementById('top-end');
   if (st) st.value = customStart;
   if (en) en.value = customEnd;
-  // Sync always-visible "All" button active state
-  var allBtn = document.getElementById('top-all-btn');
-  if (allBtn) allBtn.classList.toggle('active', currentPeriod === 'All');
 }
 
 function onPeriodSelect(val) {
