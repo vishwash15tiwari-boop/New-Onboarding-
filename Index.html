@@ -887,6 +887,41 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 /* Footer */
 .km-foot{padding:12px 18px 20px;border-top:1px solid var(--border);text-align:center}
 .km-foot-link{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:var(--accent,#005DFF);cursor:pointer;text-decoration:none;background:none;border:none;padding:0}
+/* ── GMV Category Drawer ── */
+.gmc-aud-toggle{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--border)}
+.gmc-aud-btn{flex:1;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:none;font-family:inherit;font-size:12px;font-weight:600;color:var(--txt3);cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+.gmc-aud-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.gmc-back{display:flex;align-items:center;gap:6px;padding:9px 18px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.gmc-back-btn{background:none;border:none;font-family:inherit;cursor:pointer;padding:4px 6px;border-radius:6px;display:inline-flex;align-items:center;gap:2px;color:var(--blue);font-size:12px;font-weight:600;transition:background .12s}
+.gmc-back-btn:hover{background:rgba(0,93,255,.08)}
+.gmc-breadcrumb{font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:4px;flex:1;min-width:0;overflow:hidden}
+.gmc-bc-sep{color:var(--border);font-size:12px}
+.gmc-bc-cur{color:var(--txt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gmc-cat-card{border-bottom:1px solid var(--border);padding:14px 18px;cursor:pointer;transition:background .12s}
+.gmc-cat-card:hover{background:var(--hover)}
+.gmc-cat-card:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.gmc-cat-nm{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.gmc-cat-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.02em;flex-shrink:0}
+.gmc-cat-gmv{font-size:15px;font-weight:800;color:var(--txt);letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.gmc-cat-pct{font-size:10.5px;color:var(--txt3);margin-left:auto;font-weight:600;flex-shrink:0}
+.gmc-cat-bar-wrap{height:4px;border-radius:2px;background:var(--bg2);overflow:hidden;margin-bottom:9px}
+.gmc-cat-bar{height:100%;border-radius:2px;transition:width .6s .05s}
+.gmc-cat-meta{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.gmc-cat-stat{display:flex;flex-direction:column;gap:1px}
+.gmc-cat-sv{font-size:12px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+.gmc-cat-sl{font-size:9px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.gmc-cat-drill{display:flex;align-items:center;justify-content:space-between;margin-top:9px;padding-top:9px;border-top:1px solid var(--border)}
+.gmc-sec-hd{padding:8px 18px 4px;font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em}
+.gmc-mat-row{border-bottom:1px solid var(--border);padding:12px 18px;cursor:pointer;transition:background .12s}
+.gmc-mat-row:hover{background:var(--hover)}
+.gmc-mat-row:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.gmc-mat-nm{font-size:12.5px;font-weight:600;color:var(--txt);margin-bottom:6px}
+.gmc-mat-bar-wrap{height:3px;border-radius:2px;background:var(--bg2);overflow:hidden;margin-bottom:5px}
+.gmc-mat-meta{display:flex;gap:8px;align-items:center;font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.gmc-mat-chip{font-size:10.5px;color:var(--txt3);white-space:nowrap}
+.gmc-mat-gmv{font-size:12.5px;font-weight:700;color:var(--txt)}
+.gmc-mat-pct{font-size:10px;color:var(--txt3)}
+.gmc-vlist-wrap{padding:0 18px}
 /* ===== Record Detail Modal — Apple sheet style ===== */
 @keyframes rmUp{from{opacity:0;transform:translateY(32px) scale(.97)}to{opacity:1;transform:none}}
 #rec-modal{position:fixed;inset:0;z-index:700;display:flex;align-items:flex-end;justify-content:center;padding:0}
@@ -2152,6 +2187,24 @@ body.view-gst #vert-tabs-bar{display:none}
 .rgn-row-side{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .rgn-gmv{font-size:11.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
 .rgn-gst{font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap}
+/* ── State drill-down inside region modal ── */
+.rgn-state-sec{border-bottom:1px solid var(--border)}
+.rgn-state-hd{display:flex;align-items:center;justify-content:space-between;padding:9px 18px 7px}
+.rgn-state-hd-ttl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt3)}
+.rgn-state-hd-hint{font-size:10px;color:var(--txt3)}
+.rgn-state-row{display:flex;align-items:center;gap:10px;padding:8px 18px;border-top:1px solid var(--border);cursor:pointer;transition:background .12s}
+.rgn-state-row:hover{background:var(--hover)}
+.rgn-state-row:active{background:rgba(0,0,0,.05)}
+.rgn-state-nm{flex:1;font-size:12.5px;font-weight:600;color:var(--txt);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rgn-state-meta{display:flex;gap:8px;flex-shrink:0;align-items:center;font-variant-numeric:tabular-nums}
+.rgn-state-chip{font-size:10.5px;font-weight:500;color:var(--txt3);white-space:nowrap}
+.rgn-sc-onb{color:var(--st-onboarded-tx);font-weight:600}
+.rgn-sc-rev{color:#E48800;font-weight:600}
+.rgn-sc-gmv{font-size:11px;font-weight:700;color:var(--txt)}
+.rgn-sc-arr{flex-shrink:0;color:var(--txt3)}
+/* Back breadcrumb in state view */
+.rgn-back-btn{background:none;border:none;font-family:inherit;cursor:pointer;padding:5px 6px;border-radius:6px;display:inline-flex;align-items:center;gap:3px;color:var(--blue);font-size:12px;font-weight:600;transition:background .12s}
+.rgn-back-btn:hover{background:rgba(0,93,255,.08)}
 .rgn-gst.ok{background:var(--st-onboarded-bg);color:var(--st-onboarded-tx)}
 .rgn-gst.bad{background:var(--st-rejected-bg);color:var(--st-rejected-tx)}
 .rgn-more{font-size:11px;color:var(--txt3);padding:8px 18px;text-align:center}
@@ -4661,116 +4714,298 @@ function closeKpiModal() {
   document.removeEventListener('keydown', _kpiEsc);
 }
 
-function _gmvCatRender(aud, cats) {
-  var el = document.getElementById('km-pn');
-  var modal = document.getElementById('kpi-modal');
-  if (!el || !modal) return;
-  var total = cats.reduce(function(s, c) { return s + (c.txnValue || 0); }, 0);
-  var audLbl = aud === 'seller' ? 'Sellers' : 'Buyers';
-  var rows = cats.length
-    ? cats.map(function(c) {
-        var pct = total > 0 ? ((c.txnValue / total) * 100).toFixed(1) : '0.0';
-        return '<div style="display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border)">'
-          + '<div style="flex:1;min-width:0">'
-          + '<div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:5px">' + esc(c.category) + '</div>'
-          + '<div style="height:4px;border-radius:2px;background:var(--bg2);overflow:hidden">'
-          + '<div style="height:100%;width:' + pct + '%;background:var(--st-onboarded);border-radius:2px;transition:width .6s .05s"></div>'
-          + '</div>'
-          + '</div>'
-          + '<div style="text-align:right;flex-shrink:0">'
-          + '<div style="font-size:13px;font-weight:700;color:var(--txt)">' + fmtINR(c.txnValue) + '</div>'
-          + '<div style="font-size:10.5px;color:var(--txt3);margin-top:1px">' + pct + '%</div>'
-          + '</div>'
-          + '</div>';
-      }).join('')
-    : '<div style="padding:28px 18px;text-align:center;color:var(--txt3);font-size:13px">No category GMV data available</div>';
-  el.innerHTML = '<div class="km-head">'
-    + '<div style="display:flex;align-items:center;min-width:0">'
-    + '<div class="km-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="18" y="13" width="4" height="8" rx="1"/></svg></div>'
-    + '<div class="km-htxt">'
-    + '<div class="km-title">GMV by Category</div>'
-    + '<div class="km-sub">' + audLbl + ' · Total ' + fmtINR(total) + '</div>'
-    + '</div></div>'
-    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
-    + '</div>'
-    + rows
-    + '<div class="km-foot"><button class="km-foot-link" onclick="closeKpiModal();vkpiOpen(\'all\')">View vendor detail ↓</button></div>';
-  if (!modal.classList.contains('km-open')) {
-    modal.classList.add('km-open');
-    document.addEventListener('keydown', _kpiEsc);
-  }
+// ── GMV Category Analytics Drawer ────────────────────────────────────────────
+// State: view ∈ 'list' | 'mat' | 'vendor'
+var _gmvCat = { aud: 'seller', view: 'list', cat: null, mat: null, data: null };
+var GMV_CAT_COLORS = {
+  'Metal':   { bar: '#1DC797', badge: 'rgba(29,199,151,.15)',  text: '#0A7044' },
+  'Plastic': { bar: '#E48800', badge: 'rgba(228,136,0,.12)',   text: '#7A4F00' },
+};
+function _gmvCatColor(cat) {
+  return GMV_CAT_COLORS[cat] || { bar: '#636366', badge: 'rgba(99,99,102,.12)', text: '#636366' };
 }
 
-function _gmvCatFromRows(rows) {
-  var catValMap = {};
-  rows.forEach(function(r) {
-    var val = r.txnValue != null ? Number(r.txnValue) : 0;
-    if (val > 0) {
-      var c = r.category || 'Others';
-      catValMap[c] = (catValMap[c] || 0) + val;
-    }
+function _gmvCatBuildData(rows) {
+  var catMap = {};
+  (rows || []).forEach(function(r) {
+    var cat  = (r.category  || 'Others').trim();
+    var mat  = (r.vendorType || 'Unknown').trim() || 'Unknown';
+    var txnV = r.txnValue  != null ? Number(r.txnValue)  : 0;
+    var txnC = r.txnCount  != null ? Number(r.txnCount)  : (txnV > 0 ? 1 : 0);
+    if (!catMap[cat]) catMap[cat] = { category: cat, txnValue: 0, txnCount: 0, vendorCount: 0, transactedCount: 0, mats: {}, vendors: [] };
+    var cs = catMap[cat];
+    cs.txnValue += txnV; cs.txnCount += txnC; cs.vendorCount++;
+    if (r.hasTransacted) cs.transactedCount++;
+    cs.vendors.push(r);
+    if (!cs.mats[mat]) cs.mats[mat] = { material: mat, txnValue: 0, txnCount: 0, vendorCount: 0, transactedCount: 0, vendors: [] };
+    var ms = cs.mats[mat];
+    ms.txnValue += txnV; ms.txnCount += txnC; ms.vendorCount++;
+    if (r.hasTransacted) ms.transactedCount++;
+    ms.vendors.push(r);
   });
-  return Object.keys(catValMap)
-    .map(function(c) { return { category: c, txnValue: catValMap[c] }; })
-    .sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); });
+  return Object.keys(catMap).map(function(k) {
+    var c = catMap[k];
+    c.materials = Object.keys(c.mats).map(function(m) { return c.mats[m]; })
+      .sort(function(a, b) { return b.txnValue - a.txnValue || b.vendorCount - a.vendorCount; });
+    return c;
+  }).sort(function(a, b) { return b.txnValue - a.txnValue || b.vendorCount - a.vendorCount; });
 }
 
-function openGmvCatModal(aud) {
-  // Primary: per-category txnValue supplied by server (available after Code.gs is re-deployed)
-  var rawCats = (window._gmvCats || {})[aud] || [];
-  var cats = rawCats
-    .filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
-    .slice().sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); });
+function _gmvAudToggleHtml(aud) {
+  return '<div class="gmc-aud-toggle">'
+    + '<button class="gmc-aud-btn' + (aud === 'seller' ? ' active' : '') + '" onclick="_gmvCatSetAud(\'seller\')">Sellers</button>'
+    + '<button class="gmc-aud-btn' + (aud === 'buyer'  ? ' active' : '') + '" onclick="_gmvCatSetAud(\'buyer\')">Buyers</button>'
+    + '</div>';
+}
 
-  // Fallback 1: sum txnValue per category from the already-loaded per-vendor detail rows.
-  // vertRows is loaded for selectedAud, so this only applies when audiences match.
-  if (!cats.length && aud === selectedAud && Array.isArray(vertRows) && vertRows.length) {
-    var fromActive = _gmvCatFromRows(vertRows);
-    if (fromActive.length) cats = fromActive;
+function _gmvCatNavigate(view, cat, mat) {
+  _gmvCat.view = view;
+  _gmvCat.cat  = cat || null;
+  _gmvCat.mat  = mat || null;
+  _gmvCatRender();
+}
+
+function _gmvCatSetAud(aud) {
+  if (aud === _gmvCat.aud) return;
+  _gmvCat.aud  = aud;
+  _gmvCat.view = 'list';
+  _gmvCat.cat  = null;
+  _gmvCat.mat  = null;
+  _gmvCat.data = null;
+  // Rebuild from vertRows if audience matches, else fetch
+  if (aud === selectedAud && Array.isArray(vertRows) && vertRows.length) {
+    _gmvCat.data = _gmvCatBuildData(vertRows);
+    _gmvCatRender();
+    return;
   }
-
-  // If we have data, render immediately
-  if (cats.length) { _gmvCatRender(aud, cats); return; }
-
-  // Fallback 2: audience doesn't match vertRows — fetch on-demand without switching mode
   var key = activeVertKey || selectedVert;
+  if (!key) { _gmvCatRender(); return; }
   var el = document.getElementById('km-pn');
-  var modal = document.getElementById('kpi-modal');
-  if (!el || !modal || !key) { _gmvCatRender(aud, []); return; }
-
-  var audLbl0 = aud === 'seller' ? 'Sellers' : 'Buyers';
-  el.innerHTML = '<div class="km-head">'
-    + '<div style="display:flex;align-items:center;min-width:0">'
-    + '<div class="km-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="18" y="13" width="4" height="8" rx="1"/></svg></div>'
-    + '<div class="km-htxt"><div class="km-title">GMV by Category</div>'
-    + '<div class="km-sub">' + audLbl0 + '</div></div></div>'
-    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
-    + '</div>'
-    + '<div style="padding:32px 18px;text-align:center;color:var(--txt3);font-size:13px">Loading…</div>';
-  modal.classList.add('km-open');
-  document.addEventListener('keydown', _kpiEsc);
-
+  if (el) {
+    var total0 = (_gmvCat.data || []).reduce(function(s, c) { return s + c.txnValue; }, 0);
+    el.innerHTML = _gmvCatHeadHtml(aud, total0) + _gmvAudToggleHtml(aud)
+      + '<div style="padding:32px 18px;text-align:center;color:var(--txt3);font-size:13px">Loading…</div>';
+  }
   var f = { audience: aud, period: currentPeriod };
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
   google.script.run
     .withSuccessHandler(function(res) {
       if (!document.getElementById('kpi-modal').classList.contains('km-open')) return;
       try {
-        var data = JSON.parse(res);
-        if (data.success && Array.isArray(data.rows)) {
-          var computed = _gmvCatFromRows(data.rows);
-          if (computed.length) {
-            window._gmvCats = window._gmvCats || {};
-            window._gmvCats[aud] = computed;
-            cats = computed;
-          }
-        }
-      } catch (e) {}
-      _gmvCatRender(aud, cats);
+        var d = JSON.parse(res);
+        if (d.success && Array.isArray(d.rows)) _gmvCat.data = _gmvCatBuildData(d.rows);
+      } catch(e) {}
+      _gmvCatRender();
     })
-    .withFailureHandler(function() {
-      _gmvCatRender(aud, []);
+    .withFailureHandler(function() { _gmvCatRender(); })
+    .getVerticalRows(key, JSON.stringify(f));
+}
+
+function _gmvCatHeadHtml(aud, total) {
+  var audLbl = aud === 'seller' ? 'Sellers' : 'Buyers';
+  return '<div class="km-head">'
+    + '<div style="display:flex;align-items:center;min-width:0">'
+    + '<div class="km-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="18" y="13" width="4" height="8" rx="1"/></svg></div>'
+    + '<div class="km-htxt"><div class="km-title">GMV by Category</div>'
+    + '<div class="km-sub">' + audLbl + (total > 0 ? ' · Total ' + fmtINR(total) : '') + '</div></div></div>'
+    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
+    + '</div>';
+}
+
+function _gmvCatRender() {
+  var el = document.getElementById('km-pn');
+  var modal = document.getElementById('kpi-modal');
+  if (!el || !modal) return;
+  var aud   = _gmvCat.aud;
+  var data  = _gmvCat.data || [];
+  var total = data.reduce(function(s, c) { return s + (c.txnValue || 0); }, 0);
+  var body  = '';
+  var view  = _gmvCat.view;
+  if (view === 'mat') {
+    var cd = data.find(function(c) { return c.category === _gmvCat.cat; });
+    body = cd ? _gmvBodyMat(cd, total) : '<div style="padding:28px 18px;text-align:center;color:var(--txt3)">Category not found</div>';
+  } else if (view === 'vendor') {
+    var cd2 = data.find(function(c) { return c.category === _gmvCat.cat; });
+    var md  = cd2 && cd2.materials.find(function(m) { return m.material === _gmvCat.mat; });
+    body = md ? _gmvBodyVendors(cd2, md) : '<div style="padding:28px 18px;text-align:center;color:var(--txt3)">No vendors found</div>';
+  } else {
+    body = _gmvBodyList(data, total);
+  }
+  el.innerHTML = _gmvCatHeadHtml(aud, total) + _gmvAudToggleHtml(aud) + body;
+  if (!modal.classList.contains('km-open')) {
+    modal.classList.add('km-open');
+    document.addEventListener('keydown', _kpiEsc);
+  }
+}
+
+function _gmvBodyList(cats, total) {
+  if (!cats || !cats.length) {
+    return '<div style="padding:36px 18px;text-align:center;color:var(--txt3);font-size:13px">No category GMV data available</div>';
+  }
+  return cats.map(function(c) {
+    var col    = _gmvCatColor(c.category);
+    var pct    = total > 0 ? (c.txnValue / total * 100) : 0;
+    var pctStr = pct.toFixed(1);
+    var avgTxn = c.txnCount > 0 ? Math.round(c.txnValue / c.txnCount) : 0;
+    var matCnt = (c.materials || []).length;
+    return '<div class="gmc-cat-card" tabindex="0" role="button"'
+      + ' onclick="_gmvCatNavigate(\'mat\',\'' + esc(c.category) + '\',null)"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_gmvCatNavigate(\'mat\',\'' + esc(c.category) + '\',null)}">'
+      + '<div class="gmc-cat-nm">'
+      + '<span class="gmc-cat-badge" style="background:' + col.badge + ';color:' + col.text + '">' + esc(c.category) + '</span>'
+      + '<span class="gmc-cat-gmv">' + fmtINR(c.txnValue) + '</span>'
+      + '<span class="gmc-cat-pct">' + pctStr + '%</span>'
+      + '</div>'
+      + '<div class="gmc-cat-bar-wrap"><div class="gmc-cat-bar" style="width:' + pctStr + '%;background:' + col.bar + '"></div></div>'
+      + '<div class="gmc-cat-meta">'
+      + '<div class="gmc-cat-stat"><div class="gmc-cat-sv">' + fmt(c.vendorCount) + '</div><div class="gmc-cat-sl">Total</div></div>'
+      + '<div class="gmc-cat-stat"><div class="gmc-cat-sv">' + fmt(c.transactedCount) + '</div><div class="gmc-cat-sl">Transacted</div></div>'
+      + '<div class="gmc-cat-stat"><div class="gmc-cat-sv">' + fmt(c.txnCount) + '</div><div class="gmc-cat-sl">Transactions</div></div>'
+      + (avgTxn > 0 ? '<div class="gmc-cat-stat"><div class="gmc-cat-sv">' + fmtINR(avgTxn) + '</div><div class="gmc-cat-sl">Avg TXN</div></div>' : '')
+      + '</div>'
+      + '<div class="gmc-cat-drill">'
+      + '<span style="font-size:11px;color:var(--txt3);font-weight:500">' + matCnt + ' material' + (matCnt !== 1 ? 's' : '') + '</span>'
+      + '<span style="font-size:11px;color:var(--blue);font-weight:600">View breakdown →</span>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _gmvBodyMat(catData, totalGmv) {
+  var col    = _gmvCatColor(catData.category);
+  var catPct = totalGmv > 0 ? (catData.txnValue / totalGmv * 100).toFixed(1) : '0.0';
+  var avgTxn = catData.txnCount > 0 ? Math.round(catData.txnValue / catData.txnCount) : 0;
+  var nav = '<div class="gmc-back">'
+    + '<button class="gmc-back-btn" onclick="_gmvCatNavigate(\'list\',null,null)">‹ Back</button>'
+    + '<div class="gmc-breadcrumb">'
+    + '<span>All Categories</span><span class="gmc-bc-sep">›</span><span class="gmc-bc-cur">' + esc(catData.category) + '</span>'
+    + '</div></div>';
+  var summary = '<div class="km-srow km-srow-4">'
+    + '<div class="km-s"><div class="km-sv">' + fmtINR(catData.txnValue) + '</div><div class="km-sl">GMV</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + catPct + '%</div><div class="km-sl">of Total</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + fmt(catData.transactedCount) + '<span style="font-size:10px;color:var(--txt3)">/' + fmt(catData.vendorCount) + '</span></div><div class="km-sl">Transacted</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + fmt(catData.txnCount) + '</div><div class="km-sl">Transactions</div></div>'
+    + '</div>';
+  var catTotal = catData.txnValue || 0;
+  var mats = catData.materials || [];
+  var matRows = mats.length ? mats.map(function(m) {
+    var mPct    = catTotal > 0 ? (m.txnValue / catTotal * 100) : 0;
+    var mPctStr = mPct.toFixed(1);
+    var mAvg    = m.txnCount > 0 ? Math.round(m.txnValue / m.txnCount) : 0;
+    return '<div class="gmc-mat-row" tabindex="0" role="button"'
+      + ' onclick="_gmvCatNavigate(\'vendor\',\'' + esc(catData.category) + '\',\'' + esc(m.material) + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_gmvCatNavigate(\'vendor\',\'' + esc(catData.category) + '\',\'' + esc(m.material) + '\')}">'
+      + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px">'
+      + '<div class="gmc-mat-nm">' + esc(m.material) + '</div>'
+      + '<div style="text-align:right;flex-shrink:0;padding-left:8px">'
+      + '<span class="gmc-mat-gmv">' + fmtINR(m.txnValue) + '</span>'
+      + ' <span class="gmc-mat-pct">' + mPctStr + '%</span>'
+      + '</div></div>'
+      + '<div class="gmc-mat-bar-wrap"><div class="gmc-cat-bar" style="width:' + mPctStr + '%;background:' + col.bar + '"></div></div>'
+      + '<div class="gmc-mat-meta">'
+      + '<span class="gmc-mat-chip">' + fmt(m.vendorCount) + ' vendors</span>'
+      + '<span style="color:var(--border)">·</span>'
+      + '<span class="gmc-mat-chip">' + fmt(m.txnCount) + ' txns</span>'
+      + '<span style="color:var(--border)">·</span>'
+      + '<span class="gmc-mat-chip">' + fmt(m.transactedCount) + ' transacted</span>'
+      + (mAvg > 0 ? '<span style="color:var(--border)">·</span><span class="gmc-mat-chip">avg ' + fmtINR(mAvg) + '</span>' : '')
+      + '<span style="font-size:10.5px;color:var(--blue);font-weight:600;margin-left:auto">Vendors →</span>'
+      + '</div>'
+      + '</div>';
+  }).join('')
+  : '<div style="padding:24px 18px;text-align:center;color:var(--txt3);font-size:12px">No material breakdown available</div>';
+  return nav + summary
+    + '<div class="gmc-sec-hd">Materials (' + mats.length + ')</div>'
+    + matRows;
+}
+
+function _gmvBodyVendors(catData, matData) {
+  var col = _gmvCatColor(catData.category);
+  var nav = '<div class="gmc-back">'
+    + '<button class="gmc-back-btn" onclick="_gmvCatNavigate(\'mat\',\'' + esc(catData.category) + '\',null)">‹ Back</button>'
+    + '<div class="gmc-breadcrumb">'
+    + '<span>' + esc(catData.category) + '</span><span class="gmc-bc-sep">›</span><span class="gmc-bc-cur">' + esc(matData.material) + '</span>'
+    + '</div></div>';
+  var avgTxn = matData.txnCount > 0 ? Math.round(matData.txnValue / matData.txnCount) : 0;
+  var summary = '<div class="km-srow km-srow-4">'
+    + '<div class="km-s"><div class="km-sv">' + fmtINR(matData.txnValue) + '</div><div class="km-sl">GMV</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + fmt(matData.vendorCount) + '</div><div class="km-sl">Vendors</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + fmt(matData.transactedCount) + '</div><div class="km-sl">Transacted</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + fmt(matData.txnCount) + '</div><div class="km-sl">Transactions</div></div>'
+    + '</div>';
+  var vendors = (matData.vendors || []).slice().sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); });
+  var vRows = vendors.length ? vendors.slice(0, 80).map(function(r) {
+    var gmvStr = r.txnValue ? fmtINR(r.txnValue) : null;
+    var st = r.status || '';
+    var stBg  = st === 'COMPLETED' ? 'rgba(52,199,89,.12)'  : st === 'IN_REVIEW' ? 'rgba(0,93,255,.10)' : 'rgba(142,142,147,.12)';
+    var stClr = st === 'COMPLETED' ? '#248A3D' : st === 'IN_REVIEW' ? '#024C8A' : 'var(--txt3)';
+    var stLbl = st === 'COMPLETED' ? 'Onboarded' : st === 'IN_REVIEW' ? 'In Review' : (st === 'DRAFT' ? 'Draft' : st || '—');
+    return '<div class="km-vrow" style="flex-wrap:wrap;gap:4px 8px;align-items:center">'
+      + '<span class="km-vname" style="flex:1;min-width:100px">' + esc(r.name || 'Unknown') + '</span>'
+      + (r.gstin ? '<span style="font-size:9px;font-family:monospace;color:var(--txt3);flex-shrink:0">' + esc(r.gstin) + '</span>' : '')
+      + '<span class="km-vbadge" style="background:' + stBg + ';color:' + stClr + '">' + stLbl + '</span>'
+      + (gmvStr ? '<span class="km-vbadge" style="background:rgba(52,199,89,.12);color:#248A3D">' + gmvStr + '</span>' : '')
+      + '</div>';
+  }).join('') : '<div style="padding:24px 18px;text-align:center;color:var(--txt3);font-size:12px">No vendors found</div>';
+  var extra = vendors.length > 80
+    ? '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (vendors.length - 80) + ' more</span></div>'
+    : '';
+  return nav + summary
+    + '<div class="gmc-sec-hd">Vendors · ' + esc(matData.material) + ' (' + vendors.length + ')</div>'
+    + '<div class="gmc-vlist-wrap">' + vRows + extra + '</div>';
+}
+
+function openGmvCatModal(aud) {
+  _gmvCat.aud  = aud || 'seller';
+  _gmvCat.view = 'list';
+  _gmvCat.cat  = null;
+  _gmvCat.mat  = null;
+  _gmvCat.data = null;
+
+  // Best source: per-vendor rows already loaded for this audience
+  if (_gmvCat.aud === selectedAud && Array.isArray(vertRows) && vertRows.length) {
+    _gmvCat.data = _gmvCatBuildData(vertRows);
+    _gmvCatRender();
+    return;
+  }
+
+  // Fallback: server category summary (has txnValue but no material GMV)
+  var rawCats = ((window._gmvCats || {})[_gmvCat.aud] || [])
+    .filter(function(c) { return c.txnValue != null && c.txnValue > 0; });
+  if (rawCats.length) {
+    _gmvCat.data = rawCats.map(function(c) {
+      var mats = (c.vendorTypes || []).map(function(vt) {
+        return { material: vt.type, txnValue: 0, txnCount: 0, vendorCount: vt.count || 0, transactedCount: vt.transacted || 0, vendors: [] };
+      });
+      return { category: c.category, txnValue: c.txnValue || 0, txnCount: 0, vendorCount: c.total || 0, transactedCount: c.transacted || 0, materials: mats, vendors: [] };
+    }).sort(function(a, b) { return b.txnValue - a.txnValue; });
+    _gmvCatRender();
+    return;
+  }
+
+  // Fetch on demand
+  var key = activeVertKey || selectedVert;
+  var el  = document.getElementById('km-pn');
+  var modal = document.getElementById('kpi-modal');
+  if (!el || !modal || !key) { _gmvCatRender(); return; }
+
+  el.innerHTML = _gmvCatHeadHtml(_gmvCat.aud, 0) + _gmvAudToggleHtml(_gmvCat.aud)
+    + '<div style="padding:32px 18px;text-align:center;color:var(--txt3);font-size:13px">Loading…</div>';
+  modal.classList.add('km-open');
+  document.addEventListener('keydown', _kpiEsc);
+
+  var f = { audience: _gmvCat.aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!document.getElementById('kpi-modal').classList.contains('km-open')) return;
+      try {
+        var d = JSON.parse(res);
+        if (d.success && Array.isArray(d.rows)) _gmvCat.data = _gmvCatBuildData(d.rows);
+      } catch(e) {}
+      _gmvCatRender();
     })
+    .withFailureHandler(function() { _gmvCatRender(); })
     .getVerticalRows(key, JSON.stringify(f));
 }
 
@@ -5727,7 +5962,7 @@ function _buildRailRegions(vs) {
 // toggle. Rows are fetched per audience on demand (cached), mirroring
 // the GMV-by-category modal.
 // ═══════════════════════════════════════════════════════════════
-var _rgn = { region: '', key: '', pKey: '', aud: 'seller', rows: { seller: null, buyer: null } };
+var _rgn = { region: '', key: '', pKey: '', aud: 'seller', state: null, rows: { seller: null, buyer: null } };
 
 function openRegionModal(region) {
   var key = (typeof activeVertKey !== 'undefined' && activeVertKey) || selectedVert;
@@ -5739,6 +5974,7 @@ function openRegionModal(region) {
   _rgn.key    = key;
   _rgn.pKey   = pKey;
   _rgn.aud    = (selectedAud === 'buyer') ? 'buyer' : 'seller';
+  _rgn.state  = null;   // always open at region overview
   // Seed from already-loaded detail rows when they match the active audience.
   if (_rgn.rows[_rgn.aud] == null && selectedVert === key
       && Array.isArray(vertRows) && vertRows.length
@@ -5752,6 +5988,11 @@ function _regionSetAud(aud) {
   if (_rgn.aud === aud) return;
   _rgn.aud = aud;
   _regionShow();
+}
+
+function _regionSetState(st) {
+  _rgn.state = st;
+  _regionRender(false);
 }
 
 // Render if rows for the active audience are available, else fetch them first.
@@ -5783,19 +6024,39 @@ function _regionRender(loading) {
   var el = document.getElementById('km-pn');
   var modal = document.getElementById('kpi-modal');
   if (!el || !modal) return;
-  var region = _rgn.region, aud = _rgn.aud;
+  var region = _rgn.region, aud = _rgn.aud, state = _rgn.state;
   var cfg = getVertCfg().filter(function(c) { return c.key === _rgn.key; })[0];
   var vname = (cfg && cfg.name) || _rgn.key || '';
   var audLbl = aud === 'seller' ? 'Sellers' : 'Buyers';
   var col = REGION_COLORS[region] || REGION_COLORS.Other;
 
-  var head = '<div class="km-head">'
-    + '<div style="display:flex;align-items:center;min-width:0">'
-    + '<div class="km-icon" style="color:' + col + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>'
-    + '<div class="km-htxt"><div class="km-title">' + esc(region) + ' Region</div>'
-    + '<div class="km-sub">' + esc(vname) + ' · ' + audLbl + '</div></div></div>'
-    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
-    + '</div>';
+  // ── Header — region overview vs state drill-down ───────────────────
+  var head;
+  if (state) {
+    head = '<div class="km-head">'
+      + '<div style="display:flex;align-items:center;min-width:0;gap:0">'
+      + '<button class="rgn-back-btn" onclick="_regionSetState(null)" aria-label="Back to ' + esc(region) + ' region">'
+      +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="width:15px;height:15px"><path d="M15 18l-6-6 6-6"/></svg>'
+      +   esc(region)
+      + '</button>'
+      + '<div class="km-htxt" style="margin-left:4px">'
+      +   '<div class="km-title" style="display:flex;align-items:center;gap:5px">'
+      +     '<span style="color:var(--txt3);font-weight:400;font-size:14px">›</span>'
+      +     '<span>' + esc(state) + '</span>'
+      +   '</div>'
+      +   '<div class="km-sub">' + esc(vname) + ' · ' + audLbl + '</div>'
+      + '</div></div>'
+      + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
+      + '</div>';
+  } else {
+    head = '<div class="km-head">'
+      + '<div style="display:flex;align-items:center;min-width:0">'
+      + '<div class="km-icon" style="color:' + col + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>'
+      + '<div class="km-htxt"><div class="km-title">' + esc(region) + ' Region</div>'
+      + '<div class="km-sub">' + esc(vname) + ' · ' + audLbl + '</div></div></div>'
+      + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
+      + '</div>';
+  }
 
   var audToggle = '<div class="rgn-aud">'
     + '<button class="rgn-aud-btn' + (aud === 'seller' ? ' on' : '') + '" onclick="_regionSetAud(\'seller\')">Sellers</button>'
@@ -5809,8 +6070,11 @@ function _regionRender(loading) {
     return;
   }
 
-  var all = (_rgn.rows[aud] || []).filter(function(r) { return _stateToRegionFE(r.state) === region; });
-  // Summary stats for this region + audience.
+  // ── Filter: region → optionally narrow to one state ───────────────
+  var allRegion = (_rgn.rows[aud] || []).filter(function(r) { return _stateToRegionFE(r.state) === region; });
+  var all = state ? allRegion.filter(function(r) { return (r.state || '') === state; }) : allRegion;
+
+  // ── Summary stats ─────────────────────────────────────────────────
   var sm = { total: all.length, onb: 0, rev: 0, draft: 0, rej: 0, gmv: 0, hasGmv: false };
   all.forEach(function(r) {
     if (r.status === 'COMPLETED') sm.onb++;
@@ -5830,25 +6094,29 @@ function _regionRender(loading) {
     + (aud === 'seller' && sm.hasGmv ? tile(fmtINR(sm.gmv), 'GMV') : '')
     + '</div>';
 
+  // ── State breakdown (region overview only) ─────────────────────────
+  var stateSection = state ? '' : _buildStateSection(allRegion, aud);
+
+  // ── Vendor list grouped by status ─────────────────────────────────
   var body;
   if (!all.length) {
     body = '<div style="padding:36px 18px;text-align:center;color:var(--txt3);font-size:13px">No '
-      + esc(audLbl.toLowerCase()) + ' in ' + esc(region) + ' for the selected period</div>';
+      + esc(audLbl.toLowerCase()) + ' in ' + esc(state || region) + ' for the selected period</div>';
   } else {
-    // Group by onboarding stage — onboarded first — for an at-a-glance structure.
     var groups = [
       ['COMPLETED', 'Onboarded'], ['IN_REVIEW', 'In Review'],
       ['DRAFT', 'Draft'], ['REJECTED', 'Rejected'],
     ];
-    var MAXG = 60;   // cap rows per group so the modal stays snappy
+    var MAXG = 60;
     body = groups.map(function(g) {
       var list = all.filter(function(r) { return r.status === g[0]; })
         .sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0) || String(a.name || '').localeCompare(String(b.name || '')); });
       if (!list.length) return '';
       var shown = list.slice(0, MAXG);
       var rowsHtml = shown.map(function(r) {
-        var meta = [r.id ? '#' + esc(r.id) : '', esc(r.category || ''), esc(r.state || '')]
-          .filter(Boolean).join(' · ');
+        var metaParts = [r.id ? '#' + esc(r.id) : '', esc(r.category || '')];
+        if (!state) metaParts.push(esc(r.state || ''));  // hide state col when already scoped to one state
+        var meta = metaParts.filter(Boolean).join(' · ');
         var gstChip = r.hasGST
           ? '<span class="rgn-gst ok" title="' + esc(r.gstin || '') + '">✓ GST</span>'
           : '<span class="rgn-gst bad">✗ GST</span>';
@@ -5870,8 +6138,50 @@ function _regionRender(loading) {
     }).join('');
   }
 
-  el.innerHTML = head + audToggle + tiles + body;
+  el.innerHTML = head + audToggle + tiles + stateSection + body;
   if (!modal.classList.contains('km-open')) { modal.classList.add('km-open'); document.addEventListener('keydown', _kpiEsc); }
+}
+
+// Build the state breakdown list shown in the region overview.
+function _buildStateSection(regionRows, aud) {
+  var map = {};
+  regionRows.forEach(function(r) {
+    var st = String(r.state || '').trim() || 'Unknown';
+    if (!map[st]) map[st] = { name: st, total: 0, onb: 0, rev: 0, draft: 0, gmv: 0, hasGmv: false };
+    var g = map[st];
+    g.total++;
+    if (r.status === 'COMPLETED') g.onb++;
+    else if (r.status === 'IN_REVIEW') g.rev++;
+    else if (r.status === 'DRAFT') g.draft++;
+    if (r.txnValue != null && r.txnValue > 0) { g.gmv += Number(r.txnValue); g.hasGmv = true; }
+  });
+  var states = Object.keys(map).map(function(k) { return map[k]; })
+    .sort(function(a, b) { return b.total - a.total; });
+  if (!states.length) return '';
+
+  var rows = states.map(function(s) {
+    var sj = JSON.stringify(s.name);
+    return '<div class="rgn-state-row" role="button" tabindex="0"'
+      + ' onclick="_regionSetState(' + sj + ')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_regionSetState(' + sj + ')}">'
+      + '<span class="rgn-state-nm">' + esc(s.name) + '</span>'
+      + '<span class="rgn-state-meta">'
+      +   '<span class="rgn-state-chip">' + fmt(s.total) + ' total</span>'
+      +   '<span class="rgn-state-chip rgn-sc-onb">' + fmt(s.onb) + ' onboarded</span>'
+      +   (s.rev > 0 ? '<span class="rgn-state-chip rgn-sc-rev">' + fmt(s.rev) + ' review</span>' : '')
+      +   (aud === 'seller' && s.hasGmv ? '<span class="rgn-state-chip rgn-sc-gmv">' + fmtINR(s.gmv) + '</span>' : '')
+      + '</span>'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" class="rgn-sc-arr" style="width:13px;height:13px"><path d="M9 18l6-6-6-6"/></svg>'
+      + '</div>';
+  }).join('');
+
+  return '<div class="rgn-state-sec">'
+    + '<div class="rgn-state-hd">'
+    +   '<span class="rgn-state-hd-ttl">States (' + states.length + ')</span>'
+    +   '<span class="rgn-state-hd-hint">Tap a state to drill down →</span>'
+    + '</div>'
+    + rows
+    + '</div>';
 }
 
 // Vendor Rating + OSV Status mini-cards for the rail. qc null → "Syncing…".
