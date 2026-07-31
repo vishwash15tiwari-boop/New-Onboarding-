@@ -1642,7 +1642,19 @@ function getQualityData() {
   Object.keys(ompGstinSellers).forEach(function(g) { ompGstinMap[g] = ompGstinSellers[g]; });
 
   function mkR()  { return { ws: 0, rated: 0, total: 0, dist: [0,0,0,0,0] }; }
-  function mkO()  { return { completed: 0, pending: 0, failed: 0, notInitiated: 0, total: 0 }; }
+  function mkO()  { return { completed: 0, inProgress: 0, notInitiated: 0, total: 0 }; }
+  // Three-way OSV classifier: Done / In Progress / Not Initiated
+  function osvClassify_(raw) {
+    var u = String(raw || '').trim().toUpperCase();
+    if (!u) return 'not_initiated';
+    if (u === 'DONE' || u === 'COMPLETED' || u === 'COMPLETE' || u === 'VERIFIED'
+        || u === 'POSITIVE' || u === 'YES' || u === 'CONSENT_ACCEPTED') return 'done';
+    if (u === 'IN PROGRESS' || u === 'IN_PROGRESS' || u === 'PENDING' || u === 'INITIATED'
+        || u === 'ONGOING' || u === 'SCHEDULED' || u === 'VISIT SCHEDULED'
+        || u === 'VISIT_SCHEDULED' || u === 'CONSENT_PENDING' || u === 'PROCESSING'
+        || u === 'PARTIAL') return 'in_progress';
+    return 'not_initiated';
+  }
   function mkD()  { return { complete: 0, partial: 0, incomplete: 0, missing: 0, total: 0 }; }
   function mkAcc(){ return { r: mkR(), o: mkO(), d: mkD() }; }
   var acc = { seller: mkAcc(), buyer: mkAcc(), combined: mkAcc() };
@@ -1735,7 +1747,7 @@ function getQualityData() {
         var ompInfo = ompMap[vid_];
         if (ompInfo) {
           var osRaw = String(row[oC] || '').trim();
-          var osvStatus = osRaw.toUpperCase() === 'DONE' ? 'done' : 'not_done';
+          var osvStatus = osvClassify_(osRaw);
           vendorOSV.push({
             id:               vid_.slice(0, 30),
             name:             ompInfo.name || String(row[nameC] || '').trim().slice(0, 60),
@@ -1902,15 +1914,16 @@ function getQualityData() {
           _demonitorRatingCount++;
         }
 
-        // ── OSV Status (Col M) ────────────────────────────────────────────
-        // Only "Done" (case-insensitive) = Done; blank/null/empty/any-other = Not Done.
-        var osvRaw = row[dmOsvC] != null ? String(row[dmOsvC]).trim() : '';
-        var isDone = osvRaw.toUpperCase() === 'DONE';
-        var osvStatus = isDone ? 'done' : 'not_done';
-        if (isDone) {
+        // ── OSV Status (Col M) — three-way: Done / In Progress / Not Initiated
+        var osvRaw    = row[dmOsvC] != null ? String(row[dmOsvC]).trim() : '';
+        var osvStatus = osvClassify_(osvRaw);
+        if (osvStatus === 'done') {
           acc['seller'].o.completed   += 1;
           acc['combined'].o.completed += 1;
           _demonitorOsvCount++;
+        } else if (osvStatus === 'in_progress') {
+          acc['seller'].o.inProgress   += 1;
+          acc['combined'].o.inProgress += 1;
         }
         vendorOSV.push({
           id:               (ompInfo && ompInfo.id) || dmId.slice(0, 30),
@@ -1939,12 +1952,14 @@ function getQualityData() {
       acc['combined'].r.total = acc['seller'].r.total;
       acc['seller'].o.total   = ompTotal > 0 ? ompTotal : Math.max(dmOsvTotal, _demonitorOsvCount);
       acc['combined'].o.total = acc['seller'].o.total;
-      acc['seller'].o.notInitiated   = Math.max(0, acc['seller'].o.total - acc['seller'].o.completed);
-      acc['combined'].o.notInitiated = Math.max(0, acc['combined'].o.total - acc['combined'].o.completed);
+      acc['seller'].o.notInitiated   = Math.max(0, acc['seller'].o.total   - acc['seller'].o.completed   - acc['seller'].o.inProgress);
+      acc['combined'].o.notInitiated = Math.max(0, acc['combined'].o.total - acc['combined'].o.completed - acc['combined'].o.inProgress);
 
       Logger.log('Demonitor: ' + dmRows.length + ' rows · rating col=' + dmRatC
         + ' osv col=' + dmOsvC + ' · rated=' + _demonitorRatingCount
-        + ' osv_done=' + _demonitorOsvCount);
+        + ' osv_done=' + _demonitorOsvCount
+        + ' osv_inprog=' + acc['combined'].o.inProgress
+        + ' osv_ni=' + acc['combined'].o.notInitiated);
     }
   } catch (e) {
     Logger.log('getQualityData demonitor sheet: ' + e.message);
@@ -1953,7 +1968,7 @@ function getQualityData() {
     ['seller','combined'].forEach(function(t) {
       acc[t].r.total = acc[t].r.total || ompTotal;
       acc[t].o.total = acc[t].o.total || ompTotal;
-      acc[t].o.notInitiated = Math.max(0, (acc[t].o.total || 0) - (acc[t].o.completed || 0));
+      acc[t].o.notInitiated = Math.max(0, (acc[t].o.total || 0) - (acc[t].o.completed || 0) - (acc[t].o.inProgress || 0));
     });
   }
 
@@ -1987,15 +2002,13 @@ function getQualityData() {
   if (_demonitorOsvCount === 0) {
     ['seller', 'combined'].forEach(function(t) {
       acc[t].o.total        = ompTotal;
-      acc[t].o.notInitiated = Math.max(0, ompTotal - acc[t].o.completed);
-      acc[t].o.pending      = 0;
-      acc[t].o.failed       = 0;
+      acc[t].o.notInitiated = Math.max(0, ompTotal - acc[t].o.completed - acc[t].o.inProgress);
     });
   }
 
   // ── Finalize accumulators → output shape ─────────────────────
   function fR(r) { return { avg: r.rated>0?Math.round(r.ws/r.rated*10)/10:null, total:r.total, rated:r.rated, dist:r.dist }; }
-  function fO(o) { return { completed:o.completed, pending:o.pending, failed:o.failed, notInitiated:o.notInitiated, total:o.total }; }
+  function fO(o) { return { completed:o.completed, inProgress:o.inProgress, notInitiated:o.notInitiated, total:o.total }; }
   function fD(d) { return { complete:d.complete, partial:d.partial, incomplete:d.incomplete, missing:d.missing, total:d.total }; }
   function fA(a) { return { rating:fR(a.r), osv:fO(a.o), docs:fD(a.d) }; }
 

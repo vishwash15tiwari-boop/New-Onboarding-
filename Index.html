@@ -4103,10 +4103,10 @@ function openKpiModal(cardId) {
       var shown = vendors.slice(0, 60);
       h += shown.map(function(v) {
         if (sp.mode === 'osv') {
-          var isV  = v.status === 'done';
-          var cBg  = isV ? 'rgba(29,199,151,.15)' : 'var(--bg2)';
-          var cClr = isV ? '#0A7044' : 'var(--txt3)';
-          var cLbl = isV ? 'Done' : (v.osvRaw ? esc(v.osvRaw) : 'Not Done');
+          var st   = v.status || 'not_initiated';
+          var cBg  = st === 'done' ? 'rgba(29,199,151,.15)' : st === 'in_progress' ? 'rgba(228,136,0,.12)' : 'var(--bg2)';
+          var cClr = st === 'done' ? '#0A7044'              : st === 'in_progress' ? '#7A4F00'              : 'var(--txt3)';
+          var cLbl = st === 'done' ? 'Done'                 : st === 'in_progress' ? 'In Progress'          : 'Not Initiated';
           return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
             + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
             + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
@@ -4526,15 +4526,16 @@ function openKpiModal(cardId) {
 
     } else if (cardId === 'osv') {
       title    = 'OSV Status';
-      subtitle = 'Column M from Demonitor sheet — Done vs Not Done';
+      subtitle = 'Done · In Progress · Not Initiated — from Demonitor sheet Col M';
       iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#005DFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
       if (!qd.success) {
         content = noDataMsg;
       } else {
         var o       = (qd.seller || {}).osv || {};
         var oT      = o.total || 0;
-        var oDone   = o.completed || 0;
-        var oNotDone = Math.max(0, oT - oDone);
+        var oDone   = o.completed  || 0;
+        var oInProg = o.inProgress || 0;
+        var oNI     = Math.max(0, oT - oDone - oInProg);
         var oPct    = oT > 0 ? Math.round(oDone / oT * 100) : 0;
 
         // Filterable OSV table
@@ -4551,17 +4552,18 @@ function openKpiModal(cardId) {
           + '</select>'
           + '<select class="km-fs" id="' + osvTblId + '-o" onchange="_kmOsvFilter(\'' + osvTblId + '\')">'
           + '<option value="">All Statuses</option>'
-          + '<option value="done">Done</option><option value="not_done">Not Done</option>'
+          + '<option value="done">Done</option><option value="in_progress">In Progress</option><option value="not_initiated">Not Initiated</option>'
           + '</select>'
           + '</div>';
         var osvRows = vl.map(function(v) {
-          var isDoneV = v.status === 'done';
-          var cBg  = isDoneV ? 'rgba(29,199,151,.15)' : 'var(--bg2)';
-          var cClr = isDoneV ? '#0A7044' : 'var(--txt3)';
-          return '<tr data-n="' + esc((v.name||'').toLowerCase()) + '" data-c="' + esc(v.category||'') + '" data-s="' + esc(v.status||'not_done') + '">'
+          var st   = v.status || 'not_initiated';
+          var cBg  = st === 'done' ? 'rgba(29,199,151,.15)' : st === 'in_progress' ? 'rgba(228,136,0,.12)' : 'var(--bg2)';
+          var cClr = st === 'done' ? '#0A7044'              : st === 'in_progress' ? '#7A4F00'              : 'var(--txt3)';
+          var cLbl = st === 'done' ? 'Done'                 : st === 'in_progress' ? 'In Progress'          : 'Not Initiated';
+          return '<tr data-n="' + esc((v.name||'').toLowerCase()) + '" data-c="' + esc(v.category||'') + '" data-s="' + esc(st) + '">'
             + '<td class="km-dtbl-name">' + esc(v.name || 'Unknown') + '</td>'
             + '<td>' + (v.category ? '<span class="km-vbadge" style="background:rgba(0,93,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '<span style="color:var(--txt3)">—</span>') + '</td>'
-            + '<td><span class="km-vbadge" style="background:' + cBg + ';color:' + cClr + '">' + (isDoneV ? 'Done' : 'Not Done') + '</span></td>'
+            + '<td><span class="km-vbadge" style="background:' + cBg + ';color:' + cClr + '">' + cLbl + '</span></td>'
             + '</tr>';
         }).join('');
         var osvTbl = vl.length > 0
@@ -4573,9 +4575,10 @@ function openKpiModal(cardId) {
         content =
           hero(fmt(oDone), 'Vendors with OSV Done')
           + srow([
-              {v: oPct + '%',     l: 'Done Rate',   s: 'of total vendors'},
+              {v: oPct + '%',     l: 'Done Rate',      s: 'of total vendors'},
               {v: fmt(oDone),     l: 'Done'},
-              {v: fmt(oNotDone),  l: 'Not Done'},
+              {v: fmt(oInProg),   l: 'In Progress'},
+              {v: fmt(oNI),       l: 'Not Initiated'},
             ])
           + sec('OSV Status Detail', osvFilterBar + osvTbl);
       }
@@ -5059,9 +5062,9 @@ function _patchQualityKpiCards() {
 
   var oEl = document.getElementById('qkpi-osv');
   if (oEl) {
-    var o    = qc.osv || {}, oDn = o.completed || 0, oOmp = o.total || 0;
+    var o    = qc.osv || {}, oDn = o.completed || 0, oIp = o.inProgress || 0, oOmp = o.total || 0;
     var opct = oOmp > 0 ? Math.round(oDn / oOmp * 100) + '%' : '—';
-    var osb  = fmt(oDn) + ' Done | ' + fmt(Math.max(0, oOmp - oDn)) + ' Not Done';
+    var osb  = fmt(oDn) + ' Done · ' + fmt(oIp) + ' In Progress · ' + fmt(Math.max(0, oOmp - oDn - oIp)) + ' Not Initiated';
     var ov   = oEl.querySelector('.vkpi-val'); if (ov)  ov.textContent  = opct;
     var oSub = oEl.querySelector('.vkpi-sub'); if (oSub) oSub.textContent = osb;
   }
@@ -5431,8 +5434,9 @@ function buildQualitySect(qd, aud) {
     var o  = q.osv, oT = o.total || 1;
     var osvPct = Math.round((o.completed || 0) / oT * 100);
     var or_ = [
-      { col: 'var(--st-onboarded)', v: o.completed,   lbl: 'Done'     },
-      { col: 'var(--st-draft)',     v: Math.max(0, oT - (o.completed||0)), lbl: 'Not Done' },
+      { col: 'var(--st-onboarded)', v: o.completed || 0,                                          lbl: 'Done'          },
+      { col: '#E48800',              v: o.inProgress || 0,                                         lbl: 'In Progress'   },
+      { col: 'var(--st-draft)',      v: Math.max(0, oT - (o.completed||0) - (o.inProgress||0)),   lbl: 'Not Initiated' },
     ];
     html += '<div class="cc-qsect-row cc-qsect-mt">'
       + '<span class="cc-qsect-ic">◎</span>'
@@ -5881,11 +5885,13 @@ function _buildRailQual(qc, vname) {
       + '</div>';
 
     // OSV tile
-    var osvDone    = o.completed || 0;
-    var osvTotal   = o.total || 0;
-    var osvNotDone = Math.max(0, osvTotal - osvDone);
-    var donePct    = osvTotal > 0 ? Math.round(osvDone    / osvTotal * 100) : 0;
-    var notPct     = osvTotal > 0 ? Math.round(osvNotDone / osvTotal * 100) : 0;
+    var osvDone   = o.completed  || 0;
+    var osvInProg = o.inProgress || 0;
+    var osvTotal  = o.total      || 0;
+    var osvNI     = Math.max(0, osvTotal - osvDone - osvInProg);
+    var donePct   = osvTotal > 0 ? Math.round(osvDone   / osvTotal * 100) : 0;
+    var ipPct     = osvTotal > 0 ? Math.round(osvInProg / osvTotal * 100) : 0;
+    var niPct     = osvTotal > 0 ? Math.round(osvNI     / osvTotal * 100) : 0;
     osvTile = '<div class="biz-tile biz-tile--right biz-tile--bottom biz-tile-region" role="button" tabindex="0"'
       + ' onclick="openKpiModal(\'osv\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'osv\')}">'
@@ -5893,13 +5899,18 @@ function _buildRailQual(qc, vname) {
       + '<div class="biz-osv-cols">'
       +   '<div class="biz-osv-col">'
       +     '<div class="biz-osv-lbl" style="color:#1DC797">Done</div>'
-      +     '<div class="biz-osv-num" style="color:#1DC797">' + fmt(osvDone) + '</div>'
+      +     '<div class="biz-osv-num" style="color:#1DC797;font-size:13px">' + fmt(osvDone) + '</div>'
       +     '<div class="biz-osv-pct">' + donePct + '%</div>'
       +   '</div>'
       +   '<div class="biz-osv-col">'
-      +     '<div class="biz-osv-lbl" style="color:#FF3B30">Not Done</div>'
-      +     '<div class="biz-osv-num" style="color:#FF3B30">' + fmt(osvNotDone) + '</div>'
-      +     '<div class="biz-osv-pct">' + notPct + '%</div>'
+      +     '<div class="biz-osv-lbl" style="color:#E48800">In Progress</div>'
+      +     '<div class="biz-osv-num" style="color:#E48800;font-size:13px">' + fmt(osvInProg) + '</div>'
+      +     '<div class="biz-osv-pct">' + ipPct + '%</div>'
+      +   '</div>'
+      +   '<div class="biz-osv-col">'
+      +     '<div class="biz-osv-lbl" style="color:var(--txt3)">Not Initiated</div>'
+      +     '<div class="biz-osv-num" style="color:var(--txt3);font-size:13px">' + fmt(osvNI) + '</div>'
+      +     '<div class="biz-osv-pct">' + niPct + '%</div>'
       +   '</div>'
       + '</div>'
       + '<div class="biz-osv-tot"><span>Total Vendors</span><b>' + fmt(osvTotal) + '</b></div>'
