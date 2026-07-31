@@ -1869,13 +1869,13 @@ body.view-gst #vert-tabs-bar{display:none}
    gracefully on narrow ones without shrinking text or clipping subtitles.
    The richer OMP metrics (Existing/New, Vendor Rating, OSV Consent) live in the
    Seller/Buyer pipeline cards below. */
-.vkpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-bottom:12px;align-items:stretch}
+.vkpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px;margin-bottom:6px;align-items:stretch}
 /* 4-card OMP row: explicit columns so it never wraps to a lone 3+1 card */
 .vkpi-grid.vkpi-grid-4{grid-template-columns:repeat(4,1fr)}
 .vkpi-card{
   background:var(--card);
   border:1px solid var(--border);
-  border-radius:10px;padding:14px 16px;min-height:80px;
+  border-radius:10px;padding:10px 14px;min-height:62px;
   box-shadow:0 1px 2px rgba(0,0,0,.04);
   display:flex;flex-direction:column;justify-content:space-between;
   position:relative;overflow:hidden;
@@ -1888,8 +1888,8 @@ body.view-gst #vert-tabs-bar{display:none}
 .vkpi-text{display:contents}
 .vkpi-lbl{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);line-height:1.2;margin-bottom:5px}
 .vkpi-numgrp{display:contents}
-.vkpi-val{font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
-.vkpi-sub{font-size:10.5px;color:var(--txt3);font-weight:400;line-height:1.35;text-align:left;white-space:normal;margin-top:8px}
+.vkpi-val{font-size:21px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
+.vkpi-sub{font-size:10.5px;color:var(--txt3);font-weight:400;line-height:1.35;text-align:left;white-space:normal;margin-top:4px}
 .vkpi-note{display:none}
 .vkpi-mat{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
 .vkpi-mat-chip{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:500;color:var(--txt2);white-space:nowrap}
@@ -1935,12 +1935,12 @@ body.view-gst #vert-tabs-bar{display:none}
    PIPELINE PAIR (Seller + Buyer side by side)
    ══════════════════════════════════════════════════ */
 /* Shared 4-column grid — KPI cards, pipeline, and rail share identical column boundaries */
-.vert-dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;align-items:start}
+.vert-dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px;align-items:start}
 .vert-dash-grid #vert-kpi-row{grid-column:1/-1;margin-bottom:0}
 .vert-dash-grid #vert-pipeline-pair{grid-column:1/4}
 .vert-dash-grid #vert-biz-rail{grid-column:4/5;align-self:stretch}
-.vpipe-pair{display:grid;grid-template-columns:1fr;gap:10px}
-.vpipe-card{cursor:pointer;border-radius:20px!important;padding:24px!important;box-shadow:0 4px 16px rgba(0,0,0,.04)!important;border:1px solid var(--border)!important;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
+.vpipe-pair{display:grid;grid-template-columns:1fr;gap:6px}
+.vpipe-card{cursor:pointer;border-radius:16px!important;padding:16px!important;box-shadow:0 4px 16px rgba(0,0,0,.04)!important;border:1px solid var(--border)!important;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
 .vpipe-card:hover{transform:translateY(-1px)!important;box-shadow:0 8px 28px rgba(0,0,0,.08)!important}
 .vpipe-card.det-active{
   box-shadow:0 0 0 1.5px rgba(0,93,255,.45),0 4px 16px rgba(0,0,0,.04)!important;
@@ -2007,23 +2007,23 @@ body.view-gst #vert-tabs-bar{display:none}
 .pipe-btm-solo .cc-cat-rows{margin:0}
 .pipe-btm-solo .cc-fy-wrap,.pipe-btm-solo .cc-stat-list{border-top:none;margin-top:0;padding-top:0}
 /* ── Pipeline card v2 component styles ── */
-.vpipe-hdr2{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.vpipe-title3{font-size:20px;font-weight:700;letter-spacing:-.4px;color:var(--txt);line-height:1.15}
-.vpipe-vd-btn{font-size:13px;font-weight:500;color:var(--txt3);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;transition:color .15s}
+.vpipe-hdr2{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.vpipe-title3{font-size:15px;font-weight:700;letter-spacing:-.3px;color:var(--txt);line-height:1.15}
+.vpipe-vd-btn{font-size:12px;font-weight:500;color:var(--txt3);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;transition:color .15s}
 .vpipe-vd-btn:hover{color:var(--txt)}
-.vpipe-kpi-section{display:flex;gap:12px;margin-bottom:18px}
-.vpipe-status-grid{display:flex;flex:4;gap:10px}
-.vpipe-ops-col{display:flex;flex:1;flex-direction:column;gap:8px;min-width:90px}
-.vpipe-stat-card{flex:1;min-width:0;border:1px solid var(--border);border-radius:14px;padding:12px 12px 13px;display:flex;flex-direction:column;gap:3px;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden}
-.vpipe-stat-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-bottom:4px}
-.vpipe-stat-name{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
-.vpipe-stat-num{font-size:24px;font-weight:800;letter-spacing:-.8px;line-height:1.05;color:var(--txt);font-variant-numeric:tabular-nums}
-.vpipe-stat-pct{font-size:11px;font-weight:500;color:var(--txt3)}
-.vpipe-ops-card{flex:1;border:1px solid var(--border);border-radius:12px;padding:9px 12px;display:flex;flex-direction:column;justify-content:center;gap:2px;background:var(--card)}
-.vpipe-ops-lbl{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
-.vpipe-ops-val{font-size:15px;font-weight:800;letter-spacing:-.3px;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.1}
-.vpipe-mats{display:flex;flex-direction:column;gap:14px;padding-top:18px;border-top:1px solid var(--border)}
-.vpipe-mat-row{display:flex;flex-direction:column;gap:6px}
+.vpipe-kpi-section{display:flex;gap:8px;margin-bottom:10px}
+.vpipe-status-grid{display:flex;flex:4;gap:6px}
+.vpipe-ops-col{display:flex;flex:1;flex-direction:column;gap:5px;min-width:80px}
+.vpipe-stat-card{flex:1;min-width:0;border:1px solid var(--border);border-radius:10px;padding:8px 10px 9px;display:flex;flex-direction:column;gap:2px;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden}
+.vpipe-stat-icon{width:18px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-bottom:2px}
+.vpipe-stat-name{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
+.vpipe-stat-num{font-size:19px;font-weight:800;letter-spacing:-.6px;line-height:1.05;color:var(--txt);font-variant-numeric:tabular-nums}
+.vpipe-stat-pct{font-size:10px;font-weight:500;color:var(--txt3)}
+.vpipe-ops-card{flex:1;border:1px solid var(--border);border-radius:9px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:2px;background:var(--card)}
+.vpipe-ops-lbl{font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
+.vpipe-ops-val{font-size:13px;font-weight:800;letter-spacing:-.3px;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.1}
+.vpipe-mats{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid var(--border)}
+.vpipe-mat-row{display:flex;flex-direction:column;gap:4px}
 .vpipe-mat-hd{display:flex;align-items:center;gap:9px;min-width:0}
 .vpipe-mat-bdg{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--bg2);color:var(--txt);padding:2px 8px;border-radius:5px;flex-shrink:0}
 .vpipe-mat-smry{flex:1;font-size:11px;color:var(--txt3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
