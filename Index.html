@@ -2035,8 +2035,9 @@ body.view-gst #vert-tabs-bar{display:none}
   display:flex;flex-direction:column;flex:1;
 }
 .biz-tile{
-  padding:10px 13px;display:flex;flex-direction:column;
-  gap:3px;overflow:hidden;cursor:pointer;
+  flex:1;min-height:0;
+  padding:12px 14px;display:flex;flex-direction:column;
+  justify-content:center;gap:0;overflow:hidden;cursor:pointer;
   transition:background .18s var(--ease-out);
 }
 .biz-tile:hover{background:var(--hover)}
@@ -2046,11 +2047,11 @@ body.view-gst #vert-tabs-bar{display:none}
 .biz-tile--bottom{border-top:1px solid var(--border)}
 .biz-tile-region{cursor:default}
 .biz-tile-region:hover,.biz-tile-region:active{background:transparent}
-.biz-t-lb{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:3px}
-.biz-t-val{font-size:18px;font-weight:800;letter-spacing:-.6px;color:var(--txt);line-height:1.1;font-variant-numeric:tabular-nums}
-.biz-t-sub{font-size:10px;color:var(--txt3);font-weight:500;line-height:1.4}
+.biz-t-lb{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:5px}
+.biz-t-val{font-size:18px;font-weight:800;letter-spacing:-.6px;color:var(--txt);line-height:1.1;font-variant-numeric:tabular-nums;margin-bottom:2px}
+.biz-t-sub{font-size:10px;color:var(--txt3);font-weight:500;line-height:1.4;margin-bottom:1px}
 /* OSV Status two-column layout */
-.biz-osv-cols{display:flex;gap:12px;flex:1;margin-top:4px}
+.biz-osv-cols{display:flex;gap:12px;margin-top:4px}
 .biz-osv-col{flex:1;display:flex;flex-direction:column;gap:1px}
 .biz-osv-lbl{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:1px}
 .biz-osv-num{font-size:17px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums;line-height:1}
@@ -5373,7 +5374,7 @@ function renderBizRail(cfg, vs) {
   var cats = (vs.categories || [])
     .filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
     .slice().sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); })
-    .slice(0, 4);
+    .slice(0, 2);
   var catRows = cats.map(function(c) {
     return '<div class="biz-catrow" role="button" tabindex="0"'
       + ' onclick="openGmvCatModal(\'seller\')"'
@@ -5477,7 +5478,7 @@ function _buildRailRegions(vs) {
   var metric = function(r) { return useOnb ? (r.onboarded || 0) : (r.total || 0); };
   var sorted = regs.slice().sort(function(a, b) { return metric(b) - metric(a); });
   var denom  = sorted.reduce(function(s, r) { return s + metric(r); }, 0);
-  var top    = sorted.slice(0, 6);
+  var top    = sorted.slice(0, 3);
   var rows = top.map(function(r) {
     var v   = metric(r);
     var p   = denom > 0 ? (v / denom * 100) : 0;
