@@ -2425,6 +2425,190 @@ body.view-gst #vert-tabs-bar{display:none}
 @media(max-width:440px){
   .vkpi-grid,.vkpi-grid.vkpi-grid-4{grid-template-columns:1fr}
 }
+
+/* ═══════════════════════════════════════════════════
+   RECYKAL BRAND SYSTEM — Visual Refinement
+   Applies brand-guideline-compliant styling on top of
+   the component base. Poppins · official palette only.
+   ═══════════════════════════════════════════════════ */
+
+/* ── Audience tabs: brand blue when active ── */
+.aud-tab.active{background:var(--blue);color:#fff;box-shadow:0 1px 6px rgba(0,93,255,.30)}
+.aud-tab.active:hover{color:#fff}
+.aud-tab:not(.active):hover{color:var(--txt)}
+
+/* ── Filter chips: brand blue when active ── */
+.qf-chip.active{background:var(--blue);color:#fff;box-shadow:0 1px 5px rgba(0,93,255,.22)}
+.qf-chip.active:hover{color:#fff}
+.qf-chip:not(.active):hover{color:var(--txt)}
+
+/* ── Vertical nav tab: active uses vertical tint + dot ── */
+.vert-tab.active{
+  background:var(--vc-soft,rgba(0,93,255,.07));
+  color:var(--vc-ink,var(--blue));
+  font-weight:600;box-shadow:none;
+}
+.vert-tab.active::before{background:var(--vc,var(--blue))!important}
+/* Liquid thumb adapts to vertical colour */
+.vert-tab-thumb{
+  background:var(--vc-soft,rgba(0,93,255,.06));
+  box-shadow:0 0 0 1px var(--vc-line,rgba(0,93,255,.16)),0 1px 4px rgba(0,0,0,.06);
+}
+.vert-tabs-bar.has-thumb .vert-tab.active{
+  background:transparent;color:var(--vc-ink,var(--blue));box-shadow:none;
+}
+
+/* ── Primary action button: brand blue ── */
+#btn-refresh{
+  background:var(--blue);
+  font-size:12.5px;font-weight:600;letter-spacing:.01em;
+}
+#btn-refresh:hover{background:#0047D0;transform:none}
+#btn-refresh:active{transform:scale(.97);transition-duration:.08s}
+
+/* ── Loading indicator: brand blue ── */
+.load-fill{background:var(--blue)}
+.load-wordmark{color:var(--blue);font-weight:800;font-size:16px;letter-spacing:-.3px}
+
+/* ── Dashboard filter-bar title ── */
+.dfb-title{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.dfb-label{letter-spacing:.08em}
+
+/* ── Section titles: enterprise scale ── */
+.section-title{font-size:16px;font-weight:700;letter-spacing:-.25px;margin-bottom:14px}
+
+/* ── Vertical context name: calibrated headline ── */
+.vert-ctx-name{font-size:21px;font-weight:700;letter-spacing:-.5px}
+.vert-ctx-code{font-size:9.5px;font-weight:800;letter-spacing:.9px}
+
+/* ── Hero KPI: label & value hierarchy ── */
+.vkpi-lbl{font-size:9px;font-weight:600;letter-spacing:.10em;color:var(--txt3)}
+.vkpi-val{font-size:22px;font-weight:800;letter-spacing:-1px}
+/* Onboarded: green accent gradient */
+.vkpi-card.vk-onboarded{
+  background:linear-gradient(135deg,#fff 0%,rgba(29,199,151,.06) 100%);
+  border-color:rgba(29,199,151,.28);
+}
+.vkpi-card.vk-onboarded .vkpi-val{color:var(--green)}
+/* Transacted: Midnight Blue */
+.vkpi-card.vk-transacted .vkpi-val{color:var(--blue)}
+
+/* ── Pipeline card: View Details button → branded pill ── */
+.vpipe-vd-btn{
+  font-size:11px;font-weight:600;
+  color:var(--blue);
+  padding:3px 10px;
+  border:1px solid rgba(0,93,255,.18);
+  border-radius:6px;
+  background:rgba(0,93,255,.06);
+  transition:background .15s,border-color .15s;
+}
+.vpipe-vd-btn:hover{
+  background:rgba(0,93,255,.12);
+  border-color:rgba(0,93,255,.32);
+  color:var(--blue);
+}
+
+/* ── 'Viewing below' badge: distinct brand indicator ── */
+.pipe-viewing{
+  font-size:9.5px;font-weight:700;letter-spacing:.02em;
+  color:var(--blue);
+  background:rgba(0,93,255,.08);
+  border:1px solid rgba(0,93,255,.16);
+  padding:3px 10px;border-radius:var(--pill);
+}
+
+/* ── Pipeline status card numbers: crisp scale ── */
+.vpipe-stat-num{font-size:17px;font-weight:800;letter-spacing:-.5px}
+.vpipe-stat-name{font-size:8.5px;font-weight:700;letter-spacing:.08em}
+.vpipe-ops-val{font-size:13px;font-weight:700;letter-spacing:-.3px}
+.vpipe-ops-lbl{font-size:8px;font-weight:600;letter-spacing:.07em}
+
+/* ── Material breakdown bars: 4px for visual weight ── */
+.vpipe-mat-track{height:4px;border-radius:3px}
+
+/* ── Pipeline stage progress bars: brand blue ── */
+.pipe-stage-bar{background:var(--blue)}
+.pipe-stage-lbl{font-size:10px;font-weight:600;color:var(--txt2)}
+.pipe-stage-count{font-size:12px;font-weight:700}
+.pipe-kpi-count{font-size:19px;font-weight:700;letter-spacing:-.7px}
+.pipe-kpi-label{font-size:8.5px;font-weight:700;letter-spacing:.07em}
+
+/* ── Status chips: brand-compliant palette ── */
+.status-chip{font-size:10.5px;padding:3px 9px;border-radius:20px;letter-spacing:.01em}
+.chip-completed{background:rgba(29,199,151,.12);color:#049769}
+.chip-draft{background:rgba(132,96,212,.12);color:#6B46C8}
+.chip-review{background:rgba(255,149,0,.12);color:#B25000}
+.chip-rejected{background:rgba(215,0,21,.12);color:#C00014}
+
+/* ── Tables: enterprise readability ── */
+thead th{
+  font-size:10.5px;font-weight:600;
+  letter-spacing:.06em;padding:13px 16px;
+  border-bottom:1.5px solid var(--border);
+}
+tbody td{padding:12px 16px;font-size:13px;line-height:1.45}
+tbody tr:hover,tbody tr.vd-tr:hover{background:rgba(0,93,255,.04)}
+tbody tr:nth-child(even){background:rgba(0,0,0,.018)}
+thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
+
+/* ── Category completion meters: Bright Green ── */
+.cc-cat-fill{background:var(--st-onboarded)}
+
+/* ── Hero count in compare cards ── */
+.cc-hero-num{font-size:32px;font-weight:800;letter-spacing:-1.2px}
+.compare-label{font-size:13.5px;font-weight:700;letter-spacing:-.1px}
+
+/* ── Detail page KPI values: status-coloured ── */
+.vd-kpi.k-onboarded .vd-kpi-val{color:var(--green)}
+.vd-kpi.k-transacted .vd-kpi-val{color:var(--blue)}
+.vd-kpi.k-draft .vd-kpi-val{color:var(--purple)}
+.vd-kpi.k-review .vd-kpi-val{color:var(--amber)}
+.vd-kpi.k-rejected .vd-kpi-val{color:var(--red)}
+.vd-kpi-val{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.vd-kpi-lbl{font-size:10px;font-weight:500}
+
+/* ── Detail title ── */
+.vd-title{font-size:24px;font-weight:700;letter-spacing:-.5px}
+
+/* ── Back / secondary nav: brand blue tint ── */
+.vd-back{background:rgba(0,93,255,.07);color:var(--blue);font-size:12.5px}
+.vd-back::before{color:var(--blue)}
+.vd-back:hover{background:rgba(0,93,255,.12)}
+.vd-retry{background:var(--blue)}
+.vd-retry:hover{background:#0047D0}
+
+/* ── Region audience toggle: brand blue ── */
+.rgn-aud-btn.on{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* ── Spotlight: active item → brand blue ── */
+.sp-item.sp-active{background:var(--blue)}
+.sp-item.sp-active .sp-item-title,.sp-item.sp-active .sp-item-sub{color:rgba(255,255,255,.9)}
+.sp-item.sp-active .sp-item-ic{background:rgba(255,255,255,.2);color:#fff}
+.sp-item.sp-active .sp-item-badge{background:rgba(255,255,255,.2);color:#fff;border-color:transparent}
+
+/* ── Business insights rail: refined scale ── */
+.biz-t-lb{font-size:8.5px;font-weight:700;letter-spacing:.09em}
+.biz-t-val{font-size:16px;font-weight:800;letter-spacing:-.5px}
+.biz-gmv-vl{font-size:22px;font-weight:800;letter-spacing:-.8px}
+.biz-reg-bar{height:4px;border-radius:3px}
+
+/* ── Docs table: brand hover ── */
+.docs-tbl tbody tr:hover{background:rgba(0,93,255,.04)}
+
+/* ── Subsection titles: tighter caps ── */
+.subsection-title{font-size:10.5px;font-weight:700;letter-spacing:.06em}
+
+/* ── Chart card: consistent typography ── */
+.chart-card-title{font-size:12.5px;font-weight:700;letter-spacing:-.1px}
+
+/* ── Search & pill focus rings: brand blue ── */
+.vd-pill:focus,.filter-select:focus,.filter-input:focus,.docs-search input:focus{
+  border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,93,255,.14);outline:none;
+}
+
+/* ── Docs segment active: brand style ── */
+.docs-seg button.on{background:var(--card);color:var(--txt);box-shadow:var(--shadow-sm)}
 </style>
 
 <style id="sidenav-css">
