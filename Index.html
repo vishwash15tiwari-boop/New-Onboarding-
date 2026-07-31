@@ -1422,8 +1422,7 @@ body.view-gst #vert-tabs-bar{display:none}
    Seller runs warm-green, Buyer runs cool-blue (whisper gradients),
    and a giant ghost monogram in the vertical's hue names each card
    the way Apple Sports ghosts jersey numbers. */
-.vpipe-card.aud-seller{background:linear-gradient(150deg,#FFFFFF 58%,#F4FBF6 100%)}
-.vpipe-card.aud-buyer {background:linear-gradient(150deg,#FFFFFF 58%,#F3F8FE 100%)}
+.vpipe-card.aud-seller,.vpipe-card.aud-buyer{background:var(--card)!important}
 .cc-ghost{
   position:absolute;bottom:-58px;right:-16px;top:auto;
   font-size:170px;font-weight:900;letter-spacing:-7px;line-height:1;
@@ -1941,10 +1940,10 @@ body.view-gst #vert-tabs-bar{display:none}
 .vert-dash-grid #vert-pipeline-pair{grid-column:1/4}
 .vert-dash-grid #vert-biz-rail{grid-column:4/5;align-self:stretch}
 .vpipe-pair{display:grid;grid-template-columns:1fr;gap:10px}
-.vpipe-card{cursor:pointer;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
-.vpipe-card:hover{transform:scale(1.015);box-shadow:var(--shadow-lg)!important}
+.vpipe-card{cursor:pointer;border-radius:20px!important;padding:24px!important;box-shadow:0 4px 16px rgba(0,0,0,.04)!important;border:1px solid var(--border)!important;transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out)}
+.vpipe-card:hover{transform:translateY(-1px)!important;box-shadow:0 8px 28px rgba(0,0,0,.08)!important}
 .vpipe-card.det-active{
-  box-shadow:0 0 0 1.5px rgba(0,93,255,.45),var(--shadow)!important;
+  box-shadow:0 0 0 1.5px rgba(0,93,255,.45),0 4px 16px rgba(0,0,0,.04)!important;
 }
 /* Pipeline pair: top-pack the content so the Seller/Buyer FY tables line up
    row-for-row across the pair. Any height difference (e.g. the Seller's quality
@@ -2007,6 +2006,31 @@ body.view-gst #vert-tabs-bar{display:none}
 .pipe-btm-solo{border-top:1px solid var(--border);padding-top:12px;margin-top:auto}
 .pipe-btm-solo .cc-cat-rows{margin:0}
 .pipe-btm-solo .cc-fy-wrap,.pipe-btm-solo .cc-stat-list{border-top:none;margin-top:0;padding-top:0}
+/* ── Pipeline card v2 component styles ── */
+.vpipe-hdr2{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.vpipe-title3{font-size:20px;font-weight:700;letter-spacing:-.4px;color:var(--txt);line-height:1.15}
+.vpipe-vd-btn{font-size:13px;font-weight:500;color:var(--txt3);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;transition:color .15s}
+.vpipe-vd-btn:hover{color:var(--txt)}
+.vpipe-kpi-section{display:flex;gap:12px;margin-bottom:18px}
+.vpipe-status-grid{display:flex;flex:4;gap:10px}
+.vpipe-ops-col{display:flex;flex:1;flex-direction:column;gap:8px;min-width:90px}
+.vpipe-stat-card{flex:1;min-width:0;border:1px solid var(--border);border-radius:14px;padding:12px 12px 13px;display:flex;flex-direction:column;gap:3px;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden}
+.vpipe-stat-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-bottom:4px}
+.vpipe-stat-name{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
+.vpipe-stat-num{font-size:24px;font-weight:800;letter-spacing:-.8px;line-height:1.05;color:var(--txt);font-variant-numeric:tabular-nums}
+.vpipe-stat-pct{font-size:11px;font-weight:500;color:var(--txt3)}
+.vpipe-ops-card{flex:1;border:1px solid var(--border);border-radius:12px;padding:9px 12px;display:flex;flex-direction:column;justify-content:center;gap:2px;background:var(--card)}
+.vpipe-ops-lbl{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
+.vpipe-ops-val{font-size:15px;font-weight:800;letter-spacing:-.3px;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.1}
+.vpipe-mats{display:flex;flex-direction:column;gap:14px;padding-top:18px;border-top:1px solid var(--border)}
+.vpipe-mat-row{display:flex;flex-direction:column;gap:6px}
+.vpipe-mat-hd{display:flex;align-items:center;gap:9px;min-width:0}
+.vpipe-mat-bdg{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--bg2);color:var(--txt);padding:2px 8px;border-radius:5px;flex-shrink:0}
+.vpipe-mat-smry{flex:1;font-size:11px;color:var(--txt3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vpipe-mat-smry em{font-style:normal;font-weight:700;color:var(--txt)}
+.vpipe-mat-ct{font-size:13px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;flex-shrink:0}
+.vpipe-mat-track{height:5px;border-radius:3px;background:var(--bg2);overflow:hidden}
+.vpipe-mat-fill{height:100%;border-radius:3px;transition:width .7s var(--ease-out)}
 @media(max-width:520px){
   .pipe-btm{grid-template-columns:1fr;gap:12px}
   .pipe-btm-r{padding-left:0;border-left:none;border-top:1px solid var(--border);padding-top:12px}
@@ -5709,153 +5733,112 @@ function _buildRailQual(qc, vname) {
 }
 
 function buildInlinePipeCard(cfg, v, label, aud, idx) {
-  var lblCls = aud === 'seller' ? 'cc-pipe-lbl-seller' : 'cc-pipe-lbl-buyer';
   var isActive = aud === selectedAud;
   var attrs = ' style="--i:' + idx + ';' + vcVars(cfg.key) + '"'
     + ' class="compare-card vpipe-card aud-' + aud + (isActive ? ' det-active' : '') + '"'
     + ' onclick="setDetailAud(\'' + aud + '\')" role="button" tabindex="0"'
     + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();setDetailAud(\'' + aud + '\')}"';
-  var ghost = '<span class="cc-ghost" aria-hidden="true">' + (aud === 'seller' ? 'S' : 'B') + '</span>';
-  var dotClr = aud === 'seller' ? 'var(--st-onboarded)' : 'var(--st-transacted)';
-  var hdr = '<div class="cc-hdr2 pipe-hdr" style="align-items:center;gap:8px">'
-    + '<span class="pipe-title2">' + (aud === 'seller' ? 'Sellers' : 'Buyers') + '&rsquo; Onboarding Pipeline</span>'
-    + (isActive ? '<span class="pipe-viewing">Viewing below</span>' : '')
+
+  // ── Header ──────────────────────────────────────────────────────
+  var title = (aud === 'seller' ? 'Sellers\u2019 ' : 'Buyers\u2019 ') + 'Onboarding Pipeline';
+  var hdr = '<div class="vpipe-hdr2">'
+    + '<span class="vpipe-title3">' + title + '</span>'
+    + (isActive
+        ? '<span class="pipe-viewing">Viewing below</span>'
+        : '<button class="vpipe-vd-btn" onclick="event.stopPropagation();setDetailAud(\'' + aud + '\')" tabindex="-1">View Details →</button>')
     + '</div>';
+
   var tot = v.total || 0;
   if (!tot) {
     var noDataBody = _dashLoading
-      ? ('<div class="sk-pipe">'
-         + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 16px">'
-         + '<div class="sk-kpi-card"></div><div class="sk-kpi-card"></div><div class="sk-kpi-card"></div>'
-         + '</div>'
-         + '<div class="sk-line" style="width:65%"></div>'
-         + '<div class="sk-line" style="width:45%"></div>'
-         + '</div>')
+      ? ('<div class="sk-pipe"><div style="display:flex;gap:10px;margin:0 0 16px">'
+         + '<div class="sk-kpi-card" style="flex:1;height:80px"></div>'
+         + '<div class="sk-kpi-card" style="flex:1;height:80px"></div>'
+         + '<div class="sk-kpi-card" style="flex:1;height:80px"></div>'
+         + '<div class="sk-kpi-card" style="flex:1;height:80px"></div>'
+         + '</div><div class="sk-line" style="width:65%"></div><div class="sk-line" style="width:45%"></div></div>')
       : ('<div class="no-data" style="padding:24px 0">'
          + ((typeof currentPeriod !== 'undefined' && currentPeriod && currentPeriod !== 'All')
             ? 'No ' + (aud === 'seller' ? 'seller' : 'buyer') + ' activity in the selected period'
             : 'No data')
          + '</div>');
-    return '<div' + attrs + '>' + ghost + hdr + noDataBody + '</div>';
+    return '<div' + attrs + '>' + hdr + noDataBody + '</div>';
   }
-  // KPI cards: Draft / In Review / Completed — prominent count + icon + label.
-  var vDraft = v.draft || 0, vReview = v.inReview || 0, vDone = v.completed || 0;
-  var flowBar = '';
-  var _ic = function(path, color) {
-    return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + color + '"'
-      + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
+
+  // ── 4 Status KPI cards (Left 80%) ───────────────────────────────
+  var vDraft = v.draft || 0, vReview = v.inReview || 0, vDone = v.completed || 0, vRej = v.rejected || 0;
+  var _ic2 = function(d) {
+    return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+      + ' stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
   };
-  var stageDef = [
-    { label: 'Draft',     count: vDraft,          color: 'var(--st-draft)' },
-    { label: 'In Review', count: vReview,         color: 'var(--st-review)' },
-    { label: 'Completed', count: vDone,           color: 'var(--st-onboarded)' },
-    { label: 'Rejected',  count: v.rejected || 0, color: 'var(--st-rejected)' },
+  var statDef = [
+    { lbl:'Draft',     n:vDraft,  col:'var(--st-draft)',     bg:'var(--st-draft-bg)',     ic:_ic2('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>') },
+    { lbl:'In Review', n:vReview, col:'var(--st-review)',    bg:'var(--st-review-bg)',    ic:_ic2('<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>') },
+    { lbl:'Completed', n:vDone,   col:'var(--st-onboarded)',bg:'var(--st-onboarded-bg)', ic:_ic2('<polyline points="20 6 9 17 4 12"/>') },
+    { lbl:'Rejected',  n:vRej,    col:'var(--st-rejected)', bg:'rgba(255,59,48,.1)',      ic:_ic2('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>') },
   ];
-  var stageMax = Math.max.apply(null, stageDef.map(function(s){return s.count})) || 1;
-  var pipeBoxes = '<div class="pipe-stage-list">'
-    + stageDef.map(function(s) {
-        var pct = Math.round(s.count / stageMax * 100);
-        return '<div class="pipe-stage-row">'
-          + '<span class="pipe-stage-lbl">' + s.label + '</span>'
-          + '<div class="pipe-stage-bar-wrap"><div class="pipe-stage-bar" style="width:' + pct + '%;background:' + s.color + '"></div></div>'
-          + '<span class="pipe-stage-count">' + fmt(s.count) + '</span>'
+  var statusGrid = '<div class="vpipe-status-grid">'
+    + statDef.map(function(s) {
+        var pct = tot > 0 ? Math.round(s.n / tot * 100) : 0;
+        return '<div class="vpipe-stat-card" style="border-top:3px solid ' + s.col + '">'
+          + '<div class="vpipe-stat-icon" style="background:' + s.bg + ';color:' + s.col + '">' + s.ic + '</div>'
+          + '<div class="vpipe-stat-name">' + s.lbl + '</div>'
+          + '<div class="vpipe-stat-num">' + fmt(s.n) + '</div>'
+          + '<div class="vpipe-stat-pct">' + pct + '%</div>'
           + '</div>';
       }).join('')
     + '</div>';
-  var topCats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; }).slice(0, 3);
-  var catRows = topCats.map(function(c) {
-    var parts = [];
-    if ((c.onboarded || 0) > 0) parts.push('<em>' + fmt(c.onboarded) + ' onboarded</em>');
-    if ((c.draft     || 0) > 0) parts.push(fmt(c.draft) + ' draft');
-    if ((c.inReview  || 0) > 0) parts.push(fmt(c.inReview) + ' review');
-    return '<div class="cc-cat-row"><span class="cc-cat-badge">' + esc(c.category) + '</span>'
-      + '<span class="cc-cat-detail">' + parts.join(' · ') + '</span></div>';
-  }).join('');
-  if (catRows) catRows = '<div class="cc-cat-rows">' + catRows + '</div>';
-  var newV = v.newVendors || 0, oldV = v.oldVendors || 0;
-  var enVal = null; // shown in the top KPI row for OMP, not in pipeline cards
+
+  // ── 3 Operational cards (Right 20%) ─────────────────────────────
   var fys = (v.fyBreakdown || []).filter(function(f) { return !f.fyStart || f.fyStart >= 2019; });
-  var statsList = '';
+  var curFY = '';
   if (fys.length) {
-    var isOMP    = cfg.key === 'OMP';
-    var aggTAT   = v.avgTAT        != null ? v.avgTAT + 'd'           : null;
-    var aggPct   = v.pctTransacted  != null ? v.pctTransacted + '%'   : null;
-    var aggGMV   = v.totalTxnValue  != null ? fmtINR(v.totalTxnValue) : null;
-    var aggGSTon = v.withGST        != null ? fmt(v.withGST)          : null;
-    var fyTr = function(label, valFn, aggVal, badCls, onclickFn) {
-      var cells = fys.map(valFn);
-      var allEmpty = cells.every(function(c){ return c === null || c === undefined || c === '—'; }) && aggVal == null;
-      if (allEmpty) return '';
-      var trCls = onclickFn ? ('cc-fy-row-btn' + (badCls ? ' ' + badCls : '')) : (badCls || '');
-      var trAttrs = trCls ? ' class="' + trCls + '"' : '';
-      if (onclickFn) trAttrs += ' role="button" tabindex="0"'
-        + ' onclick="event.stopPropagation();' + onclickFn + '"'
-        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();' + onclickFn + '}"';
-      return '<tr' + trAttrs + '>'
-        + '<td class="cc-fy-td-lbl">' + label + '</td>'
-        + cells.map(function(c){ return '<td class="cc-fy-td">' + (c != null ? c : '—') + '</td>'; }).join('')
-        + '<td class="cc-fy-td cc-fy-all">' + (aggVal != null ? aggVal : '—') + '</td>'
-        + '</tr>';
-    };
-    var fyTbody = [
-      fyTr('Avg TAT',       function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
-      isOMP ? null : fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
-      // Total GMV now lives in the Business Insights rail (seller-only), not here.
-      fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
-      enVal ? '<tr class="cc-fy-row-btn" role="button" tabindex="0"'
-        + ' onclick="event.stopPropagation();openKpiModal(\'oldvsnew\')"'
-        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();openKpiModal(\'oldvsnew\')}">'
-        + '<td class="cc-fy-td-lbl">New Vendors Onboarded</td>'
-        + fys.map(function(){ return '<td class="cc-fy-td" style="color:var(--txt3)">—</td>'; }).join('')
-        + '<td class="cc-fy-td cc-fy-all">' + enVal + '</td>'
-        + '</tr>' : null,
-    ].filter(Boolean).join('');
-    if (fyTbody) {
-      var fyThead = '<thead><tr><th class="cc-fy-th-lbl"></th>'
-        + fys.map(function(f){ return '<th class="cc-fy-th">' + esc(f.fy) + '</th>'; }).join('')
-        + '<th class="cc-fy-th cc-fy-all">All</th>'
-        + '</tr></thead>';
-      statsList = '<div class="cc-fy-wrap">'
-        + '<table class="cc-fy-tbl">' + fyThead + '<tbody>' + fyTbody + '</tbody></table>'
+    var fySorted = fys.slice().sort(function(a, b) { return (a.fyStart || 0) - (b.fyStart || 0); });
+    curFY = fySorted[fySorted.length - 1].fy || '';
+  }
+  var opsData = [
+    { lbl:'Avg TAT',      val: v.avgTAT  != null ? v.avgTAT + 'd'  : '—' },
+    { lbl:'GSTIN Active', val: v.withGST != null ? fmt(v.withGST) : '—' },
+    { lbl:'Current FY',   val: curFY || '—' },
+  ];
+  var opsCol = '<div class="vpipe-ops-col">'
+    + opsData.map(function(o) {
+        return '<div class="vpipe-ops-card">'
+          + '<div class="vpipe-ops-lbl">' + o.lbl + '</div>'
+          + '<div class="vpipe-ops-val">' + o.val + '</div>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+
+  var kpiSection = '<div class="vpipe-kpi-section">' + statusGrid + opsCol + '</div>';
+
+  // ── Material breakdown ───────────────────────────────────────────
+  var MAT_CLR = { plastic: '#005DFF', metal: '#1DC797' };
+  var cats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; });
+  var matsHtml = '';
+  if (cats.length) {
+    var matRows = cats.map(function(c) {
+      var catKey = (c.category || '').trim().toLowerCase();
+      var color  = MAT_CLR[catKey] || '#8E8E93';
+      var barW   = tot > 0 ? Math.round(c.total / tot * 100) : 0;
+      var parts  = [];
+      if ((c.onboarded || 0) > 0) parts.push('<em>' + fmt(c.onboarded) + '</em> onboarded');
+      if ((c.draft     || 0) > 0) parts.push('<em>' + fmt(c.draft)     + '</em> draft');
+      if ((c.inReview  || 0) > 0) parts.push('<em>' + fmt(c.inReview)  + '</em> review');
+      if ((c.rejected  || 0) > 0) parts.push('<em>' + fmt(c.rejected)  + '</em> rejected');
+      return '<div class="vpipe-mat-row">'
+        + '<div class="vpipe-mat-hd">'
+        +   '<span class="vpipe-mat-bdg">' + esc((c.category || '').toUpperCase()) + '</span>'
+        +   '<span class="vpipe-mat-smry">' + parts.join(' • ') + '</span>'
+        +   '<span class="vpipe-mat-ct">' + fmt(c.onboarded || 0) + '</span>'
+        + '</div>'
+        + '<div class="vpipe-mat-track"><div class="vpipe-mat-fill" style="width:' + barW + '%;background:' + color + '"></div></div>'
         + '</div>';
-    }
-  } else {
-    var isOMP2 = cfg.key === 'OMP';
-    var statRows = [];
-    if (v.avgTAT        != null) statRows.push(['Avg TAT',      v.avgTAT + 'd',          '']);
-    if (!isOMP2 && v.pctTransacted != null) statRows.push(['% Transacted', v.pctTransacted + '%', '']);
-    // Total GMV now lives in the Business Insights rail (seller-only), not here.
-    if (v.withGST       != null) statRows.push(['GSTIN Active', fmt(v.withGST),          '']);
-    var rowsHtml = statRows.map(function(r) {
-      if (r[3]) {
-        return '<div class="cc-stat-row cc-stat-row-btn" role="button" tabindex="0"'
-          + ' onclick="event.stopPropagation();' + r[3] + '"'
-          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();' + r[3] + '}">'
-          + r[0] + '<b>' + r[1] + '</b></div>';
-      }
-      return '<div class="cc-stat-row' + (r[2] ? ' ' + r[2] : '') + '">' + r[0] + '<b>' + r[1] + '</b></div>';
     }).join('');
-    if (enVal) rowsHtml += '<div class="cc-stat-row cc-stat-row-btn" role="button" tabindex="0"'
-      + ' onclick="event.stopPropagation();openKpiModal(\'oldvsnew\')"'
-      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();openKpiModal(\'oldvsnew\')}">'
-      + 'New Vendors Onboarded<b>' + enVal + '</b></div>';
-    statsList = rowsHtml ? '<div class="cc-stat-list">' + rowsHtml + '</div>' : '';
+    matsHtml = '<div class="vpipe-mats">' + matRows + '</div>';
   }
-  // Category breakdown (left) and the FY stats table (right) sit side-by-side,
-  // divided by a hairline. If only one is present it spans the full width.
-  var btm;
-  if (catRows && statsList) {
-    btm = '<div class="pipe-btm">'
-      + '<div class="pipe-btm-l">' + catRows + '</div>'
-      + '<div class="pipe-btm-r">' + statsList + '</div>'
-      + '</div>';
-  } else if (catRows || statsList) {
-    btm = '<div class="pipe-btm-solo">' + (catRows || statsList) + '</div>';
-  } else {
-    btm = '';
-  }
-  // Vendor Rating / OSV Consent moved to the Business Insights rail (seller OMP).
-  return '<div' + attrs + '>' + ghost + hdr + flowBar + pipeBoxes + btm + '</div>';
+
+  return '<div' + attrs + '>' + hdr + kpiSection + matsHtml + '</div>';
 }
 
 // Render the inline detailed view section (replaces the full-screen overlay).
