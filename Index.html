@@ -442,6 +442,7 @@ select,input{font-family:inherit}
 #cat-detail-wrap:not(.no-anim) .donut-seg{animation:ringIn .9s var(--ease-out) both}
 #cat-detail-wrap:not(.no-anim) .donut-ctr{animation:fadeIn .55s var(--ease-out) .35s both}
 #cat-detail-wrap:not(.no-anim) .donut-leg-row{animation:riseIn .5s var(--ease-out) both}
+.vt-tr:hover{background:var(--bg2)}
 
 /* Footer stats — 3-col grid, labels inherit small-caps from parent */
 .cc-foot{
@@ -6870,26 +6871,41 @@ function renderCatDetailCard(c) {
       + '</div>';
   }).join('');
 
-  // ── Vendor type donut ────────────────────────────────────────────
-  var vtSegs = vts.map(function(vt, vi) {
-    return { n: vt.count, fill: vtCols[vi % vtCols.length], lbl: vt.type };
-  });
-  var vtDonut = vts.length > 0
-    ? mkDonut(vtSegs, vtTot, vtTot, 'ONBOARDED')
-    : '<div style="height:108px;display:flex;align-items:center;justify-content:center;color:var(--txt3);font-size:12px">No data</div>';
-
-  var vtLeg = vts.length > 0
-    ? vts.map(function(vt, vi) {
-        var col = vtCols[vi % vtCols.length];
-        var pc2 = vtTot > 0 ? Math.round(vt.count / vtTot * 100) : 0;
-        return '<div class="donut-leg-row" style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);animation-delay:' + (200 + vi * 60) + 'ms">'
-          + '<span style="width:9px;height:9px;border-radius:2px;flex-shrink:0;background:' + col + '"></span>'
-          + '<span style="flex:1;font-size:12px;font-weight:600;color:var(--txt2)">' + esc(vt.type) + '</span>'
-          + '<span style="font-size:13px;font-weight:700;color:' + col + ';font-variant-numeric:tabular-nums;min-width:28px;text-align:right">' + fmt(vt.count) + '</span>'
-          + '<span style="font-size:10.5px;color:var(--txt3);min-width:36px;text-align:right">(' + pc2 + '%)</span>'
-          + '</div>';
-      }).join('')
-    : '<div style="padding:10px 0;font-size:12px;color:var(--txt3)">No vendor type data</div>';
+  // ── Vendor type table (Onboarded · Transacted · Rate) ───────────
+  var vtHtml = '';
+  if (vts.length === 0) {
+    vtHtml = '<div style="padding:10px 0;font-size:12px;color:var(--txt3)">No vendor type data</div>';
+  } else {
+    var vtBodyRows = vts.map(function(vt, vi) {
+      var col  = vtCols[vi % vtCols.length];
+      var txd  = vt.transacted || 0;
+      var rate = vt.count > 0 ? Math.round(txd / vt.count * 100) : 0;
+      var vtJs = JSON.stringify(vt.type);
+      return '<tr onclick="filterByVendorType(' + vtJs + ')" class="vt-tr" style="cursor:pointer;transition:background .14s">'
+        + '<td style="padding:7px 0;border-bottom:1px solid var(--border)">'
+        +   '<span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:' + col + ';margin-right:6px;vertical-align:middle"></span>'
+        +   '<span style="font-size:11.5px;font-weight:600;color:var(--txt2)">' + esc(vt.type) + '</span>'
+        + '</td>'
+        + '<td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt)">' + fmt(vt.count) + '</td>'
+        + '<td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--st-onboarded-tx)">' + fmt(txd) + '</td>'
+        + '<td style="padding:7px 0 7px 8px;border-bottom:1px solid var(--border);min-width:80px">'
+        +   '<div style="display:flex;align-items:center;gap:5px">'
+        +     '<div style="flex:1;height:5px;background:var(--bg2);border-radius:3px;overflow:hidden"><div style="height:100%;width:' + rate + '%;background:' + col + ';border-radius:3px;transition:width .7s"></div></div>'
+        +     '<span style="font-size:11px;font-weight:700;color:var(--txt);min-width:30px;text-align:right;font-variant-numeric:tabular-nums">' + rate + '%</span>'
+        +   '</div>'
+        + '</td>'
+        + '</tr>';
+    }).join('');
+    vtHtml = '<table style="width:100%;border-collapse:collapse">'
+      + '<thead><tr>'
+      +   '<th style="font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding-bottom:7px;text-align:left;border-bottom:1px solid var(--border)">Vendor Type</th>'
+      +   '<th style="font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding-bottom:7px;text-align:right;border-bottom:1px solid var(--border);padding-left:8px">Onboarded</th>'
+      +   '<th style="font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding-bottom:7px;text-align:right;border-bottom:1px solid var(--border);padding-left:8px">Transacted</th>'
+      +   '<th style="font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding-bottom:7px;text-align:left;border-bottom:1px solid var(--border);padding-left:8px">Rate</th>'
+      + '</tr></thead>'
+      + '<tbody>' + vtBodyRows + '</tbody>'
+      + '</table>';
+  }
 
   // ── Assemble ─────────────────────────────────────────────────────
   function half(sectionTitle, donutHtml, legHtml, borderRight) {
@@ -6908,7 +6924,10 @@ function renderCatDetailCard(c) {
     + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr">'
     +   half('Logged In Cases Breakdown', statusDonut, statusLeg, true)
-    +   half('Vendor Type Breakdown · Onboarded', vtDonut, vtLeg, false)
+    +   '<div style="padding:14px 16px">'
+    +     '<div style="font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:10px">Vendor Type Breakdown</div>'
+    +     vtHtml
+    +   '</div>'
     + '</div>'
     + '</div>';
 }
@@ -6973,6 +6992,33 @@ function filterByCategory(cat) {
   if (!target || target.style.display === 'none') {
     target = document.getElementById('vd-table-view');
   }
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function filterByVendorType(vt) {
+  vdF.vendor = vt;
+  if (vertRows.length === 0) {
+    if (!vertRowsLoading) {
+      setDetailAud(selectedAud || 'seller');
+      vdF.vendor = vt;
+    }
+    return;
+  }
+  var el = document.getElementById('vdf-vendor');
+  if (el) {
+    var found = false;
+    for (var i = 0; i < el.options.length; i++) {
+      if (el.options[i].value === vt) { el.value = vt; found = true; break; }
+    }
+    if (!found) {
+      var opt = document.createElement('option');
+      opt.value = opt.text = vt;
+      el.appendChild(opt);
+      el.value = vt;
+    }
+  }
+  renderVdRecords();
+  var target = document.getElementById('vd-table-view');
   if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 

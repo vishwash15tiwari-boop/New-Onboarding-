@@ -973,16 +973,18 @@ function vStats(data) {
     // the vendor-type mix of onboarded Sellers/Buyers, not the full pipeline).
     if (r.status === 'COMPLETED') {
       var vt = (r.vendorType || '').trim() || 'Unknown';
-      cs.vendorTypes[vt] = (cs.vendorTypes[vt] || 0) + 1;
+      if (!cs.vendorTypes[vt]) cs.vendorTypes[vt] = { onboarded: 0, transacted: 0 };
+      cs.vendorTypes[vt].onboarded++;
+      if (r.hasTransacted) cs.vendorTypes[vt].transacted++;
     }
   });
   var categories = Object.keys(catMap).map(function(k) {
     var cat = catMap[k];
     var vtArr = Object.keys(cat.vendorTypes)
-      .map(function(vt) { return { type: vt, count: cat.vendorTypes[vt] }; })
+      .map(function(vt) { return { type: vt, count: cat.vendorTypes[vt].onboarded, transacted: cat.vendorTypes[vt].transacted }; })
       .filter(function(x) { return x.type !== 'Unknown' && x.type; })
       .sort(function(a, b) { return b.count - a.count; });
-    if (cat.vendorTypes['Unknown']) vtArr.push({ type: 'Unknown', count: cat.vendorTypes['Unknown'] });
+    if (cat.vendorTypes['Unknown']) vtArr.push({ type: 'Unknown', count: cat.vendorTypes['Unknown'].onboarded, transacted: cat.vendorTypes['Unknown'].transacted });
     return {
       category: cat.category, total: cat.total, onboarded: cat.onboarded,
       draft: cat.draft, inReview: cat.inReview, rejected: cat.rejected,
