@@ -855,9 +855,12 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .km-srow{display:grid;gap:0;border-bottom:1px solid var(--border)}
 .km-srow-2{grid-template-columns:1fr 1fr}
 .km-srow-3{grid-template-columns:1fr 1fr 1fr}
-.km-s{padding:12px 16px;border-right:1px solid var(--border)}
+.km-srow-4{grid-template-columns:1fr 1fr 1fr 1fr}
+.km-s{padding:10px 12px;border-right:1px solid var(--border)}
 .km-s:last-child{border-right:none}
+.km-srow-4 .km-s{padding:10px 10px}
 .km-sv{font-size:18px;font-weight:700;letter-spacing:-.4px;color:var(--txt);line-height:1.1;font-variant-numeric:tabular-nums}
+.km-srow-4 .km-sv{font-size:16px;letter-spacing:-.3px}
 .km-sl{font-size:10px;font-weight:600;color:var(--txt3);margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
 .km-sb{font-size:10px;color:var(--txt3);margin-top:3px;font-variant-numeric:tabular-nums}
 /* Labeled section */
@@ -4043,7 +4046,7 @@ function openKpiModal(cardId) {
       + '</div>';
   }
   function srow(items) {
-    var cols = Math.min(items.length, 3);
+    var cols = Math.min(items.length, 4);
     return '<div class="km-srow km-srow-' + cols + '">'
       + items.map(function(it) {
           return '<div class="km-s">'
