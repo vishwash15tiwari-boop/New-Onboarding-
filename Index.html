@@ -2609,6 +2609,178 @@ thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
 
 /* ── Docs segment active: brand style ── */
 .docs-seg button.on{background:var(--card);color:var(--txt);box-shadow:var(--shadow-sm)}
+
+/* ── Completed status card: now interactive (opens vendor-type breakdown) ── */
+.vpipe-stat-card.vps-clickable{cursor:pointer;transition:box-shadow .18s var(--ease-out),border-color .18s var(--ease-out),transform .2s var(--ease-spring)}
+.vpipe-stat-card.vps-clickable:hover{box-shadow:0 3px 14px rgba(0,0,0,.10);border-color:rgba(29,199,151,.5)}
+.vpipe-stat-card.vps-clickable:active{transform:scale(.97)}
+.vpipe-stat-card.vps-clickable::after{
+  content:'⤢';position:absolute;top:5px;right:7px;
+  font-size:10px;line-height:1;color:var(--txt3);opacity:0;
+  transition:opacity .18s;
+}
+.vpipe-stat-card.vps-clickable:hover::after{opacity:.7}
+
+/* ═══════════════════════════════════════════════════
+   VENDOR TYPE BREAKDOWN MODAL — centered enterprise table
+   ═══════════════════════════════════════════════════ */
+@keyframes vtbIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+#vtb-modal{
+  position:fixed;inset:0;z-index:850;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;pointer-events:none;opacity:0;
+  transition:opacity .18s var(--ease);
+}
+#vtb-modal.vtb-open{pointer-events:all;opacity:1}
+.vtb-bd{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,.42);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.vtb-pn{
+  position:relative;z-index:1;
+  background:var(--card);
+  border-radius:18px;
+  width:min(70vw,980px);max-width:calc(100vw - 48px);
+  max-height:88vh;overflow:hidden;
+  display:flex;flex-direction:column;
+  box-shadow:0 24px 64px rgba(0,0,0,.28),0 0 0 .5px rgba(0,0,0,.05);
+}
+#vtb-modal.vtb-open .vtb-pn{animation:vtbIn .18s var(--ease-out) both}
+@media(max-width:900px){.vtb-pn{width:calc(100vw - 32px)}}
+@media(max-width:600px){#vtb-modal{padding:0;align-items:flex-end}.vtb-pn{width:100vw;max-width:100vw;max-height:92vh;border-radius:18px 18px 0 0}}
+
+/* Header */
+.vtb-head{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:18px 22px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.vtb-head-ic{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--st-onboarded-bg);color:var(--st-onboarded-tx);
+}
+.vtb-htxt{flex:1;min-width:0}
+.vtb-title{font-size:16px;font-weight:700;letter-spacing:-.3px;color:var(--txt);line-height:1.25}
+.vtb-sub{font-size:11.5px;color:var(--txt3);margin-top:3px;font-weight:500}
+.vtb-x{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  border:1px solid var(--border);background:var(--card);
+  color:var(--txt3);font-size:15px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:background .14s,color .14s;
+}
+.vtb-x:hover{background:var(--bg2);color:var(--txt)}
+
+/* Toolbar: search + filter + export */
+.vtb-toolbar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:12px 22px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.vtb-search{
+  flex:1;min-width:180px;font-family:inherit;font-size:12.5px;color:var(--txt);
+  background:var(--seg-track);border:1.5px solid transparent;border-radius:9px;
+  padding:8px 14px;outline:none;transition:background .15s,border-color .15s;
+}
+.vtb-search::placeholder{color:var(--txt3)}
+.vtb-search:focus{background:var(--card);border-color:var(--blue)}
+.vtb-fsel{
+  font-family:inherit;font-size:12px;font-weight:500;color:var(--txt);
+  background:var(--seg-track);border:none;border-radius:9px;
+  padding:8px 30px 8px 12px;cursor:pointer;outline:none;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236E6E73' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;
+}
+.vtb-fsel:hover{background-color:rgba(120,120,128,.18)}
+.vtb-export{
+  font-family:inherit;font-size:12px;font-weight:600;color:var(--txt2);
+  background:var(--seg-track);border:none;border-radius:9px;
+  padding:8px 14px;cursor:pointer;transition:background .15s,color .15s;
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.vtb-export:hover{background:rgba(120,120,128,.18);color:var(--txt)}
+
+/* Scrollable table body */
+.vtb-body{overflow:auto;flex:1;min-height:120px}
+.vtb-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.vtb-tbl thead th{
+  position:sticky;top:0;z-index:2;background:var(--card);
+  padding:10px 16px;text-align:right;white-space:nowrap;
+  font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--txt3);border-bottom:1.5px solid var(--border);
+  cursor:pointer;user-select:none;transition:color .12s;
+}
+.vtb-tbl thead th:first-child{text-align:left}
+.vtb-tbl thead th:hover{color:var(--txt)}
+.vtb-tbl thead th.vtb-sort-asc::after{content:' ↑';color:var(--blue)}
+.vtb-tbl thead th.vtb-sort-desc::after{content:' ↓';color:var(--blue)}
+.vtb-tbl tbody td{
+  padding:11px 16px;text-align:right;color:var(--txt);
+  border-bottom:1px solid var(--border);vertical-align:middle;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.vtb-tbl tbody td:first-child{text-align:left;font-weight:600;letter-spacing:-.1px}
+.vtb-tbl tbody tr:hover{background:rgba(0,93,255,.04)}
+.vtb-tbl tbody tr:nth-child(even){background:rgba(120,120,128,.03)}
+.vtb-tbl tbody tr:nth-child(even):hover{background:rgba(0,93,255,.04)}
+/* type dot */
+.vtb-type{display:inline-flex;align-items:center;gap:8px}
+.vtb-type-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--st-onboarded)}
+/* contribution mini-bar */
+.vtb-share{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end;min-width:96px}
+.vtb-share-track{width:52px;height:5px;border-radius:3px;background:var(--bg2);overflow:hidden;flex-shrink:0}
+.vtb-share-fill{height:100%;border-radius:3px;background:var(--blue);transition:width .6s var(--ease-out)}
+.vtb-share-num{min-width:38px;text-align:right}
+/* transaction-rate chip */
+.vtb-rate{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:6px;font-variant-numeric:tabular-nums}
+.vtb-rate.hi{background:rgba(29,199,151,.15);color:var(--st-onboarded-tx)}
+.vtb-rate.mid{background:rgba(255,149,0,.15);color:var(--st-review-tx)}
+.vtb-rate.lo{background:rgba(255,59,48,.13);color:var(--st-rejected-tx)}
+/* total summary row */
+.vtb-tbl tfoot td{
+  position:sticky;bottom:0;z-index:2;background:var(--bg2);
+  padding:12px 16px;text-align:right;
+  font-size:12.5px;font-weight:800;color:var(--txt);
+  border-top:1.5px solid var(--border2);font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.vtb-tbl tfoot td:first-child{text-align:left;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em}
+
+/* Footer: pagination */
+.vtb-foot{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:11px 22px;border-top:1px solid var(--border);flex-shrink:0;
+}
+.vtb-foot-info{font-size:11.5px;color:var(--txt2);flex:1;min-width:150px}
+.vtb-pg{display:inline-flex;gap:4px}
+.vtb-pg-btn{
+  font-family:inherit;font-size:12px;font-weight:600;padding:5px 11px;
+  border:1px solid var(--border);border-radius:8px;background:var(--card);
+  color:var(--txt);cursor:pointer;transition:background .12s;
+}
+.vtb-pg-btn:hover:not(:disabled){background:var(--seg-track)}
+.vtb-pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.vtb-pgsize{
+  font-family:inherit;font-size:11.5px;color:var(--txt2);
+  background:var(--seg-track);border:none;border-radius:8px;
+  padding:5px 24px 5px 10px;cursor:pointer;outline:none;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236E6E73' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;
+}
+/* States */
+.vtb-state{padding:52px 24px;text-align:center;color:var(--txt3);font-size:13px}
+.vtb-spin{
+  width:26px;height:26px;margin:0 auto 14px;border-radius:50%;
+  border:2.5px solid var(--border);border-top-color:var(--blue);
+  animation:spin .7s linear infinite;
+}
+.vtb-state-ic{font-size:26px;opacity:.5;margin-bottom:10px}
+.vtb-retry{
+  margin-top:14px;padding:8px 20px;border-radius:var(--pill);border:none;
+  background:var(--blue);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;
+}
+.vtb-retry:hover{background:#0047D0}
 </style>
 
 <style id="sidenav-css">
@@ -2928,6 +3100,12 @@ thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
 <div id="gp-modal" role="dialog" aria-modal="true" aria-label="Vendor balance details">
   <div class="gm-bd" onclick="closeGpModal()"></div>
   <div class="km-pn" id="gm-pn" style="max-width:620px"></div>
+</div>
+
+<!-- Completed Vendors · Vendor Type Breakdown Modal -->
+<div id="vtb-modal" role="dialog" aria-modal="true" aria-label="Completed vendors — vendor type breakdown">
+  <div class="vtb-bd" onclick="closeVtbModal()"></div>
+  <div class="vtb-pn" id="vtb-pn"></div>
 </div>
 
 <script>
@@ -4654,6 +4832,330 @@ function closeKpiModal() {
   document.removeEventListener('keydown', _kpiEsc);
 }
 
+// ═══════════════════════════════════════════════════════════════
+// COMPLETED VENDORS · VENDOR TYPE BREAKDOWN MODAL
+// Opened by clicking the "Completed" status card in a pipeline.
+// Loads that pipeline's rows from the backend (SWR), then computes a
+// per-vendor-type breakdown client-side and renders an enterprise table.
+// ═══════════════════════════════════════════════════════════════
+var _vtb = {
+  key: null, aud: 'seller',
+  rows: null, loading: false, error: null,
+  search: '', txnFilter: 'All',
+  sort: { col: 'completed', dir: -1 },   // default: most completed first
+  page: 0, pageSize: 10,
+};
+var _vtbGen = 0;
+var _vtbSearchTimer = null;
+
+function openVtbModal(key, aud) {
+  key = key || activeVertKey || selectedVert;
+  aud = (aud === 'buyer') ? 'buyer' : 'seller';
+  if (!key) return;
+  // Reset view state each open (keep it predictable)
+  _vtb.key = key; _vtb.aud = aud;
+  _vtb.search = ''; _vtb.txnFilter = 'All';
+  _vtb.sort = { col: 'completed', dir: -1 };
+  _vtb.page = 0;
+  _vtb.rows = null; _vtb.loading = true; _vtb.error = null;
+
+  var modal = document.getElementById('vtb-modal');
+  if (!modal) return;
+  if (!modal.classList.contains('vtb-open')) {
+    modal.classList.add('vtb-open');
+    document.addEventListener('keydown', _vtbEsc);
+    document.body.style.overflow = 'hidden';
+  }
+  renderVtbModal();
+  _vtbEnsureRows();
+}
+
+function closeVtbModal() {
+  var modal = document.getElementById('vtb-modal');
+  if (modal) modal.classList.remove('vtb-open');
+  document.removeEventListener('keydown', _vtbEsc);
+  document.body.style.overflow = '';
+  ++_vtbGen;   // invalidate any in-flight fetch callback
+}
+function _vtbEsc(e) { if (e.key === 'Escape') closeVtbModal(); }
+
+// Fetch the pipeline's rows: reuse the already-loaded `vertRows` when the
+// open audience matches; otherwise SWR from localStorage, then the backend.
+function _vtbEnsureRows() {
+  var key = _vtb.key, aud = _vtb.aud;
+  // Fast path: the detail section already holds this audience's rows.
+  if (aud === selectedAud && Array.isArray(vertRows) && vertRows.length && !vertRowsLoading) {
+    _vtb.rows = vertRows; _vtb.loading = false; _vtb.error = null;
+    renderVtbModal();
+    return;
+  }
+  var myGen = ++_vtbGen;
+  var f = { audience: aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var lsVKey = STORE_PFX + 'vr_' + aud + '_' + key;
+  // SWR: paint from localStorage instantly if fresh for this period.
+  var served = false;
+  try {
+    var sv = JSON.parse(localStorage.getItem(lsVKey) || 'null');
+    if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
+      _vtb.rows = sv.rows; _vtb.loading = false; _vtb.error = null;
+      served = true; renderVtbModal();
+    }
+  } catch (e) {}
+  if (!served) { _vtb.loading = true; _vtb.error = null; renderVtbModal(); }
+
+  if (typeof google === 'undefined' || !google.script || !google.script.run) {
+    // No backend bridge available (e.g. static preview) — fall back to whatever
+    // rows we have, else surface an empty state rather than spinning forever.
+    if (!served) { _vtb.loading = false; _vtb.rows = _vtb.rows || []; renderVtbModal(); }
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (myGen !== _vtbGen) return;   // stale (modal closed or reopened)
+      _vtb.loading = false;
+      try {
+        var data = JSON.parse(res);
+        if (data && data.success) {
+          _vtb.rows = data.rows || [];
+          try { localStorage.setItem(lsVKey, JSON.stringify({ pKey: myPKey, rows: data.rows || [] })); } catch (e) {}
+        } else if (!served) {
+          _vtb.error = (data && data.error) ? data.error : 'Could not load vendor data.';
+        }
+      } catch (e) {
+        if (!served) _vtb.error = 'Could not read vendor data.';
+      }
+      renderVtbModal();
+    })
+    .withFailureHandler(function(err) {
+      if (myGen !== _vtbGen) return;
+      _vtb.loading = false;
+      if (!served) _vtb.error = (err && err.message) ? err.message : 'Network error while loading vendors.';
+      renderVtbModal();
+    })
+    .getVerticalRows(key, JSON.stringify(f));
+}
+
+// Build the per-vendor-type aggregates from the loaded rows.
+function _vtbCompute() {
+  var rows = _vtb.rows || [];
+  var map = {}, order = [];
+  var grandCompleted = 0, grandTxn = 0;
+  rows.forEach(function(r) {
+    if (!r || r.status !== 'COMPLETED') return;
+    var vt = (r.vendorType || '').trim() || 'Unknown';
+    if (!map[vt]) { map[vt] = { type: vt, completed: 0, transacted: 0 }; order.push(vt); }
+    map[vt].completed++;
+    grandCompleted++;
+    if (r.hasTransacted) { map[vt].transacted++; grandTxn++; }
+  });
+  var list = order.map(function(vt) {
+    var o = map[vt];
+    o.rate  = o.completed ? (o.transacted / o.completed) * 100 : 0;
+    o.share = grandCompleted ? (o.completed / grandCompleted) * 100 : 0;
+    return o;
+  });
+  return {
+    list: list,
+    totals: {
+      completed: grandCompleted,
+      transacted: grandTxn,
+      rate: grandCompleted ? (grandTxn / grandCompleted) * 100 : 0,
+    },
+  };
+}
+
+// Apply search + txn filter + sort, returning the display list.
+function _vtbDisplayList(list) {
+  var q = _vtb.search.trim().toLowerCase();
+  var out = list.filter(function(o) {
+    if (q && o.type.toLowerCase().indexOf(q) === -1) return false;
+    if (_vtb.txnFilter === 'Transacting'    && o.transacted <= 0) return false;
+    if (_vtb.txnFilter === 'NonTransacting' && o.transacted >  0) return false;
+    return true;
+  });
+  var col = _vtb.sort.col, dir = _vtb.sort.dir;
+  out.sort(function(a, b) {
+    var av, bv;
+    if (col === 'type') { av = a.type.toLowerCase(); bv = b.type.toLowerCase(); return av < bv ? -dir : av > bv ? dir : 0; }
+    av = a[col]; bv = b[col];
+    return (av - bv) * dir;
+  });
+  return out;
+}
+
+function renderVtbModal() {
+  var pn = document.getElementById('vtb-pn');
+  if (!pn) return;
+  var audLbl = _vtb.aud === 'buyer' ? 'Buyers' : 'Sellers';
+  var _vcfg = (typeof getVertCfg === 'function' ? getVertCfg() : VERT_CFG) || [];
+  var _vmatch = _vcfg.filter(function(c) { return c.key === _vtb.key; })[0];
+  var vertName = _vmatch ? _vmatch.name : _vtb.key;
+  var icCheck = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  var head = '<div class="vtb-head">'
+    + '<div class="vtb-head-ic">' + icCheck + '</div>'
+    + '<div class="vtb-htxt">'
+    +   '<div class="vtb-title">Completed Vendors – Vendor Type Breakdown</div>'
+    +   '<div class="vtb-sub">' + esc(vertName) + ' · ' + audLbl + ' pipeline</div>'
+    + '</div>'
+    + '<button class="vtb-x" onclick="closeVtbModal()" aria-label="Close">&times;</button>'
+    + '</div>';
+
+  // ── Loading ──
+  if (_vtb.loading && !(_vtb.rows && _vtb.rows.length)) {
+    pn.innerHTML = head
+      + '<div class="vtb-state"><div class="vtb-spin"></div>Loading vendor breakdown…</div>';
+    return;
+  }
+  // ── Error ──
+  if (_vtb.error && !(_vtb.rows && _vtb.rows.length)) {
+    pn.innerHTML = head
+      + '<div class="vtb-state"><div class="vtb-state-ic">⚠️</div>'
+      + esc(_vtb.error)
+      + '<div><button class="vtb-retry" onclick="_vtbEnsureRows()">Retry</button></div></div>';
+    return;
+  }
+
+  var agg = _vtbCompute();
+  // ── Empty (no completed vendors at all) ──
+  if (!agg.list.length) {
+    pn.innerHTML = head
+      + '<div class="vtb-state"><div class="vtb-state-ic">◌</div>'
+      + 'No completed vendors in this pipeline for the selected period.</div>';
+    return;
+  }
+
+  var disp = _vtbDisplayList(agg.list);
+
+  // Toolbar
+  var toolbar = '<div class="vtb-toolbar">'
+    + '<input class="vtb-search" type="text" placeholder="Search vendor type…" value="' + esc(_vtb.search) + '" oninput="_vtbOnSearch(this.value)">'
+    + '<select class="vtb-fsel" onchange="_vtbOnFilter(this.value)">'
+    +   '<option value="All"' + (_vtb.txnFilter === 'All' ? ' selected' : '') + '>All types</option>'
+    +   '<option value="Transacting"' + (_vtb.txnFilter === 'Transacting' ? ' selected' : '') + '>Transacting only</option>'
+    +   '<option value="NonTransacting"' + (_vtb.txnFilter === 'NonTransacting' ? ' selected' : '') + '>Non-transacting only</option>'
+    + '</select>'
+    + '<button class="vtb-export" onclick="_vtbExport()" title="Download as CSV">'
+    +   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+    +   'Export CSV</button>'
+    + '</div>';
+
+  // Pagination math
+  var total = disp.length;
+  var pageSize = _vtb.pageSize;
+  var pageCount = Math.max(1, Math.ceil(total / pageSize));
+  if (_vtb.page >= pageCount) _vtb.page = pageCount - 1;
+  if (_vtb.page < 0) _vtb.page = 0;
+  var start = _vtb.page * pageSize;
+  var pageRows = disp.slice(start, start + pageSize);
+
+  function sortCls(col) {
+    if (_vtb.sort.col !== col) return '';
+    return _vtb.sort.dir === 1 ? ' class="vtb-sort-asc"' : ' class="vtb-sort-desc"';
+  }
+  function rateCls(r) { return r >= 60 ? 'hi' : r >= 30 ? 'mid' : 'lo'; }
+
+  var thead = '<thead><tr>'
+    + '<th onclick="_vtbSort(\'type\')"' + sortCls('type') + '>Vendor Type</th>'
+    + '<th onclick="_vtbSort(\'completed\')"' + sortCls('completed') + '>Completed</th>'
+    + '<th onclick="_vtbSort(\'transacted\')"' + sortCls('transacted') + '>Transacted</th>'
+    + '<th onclick="_vtbSort(\'rate\')"' + sortCls('rate') + '>Txn Rate</th>'
+    + '<th onclick="_vtbSort(\'share\')"' + sortCls('share') + '>% of Completed</th>'
+    + '</tr></thead>';
+
+  var tbody = '<tbody>' + (pageRows.length ? pageRows.map(function(o) {
+    return '<tr>'
+      + '<td><span class="vtb-type"><i class="vtb-type-dot"></i>' + esc(o.type) + '</span></td>'
+      + '<td>' + fmt(o.completed) + '</td>'
+      + '<td>' + fmt(o.transacted) + '</td>'
+      + '<td><span class="vtb-rate ' + rateCls(o.rate) + '">' + o.rate.toFixed(1) + '%</span></td>'
+      + '<td><span class="vtb-share">'
+      +   '<span class="vtb-share-track"><span class="vtb-share-fill" style="width:' + Math.min(100, o.share).toFixed(1) + '%"></span></span>'
+      +   '<span class="vtb-share-num">' + o.share.toFixed(1) + '%</span>'
+      + '</span></td>'
+      + '</tr>';
+  }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--txt3);padding:32px">No vendor types match your search.</td></tr>')
+    + '</tbody>';
+
+  // Total summary row reflects the FULL filtered set (not just the page)
+  var ft = disp.reduce(function(a, o) { a.completed += o.completed; a.transacted += o.transacted; return a; }, { completed: 0, transacted: 0 });
+  var ftRate  = ft.completed ? (ft.transacted / ft.completed * 100) : 0;
+  var ftShare = agg.totals.completed ? (ft.completed / agg.totals.completed * 100) : 0;
+  var tfoot = '<tfoot><tr>'
+    + '<td>Total (' + disp.length + ' type' + (disp.length === 1 ? '' : 's') + ')</td>'
+    + '<td>' + fmt(ft.completed) + '</td>'
+    + '<td>' + fmt(ft.transacted) + '</td>'
+    + '<td>' + ftRate.toFixed(1) + '%</td>'
+    + '<td>' + ftShare.toFixed(1) + '%</td>'
+    + '</tr></tfoot>';
+
+  var body = '<div class="vtb-body"><table class="vtb-tbl">' + thead + tbody + tfoot + '</table></div>';
+
+  // Footer / pagination
+  var showingFrom = total ? start + 1 : 0;
+  var showingTo   = Math.min(start + pageSize, total);
+  var foot = '<div class="vtb-foot">'
+    + '<span class="vtb-foot-info">Showing ' + showingFrom + '–' + showingTo + ' of ' + total + ' vendor types</span>'
+    + '<select class="vtb-pgsize" onchange="_vtbPageSize(this.value)">'
+    +   [10, 25, 50].map(function(n) { return '<option value="' + n + '"' + (_vtb.pageSize === n ? ' selected' : '') + '>' + n + ' / page</option>'; }).join('')
+    + '</select>'
+    + '<span class="vtb-pg">'
+    +   '<button class="vtb-pg-btn" onclick="_vtbPage(-1)"' + (_vtb.page <= 0 ? ' disabled' : '') + '>Prev</button>'
+    +   '<button class="vtb-pg-btn" onclick="_vtbPage(1)"' + (_vtb.page >= pageCount - 1 ? ' disabled' : '') + '>Next</button>'
+    + '</span>'
+    + '</div>';
+
+  pn.innerHTML = head + toolbar + body + foot;
+}
+
+function _vtbSort(col) {
+  if (_vtb.sort.col === col) { _vtb.sort.dir *= -1; }
+  else { _vtb.sort = { col: col, dir: col === 'type' ? 1 : -1 }; }
+  _vtb.page = 0;
+  renderVtbModal();
+}
+function _vtbOnSearch(val) {
+  _vtb.search = val; _vtb.page = 0;
+  clearTimeout(_vtbSearchTimer);
+  _vtbSearchTimer = setTimeout(renderVtbModal, 160);
+}
+function _vtbOnFilter(val) { _vtb.txnFilter = val; _vtb.page = 0; renderVtbModal(); }
+function _vtbPage(delta) { _vtb.page += delta; renderVtbModal(); }
+function _vtbPageSize(val) { _vtb.pageSize = parseInt(val, 10) || 10; _vtb.page = 0; renderVtbModal(); }
+
+// Export the current (filtered + sorted) breakdown as a CSV download.
+function _vtbExport() {
+  var agg = _vtbCompute();
+  var disp = _vtbDisplayList(agg.list);
+  if (!disp.length) return;
+  var head = ['Vendor Type', 'Completed Vendors', 'Transacted Vendors', 'Transaction Rate (%)', '% of Completed'];
+  function csvCell(s) {
+    s = String(s);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  var lines = [head.map(csvCell).join(',')];
+  disp.forEach(function(o) {
+    lines.push([o.type, o.completed, o.transacted, o.rate.toFixed(1), o.share.toFixed(1)].map(csvCell).join(','));
+  });
+  var ft = disp.reduce(function(a, o) { a.c += o.completed; a.t += o.transacted; return a; }, { c: 0, t: 0 });
+  var ftRate  = ft.c ? (ft.t / ft.c * 100) : 0;
+  var ftShare = agg.totals.completed ? (ft.c / agg.totals.completed * 100) : 0;
+  lines.push(['Total', ft.c, ft.t, ftRate.toFixed(1), ftShare.toFixed(1)].map(csvCell).join(','));
+
+  var csv = lines.join('\r\n');
+  var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = 'completed-vendors-by-type_' + (_vtb.key || 'vertical') + '_' + _vtb.aud + '_' + stamp + '.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+}
+
 function _gmvCatRender(aud, cats) {
   var el = document.getElementById('km-pn');
   var modal = document.getElementById('kpi-modal');
@@ -5967,13 +6469,22 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
   var statDef = [
     { lbl:'Draft',     n:vDraft,  col:'var(--st-draft)',     bg:'var(--st-draft-bg)',     ic:_ic2('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>') },
     { lbl:'In Review', n:vReview, col:'var(--st-review)',    bg:'var(--st-review-bg)',    ic:_ic2('<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>') },
-    { lbl:'Completed', n:vDone,   col:'var(--st-onboarded)',bg:'var(--st-onboarded-bg)', ic:_ic2('<polyline points="20 6 9 17 4 12"/>') },
+    { lbl:'Completed', n:vDone,   col:'var(--st-onboarded)',bg:'var(--st-onboarded-bg)', ic:_ic2('<polyline points="20 6 9 17 4 12"/>'), click:'vtb' },
     { lbl:'Rejected',  n:vRej,    col:'var(--st-rejected)', bg:'rgba(255,59,48,.1)',      ic:_ic2('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>') },
   ];
   var statusGrid = '<div class="vpipe-status-grid">'
     + statDef.map(function(s) {
         var pct = tot > 0 ? Math.round(s.n / tot * 100) : 0;
-        return '<div class="vpipe-stat-card" style="border-top:3px solid ' + s.col + '">'
+        // The Completed card opens the Vendor Type Breakdown modal.
+        var isClick = s.click === 'vtb' && s.n > 0;
+        var open = "openVtbModal('" + cfg.key + "','" + aud + "')";
+        var interactive = isClick
+          ? ' class="vpipe-stat-card vps-clickable" role="button" tabindex="0"'
+            + ' title="View vendor type breakdown"'
+            + ' onclick="event.stopPropagation();' + open + '"'
+            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();' + open + '}"'
+          : ' class="vpipe-stat-card"';
+        return '<div' + interactive + ' style="border-top:3px solid ' + s.col + '">'
           + '<div class="vpipe-stat-icon" style="background:' + s.bg + ';color:' + s.col + '">' + s.ic + '</div>'
           + '<div class="vpipe-stat-name">' + s.lbl + '</div>'
           + '<div class="vpipe-stat-num">' + fmt(s.n) + '</div>'
