@@ -2208,6 +2208,39 @@ body.view-gst #vert-tabs-bar{display:none}
 .rgn-gst.ok{background:var(--st-onboarded-bg);color:var(--st-onboarded-tx)}
 .rgn-gst.bad{background:var(--st-rejected-bg);color:var(--st-rejected-tx)}
 .rgn-more{font-size:11px;color:var(--txt3);padding:8px 18px;text-align:center}
+/* State detail — toolbar */
+.rgn-sd-tb{padding:9px 18px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.rgn-sd-srch{display:flex;align-items:center;gap:7px;background:var(--bg2);border-radius:8px;border:1px solid var(--border);padding:6px 10px}
+.rgn-sd-srch input{flex:1;border:none;background:none;font-size:12.5px;color:var(--txt);outline:none;font-family:inherit;min-width:0}
+.rgn-sd-srch input::placeholder{color:var(--txt3)}
+.rgn-sd-row{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.rgn-sd-lbl{font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;margin-right:1px;flex-shrink:0}
+.rgn-sd-chip{font-size:11px;font-weight:500;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--txt2);cursor:pointer;font-family:inherit;transition:all .12s;white-space:nowrap}
+.rgn-sd-chip.on{background:var(--txt);color:#fff;border-color:var(--txt)}
+.rgn-sd-chip:hover:not(.on){background:var(--hover)}
+.rgn-sd-divider{width:1px;height:14px;background:var(--border);flex-shrink:0;margin:0 2px}
+/* Company rows */
+.rgn-co-row{display:flex;align-items:center;gap:10px;padding:10px 18px;border-top:1px solid var(--border);cursor:pointer;transition:background .12s}
+.rgn-co-row:hover{background:var(--hover)}
+.rgn-co-row:active{background:rgba(0,0,0,.05)}
+.rgn-co-main{flex:1;min-width:0}
+.rgn-co-nm{font-size:13px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rgn-co-sub{font-size:11px;color:var(--txt3);margin-top:2px;display:flex;gap:5px;align-items:center;overflow:hidden;white-space:nowrap}
+.rgn-co-cat{font-size:10px;font-weight:600;padding:1.5px 6px;border-radius:4px;flex-shrink:0}
+.rgn-co-stbadge{font-size:10px;font-weight:600;padding:1.5px 6px;border-radius:4px;flex-shrink:0}
+.rgn-co-side{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0}
+.rgn-co-gmv{font-size:12.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rgn-co-txn{font-size:10.5px;color:var(--txt3);white-space:nowrap}
+.rgn-co-empty{padding:36px 18px;text-align:center;color:var(--txt3);font-size:13px}
+/* Company profile */
+.rgn-cp-sec{padding:12px 18px;border-bottom:1px solid var(--border)}
+.rgn-cp-sec:last-child{border-bottom:none}
+.rgn-cp-ttl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--txt3);margin-bottom:8px}
+.rgn-cp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+.rgn-cp-f{display:flex;flex-direction:column;gap:2px}
+.rgn-cp-lbl{font-size:9.5px;color:var(--txt3);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.rgn-cp-val{font-size:12.5px;font-weight:600;color:var(--txt);font-variant-numeric:tabular-nums;word-break:break-word}
+.rgn-cp-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:5px}
 /* Vendor Rating / OSV Consent mini-cards */
 .biz-q{
   display:flex;align-items:center;gap:12px;
@@ -5962,7 +5995,12 @@ function _buildRailRegions(vs) {
 // toggle. Rows are fetched per audience on demand (cached), mirroring
 // the GMV-by-category modal.
 // ═══════════════════════════════════════════════════════════════
-var _rgn = { region: '', key: '', pKey: '', aud: 'seller', state: null, rows: { seller: null, buyer: null } };
+var _rgn = {
+  region: '', key: '', pKey: '', aud: 'seller',
+  state: null, company: null,
+  stSearch: '', stFilter: { cat: 'All', status: 'All', txn: 'All' }, stSort: { key: 'gmv', dir: -1 },
+  rows: { seller: null, buyer: null }
+};
 
 function openRegionModal(region) {
   var key = (typeof activeVertKey !== 'undefined' && activeVertKey) || selectedVert;
@@ -5974,7 +6012,11 @@ function openRegionModal(region) {
   _rgn.key    = key;
   _rgn.pKey   = pKey;
   _rgn.aud    = (selectedAud === 'buyer') ? 'buyer' : 'seller';
-  _rgn.state  = null;   // always open at region overview
+  _rgn.state   = null;   // always open at region overview
+  _rgn.company = null;
+  _rgn.stSearch = '';
+  _rgn.stFilter = { cat: 'All', status: 'All', txn: 'All' };
+  _rgn.stSort   = { key: 'gmv', dir: -1 };
   // Seed from already-loaded detail rows when they match the active audience.
   if (_rgn.rows[_rgn.aud] == null && selectedVert === key
       && Array.isArray(vertRows) && vertRows.length
@@ -5987,11 +6029,16 @@ function openRegionModal(region) {
 function _regionSetAud(aud) {
   if (_rgn.aud === aud) return;
   _rgn.aud = aud;
+  _rgn.company = null;
   _regionShow();
 }
 
 function _regionSetState(st) {
-  _rgn.state = st;
+  _rgn.state   = st;
+  _rgn.company = null;
+  _rgn.stSearch = '';
+  _rgn.stFilter = { cat: 'All', status: 'All', txn: 'All' };
+  _rgn.stSort   = { key: 'gmv', dir: -1 };
   _regionRender(false);
 }
 
@@ -6024,11 +6071,33 @@ function _regionRender(loading) {
   var el = document.getElementById('km-pn');
   var modal = document.getElementById('kpi-modal');
   if (!el || !modal) return;
-  var region = _rgn.region, aud = _rgn.aud, state = _rgn.state;
+  var region = _rgn.region, aud = _rgn.aud, state = _rgn.state, company = _rgn.company;
   var cfg = getVertCfg().filter(function(c) { return c.key === _rgn.key; })[0];
   var vname = (cfg && cfg.name) || _rgn.key || '';
   var audLbl = aud === 'seller' ? 'Sellers' : 'Buyers';
   var col = REGION_COLORS[region] || REGION_COLORS.Other;
+
+  // ── COMPANY PROFILE VIEW ──────────────────────────────────────────
+  if (company) {
+    var compHead = '<div class="km-head">'
+      + '<div style="display:flex;align-items:center;min-width:0;gap:0">'
+      + '<button class="rgn-back-btn" onclick="_regionSetCompany(null)" aria-label="Back to ' + esc(state) + '">'
+      +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="width:15px;height:15px"><path d="M15 18l-6-6 6-6"/></svg>'
+      +   esc(state)
+      + '</button>'
+      + '<div class="km-htxt" style="margin-left:4px">'
+      +   '<div class="km-title" style="display:flex;align-items:center;gap:5px">'
+      +     '<span style="color:var(--txt3);font-weight:400;font-size:14px">›</span>'
+      +     '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(company.name || '—') + '</span>'
+      +   '</div>'
+      +   '<div class="km-sub">' + esc(vname) + ' · ' + audLbl + '</div>'
+      + '</div></div>'
+      + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
+      + '</div>';
+    el.innerHTML = compHead + _buildCompanyProfile(company, region, state);
+    if (!modal.classList.contains('km-open')) { modal.classList.add('km-open'); document.addEventListener('keydown', _kpiEsc); }
+    return;
+  }
 
   // ── Header — region overview vs state drill-down ───────────────────
   var head;
@@ -6070,11 +6139,21 @@ function _regionRender(loading) {
     return;
   }
 
-  // ── Filter: region → optionally narrow to one state ───────────────
   var allRegion = (_rgn.rows[aud] || []).filter(function(r) { return _stateToRegionFE(r.state) === region; });
-  var all = state ? allRegion.filter(function(r) { return (r.state || '') === state; }) : allRegion;
 
-  // ── Summary stats ─────────────────────────────────────────────────
+  // ── STATE DETAIL VIEW ─────────────────────────────────────────────
+  if (state) {
+    var stRows = allRegion.filter(function(r) { return (r.state || '') === state; });
+    el.innerHTML = head + audToggle + _buildStateDetail(stRows, aud);
+    if (!modal.classList.contains('km-open')) { modal.classList.add('km-open'); document.addEventListener('keydown', _kpiEsc); }
+    // Re-apply search value (innerHTML reset clears it)
+    var si = document.getElementById('rgn-st-sinput');
+    if (si && _rgn.stSearch) si.value = _rgn.stSearch;
+    return;
+  }
+
+  // ── REGION OVERVIEW ────────────────────────────────────────────────
+  var all = allRegion;
   var sm = { total: all.length, onb: 0, rev: 0, draft: 0, rej: 0, gmv: 0, hasGmv: false };
   all.forEach(function(r) {
     if (r.status === 'COMPLETED') sm.onb++;
@@ -6094,14 +6173,12 @@ function _regionRender(loading) {
     + (aud === 'seller' && sm.hasGmv ? tile(fmtINR(sm.gmv), 'GMV') : '')
     + '</div>';
 
-  // ── State breakdown (region overview only) ─────────────────────────
-  var stateSection = state ? '' : _buildStateSection(allRegion, aud);
+  var stateSection = _buildStateSection(allRegion, aud);
 
-  // ── Vendor list grouped by status ─────────────────────────────────
   var body;
   if (!all.length) {
     body = '<div style="padding:36px 18px;text-align:center;color:var(--txt3);font-size:13px">No '
-      + esc(audLbl.toLowerCase()) + ' in ' + esc(state || region) + ' for the selected period</div>';
+      + esc(audLbl.toLowerCase()) + ' in ' + esc(region) + ' for the selected period</div>';
   } else {
     var groups = [
       ['COMPLETED', 'Onboarded'], ['IN_REVIEW', 'In Review'],
@@ -6114,8 +6191,7 @@ function _regionRender(loading) {
       if (!list.length) return '';
       var shown = list.slice(0, MAXG);
       var rowsHtml = shown.map(function(r) {
-        var metaParts = [r.id ? '#' + esc(r.id) : '', esc(r.category || '')];
-        if (!state) metaParts.push(esc(r.state || ''));  // hide state col when already scoped to one state
+        var metaParts = [r.id ? '#' + esc(r.id) : '', esc(r.category || ''), esc(r.state || '')];
         var meta = metaParts.filter(Boolean).join(' · ');
         var gstChip = r.hasGST
           ? '<span class="rgn-gst ok" title="' + esc(r.gstin || '') + '">✓ GST</span>'
@@ -6182,6 +6258,224 @@ function _buildStateSection(regionRows, aud) {
     + '</div>'
     + rows
     + '</div>';
+}
+
+// ── Region → State → Company drill-down helpers ───────────────────
+window._rgnCoRows = [];
+
+function _regionSetCompany(idx) {
+  _rgn.company = (idx != null) ? (window._rgnCoRows[idx] || null) : null;
+  _regionRender(false);
+}
+
+function _stStateRows() {
+  var aud = _rgn.aud, state = _rgn.state, region = _rgn.region;
+  return (_rgn.rows[aud] || []).filter(function(r) {
+    return _stateToRegionFE(r.state) === region && (r.state || '') === state;
+  });
+}
+
+function _stFilteredRows() {
+  var rows = _stStateRows();
+  var q = (_rgn.stSearch || '').trim().toLowerCase();
+  var f = _rgn.stFilter;
+  var STATUS_MAP = { 'Onboarded': 'COMPLETED', 'In Review': 'IN_REVIEW', 'Draft': 'DRAFT', 'Rejected': 'REJECTED' };
+  var filtered = rows.filter(function(r) {
+    if (q && (String(r.name || '').toLowerCase().indexOf(q) === -1 && String(r.id || '').toLowerCase().indexOf(q) === -1)) return false;
+    if (f.cat !== 'All' && String(r.category || '').toLowerCase() !== f.cat.toLowerCase()) return false;
+    if (f.status !== 'All' && r.status !== (STATUS_MAP[f.status] || f.status)) return false;
+    if (f.txn === 'Transacted' && !(r.txnValue != null && r.txnValue > 0)) return false;
+    if (f.txn === 'No Txn' && (r.txnValue != null && r.txnValue > 0)) return false;
+    return true;
+  });
+  var sk = _rgn.stSort.key, dir = _rgn.stSort.dir;
+  filtered.sort(function(a, b) {
+    if (sk === 'gmv')  return dir * ((Number(b.txnValue) || 0) - (Number(a.txnValue) || 0));
+    if (sk === 'txn')  return dir * ((Number(b.txnCount) || 0) - (Number(a.txnCount) || 0));
+    if (sk === 'name') return dir * String(a.name || '').localeCompare(String(b.name || ''));
+    if (sk === 'date') return dir * (new Date(b.onbDate || 0) - new Date(a.onbDate || 0));
+    return 0;
+  });
+  return filtered;
+}
+
+function _stSetSearch(q) {
+  _rgn.stSearch = q;
+  var el = document.getElementById('rgn-vlist');
+  if (el) el.innerHTML = _buildCoList(_stFilteredRows(), _rgn.aud);
+}
+
+function _stSetFilter(key, val) {
+  _rgn.stFilter[key] = val;
+  var chips = document.getElementById('rgn-fil-chips');
+  var vlist = document.getElementById('rgn-vlist');
+  if (chips) chips.innerHTML = _buildFilChipsHtml();
+  if (vlist) vlist.innerHTML = _buildCoList(_stFilteredRows(), _rgn.aud);
+}
+
+function _stSetSort(key) {
+  if (_rgn.stSort.key === key) { _rgn.stSort.dir *= -1; }
+  else { _rgn.stSort.key = key; _rgn.stSort.dir = -1; }
+  var sortBar = document.getElementById('rgn-sort-bar');
+  var vlist   = document.getElementById('rgn-vlist');
+  if (sortBar) sortBar.innerHTML = _buildSortBarHtml();
+  if (vlist)   vlist.innerHTML   = _buildCoList(_stFilteredRows(), _rgn.aud);
+}
+
+function _buildFilChipsHtml() {
+  var stRows = _stStateRows();
+  var hasMetal   = stRows.some(function(r) { return String(r.category || '').toLowerCase() === 'metal'; });
+  var hasPlastic = stRows.some(function(r) { return String(r.category || '').toLowerCase() === 'plastic'; });
+  var c = function(key, val) {
+    var on = _rgn.stFilter[key] === val ? ' on' : '';
+    return '<button class="rgn-sd-chip' + on + '" onclick="_stSetFilter(' + JSON.stringify(key) + ',' + JSON.stringify(val) + ')">' + esc(val) + '</button>';
+  };
+  return '<span class="rgn-sd-lbl">Cat:</span>'
+    + c('cat', 'All')
+    + (hasMetal   ? c('cat', 'Metal')   : '')
+    + (hasPlastic ? c('cat', 'Plastic') : '')
+    + '<div class="rgn-sd-divider"></div>'
+    + '<span class="rgn-sd-lbl">Status:</span>'
+    + c('status', 'All') + c('status', 'Onboarded') + c('status', 'In Review') + c('status', 'Draft')
+    + '<div class="rgn-sd-divider"></div>'
+    + '<span class="rgn-sd-lbl">Txn:</span>'
+    + c('txn', 'All') + c('txn', 'Transacted') + c('txn', 'No Txn');
+}
+
+function _buildSortBarHtml() {
+  var sk = _rgn.stSort.key, dir = _rgn.stSort.dir;
+  var arr = dir === -1 ? ' ↓' : ' ↑';
+  var s = function(key, lbl) {
+    var on = sk === key ? ' on' : '';
+    return '<button class="rgn-sd-chip' + on + '" onclick="_stSetSort(' + JSON.stringify(key) + ')">'
+      + lbl + (sk === key ? arr : '') + '</button>';
+  };
+  return '<span class="rgn-sd-lbl">Sort:</span>'
+    + s('gmv', 'GMV') + s('txn', 'Txns') + s('name', 'Name') + s('date', 'Date');
+}
+
+function _buildStateDetail(stRows, aud) {
+  var sm = { total: stRows.length, onb: 0, rev: 0, draft: 0, gmv: 0, txns: 0, hasGmv: false };
+  stRows.forEach(function(r) {
+    if (r.status === 'COMPLETED') sm.onb++;
+    else if (r.status === 'IN_REVIEW') sm.rev++;
+    else if (r.status === 'DRAFT') sm.draft++;
+    if (r.txnValue != null && r.txnValue > 0) { sm.gmv += Number(r.txnValue); sm.hasGmv = true; }
+    if (r.txnCount != null && r.txnCount > 0) sm.txns += Number(r.txnCount);
+  });
+  var tile = function(v, l) {
+    return '<div class="rgn-tile"><div class="rgn-tile-v">' + v + '</div><div class="rgn-tile-l">' + l + '</div></div>';
+  };
+  var tiles = '<div class="rgn-tiles">'
+    + tile(fmt(sm.total), 'Total')
+    + tile(fmt(sm.onb), 'Onboarded')
+    + tile(fmt(sm.rev), 'In Review')
+    + tile(fmt(sm.draft), 'Draft')
+    + (aud === 'seller' && sm.hasGmv ? tile(fmtINR(sm.gmv), 'GMV') : '')
+    + (sm.txns > 0 ? tile(fmt(sm.txns), 'Transactions') : '')
+    + '</div>';
+
+  var toolbar = '<div class="rgn-sd-tb">'
+    + '<div class="rgn-sd-srch">'
+    +   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>'
+    +   '<input id="rgn-st-sinput" type="text" placeholder="Search by name or vendor ID…" oninput="_stSetSearch(this.value)" onkeydown="event.stopPropagation()">'
+    + '</div>'
+    + '<div id="rgn-fil-chips" class="rgn-sd-row">' + _buildFilChipsHtml() + '</div>'
+    + '<div id="rgn-sort-bar" class="rgn-sd-row">' + _buildSortBarHtml() + '</div>'
+    + '</div>';
+
+  var filtered = _stFilteredRows();
+  return tiles + toolbar + '<div id="rgn-vlist">' + _buildCoList(filtered, aud) + '</div>';
+}
+
+function _buildCoList(rows, aud) {
+  window._rgnCoRows = rows;
+  if (!rows.length) {
+    return '<div class="rgn-co-empty">No matching companies</div>';
+  }
+  var ST = {
+    'COMPLETED': { bg: 'var(--st-onboarded-bg)', tx: 'var(--st-onboarded-tx)', lbl: 'Onboarded' },
+    'IN_REVIEW': { bg: 'rgba(228,136,0,.12)',     tx: '#7A4F00',                lbl: 'In Review' },
+    'DRAFT':     { bg: 'var(--bg2)',               tx: 'var(--txt3)',            lbl: 'Draft'     },
+    'REJECTED':  { bg: 'var(--st-rejected-bg)',    tx: 'var(--st-rejected-tx)', lbl: 'Rejected'  },
+  };
+  return rows.map(function(r, i) {
+    var st = ST[r.status] || { bg: 'var(--bg2)', tx: 'var(--txt3)', lbl: r.status || '—' };
+    var catLo = String(r.category || '').toLowerCase();
+    var catBg = catLo === 'metal' ? 'rgba(29,199,151,.12)' : catLo === 'plastic' ? 'rgba(228,136,0,.12)' : 'var(--bg2)';
+    var catTx = catLo === 'metal' ? '#0A7044' : catLo === 'plastic' ? '#7A4F00' : 'var(--txt3)';
+    var gmvHtml = (r.txnValue != null && r.txnValue > 0) ? '<div class="rgn-co-gmv">' + fmtINR(r.txnValue) + '</div>' : '';
+    var txnHtml = (r.txnCount != null && r.txnCount > 0) ? '<div class="rgn-co-txn">' + fmt(r.txnCount) + ' txns</div>' : '';
+    return '<div class="rgn-co-row" role="button" tabindex="0"'
+      + ' onclick="_regionSetCompany(' + i + ')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_regionSetCompany(' + i + ')}">'
+      + '<div class="rgn-co-main">'
+      +   '<div class="rgn-co-nm">' + esc(r.name || '—') + '</div>'
+      +   '<div class="rgn-co-sub">'
+      +     (r.id ? '<span>#' + esc(r.id) + '</span>' : '')
+      +     (r.category ? '<span class="rgn-co-cat" style="background:' + catBg + ';color:' + catTx + '">' + esc(r.category) + '</span>' : '')
+      +     (r.vendorType ? '<span style="color:var(--txt3);flex-shrink:0">' + esc(r.vendorType) + '</span>' : '')
+      +     '<span class="rgn-co-stbadge" style="background:' + st.bg + ';color:' + st.tx + '">' + st.lbl + '</span>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="rgn-co-side">' + gmvHtml + txnHtml + '</div>'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="width:13px;height:13px;flex-shrink:0;color:var(--txt3)"><path d="M9 18l6-6-6-6"/></svg>'
+      + '</div>';
+  }).join('');
+}
+
+function _buildCompanyProfile(row, region, state) {
+  var ST = {
+    'COMPLETED': { bg: 'var(--st-onboarded-bg)', tx: 'var(--st-onboarded-tx)', lbl: 'Onboarded' },
+    'IN_REVIEW': { bg: 'rgba(228,136,0,.12)',     tx: '#7A4F00',                lbl: 'In Review' },
+    'DRAFT':     { bg: 'var(--bg2)',               tx: 'var(--txt3)',            lbl: 'Draft'     },
+    'REJECTED':  { bg: 'var(--st-rejected-bg)',    tx: 'var(--st-rejected-tx)', lbl: 'Rejected'  },
+  };
+  var st = ST[row.status] || { bg: 'var(--bg2)', tx: 'var(--txt3)', lbl: row.status || '—' };
+  var catLo = String(row.category || '').toLowerCase();
+  var catBg = catLo === 'metal' ? 'rgba(29,199,151,.12)' : catLo === 'plastic' ? 'rgba(228,136,0,.12)' : 'var(--bg2)';
+  var catTx = catLo === 'metal' ? '#0A7044' : catLo === 'plastic' ? '#7A4F00' : 'var(--txt3)';
+  var f = function(val, lbl) {
+    return '<div class="rgn-cp-f"><div class="rgn-cp-lbl">' + lbl + '</div><div class="rgn-cp-val">' + val + '</div></div>';
+  };
+
+  var sec1 = '<div class="rgn-cp-sec">'
+    + '<div class="rgn-cp-ttl">Vendor Details</div>'
+    + '<div class="rgn-cp-grid">'
+    + f(esc(row.id || '—'), 'Vendor ID')
+    + f('<span class="rgn-cp-badge" style="background:' + st.bg + ';color:' + st.tx + '">' + st.lbl + '</span>', 'Status')
+    + (row.category ? f('<span class="rgn-cp-badge" style="background:' + catBg + ';color:' + catTx + '">' + esc(row.category) + '</span>', 'Category') : '')
+    + (row.vendorType ? f(esc(row.vendorType), 'Material / Type') : '')
+    + f(esc(row.state || state || '—'), 'State')
+    + f(esc(region || '—'), 'Region')
+    + '</div></div>';
+
+  var gstHtml = row.hasGST
+    ? '<span style="color:var(--st-onboarded-tx);font-weight:600">✓ ' + esc(row.gstin || 'Verified') + '</span>'
+    : '<span style="color:var(--st-rejected-tx);font-weight:600">✗ No GST</span>';
+
+  var sec2 = '<div class="rgn-cp-sec">'
+    + '<div class="rgn-cp-ttl">Compliance & Dates</div>'
+    + '<div class="rgn-cp-grid">'
+    + f(gstHtml, 'GSTIN')
+    + f((row.tat != null && row.tat !== '') ? row.tat + ' days' : '—', 'TAT')
+    + f(row.createdDate ? esc(row.createdDate) : '—', 'Created')
+    + f(row.onbDate ? esc(row.onbDate) : '—', 'Onboarded')
+    + (row.reviewDate ? f(esc(row.reviewDate), 'Reviewed') : '')
+    + '</div></div>';
+
+  var hasGmv = row.txnValue != null && row.txnValue > 0;
+  var hasTxn = row.txnCount != null && row.txnCount > 0;
+  var sec3 = (hasGmv || hasTxn || row.txnDate)
+    ? '<div class="rgn-cp-sec">'
+    + '<div class="rgn-cp-ttl">Transaction Summary</div>'
+    + '<div class="rgn-cp-grid">'
+    + (hasGmv ? f(fmtINR(row.txnValue), 'GMV') : '')
+    + (hasTxn ? f(fmt(row.txnCount) + ' txns', 'Transactions') : '')
+    + (row.txnDate ? f(esc(row.txnDate), 'Last Txn Date') : '')
+    + '</div></div>' : '';
+
+  return sec1 + sec2 + sec3;
 }
 
 // Vendor Rating + OSV Status mini-cards for the rail. qc null → "Syncing…".
