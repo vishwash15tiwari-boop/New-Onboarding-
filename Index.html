@@ -1049,6 +1049,36 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .vtb-sec-hd{font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 .vtb-no-data{text-align:center;padding:40px 20px;color:var(--txt3);font-size:13px}
 
+/* ── Status List Modal (In Review / Rejected) ── */
+#sl-modal{position:fixed;inset:0;z-index:805;display:flex;align-items:center;justify-content:center;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .22s,visibility .22s;background:rgba(0,0,0,.48);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#sl-modal.sl-open{visibility:visible;opacity:1;pointer-events:auto}
+.sl-pn{background:var(--card);border-radius:14px;width:min(560px,94vw);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.22);transform:translateY(18px) scale(.97);transition:transform .22s cubic-bezier(.22,.68,0,1.2);overflow:hidden}
+#sl-modal.sl-open .sl-pn{transform:translateY(0) scale(1)}
+.sl-hd{display:flex;align-items:center;gap:10px;padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sl-hd-txt{flex:1;min-width:0}
+.sl-hd-title{font-size:15px;font-weight:700;line-height:1.2}
+.sl-hd-sub{font-size:12px;color:var(--txt3);margin-top:2px}
+.sl-hd-close{width:30px;height:30px;border:none;background:transparent;border-radius:50%;cursor:pointer;color:var(--txt3);font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .15s,background .15s;line-height:1}
+.sl-hd-close:hover{color:var(--txt1);background:var(--bg2)}
+.sl-body{flex:1;overflow-y:auto;min-height:0}
+.sl-toolbar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.sl-search{flex:1;height:32px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:13px;background:var(--bg2);color:var(--txt1);outline:none;transition:border-color .15s}
+.sl-search:focus{border-color:var(--accent,#005DFF)}
+.sl-count{font-size:12px;color:var(--txt3);white-space:nowrap;flex-shrink:0}
+.sl-tbl{width:100%;border-collapse:collapse}
+.sl-tbl thead th{padding:9px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:1;white-space:nowrap;cursor:pointer;user-select:none}
+.sl-tbl thead th .s-ic{margin-left:4px;opacity:.5;font-size:9px}
+.sl-tbl thead th.sl-th-asc .s-ic,.sl-tbl thead th.sl-th-desc .s-ic{opacity:1}
+.sl-row td{padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--txt1);vertical-align:middle}
+.sl-row:last-child td{border-bottom:none}
+.sl-cat-badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
+.sl-no-data{text-align:center;padding:40px 20px;color:var(--txt3);font-size:13px}
+.sl-pg{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--txt3);flex-shrink:0}
+.sl-pg-btns{display:flex;gap:6px}
+.sl-pg-btn{padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--txt2);font-size:12px;font-weight:500;cursor:pointer;transition:background .12s}
+.sl-pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.sl-pg-btn:not(:disabled):hover{background:var(--bg2)}
+
 /* ═══════════════════════════════════════════════════════════════
    GST PAYABLES VIEW — warm cream / burnt-orange enterprise palette
    ═══════════════════════════════════════════════════════════════ */
@@ -3093,6 +3123,14 @@ thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
   <div class="vtb-pn" id="vtb-pn" onclick="event.stopPropagation()">
     <div class="vtb-hd" id="vtb-hd"></div>
     <div class="vtb-body" id="vtb-body"></div>
+  </div>
+</div>
+
+<!-- Status List Modal (In Review / Rejected) -->
+<div id="sl-modal" role="dialog" aria-modal="true" onclick="closeSlModal()">
+  <div class="sl-pn" onclick="event.stopPropagation()">
+    <div class="sl-hd" id="sl-hd"></div>
+    <div class="sl-body" id="sl-body"></div>
   </div>
 </div>
 
@@ -6663,11 +6701,19 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
   var statusGrid = '<div class="vpipe-status-grid">'
     + statDef.map(function(s) {
         var pct = tot > 0 ? Math.round(s.n / tot * 100) : 0;
-        var isComp = s.lbl === 'Completed';
-        var cardAttrs = ' style="border-top:3px solid ' + s.col + (isComp ? ';cursor:pointer' : '') + '"'
-          + (isComp ? ' role="button" tabindex="0"'
-            + ' onclick="openVtbModal(\'' + aud + '\')"'
-            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openVtbModal(\'' + aud + '\')}"'
+        var isComp   = s.lbl === 'Completed';
+        var isReview = s.lbl === 'In Review';
+        var isRej    = s.lbl === 'Rejected';
+        var slStatus = isReview ? 'IN_REVIEW' : 'REJECTED';
+        var cardAttrs = ' style="border-top:3px solid ' + s.col + ((isComp || isReview || isRej) ? ';cursor:pointer' : '') + '"'
+          + (isComp
+            ? ' role="button" tabindex="0"'
+              + ' onclick="openVtbModal(\'' + aud + '\')"'
+              + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openVtbModal(\'' + aud + '\')}"'
+            : (isReview || isRej)
+            ? ' role="button" tabindex="0"'
+              + ' onclick="openSlModal(\'' + aud + '\',\'' + slStatus + '\')"'
+              + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openSlModal(\'' + aud + '\',\'' + slStatus + '\')}"'
             : '');
         return '<div class="vpipe-stat-card"' + cardAttrs + '>'
           + '<div class="vpipe-stat-icon" style="background:' + s.bg + ';color:' + s.col + '">' + s.ic + '</div>'
@@ -8927,6 +8973,160 @@ function vtbPg(d) {
   var max = Math.max(0, Math.ceil(_vtbFiltered().length / _vtb.pgSz) - 1);
   _vtb.pg = Math.max(0, Math.min(_vtb.pg + d, max));
   _vtbRender();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATUS LIST MODAL — In Review / Rejected vendor list
+// ═══════════════════════════════════════════════════════════════
+var _sl = { aud: 'seller', status: 'IN_REVIEW', q: '', rows: [], sk: 'name', sd: 1, pg: 0, pgSz: 20 };
+
+function _slGatherRows(aud, status) {
+  var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var seen = {}, rows = [];
+  var cfg = getVertCfg();
+  cfg.forEach(function(v) {
+    try {
+      var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + v.key) || 'null');
+      if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
+        sv.rows.forEach(function(r) {
+          if (r.status === status && !seen[r.id]) { seen[r.id] = true; rows.push(r); }
+        });
+      }
+    } catch(e) {}
+  });
+  if (Array.isArray(vertRows)) {
+    vertRows.forEach(function(r) {
+      if ((r.audience || 'seller') === aud && r.status === status && !seen[r.id]) {
+        seen[r.id] = true; rows.push(r);
+      }
+    });
+  }
+  return rows;
+}
+
+function openSlModal(aud, status) {
+  _sl.aud    = aud || selectedAud || 'seller';
+  _sl.status = status || 'IN_REVIEW';
+  _sl.q = ''; _sl.sk = 'name'; _sl.sd = 1; _sl.pg = 0;
+  _sl.rows = _slGatherRows(_sl.aud, _sl.status);
+  _slRender();
+  var m = document.getElementById('sl-modal');
+  if (m) { void m.offsetHeight; m.classList.add('sl-open'); }
+  document.addEventListener('keydown', _slEsc);
+}
+
+function closeSlModal() {
+  var m = document.getElementById('sl-modal');
+  if (m) m.classList.remove('sl-open');
+  document.removeEventListener('keydown', _slEsc);
+}
+
+function _slEsc(e) {
+  if (e.key !== 'Escape') return;
+  var m = document.getElementById('sl-modal');
+  if (!m || !m.classList.contains('sl-open')) return;
+  e.stopPropagation();
+  closeSlModal();
+}
+
+function _slFiltered() {
+  var q = (_sl.q || '').toLowerCase().trim();
+  if (!q) return _sl.rows.slice();
+  return _sl.rows.filter(function(r) {
+    return (r.name     || '').toLowerCase().indexOf(q) >= 0
+        || (r.id       || '').toLowerCase().indexOf(q) >= 0
+        || (r.state    || '').toLowerCase().indexOf(q) >= 0
+        || (r.category || '').toLowerCase().indexOf(q) >= 0;
+  });
+}
+
+function _slSorted(rows) {
+  var k = _sl.sk, d = _sl.sd;
+  return rows.slice().sort(function(a, b) {
+    return d * String(a[k]||'').localeCompare(String(b[k]||''));
+  });
+}
+
+function _slRender() {
+  var hd   = document.getElementById('sl-hd');
+  var body = document.getElementById('sl-body');
+  if (!hd || !body) return;
+  var isRej   = _sl.status === 'REJECTED';
+  var stLbl   = isRej ? 'Rejected' : 'In Review';
+  var audLbl  = _sl.aud === 'buyer' ? 'Buyer' : 'Seller';
+  var stColor = isRej ? 'var(--st-rejected)' : 'var(--st-review)';
+
+  hd.innerHTML = '<div class="sl-hd-txt">'
+    + '<div class="sl-hd-title" style="color:' + stColor + '">' + stLbl + ' – ' + audLbl + ' Onboarding Pipeline</div>'
+    + '<div class="sl-hd-sub">' + fmt(_sl.rows.length) + ' vendor' + (_sl.rows.length !== 1 ? 's' : '') + ' in this stage</div>'
+    + '</div>'
+    + '<button class="sl-hd-close" onclick="closeSlModal()" title="Close">×</button>';
+
+  var filtered = _slFiltered();
+  var sorted   = _slSorted(filtered);
+  var total    = sorted.length;
+  var pgSz = _sl.pgSz, pg = _sl.pg;
+  var start = pg * pgSz;
+  var page  = sorted.slice(start, start + pgSz);
+  var maxPg = Math.max(0, Math.ceil(total / pgSz) - 1);
+
+  var cols = [
+    { key:'name',     lbl:'Company Name' },
+    { key:'category', lbl:'Category'     },
+    { key:'state',    lbl:'State'        }
+  ];
+  var thHtml = cols.map(function(c) {
+    var isAsc  = _sl.sk === c.key && _sl.sd ===  1;
+    var isDesc = _sl.sk === c.key && _sl.sd === -1;
+    var cls = isAsc ? 'sl-th-asc' : isDesc ? 'sl-th-desc' : '';
+    var ic  = isAsc ? '&#9650;' : isDesc ? '&#9660;' : '&#9651;';
+    return '<th class="' + cls + '" onclick="slSrt(\'' + c.key + '\')">'
+      + esc(c.lbl) + '<span class="s-ic">' + ic + '</span></th>';
+  }).join('');
+
+  var trHtml = page.map(function(r) {
+    var cat    = r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : null;
+    var catBg  = r.category === 'Plastic' ? 'rgba(255,159,10,.15)' : r.category === 'Metal' ? 'rgba(29,199,151,.12)' : 'rgba(99,99,102,.12)';
+    var catClr = r.category === 'Plastic' ? '#B25000' : r.category === 'Metal' ? '#0A7044' : '#636366';
+    return '<tr class="sl-row">'
+      + '<td><strong>' + esc(r.name||'—') + '</strong>'
+      + (r.id ? '<div style="font-size:11px;color:var(--txt3);font-family:monospace;margin-top:2px">' + esc(r.id) + '</div>' : '')
+      + '</td>'
+      + '<td>' + (cat ? '<span class="sl-cat-badge" style="background:' + catBg + ';color:' + catClr + '">' + esc(cat) + '</span>' : '—') + '</td>'
+      + '<td>' + esc(r.state||'—') + '</td>'
+      + '</tr>';
+  }).join('');
+
+  if (!trHtml) {
+    trHtml = '<tr><td colspan="3" class="sl-no-data">'
+      + (_sl.q ? 'No match for "' + esc(_sl.q) + '"' : 'No vendors in this stage for the current period.')
+      + '</td></tr>';
+  }
+
+  var noRowsNote = !_sl.rows.length
+    ? '<div style="padding:10px 16px 0;font-size:12px;color:var(--txt3)">Open a vertical to load vendor records.</div>'
+    : '';
+
+  body.innerHTML = noRowsNote
+    + '<div class="sl-toolbar"><input class="sl-search" type="text" placeholder="Search name, ID, state…" value="' + esc(_sl.q) + '" oninput="slSetQ(this.value)">'
+    + '<span class="sl-count">' + total + ' vendor' + (total !== 1 ? 's' : '') + '</span></div>'
+    + '<table class="sl-tbl"><thead><tr>' + thHtml + '</tr></thead><tbody>' + trHtml + '</tbody></table>'
+    + '<div class="sl-pg"><span>Showing ' + (total ? start + 1 : 0) + '–' + Math.min(start + pgSz, total) + ' of ' + total + '</span>'
+    + '<div class="sl-pg-btns">'
+    + '<button class="sl-pg-btn" onclick="slPg(-1)"' + (pg <= 0 ? ' disabled' : '') + '>‹ Prev</button>'
+    + '<button class="sl-pg-btn" onclick="slPg(1)"' + (pg >= maxPg ? ' disabled' : '') + '>Next ›</button>'
+    + '</div></div>';
+}
+
+function slSetQ(v) { _sl.q = v; _sl.pg = 0; _slRender(); }
+function slSrt(key) {
+  _sl.sd = (_sl.sk === key) ? -_sl.sd : 1;
+  _sl.sk = key; _sl.pg = 0; _slRender();
+}
+function slPg(d) {
+  var max = Math.max(0, Math.ceil(_slFiltered().length / _sl.pgSz) - 1);
+  _sl.pg = Math.max(0, Math.min(_sl.pg + d, max));
+  _slRender();
 }
 
 // ═══════════════════════════════════════════════════════════════
