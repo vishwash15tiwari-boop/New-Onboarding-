@@ -4199,8 +4199,8 @@ function renderVertKPIs(key) {
   var compS  = vs.completed || 0, compB = vb.completed || 0;
   var txnS   = vs.transacted != null ? (vs.transacted || 0) : null;
   var txnB   = vb.transacted != null ? (vb.transacted || 0) : null;
-  var txnTotal   = (txnS || 0) + (txnB || 0);
-  var nonTxnTotal = Math.max(0, (compS + compB) - txnTotal);
+  var txnTotal   = txnS != null ? (txnS || 0) : 0;
+  var nonTxnTotal = Math.max(0, compS - txnTotal);
   var newS = vs.newVendors || 0, newB = vb.newVendors || 0;
   var oldS = vs.oldVendors || 0, oldB = vb.oldVendors || 0;
   var vars = vcVars(key);
@@ -4262,21 +4262,21 @@ function renderVertKPIs(key) {
   var mTotal   = (vs.metalTotal        || 0) + (vb.metalTotal        || 0);
   var pOnb     = (vs.plasticOnboarded  || 0) + (vb.plasticOnboarded  || 0);
   var mOnb     = (vs.metalOnboarded    || 0) + (vb.metalOnboarded    || 0);
-  var pTxn     = (vs.plasticTransacted || 0) + (vb.plasticTransacted || 0);
-  var mTxn     = (vs.metalTransacted   || 0) + (vb.metalTransacted   || 0);
+  var pTxn     = vs.plasticTransacted || 0;
+  var mTxn     = vs.metalTransacted   || 0;
   var pNew     = (vs.plasticNew        || 0) + (vb.plasticNew        || 0);
   var mNew     = (vs.metalNew          || 0) + (vb.metalNew          || 0);
 
   var nonTxnSub   = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
   var oldTotalSub = '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>';
-  var txnPct = (compS + compB) > 0 ? Math.round(txnTotal / (compS + compB) * 100) : 0;
+  var txnPct = compS > 0 ? Math.round(txnTotal / compS * 100) : 0;
   // Save snapshot so openKpiModal() can read it without recomputing
   window._kpiSnap = {
     key: key,
     totalS: totalS, totalB: totalB,
     compS: compS, compB: compB, compPct: compPct,
     txnS: txnS, txnB: txnB, txnTotal: txnTotal, txnPct: txnPct, nonTxnTotal: nonTxnTotal,
-    txnUniqueTotal: (vs.totalTxnCount || 0) + (vb.totalTxnCount || 0),
+    txnUniqueTotal: vs.totalTxnCount || 0,
     newS: newS, oldS: oldS, newB: newB, oldB: oldB,
     vs: vs, vb: vb,
     pTotal: pTotal, mTotal: mTotal,
@@ -5596,7 +5596,6 @@ function _renderTxnDetail(wrap, data) {
   // GMV is sourced from sellers only — Seller→Buyer is one transaction;
   // adding buyer-side values would double-count the same transaction.
   sellers.forEach(function(r) { totalTxns += (r.txnCount || 1); totalGMV += (r.txnValue || 0); });
-  buyers.forEach(function(r)  { totalTxns += (r.txnCount || 1); /* buyer GMV excluded */ });
 
   var smry = '<div class="km-txn-smry">'
     + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + fmt(totalTxns) + '</div><div class="km-txn-smry-lbl">Total Unique Txns</div></div>'
@@ -6754,7 +6753,7 @@ function _buildCoList(rows, aud) {
     var catLo = String(r.category || '').toLowerCase();
     var catBg = catLo === 'metal' ? 'rgba(29,199,151,.12)' : catLo === 'plastic' ? 'rgba(228,136,0,.12)' : 'var(--bg2)';
     var catTx = catLo === 'metal' ? '#0A7044' : catLo === 'plastic' ? '#7A4F00' : 'var(--txt3)';
-    var gmvHtml = (r.txnValue != null && r.txnValue > 0) ? '<div class="rgn-co-gmv">' + fmtINR(r.txnValue) + '</div>' : '';
+    var gmvHtml = (aud === 'seller' && r.txnValue != null && r.txnValue > 0) ? '<div class="rgn-co-gmv">' + fmtINR(r.txnValue) + '</div>' : '';
     var txnHtml = (r.txnCount != null && r.txnCount > 0) ? '<div class="rgn-co-txn">' + fmt(r.txnCount) + ' txns</div>' : '';
     return '<div class="rgn-co-row" role="button" tabindex="0"'
       + ' onclick="_regionSetCompany(' + i + ')"'
@@ -6814,7 +6813,7 @@ function _buildCompanyProfile(row, region, state) {
     + (row.reviewDate ? f(esc(row.reviewDate), 'Reviewed') : '')
     + '</div></div>';
 
-  var hasGmv = row.txnValue != null && row.txnValue > 0;
+  var hasGmv = _rgn.aud === 'seller' && row.txnValue != null && row.txnValue > 0;
   var hasTxn = row.txnCount != null && row.txnCount > 0;
   var sec3 = (hasGmv || hasTxn || row.txnDate)
     ? '<div class="rgn-cp-sec">'
@@ -7713,7 +7712,7 @@ function renderVdTable() {
     filtered.forEach(function(r) {
       var rat = _vdGetRating(r, rMap);
       if (rat !== null) { ratSum += rat; ratCount++; }
-      if (r.hasTransacted && r.txnValue) totalGMV += r.txnValue;
+      if (selectedAud === 'seller' && r.hasTransacted && r.txnValue) totalGMV += r.txnValue;
     });
     var avgRat = ratCount > 0 ? (ratSum / ratCount).toFixed(1) : null;
     var cats = {};
@@ -7723,7 +7722,7 @@ function renderVdTable() {
       + '<div class="vd-summ-item"><div class="vd-summ-val">' + fmt(all.length) + '</div><div class="vd-summ-lbl">Total</div></div>'
       + '<div class="vd-summ-item"><div class="vd-summ-val">' + fmt(filtered.length) + '</div><div class="vd-summ-lbl">Filtered</div></div>'
       + '<div class="vd-summ-item"><div class="vd-summ-val">' + (avgRat !== null ? avgRat + ' / 10' : '—') + '</div><div class="vd-summ-lbl">Avg Rating</div></div>'
-      + '<div class="vd-summ-item"><div class="vd-summ-val">' + (totalGMV > 0 ? fmtINR(totalGMV) : '—') + '</div><div class="vd-summ-lbl">Total GMV</div></div>'
+      + (selectedAud === 'seller' ? '<div class="vd-summ-item"><div class="vd-summ-val">' + (totalGMV > 0 ? fmtINR(totalGMV) : '—') + '</div><div class="vd-summ-lbl">Total GMV</div></div>' : '')
       + (catStr ? '<div class="vd-summ-item"><div class="vd-summ-val" style="font-size:12px;line-height:1.4">' + catStr + '</div><div class="vd-summ-lbl">By Category</div></div>' : '')
       + '</div>';
   }
@@ -7735,7 +7734,7 @@ function renderVdTable() {
         _rmD[key] = r;
         var txnCell;
         if (r.hasTransacted) {
-          txnCell = '<span class="txn-chip">' + (r.txnValue !== null ? fmtINR(r.txnValue) : 'Transacted') + '</span>';
+          txnCell = '<span class="txn-chip">' + (selectedAud === 'seller' && r.txnValue !== null ? fmtINR(r.txnValue) : 'Transacted') + '</span>';
         } else if (r.status === 'COMPLETED') {
           txnCell = '<span style="color:var(--txt3);font-size:11.5px">Not yet</span>';
         } else {
@@ -9560,7 +9559,7 @@ function _taRender() {
 
 function _taHdSummary() {
   var ico = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
-  var total = _ta.rows.length;
+  var total = _ta.rows.filter(function(r) { return r.audience === _ta.aud && r._normCat === _ta.cat; }).length;
   return '<div class="ta-hd-ico">' + ico + '</div>'
     + '<div class="ta-hd-txt"><div class="ta-hd-title">Vendor Transaction Ageing</div>'
     + '<div class="ta-hd-sub">' + fmt(total) + ' transacted vendor' + (total !== 1 ? 's' : '')
