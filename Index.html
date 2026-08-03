@@ -8635,6 +8635,26 @@ function _vtbGatherRows(vtType) {
   return rows;
 }
 
+function _vtbRatingMap() {
+  var map = {};
+  if (!qualityData) return map;
+  var aud = _vtb.aud;
+  (qualityData.vendorRatings || []).forEach(function(rv) {
+    if (rv.aud && rv.aud !== aud) return;
+    if (rv.gstin) map['g:' + String(rv.gstin).toUpperCase()] = rv.rating;
+    if (rv.id)    map['i:' + String(rv.id).toLowerCase()]    = rv.rating;
+  });
+  return map;
+}
+function _vtbGetRating(r, rMap) {
+  if (!rMap) return null;
+  var byG = r.gstin ? rMap['g:' + String(r.gstin).toUpperCase()] : undefined;
+  if (byG !== undefined) return typeof byG === 'number' ? byG : null;
+  var byI = r.id    ? rMap['i:' + String(r.id).toLowerCase()]    : undefined;
+  if (byI !== undefined) return typeof byI === 'number' ? byI : null;
+  return null;
+}
+
 function _vtbRender() {
   var hd   = document.getElementById('vtb-hd');
   var body = document.getElementById('vtb-body');
@@ -8703,17 +8723,17 @@ function _vtbFiltered() {
   });
 }
 
-function _vtbSorted(arr) {
+function _vtbSorted(arr, rMap) {
   var k = _vtb.sk, d = _vtb.sd;
   return arr.slice().sort(function(a, b) {
-    if (k === 'txnValue' || k === 'txnCount') return d * ((+a[k]||0) - (+b[k]||0));
-    if (k === 'avgTxn') {
-      var ac = +a.txnCount || 1, bc = +b.txnCount || 1;
-      return d * ((+a.txnValue||0)/ac - (+b.txnValue||0)/bc);
+    if (k === 'rating') {
+      var _rm = rMap || {};
+      var ra = _vtbGetRating(a, _rm), rb = _vtbGetRating(b, _rm);
+      return d * ((ra !== null ? ra : -1) - (rb !== null ? rb : -1));
     }
-    if (k === 'onbDate' || k === 'txnDate') {
-      var an = typeof _taDateNum === 'function' ? _taDateNum(a[k]||'') : 0;
-      var bn = typeof _taDateNum === 'function' ? _taDateNum(b[k]||'') : 0;
+    if (k === 'onbDate') {
+      var an = typeof _taDateNum === 'function' ? _taDateNum(a.onbDate||'') : 0;
+      var bn = typeof _taDateNum === 'function' ? _taDateNum(b.onbDate||'') : 0;
       return d * (an - bn);
     }
     return d * String(a[k]||'').localeCompare(String(b[k]||''));
@@ -8726,49 +8746,51 @@ function _vtbVlHd() {
   var pipelineLbl = (_vtb.aud === 'buyer' ? 'Buyer' : 'Seller') + ' Onboarding Pipeline';
   return '<button class="vtb-hd-back" onclick="_vtbBack()" title="Back">&#8592;</button>'
     + '<div class="vtb-hd-txt"><div class="vtb-hd-title">' + dot + esc(_vtb.vtType) + '</div>'
-    + '<div class="vtb-hd-sub">Completed vendors · ' + pipelineLbl + ' – click a row for transaction history</div></div>'
+    + '<div class="vtb-hd-sub">Completed vendors · ' + pipelineLbl + ' · ' + fmt(_vtb.vtRows.length) + ' vendors</div></div>'
     + '<button class="vtb-hd-close" onclick="closeVtbModal()" title="Close">×</button>';
 }
 
 function _vtbVlBody() {
+  var rMap     = _vtbRatingMap();
   var filtered = _vtbFiltered();
-  var sorted   = _vtbSorted(filtered);
+  var sorted   = _vtbSorted(filtered, rMap);
   var total    = sorted.length;
   var pgSz = _vtb.pgSz, pg = _vtb.pg;
   var start    = pg * pgSz;
   var page     = sorted.slice(start, start + pgSz);
   var maxPg    = Math.max(0, Math.ceil(total / pgSz) - 1);
 
-  // Summary panel — always computed over all vtRows for this vendor type
-  var allRows   = _vtb.vtRows;
-  var pVendors  = allRows.length;
-  var pTxns     = allRows.reduce(function(s,r){ return s+(+r.txnCount||0); }, 0);
-  var pGmv      = allRows.reduce(function(s,r){ return s+(+r.txnValue||0); }, 0);
-  var pAvg      = pTxns > 0 ? Math.round(pGmv / pTxns) : 0;
+  // Summary panel — over all rows for this vendor type
+  var allRows = _vtb.vtRows;
+  var catCounts = {};
+  var ratedN = 0, ratingSum = 0;
+  allRows.forEach(function(r) {
+    var c = r.category ? (r.category.charAt(0).toUpperCase() + r.category.slice(1)) : 'Other';
+    catCounts[c] = (catCounts[c] || 0) + 1;
+    var rat = _vtbGetRating(r, rMap);
+    if (rat !== null) { ratedN++; ratingSum += rat; }
+  });
+  var avgRat  = ratedN > 0 ? (ratingSum / ratedN).toFixed(1) + ' / 10' : '—';
+  var catStr  = Object.keys(catCounts).sort().map(function(k) { return fmt(catCounts[k]) + ' ' + k; }).join(' · ') || '—';
+  var audLbl  = _vtb.aud === 'buyer' ? 'Buyer' : 'Seller';
   var panelHtml = '<div class=”vtb-l2-panel”>'
-    + '<div class=”vtb-l2-metric”><div class=”vtb-l2-metric-lbl”>Total Vendors</div>'
-    + '<div class=”vtb-l2-metric-val”>' + fmt(pVendors) + '</div></div>'
-    + '<div class=”vtb-l2-metric”><div class=”vtb-l2-metric-lbl”>Total Transactions</div>'
-    + '<div class=”vtb-l2-metric-val”>' + fmt(pTxns) + '</div></div>'
-    + '<div class=”vtb-l2-metric”><div class=”vtb-l2-metric-lbl”>Total GMV</div>'
-    + '<div class=”vtb-l2-metric-val”>' + (pGmv ? '₹' + fmt(Math.round(pGmv)) : '—') + '</div></div>'
-    + '<div class=”vtb-l2-metric”><div class=”vtb-l2-metric-lbl”>Avg Transaction Value</div>'
-    + '<div class=”vtb-l2-metric-val”>' + (pAvg ? '₹' + fmt(pAvg) : '—') + '</div></div>'
+    + '<div class=”vtb-l2-metric”><div class=”vtb-l2-metric-lbl”>Total Vendors</div><div class=”vtb-l2-metric-val”>' + fmt(allRows.length) + '</div></div>'
+    + '<div class=”vtb-l2-metric”><div class=”vtb-l2-metric-lbl”>Pipeline</div><div class=”vtb-l2-metric-val”>' + esc(audLbl) + '</div></div>'
+    + '<div class=”vtb-l2-metric”><div class=”vtb-l2-metric-lbl”>By Category</div><div class=”vtb-l2-metric-val” style=”font-size:12px;line-height:1.4”>' + catStr + '</div></div>'
+    + '<div class=”vtb-l2-metric”><div class=”vtb-l2-metric-lbl”>Avg Rating</div><div class=”vtb-l2-metric-val”>' + avgRat + '</div></div>'
     + '</div>';
 
+  // 9 columns per spec
   var cols = [
-    { key:'name',       lbl:'Company Name'        },
-    { key:'id',         lbl:'Vendor ID'           },
-    { key:'vendorType', lbl:'Vendor Type'         },
-    { key:'_aud',       lbl:'Buyer / Seller',     nosort:true },
-    { key:'category',   lbl:'Material Category'  },
-    { key:'state',      lbl:'State'              },
-    { key:'status',     lbl:'Current Status'     },
-    { key:'onbDate',    lbl:'Onboarding Date'    },
-    { key:'txnDate',    lbl:'Last Txn Date'      },
-    { key:'txnCount',   lbl:'# Transactions'     },
-    { key:'txnValue',   lbl:'Total GMV'          },
-    { key:'avgTxn',     lbl:'Avg Txn Value'      },
+    { key:'name',       lbl:'Company Name'     },
+    { key:'id',         lbl:'Vendor ID'        },
+    { key:'vendorType', lbl:'Vendor Type'      },
+    { key:'_aud',       lbl:'Buyer / Seller',  nosort:true },
+    { key:'category',   lbl:'Material'         },
+    { key:'state',      lbl:'State'            },
+    { key:'status',     lbl:'Status'           },
+    { key:'onbDate',    lbl:'Onboarding Date'  },
+    { key:'rating',     lbl:'Rating (/10)'     },
   ];
 
   var thHtml = cols.map(function(c) {
@@ -8781,43 +8803,42 @@ function _vtbVlBody() {
       + esc(c.lbl) + '<span class=”s-ic”>' + ic + '</span></th>';
   }).join('');
 
-  var audLbl     = _vtb.aud === 'buyer' ? 'Buyer' : 'Seller';
   var audBadgeCls = _vtb.aud === 'buyer' ? 'vtb-badge vtb-badge-b' : 'vtb-badge vtb-badge-s';
 
   var trHtml = page.map(function(r, i) {
-    var si  = start + i;
-    var cat = r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : null;
-    var catCls = cat === 'Metal' ? 'vtb-badge vtb-badge-m' : cat === 'Plastic' ? 'vtb-badge vtb-badge-p' : '';
-    var catHtml = catCls ? '<span class=”' + catCls + '”>' + esc(cat) + '</span>' : (cat || '—');
-    var gmv     = r.txnValue ? '₹' + fmt(r.txnValue) : '—';
-    var cnt     = +r.txnCount || 0;
-    var avg     = cnt > 0 && r.txnValue ? '₹' + fmt(Math.round(r.txnValue / cnt)) : '—';
+    var si      = start + i;
+    var cat     = r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : null;
+    var catCls  = cat === 'Metal' ? 'vtb-badge vtb-badge-m' : cat === 'Plastic' ? 'vtb-badge vtb-badge-p' : '';
+    var catHtml = catCls ? '<span class=”' + catCls + '”>' + esc(cat) + '</span>' : '<span style=”color:var(--txt3)”>—</span>';
     var onbD    = r.onbDate ? String(r.onbDate).split('T')[0] : '—';
-    var txnD    = r.txnDate ? String(r.txnDate).split('T')[0] : '—';
-    var stLbl   = STATUS_LABELS[r.status] || r.status || '—';
+    var rat     = _vtbGetRating(r, rMap);
+    var ratHtml;
+    if (rat !== null) {
+      var rc = rat >= 7 ? '#1DC797' : rat >= 4 ? '#FF9F0A' : '#FF3B30';
+      ratHtml = '<span style=”font-weight:700;color:' + rc + ';font-variant-numeric:tabular-nums”>' + rat.toFixed(1) + '</span>';
+    } else {
+      ratHtml = '<span style=”color:var(--txt3)”>—</span>';
+    }
     return '<tr class=”vtb-vl-row” onclick=”vtbOpenTxn(' + si + ')”>'
-      + '<td title=”' + esc(r.name||'') + '” style=”font-weight:500”>' + esc(r.name||'—') + '</td>'
-      + '<td style=”color:var(--txt3)”>' + esc(r.id||'—') + '</td>'
+      + '<td><strong style=”font-size:12.5px”>' + esc(r.name||'—') + '</strong></td>'
+      + '<td style=”font-family:monospace;font-size:11px;color:var(--txt3)”>' + esc(r.id||'—') + '</td>'
       + '<td>' + esc(r.vendorType||'—') + '</td>'
       + '<td><span class=”' + audBadgeCls + '”>' + audLbl + '</span></td>'
       + '<td>' + catHtml + '</td>'
       + '<td>' + esc(r.state||'—') + '</td>'
-      + '<td>' + esc(stLbl) + '</td>'
-      + '<td>' + onbD + '</td>'
-      + '<td>' + txnD + '</td>'
-      + '<td style=”text-align:right”>' + (cnt || '—') + '</td>'
-      + '<td style=”text-align:right”>' + gmv + '</td>'
-      + '<td style=”text-align:right”>' + avg + '</td>'
+      + '<td>' + statusChip(r.status) + '</td>'
+      + '<td style=”color:var(--txt2);font-size:12px”>' + onbD + '</td>'
+      + '<td style=”text-align:right”>' + ratHtml + '</td>'
       + '</tr>';
   }).join('');
 
   if (!trHtml) {
-    trHtml = '<tr><td colspan=”12” class=”vtb-no-data” style=”padding:32px”>No vendors found'
+    trHtml = '<tr><td colspan=”9” class=”vtb-no-data” style=”padding:32px”>No vendors found'
       + (_vtb.q ? ' matching “' + esc(_vtb.q) + '”' : '') + '.</td></tr>';
   }
 
-  var noRowsNote = !_vtb.vtRows.length
-    ? '<div style=”padding:10px 16px 0;font-size:12px;color:var(--txt3)”>Open a vertical in the detail panel to load vendor records for this type.</div>'
+  var noRowsNote = !allRows.length
+    ? '<div style=”padding:10px 16px 0;font-size:12px;color:var(--txt3)”>Open a vertical in the detail panel to load vendor records.</div>'
     : '';
 
   return panelHtml
@@ -8825,7 +8846,7 @@ function _vtbVlBody() {
     + '<div class=”vtb-toolbar”><input class=”vtb-search” type=”text” placeholder=”Search name, ID, state, category…” value=”'
     + esc(_vtb.q) + '” oninput=”vtbSetQ(this.value)”>'
     + '<span class=”vtb-count-lbl”>' + total + ' vendor' + (total !== 1 ? 's' : '') + '</span></div>'
-    + '<div class=”vtb-vl-wrap”><table class=”vtb-vl-tbl” style=”min-width:900px”><thead><tr>' + thHtml + '</tr></thead>'
+    + '<div class=”vtb-vl-wrap”><table class=”vtb-vl-tbl” style=”min-width:780px”><thead><tr>' + thHtml + '</tr></thead>'
     + '<tbody>' + trHtml + '</tbody></table></div>'
     + '<div class=”vtb-pg”><span>Showing ' + (total ? start + 1 : 0) + '–'
     + Math.min(start + pgSz, total) + ' of ' + total + '</span>'
@@ -8899,7 +8920,7 @@ function _vtbBackToList() { _vtb.view = 'vendors'; _vtbRender(); }
 
 /* ── Level 3 – Transaction History ── */
 function vtbOpenTxn(si) {
-  var r = _vtbSorted(_vtbFiltered())[si] || null;
+  var r = _vtbSorted(_vtbFiltered(), _vtbRatingMap())[si] || null;
   if (!r) return;
   _vtb.row = r;
   _vtb.view = 'txnhist';
