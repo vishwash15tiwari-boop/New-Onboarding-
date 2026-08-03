@@ -4186,7 +4186,7 @@ function vkpiOpen(action) {
 
 function openKpiModal(cardId) {
   window._lastKpiCardId = cardId;
-  if (cardId === 'onboarded') { openVtbModal(); return; }
+  if (cardId === 'onboarded') { openVtbModal(selectedAud); return; }
   var d = window._kpiSnap;
   var isQualityCard = (cardId === 'rating' || cardId === 'osv' || cardId === 'docs');
   if (!d && !isQualityCard) return;
@@ -8604,11 +8604,13 @@ function tatChip(t) {
 // VENDOR TYPE BREAKDOWN MODAL
 // ═══════════════════════════════════════════════════════════════
 var _vtb = { view: 'summary', vtType: null, vtCol: '#005DFF',
+             aud: 'seller',
              vtRows: [], row: null,
              q: '', sk: 'name', sd: 1, pg: 0, pgSz: 15 };
 var _VTB_CLR = ['#005DFF','#1DC797','#FF9F0A','#8460D4','#FF6B35','#FF3B30','#567DE8','#8E8E93'];
 
-function openVtbModal() {
+function openVtbModal(aud) {
+  _vtb.aud  = aud || selectedAud || 'seller';
   _vtb.view = 'summary'; _vtb.vtType = null; _vtb.vtRows = []; _vtb.row = null;
   _vtb.q = ''; _vtb.sk = 'name'; _vtb.sd = 1; _vtb.pg = 0;
   _vtbRender();
@@ -8631,7 +8633,7 @@ document.addEventListener('keydown', function(e) {
   else                               closeVtbModal();
 }, true);
 
-// Aggregate vendor types from _kpiSnap across all categories (seller + buyer)
+// Aggregate vendor types from _kpiSnap — scoped to the audience that opened the modal
 function _vtbTypes() {
   var d = window._kpiSnap;
   if (!d) return [];
@@ -8649,37 +8651,40 @@ function _vtbTypes() {
       }
     }
   }
-  if (d.vs) proc(d.vs.categories);
-  if (d.vb) proc(d.vb.categories);
+  // Scope strictly to the pipeline that opened the modal
+  if (_vtb.aud === 'buyer') { if (d.vb) proc(d.vb.categories); }
+  else                      { if (d.vs) proc(d.vs.categories); }
   var arr = [];
   for (var k in map) arr.push(map[k]);
   arr.sort(function(a, b) { return b.onboarded - a.onboarded; });
   return arr;
 }
 
-// Collect completed rows for a vendor type from localStorage (all verticals) + current vertRows
+// Collect completed rows for a vendor type — scoped to _vtb.aud (seller or buyer)
 function _vtbGatherRows(vtType) {
   var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var aud = _vtb.aud;
   var seen = {}, rows = [];
   var cfg = getVertCfg();
-  ['seller', 'buyer'].forEach(function(aud) {
-    cfg.forEach(function(v) {
-      try {
-        var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + v.key) || 'null');
-        if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
-          sv.rows.forEach(function(r) {
-            if (r.status === 'COMPLETED' && (r.vendorType || 'Unknown').trim() === vtType && !seen[r.id]) {
-              seen[r.id] = true; rows.push(r);
-            }
-          });
-        }
-      } catch(e) {}
-    });
+  cfg.forEach(function(v) {
+    try {
+      var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + v.key) || 'null');
+      if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
+        sv.rows.forEach(function(r) {
+          if (r.status === 'COMPLETED' && (r.vendorType || 'Unknown').trim() === vtType && !seen[r.id]) {
+            seen[r.id] = true; rows.push(r);
+          }
+        });
+      }
+    } catch(e) {}
   });
-  // Also include currently-loaded vertRows in case they aren't cached yet
+  // Supplement with live vertRows if they match the audience
   if (Array.isArray(vertRows)) {
     vertRows.forEach(function(r) {
-      if (r.status === 'COMPLETED' && (r.vendorType || 'Unknown').trim() === vtType && !seen[r.id]) {
+      if ((r.audience || 'seller') === aud
+          && r.status === 'COMPLETED'
+          && (r.vendorType || 'Unknown').trim() === vtType
+          && !seen[r.id]) {
         seen[r.id] = true; rows.push(r);
       }
     });
@@ -8699,10 +8704,12 @@ function _vtbRender() {
 /* ── Summary ── */
 function _vtbSumHd() {
   var d = window._kpiSnap;
-  var total = d ? (d.compS || 0) + (d.compB || 0) : 0;
+  var isBuyer = _vtb.aud === 'buyer';
+  var total   = d ? (isBuyer ? (d.compB || 0) : (d.compS || 0)) : 0;
+  var pipelineLabel = isBuyer ? 'Buyer' : 'Seller';
   return '<div class="vtb-hd-txt">'
-    + '<div class="vtb-hd-title">Completed Vendors – Vendor Type Breakdown</div>'
-    + '<div class="vtb-hd-sub">' + fmt(total) + ' vendors completed onboarding</div>'
+    + '<div class="vtb-hd-title">' + pipelineLabel + ' Completed – Vendor Type Breakdown</div>'
+    + '<div class="vtb-hd-sub">' + fmt(total) + ' ' + pipelineLabel.toLowerCase() + 's completed onboarding</div>'
     + '</div>'
     + '<button class="vtb-hd-close" onclick="closeVtbModal()" title="Close">×</button>';
 }
@@ -8766,9 +8773,10 @@ function _vtbSorted(arr) {
 function _vtbVlHd() {
   var dot = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'
     + _vtb.vtCol + ';margin-right:6px;vertical-align:middle"></span>';
+  var pipelineLbl = (_vtb.aud === 'buyer' ? 'Buyer' : 'Seller') + ' Onboarding Pipeline';
   return '<button class="vtb-hd-back" onclick="_vtbBack()" title="Back">&#8592;</button>'
     + '<div class="vtb-hd-txt"><div class="vtb-hd-title">' + dot + esc(_vtb.vtType) + '</div>'
-    + '<div class="vtb-hd-sub">Completed vendors – click a row to view details</div></div>'
+    + '<div class="vtb-hd-sub">Completed vendors · ' + pipelineLbl + ' – click a row to view details</div></div>'
     + '<button class="vtb-hd-close" onclick="closeVtbModal()" title="Close">×</button>';
 }
 
@@ -8782,14 +8790,15 @@ function _vtbVlBody() {
   var maxPg    = Math.max(0, Math.ceil(total / pgSz) - 1);
 
   var cols = [
-    { key:'name',     lbl:'Company Name' },
-    { key:'id',       lbl:'Vendor ID'    },
-    { key:'audience', lbl:'Buyer/Seller' },
-    { key:'category', lbl:'Category'     },
-    { key:'state',    lbl:'State'        },
-    { key:'onbDate',  lbl:'Onb. Date'    },
-    { key:'txnValue', lbl:'GMV'          },
-    { key:'txnDate',  lbl:'Last Txn'     }
+    { key:'name',       lbl:'Company Name'  },
+    { key:'id',         lbl:'Vendor ID'     },
+    { key:'vendorType', lbl:'Vendor Type'   },
+    { key:'category',   lbl:'Category'      },
+    { key:'state',      lbl:'State'         },
+    { key:'status',     lbl:'Status'        },
+    { key:'onbDate',    lbl:'Onb. Date'     },
+    { key:'txnValue',   lbl:'GMV'           },
+    { key:'txnDate',    lbl:'Last Txn'      }
   ];
 
   var thHtml = cols.map(function(c) {
@@ -8797,23 +8806,24 @@ function _vtbVlBody() {
     var isDesc = _vtb.sk === c.key && _vtb.sd === -1;
     var cls    = isAsc ? 'vtb-th-asc' : isDesc ? 'vtb-th-desc' : '';
     var ic     = isAsc ? '&#9650;' : isDesc ? '&#9660;' : '&#9651;';
-    return '<th class="' + cls + '" onclick="vtbSrt(\'' + c.key + '\')">'
-      + esc(c.lbl) + '<span class="s-ic">' + ic + '</span></th>';
+    return '<th class=”' + cls + '” onclick=”vtbSrt(\'' + c.key + '\')”>'
+      + esc(c.lbl) + '<span class=”s-ic”>' + ic + '</span></th>';
   }).join('');
 
   var trHtml = page.map(function(r, idx) {
-    var si  = start + idx;
-    var aud = (r.audience||'') === 'buyer' ? 'Buyer' : 'Seller';
-    var cat = r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : '—';
-    var gmv = r.txnValue ? '₹' + fmt(r.txnValue) : '—';
+    var si   = start + idx;
+    var cat  = r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : '—';
+    var gmv  = r.txnValue ? '₹' + fmt(r.txnValue) : '—';
     var onbD = r.onbDate ? String(r.onbDate).split('T')[0] : '—';
     var txnD = r.txnDate ? String(r.txnDate).split('T')[0] : '—';
-    return '<tr class="vtb-vl-row" onclick="vtbOpenDet(' + si + ')">'
-      + '<td title="' + esc(r.name||'') + '">' + esc(r.name||'—') + '</td>'
+    var stLbl = STATUS_LABELS[r.status] || r.status || '—';
+    return '<tr class=”vtb-vl-row” onclick=”vtbOpenDet(' + si + ')”>'
+      + '<td title=”' + esc(r.name||'') + '”>' + esc(r.name||'—') + '</td>'
       + '<td>' + esc(r.id||'—') + '</td>'
-      + '<td>' + aud + '</td>'
+      + '<td>' + esc(r.vendorType||'—') + '</td>'
       + '<td>' + cat + '</td>'
       + '<td>' + esc(r.state||'—') + '</td>'
+      + '<td>' + esc(stLbl) + '</td>'
       + '<td>' + onbD + '</td>'
       + '<td>' + gmv  + '</td>'
       + '<td>' + txnD + '</td>'
@@ -8821,7 +8831,7 @@ function _vtbVlBody() {
   }).join('');
 
   if (!trHtml) {
-    trHtml = '<tr><td colspan="8" class="vtb-no-data" style="padding:32px">No vendors found'
+    trHtml = '<tr><td colspan=”9” class=”vtb-no-data” style=”padding:32px”>No vendors found'
       + (_vtb.q ? ' matching “' + esc(_vtb.q) + '”' : '') + '.</td></tr>';
   }
 
