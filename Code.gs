@@ -195,9 +195,10 @@ function mapToVertical(businessVertical, category, audience) {
     if (audience === 'buyer') return 'OMP';
     return 'Others';
   }
-  // Buyers with no explicit business_vertical default to OMP — all buyer onboarding
-  // in this platform happens through the Open Marketplace, so a blank vertical means OMP.
-  if (!bv && audience === 'buyer') return 'OMP';
+  // All buyer onboarding happens through the Open Marketplace — any buyer whose
+  // vertical doesn't match a specific programme (EPR, Marketplace sub-categories)
+  // belongs to OMP. This covers blank verticals AND any unrecognised explicit value.
+  if (audience === 'buyer') return 'OMP';
   return 'Others';
 }
 
@@ -218,7 +219,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v36_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v37_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -250,7 +251,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v18_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v19_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -274,14 +275,14 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v36_cmb_' + periodKey;
+    var cacheKey  = 'dash_v37_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v36_seller_' + periodKey;
-    var bIndKey = 'dash_v36_buyer_'  + periodKey;
+    var sIndKey = 'dash_v37_seller_' + periodKey;
+    var bIndKey = 'dash_v37_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -340,7 +341,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v18_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v19_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -388,7 +389,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v18_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v19_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
