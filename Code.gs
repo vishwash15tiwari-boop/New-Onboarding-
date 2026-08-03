@@ -405,7 +405,7 @@ function getTransactedVendors(filtersJson) {
       var raw = readData(aud);
       var all = normalizeRows(raw, cfg);
       return all.filter(function(r) {
-        return r.vertical === 'OMP' && r.hasTransacted && applyDateFilter(r, f);
+        return r.vertical === 'OMP' && r.hasTransacted && applyTxnDateFilter(r, f);
       }).map(vertRow);
     }
 
@@ -880,13 +880,20 @@ function buildDashboard(audience, cfg, allRows, f) {
     r.isOldVendor = !!(r.name && existingNames[r.name.trim().toLowerCase()]);
   });
 
+  // Transaction metrics must use txnDate, not onboarding/created date.
+  // Filter allRows (unfiltered by period) to vendors that have transacted AND
+  // whose txnDate falls in the requested period.
+  var txnRows = allRows.filter(function(r) { return r.hasTransacted && applyTxnDateFilter(r, f); });
+  var txnByVert = {};
+  txnRows.forEach(function(r) { (txnByVert[r.vertical] = txnByVert[r.vertical] || []).push(r); });
+
   // Always emit all seven verticals, in fixed order (empty ones render "No records").
   var verticalConfig = VERTICALS.map(function(vc) {
     return { key: vc.key, name: vc.name, sub: vc.sub, code: vc.code };
   });
   var verticals = {};
   VERTICALS.forEach(function(vc) {
-    verticals[vc.key] = vStats(byVert[vc.key] || []);
+    verticals[vc.key] = vStats(byVert[vc.key] || [], txnByVert[vc.key] || []);
   });
 
   return {
@@ -969,22 +976,21 @@ function debugExistingVsNew() {
 }
 
 // Per-vertical KPIs + onboarded-by-category breakdown + detail rows.
-function vStats(data) {
+function vStats(data, txnData) {
   var now = new Date(), weekAgo = new Date(now.getTime() - 7 * 86400000);
   var nowMs = now.getTime();
   var AGE_WARN_MS = 14 * 86400000, AGE_DUE_MS = 30 * 86400000;
 
-  // Single pass: all status / GST / new-vs-old / material / TAT / GMV / aging counts.
+  // Single pass: pipeline-stage metrics (status, GST, new/old, TAT, aging).
+  // Transaction metrics are computed separately below from txnData.
   var total = data.length;
   var completed = 0, draft = 0, inReview = 0, rejected = 0;
   var withGST = 0, newVendors = 0, oldVendors = 0, completedThisWeek = 0;
-  var hasTxnData = false, transactedCount = 0, transactedCompleted = 0, txnCountSum = 0;
-  var hasTxnValData = false, txnValSum = 0;
+  var hasTxnData = false;
   var agingCount = 0, overdueCount = 0;
   var tats = [];
   var plasticTotal = 0, metalTotal = 0;
   var plasticOnboarded = 0, metalOnboarded = 0;
-  var plasticTransacted = 0, metalTransacted = 0;
   var plasticNew = 0, metalNew = 0, plasticOld = 0, metalOld = 0;
 
   data.forEach(function(r) {
@@ -1009,10 +1015,6 @@ function vStats(data) {
     if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) tats.push(r.onbTAT);
 
     if (r.hasTxn)        hasTxnData = true;
-    if (r.hasTransacted) { transactedCount++; txnCountSum += (r.txnCount || 1); if (isDone) transactedCompleted++; }
-    if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
-      hasTxnValData = true; txnValSum += r.txnValue;
-    }
 
     if (!isDone && r.status !== 'REJECTED' && r.createdDate) {
       var elapsed = nowMs - r.createdDate.getTime();
@@ -1023,18 +1025,34 @@ function vStats(data) {
     if (isPl) {
       plasticTotal++;
       if (isDone)          plasticOnboarded++;
-      if (r.hasTransacted) plasticTransacted++;
       if (isDone && isNew) plasticNew++;
       if (isDone && isOld) plasticOld++;
     }
     if (isMt) {
       metalTotal++;
       if (isDone)          metalOnboarded++;
-      if (r.hasTransacted) metalTransacted++;
       if (isDone && isNew) metalNew++;
       if (isDone && isOld) metalOld++;
     }
   });
+
+  // Transaction metrics: derived from txnData (vendors whose txnDate matches the period).
+  var txnArr = txnData || [];
+  var hasTxnValData = false, transactedCompleted = 0, txnCountSum = 0, txnValSum = 0;
+  var plasticTransacted = 0, metalTransacted = 0;
+  var txnById = {};
+  txnArr.forEach(function(r) {
+    var cat = String(r.category || '').trim().toLowerCase();
+    if (r.status === 'COMPLETED') transactedCompleted++;
+    txnCountSum += (r.txnCount || 1);
+    if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
+      hasTxnValData = true; txnValSum += r.txnValue;
+    }
+    if (cat === 'plastic') plasticTransacted++;
+    if (cat === 'metal')   metalTransacted++;
+    txnById[r.id] = r;
+  });
+  var transactedCount = txnArr.length;
 
   var transacted    = hasTxnData    ? transactedCount : null;
   var totalTxnValue = hasTxnValData ? txnValSum       : null;
@@ -1056,9 +1074,10 @@ function vStats(data) {
     if (r.status === 'IN_REVIEW')  cs.inReview++;
     if (r.status === 'REJECTED')   cs.rejected++;
     if (r.hasTxn)                  cs.hasTxn = true;
-    if (r.hasTransacted)           cs.transacted++;
-    if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
-      cs.txnValue += r.txnValue; cs.hasTxnVal = true;
+    var txnR = txnById[r.id];
+    if (txnR)                      cs.transacted++;
+    if (txnR && txnR.txnValue !== null && txnR.txnValue !== undefined && txnR.txnValue > 0) {
+      cs.txnValue += txnR.txnValue; cs.hasTxnVal = true;
     }
     // Vendor Type breakdown counts ONBOARDED vendors only (the donut reflects
     // the vendor-type mix of onboarded Sellers/Buyers, not the full pipeline).
@@ -1066,7 +1085,7 @@ function vStats(data) {
       var vt = (r.vendorType || '').trim() || 'Unknown';
       if (!cs.vendorTypes[vt]) cs.vendorTypes[vt] = { onboarded: 0, transacted: 0 };
       cs.vendorTypes[vt].onboarded++;
-      if (r.hasTransacted) cs.vendorTypes[vt].transacted++;
+      if (txnById[r.id]) cs.vendorTypes[vt].transacted++;
     }
   });
   var categories = Object.keys(catMap).map(function(k) {
@@ -1216,44 +1235,52 @@ function _ymdIntUTC_(ms) {
 // A record date → its IST calendar day (shift the absolute instant into IST).
 function istDayNum_(d) { return _ymdIntUTC_(d.getTime() + IST_OFFSET_MS); }
 
-function applyDateFilter(r, f) {
-  if (!f || !f.period || f.period === 'All') return true;
-  // Filter by the date the record reached its CURRENT stage, so period views
-  // reflect day-wise activity: an onboarded record is matched on its onboarded
-  // date (a case onboarded Today appears even if it was created earlier); records
-  // still in the pipeline are matched on their created date.
-  var d = (r.status === 'COMPLETED' && r.onboardedDate) ? r.onboardedDate : r.createdDate;
-  if (!d) return false;
-  var recDay = istDayNum_(d);
-
-  // "Now" in IST → calendar parts used to build the period's day-range.
-  var n = new Date(Date.now() + IST_OFFSET_MS);
-  var Y = n.getUTCFullYear(), M = n.getUTCMonth(), D = n.getUTCDate();
+// Shared period-range check: returns true if recDay (yyyymmdd int, IST) falls
+// within the window defined by filter f.  istNow must be a UTC Date already
+// shifted into IST (i.e. new Date(Date.now() + IST_OFFSET_MS)).
+function _inPeriodDayRange_(recDay, istNow, f) {
+  var Y = istNow.getUTCFullYear(), M = istNow.getUTCMonth(), D = istNow.getUTCDate();
   var todayDay = Y * 10000 + (M + 1) * 100 + D;
-  // Day-of parts already in IST → build boundary days without re-shifting.
   function bDay(y, m, d0) { return _ymdIntUTC_(Date.UTC(y, m, d0)); }
-
   var psDay = null, peDay = null;
-  if (f.period === 'Today') {
-    psDay = peDay = todayDay;
-  } else if (f.period === 'ThisWeek') {           // rolling last 7 days
-    psDay = bDay(Y, M, D - 6); peDay = todayDay;
-  } else if (f.period === 'ThisMonth') {          // rolling last 30 days
-    psDay = bDay(Y, M, D - 29); peDay = todayDay;
-  } else if (f.period === 'MTD') {                // month to date
-    psDay = bDay(Y, M, 1); peDay = todayDay;
-  } else if (f.period === 'YTD') {                // Indian FY to date (Apr 1 →)
+  if      (f.period === 'Today')     { psDay = peDay = todayDay; }
+  else if (f.period === 'Yesterday') { var yd = bDay(Y, M, D - 1); psDay = peDay = yd; }
+  else if (f.period === 'Last7Days'  || f.period === 'ThisWeek')  { psDay = bDay(Y, M, D - 6);  peDay = todayDay; }
+  else if (f.period === 'Last30Days' || f.period === 'ThisMonth') { psDay = bDay(Y, M, D - 29); peDay = todayDay; }
+  else if (f.period === 'MTD')       { psDay = bDay(Y, M, 1);                        peDay = todayDay; }
+  else if (f.period === 'LastMonth') { psDay = bDay(Y, M - 1, 1); peDay = bDay(Y, M, 0); }
+  else if (f.period === 'ThisQuarter') {
+    var qStartM = Math.floor(M / 3) * 3;
+    psDay = bDay(Y, qStartM, 1); peDay = todayDay;
+  } else if (f.period === 'ThisYear') { psDay = bDay(Y, 0, 1); peDay = todayDay; }
+  else if (f.period === 'YTD') {
     var fyS = (M >= 3) ? Y : Y - 1;
     psDay = bDay(fyS, 3, 1); peDay = todayDay;
   } else if (f.period === 'Custom' && f.startDate && f.endDate) {
     psDay = _ymdIntStr_(f.startDate); peDay = _ymdIntStr_(f.endDate);
   } else if (String(f.period).indexOf('FY') === 0) {
-    var m = String(f.period).match(/FY(\d{2})-(\d{2})/);
-    if (m) { var y = 2000 + parseInt(m[1], 10); psDay = y * 10000 + 401; peDay = (y + 1) * 10000 + 331; }
+    var fm = String(f.period).match(/FY(\d{2})-(\d{2})/);
+    if (fm) { var fy = 2000 + parseInt(fm[1], 10); psDay = fy * 10000 + 401; peDay = (fy + 1) * 10000 + 331; }
   }
   if (psDay !== null && recDay < psDay) return false;
   if (peDay !== null && recDay > peDay) return false;
   return true;
+}
+
+// Filter by onboarding/created date (used for pipeline-stage metrics).
+function applyDateFilter(r, f) {
+  if (!f || !f.period || f.period === 'All') return true;
+  var d = (r.status === 'COMPLETED' && r.onboardedDate) ? r.onboardedDate : r.createdDate;
+  if (!d) return false;
+  return _inPeriodDayRange_(istDayNum_(d), new Date(Date.now() + IST_OFFSET_MS), f);
+}
+
+// Filter by transaction date (used for all transaction-based metrics).
+// r.txnDate must be a Date object (as set by normalizeRows); returns false if absent.
+function applyTxnDateFilter(r, f) {
+  if (!f || !f.period || f.period === 'All') return true;
+  if (!(r.txnDate instanceof Date)) return false;
+  return _inPeriodDayRange_(istDayNum_(r.txnDate), new Date(Date.now() + IST_OFFSET_MS), f);
 }
 // "yyyy-mm-dd" → yyyymmdd integer.
 function _ymdIntStr_(s) {

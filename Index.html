@@ -9931,6 +9931,44 @@ function _taDateNum(dateStr) {
   return 0;
 }
 
+// Frontend mirror of backend applyTxnDateFilter: checks whether a "dd/mm/yyyy"
+// txnDate string falls within the currently selected period window (IST).
+function _applyTxnDateFilter(dateStr) {
+  if (currentPeriod === 'All' || !currentPeriod) return true;
+  var recDay = _taDateNum(dateStr);
+  if (!recDay) return false;
+  var IST_MS = (5 * 60 + 30) * 60 * 1000;
+  var now = new Date(Date.now() + IST_MS);
+  var Y = now.getUTCFullYear(), M = now.getUTCMonth(), D = now.getUTCDate();
+  var todayDay = Y * 10000 + (M + 1) * 100 + D;
+  function bDay(y, m, d0) {
+    var t = new Date(Date.UTC(y, m, d0));
+    return t.getUTCFullYear() * 10000 + (t.getUTCMonth() + 1) * 100 + t.getUTCDate();
+  }
+  var psDay = null, peDay = null, p = currentPeriod;
+  if      (p === 'Today')                          { psDay = peDay = todayDay; }
+  else if (p === 'Yesterday')                      { var yd = bDay(Y, M, D - 1); psDay = peDay = yd; }
+  else if (p === 'Last7Days'  || p === 'ThisWeek') { psDay = bDay(Y, M, D - 6);  peDay = todayDay; }
+  else if (p === 'Last30Days' || p === 'ThisMonth'){ psDay = bDay(Y, M, D - 29); peDay = todayDay; }
+  else if (p === 'MTD')                            { psDay = bDay(Y, M, 1);       peDay = todayDay; }
+  else if (p === 'LastMonth')                      { psDay = bDay(Y, M - 1, 1);   peDay = bDay(Y, M, 0); }
+  else if (p === 'ThisQuarter') { var qS = Math.floor(M / 3) * 3; psDay = bDay(Y, qS, 1); peDay = todayDay; }
+  else if (p === 'ThisYear')                       { psDay = bDay(Y, 0, 1);       peDay = todayDay; }
+  else if (p === 'YTD')        { var fyS = (M >= 3) ? Y : Y - 1; psDay = bDay(fyS, 3, 1); peDay = todayDay; }
+  else if (p === 'Custom' && customStart && customEnd) {
+    var csm = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(customStart);
+    var cem = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(customEnd);
+    if (csm) psDay = +csm[1] * 10000 + +csm[2] * 100 + +csm[3];
+    if (cem) peDay = +cem[1] * 10000 + +cem[2] * 100 + +cem[3];
+  } else if (p.indexOf('FY') === 0) {
+    var fm = p.match(/FY(\d{2})-(\d{2})/);
+    if (fm) { var fy = 2000 + parseInt(fm[1], 10); psDay = fy * 10000 + 401; peDay = (fy + 1) * 10000 + 331; }
+  }
+  if (psDay !== null && recDay < psDay) return false;
+  if (peDay !== null && recDay > peDay) return false;
+  return true;
+}
+
 function _taGatherTransacted(aud) {
   var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
   var seen = {}, rows = [];
@@ -9940,7 +9978,7 @@ function _taGatherTransacted(aud) {
       var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + v.key) || 'null');
       if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
         sv.rows.forEach(function(r) {
-          if (r.hasTransacted && !seen[r.id] && _isValidRec(r)) {
+          if (r.hasTransacted && !seen[r.id] && _isValidRec(r) && _applyTxnDateFilter(r.txnDate)) {
             seen[r.id] = true;
             rows.push({ id: r.id, name: r.name, audience: aud,
               vendorType: r.vendorType || '—', _normCat: _taNormCat(r.category),
@@ -9953,7 +9991,7 @@ function _taGatherTransacted(aud) {
   });
   if (Array.isArray(vertRows)) {
     vertRows.forEach(function(r) {
-      if ((r.audience || 'seller') === aud && r.hasTransacted && !seen[r.id] && _isValidRec(r)) {
+      if ((r.audience || 'seller') === aud && r.hasTransacted && !seen[r.id] && _isValidRec(r) && _applyTxnDateFilter(r.txnDate)) {
         seen[r.id] = true;
         rows.push({ id: r.id, name: r.name, audience: aud,
           vendorType: r.vendorType || '—', _normCat: _taNormCat(r.category),
