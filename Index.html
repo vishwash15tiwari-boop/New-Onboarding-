@@ -9228,11 +9228,11 @@ function slPg(d) {
 // TRANSACTION AGEING MODAL
 // ═══════════════════════════════════════════════════════════════
 var TA_BUCKETS = [
-  { lbl:'0–30 days',   min:0,   max:30,          col:'#1DC797' },
-  { lbl:'31–60 days',  min:31,  max:60,          col:'#005DFF' },
-  { lbl:'61–90 days',  min:61,  max:90,          col:'#FF9F0A' },
-  { lbl:'91–180 days', min:91,  max:180,         col:'#FF6B35' },
-  { lbl:'180+ days',   min:181, max:Infinity,    col:'#FF3B30' },
+  { lbl:'0–30 Days',    min:0,   max:30,         col:'#1DC797' },
+  { lbl:'31–60 Days',   min:31,  max:60,         col:'#005DFF' },
+  { lbl:'61–90 Days',   min:61,  max:90,         col:'#FF9F0A' },
+  { lbl:'91–180 Days',  min:91,  max:180,        col:'#FF6B35' },
+  { lbl:'180+ Days',    min:181, max:Infinity,   col:'#FF3B30' },
 ];
 var TA_SEGS = [
   { aud:'seller', cat:'Metal',   lbl:'Seller · Metal'   },
@@ -9433,7 +9433,7 @@ function _taSumBody() {
       + '<td>' + fmt(cnt) + '</td>'
       + '<td><span class="ta-age-pct">' + pct + '%</span></td>'
       + '<td>' + (lastDate !== '—' ? lastDate : '—') + '</td>'
-      + '<td style="font-weight:600;color:' + b.col + '">' + (ds !== null ? ds + 'd' : '—') + '</td>'
+      + '<td style="font-weight:600;color:' + b.col + '">' + (ds !== null ? fmt(ds) + ' Days' : '—') + '</td>'
       + '<td>' + (gmv > 0 ? fmtINR(gmv) : '—') + '</td>'
       + '<td>' + fmt(txns) + '</td>'
       + '</tr>';
@@ -9520,7 +9520,7 @@ function _taVlBody() {
       + '<td>' + (r._normCat !== 'Other' ? '<span class="ta-cat-badge" style="background:' + catBg + ';color:' + catClr + '">' + esc(r._normCat) + '</span>' : '—') + '</td>'
       + '<td>' + esc(r.state||'—') + '</td>'
       + '<td>' + esc(r.txnDate !== '—' ? r.txnDate : '—') + '</td>'
-      + '<td class="ta-days-hot" style="color:' + dayColor + '">' + (r._days >= 9999 ? '—' : r._days + 'd') + '</td>'
+      + '<td class="ta-days-hot" style="color:' + dayColor + '">' + (r._days >= 9999 ? '—' : fmt(r._days) + ' Days') + '</td>'
       + '<td>' + (r.txnValue > 0 ? fmtINR(r.txnValue) : '—') + '</td>'
       + '<td>' + fmt(r.txnCount || 1) + '</td>'
       + '<td><span class="ta-st-badge" style="background:' + stBg + ';color:' + stClr + '">' + esc(stLbl) + '</span></td>'

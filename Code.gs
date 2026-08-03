@@ -680,11 +680,14 @@ function normalizeRows(raw, cfg) {
     // status column says (or if it's missing). This is the authoritative signal.
     var gmvTransacted = txnVal !== null && txnVal > 0;
     var txnDate = parseDate(
-      gv(row, idx, 'first_transaction_date') ||
-      gv(row, idx, 'transaction_date')       ||
-      gv(row, idx, 'first_txn_date')         ||
-      gv(row, idx, 'txn_date')               ||
-      gv(row, idx, 'activation_date')        || ''
+      (row.length > 19 ? row[19] : '')                ||  // Column T — Last Transaction Date (primary)
+      gv(row, idx, 'last_transaction_date')           ||
+      gv(row, idx, 'last_txn_date')                   ||
+      gv(row, idx, 'first_transaction_date')          ||
+      gv(row, idx, 'transaction_date')                ||
+      gv(row, idx, 'first_txn_date')                  ||
+      gv(row, idx, 'txn_date')                        ||
+      gv(row, idx, 'activation_date')                 || ''
     );
     // Timestamp when the case entered the IN_REVIEW stage. Used for accurate review-age
     // calculation on Kanban cards ("Xd waiting" counts from here, not from created date).
@@ -796,11 +799,14 @@ function getVendorTransactions(params) {
       var recId = String(gv(row, idx, cfg.idCol) || '').replace(/,/g, '').trim();
       if (recId !== vendorId) continue;
       var txnDate = parseDate(
-        gv(row, idx, 'transaction_date')       ||
-        gv(row, idx, 'first_transaction_date') ||
-        gv(row, idx, 'txn_date')               ||
-        gv(row, idx, 'first_txn_date')         ||
-        gv(row, idx, 'activation_date')        || ''
+        (row.length > 19 ? row[19] : '')               ||  // Column T — Last Transaction Date
+        gv(row, idx, 'last_transaction_date')          ||
+        gv(row, idx, 'last_txn_date')                  ||
+        gv(row, idx, 'transaction_date')               ||
+        gv(row, idx, 'first_transaction_date')         ||
+        gv(row, idx, 'txn_date')                       ||
+        gv(row, idx, 'first_txn_date')                 ||
+        gv(row, idx, 'activation_date')                || ''
       );
       var txnIdRaw  = gv(row, idx, 'transaction_id')  || gv(row, idx, 'txn_id')    || gv(row, idx, 'order_id')    || null;
       var category  = normCategory(gv(row, idx, 'business_category') || gv(row, idx, 'category'));
