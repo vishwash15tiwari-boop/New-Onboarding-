@@ -7600,6 +7600,13 @@ function vdSelect(id, label, options, current, labels) {
 // renderVertDetail() is defined above (redirects to renderInlineDetail).
 // The old full-overlay implementation has been removed in favour of the inline detail section.
 
+function _isValidRec(r) {
+  var nId = (r.id   || '').trim();
+  var nNm = (r.name || '').trim();
+  function bad(v) { return !v || v === '-' || v === '—'; }
+  return !bad(nId) || !bad(nNm);
+}
+
 function vdFilteredRows() {
   var _fvd = selectedAud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
   if (!selectedVert || !_fvd || !_fvd[selectedVert]) return [];
@@ -7610,6 +7617,7 @@ function vdFilteredRows() {
   var rMin = useRating && vdF.ratingMin !== '' ? parseFloat(vdF.ratingMin) : null;
   var rMax = useRating && vdF.ratingMax !== '' ? parseFloat(vdF.ratingMax) : null;
   return rows.filter(function(r) {
+    if (!_isValidRec(r)) return false;
     if (vdF.category !== 'All' && r.category   !== vdF.category) return false;
     if (vdF.vendor   !== 'All' && r.vendorType !== vdF.vendor)   return false;
     if (vdF.status   !== 'All' && r.status     !== vdF.status)   return false;
@@ -8867,7 +8875,7 @@ function _vtbGatherRows(vtType) {
       var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + v.key) || 'null');
       if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
         sv.rows.forEach(function(r) {
-          if (r.status === 'COMPLETED' && (r.vendorType || 'Unknown').trim() === vtType && !seen[r.id]) {
+          if (r.status === 'COMPLETED' && (r.vendorType || 'Unknown').trim() === vtType && !seen[r.id] && _isValidRec(r)) {
             seen[r.id] = true; rows.push(r);
           }
         });
@@ -8880,7 +8888,8 @@ function _vtbGatherRows(vtType) {
       if ((r.audience || 'seller') === aud
           && r.status === 'COMPLETED'
           && (r.vendorType || 'Unknown').trim() === vtType
-          && !seen[r.id]) {
+          && !seen[r.id]
+          && _isValidRec(r)) {
         seen[r.id] = true; rows.push(r);
       }
     });
@@ -9354,14 +9363,14 @@ function _slGatherRows(aud, status) {
       var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + v.key) || 'null');
       if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
         sv.rows.forEach(function(r) {
-          if (r.status === status && !seen[r.id]) { seen[r.id] = true; rows.push(r); }
+          if (r.status === status && !seen[r.id] && _isValidRec(r)) { seen[r.id] = true; rows.push(r); }
         });
       }
     } catch(e) {}
   });
   if (Array.isArray(vertRows)) {
     vertRows.forEach(function(r) {
-      if ((r.audience || 'seller') === aud && r.status === status && !seen[r.id]) {
+      if ((r.audience || 'seller') === aud && r.status === status && !seen[r.id] && _isValidRec(r)) {
         seen[r.id] = true; rows.push(r);
       }
     });
@@ -9537,7 +9546,7 @@ function _dmGatherAllRows(aud) {
       var sv = JSON.parse(localStorage.getItem(STORE_PFX+'vr_'+aud+'_'+vertKey)||'null');
       if (sv && sv.pKey===myPKey && Array.isArray(sv.rows)) {
         sv.rows.forEach(function(r) {
-          if (r.status==='DRAFT' && !seen[r.id]) { seen[r.id]=true; rows.push(Object.assign({},r,{audience:aud})); }
+          if (r.status==='DRAFT' && !seen[r.id] && _isValidRec(r)) { seen[r.id]=true; rows.push(Object.assign({},r,{audience:aud})); }
         });
       }
     } catch(e){}
@@ -9546,7 +9555,7 @@ function _dmGatherAllRows(aud) {
   if (Array.isArray(vertRows)) {
     vertRows.forEach(function(r) {
       var rAud = r.audience||'seller';
-      if (rAud===aud && r.status==='DRAFT' && !seen[r.id]) { seen[r.id]=true; rows.push(Object.assign({},r,{audience:aud})); }
+      if (rAud===aud && r.status==='DRAFT' && !seen[r.id] && _isValidRec(r)) { seen[r.id]=true; rows.push(Object.assign({},r,{audience:aud})); }
     });
   }
   return rows;
