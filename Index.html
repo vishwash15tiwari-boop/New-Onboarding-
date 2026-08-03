@@ -1933,9 +1933,8 @@ body.view-gst #vert-tabs-bar{display:none}
 .vkpi-card:hover .cfd svg,.vkpi-card:focus-visible .cfd svg{transform:translateX(2px)}
 .biz-tile:not(.biz-tile-region):hover .cfd{opacity:1;color:var(--blue)}
 .biz-tile:not(.biz-tile-region):hover .cfd svg{transform:translateX(2px)}
-/* Card header row — label left, Details link right */
-.vkpi-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px}
-.vkpi-hdr .vkpi-lbl{margin-bottom:0}
+/* Hero card "Details ›" — absolute bottom-right inside card */
+.vkpi-card .cfd{position:absolute;bottom:8px;right:10px}
 .biz-t-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px}
 .biz-t-hdr .biz-t-lb{margin-bottom:0}
 .vkpi-text{display:contents}
@@ -4013,9 +4012,10 @@ function renderVertKPIs(key) {
       + ' role="button" tabindex="0"'
       + ' onclick="openKpiModal(\'' + action + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'' + action + '\')}">'
-      + '<div class="vkpi-hdr"><div class="vkpi-lbl">' + lbl + '</div>' + _cfdHtml + '</div>'
+      + '<div class="vkpi-lbl">' + lbl + '</div>'
       + '<div class="vkpi-val">' + val + '</div>'
       + (sub != null ? '<div class="vkpi-sub">' + (sub || '') + '</div>' : '')
+      + _cfdHtml
       + '</div>';
   }
   function svg(paths) {
