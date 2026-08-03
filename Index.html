@@ -1122,6 +1122,80 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .sl-pg-btn:disabled{opacity:.4;cursor:not-allowed}
 .sl-pg-btn:not(:disabled):hover{background:var(--bg2)}
 
+/* ── Draft Modal ── */
+#draft-modal{position:fixed;inset:0;z-index:807;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.48);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:opacity .22s,visibility .22s;opacity:0}
+#draft-modal.dm-open{opacity:1}
+.dm-pn{background:var(--card);border-radius:14px;width:min(1060px,96vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.22);transform:translateY(18px) scale(.97);transition:transform .22s cubic-bezier(.22,.68,0,1.2);overflow:hidden}
+#draft-modal.dm-open .dm-pn{transform:translateY(0) scale(1)}
+.dm-hd{display:flex;align-items:center;gap:10px;padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.dm-hd-ico{width:32px;height:32px;border-radius:8px;background:rgba(255,193,7,.12);color:#FF9F0A;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dm-hd-txt{flex:1;min-width:0}
+.dm-hd-title{font-size:15px;font-weight:700;color:var(--txt1);line-height:1.2}
+.dm-hd-sub{font-size:12px;color:var(--txt3);margin-top:2px}
+.dm-hd-close{width:30px;height:30px;border:none;background:transparent;border-radius:50%;cursor:pointer;color:var(--txt3);font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .15s,background .15s;line-height:1}
+.dm-hd-close:hover{color:var(--txt1);background:var(--bg2)}
+.dm-hd-back{width:30px;height:30px;border:none;background:var(--bg2);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--txt2);font-size:15px;flex-shrink:0;transition:background .15s}
+.dm-hd-back:hover{background:var(--border)}
+.dm-body{overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column}
+.dm-chips{display:flex;flex-wrap:wrap;gap:8px;padding:16px 20px 4px}
+.dm-chip{display:flex;flex-direction:column;align-items:center;background:var(--bg2);border-radius:10px;padding:10px 16px;min-width:90px;flex:1}
+.dm-chip-val{font-size:18px;font-weight:700;color:var(--txt1);line-height:1.2}
+.dm-chip-lbl{font-size:11px;color:var(--txt3);margin-top:3px;text-align:center}
+.dm-aud-row{display:flex;gap:12px;padding:12px 20px 16px}
+.dm-aud-tile{flex:1;border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .15s,background .15s}
+.dm-aud-tile:hover{border-color:var(--blue);background:rgba(0,93,255,.04)}
+.dm-aud-tile-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.dm-aud-tile-lbl{font-size:13px;font-weight:700;color:var(--txt1)}
+.dm-aud-tile-count{font-size:28px;font-weight:800;color:var(--txt1);line-height:1}
+.dm-aud-tile-pct{font-size:12px;color:var(--txt3);margin-top:3px}
+.dm-aud-tile-meta{display:flex;gap:10px;margin-top:10px;border-top:1px solid var(--border);padding-top:8px}
+.dm-aud-tile-badge{font-size:11px;color:var(--txt2);display:flex;align-items:center;gap:5px}
+.dm-aud-cfd{font-size:10px;color:var(--txt3);margin-top:8px;display:flex;align-items:center;gap:3px}
+.dm-toolbar{display:flex;align-items:center;gap:8px;padding:10px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0}
+.dm-search{flex:1;min-width:160px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;background:var(--card);color:var(--txt1);outline:none}
+.dm-search:focus{border-color:var(--blue)}
+.dm-sel{border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12px;background:var(--card);color:var(--txt2);cursor:pointer;outline:none}
+.dm-sel:focus{border-color:var(--blue)}
+.dm-export-btn{padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--txt2);font-size:12px;font-weight:600;cursor:pointer;transition:background .12s,color .12s;white-space:nowrap;margin-left:auto}
+.dm-export-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.dm-tbl-wrap{overflow-x:auto;overflow-y:auto;flex:1}
+.dm-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.dm-tbl th{padding:8px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--txt3);border-bottom:1px solid var(--border);background:var(--bg2);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;z-index:1}
+.dm-tbl th:hover{color:var(--txt1)}
+.dm-tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--txt2);vertical-align:middle}
+.dm-tbl tr:hover td{background:rgba(0,93,255,.04)}
+.dm-tbl tr.dm-row-click{cursor:pointer}
+.dm-badge-m{background:rgba(0,93,255,.1);color:var(--blue);padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600}
+.dm-badge-p{background:rgba(29,199,151,.1);color:#1DC797;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600}
+.dm-badge-s{background:rgba(255,159,10,.12);color:#FF9F0A;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600}
+.dm-badge-b{background:rgba(100,210,255,.12);color:#00B0FF;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600}
+.dm-miss-chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600}
+.dm-miss-0{background:rgba(29,199,151,.1);color:#1DC797}
+.dm-miss-1{background:rgba(255,159,10,.1);color:#FF9F0A}
+.dm-miss-2{background:rgba(255,107,53,.1);color:#FF6B35}
+.dm-miss-3{background:rgba(255,59,48,.1);color:#FF3B30}
+.dm-pg{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--txt3);flex-shrink:0}
+.dm-pg-btns{display:flex;gap:6px;align-items:center}
+.dm-pg-btn{padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--txt2);font-size:12px;font-weight:500;cursor:pointer;transition:background .12s}
+.dm-pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.dm-pg-btn:not(:disabled):hover{background:var(--bg2)}
+.dm-no-data{text-align:center;padding:40px 20px;color:var(--txt3);font-size:13px}
+.dm-checklist{padding:16px 20px;overflow-y:auto}
+.dm-chk-hd{font-size:13px;font-weight:700;color:var(--txt1);margin-bottom:12px}
+.dm-chk-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.dm-chk-row:last-child{border-bottom:none}
+.dm-chk-ico{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;font-weight:700}
+.dm-chk-ico.ok{background:rgba(29,199,151,.15);color:#1DC797}
+.dm-chk-ico.miss{background:rgba(255,59,48,.12);color:#FF3B30}
+.dm-chk-lbl{font-size:13px;color:var(--txt1);flex:1}
+.dm-chk-status{font-size:11px;font-weight:600}
+.dm-chk-status.ok{color:#1DC797}
+.dm-chk-status.miss{color:#FF3B30}
+.dm-vendor-info{background:var(--bg2);border-radius:10px;margin:16px 20px 4px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px;flex-shrink:0}
+.dm-vi-item{display:flex;flex-direction:column;min-width:110px}
+.dm-vi-lbl{font-size:10px;color:var(--txt3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.4px}
+.dm-vi-val{font-size:12px;font-weight:600;color:var(--txt1)}
+
 /* ── Transaction Ageing Modal ── */
 #ta-modal{position:fixed;inset:0;z-index:806;display:flex;align-items:center;justify-content:center;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .22s,visibility .22s;background:rgba(0,0,0,.48);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #ta-modal.ta-open{visibility:visible;opacity:1;pointer-events:auto}
@@ -3227,6 +3301,14 @@ thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
   <div class="sl-pn" onclick="event.stopPropagation()">
     <div class="sl-hd" id="sl-hd"></div>
     <div class="sl-body" id="sl-body"></div>
+  </div>
+</div>
+
+<!-- Draft Modal -->
+<div id="draft-modal" role="dialog" aria-modal="true" onclick="closeDmModal()">
+  <div class="dm-pn" onclick="event.stopPropagation()">
+    <div class="dm-hd" id="dm-hd"></div>
+    <div class="dm-body" id="dm-body"></div>
   </div>
 </div>
 
@@ -6942,8 +7024,10 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
         var isComp   = s.lbl === 'Completed';
         var isReview = s.lbl === 'In Review';
         var isRej    = s.lbl === 'Rejected';
+        var isDraft  = s.lbl === 'Draft';
+        var isClick  = isComp || isReview || isRej || isDraft;
         var slStatus = isReview ? 'IN_REVIEW' : 'REJECTED';
-        var cardAttrs = ' style="border-top:3px solid ' + s.col + ((isComp || isReview || isRej) ? ';cursor:pointer' : '') + '"'
+        var cardAttrs = ' style="border-top:3px solid ' + s.col + (isClick ? ';cursor:pointer' : '') + '"'
           + (isComp
             ? ' role="button" tabindex="0"'
               + ' onclick="openVtbModal(\'' + aud + '\')"'
@@ -6952,13 +7036,17 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
             ? ' role="button" tabindex="0"'
               + ' onclick="openSlModal(\'' + aud + '\',\'' + slStatus + '\')"'
               + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openSlModal(\'' + aud + '\',\'' + slStatus + '\')}"'
+            : isDraft
+            ? ' role="button" tabindex="0"'
+              + ' onclick="openDmModal(\'' + aud + '\')"'
+              + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openDmModal(\'' + aud + '\')}"'
             : '');
         return '<div class="vpipe-stat-card"' + cardAttrs + '>'
           + '<div class="vpipe-stat-icon" style="background:' + s.bg + ';color:' + s.col + '">' + s.ic + '</div>'
           + '<div class="vpipe-stat-name">' + s.lbl + '</div>'
           + '<div class="vpipe-stat-num">' + fmt(s.n) + '</div>'
           + '<div class="vpipe-stat-pct">' + pct + '%</div>'
-          + ((isComp || isReview || isRej) ? _cfdHtml : '')
+          + (isClick ? _cfdHtml : '')
           + '</div>';
       }).join('')
     + '</div>';
@@ -9404,6 +9492,313 @@ function slPg(d) {
   var max = Math.max(0, Math.ceil(_slFiltered().length / _sl.pgSz) - 1);
   _sl.pg = Math.max(0, Math.min(_sl.pg + d, max));
   _slRender();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAFT MODAL
+// ═══════════════════════════════════════════════════════════════
+var DM_SELLER_MANDATORY = ['gst_certificate','owner_pan','cancelled_cheque','kyc_document','gst_portal_screenshot_bank_details','msme_certificate'];
+var DM_SELLER_LABELS = {'gst_certificate':'GST Certificate','owner_pan':'PAN Card','cancelled_cheque':'Cancelled Cheque','kyc_document':'KYC Document','gst_portal_screenshot_bank_details':'GST Portal Screenshot','msme_certificate':'MSME Certificate'};
+var DM_BUYER_MANDATORY = ['entity_pan','gst_certificate','pwm_certificate'];
+var DM_BUYER_LABELS = {'entity_pan':'Entity PAN','gst_certificate':'GST Certificate','pwm_certificate':'PWM Certificate'};
+
+var _dm = {
+  view:'summary', aud:'seller',
+  f:{ aud:'all', cat:'', vtype:'', state:'', miss:'', q:'' },
+  sk:'name', sd:1, pg:0, pgSz:25,
+  allRows:[], selVendorId:null, _cache:null
+};
+
+function _dmBuildDocMap() {
+  var m = {};
+  if (!window.qualityData || !Array.isArray(window.qualityData.vendorDocs)) return m;
+  window.qualityData.vendorDocs.forEach(function(d) {
+    if (d.id) m[d.id] = d;
+    if (d.gstin) m[d.gstin] = d;
+  });
+  return m;
+}
+
+function _dmMandatoryMissing(docRec, aud) {
+  var keys = aud === 'buyer' ? DM_BUYER_MANDATORY : DM_SELLER_MANDATORY;
+  if (!docRec) return keys.slice();
+  var byKey = {};
+  if (Array.isArray(docRec.docs)) docRec.docs.forEach(function(d){ byKey[d.key]=d; });
+  return keys.filter(function(k){ var d=byKey[k]; return !d||!d.submitted; });
+}
+
+function _dmGatherAllRows() {
+  var myPKey = JSON.stringify([currentPeriod, customStart||'', customEnd||'']);
+  var seen = {}, rows = [];
+  var cfg = getVertCfg();
+  ['seller','buyer'].forEach(function(aud) {
+    cfg.forEach(function(v) {
+      try {
+        var sv = JSON.parse(localStorage.getItem(STORE_PFX+'vr_'+aud+'_'+v.key)||'null');
+        if (sv && sv.pKey===myPKey && Array.isArray(sv.rows)) {
+          sv.rows.forEach(function(r) {
+            if (r.status==='DRAFT' && !seen[r.id]) { seen[r.id]=true; rows.push(Object.assign({},r,{audience:aud})); }
+          });
+        }
+      } catch(e){}
+    });
+  });
+  if (Array.isArray(vertRows)) {
+    vertRows.forEach(function(r) {
+      var aud = r.audience||'seller';
+      if (r.status==='DRAFT' && !seen[r.id]) { seen[r.id]=true; rows.push(Object.assign({},r,{audience:aud})); }
+    });
+  }
+  return rows;
+}
+
+function _dmEnrich(rows) {
+  var docMap = _dmBuildDocMap();
+  return rows.map(function(r) {
+    var aud = r.audience||'seller';
+    var mKeys  = aud==='buyer' ? DM_BUYER_MANDATORY : DM_SELLER_MANDATORY;
+    var mLbls  = aud==='buyer' ? DM_BUYER_LABELS    : DM_SELLER_LABELS;
+    var docRec = docMap[r.id] || docMap[r.gstin] || null;
+    var miss   = _dmMandatoryMissing(docRec, aud);
+    var mTotal = mKeys.length;
+    var mDone  = mTotal - miss.length;
+    var pct    = mTotal>0 ? Math.round(mDone/mTotal*100) : 0;
+    var reason;
+    if (miss.length===0)      reason = 'Awaiting Review';
+    else if (miss.length===1) reason = 'Missing '+(mLbls[miss[0]]||miss[0]);
+    else                      reason = 'Multiple Mandatory Docs Pending';
+    return Object.assign({},r,{_docRec:docRec,_mKeys:mKeys,_mLbls:mLbls,_miss:miss,_mTotal:mTotal,_mDone:mDone,_pct:pct,_reason:reason});
+  });
+}
+
+function _dmFiltered(enriched) {
+  var f=_dm.f, q=(f.q||'').toLowerCase().trim();
+  return enriched.filter(function(r) {
+    if (f.aud&&f.aud!=='all'&&r.audience!==f.aud) return false;
+    if (f.cat&&r.category!==f.cat) return false;
+    if (f.vtype&&r.vendorType!==f.vtype) return false;
+    if (f.state&&r.state!==f.state) return false;
+    if (f.miss) {
+      var mc=r._miss.length;
+      if (f.miss==='0'&&mc!==0) return false;
+      if (f.miss==='1'&&mc!==1) return false;
+      if (f.miss==='2'&&mc!==2) return false;
+      if (f.miss==='3+'&&mc<3)  return false;
+    }
+    if (q) {
+      var hay=[(r.name||''),(r.id||''),(r.category||''),(r.state||''),(r.vendorType||'')].join(' ').toLowerCase();
+      if (hay.indexOf(q)<0) return false;
+    }
+    return true;
+  });
+}
+
+function _dmSorted(rows) {
+  var k=_dm.sk, d=_dm.sd;
+  return rows.slice().sort(function(a,b) {
+    var av,bv;
+    if (k==='_miss') { av=a._miss.length; bv=b._miss.length; }
+    else if (k==='_pct') { av=a._pct; bv=b._pct; }
+    else { av=a[k]!=null?a[k]:''; bv=b[k]!=null?b[k]:''; }
+    if (typeof av==='number'&&typeof bv==='number') return d*(av-bv);
+    return d*String(av).localeCompare(String(bv));
+  });
+}
+
+function _esc(v){ return String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+function openDmModal(aud) {
+  _dm.aud = aud||'seller';
+  _dm.view='summary';
+  _dm.f={ aud:'all', cat:'', vtype:'', state:'', miss:'', q:'' };
+  _dm.sk='name'; _dm.sd=1; _dm.pg=0; _dm.pgSz=25;
+  _dm.selVendorId=null; _dm._cache=null;
+  _dm.allRows = _dmGatherAllRows();
+  _dm._cache  = _dmEnrich(_dm.allRows);
+  _dmRender();
+  var el=document.getElementById('draft-modal');
+  if (el){ el.style.display='flex'; requestAnimationFrame(function(){ el.classList.add('dm-open'); }); }
+  document.addEventListener('keydown',_dmEsc);
+}
+
+function closeDmModal() {
+  var el=document.getElementById('draft-modal');
+  if (el){ el.classList.remove('dm-open'); setTimeout(function(){ el.style.display='none'; },230); }
+  document.removeEventListener('keydown',_dmEsc);
+}
+function _dmEsc(e){ if(e.key==='Escape') closeDmModal(); }
+
+function dmOpenDetail(aud) { _dm.view='detail'; if(aud) _dm.f.aud=aud; _dm.pg=0; _dmRender(); }
+function dmOpenVendor(id)  { _dm.view='vendor'; _dm.selVendorId=id; _dmRender(); }
+function dmBack() {
+  if (_dm.view==='vendor') { _dm.view='detail'; _dmRender(); }
+  else { _dm.view='summary'; _dmRender(); }
+}
+function dmSetF(k,v){ _dm.f[k]=v; _dm.pg=0; _dmRender(); }
+function dmSort(k){ _dm.sd=(_dm.sk===k)?-_dm.sd:1; _dm.sk=k; _dm.pg=0; _dmRender(); }
+function dmPg(d){
+  var max=Math.max(0,Math.ceil(_dmFiltered(_dm._cache||[]).length/_dm.pgSz)-1);
+  _dm.pg=Math.max(0,Math.min(_dm.pg+d,max)); _dmRender();
+}
+function dmSetPgSz(n){ _dm.pgSz=+n; _dm.pg=0; _dmRender(); }
+
+function dmExportCSV() {
+  var rows=_dmSorted(_dmFiltered(_dm._cache||[]));
+  var hdr=['Company Name','Vendor ID','Audience','Category','Vendor Type','State','Created Date','Doc Completion %','Missing Count','Reason'];
+  var lines=[hdr.join(',')];
+  rows.forEach(function(r){
+    lines.push([
+      '"'+(r.name||'').replace(/"/g,'""')+'"',
+      '"'+(r.id||'')+'"',
+      r.audience,
+      '"'+(r.category||'')+'"',
+      '"'+(r.vendorType||'')+'"',
+      '"'+(r.state||'')+'"',
+      '"'+(r.createdDate||'')+'"',
+      r._pct+'%',
+      r._miss.length,
+      '"'+(r._reason||'').replace(/"/g,'""')+'"'
+    ].join(','));
+  });
+  var blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='draft_vendors_'+(new Date().toISOString().slice(0,10))+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function _dmRender() {
+  var hd=document.getElementById('dm-hd'), bd=document.getElementById('dm-body');
+  if (!hd||!bd) return;
+  var E=_dm._cache||[];
+  if (_dm.view==='summary')   _dmSummary(hd,bd,E);
+  else if (_dm.view==='detail') _dmDetail(hd,bd,E);
+  else if (_dm.view==='vendor') _dmVendor(hd,bd,E);
+}
+
+function _dmSummary(hd,bd,E) {
+  var S=E.filter(function(r){return r.audience==='seller';}), B=E.filter(function(r){return r.audience==='buyer';});
+  var tot=E.length;
+  var avgPct=tot>0?Math.round(E.reduce(function(s,r){return s+r._pct;},0)/tot):0;
+  var m1=E.filter(function(r){return r._miss.length===1;}).length;
+  var m2=E.filter(function(r){return r._miss.length===2;}).length;
+  var m3=E.filter(function(r){return r._miss.length>=3;}).length;
+  var cfd='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
+  hd.innerHTML='<div class="dm-hd-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></div>'
+    +'<div class="dm-hd-txt"><div class="dm-hd-title">Draft Vendors</div><div class="dm-hd-sub">'+tot+' vendor'+(tot!==1?'s':'')+' pending document completion</div></div>'
+    +'<button class="dm-hd-close" onclick="closeDmModal()" aria-label="Close">\xD7</button>';
+  var chips=[{v:tot,l:'Total Draft'},{v:S.length,l:'Sellers in Draft'},{v:B.length,l:'Buyers in Draft'},{v:avgPct+'%',l:'Avg Doc Completion'},{v:m1,l:'Missing 1 Doc'},{v:m2,l:'Missing 2 Docs'},{v:m3,l:'Missing 3+ Docs'}];
+  bd.innerHTML='<div class="dm-chips">'+chips.map(function(c){return'<div class="dm-chip"><div class="dm-chip-val">'+c.v+'</div><div class="dm-chip-lbl">'+c.l+'</div></div>';}).join('')+'</div>'
+    +'<div class="dm-aud-row">'+['seller','buyer'].map(function(aud){
+      var arr=aud==='seller'?S:B, cnt=arr.length, pct=tot>0?Math.round(cnt/tot*100):0;
+      var metal=arr.filter(function(r){return(r.category||'').toLowerCase().includes('metal');}).length;
+      var plastic=arr.filter(function(r){return(r.category||'').toLowerCase().includes('plastic');}).length;
+      return '<div class="dm-aud-tile" onclick="dmOpenDetail(\''+aud+'\')">'
+        +'<div class="dm-aud-tile-hd"><div class="dm-aud-tile-lbl">'+(aud==='seller'?'Sellers':'Buyers')+'</div></div>'
+        +'<div class="dm-aud-tile-count">'+cnt+'</div>'
+        +'<div class="dm-aud-tile-pct">'+pct+'% of all draft</div>'
+        +'<div class="dm-aud-tile-meta">'
+        +'<div class="dm-aud-tile-badge"><span class="dm-badge-m">Metal</span> '+metal+'</div>'
+        +'<div class="dm-aud-tile-badge"><span class="dm-badge-p">Plastic</span> '+plastic+'</div>'
+        +'</div>'
+        +'<div class="dm-aud-cfd">Click to drill down '+cfd+'</div>'
+        +'</div>';
+    }).join('')+'</div>';
+}
+
+function _dmDetail(hd,bd,E) {
+  var filtered=_dmFiltered(E), sorted=_dmSorted(filtered);
+  var tot=sorted.length, start=_dm.pg*_dm.pgSz, page=sorted.slice(start,start+_dm.pgSz);
+  var cats={},vtypes={},states={};
+  E.forEach(function(r){if(r.category)cats[r.category]=1;if(r.vendorType)vtypes[r.vendorType]=1;if(r.state)states[r.state]=1;});
+  var audLbl=_dm.f.aud==='buyer'?'Buyers':_dm.f.aud==='seller'?'Sellers':'All';
+  hd.innerHTML='<button class="dm-hd-back" onclick="dmBack()" title="Back">&#8592;</button>'
+    +'<div class="dm-hd-ico" style="margin-left:4px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg></div>'
+    +'<div class="dm-hd-txt"><div class="dm-hd-title">Draft — '+audLbl+'</div><div class="dm-hd-sub">'+tot+' vendor'+(tot!==1?'s':'')+' shown</div></div>'
+    +'<button class="dm-export-btn" onclick="dmExportCSV()">Export CSV</button>'
+    +'<button class="dm-hd-close" onclick="closeDmModal()" aria-label="Close">\xD7</button>';
+  var si=function(k){return _dm.sk===k?(_dm.sd>0?' &#8593;':' &#8595;'):' &#8597;';};
+  var mkOpts=function(obj,cur,ph){return '<option value="">'+ph+'</option>'+Object.keys(obj).sort().map(function(v){return'<option value="'+v+'"'+(cur===v?' selected':'')+'>'+v+'</option>';}).join('');};
+  var toolbar='<div class="dm-toolbar">'
+    +'<input class="dm-search" type="text" placeholder="Search name, ID…" value="'+((_dm.f.q||'').replace(/"/g,'&quot;'))+'" oninput="dmSetF(\'q\',this.value)">'
+    +'<select class="dm-sel" onchange="dmSetF(\'aud\',this.value)"><option value="all"'+(  _dm.f.aud==='all'?' selected':'')+'>All Audiences</option><option value="seller"'+(_dm.f.aud==='seller'?' selected':'')+'>Sellers</option><option value="buyer"'+(_dm.f.aud==='buyer'?' selected':'')+'>Buyers</option></select>'
+    +'<select class="dm-sel" onchange="dmSetF(\'cat\',this.value)">'+mkOpts(cats,_dm.f.cat,'Category')+'</select>'
+    +'<select class="dm-sel" onchange="dmSetF(\'vtype\',this.value)">'+mkOpts(vtypes,_dm.f.vtype,'Vendor Type')+'</select>'
+    +'<select class="dm-sel" onchange="dmSetF(\'state\',this.value)">'+mkOpts(states,_dm.f.state,'State')+'</select>'
+    +'<select class="dm-sel" onchange="dmSetF(\'miss\',this.value)"><option value="">Missing Docs</option>'
+    +['0','1','2','3+'].map(function(v){return'<option value="'+v+'">'+v+' missing</option>';}).join('')+'</select>'
+    +'</div>';
+  var cols=[{k:'name',l:'Company Name'},{k:'id',l:'Vendor ID'},{k:'audience',l:'Audience'},{k:'category',l:'Category'},{k:'vendorType',l:'Vendor Type'},{k:'state',l:'State'},{k:'createdDate',l:'Created'},{k:'_pct',l:'Doc %'},{k:'_miss',l:'Missing'},{k:'_reason',l:'Reason'}];
+  var thead='<thead><tr>'+cols.map(function(c){return'<th onclick="dmSort(\''+c.k+'\')">'+c.l+si(c.k)+'</th>';}).join('')+'</tr></thead>';
+  var tbody='<tbody>';
+  if (!page.length) {
+    tbody+='<tr><td colspan="'+cols.length+'" class="dm-no-data">No vendors match the current filters.</td></tr>';
+  } else {
+    page.forEach(function(r){
+      var mc=r._miss.length, mc_cls=mc===0?'dm-miss-0':mc===1?'dm-miss-1':mc===2?'dm-miss-2':'dm-miss-3';
+      var pct_cls=r._pct>=100?'dm-miss-0':r._pct>=66?'dm-miss-1':r._pct>=33?'dm-miss-2':'dm-miss-3';
+      var audB=r.audience==='seller'?'<span class="dm-badge-s">Seller</span>':'<span class="dm-badge-b">Buyer</span>';
+      var catB=(r.category||'').toLowerCase().includes('metal')?'<span class="dm-badge-m">'+(r.category||'')+'</span>':(r.category||'').toLowerCase().includes('plastic')?'<span class="dm-badge-p">'+(r.category||'')+'</span>':(r.category||'—');
+      tbody+='<tr class="dm-row-click" onclick="dmOpenVendor(\''+_esc(r.id)+'\')">'
+        +'<td style="font-weight:600;color:var(--txt1)">'+(r.name||'—')+'</td>'
+        +'<td style="font-family:monospace;font-size:11px">'+(r.id||'—')+'</td>'
+        +'<td>'+audB+'</td><td>'+catB+'</td>'
+        +'<td>'+(r.vendorType||'—')+'</td><td>'+(r.state||'—')+'</td><td>'+(r.createdDate||'—')+'</td>'
+        +'<td><span class="dm-miss-chip '+pct_cls+'">'+r._pct+'%</span></td>'
+        +'<td><span class="dm-miss-chip '+mc_cls+'">'+mc+'</span></td>'
+        +'<td style="color:var(--txt3);font-size:11px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+r._reason+'</td>'
+        +'</tr>';
+    });
+  }
+  tbody+='</tbody>';
+  var pages=Math.max(1,Math.ceil(tot/_dm.pgSz)), pg=_dm.pg;
+  var pgBar='<div class="dm-pg">'
+    +'<span>'+Math.min(start+1,tot)+'–'+Math.min(start+_dm.pgSz,tot)+' of '+tot+'</span>'
+    +'<div class="dm-pg-btns">'
+    +'<select class="dm-sel" onchange="dmSetPgSz(this.value)">'+[10,25,50,100].map(function(n){return'<option value="'+n+'">'+n+' / page</option>';}).join('')+'</select>'
+    +'<button class="dm-pg-btn" onclick="dmPg(-1)"'+(pg<=0?' disabled':'')+'>&#8592;</button>'
+    +'<span>'+(pg+1)+' / '+pages+'</span>'
+    +'<button class="dm-pg-btn" onclick="dmPg(1)"'+(pg>=pages-1?' disabled':'')+'>&#8594;</button>'
+    +'</div></div>';
+  bd.innerHTML=toolbar+'<div class="dm-tbl-wrap"><table class="dm-tbl">'+thead+tbody+'</table></div>'+pgBar;
+}
+
+function _dmVendor(hd,bd,E) {
+  var row=E.filter(function(r){return r.id===_dm.selVendorId;})[0];
+  if (!row){dmBack();return;}
+  var aud=row.audience||'seller';
+  var mKeys=row._mKeys||(aud==='buyer'?DM_BUYER_MANDATORY:DM_SELLER_MANDATORY);
+  var mLbls=row._mLbls||(aud==='buyer'?DM_BUYER_LABELS:DM_SELLER_LABELS);
+  var byKey={};
+  if (row._docRec&&Array.isArray(row._docRec.docs)) row._docRec.docs.forEach(function(d){byKey[d.key]=d;});
+  hd.innerHTML='<button class="dm-hd-back" onclick="dmBack()" title="Back">&#8592;</button>'
+    +'<div class="dm-hd-ico" style="margin-left:4px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>'
+    +'<div class="dm-hd-txt"><div class="dm-hd-title">'+(row.name||'Vendor')+'</div>'
+    +'<div class="dm-hd-sub">Document Checklist · '+(aud==='buyer'?'Buyer':'Seller')+'</div></div>'
+    +'<button class="dm-hd-close" onclick="closeDmModal()" aria-label="Close">\xD7</button>';
+  var info='<div class="dm-vendor-info">'
+    +'<div class="dm-vi-item"><div class="dm-vi-lbl">Vendor ID</div><div class="dm-vi-val">'+(row.id||'—')+'</div></div>'
+    +'<div class="dm-vi-item"><div class="dm-vi-lbl">Audience</div><div class="dm-vi-val">'+(aud==='seller'?'Seller':'Buyer')+'</div></div>'
+    +'<div class="dm-vi-item"><div class="dm-vi-lbl">Category</div><div class="dm-vi-val">'+(row.category||'—')+'</div></div>'
+    +'<div class="dm-vi-item"><div class="dm-vi-lbl">State</div><div class="dm-vi-val">'+(row.state||'—')+'</div></div>'
+    +'<div class="dm-vi-item"><div class="dm-vi-lbl">Created</div><div class="dm-vi-val">'+(row.createdDate||'—')+'</div></div>'
+    +'<div class="dm-vi-item"><div class="dm-vi-lbl">Doc Completion</div><div class="dm-vi-val">'+row._pct+'% ('+row._mDone+'/'+row._mTotal+')</div></div>'
+    +'</div>';
+  var chk='<div class="dm-checklist"><div class="dm-chk-hd">Mandatory Documents — '+(aud==='buyer'?'Buyer (3 required)':'Seller (6 required)')+'</div>';
+  if (!row._docRec) {
+    chk+='<div style="color:var(--txt3);font-size:13px;padding:12px 0">Document data not available (OMP data only).</div>';
+  } else {
+    mKeys.forEach(function(k){
+      var d=byKey[k], ok=d&&d.submitted, lbl=mLbls[k]||k;
+      chk+='<div class="dm-chk-row">'
+        +'<div class="dm-chk-ico '+(ok?'ok':'miss')+'">'+(ok?'&#10003;':'&#10007;')+'</div>'
+        +'<div class="dm-chk-lbl">'+lbl+'</div>'
+        +'<div class="dm-chk-status '+(ok?'ok':'miss')+'">'+(ok?'Submitted':'Missing')+'</div>'
+        +'</div>';
+    });
+  }
+  chk+='</div>';
+  bd.innerHTML=info+chk;
 }
 
 // ═══════════════════════════════════════════════════════════════
