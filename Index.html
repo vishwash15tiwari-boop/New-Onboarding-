@@ -4318,7 +4318,7 @@ function renderVertKPIs(key) {
   // FY sparklines from real breakdown data (skipped when <2 years exist)
   var spTotal = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'total'),      'var(--vc, #005DFF)', false);
   var spOnb   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'onboarded'),  '#30D158', true);
-  var spTxn   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'transacted'), 'var(--st-transacted)', false);
+  var spTxn   = sparkBars((vs.fyBreakdown || []).map(function(f){ return f.transacted != null ? f.transacted : null; }), 'var(--st-transacted)', false);
 
   // Completion meter on the ink card — onboarded share of the whole pipeline
   var totAll  = totalS + totalB;
@@ -5804,7 +5804,7 @@ function _patchQualityKpiCards() {
 //   Buyers: GST Certificate, Entity PAN, PWM Certificate.
 //   Sellers: full checklist until an official Seller list is provided.
 var MANDATORY_DOCS = {
-  seller: null,
+  seller: ['gst_certificate','owner_pan','cancelled_cheque','kyc_document','gst_portal_screenshot_bank_details','msme_certificate'],
   buyer:  ['gst_certificate', 'entity_pan', 'pwm_certificate'],
 };
 

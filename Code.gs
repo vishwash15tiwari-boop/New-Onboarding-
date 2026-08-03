@@ -967,7 +967,7 @@ function vStats(data) {
   var total = data.length;
   var completed = 0, draft = 0, inReview = 0, rejected = 0;
   var withGST = 0, newVendors = 0, oldVendors = 0, completedThisWeek = 0;
-  var hasTxnData = false, transactedCount = 0, txnCountSum = 0;
+  var hasTxnData = false, transactedCount = 0, transactedCompleted = 0, txnCountSum = 0;
   var hasTxnValData = false, txnValSum = 0;
   var agingCount = 0, overdueCount = 0;
   var tats = [];
@@ -998,7 +998,7 @@ function vStats(data) {
     if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) tats.push(r.onbTAT);
 
     if (r.hasTxn)        hasTxnData = true;
-    if (r.hasTransacted) { transactedCount++; txnCountSum += (r.txnCount || 1); }
+    if (r.hasTransacted) { transactedCount++; txnCountSum += (r.txnCount || 1); if (isDone) transactedCompleted++; }
     if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
       hasTxnValData = true; txnValSum += r.txnValue;
     }
@@ -1105,8 +1105,9 @@ function vStats(data) {
   // Per-financial-year breakdown (India FY: Apr 1 – Mar 31), newest FY first.
   var fyMap = {};
   data.forEach(function(r) {
-    if (!r.createdDate) return;
-    var y = r.createdDate.getFullYear(), m = r.createdDate.getMonth();
+    var refDate = (r.status === 'COMPLETED' && r.onboardedDate) ? r.onboardedDate : r.createdDate;
+    if (!refDate) return;
+    var y = refDate.getFullYear(), m = refDate.getMonth();
     var fyStart = m >= 3 ? y : y - 1;
     var fyKey   = 'FY ' + String(fyStart).slice(2) + '-' + String(fyStart + 1).slice(2);
     if (!fyMap[fyKey]) fyMap[fyKey] = { fyKey: fyKey, fyStart: fyStart, rows: [] };
@@ -1117,7 +1118,7 @@ function vStats(data) {
     var fyTotal     = d.length;
     var fyCompleted = countFn(d, function(r) { return r.status === 'COMPLETED'; });
     var fyHasTxn    = d.some(function(r) { return r.hasTxn; });
-    var fyTransacted = fyHasTxn ? countFn(d, function(r) { return r.hasTransacted; }) : null;
+    var fyTransacted = fyHasTxn ? countFn(d, function(r) { return r.hasTransacted && r.status === 'COMPLETED'; }) : null;
     var fyTxnSum = 0, fyHasTxnVal = false;
     d.forEach(function(r) {
       if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) { fyHasTxnVal = true; fyTxnSum += r.txnValue; }
@@ -1152,7 +1153,7 @@ function vStats(data) {
     completedThisWeek: completedThisWeek,
     avgTAT: tats.length ? Math.round(avg(tats)) : null,
     transacted: transacted,
-    pctTransacted: transacted === null ? null : pct(transacted, completed),
+    pctTransacted: transacted === null ? null : pct(transactedCompleted, completed),
     totalTxnCount: hasTxnData ? txnCountSum : null,
     totalTxnValue: totalTxnValue,
     aging:       agingCount   > 0 ? agingCount   : null,
@@ -1716,10 +1717,10 @@ function getQualityData() {
   // OMP-onboarded maps keyed by GSTIN (for Vendor Rating matching)
   var ompGstinSellers = buildOmpGstinMap_('_mb_sellers', 'seller');
   var ompGstinBuyers  = buildOmpGstinMap_('_mb_buyers',  'buyer');
-  // Merged map — seller wins on GSTIN collision
+  // Merged map — first occurrence wins; neither audience silently overwrites the other
   var ompGstinMap = {};
-  Object.keys(ompGstinBuyers).forEach(function(g)  { ompGstinMap[g] = ompGstinBuyers[g]; });
-  Object.keys(ompGstinSellers).forEach(function(g) { ompGstinMap[g] = ompGstinSellers[g]; });
+  Object.keys(ompGstinBuyers).forEach(function(g)  { if (!ompGstinMap[g]) ompGstinMap[g] = ompGstinBuyers[g]; });
+  Object.keys(ompGstinSellers).forEach(function(g) { if (!ompGstinMap[g]) ompGstinMap[g] = ompGstinSellers[g]; });
 
   function mkR()  { return { ws: 0, rated: 0, total: 0, dist: [0,0,0,0,0] }; }
   function mkO()  { return { completed: 0, inProgress: 0, notInitiated: 0, total: 0 }; }
@@ -1851,8 +1852,7 @@ function getQualityData() {
         docIdx.forEach(function(didx, di) {
           if (didx < 0 || didx >= row.length) return;
           totalDocs++;
-          var dv = parseInt(row[didx], 10);
-          var isSub = (!isNaN(dv) && dv > 0);
+          var isSub = isDocSubmitted_(row[didx]);
           if (isSub) submitted++;
           else missingDocNames.push(DOC_LABELS[di]);
           var vCol = qualityFindCol_(vrh, [DOC_NAMES[di] + '_verified', DOC_NAMES[di] + '_verification', DOC_NAMES[di] + '_status']);
@@ -1998,11 +1998,11 @@ function getQualityData() {
         var osvRaw    = row[dmOsvC] != null ? String(row[dmOsvC]).trim() : '';
         var osvStatus = osvClassify_(osvRaw);
         if (osvStatus === 'done') {
-          acc['seller'].o.completed   += 1;
+          acc[rAud].o.completed       += 1;
           acc['combined'].o.completed += 1;
           _demonitorOsvCount++;
         } else if (osvStatus === 'in_progress') {
-          acc['seller'].o.inProgress   += 1;
+          acc[rAud].o.inProgress       += 1;
           acc['combined'].o.inProgress += 1;
         }
         vendorOSV.push({
@@ -2277,8 +2277,7 @@ function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, selle
     docIdx.forEach(function(di, i) {
       if (di < 0 || di >= row.length) return;
       totalDocs++;
-      var dv = parseInt(row[di], 10);
-      var isSub = (!isNaN(dv) && dv > 0);
+      var isSub = isDocSubmitted_(row[di]);
       if (isSub) submitted++; else missing.push(DOC_LABELS[i]);
       var vC = fc([DOC_NAMES[i] + '_verified', DOC_NAMES[i] + '_verification', DOC_NAMES[i] + '_status']);
       var dC = fc([DOC_NAMES[i] + '_date', DOC_NAMES[i] + '_uploaded_date', DOC_NAMES[i] + '_upload_date']);
@@ -2419,7 +2418,7 @@ function debugDocs() {
 // ════════════════════════════════════════════════════════════════
 function bustQualityCache() {
   var cache = CacheService.getScriptCache();
-  cache.remove('quality_data_v11');
+  cache.remove('quality_data_v12');
   Logger.log('Quality cache cleared — next getQualityData() call will re-read Demonitor sheet.');
 }
 
