@@ -995,6 +995,61 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .no-data.plain::before{content:none}
 
 /* ═══════════════════════════════════════════════════════════════
+   VENDOR TYPE BREAKDOWN MODAL
+   ═══════════════════════════════════════════════════════════════ */
+#vtb-modal{position:fixed;inset:0;z-index:803;display:flex;align-items:center;justify-content:center;visibility:hidden;opacity:0;transition:opacity .22s,visibility .22s;background:rgba(0,0,0,.48);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#vtb-modal.vtb-open{visibility:visible;opacity:1}
+.vtb-pn{background:var(--card);border-radius:14px;width:min(860px,94vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.22);transform:translateY(18px) scale(.97);transition:transform .22s cubic-bezier(.22,.68,0,1.2);overflow:hidden}
+#vtb-modal.vtb-open .vtb-pn{transform:translateY(0) scale(1)}
+.vtb-hd{display:flex;align-items:center;gap:10px;padding:18px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.vtb-hd-back{width:30px;height:30px;border:none;background:var(--bg2);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--txt2);font-size:15px;flex-shrink:0;transition:background .15s}
+.vtb-hd-back:hover{background:var(--border)}
+.vtb-hd-txt{flex:1;min-width:0}
+.vtb-hd-title{font-size:15px;font-weight:700;color:var(--txt1);line-height:1.2}
+.vtb-hd-sub{font-size:12px;color:var(--txt3);margin-top:2px}
+.vtb-hd-close{width:30px;height:30px;border:none;background:transparent;border-radius:50%;cursor:pointer;color:var(--txt3);font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .15s,background .15s;line-height:1}
+.vtb-hd-close:hover{color:var(--txt1);background:var(--bg2)}
+.vtb-body{flex:1;overflow-y:auto;min-height:0}
+.vtb-sum-tbl{width:100%;border-collapse:collapse}
+.vtb-sum-tbl thead th{padding:9px 18px;text-align:left;font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:1;white-space:nowrap}
+.vtb-sum-tbl thead th:not(:first-child){text-align:right}
+.vtb-sum-row{cursor:pointer;transition:background .12s}
+.vtb-sum-row:hover{background:var(--bg2)}
+.vtb-sum-row td{padding:13px 18px;border-bottom:1px solid var(--border);font-size:13px;color:var(--txt1);vertical-align:middle}
+.vtb-sum-row td:not(:first-child){text-align:right}
+.vtb-type-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;flex-shrink:0;vertical-align:middle}
+.vtb-type-name{display:flex;align-items:center}
+.vtb-txn-rate{font-size:11px;color:var(--txt3);margin-top:2px}
+.vtb-arr{color:var(--txt3);font-size:14px}
+.vtb-toolbar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.vtb-search{flex:1;height:32px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:13px;background:var(--bg2);color:var(--txt1);outline:none;transition:border-color .15s}
+.vtb-search:focus{border-color:var(--blue)}
+.vtb-count-lbl{font-size:12px;color:var(--txt3);white-space:nowrap}
+.vtb-vl-wrap{overflow-x:auto}
+.vtb-vl-tbl{width:100%;border-collapse:collapse;min-width:660px}
+.vtb-vl-tbl thead th{padding:8px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:1;cursor:pointer;white-space:nowrap;user-select:none}
+.vtb-vl-tbl thead th:hover{color:var(--txt1)}
+.vtb-vl-tbl .s-ic{margin-left:3px;opacity:.45;font-size:10px}
+.vtb-vl-tbl th.vtb-th-asc .s-ic,.vtb-vl-tbl th.vtb-th-desc .s-ic{opacity:1;color:var(--blue)}
+.vtb-vl-row{cursor:pointer;transition:background .1s}
+.vtb-vl-row:hover{background:var(--bg2)}
+.vtb-vl-row td{padding:9px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--txt1);vertical-align:middle;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vtb-pg{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--txt3);flex-shrink:0}
+.vtb-pg-btns{display:flex;gap:6px}
+.vtb-pg-btn{height:28px;min-width:52px;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--txt1);font-size:12px;cursor:pointer;transition:background .12s}
+.vtb-pg-btn:hover:not([disabled]){background:var(--bg2)}
+.vtb-pg-btn[disabled]{opacity:.4;cursor:default}
+.vtb-det{padding:20px}
+.vtb-chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.vtb-chip{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;background:var(--bg2);color:var(--txt2);gap:4px}
+.vtb-fld-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-bottom:18px}
+@media(max-width:480px){.vtb-fld-grid{grid-template-columns:1fr}}
+.vtb-fld-lbl{font-size:11px;color:var(--txt3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em}
+.vtb-fld-val{font-size:13px;color:var(--txt1);font-weight:500}
+.vtb-sec-hd{font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.vtb-no-data{text-align:center;padding:40px 20px;color:var(--txt3);font-size:13px}
+
+/* ═══════════════════════════════════════════════════════════════
    GST PAYABLES VIEW — warm cream / burnt-orange enterprise palette
    ═══════════════════════════════════════════════════════════════ */
 :root{
@@ -3033,6 +3088,14 @@ thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
   <div class="km-pn" id="gm-pn" style="max-width:620px"></div>
 </div>
 
+<!-- Vendor Type Breakdown Modal -->
+<div id="vtb-modal" role="dialog" aria-modal="true" aria-label="Vendor type breakdown" onclick="closeVtbModal()">
+  <div class="vtb-pn" id="vtb-pn" onclick="event.stopPropagation()">
+    <div class="vtb-hd" id="vtb-hd"></div>
+    <div class="vtb-body" id="vtb-body"></div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
 // STATE
@@ -4123,6 +4186,7 @@ function vkpiOpen(action) {
 
 function openKpiModal(cardId) {
   window._lastKpiCardId = cardId;
+  if (cardId === 'onboarded') { openVtbModal(); return; }
   var d = window._kpiSnap;
   var isQualityCard = (cardId === 'rating' || cardId === 'osv' || cardId === 'docs');
   if (!d && !isQualityCard) return;
@@ -8534,6 +8598,321 @@ function tatChip(t) {
   if (isNaN(n)) return '<span class="text-muted">' + esc(t) + '</span>';
   var cls = n <= 2 ? 'text-green' : n <= 5 ? 'text-amber' : 'text-red';
   return '<span class="' + cls + '">' + n + 'd</span>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VENDOR TYPE BREAKDOWN MODAL
+// ═══════════════════════════════════════════════════════════════
+var _vtb = { view: 'summary', vtType: null, vtCol: '#005DFF',
+             vtRows: [], row: null,
+             q: '', sk: 'name', sd: 1, pg: 0, pgSz: 15 };
+var _VTB_CLR = ['#005DFF','#1DC797','#FF9F0A','#8460D4','#FF6B35','#FF3B30','#567DE8','#8E8E93'];
+
+function openVtbModal() {
+  _vtb.view = 'summary'; _vtb.vtType = null; _vtb.vtRows = []; _vtb.row = null;
+  _vtb.q = ''; _vtb.sk = 'name'; _vtb.sd = 1; _vtb.pg = 0;
+  _vtbRender();
+  var m = document.getElementById('vtb-modal');
+  if (m) { void m.offsetHeight; m.classList.add('vtb-open'); }
+}
+
+function closeVtbModal() {
+  var m = document.getElementById('vtb-modal');
+  if (m) m.classList.remove('vtb-open');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  var m = document.getElementById('vtb-modal');
+  if (!m || !m.classList.contains('vtb-open')) return;
+  e.stopPropagation();
+  if (_vtb.view === 'detail')       { _vtb.view = 'vendors'; _vtbRender(); }
+  else if (_vtb.view === 'vendors') { _vtb.view = 'summary'; _vtbRender(); }
+  else                               closeVtbModal();
+}, true);
+
+// Aggregate vendor types from _kpiSnap across all categories (seller + buyer)
+function _vtbTypes() {
+  var d = window._kpiSnap;
+  if (!d) return [];
+  var map = {};
+  function proc(cats) {
+    if (!cats) return;
+    for (var i = 0; i < cats.length; i++) {
+      var vts = cats[i].vendorTypes || [];
+      for (var j = 0; j < vts.length; j++) {
+        var vt = vts[j];
+        var k = (vt.type || 'Unknown').trim() || 'Unknown';
+        if (!map[k]) map[k] = { type: k, onboarded: 0, transacted: 0 };
+        map[k].onboarded  += (vt.count      || 0);
+        map[k].transacted += (vt.transacted || 0);
+      }
+    }
+  }
+  if (d.vs) proc(d.vs.categories);
+  if (d.vb) proc(d.vb.categories);
+  var arr = [];
+  for (var k in map) arr.push(map[k]);
+  arr.sort(function(a, b) { return b.onboarded - a.onboarded; });
+  return arr;
+}
+
+// Collect completed rows for a vendor type from localStorage (all verticals) + current vertRows
+function _vtbGatherRows(vtType) {
+  var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var seen = {}, rows = [];
+  var cfg = getVertCfg();
+  ['seller', 'buyer'].forEach(function(aud) {
+    cfg.forEach(function(v) {
+      try {
+        var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + v.key) || 'null');
+        if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
+          sv.rows.forEach(function(r) {
+            if (r.status === 'COMPLETED' && (r.vendorType || 'Unknown').trim() === vtType && !seen[r.id]) {
+              seen[r.id] = true; rows.push(r);
+            }
+          });
+        }
+      } catch(e) {}
+    });
+  });
+  // Also include currently-loaded vertRows in case they aren't cached yet
+  if (Array.isArray(vertRows)) {
+    vertRows.forEach(function(r) {
+      if (r.status === 'COMPLETED' && (r.vendorType || 'Unknown').trim() === vtType && !seen[r.id]) {
+        seen[r.id] = true; rows.push(r);
+      }
+    });
+  }
+  return rows;
+}
+
+function _vtbRender() {
+  var hd   = document.getElementById('vtb-hd');
+  var body = document.getElementById('vtb-body');
+  if (!hd || !body) return;
+  if (_vtb.view === 'summary')      { hd.innerHTML = _vtbSumHd();  body.innerHTML = _vtbSumBody(); }
+  else if (_vtb.view === 'vendors') { hd.innerHTML = _vtbVlHd();   body.innerHTML = _vtbVlBody(); }
+  else                              { hd.innerHTML = _vtbDetHd();  body.innerHTML = _vtbDetBody(); }
+}
+
+/* ── Summary ── */
+function _vtbSumHd() {
+  var d = window._kpiSnap;
+  var total = d ? (d.compS || 0) + (d.compB || 0) : 0;
+  return '<div class="vtb-hd-txt">'
+    + '<div class="vtb-hd-title">Completed Vendors – Vendor Type Breakdown</div>'
+    + '<div class="vtb-hd-sub">' + fmt(total) + ' vendors completed onboarding</div>'
+    + '</div>'
+    + '<button class="vtb-hd-close" onclick="closeVtbModal()" title="Close">×</button>';
+}
+
+function _vtbSumBody() {
+  var types = _vtbTypes();
+  if (!types.length) return '<div class="vtb-no-data">No vendor type data available for the current selection.</div>';
+  var rows = '';
+  for (var i = 0; i < types.length; i++) {
+    var t = types[i];
+    var col = _VTB_CLR[i % _VTB_CLR.length];
+    var rate = t.onboarded > 0 ? Math.round((t.transacted / t.onboarded) * 100) : 0;
+    rows += '<tr class="vtb-sum-row" onclick="vtbDrilldown(' + JSON.stringify(t.type) + ',' + i + ')">'
+      + '<td><div class="vtb-type-name"><span class="vtb-type-dot" style="background:' + col + '"></span>'
+      + esc(t.type) + '</div></td>'
+      + '<td><strong>' + fmt(t.onboarded) + '</strong></td>'
+      + '<td>' + fmt(t.transacted) + '<div class="vtb-txn-rate">' + rate + '% of completed</div></td>'
+      + '<td style="color:var(--txt3)">—</td>'
+      + '<td><span class="vtb-arr">›</span></td>'
+      + '</tr>';
+  }
+  return '<table class="vtb-sum-tbl"><thead><tr>'
+    + '<th>Vendor Type</th><th>Total Completed</th><th>Transacted</th><th>GMV</th><th></th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+/* ── Vendor list ── */
+function vtbDrilldown(vtType, ci) {
+  _vtb.vtType = vtType;
+  _vtb.vtCol  = _VTB_CLR[(ci || 0) % _VTB_CLR.length];
+  _vtb.view   = 'vendors';
+  _vtb.q = ''; _vtb.sk = 'name'; _vtb.sd = 1; _vtb.pg = 0;
+  _vtb.vtRows = _vtbGatherRows(vtType);
+  _vtbRender();
+}
+
+function _vtbFiltered() {
+  var q = _vtb.q.toLowerCase();
+  return _vtb.vtRows.filter(function(r) {
+    if (!q) return true;
+    return (r.name||'').toLowerCase().indexOf(q) > -1
+      || (r.id||'').toLowerCase().indexOf(q) > -1
+      || (r.state||'').toLowerCase().indexOf(q) > -1
+      || (r.category||'').toLowerCase().indexOf(q) > -1;
+  });
+}
+
+function _vtbSorted(arr) {
+  var k = _vtb.sk, d = _vtb.sd;
+  return arr.slice().sort(function(a, b) {
+    if (k === 'txnValue') return d * ((+a[k] || 0) - (+b[k] || 0));
+    if (k === 'onbDate' || k === 'txnDate') {
+      var at = a[k] ? new Date(a[k]).getTime() : 0;
+      var bt = b[k] ? new Date(b[k]).getTime() : 0;
+      return d * (at - bt);
+    }
+    return d * String(a[k]||'').localeCompare(String(b[k]||''));
+  });
+}
+
+function _vtbVlHd() {
+  var dot = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'
+    + _vtb.vtCol + ';margin-right:6px;vertical-align:middle"></span>';
+  return '<button class="vtb-hd-back" onclick="_vtbBack()" title="Back">&#8592;</button>'
+    + '<div class="vtb-hd-txt"><div class="vtb-hd-title">' + dot + esc(_vtb.vtType) + '</div>'
+    + '<div class="vtb-hd-sub">Completed vendors – click a row to view details</div></div>'
+    + '<button class="vtb-hd-close" onclick="closeVtbModal()" title="Close">×</button>';
+}
+
+function _vtbVlBody() {
+  var filtered = _vtbFiltered();
+  var sorted   = _vtbSorted(filtered);
+  var total    = sorted.length;
+  var pgSz = _vtb.pgSz, pg = _vtb.pg;
+  var start    = pg * pgSz;
+  var page     = sorted.slice(start, start + pgSz);
+  var maxPg    = Math.max(0, Math.ceil(total / pgSz) - 1);
+
+  var cols = [
+    { key:'name',     lbl:'Company Name' },
+    { key:'id',       lbl:'Vendor ID'    },
+    { key:'audience', lbl:'Buyer/Seller' },
+    { key:'category', lbl:'Category'     },
+    { key:'state',    lbl:'State'        },
+    { key:'onbDate',  lbl:'Onb. Date'    },
+    { key:'txnValue', lbl:'GMV'          },
+    { key:'txnDate',  lbl:'Last Txn'     }
+  ];
+
+  var thHtml = cols.map(function(c) {
+    var isAsc  = _vtb.sk === c.key && _vtb.sd ===  1;
+    var isDesc = _vtb.sk === c.key && _vtb.sd === -1;
+    var cls    = isAsc ? 'vtb-th-asc' : isDesc ? 'vtb-th-desc' : '';
+    var ic     = isAsc ? '&#9650;' : isDesc ? '&#9660;' : '&#9651;';
+    return '<th class="' + cls + '" onclick="vtbSrt(\'' + c.key + '\')">'
+      + esc(c.lbl) + '<span class="s-ic">' + ic + '</span></th>';
+  }).join('');
+
+  var trHtml = page.map(function(r, idx) {
+    var si  = start + idx;
+    var aud = (r.audience||'') === 'buyer' ? 'Buyer' : 'Seller';
+    var cat = r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : '—';
+    var gmv = r.txnValue ? '₹' + fmt(r.txnValue) : '—';
+    var onbD = r.onbDate ? String(r.onbDate).split('T')[0] : '—';
+    var txnD = r.txnDate ? String(r.txnDate).split('T')[0] : '—';
+    return '<tr class="vtb-vl-row" onclick="vtbOpenDet(' + si + ')">'
+      + '<td title="' + esc(r.name||'') + '">' + esc(r.name||'—') + '</td>'
+      + '<td>' + esc(r.id||'—') + '</td>'
+      + '<td>' + aud + '</td>'
+      + '<td>' + cat + '</td>'
+      + '<td>' + esc(r.state||'—') + '</td>'
+      + '<td>' + onbD + '</td>'
+      + '<td>' + gmv  + '</td>'
+      + '<td>' + txnD + '</td>'
+      + '</tr>';
+  }).join('');
+
+  if (!trHtml) {
+    trHtml = '<tr><td colspan="8" class="vtb-no-data" style="padding:32px">No vendors found'
+      + (_vtb.q ? ' matching “' + esc(_vtb.q) + '”' : '') + '.</td></tr>';
+  }
+
+  var noRowsNote = !_vtb.vtRows.length
+    ? '<div style="padding:10px 16px 0;font-size:12px;color:var(--txt3)">Open a vertical in the detail panel to load vendor records for this type.</div>'
+    : '';
+
+  return noRowsNote
+    + '<div class="vtb-toolbar"><input class="vtb-search" type="text" placeholder="Search name, ID, state…" value="'
+    + esc(_vtb.q) + '" oninput="vtbSetQ(this.value)">'
+    + '<span class="vtb-count-lbl">' + total + ' vendor' + (total !== 1 ? 's' : '') + '</span></div>'
+    + '<div class="vtb-vl-wrap"><table class="vtb-vl-tbl"><thead><tr>' + thHtml + '</tr></thead>'
+    + '<tbody>' + trHtml + '</tbody></table></div>'
+    + '<div class="vtb-pg"><span>Showing ' + (total ? start + 1 : 0) + '–'
+    + Math.min(start + pgSz, total) + ' of ' + total + '</span>'
+    + '<div class="vtb-pg-btns">'
+    + '<button class="vtb-pg-btn" onclick="vtbPg(-1)"' + (pg <= 0 ? ' disabled' : '') + '>‹ Prev</button>'
+    + '<button class="vtb-pg-btn" onclick="vtbPg(1)"'  + (pg >= maxPg ? ' disabled' : '') + '>Next ›</button>'
+    + '</div></div>';
+}
+
+/* ── Detail view ── */
+function vtbOpenDet(si) {
+  _vtb.row  = _vtbSorted(_vtbFiltered())[si] || null;
+  _vtb.view = 'detail';
+  _vtbRender();
+}
+
+function _vtbDetHd() {
+  var r = _vtb.row;
+  return '<button class="vtb-hd-back" onclick="_vtbBackToList()" title="Back">&#8592;</button>'
+    + '<div class="vtb-hd-txt"><div class="vtb-hd-title">' + esc(r ? r.name || 'Vendor Detail' : 'Vendor Detail') + '</div>'
+    + '<div class="vtb-hd-sub">Vendor profile</div></div>'
+    + '<button class="vtb-hd-close" onclick="closeVtbModal()" title="Close">×</button>';
+}
+
+function _vtbDetBody() {
+  var r = _vtb.row;
+  if (!r) return '<div class="vtb-no-data">No vendor selected.</div>';
+  var audLbl = (r.audience||'') === 'buyer' ? '🛒 Buyer' : '🏠 Seller';
+  var chips = [
+    audLbl,
+    r.vendorType || null,
+    r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : null,
+    r.state || null,
+    r.hasTransacted ? '⚡ Transacted' : null,
+    r.hasGST ? 'GST Registered' : null
+  ].filter(Boolean).map(function(c) { return '<span class="vtb-chip">' + c + '</span>'; }).join('');
+
+  var fields = [
+    { l:'Vendor ID',         v: esc(r.id||'—') },
+    { l:'Status',            v: esc(STATUS_LABELS[r.status] || r.status || '—') },
+    { l:'State',             v: esc(r.state||'—') },
+    { l:'GSTIN',             v: esc(r.gstin||'—') },
+    { l:'Onboarding Date',   v: r.onbDate ? String(r.onbDate).split('T')[0] : '—' },
+    { l:'TAT',               v: tatChip(r.tat) },
+    { l:'Material Category', v: r.category ? esc(r.category.charAt(0).toUpperCase() + r.category.slice(1)) : '—' },
+    { l:'Vendor Type',       v: esc(r.vendorType||'—') }
+  ];
+  var fldHtml = fields.map(function(f) {
+    return '<div><div class="vtb-fld-lbl">' + f.l + '</div><div class="vtb-fld-val">' + f.v + '</div></div>';
+  }).join('');
+
+  var txnHtml = r.hasTransacted
+    ? '<div class="vtb-fld-grid">'
+      + '<div><div class="vtb-fld-lbl">GMV</div><div class="vtb-fld-val">'
+      + (r.txnValue ? '₹' + fmt(r.txnValue) : '—') + '</div></div>'
+      + '<div><div class="vtb-fld-lbl">Last Transaction</div><div class="vtb-fld-val">'
+      + (r.txnDate ? String(r.txnDate).split('T')[0] : '—') + '</div></div>'
+      + '</div>'
+    : '<p style="color:var(--txt3);font-size:12px;margin:4px 0 0">No transactions recorded.</p>';
+
+  return '<div class="vtb-det">'
+    + '<div class="vtb-chip-row">' + chips + '</div>'
+    + '<div class="vtb-sec-hd">Vendor Details</div>'
+    + '<div class="vtb-fld-grid">' + fldHtml + '</div>'
+    + '<div class="vtb-sec-hd">Transaction Info</div>'
+    + txnHtml + '</div>';
+}
+
+function _vtbBack()       { _vtb.view = 'summary'; _vtbRender(); }
+function _vtbBackToList() { _vtb.view = 'vendors'; _vtbRender(); }
+function vtbSrt(key) {
+  _vtb.sd = (_vtb.sk === key) ? -_vtb.sd : 1;
+  _vtb.sk = key; _vtb.pg = 0; _vtbRender();
+}
+function vtbSetQ(v) { _vtb.q = v; _vtb.pg = 0; _vtbRender(); }
+function vtbPg(d) {
+  var max = Math.max(0, Math.ceil(_vtbFiltered().length / _vtb.pgSz) - 1);
+  _vtb.pg = Math.max(0, Math.min(_vtb.pg + d, max));
+  _vtbRender();
 }
 
 // ═══════════════════════════════════════════════════════════════
