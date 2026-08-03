@@ -1072,8 +1072,7 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .vtb-sec-hd{font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 .vtb-no-data{text-align:center;padding:40px 20px;color:var(--txt3);font-size:13px}
 /* VTB Level 2 – KPI cards */
-.vtb-kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
-@media(max-width:640px){.vtb-kpi-strip{grid-template-columns:repeat(3,1fr)}}
+.vtb-kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
 @media(max-width:400px){.vtb-kpi-strip{grid-template-columns:repeat(2,1fr)}}
 .vtb-kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden}
 .vtb-kpi-val{font-size:18px;font-weight:700;color:var(--txt1);font-variant-numeric:tabular-nums;line-height:1.15;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -3920,7 +3919,6 @@ function fyTable(v) {
   if (!rows.length) return '';
 
   var hasTxn = rows.some(function(f) { return f.pctTransacted !== null || f.totalTxnValue !== null; });
-  var hasGST = rows.some(function(f) { return f.withGST !== null; });
 
   var thead = '<thead><tr>'
     + '<th style="text-align:left">FY</th>'
@@ -3928,7 +3926,6 @@ function fyTable(v) {
     + '<th>Onboarded</th>'
     + (hasTxn ? '<th>Txn%</th><th>GMV</th>' : '')
     + '<th>Avg TAT</th>'
-    + (hasGST ? '<th>GST ✓</th>' : '')
     + '</tr></thead>';
 
   var tbody = '<tbody>' + rows.map(function(f) {
@@ -3941,7 +3938,6 @@ function fyTable(v) {
           + '<td class="cfy-gmv">' + (f.totalTxnValue !== null ? fmtINR(f.totalTxnValue) : '—') + '</td>'
           : '')
       + '<td class="cfy-tat">' + (f.avgTAT !== null ? f.avgTAT + 'd' : '—') + '</td>'
-      + (hasGST ? '<td>' + (f.withGST !== null ? fmt(f.withGST) : '—') + '</td>' : '')
       + '</tr>';
   }).join('') + '</tbody>';
 
@@ -5795,7 +5791,7 @@ function _patchQualityKpiCards() {
 
   // Patch the Business Insights rail's Vendor Rating / OSV Consent mini-cards.
   var bqEl = document.getElementById('biz-qual');
-  if (bqEl) bqEl.outerHTML = _buildRailQual(qc);
+  if (bqEl) bqEl.outerHTML = _buildRailQual(qc, true); // always OMP when quality data is loaded
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -6319,7 +6315,7 @@ function renderBizRail(cfg, vs) {
 
   // ── Tiles 2 & 3: Vendor Rating + OSV Consent (OMP only, patched async) ──
   var qc = (qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
-  var qualTiles = _buildRailQual(isOMP ? qc : null, vname);
+  var qualTiles = _buildRailQual(qc, isOMP);
 
   // ── Tile 4: Regional Split ──
   var regionRows = _buildRailRegions(vs);
@@ -6915,8 +6911,10 @@ function _buildCompanyProfile(row, region, state) {
   return sec1 + sec2 + sec3;
 }
 
-// Vendor Rating + OSV Status mini-cards for the rail. qc null → "Syncing…".
-function _buildRailQual(qc, vname) {
+// Vendor Rating + OSV Status mini-cards for the rail (Open Marketplace only).
+// isOMP=false → returns empty string; isOMP=true with qc=null → "Syncing…" state.
+function _buildRailQual(qc, isOMP) {
+  if (!isOMP) return '';
   var ratingTile, osvTile;
 
   if (qc) {
@@ -7065,9 +7063,8 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     curFY = fySorted[fySorted.length - 1].fy || '';
   }
   var opsData = [
-    { lbl:'Avg TAT',      val: v.avgTAT  != null ? v.avgTAT + 'd'  : '—' },
-    { lbl:'GSTIN Active', val: v.withGST != null ? fmt(v.withGST) : '—' },
-    { lbl:'Current FY',   val: curFY || '—' },
+    { lbl:'Avg TAT',    val: v.avgTAT != null ? v.avgTAT + 'd' : '—' },
+    { lbl:'Current FY', val: curFY || '—' },
   ];
   var opsCol = '<div class="vpipe-ops-col">'
     + opsData.map(function(o) {
@@ -7281,7 +7278,6 @@ function buildCard(cfg, v, pipelineLabel) {
       var aggTAT   = v.avgTAT        != null ? v.avgTAT + 'd'           : null;
       var aggPct   = v.pctTransacted  != null ? v.pctTransacted + '%'   : null;
       var aggGMV   = v.totalTxnValue  != null ? fmtINR(v.totalTxnValue) : null;
-      var aggGSTon = v.withGST        != null ? fmt(v.withGST)          : null;
 
       function fyTr(label, valFn, aggVal, badCls) {
         var cells = fys.map(valFn);
@@ -7297,7 +7293,6 @@ function buildCard(cfg, v, pipelineLabel) {
         fyTr('Avg TAT',       function(f){ return f.avgTAT        != null ? f.avgTAT + 'd'           : null; }, aggTAT,   ''),
         isOMPc ? null : fyTr('% Transacted',  function(f){ return f.pctTransacted != null ? f.pctTransacted + '%'   : null; }, aggPct,   ''),
         aud === 'seller' ? fyTr('Total GMV', function(f){ return f.totalTxnValue != null ? fmtINR(f.totalTxnValue) : null; }, aggGMV, '') : null,
-        fyTr('GSTIN active',  function(f){ return f.withGST       != null ? fmt(f.withGST)          : null; }, aggGSTon, ''),
       ].filter(Boolean).join('');
 
       if (fyTbody) {
@@ -7525,7 +7520,6 @@ function renderVertStory() {
       ['Avg TAT',        dOr(v.avgTAT, 'd'), ''],
       v.completedThisWeek ? ['Onboarded (7d)', fmt(v.completedThisWeek), ''] : null,
       !isOMPs && v.transacted != null ? ['Transacted', fmt(v.transacted) + ' (' + (v.pctTransacted || 0) + '%)', ''] : null,
-      v.withGST != null ? ['GST Active', fmt(v.withGST), ''] : null,
     ].filter(Boolean);
     var metricsHtml = (metArr.length || gmvMetric)
       ? '<div class="vs-metrics">'
@@ -9042,12 +9036,13 @@ function _vtbVlBody() {
   // KPI summary cards
   var catNames = Object.keys(catCounts).sort().join(' · ') || '—';
   var catFzSt  = catNames.length > 10 ? ' style=”font-size:13px;line-height:1.35;white-space:normal”' : '';
+  var isOmpVtb = (typeof activeVertKey !== 'undefined' && activeVertKey === 'OMP');
   var ratSt    = avgRat !== null ? '' : ' style=”color:var(--txt3)”';
   var statStrip = '<div class=”vtb-kpi-strip”>'
     + '<div class=”vtb-kpi-card”><div class=”vtb-kpi-val”>' + fmt(allRows.length) + '</div><div class=”vtb-kpi-lbl”>Total Vendors</div></div>'
     + '<div class=”vtb-kpi-card”><div class=”vtb-kpi-val” style=”font-size:14px”>' + esc(audLbl) + '</div><div class=”vtb-kpi-lbl”>Active Pipeline</div></div>'
     + '<div class=”vtb-kpi-card”><div class=”vtb-kpi-val”' + catFzSt + '>' + esc(catNames) + '</div><div class=”vtb-kpi-lbl”>Material Category</div></div>'
-    + '<div class=”vtb-kpi-card”><div class=”vtb-kpi-val”' + ratSt + '>' + (avgRat !== null ? avgRat + ' / 10' : '—') + '</div><div class=”vtb-kpi-lbl”>Avg Vendor Rating</div></div>'
+    + (isOmpVtb ? '<div class=”vtb-kpi-card”><div class=”vtb-kpi-val”' + ratSt + '>' + (avgRat !== null ? avgRat + ' / 10' : '—') + '</div><div class=”vtb-kpi-lbl”>Avg Vendor Rating</div></div>' : '')
     + '<div class=”vtb-kpi-card”><div class=”vtb-kpi-val”>' + fmt(total) + '</div><div class=”vtb-kpi-lbl”>Vendors Displayed</div></div>'
     + '</div>';
 

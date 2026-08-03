@@ -984,7 +984,7 @@ function vStats(data, txnData) {
   // Transaction metrics are computed separately below from txnData.
   var total = data.length;
   var completed = 0, draft = 0, inReview = 0, rejected = 0;
-  var withGST = 0, newVendors = 0, oldVendors = 0, completedThisWeek = 0;
+  var newVendors = 0, oldVendors = 0, completedThisWeek = 0;
   var hasTxnData = false;
   var agingCount = 0, overdueCount = 0;
   var tats = [];
@@ -1003,7 +1003,6 @@ function vStats(data, txnData) {
     else if (r.status === 'IN_REVIEW')  inReview++;
     else if (r.status === 'REJECTED')   rejected++;
 
-    if (isDone && r.hasGST)                                       withGST++;
     if (isDone && isNew)                                           newVendors++;
     if (isDone && isOld)                                           oldVendors++;
     if (isDone && r.onboardedDate && r.onboardedDate >= weekAgo)  completedThisWeek++;
@@ -1152,8 +1151,6 @@ function vStats(data, txnData) {
     d.forEach(function(r) {
       if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) { fyHasTxnVal = true; fyTxnSum += r.txnValue; }
     });
-    var fyWithGST = d.some(function(r) { return r.gstin; })
-      ? countFn(d, function(r) { return r.status === 'COMPLETED' && r.hasGST; }) : null;
     var fyTats = d.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS; })
                   .map(function(r) { return r.onbTAT; });
     return {
@@ -1165,7 +1162,6 @@ function vStats(data, txnData) {
       transacted:    fyTransacted,
       pctTransacted: fyTransacted === null ? null : pct(fyTransacted, fyCompleted),
       totalTxnValue: fyHasTxnVal ? fyTxnSum : null,
-      withGST:       fyWithGST,
       avgTAT:        fyTats.length ? Math.round(avg(fyTats)) : null,
     };
   }).filter(function(f) { return f.fyStart >= 2019; })
@@ -1177,7 +1173,6 @@ function vStats(data, txnData) {
     draft: draft,
     inReview: inReview,
     rejected: rejected,
-    withGST: withGST,
     completionPct: pct(completed, total),
     completedThisWeek: completedThisWeek,
     avgTAT: tats.length ? Math.round(avg(tats)) : null,
