@@ -757,13 +757,18 @@ function normalizeRows(raw, cfg) {
     var nNm = (r.name || '').trim();
     return !!nNm && nNm !== '-' && nNm !== '—';
   });
-  // Count pre-dedup rows per (id+vertical) as per-vendor transaction count.
-  // Metabase emits one row per transaction via joins; this count captures that.
-  var txnCounts = {};
+  // Count pre-dedup rows per (id+vertical) as per-vendor transaction count and
+  // accumulate the full txnValue sum — Metabase emits one row per transaction
+  // via joins, so summing before dedup gives the correct total GMV per vendor.
+  var txnCounts   = {};
+  var txnValSums  = {};
   normalized.forEach(function(r) {
     if (!r.id) return;
     var key = r.id + '\x00' + r.vertical;
     txnCounts[key] = (txnCounts[key] || 0) + 1;
+    if (r.txnValue !== null && r.txnValue > 0) {
+      txnValSums[key] = (txnValSums[key] || 0) + r.txnValue;
+    }
   });
   // Deduplicate by ID — Metabase can emit the same entity multiple times when joins
   // produce multiple transaction rows. Sort so hasTransacted=true rows come first so
@@ -782,6 +787,9 @@ function normalizeRows(raw, cfg) {
     if (seen[key]) return false;
     seen[key] = true;
     r.txnCount = txnCounts[key] || 1;
+    // Replace per-row txnValue with the cumulative sum across all pre-dedup rows
+    // so vStats GMV totals and the detail table both see total GMV per vendor.
+    if (txnValSums[key] != null) r.txnValue = txnValSums[key];
     return true;
   });
 }

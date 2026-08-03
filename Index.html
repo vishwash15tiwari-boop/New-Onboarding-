@@ -1245,6 +1245,10 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .ta-pg-btn:disabled{opacity:.4;cursor:not-allowed}
 .ta-pg-btn:not(:disabled):hover{background:var(--bg2)}
 .ta-no-data{text-align:center;padding:40px 20px;color:var(--txt3);font-size:13px}
+.ta-metrics{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.ta-metric-card{flex:1;min-width:120px;background:var(--bg2);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:3px}
+.ta-metric-val{font-size:17px;font-weight:700;line-height:1.2}
+.ta-metric-lbl{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em}
 
 /* ═══════════════════════════════════════════════════════════════
    GST PAYABLES VIEW — warm cream / burnt-orange enterprise palette
@@ -9888,23 +9892,9 @@ function _dmVendor(hd,bd,E) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TRANSACTION AGEING MODAL
+// TRANSACTION VENDORS MODAL
 // ═══════════════════════════════════════════════════════════════
-var TA_BUCKETS = [
-  { lbl:'0–30 Days',    min:0,   max:30,         col:'#1DC797' },
-  { lbl:'31–60 Days',   min:31,  max:60,         col:'#005DFF' },
-  { lbl:'61–90 Days',   min:61,  max:90,         col:'#FF9F0A' },
-  { lbl:'91–180 Days',  min:91,  max:180,        col:'#FF6B35' },
-  { lbl:'180+ Days',    min:181, max:Infinity,   col:'#FF3B30' },
-];
-var TA_SEGS = [
-  { aud:'seller', cat:'Metal',   lbl:'Seller · Metal'   },
-  { aud:'seller', cat:'Plastic', lbl:'Seller · Plastic' },
-  { aud:'buyer',  cat:'Metal',   lbl:'Buyer · Metal'    },
-  { aud:'buyer',  cat:'Plastic', lbl:'Buyer · Plastic'  },
-];
-var _ta = { view:'summary', aud:'seller', cat:'Metal', bucket:null,
-            rows:[], bucketRows:[], q:'', sk:'_days', sd:1, pg:0, pgSz:20 };
+var _ta = { aud:'seller', cat:'All', q:'', sk:'txnCount', sd:-1, pg:0, pgSz:25, rows:[] };
 
 function _taNormCat(c) {
   if (!c) return 'Other';
@@ -9939,13 +9929,6 @@ function _taDateNum(dateStr) {
   return 0;
 }
 
-function _taBucketIdx(days) {
-  for (var i = 0; i < TA_BUCKETS.length; i++) {
-    if (days >= TA_BUCKETS[i].min && days <= TA_BUCKETS[i].max) return i;
-  }
-  return TA_BUCKETS.length - 1;
-}
-
 function _taGatherTransacted(aud) {
   var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
   var seen = {}, rows = [];
@@ -9955,15 +9938,12 @@ function _taGatherTransacted(aud) {
       var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + v.key) || 'null');
       if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
         sv.rows.forEach(function(r) {
-          if (r.hasTransacted && !seen[r.id]) {
+          if (r.hasTransacted && !seen[r.id] && _isValidRec(r)) {
             seen[r.id] = true;
-            var days = _taDaysSince(r.txnDate);
             rows.push({ id: r.id, name: r.name, audience: aud,
-              vendorType: r.vendorType || '—', category: r.category || '',
+              vendorType: r.vendorType || '—', _normCat: _taNormCat(r.category),
               state: r.state || '—', txnDate: r.txnDate || '—',
-              txnValue: r.txnValue || 0, txnCount: r.txnCount || 1,
-              status: r.status || '', _days: days !== null ? days : 9999,
-              _normCat: _taNormCat(r.category) });
+              txnValue: r.txnValue || 0, txnCount: r.txnCount || 1 });
           }
         });
       }
@@ -9971,15 +9951,12 @@ function _taGatherTransacted(aud) {
   });
   if (Array.isArray(vertRows)) {
     vertRows.forEach(function(r) {
-      if ((r.audience || 'seller') === aud && r.hasTransacted && !seen[r.id]) {
+      if ((r.audience || 'seller') === aud && r.hasTransacted && !seen[r.id] && _isValidRec(r)) {
         seen[r.id] = true;
-        var days = _taDaysSince(r.txnDate);
         rows.push({ id: r.id, name: r.name, audience: aud,
-          vendorType: r.vendorType || '—', category: r.category || '',
+          vendorType: r.vendorType || '—', _normCat: _taNormCat(r.category),
           state: r.state || '—', txnDate: r.txnDate || '—',
-          txnValue: r.txnValue || 0, txnCount: r.txnCount || 1,
-          status: r.status || '', _days: days !== null ? days : 9999,
-          _normCat: _taNormCat(r.category) });
+          txnValue: r.txnValue || 0, txnCount: r.txnCount || 1 });
       }
     });
   }
@@ -9990,8 +9967,8 @@ function openTaModal() {
   var m = document.getElementById('ta-modal');
   var isOpen = m && m.classList.contains('ta-open');
   if (!isOpen) {
-    _ta.view = 'summary'; _ta.aud = 'seller'; _ta.cat = 'Metal';
-    _ta.bucket = null; _ta.q = ''; _ta.sk = '_days'; _ta.sd = 1; _ta.pg = 0;
+    _ta.aud = 'seller'; _ta.cat = 'All'; _ta.q = '';
+    _ta.sk = 'txnCount'; _ta.sd = -1; _ta.pg = 0;
   }
   _ovnEnsureAud('seller');
   _ovnEnsureAud('buyer');
@@ -10011,8 +9988,7 @@ function _taEsc(e) {
   var m = document.getElementById('ta-modal');
   if (!m || !m.classList.contains('ta-open')) return;
   e.stopPropagation();
-  if (_ta.view === 'vendors') { _ta.view = 'summary'; _taRender(); }
-  else closeTaModal();
+  closeTaModal();
 }
 
 function _taRender() {
@@ -10023,121 +9999,65 @@ function _taRender() {
   var allSeller = _taGatherTransacted('seller');
   var allBuyer  = _taGatherTransacted('buyer');
   _ta.rows = allSeller.concat(allBuyer);
-  if (_ta.view === 'vendors') {
-    if (seg) seg.style.display = 'none';
-    var bi = _ta.bucket;
-    _ta.bucketRows = _ta.rows.filter(function(r) {
-      return r.audience === _ta.aud && r._normCat === _ta.cat && _taBucketIdx(r._days) === bi;
-    });
-    hd.innerHTML  = _taHdVendors();
-    body.innerHTML = _taVlBody();
-  } else {
-    if (seg) { seg.style.display = ''; seg.innerHTML = _taSegTabsHtml(); }
-    hd.innerHTML  = _taHdSummary();
-    body.innerHTML = _taSumBody();
-  }
+  var sCnt = allSeller.length, bCnt = allBuyer.length;
+  hd.innerHTML = _taHdHtml(sCnt, bCnt);
+  if (seg) { seg.style.display = ''; seg.innerHTML = _taSegTabsHtml(sCnt, bCnt); }
+  body.innerHTML = _taTblHtml();
 }
 
-function _taHdSummary() {
-  var ico = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
-  var total = _ta.rows.filter(function(r) { return r.audience === _ta.aud && r._normCat === _ta.cat; }).length;
+function _taHdHtml(sCnt, bCnt) {
+  var ico = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+  var total = sCnt + bCnt;
+  var sub = total === 0 ? 'Loading…'
+    : fmt(sCnt) + ' seller' + (sCnt !== 1 ? 's' : '') + ' · ' + fmt(bCnt) + ' buyer' + (bCnt !== 1 ? 's' : '') + ' · ' + (currentPeriod || 'All') + ' period';
   return '<div class="ta-hd-ico">' + ico + '</div>'
-    + '<div class="ta-hd-txt"><div class="ta-hd-title">Vendor Transaction Ageing</div>'
-    + '<div class="ta-hd-sub">' + fmt(total) + ' transacted vendor' + (total !== 1 ? 's' : '')
-    + (total === 0 ? ' · Loading…' : ' · ' + (currentPeriod || 'All') + ' period') + '</div></div>'
+    + '<div class="ta-hd-txt"><div class="ta-hd-title">Transacted Vendors</div>'
+    + '<div class="ta-hd-sub">' + sub + '</div></div>'
     + '<button class="ta-hd-close" onclick="closeTaModal()" title="Close">×</button>';
 }
 
-function _taHdVendors() {
-  var b = TA_BUCKETS[_ta.bucket];
-  var segLbl = (_ta.aud === 'buyer' ? 'Buyer' : 'Seller') + ' · ' + _ta.cat;
-  return '<button class="ta-hd-back" onclick="_taBack()" title="Back">&#8592;</button>'
-    + '<div class="ta-hd-txt"><div class="ta-hd-title">Vendor Transaction Ageing</div>'
-    + '<div class="ta-hd-sub">' + segLbl + ' · ' + (b ? b.lbl : '') + ' · '
-    + fmt(_ta.bucketRows.length) + ' vendor' + (_ta.bucketRows.length !== 1 ? 's' : '') + '</div></div>'
-    + '<button class="ta-hd-close" onclick="closeTaModal()" title="Close">×</button>';
-}
-
-function _taSegTabsHtml() {
-  return TA_SEGS.map(function(s) {
-    var active = s.aud === _ta.aud && s.cat === _ta.cat;
-    return '<button class="ta-seg-tab' + (active ? ' active' : '') + '"'
-      + ' onclick="taSetSeg(\'' + s.aud + '\',\'' + s.cat + '\')">' + s.lbl + '</button>';
+function _taSegTabsHtml(sCnt, bCnt) {
+  var audHtml = [
+    { aud:'seller', lbl:'Sellers (' + fmt(sCnt) + ')' },
+    { aud:'buyer',  lbl:'Buyers ('  + fmt(bCnt) + ')' }
+  ].map(function(a) {
+    return '<button class="ta-seg-tab' + (_ta.aud === a.aud ? ' active' : '') + '" onclick="taSetAud(\'' + a.aud + '\')">' + a.lbl + '</button>';
   }).join('');
-}
-
-function _taSumBody() {
-  var segRows = _ta.rows.filter(function(r) { return r.audience === _ta.aud && r._normCat === _ta.cat; });
-  var total = segRows.length;
-  if (!total) {
-    return '<div class="ta-no-data">'
-      + (_ta.rows.length === 0 ? 'Loading vendor data…' : 'No transacted ' + _ta.aud + 's with <em>' + esc(_ta.cat) + '</em> category in the current period.')
-      + '</div>';
-  }
-  var totalGMV = 0, totalTxns = 0;
-  var thHtml = '<thead><tr>'
-    + '<th style="text-align:left">Ageing Bucket</th>'
-    + '<th>Vendors</th><th>%</th><th>Last Txn Date</th><th>Days Since</th><th>GMV</th><th>Transactions</th>'
-    + '</tr></thead>';
-  var trHtml = '';
-  TA_BUCKETS.forEach(function(b, bi) {
-    var bRows = segRows.filter(function(r) { return _taBucketIdx(r._days) === bi; });
-    if (!bRows.length) return;
-    var cnt  = bRows.length;
-    var pct  = Math.round(cnt / total * 100);
-    var gmv  = bRows.reduce(function(s, r) { return s + (r.txnValue || 0); }, 0);
-    var txns = bRows.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
-    totalGMV += gmv; totalTxns += txns;
-    var maxDN = 0, lastDate = '—';
-    bRows.forEach(function(r) { var dn = _taDateNum(r.txnDate); if (dn > maxDN) { maxDN = dn; lastDate = r.txnDate; } });
-    var ds = lastDate !== '—' ? _taDaysSince(lastDate) : null;
-    trHtml += '<tr class="ta-age-row" onclick="taDrilldown(' + bi + ')">'
-      + '<td><div class="ta-age-bucket"><span class="ta-age-dot" style="background:' + b.col + '"></span>' + b.lbl + '</div></td>'
-      + '<td>' + fmt(cnt) + '</td>'
-      + '<td><span class="ta-age-pct">' + pct + '%</span></td>'
-      + '<td>' + (lastDate !== '—' ? lastDate : '—') + '</td>'
-      + '<td style="font-weight:600;color:' + b.col + '">' + (ds !== null ? fmt(ds) + ' Days' : '—') + '</td>'
-      + '<td>' + (gmv > 0 ? fmtINR(gmv) : '—') + '</td>'
-      + '<td>' + fmt(txns) + '</td>'
-      + '</tr>';
-  });
-  if (!trHtml) trHtml = '<tr><td colspan="7" class="ta-no-data">No transaction dates available to bucket vendors.</td></tr>';
-  return '<table class="ta-age-tbl">' + thHtml + '<tbody>' + trHtml + '</tbody></table>'
-    + '<div class="ta-age-foot">'
-    + '<span><strong>' + fmt(total) + '</strong> ' + _ta.aud + 's · ' + esc(_ta.cat) + '</span>'
-    + '<span><strong>' + (totalGMV > 0 ? fmtINR(totalGMV) : '—') + '</strong> GMV · <strong>' + fmt(totalTxns) + '</strong> transactions</span>'
-    + '</div>';
-}
-
-function taDrilldown(bi) {
-  _ta.bucket = bi; _ta.view = 'vendors';
-  _ta.q = ''; _ta.sk = '_days'; _ta.sd = 1; _ta.pg = 0;
-  _taRender();
+  var catHtml = ['All', 'Metal', 'Plastic'].map(function(c) {
+    return '<button class="ta-seg-tab' + (_ta.cat === c ? ' active' : '') + '" onclick="taSetCat(\'' + c + '\')">' + c + '</button>';
+  }).join('');
+  return audHtml + '<span style="width:1px;background:var(--border);align-self:stretch;margin:0 4px;flex-shrink:0"></span>' + catHtml;
 }
 
 function _taFiltered() {
+  var rows = _ta.rows.filter(function(r) { return r.audience === _ta.aud; });
+  if (_ta.cat !== 'All') rows = rows.filter(function(r) { return r._normCat === _ta.cat; });
   var q = (_ta.q || '').toLowerCase().trim();
-  if (!q) return _ta.bucketRows.slice();
-  return _ta.bucketRows.filter(function(r) {
-    return (r.name       || '').toLowerCase().indexOf(q) >= 0
-        || (r.id         || '').toLowerCase().indexOf(q) >= 0
-        || (r.state      || '').toLowerCase().indexOf(q) >= 0
-        || (r._normCat   || '').toLowerCase().indexOf(q) >= 0
-        || (r.vendorType || '').toLowerCase().indexOf(q) >= 0
-        || (r.audience   || '').toLowerCase().indexOf(q) >= 0;
+  if (q) rows = rows.filter(function(r) {
+    return (r.name || '').toLowerCase().indexOf(q) >= 0
+        || (r.id || '').toLowerCase().indexOf(q) >= 0
+        || (r.state || '').toLowerCase().indexOf(q) >= 0
+        || (r._normCat || '').toLowerCase().indexOf(q) >= 0
+        || (r.vendorType || '').toLowerCase().indexOf(q) >= 0;
   });
+  return rows;
 }
 
 function _taSorted(rows) {
   var k = _ta.sk, d = _ta.sd;
   return rows.slice().sort(function(a, b) {
-    if (k === '_days' || k === 'txnValue' || k === 'txnCount') return d * ((+(a[k]||0)) - (+(b[k]||0)));
+    if (k === 'txnValue' || k === 'txnCount') return d * ((+(a[k]||0)) - (+(b[k]||0)));
+    if (k === 'avgTxnValue') {
+      var aAvg = (a.txnCount && a.txnValue) ? a.txnValue / a.txnCount : 0;
+      var bAvg = (b.txnCount && b.txnValue) ? b.txnValue / b.txnCount : 0;
+      return d * (aAvg - bAvg);
+    }
     if (k === 'txnDate') return d * (_taDateNum(a.txnDate) - _taDateNum(b.txnDate));
     return d * String(a[k]||'').localeCompare(String(b[k]||''));
   });
 }
 
-function _taVlBody() {
+function _taTblHtml() {
   var filtered = _taFiltered();
   var sorted   = _taSorted(filtered);
   var total    = sorted.length;
@@ -10145,18 +10065,38 @@ function _taVlBody() {
   var start = pg * pgSz;
   var page  = sorted.slice(start, start + pgSz);
   var maxPg = Math.max(0, Math.ceil(total / pgSz) - 1);
+
+  var uniqueVendors = filtered.length;
+  var totalTxns  = filtered.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
+  var totalGMV   = filtered.reduce(function(s, r) { return s + (r.txnValue || 0); }, 0);
+  var avgPerVend = uniqueVendors ? (totalTxns / uniqueVendors) : 0;
+  var avgTxnVal  = totalTxns ? (totalGMV / totalTxns) : 0;
+
+  var metricsHtml = '<div class="ta-metrics">'
+    + _taMetricCard('Unique Vendors',     fmt(uniqueVendors),                            '#005DFF')
+    + _taMetricCard('Total Transactions', fmt(totalTxns),                                '#1DC797')
+    + _taMetricCard('Total GMV',          totalGMV > 0 ? fmtINR(totalGMV) : '—',        '#FF9F0A')
+    + _taMetricCard('Avg Txns / Vendor',  avgPerVend > 0 ? avgPerVend.toFixed(1) : '—', 'var(--txt2)')
+    + _taMetricCard('Avg Txn Value',      avgTxnVal  > 0 ? fmtINR(avgTxnVal)  : '—',   'var(--txt2)')
+    + '</div>';
+
+  if (!total) {
+    return metricsHtml + '<div class="ta-no-data">'
+      + (_ta.rows.length === 0 ? 'Loading vendor data…'
+        : 'No transacted ' + _ta.aud + 's' + (_ta.cat !== 'All' ? ' with <em>' + esc(_ta.cat) + '</em> category' : '') + ' in the current period.')
+      + '</div>';
+  }
+
   var cols = [
-    { key:'name',       lbl:'Company Name'  },
-    { key:'id',         lbl:'Vendor ID'     },
-    { key:'audience',   lbl:'Type'          },
-    { key:'vendorType', lbl:'Vendor Type'   },
-    { key:'_normCat',   lbl:'Category'      },
-    { key:'state',      lbl:'State'         },
-    { key:'txnDate',    lbl:'Last Txn Date' },
-    { key:'_days',      lbl:'Days Since'    },
-    { key:'txnValue',   lbl:'GMV'           },
-    { key:'txnCount',   lbl:'Transactions'  },
-    { key:'status',     lbl:'Status'        }
+    { key:'name',        lbl:'Company Name'  },
+    { key:'id',          lbl:'Vendor ID'     },
+    { key:'vendorType',  lbl:'Vendor Type'   },
+    { key:'_normCat',    lbl:'Category'      },
+    { key:'state',       lbl:'State'         },
+    { key:'txnCount',    lbl:'Txn Count'     },
+    { key:'txnValue',    lbl:'Total GMV'     },
+    { key:'avgTxnValue', lbl:'Avg Txn Value' },
+    { key:'txnDate',     lbl:'Last Txn Date' },
   ];
   var thHtml = cols.map(function(c) {
     var isAsc  = _ta.sk === c.key && _ta.sd ===  1;
@@ -10165,37 +10105,30 @@ function _taVlBody() {
     return '<th class="' + cls + '" onclick="taSrt(\'' + c.key + '\')">'
       + esc(c.lbl) + '<span class="s-ic">' + (isAsc ? '&#9650;' : isDesc ? '&#9660;' : '&#9651;') + '</span></th>';
   }).join('');
-  var b = TA_BUCKETS[_ta.bucket];
-  var dayColor = b ? b.col : 'var(--txt2)';
+
   var trHtml = page.map(function(r) {
+    var avg = (r.txnCount && r.txnValue) ? r.txnValue / r.txnCount : 0;
     var catBg  = r._normCat === 'Plastic' ? 'rgba(255,159,10,.15)' : r._normCat === 'Metal' ? 'rgba(29,199,151,.12)' : 'rgba(99,99,102,.12)';
     var catClr = r._normCat === 'Plastic' ? '#B25000' : r._normCat === 'Metal' ? '#0A7044' : '#636366';
-    var audBg  = r.audience === 'buyer' ? 'rgba(0,93,255,.1)' : 'rgba(29,199,151,.1)';
-    var audClr = r.audience === 'buyer' ? '#005DFF' : '#0A7044';
-    var stLbl  = STATUS_LABELS[r.status] || r.status || '—';
-    var stBg   = r.status === 'COMPLETED' ? 'rgba(29,199,151,.12)' : r.status === 'REJECTED' ? 'rgba(255,59,48,.12)' : 'rgba(99,99,102,.1)';
-    var stClr  = r.status === 'COMPLETED' ? '#0A7044' : r.status === 'REJECTED' ? '#C0392B' : '#636366';
     return '<tr class="ta-vl-row">'
       + '<td><strong>' + esc(r.name||'—') + '</strong></td>'
       + '<td style="font-family:monospace;font-size:11px;color:var(--txt3)">' + esc(r.id||'—') + '</td>'
-      + '<td><span class="ta-aud-badge" style="background:' + audBg + ';color:' + audClr + '">' + (r.audience === 'buyer' ? 'Buyer' : 'Seller') + '</span></td>'
       + '<td>' + esc(r.vendorType||'—') + '</td>'
       + '<td>' + (r._normCat !== 'Other' ? '<span class="ta-cat-badge" style="background:' + catBg + ';color:' + catClr + '">' + esc(r._normCat) + '</span>' : '—') + '</td>'
       + '<td>' + esc(r.state||'—') + '</td>'
+      + '<td style="text-align:right;font-weight:600">' + fmt(r.txnCount || 1) + '</td>'
+      + '<td style="text-align:right">' + (r.txnValue > 0 ? fmtINR(r.txnValue) : '—') + '</td>'
+      + '<td style="text-align:right">' + (avg > 0 ? fmtINR(avg) : '—') + '</td>'
       + '<td>' + esc(r.txnDate !== '—' ? r.txnDate : '—') + '</td>'
-      + '<td class="ta-days-hot" style="color:' + dayColor + '">' + (r._days >= 9999 ? '—' : fmt(r._days) + ' Days') + '</td>'
-      + '<td>' + (r.txnValue > 0 ? fmtINR(r.txnValue) : '—') + '</td>'
-      + '<td>' + fmt(r.txnCount || 1) + '</td>'
-      + '<td><span class="ta-st-badge" style="background:' + stBg + ';color:' + stClr + '">' + esc(stLbl) + '</span></td>'
       + '</tr>';
   }).join('');
+
   if (!trHtml) {
-    trHtml = '<tr><td colspan="11" class="ta-no-data">'
-      + (_ta.q ? 'No match for "' + esc(_ta.q) + '"' : 'No vendors in this ageing bucket.') + '</td></tr>';
+    trHtml = '<tr><td colspan="9" class="ta-no-data">'
+      + (_ta.q ? 'No match for &ldquo;' + esc(_ta.q) + '&rdquo;' : 'No vendors found.') + '</td></tr>';
   }
-  var noRowsNote = !_ta.bucketRows.length
-    ? '<div style="padding:10px 16px 0;font-size:12px;color:var(--txt3)">Open a vertical to load vendor records.</div>' : '';
-  return noRowsNote
+
+  return metricsHtml
     + '<div class="ta-toolbar"><input class="ta-search" type="text" placeholder="Search name, ID, state, type…" value="' + esc(_ta.q) + '" oninput="taSetQ(this.value)">'
     + '<span class="ta-count">' + total + ' vendor' + (total !== 1 ? 's' : '') + '</span></div>'
     + '<div class="ta-vl-wrap"><table class="ta-vl-tbl"><thead><tr>' + thHtml + '</tr></thead><tbody>' + trHtml + '</tbody></table></div>'
@@ -10206,10 +10139,17 @@ function _taVlBody() {
     + '</div></div>';
 }
 
-function _taBack()     { _ta.view = 'summary'; _taRender(); }
-function taSetSeg(aud, cat) { _ta.aud = aud; _ta.cat = cat; _taRender(); }
+function _taMetricCard(lbl, val, color) {
+  return '<div class="ta-metric-card">'
+    + '<div class="ta-metric-val" style="color:' + color + '">' + val + '</div>'
+    + '<div class="ta-metric-lbl">' + esc(lbl) + '</div>'
+    + '</div>';
+}
+
+function taSetAud(aud) { _ta.aud = aud; _ta.pg = 0; _taRender(); }
+function taSetCat(cat) { _ta.cat = cat; _ta.pg = 0; _taRender(); }
 function taSetQ(v)     { _ta.q = v; _ta.pg = 0; _taRender(); }
-function taSrt(key)    { _ta.sd = (_ta.sk === key) ? -_ta.sd : 1; _ta.sk = key; _ta.pg = 0; _taRender(); }
+function taSrt(key)    { _ta.sd = (_ta.sk === key) ? -_ta.sd : -1; _ta.sk = key; _ta.pg = 0; _taRender(); }
 function taPg(d) {
   var max = Math.max(0, Math.ceil(_taFiltered().length / _ta.pgSz) - 1);
   _ta.pg = Math.max(0, Math.min(_ta.pg + d, max));
