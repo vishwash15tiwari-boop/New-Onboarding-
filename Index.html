@@ -9527,26 +9527,24 @@ function _dmMandatoryMissing(docRec, aud) {
   return keys.filter(function(k){ var d=byKey[k]; return !d||!d.submitted; });
 }
 
-function _dmGatherAllRows() {
+function _dmGatherAllRows(aud) {
   var myPKey = JSON.stringify([currentPeriod, customStart||'', customEnd||'']);
   var seen = {}, rows = [];
   var cfg = getVertCfg();
-  ['seller','buyer'].forEach(function(aud) {
-    cfg.forEach(function(v) {
-      try {
-        var sv = JSON.parse(localStorage.getItem(STORE_PFX+'vr_'+aud+'_'+v.key)||'null');
-        if (sv && sv.pKey===myPKey && Array.isArray(sv.rows)) {
-          sv.rows.forEach(function(r) {
-            if (r.status==='DRAFT' && !seen[r.id]) { seen[r.id]=true; rows.push(Object.assign({},r,{audience:aud})); }
-          });
-        }
-      } catch(e){}
-    });
+  cfg.forEach(function(v) {
+    try {
+      var sv = JSON.parse(localStorage.getItem(STORE_PFX+'vr_'+aud+'_'+v.key)||'null');
+      if (sv && sv.pKey===myPKey && Array.isArray(sv.rows)) {
+        sv.rows.forEach(function(r) {
+          if (r.status==='DRAFT' && !seen[r.id]) { seen[r.id]=true; rows.push(Object.assign({},r,{audience:aud})); }
+        });
+      }
+    } catch(e){}
   });
   if (Array.isArray(vertRows)) {
     vertRows.forEach(function(r) {
-      var aud = r.audience||'seller';
-      if (r.status==='DRAFT' && !seen[r.id]) { seen[r.id]=true; rows.push(Object.assign({},r,{audience:aud})); }
+      var rAud = r.audience||'seller';
+      if (rAud===aud && r.status==='DRAFT' && !seen[r.id]) { seen[r.id]=true; rows.push(Object.assign({},r,{audience:aud})); }
     });
   }
   return rows;
@@ -9610,10 +9608,10 @@ function _esc(v){ return String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")
 function openDmModal(aud) {
   _dm.aud = aud||'seller';
   _dm.view='summary';
-  _dm.f={ aud:'all', cat:'', vtype:'', state:'', miss:'', q:'' };
+  _dm.f={ aud:_dm.aud, cat:'', vtype:'', state:'', miss:'', q:'' };
   _dm.sk='name'; _dm.sd=1; _dm.pg=0; _dm.pgSz=25;
   _dm.selVendorId=null; _dm._cache=null;
-  _dm.allRows = _dmGatherAllRows();
+  _dm.allRows = _dmGatherAllRows(_dm.aud);
   _dm._cache  = _dmEnrich(_dm.allRows);
   _dmRender();
   var el=document.getElementById('draft-modal');
@@ -9663,7 +9661,7 @@ function dmExportCSV() {
   var blob=new Blob([lines.join('\n')],{type:'text/csv'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
-  a.href=url; a.download='draft_vendors_'+(new Date().toISOString().slice(0,10))+'.csv';
+  a.href=url; a.download='draft_'+_dm.aud+'s_'+(new Date().toISOString().slice(0,10))+'.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
@@ -9677,33 +9675,39 @@ function _dmRender() {
 }
 
 function _dmSummary(hd,bd,E) {
-  var S=E.filter(function(r){return r.audience==='seller';}), B=E.filter(function(r){return r.audience==='buyer';});
+  var aud=_dm.aud, audLbl=aud==='seller'?'Sellers':'Buyers';
   var tot=E.length;
   var avgPct=tot>0?Math.round(E.reduce(function(s,r){return s+r._pct;},0)/tot):0;
+  var m0=E.filter(function(r){return r._miss.length===0;}).length;
   var m1=E.filter(function(r){return r._miss.length===1;}).length;
   var m2=E.filter(function(r){return r._miss.length===2;}).length;
   var m3=E.filter(function(r){return r._miss.length>=3;}).length;
+  var metal=E.filter(function(r){return(r.category||'').toLowerCase().includes('metal');}).length;
+  var plastic=E.filter(function(r){return(r.category||'').toLowerCase().includes('plastic');}).length;
   var cfd='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
   hd.innerHTML='<div class="dm-hd-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></div>'
-    +'<div class="dm-hd-txt"><div class="dm-hd-title">Draft Vendors</div><div class="dm-hd-sub">'+tot+' vendor'+(tot!==1?'s':'')+' pending document completion</div></div>'
+    +'<div class="dm-hd-txt"><div class="dm-hd-title">Draft '+audLbl+'</div>'
+    +'<div class="dm-hd-sub">'+tot+' '+audLbl.toLowerCase()+' pending document completion</div></div>'
     +'<button class="dm-hd-close" onclick="closeDmModal()" aria-label="Close">\xD7</button>';
-  var chips=[{v:tot,l:'Total Draft'},{v:S.length,l:'Sellers in Draft'},{v:B.length,l:'Buyers in Draft'},{v:avgPct+'%',l:'Avg Doc Completion'},{v:m1,l:'Missing 1 Doc'},{v:m2,l:'Missing 2 Docs'},{v:m3,l:'Missing 3+ Docs'}];
+  var chips=[
+    {v:tot,       l:audLbl+' in Draft'},
+    {v:avgPct+'%',l:'Avg Doc Completion'},
+    {v:m0,        l:'Docs Complete'},
+    {v:m1,        l:'Missing 1 Doc'},
+    {v:m2,        l:'Missing 2 Docs'},
+    {v:m3,        l:'Missing 3+ Docs'}
+  ];
   bd.innerHTML='<div class="dm-chips">'+chips.map(function(c){return'<div class="dm-chip"><div class="dm-chip-val">'+c.v+'</div><div class="dm-chip-lbl">'+c.l+'</div></div>';}).join('')+'</div>'
-    +'<div class="dm-aud-row">'+['seller','buyer'].map(function(aud){
-      var arr=aud==='seller'?S:B, cnt=arr.length, pct=tot>0?Math.round(cnt/tot*100):0;
-      var metal=arr.filter(function(r){return(r.category||'').toLowerCase().includes('metal');}).length;
-      var plastic=arr.filter(function(r){return(r.category||'').toLowerCase().includes('plastic');}).length;
-      return '<div class="dm-aud-tile" onclick="dmOpenDetail(\''+aud+'\')">'
-        +'<div class="dm-aud-tile-hd"><div class="dm-aud-tile-lbl">'+(aud==='seller'?'Sellers':'Buyers')+'</div></div>'
-        +'<div class="dm-aud-tile-count">'+cnt+'</div>'
-        +'<div class="dm-aud-tile-pct">'+pct+'% of all draft</div>'
-        +'<div class="dm-aud-tile-meta">'
-        +'<div class="dm-aud-tile-badge"><span class="dm-badge-m">Metal</span> '+metal+'</div>'
-        +'<div class="dm-aud-tile-badge"><span class="dm-badge-p">Plastic</span> '+plastic+'</div>'
-        +'</div>'
-        +'<div class="dm-aud-cfd">Click to drill down '+cfd+'</div>'
-        +'</div>';
-    }).join('')+'</div>';
+    +'<div class="dm-aud-row"><div class="dm-aud-tile" onclick="dmOpenDetail(\''+aud+'\')">'
+    +'<div class="dm-aud-tile-hd"><div class="dm-aud-tile-lbl">'+audLbl+'</div></div>'
+    +'<div class="dm-aud-tile-count">'+tot+'</div>'
+    +'<div class="dm-aud-tile-pct">Currently in draft stage</div>'
+    +'<div class="dm-aud-tile-meta">'
+    +'<div class="dm-aud-tile-badge"><span class="dm-badge-m">Metal</span> '+metal+'</div>'
+    +'<div class="dm-aud-tile-badge"><span class="dm-badge-p">Plastic</span> '+plastic+'</div>'
+    +'</div>'
+    +'<div class="dm-aud-cfd">Click to drill down '+cfd+'</div>'
+    +'</div></div>';
 }
 
 function _dmDetail(hd,bd,E) {
@@ -9711,17 +9715,16 @@ function _dmDetail(hd,bd,E) {
   var tot=sorted.length, start=_dm.pg*_dm.pgSz, page=sorted.slice(start,start+_dm.pgSz);
   var cats={},vtypes={},states={};
   E.forEach(function(r){if(r.category)cats[r.category]=1;if(r.vendorType)vtypes[r.vendorType]=1;if(r.state)states[r.state]=1;});
-  var audLbl=_dm.f.aud==='buyer'?'Buyers':_dm.f.aud==='seller'?'Sellers':'All';
+  var audLbl=_dm.aud==='buyer'?'Buyers':'Sellers';
   hd.innerHTML='<button class="dm-hd-back" onclick="dmBack()" title="Back">&#8592;</button>'
     +'<div class="dm-hd-ico" style="margin-left:4px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg></div>'
-    +'<div class="dm-hd-txt"><div class="dm-hd-title">Draft — '+audLbl+'</div><div class="dm-hd-sub">'+tot+' vendor'+(tot!==1?'s':'')+' shown</div></div>'
+    +'<div class="dm-hd-txt"><div class="dm-hd-title">Draft — '+audLbl+'</div><div class="dm-hd-sub">'+tot+' '+audLbl.toLowerCase()+' shown</div></div>'
     +'<button class="dm-export-btn" onclick="dmExportCSV()">Export CSV</button>'
     +'<button class="dm-hd-close" onclick="closeDmModal()" aria-label="Close">\xD7</button>';
   var si=function(k){return _dm.sk===k?(_dm.sd>0?' &#8593;':' &#8595;'):' &#8597;';};
   var mkOpts=function(obj,cur,ph){return '<option value="">'+ph+'</option>'+Object.keys(obj).sort().map(function(v){return'<option value="'+v+'"'+(cur===v?' selected':'')+'>'+v+'</option>';}).join('');};
   var toolbar='<div class="dm-toolbar">'
     +'<input class="dm-search" type="text" placeholder="Search name, ID…" value="'+((_dm.f.q||'').replace(/"/g,'&quot;'))+'" oninput="dmSetF(\'q\',this.value)">'
-    +'<select class="dm-sel" onchange="dmSetF(\'aud\',this.value)"><option value="all"'+(  _dm.f.aud==='all'?' selected':'')+'>All Audiences</option><option value="seller"'+(_dm.f.aud==='seller'?' selected':'')+'>Sellers</option><option value="buyer"'+(_dm.f.aud==='buyer'?' selected':'')+'>Buyers</option></select>'
     +'<select class="dm-sel" onchange="dmSetF(\'cat\',this.value)">'+mkOpts(cats,_dm.f.cat,'Category')+'</select>'
     +'<select class="dm-sel" onchange="dmSetF(\'vtype\',this.value)">'+mkOpts(vtypes,_dm.f.vtype,'Vendor Type')+'</select>'
     +'<select class="dm-sel" onchange="dmSetF(\'state\',this.value)">'+mkOpts(states,_dm.f.state,'State')+'</select>'
