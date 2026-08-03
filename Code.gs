@@ -182,7 +182,7 @@ function mapToVertical(businessVertical, category, audience) {
   var bv  = String(businessVertical || '').trim().toLowerCase();
   var cat = String(category || '').trim().toLowerCase();
   if (bv === 'epr') return 'EPR';
-  if (bv === 'open marketplace' || bv === 'openmarketplace') {
+  if (bv === 'open marketplace' || bv === 'openmarketplace' || bv === 'omp') {
     return 'OMP';  // All Open Marketplace entries belong to OMP regardless of category
   }
   if (bv === 'marketplace') {
@@ -191,8 +191,13 @@ function mapToVertical(businessVertical, category, audience) {
     if (cat === 're-commerce' || cat === 'recommerce' || cat === 're commerce') return 'Recommerce';
     if (isEwaste(cat)) return 'Recommerce';
     if (INFRA_CATS[cat]) return 'InfraBusiness';
+    // Buyers with Marketplace vertical but no sub-category are OMP participants
+    if (audience === 'buyer') return 'OMP';
     return 'Others';
   }
+  // Buyers with no explicit business_vertical default to OMP — all buyer onboarding
+  // in this platform happens through the Open Marketplace, so a blank vertical means OMP.
+  if (!bv && audience === 'buyer') return 'OMP';
   return 'Others';
 }
 
@@ -213,7 +218,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v35_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v36_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -245,7 +250,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v17_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v18_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -269,14 +274,14 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v35_cmb_' + periodKey;
+    var cacheKey  = 'dash_v36_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v35_seller_' + periodKey;
-    var bIndKey = 'dash_v35_buyer_'  + periodKey;
+    var sIndKey = 'dash_v36_seller_' + periodKey;
+    var bIndKey = 'dash_v36_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -335,7 +340,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v17_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v18_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -383,7 +388,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v17_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v18_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
@@ -612,8 +617,13 @@ function normalizeRows(raw, cfg) {
   var idx = buildIndex(raw.headers);
   var normalized = raw.rows.map(function(row) {
     var status   = normStatus(gv(row, idx, 'onboarding_status'));
-    var category = normCategory(gv(row, idx, 'business_category'));
-    var bizVert  = gv(row, idx, 'business_vertical');
+    var category = normCategory(gv(row, idx, 'business_category') || gv(row, idx, 'category'));
+    // Try multiple column aliases — Metabase cards may name the vertical column differently
+    var bizVert  = gv(row, idx, 'business_vertical')
+      || gv(row, idx, 'vertical_type')
+      || gv(row, idx, 'vertical')
+      || gv(row, idx, 'marketplace_vertical')
+      || '';
     var created  = parseDate(gv(row, idx, 'onboarding_created_date'));
     var onboarded = cfg.onbCol ? parseDate(gv(row, idx, cfg.onbCol)) : null;
     var recId    = String(gv(row, idx, cfg.idCol)   || '').replace(/,/g, '').trim();
