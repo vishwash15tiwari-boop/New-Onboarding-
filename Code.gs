@@ -1809,7 +1809,7 @@ function getQualityData() {
               id:               ompRInfo.id   || String(row[vidC] || '').trim().slice(0, 30),
               name:             ompRInfo.name || String(row[nameC] || '').trim().slice(0, 60),
               gstin:            vrGstin.slice(0, 20),
-              rating:           Math.round(rv * 10) / 10,
+              rating:           Math.round(rv * 2 * 10) / 10,
               onboardingStatus: ompRInfo.onboardingStatus,
               category:         ompRInfo.category,
               aud:              rAud,

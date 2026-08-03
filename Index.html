@@ -4690,7 +4690,7 @@ function openKpiModal(cardId) {
                 return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
                   + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
                   + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
-                  + '<span class="km-vrating" style="color:' + bcol + '">' + v.rating.toFixed(1) + '★</span>'
+                  + '<span class="km-vrating" style="color:' + bcol + '">' + v.rating.toFixed(1) + ' / 10</span>'
                   + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.category) + '</span>' : '')
                   + '</div>';
               }).join('')
@@ -4779,7 +4779,7 @@ function openKpiModal(cardId) {
           return '<tr data-n="' + esc((v.name||'').toLowerCase()) + '" data-c="' + esc(v.category||'') + '" data-r="' + (v.rating||0) + '">'
             + '<td class="km-dtbl-name">' + esc(v.name || 'Unknown') + '</td>'
             + '<td>' + (v.category ? '<span class="km-vbadge" style="background:rgba(0,93,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '<span style="color:var(--txt3)">—</span>') + '</td>'
-            + '<td style="font-weight:700;color:' + rColor + ';font-variant-numeric:tabular-nums">' + (v.rating||0).toFixed(1) + '</td>'
+            + '<td style="font-weight:700;color:' + rColor + ';font-variant-numeric:tabular-nums">' + (v.rating||0).toFixed(1) + ' / 10</td>'
             + '</tr>';
         }).join('');
         var tblHtml = selVR.length > 0
@@ -7555,7 +7555,7 @@ function renderVdTable() {
     summEl.innerHTML = '<div class="vd-summary">'
       + '<div class="vd-summ-item"><div class="vd-summ-val">' + fmt(all.length) + '</div><div class="vd-summ-lbl">Total</div></div>'
       + '<div class="vd-summ-item"><div class="vd-summ-val">' + fmt(filtered.length) + '</div><div class="vd-summ-lbl">Filtered</div></div>'
-      + '<div class="vd-summ-item"><div class="vd-summ-val">' + (avgRat !== null ? avgRat + ' ★' : '—') + '</div><div class="vd-summ-lbl">Avg Rating</div></div>'
+      + '<div class="vd-summ-item"><div class="vd-summ-val">' + (avgRat !== null ? avgRat + ' / 10' : '—') + '</div><div class="vd-summ-lbl">Avg Rating</div></div>'
       + '<div class="vd-summ-item"><div class="vd-summ-val">' + (totalGMV > 0 ? fmtINR(totalGMV) : '—') + '</div><div class="vd-summ-lbl">Total GMV</div></div>'
       + (catStr ? '<div class="vd-summ-item"><div class="vd-summ-val" style="font-size:12px;line-height:1.4">' + catStr + '</div><div class="vd-summ-lbl">By Category</div></div>' : '')
       + '</div>';
@@ -7578,7 +7578,7 @@ function renderVdTable() {
         var ratChip;
         if (rat !== null) {
           var rc = rat >= 7 ? 'high' : rat >= 4 ? 'mid' : 'low';
-          ratChip = '<span class="vd-rat-chip ' + rc + '">' + rat.toFixed(1) + ' ★</span>';
+          ratChip = '<span class="vd-rat-chip ' + rc + '">' + rat.toFixed(1) + ' / 10</span>';
         } else {
           ratChip = '<span class="vd-rat-chip none">—</span>';
         }
