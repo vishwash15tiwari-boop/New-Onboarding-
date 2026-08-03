@@ -193,15 +193,14 @@ function mapToVertical(businessVertical, category, audience) {
     if (cat === 're-commerce' || cat === 'recommerce' || cat === 're commerce') return 'Recommerce';
     if (isEwaste(cat)) return 'Recommerce';
     if (INFRA_CATS[cat]) return 'InfraBusiness';
-    // Buyers: Metal/Plastic go to OMP; everything else stays in Marketplace
-    if (audience === 'buyer') return isOmpCat ? 'OMP' : 'Marketplace';
+    // Non-infra categories (Paper, M3, M4, Tyre Oil, etc.) don't belong in
+    // Marketplace for either audience — route them to Others.
     return 'Others';
   }
 
   // Buyers with blank or unrecognised vertical:
-  // Metal/Plastic → OMP (the only OMP-traded commodities for buyers)
-  // Everything else → Marketplace (Paper, M3, M4, Tyre Oil, etc.)
-  if (audience === 'buyer') return isOmpCat ? 'OMP' : 'Marketplace';
+  // Metal/Plastic → OMP; everything else → Others (not Marketplace).
+  if (audience === 'buyer') return isOmpCat ? 'OMP' : 'Others';
   return 'Others';
 }
 
