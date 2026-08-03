@@ -754,10 +754,8 @@ function normalizeRows(raw, cfg) {
       reviewDate:    reviewDate,
     };
   }).filter(function(r) {
-    var nId = (r.id   || '').trim();
     var nNm = (r.name || '').trim();
-    function bad(v) { return !v || v === '-' || v === '—'; }
-    return !bad(nId) || !bad(nNm);
+    return !!nNm && nNm !== '-' && nNm !== '—';
   });
   // Count pre-dedup rows per (id+vertical) as per-vendor transaction count.
   // Metabase emits one row per transaction via joins; this count captures that.

@@ -5378,7 +5378,9 @@ function _ovnBuildContent() {
   var selRows = Array.isArray(_ovnRows.seller) ? _ovnRows.seller.map(function(r) { var c = {}; for (var k in r) c[k] = r[k]; c._aud = 'seller'; return c; }) : null;
   var buyRows = Array.isArray(_ovnRows.buyer)  ? _ovnRows.buyer.map(function(r)  { var c = {}; for (var k in r) c[k] = r[k]; c._aud = 'buyer';  return c; }) : null;
   var loading = selRows === null || buyRows === null;
-  var allRows = loading ? [] : selRows.concat(buyRows);
+  var allRows = loading ? [] : selRows.concat(buyRows).filter(function(r) {
+    return r.status === 'COMPLETED' && _isValidRec(r);
+  });
 
   function uniq(fn) {
     var seen = {}, out = [];
@@ -7601,10 +7603,8 @@ function vdSelect(id, label, options, current, labels) {
 // The old full-overlay implementation has been removed in favour of the inline detail section.
 
 function _isValidRec(r) {
-  var nId = (r.id   || '').trim();
   var nNm = (r.name || '').trim();
-  function bad(v) { return !v || v === '-' || v === '—'; }
-  return !bad(nId) || !bad(nNm);
+  return !!nNm && nNm !== '-' && nNm !== '—';
 }
 
 function vdFilteredRows() {
