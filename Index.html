@@ -6663,7 +6663,13 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
   var statusGrid = '<div class="vpipe-status-grid">'
     + statDef.map(function(s) {
         var pct = tot > 0 ? Math.round(s.n / tot * 100) : 0;
-        return '<div class="vpipe-stat-card" style="border-top:3px solid ' + s.col + '">'
+        var isComp = s.lbl === 'Completed';
+        var cardAttrs = ' style="border-top:3px solid ' + s.col + (isComp ? ';cursor:pointer' : '') + '"'
+          + (isComp ? ' role="button" tabindex="0"'
+            + ' onclick="openVtbModal(\'' + aud + '\')"'
+            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openVtbModal(\'' + aud + '\')}"'
+            : '');
+        return '<div class="vpipe-stat-card"' + cardAttrs + '>'
           + '<div class="vpipe-stat-icon" style="background:' + s.bg + ';color:' + s.col + '">' + s.ic + '</div>'
           + '<div class="vpipe-stat-name">' + s.lbl + '</div>'
           + '<div class="vpipe-stat-num">' + fmt(s.n) + '</div>'
