@@ -1079,6 +1079,56 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .sl-pg-btn:disabled{opacity:.4;cursor:not-allowed}
 .sl-pg-btn:not(:disabled):hover{background:var(--bg2)}
 
+/* ── Transaction Ageing Modal ── */
+#ta-modal{position:fixed;inset:0;z-index:806;display:flex;align-items:center;justify-content:center;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .22s,visibility .22s;background:rgba(0,0,0,.48);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#ta-modal.ta-open{visibility:visible;opacity:1;pointer-events:auto}
+.ta-pn{background:var(--card);border-radius:14px;width:min(980px,96vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.22);transform:translateY(18px) scale(.97);transition:transform .22s cubic-bezier(.22,.68,0,1.2);overflow:hidden}
+#ta-modal.ta-open .ta-pn{transform:translateY(0) scale(1)}
+.ta-hd{display:flex;align-items:center;gap:10px;padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.ta-hd-ico{width:32px;height:32px;border-radius:8px;background:rgba(0,93,255,.1);color:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ta-hd-txt{flex:1;min-width:0}
+.ta-hd-title{font-size:15px;font-weight:700;color:var(--txt1);line-height:1.2}
+.ta-hd-sub{font-size:12px;color:var(--txt3);margin-top:2px}
+.ta-hd-close{width:30px;height:30px;border:none;background:transparent;border-radius:50%;cursor:pointer;color:var(--txt3);font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .15s,background .15s;line-height:1}
+.ta-hd-close:hover{color:var(--txt1);background:var(--bg2)}
+.ta-hd-back{width:30px;height:30px;border:none;background:var(--bg2);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--txt2);font-size:15px;flex-shrink:0;transition:background .15s}
+.ta-hd-back:hover{background:var(--border)}
+.ta-body{flex:1;overflow-y:auto;min-height:0}
+.ta-seg-bar{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.ta-seg-tab{padding:5px 13px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;transition:background .12s,border-color .12s,color .12s;color:var(--txt2);background:var(--card);white-space:nowrap;font-family:inherit}
+.ta-seg-tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.ta-age-tbl{width:100%;border-collapse:collapse}
+.ta-age-tbl thead th{padding:9px 16px;text-align:right;font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:1;white-space:nowrap}
+.ta-age-tbl thead th:first-child{text-align:left}
+.ta-age-row{cursor:pointer;transition:background .12s}
+.ta-age-row:hover{background:var(--bg2)}
+.ta-age-row td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--txt1);text-align:right;vertical-align:middle}
+.ta-age-row td:first-child{text-align:left;font-weight:600}
+.ta-age-row:last-child td{border-bottom:none}
+.ta-age-bucket{display:flex;align-items:center;gap:8px}
+.ta-age-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.ta-age-pct{font-size:11px;color:var(--txt3)}
+.ta-age-foot{padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--txt3);display:flex;justify-content:space-between;align-items:center;background:var(--bg2);flex-shrink:0}
+.ta-toolbar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ta-search{flex:1;height:32px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:13px;background:var(--bg2);color:var(--txt1);outline:none;transition:border-color .15s}
+.ta-search:focus{border-color:var(--accent,#005DFF)}
+.ta-count{font-size:12px;color:var(--txt3);white-space:nowrap;flex-shrink:0}
+.ta-vl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ta-vl-tbl{width:100%;border-collapse:collapse;min-width:900px}
+.ta-vl-tbl thead th{padding:8px 10px;text-align:left;font-size:10.5px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:1;white-space:nowrap;cursor:pointer;user-select:none}
+.ta-vl-tbl thead th .s-ic{margin-left:3px;opacity:.5;font-size:9px}
+.ta-vl-tbl thead th.ta-th-asc .s-ic,.ta-vl-tbl thead th.ta-th-desc .s-ic{opacity:1}
+.ta-vl-row td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--txt1);vertical-align:middle;white-space:nowrap}
+.ta-vl-row:hover td{background:var(--bg2)}
+.ta-cat-badge,.ta-st-badge,.ta-aud-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:9px}
+.ta-days-hot{font-weight:700}
+.ta-pg{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--txt3);flex-shrink:0}
+.ta-pg-btns{display:flex;gap:6px}
+.ta-pg-btn{padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--txt2);font-size:12px;font-weight:500;cursor:pointer;transition:background .12s}
+.ta-pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.ta-pg-btn:not(:disabled):hover{background:var(--bg2)}
+.ta-no-data{text-align:center;padding:40px 20px;color:var(--txt3);font-size:13px}
+
 /* ═══════════════════════════════════════════════════════════════
    GST PAYABLES VIEW — warm cream / burnt-orange enterprise palette
    ═══════════════════════════════════════════════════════════════ */
@@ -3134,6 +3184,15 @@ thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
   </div>
 </div>
 
+<!-- Transaction Ageing Modal -->
+<div id="ta-modal" role="dialog" aria-modal="true" aria-label="Vendor Transaction Ageing" onclick="closeTaModal()">
+  <div class="ta-pn" onclick="event.stopPropagation()">
+    <div class="ta-hd" id="ta-hd"></div>
+    <div class="ta-seg-bar" id="ta-seg-bar"></div>
+    <div class="ta-body" id="ta-body"></div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
 // STATE
@@ -4224,6 +4283,7 @@ function vkpiOpen(action) {
 
 function openKpiModal(cardId) {
   window._lastKpiCardId = cardId;
+  if (cardId === 'transacted') { openTaModal(); return; }
   var d = window._kpiSnap;
   var isQualityCard = (cardId === 'rating' || cardId === 'osv' || cardId === 'docs');
   if (!d && !isQualityCard) return;
@@ -9127,6 +9187,335 @@ function slPg(d) {
   var max = Math.max(0, Math.ceil(_slFiltered().length / _sl.pgSz) - 1);
   _sl.pg = Math.max(0, Math.min(_sl.pg + d, max));
   _slRender();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRANSACTION AGEING MODAL
+// ═══════════════════════════════════════════════════════════════
+var TA_BUCKETS = [
+  { lbl:'0–30 days',   min:0,   max:30,          col:'#1DC797' },
+  { lbl:'31–60 days',  min:31,  max:60,          col:'#005DFF' },
+  { lbl:'61–90 days',  min:61,  max:90,          col:'#FF9F0A' },
+  { lbl:'91–180 days', min:91,  max:180,         col:'#FF6B35' },
+  { lbl:'180+ days',   min:181, max:Infinity,    col:'#FF3B30' },
+];
+var TA_SEGS = [
+  { aud:'seller', cat:'Metal',   lbl:'Seller · Metal'   },
+  { aud:'seller', cat:'Plastic', lbl:'Seller · Plastic' },
+  { aud:'buyer',  cat:'Metal',   lbl:'Buyer · Metal'    },
+  { aud:'buyer',  cat:'Plastic', lbl:'Buyer · Plastic'  },
+];
+var _ta = { view:'summary', aud:'seller', cat:'Metal', bucket:null,
+            rows:[], bucketRows:[], q:'', sk:'_days', sd:1, pg:0, pgSz:20 };
+
+function _taNormCat(c) {
+  if (!c) return 'Other';
+  var lc = String(c).toLowerCase().trim();
+  return lc === 'metal' ? 'Metal' : lc === 'plastic' ? 'Plastic' : 'Other';
+}
+
+function _taParseDate(str) {
+  if (!str || str === '—') return null;
+  var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(str);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(str);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+  return null;
+}
+
+function _taDaysSince(dateStr) {
+  var d = _taParseDate(dateStr);
+  if (!d) return null;
+  var now = new Date();
+  var todayMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  var thenMs  = Date.UTC(d.getFullYear(),   d.getMonth(),   d.getDate());
+  return Math.max(0, Math.floor((todayMs - thenMs) / 86400000));
+}
+
+function _taDateNum(dateStr) {
+  if (!dateStr || dateStr === '—') return 0;
+  var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(dateStr);
+  if (m) return +m[3] * 10000 + +m[2] * 100 + +m[1];
+  m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(dateStr);
+  if (m) return +m[1] * 10000 + +m[2] * 100 + +m[3];
+  return 0;
+}
+
+function _taBucketIdx(days) {
+  for (var i = 0; i < TA_BUCKETS.length; i++) {
+    if (days >= TA_BUCKETS[i].min && days <= TA_BUCKETS[i].max) return i;
+  }
+  return TA_BUCKETS.length - 1;
+}
+
+function _taGatherTransacted(aud) {
+  var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var seen = {}, rows = [];
+  var cfg = getVertCfg();
+  cfg.forEach(function(v) {
+    try {
+      var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + v.key) || 'null');
+      if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
+        sv.rows.forEach(function(r) {
+          if (r.hasTransacted && !seen[r.id]) {
+            seen[r.id] = true;
+            var days = _taDaysSince(r.txnDate);
+            rows.push({ id: r.id, name: r.name, audience: aud,
+              vendorType: r.vendorType || '—', category: r.category || '',
+              state: r.state || '—', txnDate: r.txnDate || '—',
+              txnValue: r.txnValue || 0, txnCount: r.txnCount || 1,
+              status: r.status || '', _days: days !== null ? days : 9999,
+              _normCat: _taNormCat(r.category) });
+          }
+        });
+      }
+    } catch(e) {}
+  });
+  if (Array.isArray(vertRows)) {
+    vertRows.forEach(function(r) {
+      if ((r.audience || 'seller') === aud && r.hasTransacted && !seen[r.id]) {
+        seen[r.id] = true;
+        var days = _taDaysSince(r.txnDate);
+        rows.push({ id: r.id, name: r.name, audience: aud,
+          vendorType: r.vendorType || '—', category: r.category || '',
+          state: r.state || '—', txnDate: r.txnDate || '—',
+          txnValue: r.txnValue || 0, txnCount: r.txnCount || 1,
+          status: r.status || '', _days: days !== null ? days : 9999,
+          _normCat: _taNormCat(r.category) });
+      }
+    });
+  }
+  return rows;
+}
+
+function openTaModal() {
+  var m = document.getElementById('ta-modal');
+  var isOpen = m && m.classList.contains('ta-open');
+  if (!isOpen) {
+    _ta.view = 'summary'; _ta.aud = 'seller'; _ta.cat = 'Metal';
+    _ta.bucket = null; _ta.q = ''; _ta.sk = '_days'; _ta.sd = 1; _ta.pg = 0;
+  }
+  _ovnEnsureAud('seller');
+  _ovnEnsureAud('buyer');
+  _taRender();
+  if (m && !isOpen) { void m.offsetHeight; m.classList.add('ta-open'); }
+  if (!isOpen) document.addEventListener('keydown', _taEsc);
+}
+
+function closeTaModal() {
+  var m = document.getElementById('ta-modal');
+  if (m) m.classList.remove('ta-open');
+  document.removeEventListener('keydown', _taEsc);
+}
+
+function _taEsc(e) {
+  if (e.key !== 'Escape') return;
+  var m = document.getElementById('ta-modal');
+  if (!m || !m.classList.contains('ta-open')) return;
+  e.stopPropagation();
+  if (_ta.view === 'vendors') { _ta.view = 'summary'; _taRender(); }
+  else closeTaModal();
+}
+
+function _taRender() {
+  var hd   = document.getElementById('ta-hd');
+  var seg  = document.getElementById('ta-seg-bar');
+  var body = document.getElementById('ta-body');
+  if (!hd || !body) return;
+  var allSeller = _taGatherTransacted('seller');
+  var allBuyer  = _taGatherTransacted('buyer');
+  _ta.rows = allSeller.concat(allBuyer);
+  if (_ta.view === 'vendors') {
+    if (seg) seg.style.display = 'none';
+    var bi = _ta.bucket;
+    _ta.bucketRows = _ta.rows.filter(function(r) {
+      return r.audience === _ta.aud && r._normCat === _ta.cat && _taBucketIdx(r._days) === bi;
+    });
+    hd.innerHTML  = _taHdVendors();
+    body.innerHTML = _taVlBody();
+  } else {
+    if (seg) { seg.style.display = ''; seg.innerHTML = _taSegTabsHtml(); }
+    hd.innerHTML  = _taHdSummary();
+    body.innerHTML = _taSumBody();
+  }
+}
+
+function _taHdSummary() {
+  var ico = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
+  var total = _ta.rows.length;
+  return '<div class="ta-hd-ico">' + ico + '</div>'
+    + '<div class="ta-hd-txt"><div class="ta-hd-title">Vendor Transaction Ageing</div>'
+    + '<div class="ta-hd-sub">' + fmt(total) + ' transacted vendor' + (total !== 1 ? 's' : '')
+    + (total === 0 ? ' · Loading…' : ' · ' + (currentPeriod || 'All') + ' period') + '</div></div>'
+    + '<button class="ta-hd-close" onclick="closeTaModal()" title="Close">×</button>';
+}
+
+function _taHdVendors() {
+  var b = TA_BUCKETS[_ta.bucket];
+  var segLbl = (_ta.aud === 'buyer' ? 'Buyer' : 'Seller') + ' · ' + _ta.cat;
+  return '<button class="ta-hd-back" onclick="_taBack()" title="Back">&#8592;</button>'
+    + '<div class="ta-hd-txt"><div class="ta-hd-title">Vendor Transaction Ageing</div>'
+    + '<div class="ta-hd-sub">' + segLbl + ' · ' + (b ? b.lbl : '') + ' · '
+    + fmt(_ta.bucketRows.length) + ' vendor' + (_ta.bucketRows.length !== 1 ? 's' : '') + '</div></div>'
+    + '<button class="ta-hd-close" onclick="closeTaModal()" title="Close">×</button>';
+}
+
+function _taSegTabsHtml() {
+  return TA_SEGS.map(function(s) {
+    var active = s.aud === _ta.aud && s.cat === _ta.cat;
+    return '<button class="ta-seg-tab' + (active ? ' active' : '') + '"'
+      + ' onclick="taSetSeg(\'' + s.aud + '\',\'' + s.cat + '\')">' + s.lbl + '</button>';
+  }).join('');
+}
+
+function _taSumBody() {
+  var segRows = _ta.rows.filter(function(r) { return r.audience === _ta.aud && r._normCat === _ta.cat; });
+  var total = segRows.length;
+  if (!total) {
+    return '<div class="ta-no-data">'
+      + (_ta.rows.length === 0 ? 'Loading vendor data…' : 'No transacted ' + _ta.aud + 's with <em>' + esc(_ta.cat) + '</em> category in the current period.')
+      + '</div>';
+  }
+  var totalGMV = 0, totalTxns = 0;
+  var thHtml = '<thead><tr>'
+    + '<th style="text-align:left">Ageing Bucket</th>'
+    + '<th>Vendors</th><th>%</th><th>Last Txn Date</th><th>Days Since</th><th>GMV</th><th>Transactions</th>'
+    + '</tr></thead>';
+  var trHtml = '';
+  TA_BUCKETS.forEach(function(b, bi) {
+    var bRows = segRows.filter(function(r) { return _taBucketIdx(r._days) === bi; });
+    if (!bRows.length) return;
+    var cnt  = bRows.length;
+    var pct  = Math.round(cnt / total * 100);
+    var gmv  = bRows.reduce(function(s, r) { return s + (r.txnValue || 0); }, 0);
+    var txns = bRows.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
+    totalGMV += gmv; totalTxns += txns;
+    var maxDN = 0, lastDate = '—';
+    bRows.forEach(function(r) { var dn = _taDateNum(r.txnDate); if (dn > maxDN) { maxDN = dn; lastDate = r.txnDate; } });
+    var ds = lastDate !== '—' ? _taDaysSince(lastDate) : null;
+    trHtml += '<tr class="ta-age-row" onclick="taDrilldown(' + bi + ')">'
+      + '<td><div class="ta-age-bucket"><span class="ta-age-dot" style="background:' + b.col + '"></span>' + b.lbl + '</div></td>'
+      + '<td>' + fmt(cnt) + '</td>'
+      + '<td><span class="ta-age-pct">' + pct + '%</span></td>'
+      + '<td>' + (lastDate !== '—' ? lastDate : '—') + '</td>'
+      + '<td style="font-weight:600;color:' + b.col + '">' + (ds !== null ? ds + 'd' : '—') + '</td>'
+      + '<td>' + (gmv > 0 ? fmtINR(gmv) : '—') + '</td>'
+      + '<td>' + fmt(txns) + '</td>'
+      + '</tr>';
+  });
+  if (!trHtml) trHtml = '<tr><td colspan="7" class="ta-no-data">No transaction dates available to bucket vendors.</td></tr>';
+  return '<table class="ta-age-tbl">' + thHtml + '<tbody>' + trHtml + '</tbody></table>'
+    + '<div class="ta-age-foot">'
+    + '<span><strong>' + fmt(total) + '</strong> ' + _ta.aud + 's · ' + esc(_ta.cat) + '</span>'
+    + '<span><strong>' + (totalGMV > 0 ? fmtINR(totalGMV) : '—') + '</strong> GMV · <strong>' + fmt(totalTxns) + '</strong> transactions</span>'
+    + '</div>';
+}
+
+function taDrilldown(bi) {
+  _ta.bucket = bi; _ta.view = 'vendors';
+  _ta.q = ''; _ta.sk = '_days'; _ta.sd = 1; _ta.pg = 0;
+  _taRender();
+}
+
+function _taFiltered() {
+  var q = (_ta.q || '').toLowerCase().trim();
+  if (!q) return _ta.bucketRows.slice();
+  return _ta.bucketRows.filter(function(r) {
+    return (r.name       || '').toLowerCase().indexOf(q) >= 0
+        || (r.id         || '').toLowerCase().indexOf(q) >= 0
+        || (r.state      || '').toLowerCase().indexOf(q) >= 0
+        || (r._normCat   || '').toLowerCase().indexOf(q) >= 0
+        || (r.vendorType || '').toLowerCase().indexOf(q) >= 0
+        || (r.audience   || '').toLowerCase().indexOf(q) >= 0;
+  });
+}
+
+function _taSorted(rows) {
+  var k = _ta.sk, d = _ta.sd;
+  return rows.slice().sort(function(a, b) {
+    if (k === '_days' || k === 'txnValue' || k === 'txnCount') return d * ((+(a[k]||0)) - (+(b[k]||0)));
+    if (k === 'txnDate') return d * (_taDateNum(a.txnDate) - _taDateNum(b.txnDate));
+    return d * String(a[k]||'').localeCompare(String(b[k]||''));
+  });
+}
+
+function _taVlBody() {
+  var filtered = _taFiltered();
+  var sorted   = _taSorted(filtered);
+  var total    = sorted.length;
+  var pgSz = _ta.pgSz, pg = _ta.pg;
+  var start = pg * pgSz;
+  var page  = sorted.slice(start, start + pgSz);
+  var maxPg = Math.max(0, Math.ceil(total / pgSz) - 1);
+  var cols = [
+    { key:'name',       lbl:'Company Name'  },
+    { key:'id',         lbl:'Vendor ID'     },
+    { key:'audience',   lbl:'Type'          },
+    { key:'vendorType', lbl:'Vendor Type'   },
+    { key:'_normCat',   lbl:'Category'      },
+    { key:'state',      lbl:'State'         },
+    { key:'txnDate',    lbl:'Last Txn Date' },
+    { key:'_days',      lbl:'Days Since'    },
+    { key:'txnValue',   lbl:'GMV'           },
+    { key:'txnCount',   lbl:'Transactions'  },
+    { key:'status',     lbl:'Status'        }
+  ];
+  var thHtml = cols.map(function(c) {
+    var isAsc  = _ta.sk === c.key && _ta.sd ===  1;
+    var isDesc = _ta.sk === c.key && _ta.sd === -1;
+    var cls = isAsc ? 'ta-th-asc' : isDesc ? 'ta-th-desc' : '';
+    return '<th class="' + cls + '" onclick="taSrt(\'' + c.key + '\')">'
+      + esc(c.lbl) + '<span class="s-ic">' + (isAsc ? '&#9650;' : isDesc ? '&#9660;' : '&#9651;') + '</span></th>';
+  }).join('');
+  var b = TA_BUCKETS[_ta.bucket];
+  var dayColor = b ? b.col : 'var(--txt2)';
+  var trHtml = page.map(function(r) {
+    var catBg  = r._normCat === 'Plastic' ? 'rgba(255,159,10,.15)' : r._normCat === 'Metal' ? 'rgba(29,199,151,.12)' : 'rgba(99,99,102,.12)';
+    var catClr = r._normCat === 'Plastic' ? '#B25000' : r._normCat === 'Metal' ? '#0A7044' : '#636366';
+    var audBg  = r.audience === 'buyer' ? 'rgba(0,93,255,.1)' : 'rgba(29,199,151,.1)';
+    var audClr = r.audience === 'buyer' ? '#005DFF' : '#0A7044';
+    var stLbl  = STATUS_LABELS[r.status] || r.status || '—';
+    var stBg   = r.status === 'COMPLETED' ? 'rgba(29,199,151,.12)' : r.status === 'REJECTED' ? 'rgba(255,59,48,.12)' : 'rgba(99,99,102,.1)';
+    var stClr  = r.status === 'COMPLETED' ? '#0A7044' : r.status === 'REJECTED' ? '#C0392B' : '#636366';
+    return '<tr class="ta-vl-row">'
+      + '<td><strong>' + esc(r.name||'—') + '</strong></td>'
+      + '<td style="font-family:monospace;font-size:11px;color:var(--txt3)">' + esc(r.id||'—') + '</td>'
+      + '<td><span class="ta-aud-badge" style="background:' + audBg + ';color:' + audClr + '">' + (r.audience === 'buyer' ? 'Buyer' : 'Seller') + '</span></td>'
+      + '<td>' + esc(r.vendorType||'—') + '</td>'
+      + '<td>' + (r._normCat !== 'Other' ? '<span class="ta-cat-badge" style="background:' + catBg + ';color:' + catClr + '">' + esc(r._normCat) + '</span>' : '—') + '</td>'
+      + '<td>' + esc(r.state||'—') + '</td>'
+      + '<td>' + esc(r.txnDate !== '—' ? r.txnDate : '—') + '</td>'
+      + '<td class="ta-days-hot" style="color:' + dayColor + '">' + (r._days >= 9999 ? '—' : r._days + 'd') + '</td>'
+      + '<td>' + (r.txnValue > 0 ? fmtINR(r.txnValue) : '—') + '</td>'
+      + '<td>' + fmt(r.txnCount || 1) + '</td>'
+      + '<td><span class="ta-st-badge" style="background:' + stBg + ';color:' + stClr + '">' + esc(stLbl) + '</span></td>'
+      + '</tr>';
+  }).join('');
+  if (!trHtml) {
+    trHtml = '<tr><td colspan="11" class="ta-no-data">'
+      + (_ta.q ? 'No match for "' + esc(_ta.q) + '"' : 'No vendors in this ageing bucket.') + '</td></tr>';
+  }
+  var noRowsNote = !_ta.bucketRows.length
+    ? '<div style="padding:10px 16px 0;font-size:12px;color:var(--txt3)">Open a vertical to load vendor records.</div>' : '';
+  return noRowsNote
+    + '<div class="ta-toolbar"><input class="ta-search" type="text" placeholder="Search name, ID, state, type…" value="' + esc(_ta.q) + '" oninput="taSetQ(this.value)">'
+    + '<span class="ta-count">' + total + ' vendor' + (total !== 1 ? 's' : '') + '</span></div>'
+    + '<div class="ta-vl-wrap"><table class="ta-vl-tbl"><thead><tr>' + thHtml + '</tr></thead><tbody>' + trHtml + '</tbody></table></div>'
+    + '<div class="ta-pg"><span>Showing ' + (total ? start+1 : 0) + '–' + Math.min(start+pgSz,total) + ' of ' + total + '</span>'
+    + '<div class="ta-pg-btns">'
+    + '<button class="ta-pg-btn" onclick="taPg(-1)"' + (pg<=0 ? ' disabled' : '') + '>‹ Prev</button>'
+    + '<button class="ta-pg-btn" onclick="taPg(1)"'  + (pg>=maxPg ? ' disabled' : '') + '>Next ›</button>'
+    + '</div></div>';
+}
+
+function _taBack()     { _ta.view = 'summary'; _taRender(); }
+function taSetSeg(aud, cat) { _ta.aud = aud; _ta.cat = cat; _taRender(); }
+function taSetQ(v)     { _ta.q = v; _ta.pg = 0; _taRender(); }
+function taSrt(key)    { _ta.sd = (_ta.sk === key) ? -_ta.sd : 1; _ta.sk = key; _ta.pg = 0; _taRender(); }
+function taPg(d) {
+  var max = Math.max(0, Math.ceil(_taFiltered().length / _ta.pgSz) - 1);
+  _ta.pg = Math.max(0, Math.min(_ta.pg + d, max));
+  _taRender();
 }
 
 // ═══════════════════════════════════════════════════════════════
