@@ -1925,9 +1925,19 @@ body.view-gst #vert-tabs-bar{display:none}
 }
 .vkpi-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);border-color:rgba(0,0,0,.15)}
 .vkpi-card:active{opacity:.85;transition-duration:.06s}
-.vkpi-card::after{content:'Click for Details \00A0\2192';position:absolute;bottom:7px;right:10px;font-size:9px;font-weight:600;letter-spacing:.03em;color:var(--txt3);opacity:.45;transition:opacity .15s,color .15s;pointer-events:none;line-height:1}
-.vkpi-card:hover::after,.vkpi-card:focus-visible::after{opacity:1;color:var(--blue)}
 .vkpi-icon{display:none}
+/* "Details ›" link shared across all interactive cards */
+.cfd{font-size:10px;font-weight:600;letter-spacing:.03em;color:var(--txt3);display:inline-flex;align-items:center;gap:2px;opacity:.45;transition:opacity .15s,color .15s;flex-shrink:0;white-space:nowrap;line-height:1;padding-top:1px;pointer-events:none}
+.cfd svg{transition:transform .15s;flex-shrink:0}
+.vkpi-card:hover .cfd,.vkpi-card:focus-visible .cfd{opacity:1;color:var(--blue)}
+.vkpi-card:hover .cfd svg,.vkpi-card:focus-visible .cfd svg{transform:translateX(2px)}
+.biz-tile:not(.biz-tile-region):hover .cfd{opacity:1;color:var(--blue)}
+.biz-tile:not(.biz-tile-region):hover .cfd svg{transform:translateX(2px)}
+/* Card header row — label left, Details link right */
+.vkpi-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px}
+.vkpi-hdr .vkpi-lbl{margin-bottom:0}
+.biz-t-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px}
+.biz-t-hdr .biz-t-lb{margin-bottom:0}
 .vkpi-text{display:contents}
 .vkpi-lbl{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);line-height:1.2;margin-bottom:5px}
 .vkpi-numgrp{display:contents}
@@ -4003,7 +4013,7 @@ function renderVertKPIs(key) {
       + ' role="button" tabindex="0"'
       + ' onclick="openKpiModal(\'' + action + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'' + action + '\')}">'
-      + '<div class="vkpi-lbl">' + lbl + '</div>'
+      + '<div class="vkpi-hdr"><div class="vkpi-lbl">' + lbl + '</div>' + _cfdHtml + '</div>'
       + '<div class="vkpi-val">' + val + '</div>'
       + (sub != null ? '<div class="vkpi-sub">' + (sub || '') + '</div>' : '')
       + '</div>';
@@ -5873,7 +5883,7 @@ function renderBizRail(cfg, vs) {
   var gmvTile = '<div class="biz-tile biz-tile-gmv" role="button" tabindex="0"'
     + ' onclick="openGmvCatModal(\'seller\')"'
     + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openGmvCatModal(\'seller\')}">'
-    + '<div class="biz-t-lb">Total GMV</div>'
+    + '<div class="biz-t-hdr"><div class="biz-t-lb">Total GMV</div>' + _cfdHtml + '</div>'
     + ((gmv != null && gmv > 0)
         ? '<div class="biz-t-val">' + fmtINR(gmv) + '</div>'
           + (catRows ? '<div style="margin-top:6px">' + catRows + '</div>' : '')
@@ -6491,7 +6501,7 @@ function _buildRailQual(qc, vname) {
     ratingTile = '<div class="biz-tile biz-tile--right" role="button" tabindex="0"'
       + ' onclick="openKpiModal(\'rating\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'rating\')}">'
-      + '<div class="biz-t-lb">Vendor Rating</div>'
+      + '<div class="biz-t-hdr"><div class="biz-t-lb">Vendor Rating</div>' + _cfdHtml + '</div>'
       + '<div class="biz-t-val" style="color:#E48800;font-size:19px;letter-spacing:-.6px">' + rVal + '</div>'
       + '<div style="height:3px;border-radius:2px;background:var(--bg2);overflow:hidden;margin:5px 0 4px">'
       +   '<div style="width:' + rPct + '%;height:100%;background:#E48800;border-radius:2px;transition:width .6s var(--ease-out)"></div>'
@@ -6510,7 +6520,7 @@ function _buildRailQual(qc, vname) {
     osvTile = '<div class="biz-tile biz-tile--right" role="button" tabindex="0"'
       + ' onclick="openKpiModal(\'osv\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'osv\')}">'
-      + '<div class="biz-t-lb">OSV Status</div>'
+      + '<div class="biz-t-hdr"><div class="biz-t-lb">OSV Status</div>' + _cfdHtml + '</div>'
       + '<div class="biz-osv-cols">'
       +   '<div class="biz-osv-col">'
       +     '<div class="biz-osv-lbl" style="color:#1DC797">Done</div>'
@@ -8493,6 +8503,7 @@ function setupScrollSpy() {
 function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
 function dOr(v, suffix) { return (v === null || v === undefined) ? '—' : v + (suffix || ''); }
 function fmt(n) { return Number(n || 0).toLocaleString('en-IN'); }
+var _cfdHtml = '<span class="cfd">Details <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>';
 function pct(a, b) { return b ? Math.round((a / b) * 100) : 0; }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtINR(v) {
