@@ -181,24 +181,27 @@ var MKT_SPLIT_DATE = new Date(2026, 3, 1); // April 1, 2026
 function mapToVertical(businessVertical, category, audience) {
   var bv  = String(businessVertical || '').trim().toLowerCase();
   var cat = String(category || '').trim().toLowerCase();
+  var isOmpCat = (cat === 'metal' || cat === 'plastic');
+
   if (bv === 'epr') return 'EPR';
-  if (bv === 'open marketplace' || bv === 'openmarketplace' || bv === 'omp') {
-    return 'OMP';  // All Open Marketplace entries belong to OMP regardless of category
-  }
+  // Explicit OMP vertical → always OMP regardless of category
+  if (bv === 'open marketplace' || bv === 'openmarketplace' || bv === 'omp') return 'OMP';
+
   if (bv === 'marketplace') {
     if (cat === 'afr') return 'AFR';
     if (cat === 'goa drs' || cat === 'drs') return 'DRS';
     if (cat === 're-commerce' || cat === 'recommerce' || cat === 're commerce') return 'Recommerce';
     if (isEwaste(cat)) return 'Recommerce';
     if (INFRA_CATS[cat]) return 'InfraBusiness';
-    // Buyers with Marketplace vertical but no sub-category are OMP participants
-    if (audience === 'buyer') return 'OMP';
+    // Buyers: Metal/Plastic go to OMP; everything else stays in Marketplace
+    if (audience === 'buyer') return isOmpCat ? 'OMP' : 'Marketplace';
     return 'Others';
   }
-  // All buyer onboarding happens through the Open Marketplace — any buyer whose
-  // vertical doesn't match a specific programme (EPR, Marketplace sub-categories)
-  // belongs to OMP. This covers blank verticals AND any unrecognised explicit value.
-  if (audience === 'buyer') return 'OMP';
+
+  // Buyers with blank or unrecognised vertical:
+  // Metal/Plastic → OMP (the only OMP-traded commodities for buyers)
+  // Everything else → Marketplace (Paper, M3, M4, Tyre Oil, etc.)
+  if (audience === 'buyer') return isOmpCat ? 'OMP' : 'Marketplace';
   return 'Others';
 }
 
@@ -219,7 +222,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v37_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v38_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -251,7 +254,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v19_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v20_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -275,14 +278,14 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v37_cmb_' + periodKey;
+    var cacheKey  = 'dash_v38_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v37_seller_' + periodKey;
-    var bIndKey = 'dash_v37_buyer_'  + periodKey;
+    var sIndKey = 'dash_v38_seller_' + periodKey;
+    var bIndKey = 'dash_v38_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -341,7 +344,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v19_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v20_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -389,7 +392,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v19_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v20_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
