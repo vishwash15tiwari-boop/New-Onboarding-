@@ -2087,6 +2087,9 @@ body.view-gst #vert-tabs-bar{display:none}
 .vkpi-card:hover .cfd svg,.vkpi-card:focus-visible .cfd svg{transform:translateX(2px)}
 .biz-tile:not(.biz-tile-region):hover .cfd{opacity:1;color:var(--blue)}
 .biz-tile:not(.biz-tile-region):hover .cfd svg{transform:translateX(2px)}
+.vpipe-stat-card .cfd{position:absolute;bottom:4px;right:6px}
+.vpipe-stat-card[role="button"]:hover .cfd,.vpipe-stat-card[role="button"]:focus-visible .cfd{opacity:1;color:var(--blue)}
+.vpipe-stat-card[role="button"]:hover .cfd svg,.vpipe-stat-card[role="button"]:focus-visible .cfd svg{transform:translateX(2px)}
 /* Hero card "Details ›" — absolute bottom-right inside card */
 .vkpi-card .cfd{position:absolute;bottom:8px;right:10px}
 .biz-t-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px}
@@ -2221,7 +2224,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .vpipe-kpi-section{display:flex;gap:5px;margin-bottom:5px}
 .vpipe-status-grid{display:flex;flex:4;gap:4px}
 .vpipe-ops-col{display:flex;flex:1;flex-direction:column;gap:3px;min-width:76px}
-.vpipe-stat-card{flex:1;min-width:0;border:1px solid var(--border);border-radius:10px;padding:4px 7px 5px;display:flex;flex-direction:column;gap:0;background:var(--card);box-shadow:var(--shadow-sm);overflow:hidden}
+.vpipe-stat-card{flex:1;min-width:0;border:1px solid var(--border);border-radius:10px;padding:4px 7px 18px;display:flex;flex-direction:column;gap:0;background:var(--card);box-shadow:var(--shadow-sm);overflow:hidden;position:relative}
 .vpipe-stat-icon{width:14px;height:14px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-bottom:1px}
 .vpipe-stat-name{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
 .vpipe-stat-num{font-size:16px;font-weight:800;letter-spacing:-.5px;line-height:1.05;color:var(--txt);font-variant-numeric:tabular-nums}
@@ -6799,6 +6802,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
           + '<div class="vpipe-stat-name">' + s.lbl + '</div>'
           + '<div class="vpipe-stat-num">' + fmt(s.n) + '</div>'
           + '<div class="vpipe-stat-pct">' + pct + '%</div>'
+          + ((isComp || isReview || isRej) ? _cfdHtml : '')
           + '</div>';
       }).join('')
     + '</div>';
