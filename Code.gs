@@ -780,6 +780,66 @@ function normalizeRows(raw, cfg) {
   });
 }
 
+// Return individual transaction rows for a specific vendor, used by the
+// VTB Level 3 drill-down (Transaction History view in the frontend).
+function getVendorTransactions(params) {
+  try {
+    var vendorId = String((params || {}).vendorId  || '').trim();
+    var audience = String((params || {}).audience  || 'seller').toLowerCase();
+    if (!vendorId) return [];
+    var cfg = AUDIENCE_CFG[audience] || AUDIENCE_CFG.seller;
+    var raw = readData(audience);
+    var idx = buildIndex(raw.headers);
+    var rows = [];
+    for (var i = 0; i < raw.rows.length; i++) {
+      var row   = raw.rows[i];
+      var recId = String(gv(row, idx, cfg.idCol) || '').replace(/,/g, '').trim();
+      if (recId !== vendorId) continue;
+      var txnDate = parseDate(
+        gv(row, idx, 'transaction_date')       ||
+        gv(row, idx, 'first_transaction_date') ||
+        gv(row, idx, 'txn_date')               ||
+        gv(row, idx, 'first_txn_date')         ||
+        gv(row, idx, 'activation_date')        || ''
+      );
+      var txnIdRaw  = gv(row, idx, 'transaction_id')  || gv(row, idx, 'txn_id')    || gv(row, idx, 'order_id')    || null;
+      var category  = normCategory(gv(row, idx, 'business_category') || gv(row, idx, 'category'));
+      var qtyRaw    = gv(row, idx, 'quantity') || gv(row, idx, 'txn_quantity') || gv(row, idx, 'order_quantity') || null;
+      var txnValRaw = gv(row, idx, 'transaction_value')       ||
+                      gv(row, idx, 'txn_value')               ||
+                      gv(row, idx, 'gmv')                     ||
+                      gv(row, idx, 'transaction_amount')      ||
+                      gv(row, idx, 'first_transaction_value') ||
+                      gv(row, idx, 'order_value')             || null;
+      var txnVal = (txnValRaw !== null && txnValRaw !== undefined && txnValRaw !== '')
+        ? parseFloat(String(txnValRaw).replace(/[₹$€£¥,\s]/g, '')) : NaN;
+      if (isNaN(txnVal)) txnVal = null;
+      var cpRaw  = gv(row, idx, 'buyer_name')        || gv(row, idx, 'seller_name')   ||
+                   gv(row, idx, 'counterparty_name') || gv(row, idx, 'counter_party') ||
+                   gv(row, idx, 'party_name')        || null;
+      var txnStRaw = gv(row, idx, 'transaction_status')            ||
+                     gv(row, idx, 'txn_status')                    ||
+                     gv(row, idx, 'transaction_activation_status') || null;
+      // Skip rows with no transaction signal at all
+      if (!txnDate && txnVal === null && !txnIdRaw) continue;
+      rows.push({
+        txnId:        txnIdRaw   ? String(txnIdRaw).trim()   : null,
+        txnDate:      txnDate    ? fmtDate(txnDate)           : null,
+        material:     category   || null,
+        qty:          (qtyRaw !== null && qtyRaw !== undefined && String(qtyRaw).trim() !== '')
+                        ? String(qtyRaw).trim() : null,
+        txnValue:     txnVal,
+        counterParty: cpRaw      ? String(cpRaw).trim()   || null : null,
+        txnStatus:    txnStRaw   ? String(txnStRaw).trim() || null : null,
+      });
+    }
+    return rows;
+  } catch (e) {
+    Logger.log('getVendorTransactions error: ' + e.message);
+    return [];
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // DASHBOARD ASSEMBLY
 // ─────────────────────────────────────────────────────────────
