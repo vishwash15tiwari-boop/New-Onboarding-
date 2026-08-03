@@ -1,0 +1,304 @@
+// ═══════════════════════════════════════════════════════════════
+// SCROLL REVEAL — D.E. Shaw editorial entrance pattern
+// IntersectionObserver fires .visible the moment each .reveal
+// element crosses an 8% threshold.  The .reveal CSS rule
+// (opacity:0 → 1, translateY 22px → 0) plays the transition.
+// Only runs when OS motion is permitted.
+// ═══════════════════════════════════════════════════════════════
+(function initReveal() {
+  if (!window.IntersectionObserver) return;
+  var io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        var delay = (parseInt(e.target.getAttribute('data-ri') || '0', 10) || 0) * 8;
+        if (delay) {
+          setTimeout(function() { e.target.classList.add('visible'); }, delay);
+        } else {
+          e.target.classList.add('visible');
+        }
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.06, rootMargin: '0px 0px -32px 0px' });
+
+  function observe() {
+    if (motionOK()) {
+      document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) { io.observe(el); });
+    } else {
+      document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('visible'); });
+    }
+  }
+
+  if (document.readyState !== 'loading') { observe(); }
+  else { document.addEventListener('DOMContentLoaded', observe); }
+
+  var _origRenderAll = window.renderAll;
+  window.renderAll = function() {
+    if (_origRenderAll) _origRenderAll.apply(this, arguments);
+    requestAnimationFrame(observe);
+  };
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// SIDEBAR NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+var snActiveKey = null;    // which vertical's section is active (scroll spy)
+var snVertsOpen = false;   // sidebar verticals list collapsed by default
+var _scrollSpyObs = null;  // IntersectionObserver instance for scroll spy
+
+function buildSideNav() {
+  var nav = document.getElementById('side-nav');
+  if (!nav) return;
+
+  var cfgList = getVertCfg();
+  var isGST   = currentView === 'gst';
+  var isOvw   = !isGST;
+
+  var html = '<div class="sn-sect">Navigation</div>';
+
+  // ── Verticals group (collapsed by default, toggles on click) ──
+  var vertsOpen = isOvw && snVertsOpen;
+  html += '<button class="sn-grp' + (isOvw ? ' sn-active' : '') + (vertsOpen ? ' sn-open' : '') + '"'
+    + ' onclick="if(currentView===\'gst\'){switchView(\'onboarding\');}else{snVertsOpen=!snVertsOpen;buildSideNav();}">'
+    + '<span class="sn-grp-ic">V</span>'
+    + '<span class="sn-grp-lbl">Verticals</span>'
+    + '<span class="sn-grp-arr">›</span>'
+    + '</button>';
+  if (vertsOpen && cfgList.length) {
+    html += '<div class="sn-subs sn-open">';
+    cfgList.forEach(function(cfg) {
+      var vs  = DS && DS.verticals && DS.verticals[cfg.key] || {};
+      var vb  = DB && DB.verticals && DB.verticals[cfg.key] || {};
+      var tot = (vs.total || 0) + (vb.total || 0);
+      var vc  = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
+      html += '<button class="sn-sub' + (snActiveKey === cfg.key ? ' sn-active' : '') + '"'
+        + ' data-key="' + esc(cfg.key) + '"'
+        + ' style="--vc:' + vc.c + ';--vc-ink:' + vc.ink + ';--vc-soft:' + hexRGBA(vc.c, .09) + '"'
+        + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
+        + '<span class="sn-sub-dot"></span>'
+        + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
+        + '</button>';
+    });
+    html += '</div>';
+  }
+
+  // ── Separator + GST Payables ───────────────────────────────
+  html += '<div class="sn-sep"></div>';
+  html += '<button class="sn-gst' + (isGST ? ' sn-active' : '') + '" onclick="switchView(\'gst\')">'
+    + '<span class="sn-gst-ic">₹</span>'
+    + '<span class="sn-gst-lbl">GST Payables</span>'
+    + '</button>';
+
+  nav.innerHTML = html;
+}
+
+// Called when a group header (Sellers/Buyers) is clicked.
+function snSelectGroup(aud) {
+  snActiveKey = null;
+  switchAudience(aud);
+}
+
+// Called when a vertical sub-item is clicked — opens the detail panel.
+function snSelectVert(key) {
+  snActiveKey = key;
+  openVertDetail(key);
+}
+
+// IntersectionObserver scroll spy — highlights the sidebar item matching the
+// section closest to the top of the viewport.
+function setupScrollSpy() {
+  if (_scrollSpyObs) { _scrollSpyObs.disconnect(); _scrollSpyObs = null; }
+  if (!window.IntersectionObserver) return;
+
+  var sections = document.querySelectorAll('.vert-section[id^="vs-"]');
+  if (!sections.length) return;
+
+  _scrollSpyObs = new IntersectionObserver(function(entries) {
+    var best = null, bestRatio = 0;
+    entries.forEach(function(e) {
+      if (e.isIntersecting && e.intersectionRatio > bestRatio) {
+        bestRatio = e.intersectionRatio;
+        best = e.target;
+      }
+    });
+    if (!best) return;
+    var key = best.id.replace('vs-', '');
+    if (key === snActiveKey) return;
+    snActiveKey = key;
+  }, { threshold: [0.1, 0.25, 0.5], rootMargin: '-64px 0px -40% 0px' });
+
+  sections.forEach(function(sec) { _scrollSpyObs.observe(sec); });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════════════════════════
+function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+function dOr(v, suffix) { return (v === null || v === undefined) ? '—' : v + (suffix || ''); }
+function fmt(n) { return Number(n || 0).toLocaleString('en-IN'); }
+var _cfdHtml = '<span class="cfd">Click for Details <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>';
+function pct(a, b) { return b ? Math.round((a / b) * 100) : 0; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtINR(v) {
+  if (v === null || v === undefined || isNaN(parseFloat(v))) return '—';
+  v = parseFloat(v);
+  if (v >= 1e7) {
+    var cr = v / 1e7;
+    // Large Crore values (≥100 Cr) get Indian grouping and no decimals: "₹35,793 Cr"
+    // Smaller Crore values keep 2 decimal places: "₹87.75 Cr"
+    var s = cr >= 100
+      ? cr.toLocaleString('en-IN', { maximumFractionDigits: 0 })
+      : cr.toFixed(2);
+    return '₹' + s + ' Cr';
+  }
+  if (v >= 1e5) return '₹' + (v / 1e5).toFixed(2) + ' L';
+  if (v >= 1000) return '₹' + (v / 1000).toFixed(1) + ' K';
+  return '₹' + Math.round(v).toLocaleString('en-IN');
+}
+
+function statusChip(s) {
+  var cls = { COMPLETED: 'chip-completed', DRAFT: 'chip-draft', IN_REVIEW: 'chip-review', REJECTED: 'chip-rejected' };
+  return '<span class="status-chip ' + (cls[s] || '') + '">' + esc(STATUS_LABELS[s] || s || '—') + '</span>';
+}
+function tatChip(t) {
+  // 0 is a valid TAT (same-day onboarding) — only null/undefined/'—' mean "no TAT".
+  if (t === null || t === undefined || t === '' || t === '—') return '<span class="text-muted">—</span>';
+  var n = parseInt(t, 10);
+  if (isNaN(n)) return '<span class="text-muted">' + esc(t) + '</span>';
+  var cls = n <= 2 ? 'text-green' : n <= 5 ? 'text-amber' : 'text-red';
+  return '<span class="' + cls + '">' + n + 'd</span>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SPOTLIGHT SEARCH — ⌘K / Ctrl+K command palette
+// ═══════════════════════════════════════════════════════════════
+var spActiveIdx = -1;
+var spCurrentItems = [];
+
+function spBuildItems(query) {
+  var q = (query || '').toLowerCase().trim();
+  var items = [];
+
+  // ── Navigation ──
+  var navItems = [
+    { ic:'⊞', title:'Dashboard Overview', sub:'All verticals, onboarding pipeline', action:function(){switchView('onboarding')}, badge:'View' },
+    { ic:'₹', title:'GST Payables', sub:'Vendor register, outstanding balances', action:function(){switchView('gst')}, badge:'View' },
+  ];
+  // Add verticals from config
+  var cfgList = (typeof getVertCfg === 'function') ? getVertCfg() : [];
+  cfgList.forEach(function(cfg) {
+    navItems.push({ ic:cfg.name.charAt(0), title:cfg.name, sub:'View ' + cfg.name + ' vertical detail', action:function(k){return function(){openVertDetail(k)}}(cfg.key), badge:'Vertical' });
+  });
+
+  // ── Actions ──
+  var actionItems = [
+    { ic:'↻', title:'Refresh Data', sub:'Reload the latest data from source', action:function(){refreshActive()}, badge:'Action' },
+  ];
+
+  // ── Period filters (shown when on overview) ──
+  var periodItems = [
+    { ic:'D', title:'Today', sub:'Onboarding activity for today', action:function(){onPeriodSelect('Today')}, badge:'Period' },
+    { ic:'MTD', title:'For the Month', sub:'From 1st of current month to today', action:function(){onPeriodSelect('MTD')}, badge:'Period' },
+    { ic:'YTD', title:'YTD – Year to Date', sub:'From Apr 1 of current financial year', action:function(){onPeriodSelect('YTD')}, badge:'Period' },
+    { ic:'All', title:'All Time', sub:'Complete onboarding history', action:function(){onPeriodSelect('All')}, badge:'Period' },
+  ];
+
+  var all = navItems.concat(actionItems, periodItems);
+  if (q) {
+    all = all.filter(function(i) {
+      return i.title.toLowerCase().indexOf(q) !== -1 || (i.sub || '').toLowerCase().indexOf(q) !== -1;
+    });
+  }
+  return all;
+}
+
+function spRender(query) {
+  var items = spBuildItems(query);
+  spCurrentItems = items;
+  spActiveIdx = items.length > 0 ? 0 : -1;
+  var res = document.getElementById('sp-results');
+  if (!res) return;
+  if (!items.length) {
+    res.innerHTML = '<div class="sp-empty">No results for "<b>' + esc(query) + '</b>"</div>';
+    return;
+  }
+  res.innerHTML = items.map(function(item, i) {
+    return '<div class="sp-item' + (i === 0 ? ' sp-active' : '') + '" data-sp-i="' + i + '" onclick="spSelect(' + i + ')" onmouseover="spHover(' + i + ')">'
+      + '<div class="sp-item-ic">' + esc(item.ic) + '</div>'
+      + '<div class="sp-item-body"><div class="sp-item-title">' + esc(item.title) + '</div>'
+      + (item.sub ? '<div class="sp-item-sub">' + esc(item.sub) + '</div>' : '')
+      + '</div>'
+      + (item.badge ? '<span class="sp-item-badge">' + esc(item.badge) + '</span>' : '')
+      + '</div>';
+  }).join('');
+}
+
+function spHover(i) { spActiveIdx = i; spHighlight(); }
+
+function spHighlight() {
+  document.querySelectorAll('#sp-results .sp-item').forEach(function(el, i) {
+    el.classList.toggle('sp-active', i === spActiveIdx);
+  });
+}
+
+function spFilter(val) { spRender(val); }
+
+function spSelect(i) {
+  var item = spCurrentItems[i];
+  if (!item) return;
+  closeSpotlight();
+  setTimeout(function() { item.action(); }, 50);
+}
+
+function spKeydown(e) {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    spActiveIdx = Math.min(spActiveIdx + 1, spCurrentItems.length - 1);
+    spHighlight();
+    var active = document.querySelector('#sp-results .sp-item.sp-active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    spActiveIdx = Math.max(spActiveIdx - 1, 0);
+    spHighlight();
+    var active = document.querySelector('#sp-results .sp-item.sp-active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    if (spActiveIdx >= 0) spSelect(spActiveIdx);
+  } else if (e.key === 'Escape') {
+    closeSpotlight();
+  }
+}
+
+function openSpotlight() {
+  var overlay = document.getElementById('spotlight-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  spRender('');
+  var input = document.getElementById('sp-input');
+  if (input) { input.value = ''; setTimeout(function() { input.focus(); }, 50); }
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSpotlight() {
+  var overlay = document.getElementById('spotlight-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ⌘K / Ctrl+K global shortcut
+document.addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    var overlay = document.getElementById('spotlight-overlay');
+    if (overlay && overlay.style.display !== 'none') {
+      closeSpotlight();
+    } else {
+      openSpotlight();
+    }
+  }
+  if (e.key === 'Escape') {
+    var overlay = document.getElementById('spotlight-overlay');
+    if (overlay && overlay.style.display !== 'none') closeSpotlight();
+  }
+});

@@ -1,0 +1,1556 @@
+// ═══════════════════════════════════════════════════════════════
+// VERTICAL TAB NAVIGATION — new layout
+// ═══════════════════════════════════════════════════════════════
+function renderVerticals() {
+  if (!DS || !DS.verticals) return;
+
+  if (D && D.dataSource === 'empty') {
+    var kEl = document.getElementById('vert-kpi-row');
+    var pEl = document.getElementById('vert-pipeline-pair');
+    var dEl = document.getElementById('vert-detail-section');
+    if (kEl) kEl.innerHTML = '';
+    if (pEl) pEl.innerHTML = '<div style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:36px 32px;text-align:center;box-shadow:var(--shadow-sm)">'
+      + '<div style="font-size:15px;font-weight:800;color:var(--red);margin-bottom:8px">⚠ Backend connected — but no data source is reachable</div>'
+      + '<div style="font-size:12.5px;color:var(--txt2);max-width:640px;margin:0 auto 14px;line-height:1.7">The web app responded, but all three data paths came back empty. In the Apps Script editor, check in this order:'
+      + '<ol style="text-align:left;margin:10px auto 0;max-width:560px;padding-left:22px">'
+      + '<li>Run <b>setupMetabaseCredentials()</b> once (Metabase.gs) so live Metabase fetches can authenticate.</li>'
+      + '<li>Run <b>syncAllOnboarding()</b>, then <b>setupMetabaseTrigger()</b> to create the <b>_mb_sellers</b> / <b>_mb_buyers</b> synced sheets.</li>'
+      + '<li>If Metabase is unavailable, share the fallback Google Sheets with the account that deployed this web app.</li>'
+      + '</ol></div>'
+      + '<button onclick="loadData(false)" style="padding:9px 24px;border-radius:999px;border:1px solid var(--blue);background:var(--blue);color:#fff;font-size:13px;font-weight:600;cursor:pointer">↻ Retry</button>'
+      + '</div>';
+    if (dEl) dEl.style.display = 'none';
+    return;
+  }
+
+  // First render — initialize the active tab to the first vertical
+  if (!activeVertKey) {
+    var cfg0 = getVertCfg();
+    activeVertKey = cfg0.length ? cfg0[0].key : 'OMP';
+    selectedVert  = activeVertKey;
+    selectedAud   = 'seller';
+    vertRows = []; vertRowsLoading = true; vertRowsError = null;
+    _ovnRows = {};
+    _vertRowsPKey = null; ++_vertRowsGen;
+    loadVertRows(activeVertKey);
+  }
+
+  renderVertTabBar();
+  renderVertCtxHdr(activeVertKey);
+  renderVertKPIs(activeVertKey);
+  renderPipelinePair(activeVertKey);
+
+  var detEl = document.getElementById('vert-detail-section');
+  if (detEl) detEl.style.display = '';
+  renderInlineDetail(activeVertKey);
+}
+
+function renderVertTabBar() {
+  var bar = document.getElementById('vert-tabs-bar');
+  if (!bar) return;
+  var cfg = getVertCfg();
+  bar.innerHTML = cfg.map(function(c) {
+    var isActive = c.key === activeVertKey;
+    return '<button class="vert-tab' + (isActive ? ' active' : '') + '"'
+      + ' data-key="' + esc(c.key) + '"'
+      + ' style="' + vcVars(c.key) + '"'
+      + ' onclick="selectVertTab(\'' + c.key + '\')">'
+      + esc(c.name)
+      + '</button>';
+  }).join('')
+  + '<button class="vert-tab vert-tab-gst" onclick="switchView(\'gst\')">GST Payables</button>';
+  positionVertThumb(false);
+}
+
+// ── Liquid tab thumb — the white pill that slides between vertical tabs.
+//    Recreated on every bar re-render (innerHTML wipes it); positioned from
+//    the active tab's box. animate=false snaps (first paint, resize, refresh).
+function positionVertThumb(animate) {
+  var bar = document.getElementById('vert-tabs-bar');
+  if (!bar) return;
+  var active = bar.querySelector('.vert-tab.active');
+  var thumb  = bar.querySelector('.vert-tab-thumb');
+  if (!active) { if (thumb) thumb.style.width = '0px'; return; }
+  if (!active.offsetWidth) return;   // bar hidden (GST view) — keep last position
+  if (!thumb) {
+    thumb = document.createElement('div');
+    thumb.className = 'vert-tab-thumb';
+    bar.insertBefore(thumb, bar.firstChild);
+  }
+  bar.classList.add('has-thumb');
+  var instant = animate === false || !motionOK();
+  if (instant) thumb.style.transition = 'none';
+  thumb.style.width = active.offsetWidth + 'px';
+  thumb.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+  if (instant) requestAnimationFrame(function() { thumb.style.transition = ''; });
+}
+window.addEventListener('resize', function() { positionVertThumb(false); });
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(function() { positionVertThumb(false); });
+}
+
+function renderVertCtxHdr(key) {
+  var el = document.getElementById('vert-ctx-hdr');
+  if (!el) return;
+  if (currentView === 'gst' || !key) { el.innerHTML = ''; return; }
+  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  if (!cfg) { el.innerHTML = ''; return; }
+  el.setAttribute('style', vcVars(key));
+  el.innerHTML = '<span class="vert-ctx-code">' + esc(cfg.code || cfg.key) + '</span>'
+    + '<span class="vert-ctx-name">' + esc(cfg.name) + '</span>';
+}
+
+function selectVertTab(key) {
+  if (activeVertKey === key) return;
+  activeVertKey = key;
+  selectedVert  = key;
+  // Reset rows — new vertical, fresh load
+  vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '', region: 'All', ratingMin: '', ratingMax: '' }; vdPage = 0;
+  vdSort = { key: '', dir: 1 };
+  vertRows = []; vertRowsLoading = true; vertRowsError = null;
+  _ovnRows = {};
+  _vertRowsPKey = null; ++_vertRowsGen;
+  // Update tab active states in-place (faster than full re-render)
+  var actTab = null;
+  document.querySelectorAll('.vert-tab[data-key]').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.key === key);
+    if (t.dataset.key === key) { t.setAttribute('style', vcVars(key)); actTab = t; }
+  });
+  positionVertThumb(true);
+  setAura(key);
+  if (actTab && actTab.scrollIntoView) {
+    try { actTab.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'nearest', inline: 'nearest' }); } catch (e) {}
+  }
+  renderVertCtxHdr(key);
+  renderVertKPIs(key);
+  renderPipelinePair(key);
+  var detEl = document.getElementById('vert-detail-section');
+  if (detEl) detEl.style.display = '';
+  renderInlineDetail(key);
+  loadVertRows(key);
+}
+
+// Merge seller+buyer FY breakdowns into one chronological series per metric.
+function mergeFYSeries(vsF, vbF, field) {
+  var m = {};
+  (vsF || []).concat(vbF || []).forEach(function(f) {
+    if (!f || !f.fy) return;
+    if (m[f.fy] === undefined) m[f.fy] = null;
+    if (f[field] != null) m[f.fy] = (m[f.fy] || 0) + f[field];
+  });
+  return Object.keys(m).sort().map(function(k) { return m[k]; });
+}
+
+// Mini FY bar sparkline — quiet bars, latest year in the accent colour.
+function sparkBars(vals, accent, dark) {
+  vals = (vals || []).filter(function(v) { return v != null; });
+  if (vals.length < 2) return '';
+  var max = Math.max.apply(null, vals);
+  if (!(max > 0)) return '';
+  var H = 26, bw = 9, gap = 5;
+  var n = vals.length, W = n * bw + (n - 1) * gap;
+  var base = dark ? 'rgba(255,255,255,.22)' : 'rgba(60,60,67,.18)';
+  return '<svg class="vkpi-spark" viewBox="0 0 ' + W + ' ' + H + '" style="width:' + W + 'px" aria-hidden="true">'
+    + vals.map(function(v, i) {
+        var h = Math.max(3, Math.round((v / max) * H));
+        var x = i * (bw + gap), y = H - h;
+        return '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="2.5" fill="' + (i === n - 1 ? accent : base) + '"/>';
+      }).join('')
+    + '</svg>';
+}
+
+function renderVertKPIs(key) {
+  var el = document.getElementById('vert-kpi-row');
+  if (!el) return;
+  // Show skeleton KPI cards during first load when there's no cached data
+  if (_dashLoading && !DS) {
+    var skCard = '<div class="sk-kpi-card"></div>';
+    el.classList.add('vkpi-grid-4');
+    el.innerHTML = skCard + skCard + skCard + skCard;
+    return;
+  }
+  var vs = (DS && DS.verticals || {})[key] || {};
+  var vb = (DB && DB.verticals || {})[key] || {};
+  var totalS = vs.total || 0, totalB = vb.total || 0;
+  var compS  = vs.completed || 0, compB = vb.completed || 0;
+  var txnS   = vs.transacted != null ? (vs.transacted || 0) : null;
+  var txnB   = vb.transacted != null ? (vb.transacted || 0) : null;
+  var txnTotal   = (txnS || 0) + (txnB || 0);
+  var nonTxnTotal = Math.max(0, (compS + compB) - txnTotal);
+  var newS = vs.newVendors || 0, newB = vb.newVendors || 0;
+  var oldS = vs.oldVendors || 0, oldB = vb.oldVendors || 0;
+  var vars = vcVars(key);
+  function sideRow(v, tag, clr) {
+    return '<span class="vkpi-side-row">'
+      + '<i class="vkpi-side-dot" style="background:' + clr + '"></i>'
+      + '<b class="vkpi-side-num">' + v + '</b>'
+      + '<em class="vkpi-side-tag">' + tag + '</em>'
+      + '</span>';
+  }
+  // sides: [{val,tag,clr}] → renders as left column; big number anchors right.
+  // sub: plain string shown below the value when no sides are given.
+  // id: optional DOM id so cards can be patched after async data arrives.
+  function mk(icon, lbl, val, sub, cls, action, id, note) {
+    return '<div' + (id ? ' id="' + id + '"' : '') + ' class="vkpi-card' + (cls ? ' ' + cls : '') + '" style="' + vars + '"'
+      + ' role="button" tabindex="0"'
+      + ' onclick="openKpiModal(\'' + action + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'' + action + '\')}">'
+      + '<div class="vkpi-lbl">' + lbl + '</div>'
+      + '<div class="vkpi-val">' + val + '</div>'
+      + (sub != null ? '<div class="vkpi-sub">' + (sub || '') + '</div>' : '')
+      + _cfdHtml
+      + '</div>';
+  }
+  function svg(paths) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
+  }
+  var icFunnel = svg('<path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/>');
+  var icCheck  = svg('<circle cx="12" cy="12" r="8.4"/><path d="M8.6 12.4l2.4 2.4 4.4-5"/>');
+  var icZap    = svg('<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>');
+  var icUsers  = svg('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>');
+
+  // FY sparklines from real breakdown data (skipped when <2 years exist)
+  var spTotal = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'total'),      'var(--vc, #005DFF)', false);
+  var spOnb   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'onboarded'),  '#30D158', true);
+  var spTxn   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'transacted'), 'var(--st-transacted)', false);
+
+  // Completion meter on the ink card — onboarded share of the whole pipeline
+  var totAll  = totalS + totalB;
+  var compPct = totAll > 0 ? Math.round(((compS + compB) / totAll) * 100) : 0;
+  var meter   = '<div class="vkpi-meter" title="' + compPct + '% of pipeline onboarded"><i style="width:' + compPct + '%"></i></div>';
+
+  var S = '#1DC797', B = '#005DFF';
+  var G2 = 'rgba(52,199,89,.38)', B2 = 'rgba(0,122,255,.38)';
+  // Plastic vs Metal combined (S + B) per metric
+  var PC = '#FF9F0A', MC = '#8E8E93';
+  function matLine(p, m) {
+    if (!p && !m) return '';
+    return '<div class="vkpi-mat">'
+      + '<span class="vkpi-mat-chip"><i class="vkpi-mat-dot" style="background:' + PC + '"></i>' + fmt(p) + ' plastic</span>'
+      + '<span class="vkpi-mat-chip"><i class="vkpi-mat-dot" style="background:' + MC + '"></i>' + fmt(m) + ' metal</span>'
+      + '</div>';
+  }
+  function matBracket(p, m) {
+    if (!p && !m) return '';
+    return '<span class="vkpi-mat-br">(' + p + 'P · ' + m + 'M)</span>';
+  }
+  var pTotal   = (vs.plasticTotal      || 0) + (vb.plasticTotal      || 0);
+  var mTotal   = (vs.metalTotal        || 0) + (vb.metalTotal        || 0);
+  var pOnb     = (vs.plasticOnboarded  || 0) + (vb.plasticOnboarded  || 0);
+  var mOnb     = (vs.metalOnboarded    || 0) + (vb.metalOnboarded    || 0);
+  var pTxn     = (vs.plasticTransacted || 0) + (vb.plasticTransacted || 0);
+  var mTxn     = (vs.metalTransacted   || 0) + (vb.metalTransacted   || 0);
+  var pNew     = (vs.plasticNew        || 0) + (vb.plasticNew        || 0);
+  var mNew     = (vs.metalNew          || 0) + (vb.metalNew          || 0);
+
+  var nonTxnSub   = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
+  var oldTotalSub = '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>';
+  var txnPct = (compS + compB) > 0 ? Math.round(txnTotal / (compS + compB) * 100) : 0;
+  // Save snapshot so openKpiModal() can read it without recomputing
+  window._kpiSnap = {
+    key: key,
+    totalS: totalS, totalB: totalB,
+    compS: compS, compB: compB, compPct: compPct,
+    txnS: txnS, txnB: txnB, txnTotal: txnTotal, txnPct: txnPct, nonTxnTotal: nonTxnTotal,
+    txnUniqueTotal: (vs.totalTxnCount || 0) + (vb.totalTxnCount || 0),
+    newS: newS, oldS: oldS, newB: newB, oldB: oldB,
+    vs: vs, vb: vb,
+    pTotal: pTotal, mTotal: mTotal,
+    pOnb: pOnb, mOnb: mOnb,
+    pTxn: pTxn, mTxn: mTxn,
+    pNew: pNew, mNew: mNew,
+  };
+  var cards = [
+    mk(icFunnel, 'Logged In Cases', fmt(totalS + totalB), '<b>' + fmt(totalS) + '</b> sellers | <b>' + fmt(totalB) + '</b> buyers', 'vk-total',     'total',      null),
+    mk(icCheck,  'Onboarded',   fmt(compS + compB),   '<b>' + fmt(compS) + '</b> sellers | <b>' + fmt(compB) + '</b> buyers',  'vk-onboarded', 'onboarded'),
+    mk(icZap,    'Transacted',  fmt(txnTotal),         '<b>' + fmt(pTxn) + '</b> Plastic | <b>' + fmt(mTxn) + '</b> Metal', 'vk-transacted', 'transacted'),
+  ];
+  if (key === 'OMP') {
+    var enTotal = (oldS + oldB) + (newS + newB);
+    cards.push(mk(icUsers, 'Existing vs New', fmt(enTotal),
+      fmt(oldS + oldB) + ' Existing vs ' + fmt(newS + newB) + ' New',
+      'vk-oldvsnew', 'oldvsnew'));
+  }
+  // 3-card verticals use auto-fit; the 4-card OMP row uses an explicit grid
+  // (class-driven, see .vkpi-grid-4) so it steps 4-up → 2×2 → 1-up and never
+  // breaks to an unbalanced 3 + lone card at intermediate widths.
+  el.style.gridTemplateColumns = '';
+  el.classList.toggle('vkpi-grid-4', cards.length === 4);
+  el.innerHTML = cards.join('');
+  animateCounters(el);
+}
+
+function vkpiOpen(action) {
+  var aud = selectedAud || 'seller';
+  var detEl = document.getElementById('vert-detail-section');
+  var rowsReady = vertRows.length > 0 && !vertRowsLoading;
+  if (rowsReady && detEl) {
+    vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '', region: 'All', ratingMin: '', ratingMax: '' }; vdPage = 0;
+    ['vdf-category','vdf-vendor','vdf-status','vdf-gst'].forEach(function(id) {
+      var e = document.getElementById(id); if (e) e.value = 'All';
+    });
+    var s = document.getElementById('vdf-search'); if (s) s.value = '';
+    if (action === 'missing') {
+      vdF.gst = 'Inactive';
+      var e = document.getElementById('vdf-gst'); if (e) e.value = 'Inactive';
+    } else if (action === 'onboarded') {
+      vdF.status = 'COMPLETED';
+      var e = document.getElementById('vdf-status'); if (e) e.value = 'COMPLETED';
+    }
+    renderVdRecords();
+    detEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    setDetailAud(aud);
+  }
+}
+
+function openKpiModal(cardId) {
+  window._lastKpiCardId = cardId;
+  var d = window._kpiSnap;
+  var isQualityCard = (cardId === 'rating' || cardId === 'osv' || cardId === 'docs');
+  if (!d && !isQualityCard) return;
+  var el = document.getElementById('km-pn');
+  var modal = document.getElementById('kpi-modal');
+  if (!el || !modal) return;
+
+  var S = '#1DC797', B = '#005DFF';
+  var PC = '#FF9F0A', MC = '#8E8E93';
+
+  // ── layout primitives ────────────────────────────────────────
+  function hero(num, lbl) {
+    var text = String(num);
+    var hasData = /[\d★%]/.test(text);
+    return '<div class="km-hero">'
+      + '<div class="km-hero-num"' + (!hasData ? ' style="font-size:20px;font-weight:400;letter-spacing:0;color:var(--txt3)"' : '') + '>' + text + '</div>'
+      + '<div class="km-hero-lbl">' + lbl + '</div>'
+      + '</div>';
+  }
+  function srow(items) {
+    var cols = Math.min(items.length, 4);
+    return '<div class="km-srow km-srow-' + cols + '">'
+      + items.map(function(it) {
+          return '<div class="km-s">'
+            + '<div class="km-sv"' + (it.c ? ' style="color:' + it.c + '"' : '') + '>' + it.v + '</div>'
+            + '<div class="km-sl">' + it.l + '</div>'
+            + (it.s ? '<div class="km-sb">' + it.s + '</div>' : '')
+            + '</div>';
+        }).join('') + '</div>';
+  }
+  function sec(title, inner) {
+    return '<div class="km-sec"><div class="km-sec-t">' + title + '</div>' + inner + '</div>';
+  }
+  function sbar(segs) {
+    var tot = segs.reduce(function(a, s) { return a + s.w; }, 0);
+    if (!tot) return '';
+    return '<div class="km-sbar">'
+      + segs.map(function(s) {
+          return s.w > 0 ? '<div style="flex:' + s.w + ';background:' + s.color + '"></div>' : '';
+        }).join('') + '</div>';
+  }
+  function sgrid(items, two) {
+    return '<div class="km-sg' + (two ? ' km-sg-2' : '') + '">'
+      + items.map(function(it) {
+          return '<div class="km-sg-item">'
+            + '<div class="km-sg-v">' + it.v + '</div>'
+            + '<div class="km-sg-l"><i class="km-dot" style="background:' + it.c + '"></i>' + it.l + '</div>'
+            + '</div>';
+        }).join('') + '</div>';
+  }
+  function expandTileGrid(specs) {
+    var gid = 'etg' + Math.random().toString(36).slice(2, 8);
+    // Fill the row: N tiles → N equal columns (capped at 4) instead of always 4,
+    // so a 2-tile grid (e.g. OSV Verified / Not Initiated) stretches full-width.
+    var cols = Math.max(1, Math.min(specs.length, 4));
+    var h = '<div class="km-sg" id="' + gid + '-g" style="grid-template-columns:repeat(' + cols + ',1fr)">'
+      + specs.map(function(sp, si) {
+          var vendors = sp.vendors || [];
+          if (vendors.length === 0) {
+            return '<div class="km-sg-item">'
+              + '<div class="km-sg-v">' + sp.v + '</div>'
+              + '<div class="km-sg-l"><i class="km-dot" style="background:' + sp.c + '"></i>' + sp.l + '</div>'
+              + '</div>';
+          }
+          var tid = gid + '-p' + si;
+          return '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
+            + ' onclick="_kmTileToggle(\'' + tid + '\',\'' + gid + '\',this)"'
+            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmTileToggle(\'' + tid + '\',\'' + gid + '\',this)}">'
+            + '<div class="km-sg-v">' + sp.v + '</div>'
+            + '<div class="km-sg-l"><i class="km-dot" style="background:' + sp.c + '"></i>'
+            + sp.l + ' <span class="km-star-arr">▶</span></div>'
+            + '</div>';
+        }).join('')
+      + '</div>';
+    specs.forEach(function(sp, si) {
+      var vendors = sp.vendors || [];
+      if (vendors.length === 0) return;
+      var tid = gid + '-p' + si;
+      h += '<div id="' + tid + '" class="km-tile-vlist" style="display:none">';
+      var shown = vendors.slice(0, 60);
+      h += shown.map(function(v) {
+        if (sp.mode === 'osv') {
+          var st   = v.status || 'not_initiated';
+          var cBg  = st === 'done' ? 'rgba(29,199,151,.15)' : st === 'in_progress' ? 'rgba(228,136,0,.12)' : 'var(--bg2)';
+          var cClr = st === 'done' ? '#0A7044'              : st === 'in_progress' ? '#7A4F00'              : 'var(--txt3)';
+          var cLbl = st === 'done' ? 'Done'                 : st === 'in_progress' ? 'In Progress'          : 'Not Initiated';
+          return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
+            + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
+            + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
+            + '<span class="km-vbadge" style="background:' + cBg + ';color:' + cClr + '">' + cLbl + '</span>'
+            + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.category) + '</span>' : '')
+            + '</div>';
+        }
+        var vr = '<div class="km-vrow"' + (sp.mode === 'docs' && v.missingDocs && v.missingDocs.length ? ' style="flex-wrap:wrap;align-items:flex-start"' : '') + '>';
+        if (v.id) vr += '<span class="km-vid">' + esc(v.id) + '</span>';
+        vr += '<span class="km-vname">' + esc(v.name || 'Unknown') + '</span>';
+        if (v.aud === 'seller' || v.aud === 'buyer') {
+          var ac = v.aud === 'seller' ? '#3B82F6' : '#8B5CF6';
+          vr += '<span class="km-vbadge" style="background:' + ac + '20;color:' + ac + '">' + (v.aud === 'seller' ? 'S' : 'B') + '</span>';
+        }
+        if (sp.mode === 'docs') {
+          var docPct_ = v.total > 0 ? Math.round(v.submitted / v.total * 100) : 0;
+          vr += '<span class="km-vaud" style="font-weight:600;color:var(--txt)">' + docPct_ + '%'
+            + '<span style="font-weight:400;color:var(--txt3);font-size:9.5px;margin-left:3px">(' + (v.submitted || 0) + '/' + (v.total || 0) + ')</span>'
+            + '</span>';
+          if (v.missingDocs && v.missingDocs.length > 0) {
+            vr += '<span class="km-vmissing">Missing: ' + esc(v.missingDocs.join(' · ')) + '</span>';
+          }
+        }
+        vr += '</div>';
+        return vr;
+      }).join('');
+      if (vendors.length > 60) {
+        h += '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (vendors.length - 60) + ' more</span></div>';
+      }
+      h += '</div>';
+    });
+    return h;
+  }
+  function matBadges(p, m) {
+    if (!p && !m) return '';
+    return '<div class="km-mat">'
+      + '<div class="km-mb"><div class="km-mb-dot" style="background:' + PC + '"></div>'
+      + '<div><div class="km-mb-v">' + fmt(p) + '</div><div class="km-mb-l">Plastic</div></div></div>'
+      + '<div class="km-mb"><div class="km-mb-dot" style="background:' + MC + '"></div>'
+      + '<div><div class="km-mb-v">' + fmt(m) + '</div><div class="km-mb-l">Metal</div></div></div>'
+      + '</div>';
+  }
+
+  var content = '', title = '', subtitle = '', iconHtml = '';
+  var vs = d ? d.vs : {}, vb = d ? d.vb : {};
+
+  if (cardId === 'total') {
+    title = 'Logged In Cases';
+    subtitle = 'All pipeline entries across sellers & buyers';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>';
+    var dComb = (vs.draft || 0) + (vb.draft || 0);
+    var rComb = (vs.inReview || 0) + (vb.inReview || 0);
+    var jComb = (vs.rejected || 0) + (vb.rejected || 0);
+    content =
+      hero(fmt(d.totalS + d.totalB), 'Logged In Cases')
+      + srow([
+          {v: fmt(d.totalS), l: 'Sellers', c: S},
+          {v: fmt(d.totalB), l: 'Buyers',  c: B},
+        ])
+      + sec('Pipeline Status',
+          sbar([
+            {w: d.compS + d.compB, color: 'var(--st-onboarded)'},
+            {w: dComb,             color: 'var(--st-draft)'},
+            {w: rComb,             color: 'var(--st-review)'},
+            {w: jComb,             color: 'var(--st-rejected)'},
+          ])
+          + sgrid([
+              {v: fmt(d.compS + d.compB), l: 'Onboarded', c: 'var(--st-onboarded)'},
+              {v: fmt(dComb),             l: 'Draft',      c: 'var(--st-draft)'},
+              {v: fmt(rComb),             l: 'In Review',  c: 'var(--st-review)'},
+              {v: fmt(jComb),             l: 'Rejected',   c: 'var(--st-rejected)'},
+            ])
+        )
+      + (d.pTotal + d.mTotal > 0 ? sec('Material Mix', matBadges(d.pTotal, d.mTotal)) : '');
+
+  } else if (cardId === 'onboarded') {
+    title = 'Onboarded';
+    subtitle = 'Vendors who completed onboarding';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M8.6 12.4l2.4 2.4 4.4-5"/></svg>';
+    var tatS = vs.avgTAT != null ? vs.avgTAT + 'd avg TAT' : null;
+    var tatB = vb.avgTAT != null ? vb.avgTAT + 'd avg TAT' : null;
+    content =
+      hero(fmt(d.compS + d.compB), 'Onboarded')
+      + srow([
+          {v: fmt(d.compS), l: 'Sellers', c: S, s: tatS},
+          {v: fmt(d.compB), l: 'Buyers',  c: B, s: tatB},
+        ])
+      + srow([
+          {v: d.compPct + '%', l: 'Completion Rate', s: 'of total pipeline'},
+          {v: fmt(((d.vs.draft||0)+(d.vb.draft||0))+((d.vs.inReview||0)+(d.vb.inReview||0))), l: 'Active Pipeline', s: 'draft + in review'},
+        ])
+      + (d.pOnb + d.mOnb > 0 ? sec('Material Mix', matBadges(d.pOnb, d.mOnb)) : '');
+
+  } else if (cardId === 'transacted') {
+    title = 'Transacted';
+    subtitle = 'Onboarded vendors who have made a transaction';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
+    // Pre-load rows for both audiences so vendor tiles render immediately
+    _ovnEnsureAud('seller');
+    _ovnEnsureAud('buyer');
+    // GMV = seller transactions only. Seller→Buyer is one transaction; counting
+    // buyer-side values would double-count the same underlying transaction.
+    var gmvCombined = vs.totalTxnValue || 0;
+    var sPMSub = (vs.plasticTransacted || vs.metalTransacted)
+      ? fmt(vs.plasticTransacted || 0) + 'P · ' + fmt(vs.metalTransacted || 0) + 'M' : 'sellers transacted';
+    var bPMSub = (vb.plasticTransacted || vb.metalTransacted)
+      ? fmt(vb.plasticTransacted || 0) + 'P · ' + fmt(vb.metalTransacted || 0) + 'M' : 'buyers transacted';
+    var metricItems = [{v: d.txnPct > 0 ? d.txnPct + '%' : '—', l: 'Txn Rate', s: 'of onboarded'}];
+    if (gmvCombined > 0) metricItems.push({v: fmtINR(gmvCombined), l: 'Total GMV'});
+    metricItems.push({v: fmt(d.nonTxnTotal), l: 'Not Transacted', s: 'onboarded · no txn'});
+    var txnUnique = d.txnUniqueTotal || d.txnTotal;
+
+    function txnAudTile(aud, count, acColor) {
+      var gid = 'txn-' + aud;
+      var pid = gid + '-p';
+      var audRows = _ovnRows[aud];
+      var hasRows = Array.isArray(audRows);
+      var tileHtml = count === 0
+        ? '<div class="km-sg-item"><div class="km-sg-v">' + fmt(count) + '</div>'
+          + '<div class="km-sg-l"><i class="km-dot" style="background:' + acColor + '"></i>'
+          + (aud === 'seller' ? 'Sellers' : 'Buyers') + '</div></div>'
+        : '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
+          + ' onclick="_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)"'
+          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)}">'
+          + '<div class="km-sg-v">' + fmt(count) + '</div>'
+          + '<div class="km-sg-l"><i class="km-dot" style="background:' + acColor + '"></i>'
+          + (aud === 'seller' ? 'Sellers' : 'Buyers') + ' <span class="km-star-arr">▶</span></div>'
+          + '</div>';
+      var panelHtml = '<div id="' + pid + '" class="km-tile-vlist" style="display:none">';
+      if (!hasRows) {
+        panelHtml += '<div style="padding:12px 4px;text-align:center;color:var(--txt3);font-size:11px">Loading…</div>';
+      } else {
+        var filtered = audRows.filter(function(r) { return !!r.hasTransacted; });
+        if (filtered.length === 0) {
+          panelHtml += '<div class="km-vrow" style="color:var(--txt3);font-size:11px">No transacted vendors found</div>';
+        } else {
+          panelHtml += filtered.slice(0, 80).map(function(r) {
+            var catBg  = r.category === 'Plastic' ? 'rgba(255,159,10,.15)' : 'rgba(142,142,147,.15)';
+            var catClr = r.category === 'Plastic' ? '#B25000' : '#636366';
+            var gmvStr = r.txnValue ? fmtINR(r.txnValue) : null;
+            return '<div class="km-vrow" style="flex-wrap:wrap;gap:4px 8px;align-items:center">'
+              + '<span class="km-vname" style="flex:1;min-width:120px">' + esc(r.name || 'Unknown') + '</span>'
+              + '<span style="font-size:9.5px;font-family:monospace;color:var(--txt3);flex-shrink:0">' + esc(r.gstin || '—') + '</span>'
+              + (r.category ? '<span class="km-vbadge" style="background:' + catBg + ';color:' + catClr + '">' + esc(r.category) + '</span>' : '')
+              + (gmvStr ? '<span class="km-vbadge" style="background:rgba(52,199,89,.12);color:#248A3D">' + gmvStr + '</span>' : '')
+              + '</div>';
+          }).join('');
+          if (filtered.length > 80) {
+            panelHtml += '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (filtered.length - 80) + ' more</span></div>';
+          }
+        }
+      }
+      panelHtml += '</div>';
+      return '<div id="' + gid + '-g" class="km-sg km-sg-1">' + tileHtml + '</div>' + panelHtml;
+    }
+
+    content =
+      hero(fmt(d.txnTotal), 'Transacted')
+      + srow([
+          {v: fmt(txnUnique),                          l: 'Unique Transactions', s: 'distinct txns completed'},
+          {v: fmt(d.txnS != null ? d.txnS : 0), c: S, l: 'Unique Sellers',      s: sPMSub},
+          {v: fmt(d.txnB != null ? d.txnB : 0), c: B, l: 'Unique Buyers',       s: bPMSub},
+        ])
+      + srow(metricItems)
+      + (d.pTxn + d.mTxn > 0 ? sec('Material Split',
+          '<div class="km-mat">'
+          + '<div class="km-mb"><div class="km-mb-dot" style="background:' + PC + '"></div>'
+          + '<div><div class="km-mb-v">' + fmt(d.pTxn) + '</div>'
+          + '<div class="km-mb-l">Plastic</div>'
+          + ((vs.plasticTransacted || vb.plasticTransacted)
+              ? '<div class="km-mb-sub">' + fmt(vs.plasticTransacted || 0) + ' sellers · ' + fmt(vb.plasticTransacted || 0) + ' buyers</div>'
+              : '')
+          + '</div></div>'
+          + '<div class="km-mb"><div class="km-mb-dot" style="background:' + MC + '"></div>'
+          + '<div><div class="km-mb-v">' + fmt(d.mTxn) + '</div>'
+          + '<div class="km-mb-l">Metal</div>'
+          + ((vs.metalTransacted || vb.metalTransacted)
+              ? '<div class="km-mb-sub">' + fmt(vs.metalTransacted || 0) + ' sellers · ' + fmt(vb.metalTransacted || 0) + ' buyers</div>'
+              : '')
+          + '</div></div>'
+          + '</div>'
+        ) : '')
+      + sec('Vendors',
+          txnAudTile('seller', d.txnS != null ? d.txnS : 0, S)
+          + txnAudTile('buyer',  d.txnB != null ? d.txnB : 0, B));
+
+  } else if (cardId === 'oldvsnew') {
+    title = 'Existing vs New';
+    subtitle = 'OMP vendors — existing in other verticals vs first-time';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+    // Auto-load rows for both audiences in parallel (no manual button needed)
+    _ovnEnsureAud('seller');
+    _ovnEnsureAud('buyer');
+    var totalOnb  = (d.newS + d.oldS) + (d.newB + d.oldB);
+    var totalNew  = d.newS + d.newB;
+    var totalExst = d.oldS + d.oldB;
+
+    function ovnBlock(aud, nCount, eCount) {
+      var gid     = 'ovn-' + aud;
+      var audRows = _ovnRows[aud];               // null = loading, array = ready
+      var hasRows = Array.isArray(audRows);
+      var acNew   = aud === 'seller' ? S : B;
+      var acExst  = aud === 'seller' ? '#22c55e' : '#60a5fa';
+
+      function tile(count, label, pid, color) {
+        if (count === 0) {
+          return '<div class="km-sg-item">'
+            + '<div class="km-sg-v">' + fmt(count) + '</div>'
+            + '<div class="km-sg-l"><i class="km-dot" style="background:' + color + '"></i>' + label + '</div>'
+            + '</div>';
+        }
+        return '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
+          + ' onclick="_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)"'
+          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)}">'
+          + '<div class="km-sg-v">' + fmt(count) + '</div>'
+          + '<div class="km-sg-l"><i class="km-dot" style="background:' + color + '"></i>'
+          + label + ' <span class="km-star-arr">▶</span></div>'
+          + '</div>';
+      }
+
+      var h = '<div id="' + gid + '-g" class="km-sg km-sg-2">'
+        + tile(nCount, 'New',      gid + '-n', acNew)
+        + tile(eCount, 'Existing', gid + '-e', acExst)
+        + '</div>';
+
+      [['n', false, nCount], ['e', true, eCount]].forEach(function(spec) {
+        var k = spec[0], isOld = spec[1], count = spec[2];
+        if (count === 0) return;
+        var pid = gid + '-' + k;
+        h += '<div id="' + pid + '" class="km-tile-vlist" style="display:none">';
+        if (!hasRows) {
+          // still loading — show spinner; data will arrive and re-render the modal
+          h += '<div style="padding:12px 4px;text-align:center;color:var(--txt3);font-size:11px">Loading…</div>';
+        } else {
+          var filtered = audRows.filter(function(r) {
+            return r.status === 'COMPLETED' && !!r.isOldVendor === isOld;
+          });
+          if (filtered.length === 0) {
+            h += '<div class="km-vrow" style="color:var(--txt3);font-size:11px">No vendors in this segment</div>';
+          } else {
+            var audLabel = aud === 'seller' ? 'Seller' : 'Buyer';
+            var stLbl    = isOld ? 'Existing' : 'New';
+            var stBg     = isOld ? 'rgba(142,142,147,.15)' : (aud === 'seller' ? 'rgba(48,209,88,.14)' : 'rgba(0,122,255,.12)');
+            var stClr    = isOld ? 'var(--txt2)'           : (aud === 'seller' ? '#248A3D'             : '#024C8A');
+            h += filtered.slice(0, 80).map(function(r) {
+              return '<div class="km-vrow" style="flex-wrap:wrap;gap:4px 8px;align-items:center">'
+                + '<span class="km-vname" style="flex:1;min-width:120px">' + esc(r.name || 'Unknown') + '</span>'
+                + '<span style="font-size:9.5px;font-family:monospace;color:var(--txt3);flex-shrink:0">' + esc(r.gstin || '—') + '</span>'
+                + '<span class="km-vbadge" style="background:' + (aud === 'seller' ? 'rgba(48,209,88,.14)' : 'rgba(0,122,255,.12)') + ';color:' + (aud === 'seller' ? '#248A3D' : '#024C8A') + '">' + esc(audLabel) + '</span>'
+                + '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A">' + esc(r.vertical || 'OMP') + '</span>'
+                + '<span class="km-vbadge" style="background:' + stBg + ';color:' + stClr + '">' + stLbl + '</span>'
+                + '</div>';
+            }).join('');
+            if (filtered.length > 80) {
+              h += '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (filtered.length - 80) + ' more</span></div>';
+            }
+          }
+        }
+        h += '</div>';
+      });
+
+      return h;
+    }
+
+    content =
+      hero(fmt(totalOnb), 'Total Onboarded in OMP')
+      + srow([
+          {v: fmt(totalNew),  l: 'New',      s: 'first-time in OMP'},
+          {v: fmt(totalExst), l: 'Existing', s: 'active in other verticals'},
+        ])
+      + sec('Sellers', ovnBlock('seller', d.newS, d.oldS))
+      + sec('Buyers',  ovnBlock('buyer',  d.newB, d.oldB));
+  }
+
+  // ── Quality card modals ──────────────────────────────────────
+  var isQuality = isQualityCard;
+  if (isQuality) {
+    var qd = qualityData || { success: false };
+    var S2 = '#1DC797', B2 = '#005DFF';
+
+    // Reusable star-distribution builder
+    var starBarsHtml = function(dist, rated, vendors) {
+      vendors = vendors || [];
+      var maxD   = Math.max.apply(null, dist) || 1;
+      var ratedD = rated || 1;
+      var h = '';
+      for (var si = 5; si >= 1; si--) {
+        var rc   = dist[si - 1] || 0;
+        var bpct = Math.round(rc / maxD * 100);
+        var dpct = Math.round(rc / ratedD * 100);
+        var bcol = si >= 4 ? '#22C55E' : si === 3 ? '#F59E0B' : '#EF4444';
+        var sv   = vendors.filter(function(v) { return Math.round(v.rating) === si; })
+                          .sort(function(a, b) { return b.rating - a.rating; });
+        var tid  = 'km-svl-' + si;
+        if (sv.length > 0) {
+          h += '<div class="km-star-row km-star-clickable" role="button" tabindex="0"'
+            + ' onclick="_kmStarToggle(\'' + tid + '\',this)"'
+            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmStarToggle(\'' + tid + '\',this)}">'
+            + '<span class="km-star-n">' + si + '★</span>'
+            + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
+            + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
+            + '<span class="km-star-pct">' + dpct + '% <span class="km-star-arr">▶</span></span>'
+            + '</div>'
+            + '<div id="' + tid + '" class="km-star-vlist" style="display:none">'
+            + sv.map(function(v) {
+                return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
+                  + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
+                  + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
+                  + '<span class="km-vrating" style="color:' + bcol + '">' + v.rating.toFixed(1) + '★</span>'
+                  + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.category) + '</span>' : '')
+                  + '</div>';
+              }).join('')
+            + '</div>';
+        } else {
+          h += '<div class="km-star-row">'
+            + '<span class="km-star-n">' + si + '★</span>'
+            + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
+            + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
+            + '<span class="km-star-pct">' + dpct + '%</span>'
+            + '</div>';
+        }
+      }
+      return h;
+    };
+
+    // Segmented progress bar
+    var progBar = function(segs) {
+      var tot = segs.reduce(function(a, s) { return a + s.w; }, 0);
+      if (!tot) return '';
+      return '<div class="km-prog">'
+        + segs.filter(function(s) { return s.w > 0; }).map(function(s) {
+            return '<div class="km-prog-seg" style="flex:' + s.w + ';background:' + s.color + '"></div>';
+          }).join('')
+        + '</div>';
+    };
+
+    var noDataMsg = '<div style="padding:32px 18px;text-align:center;color:var(--txt3);font-size:13px">Quality data is loading — check back shortly.</div>';
+
+    if (cardId === 'rating') {
+      title    = 'Vendor Rating';
+      subtitle = 'Demonitor score (0 – 10 scale) — OMP sellers';
+      iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+      if (!qd.success) {
+        content = noDataMsg;
+      } else {
+        var r      = (qd.seller || {}).rating || {};
+        var avg    = r.avg != null ? r.avg.toFixed(1) : '—';
+        var rRated = r.rated || 0;
+        var rTotal = r.total || 0;
+        var selVR  = (qd.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
+        selVR.sort(function(a, b) { return b.rating - a.rating; });
+
+        // Range distribution bars (0-2, 2-4, 4-6, 6-8, 8-10)
+        var dist      = r.dist || [0,0,0,0,0];
+        var rngLabels = ['0 – 2','2 – 4','4 – 6','6 – 8','8 – 10'];
+        var rngCols   = ['#EF4444','#FB923C','#F59E0B','#84CC16','#22C55E'];
+        var maxD      = Math.max.apply(null, dist) || 1;
+        var rangeBarsHtml = '';
+        for (var ri = 4; ri >= 0; ri--) {
+          var rc   = dist[ri] || 0;
+          var bpct = Math.round(rc / maxD * 100);
+          var dpct = rRated > 0 ? Math.round(rc / rRated * 100) : 0;
+          rangeBarsHtml += '<div class="km-rng-row">'
+            + '<span class="km-star-n" style="text-align:left;font-size:9px">' + rngLabels[ri] + '</span>'
+            + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + rngCols[ri] + '"></div></div>'
+            + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
+            + '<span class="km-star-pct">' + dpct + '%</span>'
+            + '</div>';
+        }
+
+        // Filterable vendor table
+        var tblId = 'km-rat-tbl';
+        var cats  = [];
+        selVR.forEach(function(v) { if (v.category && cats.indexOf(v.category) < 0) cats.push(v.category); });
+        cats.sort();
+        var filterBar = '<div class="km-fbar">'
+          + '<input type="text" class="km-fi" id="' + tblId + '-s" placeholder="Search vendor…" oninput="_kmRatFilter(\'' + tblId + '\')">'
+          + '<select class="km-fs" id="' + tblId + '-c" onchange="_kmRatFilter(\'' + tblId + '\')">'
+          + '<option value="">All Categories</option>'
+          + cats.map(function(c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('')
+          + '</select>'
+          + '<select class="km-fs" id="' + tblId + '-r" onchange="_kmRatFilter(\'' + tblId + '\')">'
+          + '<option value="">All Ranges</option>'
+          + '<option value="8-10">8 – 10</option><option value="6-8">6 – 8</option>'
+          + '<option value="4-6">4 – 6</option><option value="2-4">2 – 4</option>'
+          + '<option value="0-2">0 – 2</option>'
+          + '</select>'
+          + '<select class="km-fs" id="' + tblId + '-o" onchange="_kmRatFilter(\'' + tblId + '\')">'
+          + '<option value="desc">High → Low</option><option value="asc">Low → High</option>'
+          + '<option value="az">Name A – Z</option><option value="za">Name Z – A</option>'
+          + '</select>'
+          + '</div>';
+        var tblRows = selVR.map(function(v) {
+          var rColor = v.rating >= 8 ? '#22C55E' : v.rating >= 6 ? '#84CC16' : v.rating >= 4 ? '#F59E0B' : v.rating >= 2 ? '#FB923C' : '#EF4444';
+          return '<tr data-n="' + esc((v.name||'').toLowerCase()) + '" data-c="' + esc(v.category||'') + '" data-r="' + (v.rating||0) + '">'
+            + '<td class="km-dtbl-name">' + esc(v.name || 'Unknown') + '</td>'
+            + '<td>' + (v.category ? '<span class="km-vbadge" style="background:rgba(0,93,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '<span style="color:var(--txt3)">—</span>') + '</td>'
+            + '<td style="font-weight:700;color:' + rColor + ';font-variant-numeric:tabular-nums">' + (v.rating||0).toFixed(1) + '</td>'
+            + '</tr>';
+        }).join('');
+        var tblHtml = selVR.length > 0
+          ? '<div class="km-dtbl-wrap"><table class="km-dtbl" id="' + tblId + '">'
+              + '<thead><tr><th>Vendor Name</th><th>Category</th><th>Rating (/10)</th></tr></thead>'
+              + '<tbody>' + tblRows + '</tbody></table></div>'
+          : '<div style="padding:16px;text-align:center;color:var(--txt3);font-size:12px">No vendor rating data available.</div>';
+
+        content =
+          hero(avg !== '—' ? avg + ' / 10' : '—', 'Average Rating (0 – 10 scale)')
+          + srow([
+              {v: fmt(rRated),                   l: 'Vendors Rated',  s: 'have a score'},
+              {v: fmt(rTotal - rRated),           l: 'Unrated',        s: 'no score yet'},
+              {v: rTotal > 0 ? Math.round(rRated / rTotal * 100) + '%' : '—', l: 'Coverage'},
+            ])
+          + (rRated > 0 ? sec('Distribution by Range', rangeBarsHtml) : '')
+          + sec('Vendor Details', filterBar + tblHtml);
+      }
+
+    } else if (cardId === 'osv') {
+      title    = 'OSV Status';
+      subtitle = 'Done · In Progress · Not Initiated — from Demonitor sheet Col M';
+      iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#005DFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+      if (!qd.success) {
+        content = noDataMsg;
+      } else {
+        var o       = (qd.seller || {}).osv || {};
+        var oT      = o.total || 0;
+        var oDone   = o.completed  || 0;
+        var oInProg = o.inProgress || 0;
+        var oNI     = Math.max(0, oT - oDone - oInProg);
+        var oPct    = oT > 0 ? Math.round(oDone / oT * 100) : 0;
+
+        // Filterable OSV table
+        var vl       = qd.vendorOSV || [];
+        var osvTblId = 'km-osv-tbl';
+        var osvCats  = [];
+        vl.forEach(function(v) { if (v.category && osvCats.indexOf(v.category) < 0) osvCats.push(v.category); });
+        osvCats.sort();
+        var osvFilterBar = '<div class="km-fbar">'
+          + '<input type="text" class="km-fi" id="' + osvTblId + '-s" placeholder="Search vendor…" oninput="_kmOsvFilter(\'' + osvTblId + '\')">'
+          + '<select class="km-fs" id="' + osvTblId + '-c" onchange="_kmOsvFilter(\'' + osvTblId + '\')">'
+          + '<option value="">All Categories</option>'
+          + osvCats.map(function(c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('')
+          + '</select>'
+          + '<select class="km-fs" id="' + osvTblId + '-o" onchange="_kmOsvFilter(\'' + osvTblId + '\')">'
+          + '<option value="">All Statuses</option>'
+          + '<option value="done">Done</option><option value="in_progress">In Progress</option><option value="not_initiated">Not Initiated</option>'
+          + '</select>'
+          + '</div>';
+        var osvRows = vl.map(function(v) {
+          var st   = v.status || 'not_initiated';
+          var cBg  = st === 'done' ? 'rgba(29,199,151,.15)' : st === 'in_progress' ? 'rgba(228,136,0,.12)' : 'var(--bg2)';
+          var cClr = st === 'done' ? '#0A7044'              : st === 'in_progress' ? '#7A4F00'              : 'var(--txt3)';
+          var cLbl = st === 'done' ? 'Done'                 : st === 'in_progress' ? 'In Progress'          : 'Not Initiated';
+          return '<tr data-n="' + esc((v.name||'').toLowerCase()) + '" data-c="' + esc(v.category||'') + '" data-s="' + esc(st) + '">'
+            + '<td class="km-dtbl-name">' + esc(v.name || 'Unknown') + '</td>'
+            + '<td>' + (v.category ? '<span class="km-vbadge" style="background:rgba(0,93,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '<span style="color:var(--txt3)">—</span>') + '</td>'
+            + '<td><span class="km-vbadge" style="background:' + cBg + ';color:' + cClr + '">' + cLbl + '</span></td>'
+            + '</tr>';
+        }).join('');
+        var osvTbl = vl.length > 0
+          ? '<div class="km-dtbl-wrap"><table class="km-dtbl" id="' + osvTblId + '">'
+              + '<thead><tr><th>Vendor Name</th><th>Category</th><th>OSV Status</th></tr></thead>'
+              + '<tbody>' + osvRows + '</tbody></table></div>'
+          : '<div style="padding:16px;text-align:center;color:var(--txt3);font-size:12px">No OSV data available.</div>';
+
+        content =
+          hero(fmt(oDone), 'Vendors with OSV Done')
+          + srow([
+              {v: oPct + '%',     l: 'Completion %',   s: 'of total vendors'},
+              {v: fmt(oDone),     l: 'Done'},
+              {v: fmt(oInProg),   l: 'In Progress'},
+              {v: fmt(oNI),       l: 'Not Initiated'},
+            ])
+          + sec('OSV Status Detail', osvFilterBar + osvTbl);
+      }
+
+    } else { // docs
+      title    = 'Document Completeness';
+      subtitle = 'KYC & onboarding document collection status';
+      iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+      if (!qd.success) {
+        content = noDataMsg;
+      } else {
+        var dComb = (qd.combined || qd.seller || {}).docs || {};
+        var dT2   = (dComb.complete || 0) + (dComb.partial || 0) + (dComb.incomplete || 0) + (dComb.missing || 0);
+        var dPct  = dT2 > 0 ? Math.round((dComb.complete || 0) / dT2 * 100) : 0;
+        content =
+          hero(dPct + '%', 'Document Completeness Rate')
+          + srow([
+              {v: fmt(dComb.complete || 0), l: 'Complete Docs', s: 'all docs submitted'},
+              {v: fmt(dT2),                 l: 'Total Vendors'},
+            ])
+          + sec('Status Breakdown',
+              progBar([
+                {w: dComb.complete   || 0, color: 'var(--st-onboarded)'},
+                {w: dComb.partial    || 0, color: 'var(--st-review)'},
+                {w: dComb.incomplete || 0, color: 'var(--st-draft)'},
+                {w: dComb.missing    || 0, color: 'var(--st-rejected)'},
+              ])
+              + (function() {
+                  var vd = (qd.vendorDocs || []).slice().sort(function(a, b) {
+                    var pa = a.total > 0 ? a.submitted / a.total : -1;
+                    var pb = b.total > 0 ? b.submitted / b.total : -1;
+                    return pb - pa;
+                  });
+                  return expandTileGrid([
+                    {v: fmt(dComb.complete   || 0), l: 'Complete',   c: 'var(--st-onboarded)', vendors: vd.filter(function(v){return v.submitted===v.total&&v.total>0;})},
+                    {v: fmt(dComb.partial    || 0), l: 'Partial',    c: 'var(--st-review)',    vendors: vd.filter(function(v){return v.submitted>0&&v.submitted<v.total;}), mode:'docs'},
+                    {v: fmt(dComb.incomplete || 0), l: 'Incomplete', c: 'var(--st-draft)',     vendors: vd.filter(function(v){return v.submitted===0&&v.total>0;}),          mode:'docs'},
+                    {v: fmt(dComb.missing    || 0), l: 'Missing',    c: 'var(--st-rejected)',  vendors: vd.filter(function(v){return v.total===0;})},
+                  ]);
+                })()
+            );
+      }
+    }
+  }
+
+  var footAction = isQuality
+    ? 'closeKpiModal();(function(){var p=document.getElementById(\'vert-pipeline-pair\');if(p)p.scrollIntoView({behavior:\'smooth\',block:\'start\'});})();'
+    : (cardId !== 'transacted' && cardId !== 'oldvsnew' ? 'closeKpiModal();vkpiOpen(\'' + (cardId === 'onboarded' ? 'onboarded' : 'all') + '\')' : null);
+  var footLabel  = isQuality ? 'View quality detail in pipeline cards ↓' : 'View vendor detail ↓';
+
+  el.innerHTML =
+    '<div class="km-head">'
+    + '<div style="display:flex;align-items:center;min-width:0">'
+    + '<div class="km-icon">' + iconHtml + '</div>'
+    + '<div class="km-htxt">'
+    + '<div class="km-title">' + title + '</div>'
+    + '<div class="km-sub">' + subtitle + '</div>'
+    + '</div></div>'
+    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
+    + '</div>'
+    + content
+    + (footAction !== null
+      ? '<div class="km-foot"><button class="km-foot-link" onclick="' + footAction + '">' + footLabel + '</button></div>'
+      : '');
+
+  modal.classList.add('km-open');
+  document.addEventListener('keydown', _kpiEsc);
+}
+
+
+function closeKpiModal() {
+  var modal = document.getElementById('kpi-modal');
+  if (modal) modal.classList.remove('km-open');
+  document.removeEventListener('keydown', _kpiEsc);
+}
+
+// ── GMV Category Analytics Drawer ────────────────────────────────────────────
+// State: view ∈ 'list' | 'mat' | 'vendor'
+var _gmvCat = { aud: 'seller', view: 'list', cat: null, mat: null, data: null };
+var GMV_CAT_COLORS = {
+  'Metal':   { bar: '#1DC797', badge: 'rgba(29,199,151,.15)',  text: '#0A7044' },
+  'Plastic': { bar: '#E48800', badge: 'rgba(228,136,0,.12)',   text: '#7A4F00' },
+};
+function _gmvCatColor(cat) {
+  return GMV_CAT_COLORS[cat] || { bar: '#636366', badge: 'rgba(99,99,102,.12)', text: '#636366' };
+}
+
+function _gmvCatBuildData(rows) {
+  var catMap = {};
+  (rows || []).forEach(function(r) {
+    var cat  = (r.category  || 'Others').trim();
+    var mat  = (r.vendorType || 'Unknown').trim() || 'Unknown';
+    var txnV = r.txnValue  != null ? Number(r.txnValue)  : 0;
+    var txnC = r.txnCount  != null ? Number(r.txnCount)  : (txnV > 0 ? 1 : 0);
+    if (!catMap[cat]) catMap[cat] = { category: cat, txnValue: 0, txnCount: 0, vendorCount: 0, transactedCount: 0, mats: {}, vendors: [] };
+    var cs = catMap[cat];
+    cs.txnValue += txnV; cs.txnCount += txnC; cs.vendorCount++;
+    if (r.hasTransacted) cs.transactedCount++;
+    cs.vendors.push(r);
+    if (!cs.mats[mat]) cs.mats[mat] = { material: mat, txnValue: 0, txnCount: 0, vendorCount: 0, transactedCount: 0, vendors: [] };
+    var ms = cs.mats[mat];
+    ms.txnValue += txnV; ms.txnCount += txnC; ms.vendorCount++;
+    if (r.hasTransacted) ms.transactedCount++;
+    ms.vendors.push(r);
+  });
+  return Object.keys(catMap).map(function(k) {
+    var c = catMap[k];
+    c.materials = Object.keys(c.mats).map(function(m) { return c.mats[m]; })
+      .sort(function(a, b) { return b.txnValue - a.txnValue || b.vendorCount - a.vendorCount; });
+    return c;
+  }).sort(function(a, b) { return b.txnValue - a.txnValue || b.vendorCount - a.vendorCount; });
+}
+
+function _gmvAudToggleHtml(aud) {
+  return '<div class="gmc-aud-toggle">'
+    + '<button class="gmc-aud-btn' + (aud === 'seller' ? ' active' : '') + '" onclick="_gmvCatSetAud(\'seller\')">Sellers</button>'
+    + '<button class="gmc-aud-btn' + (aud === 'buyer'  ? ' active' : '') + '" onclick="_gmvCatSetAud(\'buyer\')">Buyers</button>'
+    + '</div>';
+}
+
+function _gmvCatNavigate(view, cat, mat) {
+  _gmvCat.view = view;
+  _gmvCat.cat  = cat || null;
+  _gmvCat.mat  = mat || null;
+  _gmvCatRender();
+}
+
+function _gmvCatSetAud(aud) {
+  if (aud === _gmvCat.aud) return;
+  _gmvCat.aud  = aud;
+  _gmvCat.view = 'list';
+  _gmvCat.cat  = null;
+  _gmvCat.mat  = null;
+  _gmvCat.data = null;
+  // Rebuild from vertRows if audience matches, else fetch
+  if (aud === selectedAud && Array.isArray(vertRows) && vertRows.length) {
+    _gmvCat.data = _gmvCatBuildData(vertRows);
+    _gmvCatRender();
+    return;
+  }
+  var key = activeVertKey || selectedVert;
+  if (!key) { _gmvCatRender(); return; }
+  var el = document.getElementById('km-pn');
+  if (el) {
+    var total0 = (_gmvCat.data || []).reduce(function(s, c) { return s + c.txnValue; }, 0);
+    el.innerHTML = _gmvCatHeadHtml(aud, total0) + _gmvAudToggleHtml(aud)
+      + '<div style="padding:32px 18px;text-align:center;color:var(--txt3);font-size:13px">Loading…</div>';
+  }
+  var f = { audience: aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!document.getElementById('kpi-modal').classList.contains('km-open')) return;
+      try {
+        var d = JSON.parse(res);
+        if (d.success && Array.isArray(d.rows)) _gmvCat.data = _gmvCatBuildData(d.rows);
+      } catch(e) {}
+      _gmvCatRender();
+    })
+    .withFailureHandler(function() { _gmvCatRender(); })
+    .getVerticalRows(key, JSON.stringify(f));
+}
+
+function _gmvCatHeadHtml(aud, total) {
+  var audLbl = aud === 'seller' ? 'Sellers' : 'Buyers';
+  return '<div class="km-head">'
+    + '<div style="display:flex;align-items:center;min-width:0">'
+    + '<div class="km-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="18" y="13" width="4" height="8" rx="1"/></svg></div>'
+    + '<div class="km-htxt"><div class="km-title">GMV by Category</div>'
+    + '<div class="km-sub">' + audLbl + (total > 0 ? ' · Total ' + fmtINR(total) : '') + '</div></div></div>'
+    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
+    + '</div>';
+}
+
+function _gmvCatRender() {
+  var el = document.getElementById('km-pn');
+  var modal = document.getElementById('kpi-modal');
+  if (!el || !modal) return;
+  var aud   = _gmvCat.aud;
+  var data  = _gmvCat.data || [];
+  var total = data.reduce(function(s, c) { return s + (c.txnValue || 0); }, 0);
+  var body  = '';
+  var view  = _gmvCat.view;
+  if (view === 'mat') {
+    var cd = data.find(function(c) { return c.category === _gmvCat.cat; });
+    body = cd ? _gmvBodyMat(cd, total) : '<div style="padding:28px 18px;text-align:center;color:var(--txt3)">Category not found</div>';
+  } else if (view === 'vendor') {
+    var cd2 = data.find(function(c) { return c.category === _gmvCat.cat; });
+    var md  = cd2 && cd2.materials.find(function(m) { return m.material === _gmvCat.mat; });
+    body = md ? _gmvBodyVendors(cd2, md) : '<div style="padding:28px 18px;text-align:center;color:var(--txt3)">No vendors found</div>';
+  } else {
+    body = _gmvBodyList(data, total);
+  }
+  el.innerHTML = _gmvCatHeadHtml(aud, total) + _gmvAudToggleHtml(aud) + body;
+  if (!modal.classList.contains('km-open')) {
+    modal.classList.add('km-open');
+    document.addEventListener('keydown', _kpiEsc);
+  }
+}
+
+function _gmvBodyList(cats, total) {
+  if (!cats || !cats.length) {
+    return '<div style="padding:36px 18px;text-align:center;color:var(--txt3);font-size:13px">No category GMV data available</div>';
+  }
+  return cats.map(function(c) {
+    var col    = _gmvCatColor(c.category);
+    var pct    = total > 0 ? (c.txnValue / total * 100) : 0;
+    var pctStr = pct.toFixed(1);
+    var avgTxn = c.txnCount > 0 ? Math.round(c.txnValue / c.txnCount) : 0;
+    var matCnt = (c.materials || []).length;
+    return '<div class="gmc-cat-card" tabindex="0" role="button"'
+      + ' onclick="_gmvCatNavigate(\'mat\',\'' + esc(c.category) + '\',null)"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_gmvCatNavigate(\'mat\',\'' + esc(c.category) + '\',null)}">'
+      + '<div class="gmc-cat-nm">'
+      + '<span class="gmc-cat-badge" style="background:' + col.badge + ';color:' + col.text + '">' + esc(c.category) + '</span>'
+      + '<span class="gmc-cat-gmv">' + fmtINR(c.txnValue) + '</span>'
+      + '<span class="gmc-cat-pct">' + pctStr + '%</span>'
+      + '</div>'
+      + '<div class="gmc-cat-bar-wrap"><div class="gmc-cat-bar" style="width:' + pctStr + '%;background:' + col.bar + '"></div></div>'
+      + '<div class="gmc-cat-meta">'
+      + '<div class="gmc-cat-stat"><div class="gmc-cat-sv">' + fmt(c.vendorCount) + '</div><div class="gmc-cat-sl">Total</div></div>'
+      + '<div class="gmc-cat-stat"><div class="gmc-cat-sv">' + fmt(c.transactedCount) + '</div><div class="gmc-cat-sl">Transacted</div></div>'
+      + '<div class="gmc-cat-stat"><div class="gmc-cat-sv">' + fmt(c.txnCount) + '</div><div class="gmc-cat-sl">Transactions</div></div>'
+      + (avgTxn > 0 ? '<div class="gmc-cat-stat"><div class="gmc-cat-sv">' + fmtINR(avgTxn) + '</div><div class="gmc-cat-sl">Avg TXN</div></div>' : '')
+      + '</div>'
+      + '<div class="gmc-cat-drill">'
+      + '<span style="font-size:11px;color:var(--txt3);font-weight:500">' + matCnt + ' material' + (matCnt !== 1 ? 's' : '') + '</span>'
+      + '<span style="font-size:11px;color:var(--blue);font-weight:600">View breakdown →</span>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _gmvBodyMat(catData, totalGmv) {
+  var col    = _gmvCatColor(catData.category);
+  var catPct = totalGmv > 0 ? (catData.txnValue / totalGmv * 100).toFixed(1) : '0.0';
+  var avgTxn = catData.txnCount > 0 ? Math.round(catData.txnValue / catData.txnCount) : 0;
+  var nav = '<div class="gmc-back">'
+    + '<button class="gmc-back-btn" onclick="_gmvCatNavigate(\'list\',null,null)">‹ Back</button>'
+    + '<div class="gmc-breadcrumb">'
+    + '<span>All Categories</span><span class="gmc-bc-sep">›</span><span class="gmc-bc-cur">' + esc(catData.category) + '</span>'
+    + '</div></div>';
+  var summary = '<div class="km-srow km-srow-4">'
+    + '<div class="km-s"><div class="km-sv">' + fmtINR(catData.txnValue) + '</div><div class="km-sl">GMV</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + catPct + '%</div><div class="km-sl">of Total</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + fmt(catData.transactedCount) + '<span style="font-size:10px;color:var(--txt3)">/' + fmt(catData.vendorCount) + '</span></div><div class="km-sl">Transacted</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + fmt(catData.txnCount) + '</div><div class="km-sl">Transactions</div></div>'
+    + '</div>';
+  var catTotal = catData.txnValue || 0;
+  var mats = catData.materials || [];
+  var matRows = mats.length ? mats.map(function(m) {
+    var mPct    = catTotal > 0 ? (m.txnValue / catTotal * 100) : 0;
+    var mPctStr = mPct.toFixed(1);
+    var mAvg    = m.txnCount > 0 ? Math.round(m.txnValue / m.txnCount) : 0;
+    return '<div class="gmc-mat-row" tabindex="0" role="button"'
+      + ' onclick="_gmvCatNavigate(\'vendor\',\'' + esc(catData.category) + '\',\'' + esc(m.material) + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_gmvCatNavigate(\'vendor\',\'' + esc(catData.category) + '\',\'' + esc(m.material) + '\')}">'
+      + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px">'
+      + '<div class="gmc-mat-nm">' + esc(m.material) + '</div>'
+      + '<div style="text-align:right;flex-shrink:0;padding-left:8px">'
+      + '<span class="gmc-mat-gmv">' + fmtINR(m.txnValue) + '</span>'
+      + ' <span class="gmc-mat-pct">' + mPctStr + '%</span>'
+      + '</div></div>'
+      + '<div class="gmc-mat-bar-wrap"><div class="gmc-cat-bar" style="width:' + mPctStr + '%;background:' + col.bar + '"></div></div>'
+      + '<div class="gmc-mat-meta">'
+      + '<span class="gmc-mat-chip">' + fmt(m.vendorCount) + ' vendors</span>'
+      + '<span style="color:var(--border)">·</span>'
+      + '<span class="gmc-mat-chip">' + fmt(m.txnCount) + ' txns</span>'
+      + '<span style="color:var(--border)">·</span>'
+      + '<span class="gmc-mat-chip">' + fmt(m.transactedCount) + ' transacted</span>'
+      + (mAvg > 0 ? '<span style="color:var(--border)">·</span><span class="gmc-mat-chip">avg ' + fmtINR(mAvg) + '</span>' : '')
+      + '<span style="font-size:10.5px;color:var(--blue);font-weight:600;margin-left:auto">Vendors →</span>'
+      + '</div>'
+      + '</div>';
+  }).join('')
+  : '<div style="padding:24px 18px;text-align:center;color:var(--txt3);font-size:12px">No material breakdown available</div>';
+  return nav + summary
+    + '<div class="gmc-sec-hd">Materials (' + mats.length + ')</div>'
+    + matRows;
+}
+
+function _gmvBodyVendors(catData, matData) {
+  var col = _gmvCatColor(catData.category);
+  var nav = '<div class="gmc-back">'
+    + '<button class="gmc-back-btn" onclick="_gmvCatNavigate(\'mat\',\'' + esc(catData.category) + '\',null)">‹ Back</button>'
+    + '<div class="gmc-breadcrumb">'
+    + '<span>' + esc(catData.category) + '</span><span class="gmc-bc-sep">›</span><span class="gmc-bc-cur">' + esc(matData.material) + '</span>'
+    + '</div></div>';
+  var avgTxn = matData.txnCount > 0 ? Math.round(matData.txnValue / matData.txnCount) : 0;
+  var summary = '<div class="km-srow km-srow-4">'
+    + '<div class="km-s"><div class="km-sv">' + fmtINR(matData.txnValue) + '</div><div class="km-sl">GMV</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + fmt(matData.vendorCount) + '</div><div class="km-sl">Vendors</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + fmt(matData.transactedCount) + '</div><div class="km-sl">Transacted</div></div>'
+    + '<div class="km-s"><div class="km-sv">' + fmt(matData.txnCount) + '</div><div class="km-sl">Transactions</div></div>'
+    + '</div>';
+  var vendors = (matData.vendors || []).slice().sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); });
+  var vRows = vendors.length ? vendors.slice(0, 80).map(function(r) {
+    var gmvStr = r.txnValue ? fmtINR(r.txnValue) : null;
+    var st = r.status || '';
+    var stBg  = st === 'COMPLETED' ? 'rgba(52,199,89,.12)'  : st === 'IN_REVIEW' ? 'rgba(0,93,255,.10)' : 'rgba(142,142,147,.12)';
+    var stClr = st === 'COMPLETED' ? '#248A3D' : st === 'IN_REVIEW' ? '#024C8A' : 'var(--txt3)';
+    var stLbl = st === 'COMPLETED' ? 'Onboarded' : st === 'IN_REVIEW' ? 'In Review' : (st === 'DRAFT' ? 'Draft' : st || '—');
+    return '<div class="km-vrow" style="flex-wrap:wrap;gap:4px 8px;align-items:center">'
+      + '<span class="km-vname" style="flex:1;min-width:100px">' + esc(r.name || 'Unknown') + '</span>'
+      + (r.gstin ? '<span style="font-size:9px;font-family:monospace;color:var(--txt3);flex-shrink:0">' + esc(r.gstin) + '</span>' : '')
+      + '<span class="km-vbadge" style="background:' + stBg + ';color:' + stClr + '">' + stLbl + '</span>'
+      + (gmvStr ? '<span class="km-vbadge" style="background:rgba(52,199,89,.12);color:#248A3D">' + gmvStr + '</span>' : '')
+      + '</div>';
+  }).join('') : '<div style="padding:24px 18px;text-align:center;color:var(--txt3);font-size:12px">No vendors found</div>';
+  var extra = vendors.length > 80
+    ? '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (vendors.length - 80) + ' more</span></div>'
+    : '';
+  return nav + summary
+    + '<div class="gmc-sec-hd">Vendors · ' + esc(matData.material) + ' (' + vendors.length + ')</div>'
+    + '<div class="gmc-vlist-wrap">' + vRows + extra + '</div>';
+}
+
+function openGmvCatModal(aud) {
+  _gmvCat.aud  = aud || 'seller';
+  _gmvCat.view = 'list';
+  _gmvCat.cat  = null;
+  _gmvCat.mat  = null;
+  _gmvCat.data = null;
+
+  // Best source: per-vendor rows already loaded for this audience
+  if (_gmvCat.aud === selectedAud && Array.isArray(vertRows) && vertRows.length) {
+    _gmvCat.data = _gmvCatBuildData(vertRows);
+    _gmvCatRender();
+    return;
+  }
+
+  // Fallback: server category summary (has txnValue but no material GMV)
+  var rawCats = ((window._gmvCats || {})[_gmvCat.aud] || [])
+    .filter(function(c) { return c.txnValue != null && c.txnValue > 0; });
+  if (rawCats.length) {
+    _gmvCat.data = rawCats.map(function(c) {
+      var mats = (c.vendorTypes || []).map(function(vt) {
+        return { material: vt.type, txnValue: 0, txnCount: 0, vendorCount: vt.count || 0, transactedCount: vt.transacted || 0, vendors: [] };
+      });
+      return { category: c.category, txnValue: c.txnValue || 0, txnCount: 0, vendorCount: c.total || 0, transactedCount: c.transacted || 0, materials: mats, vendors: [] };
+    }).sort(function(a, b) { return b.txnValue - a.txnValue; });
+    _gmvCatRender();
+    return;
+  }
+
+  // Fetch on demand
+  var key = activeVertKey || selectedVert;
+  var el  = document.getElementById('km-pn');
+  var modal = document.getElementById('kpi-modal');
+  if (!el || !modal || !key) { _gmvCatRender(); return; }
+
+  el.innerHTML = _gmvCatHeadHtml(_gmvCat.aud, 0) + _gmvAudToggleHtml(_gmvCat.aud)
+    + '<div style="padding:32px 18px;text-align:center;color:var(--txt3);font-size:13px">Loading…</div>';
+  modal.classList.add('km-open');
+  document.addEventListener('keydown', _kpiEsc);
+
+  var f = { audience: _gmvCat.aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!document.getElementById('kpi-modal').classList.contains('km-open')) return;
+      try {
+        var d = JSON.parse(res);
+        if (d.success && Array.isArray(d.rows)) _gmvCat.data = _gmvCatBuildData(d.rows);
+      } catch(e) {}
+      _gmvCatRender();
+    })
+    .withFailureHandler(function() { _gmvCatRender(); })
+    .getVerticalRows(key, JSON.stringify(f));
+}
+
+// Load rows for `aud` in the background and re-render the open KPI modal when done.
+// Called by the "Load Buyers/Sellers detail" button inside the modal tiles.
+function _kvnLoadAud(aud) {
+  selectedAud = aud;
+  vertRows = []; vertRowsLoading = true; vertRowsError = null;
+  var myGen = ++_vertRowsGen;
+  var key = activeVertKey || selectedVert;
+  if (!key) return;
+  var f = { audience: aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var lsVKey = STORE_PFX + 'vr_' + aud + '_' + key;
+  // SWR: serve from localStorage immediately, then refresh from server
+  var swrDone = false;
+  try {
+    var sv = JSON.parse(localStorage.getItem(lsVKey) || 'null');
+    if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
+      vertRows = sv.rows; vertRowsLoading = false; swrDone = true;
+      if (window._lastKpiCardId) openKpiModal(window._lastKpiCardId);
+    }
+  } catch (e) {}
+  if (!swrDone) {
+    // Show "Loading…" inside any currently-open tile panels while we wait
+    var pn = document.getElementById('km-pn');
+    if (pn) {
+      var pvs = pn.querySelectorAll('.km-tile-vlist');
+      for (var pi = 0; pi < pvs.length; pi++) {
+        if (pvs[pi].style.display !== 'none') {
+          pvs[pi].innerHTML = '<div style="padding:12px 4px;text-align:center;color:var(--txt3);font-size:11px">Loading…</div>';
+        }
+      }
+    }
+  }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (myGen !== _vertRowsGen) return;
+      vertRowsLoading = false;
+      try {
+        var data = JSON.parse(res);
+        if (data.success) {
+          vertRows = data.rows || [];
+          try { localStorage.setItem(lsVKey, JSON.stringify({ pKey: myPKey, rows: data.rows || [] })); } catch (e) {}
+        }
+      } catch (e) {}
+      if (window._lastKpiCardId) openKpiModal(window._lastKpiCardId);
+    })
+    .withFailureHandler(function() {
+      if (myGen !== _vertRowsGen) return;
+      vertRowsLoading = false;
+      if (window._lastKpiCardId) openKpiModal(window._lastKpiCardId);
+    })
+    .getVerticalRows(key, JSON.stringify(f));
+}
+
+// Load rows for `aud` into _ovnRows[aud] (per-audience cache for Existing/New modal).
+// Reuses the same localStorage key as _kvnLoadAud for zero-cost SWR hits.
+function _ovnEnsureAud(aud) {
+  if (_ovnRows[aud] !== undefined) return; // already loaded or in-flight
+  _ovnRows[aud] = null; // mark as in-flight
+  var key = activeVertKey || selectedVert;
+  if (!key) return;
+  var f = { audience: aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var lsVKey = STORE_PFX + 'vr_' + aud + '_' + key;
+  try {
+    var sv = JSON.parse(localStorage.getItem(lsVKey) || 'null');
+    if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
+      _ovnRows[aud] = sv.rows;
+      if (window._lastKpiCardId === 'oldvsnew' || window._lastKpiCardId === 'transacted') openKpiModal(window._lastKpiCardId);
+      return;
+    }
+  } catch (e) {}
+  google.script.run
+    .withSuccessHandler(function(res) {
+      try {
+        var data = JSON.parse(res);
+        _ovnRows[aud] = data.success ? (data.rows || []) : [];
+        try { localStorage.setItem(lsVKey, JSON.stringify({ pKey: myPKey, rows: _ovnRows[aud] })); } catch (e) {}
+      } catch (e) { _ovnRows[aud] = []; }
+      if (window._lastKpiCardId === 'oldvsnew' || window._lastKpiCardId === 'transacted') openKpiModal(window._lastKpiCardId);
+    })
+    .withFailureHandler(function() {
+      _ovnRows[aud] = [];
+      if (window._lastKpiCardId === 'oldvsnew' || window._lastKpiCardId === 'transacted') openKpiModal(window._lastKpiCardId);
+    })
+    .getVerticalRows(key, JSON.stringify(f));
+}
+
+function _kmStarToggle(id, row) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : '';
+  if (row) row.classList.toggle('km-star-open', !open);
+}
+function _kmRatFilter(tblId) {
+  var tbl    = document.getElementById(tblId);
+  if (!tbl) return;
+  var search = ((document.getElementById(tblId + '-s') || {}).value || '').toLowerCase();
+  var cat    = (document.getElementById(tblId + '-c') || {}).value || '';
+  var range  = (document.getElementById(tblId + '-r') || {}).value || '';
+  var sort   = (document.getElementById(tblId + '-o') || {}).value || 'desc';
+  var tbody  = tbl.querySelector('tbody');
+  var rows   = Array.prototype.slice.call(tbl.querySelectorAll('tbody tr'));
+  rows.forEach(function(tr) {
+    var name   = tr.getAttribute('data-n') || '';
+    var trCat  = tr.getAttribute('data-c') || '';
+    var rating = parseFloat(tr.getAttribute('data-r') || '0');
+    var show   = (!search || name.indexOf(search) >= 0)
+              && (!cat    || trCat === cat)
+              && (!range  || (function() {
+                    var p = range.split('-');
+                    return rating >= parseFloat(p[0]) && rating <= parseFloat(p[1]);
+                  })());
+    tr.style.display = show ? '' : 'none';
+  });
+  var vis = rows.filter(function(tr) { return tr.style.display !== 'none'; });
+  vis.sort(function(a, b) {
+    if (sort === 'asc') return parseFloat(a.getAttribute('data-r')) - parseFloat(b.getAttribute('data-r'));
+    if (sort === 'az')  return (a.getAttribute('data-n')||'').localeCompare(b.getAttribute('data-n')||'');
+    if (sort === 'za')  return (b.getAttribute('data-n')||'').localeCompare(a.getAttribute('data-n')||'');
+    return parseFloat(b.getAttribute('data-r')) - parseFloat(a.getAttribute('data-r'));
+  });
+  vis.forEach(function(tr) { tbody.appendChild(tr); });
+}
+function _kmOsvFilter(tblId) {
+  var tbl = document.getElementById(tblId);
+  if (!tbl) return;
+  var search = ((document.getElementById(tblId + '-s') || {}).value || '').toLowerCase();
+  var cat    = (document.getElementById(tblId + '-c') || {}).value || '';
+  var status = (document.getElementById(tblId + '-o') || {}).value || '';
+  var rows = Array.prototype.slice.call(tbl.querySelectorAll('tbody tr'));
+  rows.forEach(function(tr) {
+    var name   = tr.getAttribute('data-n') || '';
+    var trCat  = tr.getAttribute('data-c') || '';
+    var trStat = tr.getAttribute('data-s') || '';
+    var show   = (!search || name.indexOf(search) >= 0)
+              && (!cat    || trCat === cat)
+              && (!status || trStat === status);
+    tr.style.display = show ? '' : 'none';
+  });
+}
+function _kmTileToggle(panelId, groupId, tile) {
+  var panel = document.getElementById(panelId);
+  if (!panel) return;
+  var isOpen = panel.style.display !== 'none';
+  var grid = document.getElementById(groupId + '-g');
+  if (grid && grid.parentNode) {
+    var ch = grid.parentNode.children;
+    for (var i = 0; i < ch.length; i++) {
+      if (ch[i].className && ch[i].className.indexOf('km-tile-vlist') >= 0) ch[i].style.display = 'none';
+    }
+  }
+  if (grid) {
+    var tiles = grid.querySelectorAll('.km-sg-xp');
+    for (var j = 0; j < tiles.length; j++) tiles[j].classList.remove('km-sg-open');
+  }
+  if (!isOpen) {
+    panel.style.display = '';
+    if (tile) tile.classList.add('km-sg-open');
+  }
+}
+
+function _kpiEsc(e) { if (e.key === 'Escape') closeKpiModal(); }
+
+function _txnDetailToggle(btn) {
+  var wrap = document.getElementById('txn-detail-wrap');
+  if (!wrap) return;
+  var isOpen = wrap.style.display !== 'none';
+  if (isOpen) {
+    wrap.style.display = 'none';
+    if (btn) btn.textContent = 'View Transaction Details ↓';
+    return;
+  }
+  wrap.style.display = '';
+  if (btn) btn.textContent = 'Hide Transaction Details ↑';
+  if (wrap.dataset.loaded) return;
+  wrap.dataset.loaded = '1';
+  wrap.innerHTML = '<div style="padding:12px 0;text-align:center;font-size:11px;color:var(--txt3)">Loading transaction details…</div>';
+  var f = { period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      try {
+        var data = JSON.parse(res);
+        if (!data.success) { wrap.innerHTML = '<div class="km-txn-empty" style="color:#c00">Failed: ' + esc(data.error || 'Unknown error') + '</div>'; return; }
+        _renderTxnDetail(wrap, data);
+      } catch (e) {
+        wrap.innerHTML = '<div class="km-txn-empty" style="color:#c00">Error parsing response</div>';
+      }
+    })
+    .withFailureHandler(function() {
+      wrap.innerHTML = '<div class="km-txn-empty" style="color:#c00">Could not load transaction details</div>';
+    })
+    .getTransactedVendors(JSON.stringify(f));
+}
+
+function _renderTxnDetail(wrap, data) {
+  var sellers = data.sellers || [];
+  var buyers  = data.buyers  || [];
+  var totalTxns = 0, totalGMV = 0;
+  // GMV is sourced from sellers only — Seller→Buyer is one transaction;
+  // adding buyer-side values would double-count the same transaction.
+  sellers.forEach(function(r) { totalTxns += (r.txnCount || 1); totalGMV += (r.txnValue || 0); });
+  buyers.forEach(function(r)  { totalTxns += (r.txnCount || 1); /* buyer GMV excluded */ });
+
+  var smry = '<div class="km-txn-smry">'
+    + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + fmt(totalTxns) + '</div><div class="km-txn-smry-lbl">Total Unique Txns</div></div>'
+    + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + fmt(sellers.length) + '</div><div class="km-txn-smry-lbl">Total Unique Sellers</div></div>'
+    + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + fmt(buyers.length) + '</div><div class="km-txn-smry-lbl">Total Unique Buyers</div></div>'
+    + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + (totalGMV > 0 ? fmtINR(totalGMV) : '—') + '</div><div class="km-txn-smry-lbl">Total GMV</div></div>'
+    + '</div>';
+
+  function tblSection(label, rows) {
+    var h = '<div class="km-txn-aud">' + esc(label) + '</div>';
+    if (!rows.length) return h + '<div class="km-txn-empty">No records</div>';
+    h += '<table class="km-txn-tbl"><thead><tr>'
+      + '<th>Name</th><th>GSTIN</th><th>Category</th>'
+      + '<th style="text-align:right"># Unique Txns</th>'
+      + '<th style="text-align:right">Total GMV</th>'
+      + '</tr></thead><tbody>';
+    rows.slice(0, 100).forEach(function(r) {
+      var cat   = String(r.category || '').trim();
+      var catLc = cat.toLowerCase();
+      var catBg  = catLc.indexOf('plastic') >= 0 ? 'rgba(255,159,10,.15)'
+                 : catLc.indexOf('metal')   >= 0 ? 'rgba(142,142,147,.15)' : 'var(--bg2)';
+      var catClr = catLc.indexOf('plastic') >= 0 ? '#B25000'
+                 : catLc.indexOf('metal')   >= 0 ? '#636366' : 'var(--txt3)';
+      var catHtml = cat
+        ? '<span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:9.5px;font-weight:600;background:' + catBg + ';color:' + catClr + '">' + esc(cat) + '</span>'
+        : '<span style="color:var(--txt3)">—</span>';
+      h += '<tr>'
+        + '<td style="font-weight:500;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name || '—') + '</td>'
+        + '<td style="font-family:monospace;font-size:10px;color:var(--txt3)">' + esc(r.gstin || '—') + '</td>'
+        + '<td>' + catHtml + '</td>'
+        + '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmt(r.txnCount || 1) + '</td>'
+        + '<td style="text-align:right;font-weight:600;color:var(--st-transacted-tx);font-variant-numeric:tabular-nums">' + (r.txnValue > 0 ? fmtINR(r.txnValue) : '—') + '</td>'
+        + '</tr>';
+    });
+    if (rows.length > 100) h += '<tr><td colspan="5" style="color:var(--txt3);font-size:10px">… and ' + (rows.length - 100) + ' more records</td></tr>';
+    h += '</tbody></table>';
+    return h;
+  }
+
+  wrap.innerHTML = smry + tblSection('Seller-wise Details', sellers) + tblSection('Buyer-wise Details', buyers);
+}
+
+// ── Quality data: load once for OMP, patch into Seller + Buyer cards ─
+function loadQualityData() {
+  if (qualityData) { _patchQualitySects(); return; }
+  if (qualityLoading) return;
+  qualityLoading = true;
+  google.script.run
+    .withSuccessHandler(function(json) {
+      qualityLoading = false;
+      try { qualityData = JSON.parse(json); } catch (e) { qualityData = { success: false }; }
+      _patchQualitySects();
+    })
+    .withFailureHandler(function() {
+      qualityLoading = false;
+      qualityData = { success: false };
+      _patchQualitySects();
+    })
+    .getQualityData();
+}
+
+function _patchQualitySects() {
+  ['seller', 'buyer'].forEach(function(aud) {
+    var el = document.getElementById('qsect-' + aud);
+    if (!el) return;
+    el.innerHTML = buildQualitySect(qualityData, aud);
+  });
+  _patchQualityKpiCards();
+  renderDocsSection();
+}
+
+function _patchQualityKpiCards() {
+  var qd = qualityData;
+  if (!qd || !qd.success) return;
+  var qc     = qd.seller || {};
+  var selOnb = (window._kpiSnap && window._kpiSnap.compS) || 0;
+
+  var rEl = document.getElementById('qkpi-rating');
+  if (rEl) {
+    var r    = qc.rating || {};
+    var avg  = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
+    var rsb  = fmt(r.rated || 0) + ' rated · ' + fmt(Math.max(0, (r.total || 0) - (r.rated || 0))) + ' unrated';
+    var rv   = rEl.querySelector('.vkpi-val'); if (rv) rv.textContent = avg;
+    var rs   = rEl.querySelector('.vkpi-sub'); if (rs) rs.textContent = rsb;
+  }
+
+  var oEl = document.getElementById('qkpi-osv');
+  if (oEl) {
+    var o    = qc.osv || {}, oDn = o.completed || 0, oIp = o.inProgress || 0, oOmp = o.total || 0;
+    var opct = oOmp > 0 ? Math.round(oDn / oOmp * 100) + '%' : '—';
+    var osb  = fmt(oDn) + ' Done · ' + fmt(oIp) + ' In Progress · ' + fmt(Math.max(0, oOmp - oDn - oIp)) + ' Not Initiated';
+    var ov   = oEl.querySelector('.vkpi-val'); if (ov)  ov.textContent  = opct;
+    var oSub = oEl.querySelector('.vkpi-sub'); if (oSub) oSub.textContent = osb;
+  }
+
+  var dEl = document.getElementById('qkpi-docs');
+  if (dEl) {
+    var d    = qc.docs || {}, dCmp = d.complete || 0;
+    var dpct = selOnb > 0 ? Math.round(dCmp / selOnb * 100) + '%' : '—';
+    var dsb  = fmt(dCmp) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' complete';
+    var dv  = dEl.querySelector('.vkpi-val'); if (dv) dv.textContent = dpct;
+    var ds  = dEl.querySelector('.vkpi-sub'); if (ds) ds.textContent = dsb;
+  }
+
+  // Patch inline seller pipeline card quality strip (legacy — safe no-op if absent)
+  var ipcEl = document.getElementById('ipc-qual-seller');
+  if (ipcEl) ipcEl.innerHTML = _buildSellerQualStrip(qc);
+
+  // Patch the Business Insights rail's Vendor Rating / OSV Consent mini-cards.
+  var bqEl = document.getElementById('biz-qual');
+  if (bqEl) bqEl.outerHTML = _buildRailQual(qc);
+}
+

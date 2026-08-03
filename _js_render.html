@@ -1,0 +1,348 @@
+// ═══════════════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════════════
+function renderAll() {
+  renderAudienceTabs();
+  renderPeriodControl();
+  renderLastUpdated();
+  renderOverview();
+}
+
+function renderLastUpdated() {
+  var d   = new Date(D.lastUpdated);
+  var el  = document.getElementById('last-updated');
+  var dot = document.querySelector('.status-dot');
+
+  var t = d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+  var isLive = D.dataSource === 'metabase_live' || D.dataSource === 'metabase_sync' || D.dataSource === 'metabase';
+  if (isLive) {
+    el.textContent = 'Live · Updated ' + t;
+    el.title = (D.dataSource === 'metabase_live' ? 'Metabase Live' : 'Metabase Sync')
+      + (D.mbSyncedAt ? ' · synced ' + new Date(D.mbSyncedAt).toLocaleTimeString('en-IN') : '');
+    if (dot) { dot.style.background = '#30D158'; }
+  } else if (D.dataSource === 'empty') {
+    el.innerHTML = '<span style="color:var(--st-rejected-tx);font-weight:600">No data source</span>';
+    el.title = 'All data paths returned empty — check the Apps Script configuration';
+    if (dot) { dot.style.background = '#FF3B30'; }
+  } else {
+    el.textContent = 'Updated ' + t;
+    el.title = 'Source: ' + (D.dataSource || 'sheet');
+    if (dot) { dot.style.background = '#AEAEB2'; }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OVERVIEW
+// ═══════════════════════════════════════════════════════════════
+function renderOverview() {
+  renderVerticals();
+  renderVertDetail();   // refresh open detail panel (no-op when none selected)
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VERTICAL CARDS
+// ═══════════════════════════════════════════════════════════════
+// Default (Sellers) vertical layout. Each audience/dataset may ship its own
+// `verticalConfig` from the backend; when present it drives the cards instead,
+// so Buyers can define an entirely different set of verticals.
+var VERT_CFG = [
+  { key:'OMP',           name:'Open Marketplace', sub:'', code:'OMP' },
+  { key:'EPR',           name:'EPR',              sub:'', code:'EPR' },
+  { key:'Marketplace',   name:'Marketplace',      sub:'', code:'MKT' },
+  { key:'InfraBusiness', name:'Infra Business',   sub:'', code:'INF' },
+  { key:'AFR',           name:'AFR',              sub:'', code:'AFR' },
+  { key:'Recommerce',    name:'Re-Commerce',      sub:'', code:'REC' },
+  { key:'DRS',           name:'DRS',              sub:'', code:'DRS' },
+  { key:'Others',        name:'Others',           sub:'', code:'OTH' },
+];
+
+// Active vertical layout: backend-supplied config for this audience, else default.
+function getVertCfg() {
+  return (D && D.verticalConfig && D.verticalConfig.length) ? D.verticalConfig : VERT_CFG;
+}
+
+// ── Signature colour per vertical — the eight Recykal primary-palette hues.
+//    c = accent · ink = darker text-safe variant of the same hue.
+var VERT_COLORS = {
+  OMP:           { c: '#005DFF', ink: '#024C8A' },   // Apple blue
+  EPR:           { c: '#8460D4', ink: '#8944AB' },   // iOS purple
+  Marketplace:   { c: '#8460D4', ink: '#3634A3' },   // iOS indigo
+  InfraBusiness: { c: '#32ADE6', ink: '#0071A4' },   // iOS cyan
+  AFR:           { c: '#1DC797', ink: '#248A3D' },   // iOS green
+  Recommerce:    { c: '#00C7BE', ink: '#0C817B' },   // iOS mint
+  DRS:           { c: '#A2845E', ink: '#7A6248' },   // iOS brown
+  Others:        { c: '#8E8E93', ink: '#636366' },   // iOS gray
+};
+function hexRGBA(hex, a) {
+  var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  if (!m) return 'rgba(0,0,0,' + a + ')';
+  var n = parseInt(m[1], 16);
+  return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+// Inline CSS-variable pack for a vertical's signature colour.
+function vcVars(key) {
+  var vc = VERT_COLORS[key] || VERT_COLORS.Others;
+  return '--vc:' + vc.c + ';--vc-ink:' + vc.ink
+    + ';--vc-soft:' + hexRGBA(vc.c, .09)
+    + ';--vc-line:' + hexRGBA(vc.c, .30)
+    + ';--vc-fade:' + hexRGBA(vc.c, .25) + ';';
+}
+
+// ── Ambient aura — repaint the page's faint colour field to match the
+//    active vertical (or GST orange). Registered @property colours make
+//    the hue crossfade; older browsers simply snap.
+function setAura(key) {
+  var c = key === 'gst' ? '#FF9500' : ((VERT_COLORS[key] || VERT_COLORS.OMP).c);
+  var rs = document.documentElement.style;
+  rs.setProperty('--aura-a', hexRGBA(c, .13));
+  rs.setProperty('--aura-b', hexRGBA(c, .07));
+}
+var selectedVert = null;
+var activeVertKey = null;      // which vertical tab is currently active
+var selectedAud  = 'seller';   // 'seller' | 'buyer' — which pipeline is shown in the detail section
+var vertRows = [];          // lazily loaded rows for the open vertical
+var vertRowsLoading = false;
+var vertRowsError = null;   // backend error message when the last row fetch failed
+var _vertRowsGen = 0;       // incremented on each loadVertRows call; stale callbacks are discarded
+var _vertRowsPKey = null;   // period key when vertRows were last fetched; used to detect stale rows
+var _ovnRows = {};          // per-audience row cache for the Existing/New modal {seller:[],buyer:[]}
+var vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '', region: 'All', ratingMin: '', ratingMax: '' };
+var vdSort = { key: '', dir: 1 };   // detail table sort state (dir: 1 asc, -1 desc)
+var vdPage = 0;       // current page index (0-based) for the detail table
+var vdPageSize = 50;  // rows per page
+var qualityData    = null;   // result of getQualityData() — loaded once for OMP
+var qualityLoading = false;
+var VD_MAX_RENDER = 200;   // kept for board view compatibility
+var KB_MAX_PER_COL = 50;   // cards rendered per Kanban column
+var vdView = 'table';      // records view in the detail panel: 'table' only
+var KB_COLS = [            // workflow order, left to right
+  { key: 'DRAFT',     cls: 'draft'    },
+  { key: 'IN_REVIEW', cls: 'review'   },
+  { key: 'COMPLETED', cls: 'done'     },
+  { key: 'REJECTED',  cls: 'rejected' },
+];
+
+// ── Pipeline stage palette — mirrors the CSS --st-* tokens, one set everywhere ──
+var STAGE = {
+  total:      { fill: 'var(--st-total)',      bg: 'var(--st-total-bg)',      tx: 'var(--st-total-tx)',      lbl: 'Logged In Cases' },
+  draft:      { fill: 'var(--st-draft)',      bg: 'var(--st-draft-bg)',      tx: 'var(--st-draft-tx)',      lbl: 'Draft' },
+  review:     { fill: 'var(--st-review)',     bg: 'var(--st-review-bg)',     tx: 'var(--st-review-tx)',     lbl: 'In Review' },
+  onboarded:  { fill: 'var(--st-onboarded)',  bg: 'var(--st-onboarded-bg)',  tx: 'var(--st-onboarded-tx)',  lbl: 'Onboarded' },
+  transacted: { fill: 'var(--st-transacted)', bg: 'var(--st-transacted-bg)', tx: 'var(--st-transacted-tx)', lbl: 'Transacted' },
+  rejected:   { fill: 'var(--st-rejected)',   bg: 'var(--st-rejected-bg)',   tx: 'var(--st-rejected-tx)',   lbl: 'Rejected' },
+};
+
+// The four current-status segments that partition Total.
+function stageSegs(v) {
+  return [
+    ['draft',     v.draft    || 0],
+    ['review',    v.inReview || 0],
+    ['onboarded', v.completed|| 0],
+    ['rejected',  v.rejected || 0],
+  ];
+}
+
+// Vertical card: one small stat card per pipeline stage (Draft / In Review /
+// Onboarded / Rejected), each with its stage-colour accent.
+function cardStats(v) {
+  return '<div class="cc-stats">' + stageSegs(v).map(function(s) {
+    var st = STAGE[s[0]];
+    return '<div class="cc-stat" style="--st-c:' + st.fill + ';--st-bg:' + st.bg + ';--st-tx:' + st.tx + '">'
+      + '<b>' + fmt(s[1]) + '</b><span>' + st.lbl + '</span></div>';
+  }).join('') + '</div>';
+}
+
+// Compact year-wise breakdown table rendered inside the compare card.
+function fyTable(v) {
+  var rows = (v.fyBreakdown || []);
+  if (!rows.length) return '';
+
+  var hasTxn = rows.some(function(f) { return f.pctTransacted !== null || f.totalTxnValue !== null; });
+  var hasGST = rows.some(function(f) { return f.withGST !== null; });
+
+  var thead = '<thead><tr>'
+    + '<th style="text-align:left">FY</th>'
+    + '<th>Total</th>'
+    + '<th>Onboarded</th>'
+    + (hasTxn ? '<th>Txn%</th><th>GMV</th>' : '')
+    + '<th>Avg TAT</th>'
+    + (hasGST ? '<th>GST ✓</th>' : '')
+    + '</tr></thead>';
+
+  var tbody = '<tbody>' + rows.map(function(f) {
+    return '<tr>'
+      + '<td>' + esc(f.fy) + '</td>'
+      + '<td>' + fmt(f.total) + '</td>'
+      + '<td>' + fmt(f.onboarded) + ' <span class="cfy-pct">(' + f.completionPct + '%)</span></td>'
+      + (hasTxn
+          ? '<td>' + (f.pctTransacted !== null ? f.pctTransacted + '%' : '—') + '</td>'
+          + '<td class="cfy-gmv">' + (f.totalTxnValue !== null ? fmtINR(f.totalTxnValue) : '—') + '</td>'
+          : '')
+      + '<td class="cfy-tat">' + (f.avgTAT !== null ? f.avgTAT + 'd' : '—') + '</td>'
+      + (hasGST ? '<td>' + (f.withGST !== null ? fmt(f.withGST) : '—') + '</td>' : '')
+      + '</tr>';
+  }).join('') + '</tbody>';
+
+  return '<div class="cfy-wrap">'
+    + '<div class="cfy-title">Year-wise</div>'
+    + '<table class="cfy-table">' + thead + tbody + '</table>'
+    + '</div>';
+}
+
+// Onboarded count per business category (top `max`, remainder rolled into
+// "Others"). Shown in the detail panel. Green accent ties them to Onboarded.
+var CARD_CAT_MAX = 8;
+function cardCategories(v, max) {
+  max = max || CARD_CAT_MAX;
+  var cats = (v.categories || []).filter(function(c) { return (c.total || 0) > 0; });
+  if (!cats.length) return '';
+  if (cats.length > max) {
+    var head = cats.slice(0, max - 1);
+    var others = cats.slice(max - 1).reduce(function(a, c) {
+      return { category: 'Others', onboarded: a.onboarded + (c.onboarded || 0), total: a.total + (c.total || 0) };
+    }, { category: 'Others', onboarded: 0, total: 0 });
+    head.push(others);
+    cats = head;
+  }
+  return '<div class="cc-cats">' + cats.map(function(c, ci) {
+    var n   = c.onboarded || 0;
+    var tot = c.total     || 0;
+    var pct = tot > 0 ? Math.round((n / tot) * 100) : 0;
+    var catEsc = esc(c.category);
+    var catJs  = c.category.replace(/'/g, "\\'");
+    return '<div class="cc-cat cc-cat-click" role="button" tabindex="0" style="--kd:' + (ci * 40) + '"'
+      + ' title="' + catEsc + ': ' + fmt(n) + ' onboarded of ' + fmt(tot) + ' · click to view records"'
+      + ' onclick="filterByCategory(\'' + catJs + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();filterByCategory(\'' + catJs + '\')}">'
+      + '<b>' + fmt(n) + '<i class="cc-cat-of">/ ' + fmt(tot) + '</i></b>'
+      + '<span>' + catEsc + '</span>'
+      + '<div class="cc-cat-meter"><div class="cc-cat-track"><div class="cc-cat-fill" style="width:' + pct + '%"></div></div><em>' + pct + '%</em></div>'
+      + '</div>';
+  }).join('') + '</div>';
+}
+
+// Shared funnel order — the meter bars and the 3D funnel render this exact
+// sequence: Total Cases, then Onboarded, then the remaining stages by
+// descending count (so the funnel narrows properly).
+function funnelTiers(v) {
+  var rest = [
+    { k: 'draft',  n: v.draft    || 0 },
+    { k: 'review', n: v.inReview || 0 },
+  ];
+  if (v.transacted !== null && v.transacted !== undefined) {
+    rest.push({ k: 'transacted', n: v.transacted });
+  }
+  rest.sort(function(a, b) { return b.n - a.n; });
+  return [{ k: 'total', n: v.total || 0, isTotal: true }, { k: 'onboarded', n: v.completed || 0 }].concat(rest);
+}
+
+// Detail funnel — Apple Activity-style concentric rings. One ring per stage,
+// sweep proportional to its share of Total (12 o'clock, clockwise); Total sits
+// in the centre. The legend carries the exact counts, so precision never
+// depends on reading arc lengths. Ring order matches the 3D funnel.
+function funnelBig(v, cfg) {
+  var tot = v.total || 0;
+  if (!tot) return '';
+
+  // Outermost → innermost: Onboarded, then the rest of the pipeline by
+  // descending count (same as funnelTiers), Rejected always innermost.
+  var tiers = funnelTiers(v).filter(function(t) { return !t.isTotal; });
+  tiers.push({ k: 'rejected', n: v.rejected || 0 });
+
+  var S = 260, c0 = S / 2;            // svg size / centre
+  var R0 = 112, RW = 14, RGAP = 4;    // outer radius, ring width, ring gap
+
+  var rings = tiers.map(function(t, i) {
+    var r = R0 - i * (RW + RGAP);
+    if (r < 24) return '';            // never collide with the centre label
+    var C = 2 * Math.PI * r;
+    var frac = Math.max(0, Math.min(1, (t.n || 0) / tot));
+    var st = STAGE[t.k];
+    var track = '<circle cx="' + c0 + '" cy="' + c0 + '" r="' + r + '" fill="none"'
+      + ' stroke="var(--bg2)" stroke-width="' + RW + '"/>';
+    if (!frac) return track;
+    // Floor tiny arcs at one ring-width so they read as arcs, never dots;
+    // the legend + tooltip carry the exact value.
+    var dash = Math.max(frac * C, RW);
+    var arc = '<circle class="fring" cx="' + c0 + '" cy="' + c0 + '" r="' + r + '" fill="none"'
+      + ' stroke="' + st.fill + '" stroke-width="' + RW + '" stroke-linecap="round"'
+      + ' stroke-dasharray="' + dash.toFixed(2) + ' ' + C.toFixed(2) + '"'
+      + ' transform="rotate(-90 ' + c0 + ' ' + c0 + ')"'
+      + ' style="animation-delay:' + (120 + i * 110) + 'ms"'
+      + '><title>' + st.lbl + ' — ' + fmt(t.n) + ' (' + Math.round(frac * 100) + '%)</title></circle>';
+    return track + arc;
+  }).join('');
+
+  var centre = '<g class="donut-ctr">'
+    + '<text x="' + c0 + '" y="' + (c0 - 2) + '" text-anchor="middle" font-family="Inter,sans-serif"'
+    + ' font-size="23" font-weight="800" fill="var(--txt)">' + fmt(tot) + '</text>'
+    + '<text x="' + c0 + '" y="' + (c0 + 13) + '" text-anchor="middle" font-family="Inter,sans-serif"'
+    + ' font-size="8" font-weight="600" fill="var(--txt3)" letter-spacing="0.5">TOTAL CASES</text>'
+    + '</g>';
+
+  var svg = '<svg width="' + S + '" height="' + S + '" viewBox="0 0 ' + S + ' ' + S + '"'
+    + ' style="flex-shrink:0;display:block" role="img" aria-label="Onboarding funnel rings">'
+    + rings + centre + '</svg>';
+
+  var legend = '<div class="fring-leg">'
+    + [{ k: 'total', n: tot }].concat(tiers).map(function(t) {
+        var st   = STAGE[t.k];
+        var pc   = Math.round(((t.n || 0) / tot) * 100);
+        var hero = t.k === 'onboarded';
+        return '<div class="fring-leg-row' + (hero ? ' is-hero' : '') + '">'
+          + '<span class="cc-dot" style="background:' + st.fill + '"></span>'
+          + '<span class="fring-leg-lbl">' + st.lbl + '</span>'
+          + '<span class="fring-leg-val">' + fmt(t.n) + '</span>'
+          + '<span class="fring-leg-pct">(' + pc + '%)</span>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+
+  return '<div class="fun-split">'
+    + '<div class="fun-rings">' + svg + legend + '</div>'
+    + '<div class="fun-3d">' + funnel3D(v) + '</div>'
+    + '</div>';
+}
+
+// Small 3D funnel. Sequence: Total Cases, then Onboarded, then the remaining
+// stages by descending count (so the funnel narrows properly). Each stage is a
+// row: a centred 3D band (width ∝ its share of Total) beside a small detail
+// card naming the stage and its count.
+function funnel3D(v) {
+  var tot = v.total || 0;
+  if (!tot) return '';
+  var tiers = funnelTiers(v);
+
+  var BA = 178, cx = 89, FW = 166, ry = 6, y0 = 6, bandH = 28, y1 = y0 + bandH, vbH = 40;
+  var scale = function(n) { return Math.min(FW, Math.max(28, FW * ((n || 0) / tot))); };
+
+  // Shared cylindrical-sheen gradient, defined once for all band SVGs.
+  var out = '<div class="f3d"><svg width="0" height="0" style="position:absolute" aria-hidden="true">'
+    + '<defs><linearGradient id="f3d-cyl" x1="0" y1="0" x2="1" y2="0">'
+    +   '<stop offset="0" stop-color="#fff" stop-opacity=".32"/><stop offset=".40" stop-color="#fff" stop-opacity="0"/>'
+    +   '<stop offset=".64" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/>'
+    + '</linearGradient></defs></svg>';
+
+  out += tiers.map(function(t) {
+    var w  = scale(t.n);
+    var wB = w * 0.86;
+    var col = STAGE[t.k].fill;
+    var trap = 'M' + (cx - w / 2) + ' ' + y0 + ' L' + (cx + w / 2) + ' ' + y0
+             + ' L' + (cx + wB / 2) + ' ' + y1 + ' L' + (cx - wB / 2) + ' ' + y1 + ' Z';
+    var band = '<svg class="f3d-band-svg" viewBox="0 0 ' + BA + ' ' + vbH + '" role="img" aria-label="' + esc(STAGE[t.k].lbl) + '">'
+      + '<path d="' + trap + '" fill="' + col + '"/>'
+      + '<ellipse cx="' + cx + '" cy="' + y0 + '" rx="' + (w / 2).toFixed(1) + '" ry="' + ry + '" fill="' + col + '"/>'
+      + '<ellipse cx="' + cx + '" cy="' + y0 + '" rx="' + (w / 2).toFixed(1) + '" ry="' + ry + '" fill="#fff" opacity=".26"/>'
+      + '<path d="' + trap + '" fill="url(#f3d-cyl)"/>'
+      + '<ellipse cx="' + cx + '" cy="' + y1 + '" rx="' + (wB / 2).toFixed(1) + '" ry="' + (ry * 0.78).toFixed(1) + '" fill="' + col + '"/>'
+      + '<ellipse cx="' + cx + '" cy="' + y1 + '" rx="' + (wB / 2).toFixed(1) + '" ry="' + (ry * 0.78).toFixed(1) + '" fill="#000" opacity=".12"/>'
+      + '</svg>';
+    var card = '<div class="f3d-card"><span class="cc-dot" style="background:' + col + '"></span>'
+      + '<span class="f3d-card-lbl">' + STAGE[t.k].lbl + '</span>'
+      + '<span class="f3d-card-val">' + fmt(t.n) + '</span></div>';
+    return '<div class="f3d-row">' + band + card + '</div>';
+  }).join('');
+
+  return out + '</div>';
+}
+

@@ -1,0 +1,177 @@
+<style id="sidenav-css">
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR NAVIGATION
+   ═══════════════════════════════════════════════════════════ */
+#side-nav{
+  width:220px;flex-shrink:0;
+  position:sticky;top:56px;
+  height:calc(100vh - 56px);
+  overflow-y:auto;
+  /* No border — blends with the page wash background */
+  background:transparent;
+  display:flex;flex-direction:column;
+  padding:16px 0 40px;
+  z-index:10;
+}
+#side-nav::-webkit-scrollbar{width:3px}
+#side-nav::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;opacity:.5}
+
+/* Section label */
+.sn-sect{
+  font-size:9px;font-weight:700;color:var(--txt3);
+  text-transform:uppercase;letter-spacing:1.2px;
+  padding:0 14px 10px;
+}
+
+/* Group button (Sellers / Buyers) */
+.sn-grp{
+  display:flex;align-items:center;gap:9px;
+  width:100%;padding:9px 14px;
+  border:none;background:transparent;
+  cursor:pointer;text-align:left;
+  font-family:inherit;
+  border-radius:10px;
+  transition:background .15s var(--ease);
+}
+.sn-grp:hover{background:rgba(15,23,32,.05)}
+.sn-grp.sn-active{background:rgba(0,93,255,.07)}
+.sn-grp-ic{
+  width:28px;height:28px;border-radius:8px;
+  background:var(--bg2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:var(--txt2);
+  flex-shrink:0;
+  transition:background .15s,color .15s;
+}
+.sn-grp.sn-active .sn-grp-ic{background:var(--blue);color:#fff}
+.sn-grp-lbl{flex:1;font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.1px}
+.sn-grp-arr{
+  font-size:11px;color:var(--txt3);line-height:1;
+  transition:transform .22s var(--ease-out);
+}
+.sn-grp.sn-open .sn-grp-arr{transform:rotate(90deg)}
+
+/* Sub-list (vertical items under each group) */
+.sn-subs{display:none;flex-direction:column;padding:2px 0 6px;margin:0 6px}
+.sn-subs.sn-open{display:flex}
+.sn-sub{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px 7px 20px;
+  cursor:pointer;border:none;
+  background:transparent;text-align:left;
+  width:100%;font-family:inherit;
+  border-radius:8px;
+  transition:background .13s var(--ease);
+}
+.sn-sub:hover{background:rgba(15,23,32,.05)}
+.sn-sub:active{background:var(--vc-soft,rgba(0,93,255,.07));transition-duration:.05s}
+.sn-sub-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--vc,var(--border2));
+  flex-shrink:0;opacity:.5;
+  transition:opacity .13s,transform .13s;
+}
+.sn-sub:hover .sn-sub-dot{opacity:.75}
+.sn-sub:active .sn-sub-dot{opacity:1;transform:scale(1.3)}
+.sn-sub-lbl{
+  flex:1;font-size:12px;font-weight:600;
+  color:var(--txt3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:color .13s,font-weight .13s;
+}
+.sn-sub:hover .sn-sub-lbl{color:var(--txt2)}
+.sn-sub:active .sn-sub-lbl{color:var(--txt);font-weight:600}
+/* Count badges hidden — numbers shown on the cards themselves */
+.sn-sub-n{display:none}
+
+/* Separator */
+.sn-sep{height:1px;background:var(--border);margin:10px 14px;opacity:.6}
+
+/* GST Payables button */
+.sn-gst{
+  display:flex;align-items:center;gap:9px;
+  width:100%;padding:9px 14px;
+  border:none;background:transparent;
+  cursor:pointer;text-align:left;font-family:inherit;
+  border-radius:10px;
+  transition:background .15s var(--ease);
+}
+.sn-gst:hover{background:rgba(224,115,50,.07)}
+.sn-gst.sn-active{background:rgba(224,115,50,.10)}
+.sn-gst-ic{
+  width:28px;height:28px;border-radius:8px;
+  background:var(--gp-orange-bg,#FDE9D7);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:var(--gp-orange,#E07332);
+  flex-shrink:0;
+  transition:background .15s,color .15s;
+}
+.sn-gst.sn-active .sn-gst-ic{
+  background:var(--gp-orange,#E07332);color:#fff;
+}
+.sn-gst-lbl{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.1px}
+
+/* On desktop: hide the top header .aud-tabs (sidebar/tab bar replaces them) */
+@media(min-width:1025px){
+  #header .aud-tabs{display:none!important}
+}
+
+/* ═══════════════════════════════════════════════
+   SPOTLIGHT SEARCH — ⌘K / Ctrl+K overlay
+   Apple Spotlight / Linear-style command palette
+   ═══════════════════════════════════════════════ */
+@keyframes spIn{from{opacity:0;transform:translateY(-12px) scale(.97)}to{opacity:1;transform:none}}
+#spotlight-overlay{position:fixed;inset:0;z-index:900;display:flex;align-items:flex-start;justify-content:center;padding-top:clamp(60px,10vh,120px)}
+.sp-bd{position:absolute;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:fadeIn .2s var(--ease) both}
+.sp-pn{
+  position:relative;z-index:1;
+  background:rgba(255,255,255,.95);
+  border:1px solid rgba(0,0,0,.12);
+  border-radius:18px;
+  box-shadow:0 32px 80px rgba(0,0,0,.22),0 2px 12px rgba(0,0,0,.10);
+  width:100%;max-width:580px;overflow:hidden;
+  animation:spIn .25s var(--ease-out) both;
+  backdrop-filter:saturate(200%) blur(30px);
+  -webkit-backdrop-filter:saturate(200%) blur(30px);
+}
+.sp-search-row{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid rgba(0,0,0,.07)}
+.sp-icon{color:var(--txt3);flex-shrink:0}
+.sp-input{flex:1;border:none;outline:none;font-family:inherit;font-size:17px;font-weight:400;color:var(--txt);background:transparent;letter-spacing:-.2px}
+.sp-input:focus,.sp-input:focus-visible{box-shadow:none;outline:none}
+.sp-input::placeholder{color:var(--txt3)}
+.sp-esc{font-family:inherit;font-size:11px;font-weight:600;color:var(--txt3);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:3px 7px;cursor:pointer;flex-shrink:0;letter-spacing:.05em}
+.sp-results{max-height:420px;overflow-y:auto;padding:8px}
+.sp-section{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;padding:12px 12px 6px;line-height:1}
+.sp-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px;border-radius:10px;cursor:pointer;
+  transition:background .12s;
+}
+.sp-item:hover,.sp-item.sp-active{background:rgba(0,93,255,.08)}
+.sp-item.sp-active{background:var(--blue);color:#fff}
+.sp-item-ic{
+  width:32px;height:32px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;
+  background:var(--bg2);color:var(--txt2);
+}
+.sp-item.sp-active .sp-item-ic{background:rgba(255,255,255,.2);color:#fff}
+.sp-item-body{flex:1;min-width:0}
+.sp-item-title{font-size:13.5px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-item-sub{font-size:11px;color:var(--txt3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-item.sp-active .sp-item-title,.sp-item.sp-active .sp-item-sub{color:rgba(255,255,255,.9)}
+.sp-item-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:var(--pill);background:var(--bg2);color:var(--txt3);flex-shrink:0;border:1px solid var(--border)}
+.sp-item.sp-active .sp-item-badge{background:rgba(255,255,255,.2);color:#fff;border-color:transparent}
+.sp-empty{text-align:center;padding:40px;color:var(--txt3);font-size:13px}
+.sp-footer{display:flex;gap:16px;padding:10px 20px;border-top:1px solid rgba(0,0,0,.06);font-size:10.5px;color:var(--txt3)}
+.sp-footer kbd{font-family:inherit;font-size:10px;font-weight:600;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;margin-right:3px}
+
+/* Responsive: collapse sidebar on small screens */
+@media(max-width:1024px){
+  #side-nav{display:none!important}
+  #dash-content{padding:18px 20px 48px}
+}
+@media(max-width:760px){
+  #dash-content{padding:0 16px 60px}
+}
+</style>
