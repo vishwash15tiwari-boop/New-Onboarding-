@@ -3207,6 +3207,14 @@ thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
   --t-card:      box-shadow var(--dur-base) var(--ease-out),
                  border-color var(--dur-base) var(--ease-out),
                  transform var(--dur-base) var(--ease-out);
+  /* Alias tokens for cross-module compatibility */
+  --txt1:   var(--txt);
+  --accent: var(--blue);
+  /* GST module aliases — map to main design system */
+  --gp-bg:  var(--bg2);
+  --gp-ink: var(--txt);
+  --gp-sub: var(--txt3);
+  --gp-bdr: var(--border);
 }
 
 /* ══ 2. SCROLLBAR — 3 px hairline ══════════════════════════════════════════ */
@@ -3378,12 +3386,33 @@ tbody tr:nth-child(odd) { background:transparent }
 .kb-col           { border-top-width:2px }
 
 /* ══ 9. SEGMENT CONTROLS & TABS ════════════════════════════════════════════ */
+/* Override story-theme RECYKAL BRAND blue active → neutral white card */
 .qf-chip.active, .aud-tab.active {
+  background:var(--card) !important;
+  color:var(--txt) !important;
   box-shadow:0 1px 4px rgba(0,0,0,.09), 0 0 0 .5px rgba(0,0,0,.06);
 }
 .vd-toggle-btn.active   { box-shadow:0 1px 4px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.05) }
 .vert-tab.active        { box-shadow:0 1px 4px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.05) }
 .vert-tab.active::before{ width:4px; height:4px }
+/* Transacted segment tabs — charcoal active, not blue */
+.ta-seg-tab.active {
+  background:var(--card) !important;
+  color:var(--txt) !important;
+  box-shadow:0 1px 4px rgba(0,0,0,.09), 0 0 0 .5px rgba(0,0,0,.06);
+}
+/* GMC audience buttons — charcoal active */
+.gmc-aud-btn.active {
+  background:var(--card) !important;
+  color:var(--txt) !important;
+  box-shadow:0 1px 4px rgba(0,0,0,.09), 0 0 0 .5px rgba(0,0,0,.06);
+}
+/* GST year chips — charcoal active */
+.gp-year-chip.active {
+  background:var(--card) !important;
+  color:var(--txt) !important;
+  box-shadow:0 1px 4px rgba(0,0,0,.09), 0 0 0 .5px rgba(0,0,0,.06);
+}
 
 /* ══ 10. PIPELINE CARDS ════════════════════════════════════════════════════ */
 .vpipe-card      { border-radius:var(--r) !important }
@@ -3481,6 +3510,172 @@ button:active:not(:disabled),
   color:var(--txt2);
   background:rgba(0,0,0,.045);
   border:1px solid var(--border2);
+  border-radius:var(--r-xs);
+}
+
+/* ══ 22. UNIFIED FILTER & SEARCH INPUTS ════════════════════════════════════ */
+.vtb-search, .sl-search, .ta-search, .dm-search,
+.ovn-search, .gp-input, .km-fi-input, .vd-filter-input {
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--r-sm);
+  color:var(--txt);
+  font-size:13px;
+  transition:border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+.vtb-search:focus, .sl-search:focus, .ta-search:focus, .dm-search:focus,
+.ovn-search:focus, .gp-input:focus, .km-fi-input:focus, .vd-filter-input:focus {
+  border-color:var(--border2);
+  box-shadow:0 0 0 3px rgba(0,0,0,.04);
+  outline:none;
+}
+
+/* ══ 23. UNIFIED PAGINATION — charcoal active, not blue ════════════════════ */
+.vd-pg-btn, .sl-pg-btn, .ta-pg-btn, .vtb-pg-btn, .dm-pg-btn, .km-pg-btn,
+.ovn-pg-btn, .gp-pg-btn {
+  background:transparent;
+  border:1px solid var(--border);
+  border-radius:var(--r-xs);
+  color:var(--txt2);
+  font-size:12px;
+  font-weight:600;
+  transition:background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.vd-pg-btn:hover, .sl-pg-btn:hover, .ta-pg-btn:hover, .vtb-pg-btn:hover,
+.dm-pg-btn:hover, .km-pg-btn:hover, .ovn-pg-btn:hover, .gp-pg-btn:hover {
+  background:var(--hover);
+  border-color:var(--border2);
+  color:var(--txt);
+}
+.vd-pg-btn.active, .sl-pg-btn.active, .ta-pg-btn.active, .vtb-pg-btn.active,
+.dm-pg-btn.active, .km-pg-btn.active, .ovn-pg-btn.active, .gp-pg-btn.active {
+  background:var(--txt) !important;
+  border-color:var(--txt) !important;
+  color:#fff !important;
+}
+
+/* ══ 24. SECONDARY ACTION CONTROLS — neutral, no blue ══════════════════════ */
+.vd-clear-btn, .sl-clear-btn, .ta-clear-btn, .dm-clear-btn, .km-clear-btn {
+  color:var(--txt2);
+  background:transparent;
+  border:1px solid var(--border);
+  border-radius:var(--r-xs);
+  transition:background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.vd-clear-btn:hover, .sl-clear-btn:hover, .ta-clear-btn:hover,
+.dm-clear-btn:hover, .km-clear-btn:hover {
+  background:var(--hover);
+  color:var(--txt);
+}
+/* Sort arrows — neutral ink not blue */
+.vd-tbl thead th.sort-asc::after,
+.vd-tbl thead th.sort-desc::after { color:var(--txt2) }
+
+/* ══ 25. QUALITY CARD — remove purple gradient ═════════════════════════════ */
+.qcard {
+  background:var(--card) !important;
+  border:1px solid var(--border) !important;
+  box-shadow:var(--e1) !important;
+}
+.qcard:hover { box-shadow:var(--e2) !important; transform:translateY(-1px) }
+
+/* ══ 26. GST HERO KPI — flat white, remove dark graphite ═══════════════════ */
+.gp-kpi.gp-orange {
+  background:var(--card) !important;
+  border:1px solid var(--border) !important;
+  box-shadow:var(--e1) !important;
+}
+.gp-kpi.gp-orange .gp-kpi-val { color:var(--txt) }
+.gp-kpi.gp-orange .gp-kpi-lbl { color:var(--txt3) }
+
+/* ══ 27. GST YEAR/FILTER CARDS ═════════════════════════════════════════════ */
+.gp-fy-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--r2);
+  box-shadow:var(--e1);
+  transition:var(--t-card);
+}
+.gp-fy-card:hover { box-shadow:var(--e2); border-color:rgba(0,0,0,.12); transform:translateY(-1px) }
+
+/* ══ 28. COMPONENT RADIUS STANDARDIZATION ══════════════════════════════════ */
+.kb-card      { border-radius:var(--r2) }
+.f3d-card     { border-radius:var(--r2) }
+.vd-kpi       { border-radius:var(--r-sm) }
+.ovn-chip     { border-radius:var(--r-xs) }
+.dm-chip      { border-radius:var(--r-xs) }
+.cc-pipe-stat { border-radius:var(--r-sm) }
+.cc-pipe-box  { border-radius:var(--r2) }
+.biz-gmv      { border-radius:var(--r-sm) }
+.biz-q        { border-radius:var(--r-sm) }
+.rgn-ctl      { border-radius:var(--r-sm) }
+.cc-cat-click:hover { background:var(--hover) }
+
+/* ══ 29. MODAL ACTION BUTTONS — unified neutral style ══════════════════════ */
+.vtb-back-btn, .sl-back-btn, .ta-back-btn, .dm-back-btn, .km-back-btn,
+.vtb-close-btn, .sl-close-btn, .ta-close-btn, .dm-close-btn, .km-close-btn {
+  color:var(--txt2);
+  background:transparent;
+  border:1px solid var(--border);
+  border-radius:var(--r-sm);
+  transition:background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.vtb-back-btn:hover, .sl-back-btn:hover, .ta-back-btn:hover,
+.dm-back-btn:hover, .km-back-btn:hover,
+.vtb-close-btn:hover, .sl-close-btn:hover, .ta-close-btn:hover,
+.dm-close-btn:hover, .km-close-btn:hover {
+  background:var(--hover);
+  border-color:var(--border2);
+  color:var(--txt);
+}
+/* Export button — outline style, not blue fill */
+.dm-export-btn {
+  background:transparent;
+  border:1px solid var(--border2);
+  color:var(--txt2);
+  border-radius:var(--r-sm);
+  transition:background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.dm-export-btn:hover { background:var(--hover); border-color:var(--border2); color:var(--txt) }
+
+/* ══ 30. VERTICAL CONTEXT HEADER — remove gradient tints ═══════════════════ */
+.vds-head, .docs-hd {
+  background:var(--card) !important;
+  border-bottom:1px solid var(--border);
+}
+.story-sep  { background:var(--border) !important }
+.vert-ctx-code {
+  background:var(--bg2) !important;
+  border:1px solid var(--border);
+  color:var(--txt2);
+}
+
+/* ══ 31. ADDITIONAL TABLE COVERAGE ═════════════════════════════════════════ */
+.docs-tbl thead th {
+  background:var(--bg2);
+  font-size:10px; font-weight:700;
+  letter-spacing:.07em; text-transform:uppercase; color:var(--txt3);
+}
+.docs-tbl tbody tr:hover { background:var(--hover) !important }
+.km-txn-tbl thead th           { background:var(--card) }
+.km-txn-tbl tbody tr:hover td  { background:var(--hover) }
+.cfy-table thead th            { background:var(--card) }
+.cfy-table tbody tr:hover td   { background:var(--hover) }
+
+/* ══ 32. MODAL TITLE COLOR — ensure --txt1 alias resolves ══════════════════ */
+.vtb-title, .sl-title, .ta-title, .dm-title, .km-title { color:var(--txt) }
+
+/* ══ 33. CARD HOVER COVERAGE EXPANSION ════════════════════════════════════ */
+.gp-fy-card, .cc-pipe-box { transition:var(--t-card) }
+
+/* ══ 34. MOTION NORMALIZATION ══════════════════════════════════════════════ */
+.vtb-pn, .sl-pn, .ta-pn, .dm-pn, .km-pn {
+  transition:opacity var(--dur-base) var(--ease-out),
+             transform var(--dur-base) var(--ease-out);
+}
+.compare-card, .kb-card, .f3d-card, .vd-kpi, .gp-kpi, .gp-card,
+.gp-fy-card, .vpipe-stat-card, .biz-tile, .vkpi-card, .qcard {
+  transition:var(--t-card);
 }
 </style>
 </head>
