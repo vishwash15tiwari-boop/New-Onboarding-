@@ -3823,6 +3823,130 @@ button:active:not(:disabled),
 .vkpi-card.vk-onboarded .vkpi-val { color: #049769 !important }
 .vkpi-card.vk-transacted .vkpi-val { color: var(--blue) !important }
 </style>
+
+<style id="omp-hero-css">
+/* ══ OMP 8 HERO CARDS ═════════════════════════════════════════════════════ */
+.omp-hero-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  grid-template-rows:auto auto auto;
+  gap:10px;
+  width:100%;
+}
+/* Row 1: Funnel 2-col + Volume 2-col */
+.ohc-funnel{grid-column:span 2}
+.ohc-volume{grid-column:span 2}
+/* Row 3: Geo 2-col + OSV 2-col */
+.ohc-geo  {grid-column:span 2}
+.ohc-osv  {grid-column:span 2}
+
+.ohc{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px 18px;
+  box-shadow:var(--shadow-sm);
+  overflow:hidden;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  gap:0;
+}
+.ohc-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--txt3);margin-bottom:10px;
+}
+.ohc-badge-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ohc-big{
+  font-size:30px;font-weight:800;letter-spacing:-1.2px;
+  color:var(--txt);font-variant-numeric:tabular-nums;line-height:1;
+  margin-bottom:3px;
+}
+.ohc-sub{font-size:11px;color:var(--txt3);line-height:1.4}
+.ohc-divider{height:1px;background:var(--border);margin:12px 0;flex-shrink:0}
+
+/* ── Funnel ── */
+.ohc-funnel-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.ohc-funnel-lbl{font-size:10px;font-weight:600;color:var(--txt2);width:76px;flex-shrink:0}
+.ohc-funnel-track{flex:1;height:20px;background:var(--bg2);border-radius:5px;overflow:hidden;position:relative}
+.ohc-funnel-fill{height:100%;border-radius:5px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.ohc-funnel-count{font-size:11px;font-weight:700;color:var(--txt);width:44px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+.ohc-funnel-pct{font-size:9px;font-weight:600;color:var(--txt3);width:28px;text-align:right;flex-shrink:0}
+.ohc-funnel-sb{display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.ohc-funnel-sb-item{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--txt2)}
+.ohc-funnel-sb-dot{width:8px;height:8px;border-radius:50%}
+
+/* ── Volume metrics ── */
+.ohc-vol-splits{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.ohc-vol-cell{border:1px solid var(--border);border-radius:9px;padding:7px 9px}
+.ohc-vol-cell-lbl{font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:3px}
+.ohc-vol-cell-val{font-size:17px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.ohc-vol-cell-sub{font-size:9px;color:var(--txt3);margin-top:1px}
+.ohc-vol-matrix{width:100%;border-collapse:separate;border-spacing:0;font-size:10px}
+.ohc-vol-matrix th{
+  font-size:8.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--txt3);padding:5px 6px 4px;border-bottom:1px solid var(--border);
+  text-align:left;white-space:nowrap;
+}
+.ohc-vol-matrix td{
+  padding:5px 6px;color:var(--txt);font-weight:500;
+  border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums;
+}
+.ohc-vol-matrix tr:last-child td{border-bottom:none}
+.ohc-vol-matrix .r{text-align:right;font-weight:700}
+.ohc-vol-matrix .r-s{text-align:right;font-weight:700;color:#1DC797}
+.ohc-vol-matrix .r-b{text-align:right;font-weight:700;color:#005DFF}
+.ohc-vol-matrix .fy-tag{font-size:8.5px;color:var(--txt3);font-weight:500}
+
+/* ── Transacted & GMV ── */
+.ohc-mat-pair{display:flex;gap:6px;margin-top:10px}
+.ohc-mat-cell{flex:1;border-radius:9px;padding:8px 10px;text-align:center}
+.ohc-mat-cell-lbl{font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px}
+.ohc-mat-cell-val{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.ohc-mat-cell-sub{font-size:9px;color:var(--txt3);margin-top:2px}
+
+/* ── Vendor Rating ── */
+.ohc-rating-big{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1}
+.ohc-star-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.ohc-star-lbl{font-size:9px;font-weight:600;color:var(--txt2);width:22px;text-align:right;flex-shrink:0}
+.ohc-star-track{flex:1;height:9px;background:var(--bg2);border-radius:4px;overflow:hidden}
+.ohc-star-fill{height:100%;border-radius:4px;background:#E48800}
+.ohc-star-count{font-size:9px;font-weight:600;color:var(--txt3);width:28px;text-align:right;flex-shrink:0}
+
+/* ── Geo Split ── */
+.ohc-geo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+.ohc-geo-bar-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.ohc-geo-bar-lbl{font-size:10px;font-weight:600;color:var(--txt2);width:64px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ohc-geo-bar-track{flex:1;height:16px;background:var(--bg2);border-radius:4px;overflow:hidden}
+.ohc-geo-bar-fill{height:100%;border-radius:4px}
+.ohc-geo-bar-val{font-size:10px;font-weight:700;color:var(--txt);width:32px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+
+/* ── Churn/Inactivity ── */
+.ohc-churn-pills{display:flex;gap:7px;margin-top:10px}
+.ohc-churn-pill{flex:1;border-radius:10px;padding:10px;text-align:center}
+.ohc-churn-pill-val{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.ohc-churn-pill-lbl{font-size:8.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
+
+/* ── OSV ── */
+.ohc-osv-stages{display:flex;gap:7px;margin-top:10px}
+.ohc-osv-stage{flex:1;border-radius:10px;padding:10px;text-align:center}
+.ohc-osv-stage-val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.ohc-osv-stage-lbl{font-size:8.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
+.ohc-osv-bar-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:12px}
+.ohc-osv-bar-fill{height:100%;border-radius:3px;background:#30D158;transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+/* Responsive */
+@media(max-width:1100px){
+  .omp-hero-grid{grid-template-columns:repeat(2,1fr)}
+  .ohc-funnel,.ohc-volume,.ohc-geo,.ohc-osv{grid-column:span 2}
+}
+@media(max-width:640px){
+  .omp-hero-grid{grid-template-columns:1fr}
+  .ohc-funnel,.ohc-volume,.ohc-geo,.ohc-osv{grid-column:span 1}
+  .ohc-vol-splits{grid-template-columns:repeat(2,1fr)}
+}
+</style>
 </head>
 
 <body>
@@ -5052,15 +5176,17 @@ function renderVertKPIs(key) {
     mk(icZap,    'Transacted',  fmt(txnTotal),         '<b>' + fmt(pTxn) + '</b> Plastic | <b>' + fmt(mTxn) + '</b> Metal', 'vk-transacted', 'transacted'),
   ];
   if (key === 'OMP') {
-    var enTotal = (oldS + oldB) + (newS + newB);
-    cards.push(mk(icUsers, 'Existing vs New', fmt(enTotal),
-      fmt(oldS + oldB) + ' Existing vs ' + fmt(newS + newB) + ' New',
-      'vk-oldvsnew', 'oldvsnew'));
+    el.style.gridTemplateColumns = '1fr';
+    el.classList.remove('vkpi-grid-4');
+    el.style.display = 'block';
+    el.innerHTML = _buildOMPHeroGrid(vs, vb);
+    animateCounters(el);
+    loadQualityData();
+    return;
   }
-  // 3-card verticals use auto-fit; the 4-card OMP row uses an explicit grid
-  // (class-driven, see .vkpi-grid-4) so it steps 4-up → 2×2 → 1-up and never
-  // breaks to an unbalanced 3 + lone card at intermediate widths.
+  // 3-card verticals use auto-fit; the 4-card non-OMP row uses an explicit grid
   el.style.gridTemplateColumns = '';
+  el.style.display = '';
   el.classList.toggle('vkpi-grid-4', cards.length === 4);
   el.innerHTML = cards.join('');
   animateCounters(el);
@@ -6477,6 +6603,11 @@ function _patchQualityKpiCards() {
   // Patch the Business Insights rail's Vendor Rating / OSV Consent mini-cards.
   var bqEl = document.getElementById('biz-qual');
   if (bqEl) bqEl.outerHTML = _buildRailQual(qc, true); // always OMP when quality data is loaded
+
+  // Patch OMP hero cards 5 (Rating) and 8 (OSV) if visible
+  if (document.getElementById('omp-hc-rating') || document.getElementById('omp-hc-osv')) {
+    _patchOMPHeroCards(qd);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -6910,9 +7041,272 @@ function _buildSellerQualStrip(qc) {
     + '</div>';
 }
 
+// ═══════════════════════════════════════════════════════════════
+// OMP 8-CARD HERO GRID
+// ═══════════════════════════════════════════════════════════════
+function _buildOMPHeroGrid(vs, vb) {
+  var totalS = vs.total || 0,      totalB = vb.total || 0;
+  var compS  = vs.completed || 0,  compB  = vb.completed || 0;
+  var draftS = vs.draft || 0,      draftB = vb.draft || 0;
+  var revS   = vs.inReview || 0,   revB   = vb.inReview || 0;
+  var rejS   = vs.rejected || 0,   rejB   = vb.rejected || 0;
+  var txnS   = vs.transacted || 0;
+  var pTxn   = vs.plasticTransacted || 0;
+  var mTxn   = vs.metalTransacted   || 0;
+  var txnVal = vs.totalTxnValue != null ? vs.totalTxnValue : null;
+  var oldS   = vs.oldVendors || 0, oldB = vb.oldVendors || 0;
+  var newS   = vs.newVendors || 0, newB = vb.newVendors || 0;
+  var aging  = vs.aging  || 0;
+  var overdue= vs.overdue|| 0;
+  var txnPct = compS > 0 ? Math.round(txnS / compS * 100) : 0;
+  var regions= vs.regions || [];
+
+  function badge(dot, label) {
+    return '<div class="ohc-badge">'
+      + '<div class="ohc-badge-dot" style="background:' + dot + '"></div>'
+      + label + '</div>';
+  }
+
+  // ── Card 1: Onboarding Funnel ─────────────────────────────────
+  var totAll = totalS + totalB;
+  var stages = [
+    { lbl:'Total Cases', n: totalS + totalB,   col:'#005DFF' },
+    { lbl:'Draft',       n: draftS + draftB,   col:'#8E8E93' },
+    { lbl:'In Review',   n: revS   + revB,     col:'#E48800' },
+    { lbl:'Rejected',    n: rejS   + rejB,     col:'#FF3B30' },
+    { lbl:'Onboarded',   n: compS  + compB,    col:'#30D158' },
+  ];
+  var maxFn = totAll || 1;
+  var funnelRows = stages.map(function(s) {
+    var pctOfTotal = totAll > 0 ? Math.round(s.n / totAll * 100) : 0;
+    var barW = Math.round(s.n / maxFn * 100);
+    return '<div class="ohc-funnel-row">'
+      + '<div class="ohc-funnel-lbl">' + s.lbl + '</div>'
+      + '<div class="ohc-funnel-track">'
+      + '<div class="ohc-funnel-fill" style="width:' + barW + '%;background:' + s.col + '"></div>'
+      + '</div>'
+      + '<div class="ohc-funnel-count">' + fmt(s.n) + '</div>'
+      + '<div class="ohc-funnel-pct">' + pctOfTotal + '%</div>'
+      + '</div>';
+  }).join('');
+  var c1 = '<div class="ohc ohc-funnel">'
+    + badge('#005DFF', 'Onboarding Funnel')
+    + funnelRows
+    + '<div class="ohc-funnel-sb">'
+    + '<div class="ohc-funnel-sb-item"><div class="ohc-funnel-sb-dot" style="background:#1DC797"></div><b>' + fmt(compS) + '</b>&nbsp;Sellers Onboarded</div>'
+    + '<div class="ohc-funnel-sb-item"><div class="ohc-funnel-sb-dot" style="background:#005DFF"></div><b>' + fmt(compB) + '</b>&nbsp;Buyers Onboarded</div>'
+    + '</div>'
+    + '</div>';
+
+  // ── Card 2: Volume Metrics ────────────────────────────────────
+  var existing = oldS + oldB, newVnd = newS + newB;
+  var activeSellers = txnS, dormant = Math.max(0, compS - txnS);
+  var fysSell = (vs.fyBreakdown || []).slice(0, 5).reverse();
+  var fysBuy  = (vb.fyBreakdown || []).slice(0, 5).reverse();
+  var fyBuyMap = {};
+  fysBuy.forEach(function(f) { fyBuyMap[f.fy] = f; });
+  var matRows = fysSell.map(function(f) {
+    var bf = fyBuyMap[f.fy] || {};
+    return '<tr>'
+      + '<td>' + (f.fy || '—') + '</td>'
+      + '<td class="r-s">' + fmt(f.total || 0) + '</td>'
+      + '<td class="r-b">' + fmt(bf.total || 0) + '</td>'
+      + '<td class="r" style="color:#30D158">' + fmt(f.onboarded || 0) + '</td>'
+      + '<td class="r" style="color:#005DFF">' + fmt(bf.onboarded || 0) + '</td>'
+      + '</tr>';
+  }).join('');
+  var c2 = '<div class="ohc ohc-volume">'
+    + badge('#8460D4', 'Volume Metrics')
+    + '<div class="ohc-vol-splits">'
+    + '<div class="ohc-vol-cell"><div class="ohc-vol-cell-lbl">Existing</div><div class="ohc-vol-cell-val" style="color:var(--txt)">' + fmt(existing) + '</div><div class="ohc-vol-cell-sub">' + fmt(oldS) + ' S · ' + fmt(oldB) + ' B</div></div>'
+    + '<div class="ohc-vol-cell"><div class="ohc-vol-cell-lbl" style="color:#1DC797">New</div><div class="ohc-vol-cell-val" style="color:#1DC797">' + fmt(newVnd) + '</div><div class="ohc-vol-cell-sub">' + fmt(newS) + ' S · ' + fmt(newB) + ' B</div></div>'
+    + '<div class="ohc-vol-cell"><div class="ohc-vol-cell-lbl" style="color:#30D158">Active</div><div class="ohc-vol-cell-val" style="color:#30D158">' + fmt(activeSellers) + '</div><div class="ohc-vol-cell-sub">Transacted</div></div>'
+    + '<div class="ohc-vol-cell"><div class="ohc-vol-cell-lbl" style="color:#8E8E93">Dormant</div><div class="ohc-vol-cell-val" style="color:#8E8E93">' + fmt(dormant) + '</div><div class="ohc-vol-cell-sub">Not transacted</div></div>'
+    + '</div>'
+    + '<table class="ohc-vol-matrix"><thead><tr>'
+    + '<th>FY</th><th style="color:#1DC797">New S</th><th style="color:#005DFF">New B</th><th style="color:#30D158">Onb S</th><th style="color:#005DFF">Onb B</th>'
+    + '</tr></thead><tbody>' + (matRows || '<tr><td colspan="5" style="color:var(--txt3);text-align:center">No FY data</td></tr>') + '</tbody></table>'
+    + '</div>';
+
+  // ── Card 3: Transacted (Seller) ───────────────────────────────
+  var c3 = '<div class="ohc">'
+    + badge('#30D158', 'Transacted · Seller')
+    + '<div class="ohc-big" style="color:#30D158">' + fmt(txnS) + '</div>'
+    + '<div class="ohc-sub">' + txnPct + '% of onboarded sellers have transacted</div>'
+    + '<div class="ohc-divider"></div>'
+    + '<div class="ohc-mat-pair">'
+    + '<div class="ohc-mat-cell" style="background:rgba(255,159,10,.1)">'
+    + '<div class="ohc-mat-cell-lbl" style="color:#E48800">Plastic</div>'
+    + '<div class="ohc-mat-cell-val" style="color:#E48800">' + fmt(pTxn) + '</div>'
+    + '<div class="ohc-mat-cell-sub">vendors</div>'
+    + '</div>'
+    + '<div class="ohc-mat-cell" style="background:rgba(142,142,147,.1)">'
+    + '<div class="ohc-mat-cell-lbl" style="color:#636366">Metal</div>'
+    + '<div class="ohc-mat-cell-val" style="color:var(--txt2)">' + fmt(mTxn) + '</div>'
+    + '<div class="ohc-mat-cell-sub">vendors</div>'
+    + '</div>'
+    + '</div>'
+    + (txnVal != null ? '<div style="margin-top:10px;font-size:10px;color:var(--txt3)">Total GMV&nbsp;<b style="font-size:13px;color:var(--txt)">' + fmtINR(txnVal) + '</b></div>' : '')
+    + '</div>';
+
+  // ── Card 4: Total GMV (Category wise) ────────────────────────
+  var gmvFySpark = '';
+  var fyG = (vs.fyBreakdown || []).filter(function(f) { return f.totalTxnValue != null; }).slice(0,5).reverse();
+  if (fyG.length > 1) {
+    var maxGmv = Math.max.apply(null, fyG.map(function(f){ return f.totalTxnValue || 0; })) || 1;
+    gmvFySpark = '<div style="display:flex;align-items:flex-end;gap:3px;height:32px;margin-top:10px">'
+      + fyG.map(function(f) {
+          var h = Math.max(4, Math.round((f.totalTxnValue || 0) / maxGmv * 32));
+          return '<div style="flex:1;height:' + h + 'px;background:rgba(228,136,0,.5);border-radius:2px 2px 0 0;min-width:4px" title="' + (f.fy || '') + ': ' + fmtINR(f.totalTxnValue) + '"></div>';
+        }).join('')
+      + '</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:8px;color:var(--txt3);margin-top:2px">'
+      + '<span>' + (fyG[0].fy || '') + '</span><span>' + (fyG[fyG.length-1].fy || '') + '</span>'
+      + '</div>';
+  }
+  var c4 = '<div class="ohc">'
+    + badge('#E48800', 'Total GMV')
+    + '<div class="ohc-big">' + (txnVal != null ? fmtINR(txnVal) : '—') + '</div>'
+    + '<div class="ohc-sub">Seller transaction value (OMP)</div>'
+    + '<div class="ohc-divider"></div>'
+    + '<div class="ohc-mat-pair">'
+    + '<div class="ohc-mat-cell" style="background:rgba(255,159,10,.1)">'
+    + '<div class="ohc-mat-cell-lbl" style="color:#E48800">Plastic</div>'
+    + '<div class="ohc-mat-cell-val" style="color:#E48800">' + fmt(pTxn) + '</div>'
+    + '<div class="ohc-mat-cell-sub">transacted vendors</div>'
+    + '</div>'
+    + '<div class="ohc-mat-cell" style="background:rgba(142,142,147,.1)">'
+    + '<div class="ohc-mat-cell-lbl" style="color:#636366">Metal</div>'
+    + '<div class="ohc-mat-cell-val" style="color:var(--txt2)">' + fmt(mTxn) + '</div>'
+    + '<div class="ohc-mat-cell-sub">transacted vendors</div>'
+    + '</div>'
+    + '</div>'
+    + gmvFySpark
+    + '</div>';
+
+  // ── Card 5: Vendor Rating (patched async) ─────────────────────
+  var c5 = '<div class="ohc" id="omp-hc-rating">'
+    + badge('#E48800', 'Vendor Rating · Seller')
+    + '<div class="ohc-big ohc-rating-big" id="omp-rating-big" style="color:#E48800">—</div>'
+    + '<div class="ohc-sub" id="omp-rating-sub" style="margin-bottom:10px">Loading ratings…</div>'
+    + '<div id="omp-rating-dist"></div>'
+    + '</div>';
+
+  // ── Card 6: Geographical Split ────────────────────────────────
+  var maxRegOnb = regions.length ? Math.max.apply(null, regions.map(function(r){ return r.onboarded || 0; })) : 1;
+  var geoRows = regions.slice(0, 8).map(function(r) {
+    var barW = maxRegOnb > 0 ? Math.round((r.onboarded || 0) / maxRegOnb * 100) : 0;
+    return '<div class="ohc-geo-bar-row">'
+      + '<div class="ohc-geo-bar-lbl">' + esc(r.region) + '</div>'
+      + '<div class="ohc-geo-bar-track"><div class="ohc-geo-bar-fill" style="width:' + barW + '%;background:#005DFF;opacity:.8"></div></div>'
+      + '<div class="ohc-geo-bar-val">' + fmt(r.onboarded || 0) + '</div>'
+      + '</div>';
+  }).join('');
+  var c6 = '<div class="ohc ohc-geo">'
+    + badge('#32ADE6', 'Geographical Split · Seller Onboarded')
+    + (geoRows || '<div style="color:var(--txt3);font-size:11px;padding:8px 0">No region data available</div>')
+    + '</div>';
+
+  // ── Card 7: Churn / Inactivity ────────────────────────────────
+  var nonTxn = Math.max(0, compS - txnS);
+  var churnPct = compS > 0 ? Math.round(nonTxn / compS * 100) : 0;
+  var c7 = '<div class="ohc">'
+    + badge('#FF3B30', 'Churn / Inactivity')
+    + '<div class="ohc-big" style="color:#FF3B30">' + fmt(nonTxn) + '</div>'
+    + '<div class="ohc-sub">' + churnPct + '% of onboarded sellers have not transacted</div>'
+    + '<div class="ohc-churn-pills">'
+    + '<div class="ohc-churn-pill" style="background:rgba(255,159,10,.1)">'
+    + '<div class="ohc-churn-pill-val" style="color:#E48800">' + fmt(aging) + '</div>'
+    + '<div class="ohc-churn-pill-lbl" style="color:#E48800">Aging<br><span style="font-size:8px;font-weight:500;text-transform:none">14–30 days</span></div>'
+    + '</div>'
+    + '<div class="ohc-churn-pill" style="background:rgba(255,59,48,.1)">'
+    + '<div class="ohc-churn-pill-val" style="color:#FF3B30">' + fmt(overdue) + '</div>'
+    + '<div class="ohc-churn-pill-lbl" style="color:#FF3B30">Overdue<br><span style="font-size:8px;font-weight:500;text-transform:none">&gt;30 days</span></div>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+
+  // ── Card 8: OSV Status (patched async) ───────────────────────
+  var c8 = '<div class="ohc ohc-osv" id="omp-hc-osv">'
+    + badge('#005DFF', 'OSV Status · Seller')
+    + '<div class="ohc-osv-stages">'
+    + '<div class="ohc-osv-stage" style="background:rgba(48,209,88,.1)">'
+    + '<div class="ohc-osv-stage-val" style="color:#30D158" id="omp-osv-done">—</div>'
+    + '<div class="ohc-osv-stage-lbl" style="color:#30D158">Done</div>'
+    + '</div>'
+    + '<div class="ohc-osv-stage" style="background:rgba(228,136,0,.1)">'
+    + '<div class="ohc-osv-stage-val" style="color:#E48800" id="omp-osv-prog">—</div>'
+    + '<div class="ohc-osv-stage-lbl" style="color:#E48800">In Progress</div>'
+    + '</div>'
+    + '<div class="ohc-osv-stage" style="background:rgba(142,142,147,.1)">'
+    + '<div class="ohc-osv-stage-val" style="color:#8E8E93" id="omp-osv-ni">—</div>'
+    + '<div class="ohc-osv-stage-lbl" style="color:#8E8E93">Not Initiated</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="ohc-osv-bar-wrap"><div class="ohc-osv-bar-fill" id="omp-osv-bar" style="width:0%"></div></div>'
+    + '<div id="omp-osv-sub" style="font-size:10px;color:var(--txt3);margin-top:6px">Loading OSV data…</div>'
+    + '</div>';
+
+  return '<div class="omp-hero-grid" style="' + vcVars('OMP') + '">'
+    + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8
+    + '</div>';
+}
+
+// Patch OMP hero cards 5 (Rating) and 8 (OSV) when qualityData arrives
+function _patchOMPHeroCards(qd) {
+  var qc = (qd && qd.seller) || {};
+
+  // Rating card
+  var r = qc.rating || {};
+  var rBig = document.getElementById('omp-rating-big');
+  var rSub = document.getElementById('omp-rating-sub');
+  var rDist= document.getElementById('omp-rating-dist');
+  if (rBig) rBig.textContent = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
+  if (rSub) rSub.textContent = fmt(r.rated || 0) + ' rated · ' + fmt(Math.max(0, (r.total || 0) - (r.rated || 0))) + ' unrated';
+  if (rDist && r.dist) {
+    var distMax = Math.max.apply(null, r.dist) || 1;
+    rDist.innerHTML = [5,4,3,2,1].map(function(star) {
+      var cnt = r.dist[star - 1] || 0;
+      var bw  = Math.round(cnt / distMax * 100);
+      return '<div class="ohc-star-row">'
+        + '<span class="ohc-star-lbl">' + star + '★</span>'
+        + '<div class="ohc-star-track"><div class="ohc-star-fill" style="width:' + bw + '%"></div></div>'
+        + '<span class="ohc-star-count">' + cnt + '</span>'
+        + '</div>';
+    }).join('');
+  } else if (rDist) {
+    rDist.innerHTML = '<div style="font-size:10px;color:var(--txt3)">No rating data</div>';
+  }
+
+  // OSV card
+  var o   = qc.osv || {};
+  var oDn = o.completed   || 0;
+  var oIp = o.inProgress  || 0;
+  var oNI = Math.max(0, (o.total || 0) - oDn - oIp);
+  var oTot= o.total || 0;
+  var oPct= oTot > 0 ? Math.round(oDn / oTot * 100) : 0;
+  var eD  = document.getElementById('omp-osv-done');
+  var eIp = document.getElementById('omp-osv-prog');
+  var eNI = document.getElementById('omp-osv-ni');
+  var eSub= document.getElementById('omp-osv-sub');
+  var eBar= document.getElementById('omp-osv-bar');
+  if (eD)   eD.textContent   = fmt(oDn);
+  if (eIp)  eIp.textContent  = fmt(oIp);
+  if (eNI)  eNI.textContent  = fmt(oNI);
+  if (eSub) eSub.textContent = oPct + '% complete · ' + fmt(oTot) + ' total';
+  if (eBar) eBar.style.width = oPct + '%';
+}
+
 function renderPipelinePair(key) {
   var el = document.getElementById('vert-pipeline-pair');
   if (!el) return;
+  // OMP uses the 8-card hero grid in #vert-kpi-row — pipeline pair is not needed
+  if (key === 'OMP') {
+    el.innerHTML = '';
+    var bizRail = document.getElementById('vert-biz-rail');
+    if (bizRail) bizRail.innerHTML = '';
+    return;
+  }
   var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
   if (!cfg || !DS || !DS.verticals) {
     if (_dashLoading) {
