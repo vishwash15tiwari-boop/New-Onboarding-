@@ -679,6 +679,10 @@ function normalizeRows(raw, cfg) {
       ? level1 : created;
     var tat = (status === 'COMPLETED' && tatStart && onboarded) ? dateDiffDays(tatStart, onboarded) : null;
     if (tat !== null && tat < 0) tat = null;
+    // Buyer onboarding_updated_date drifts on any CRM field edit post-completion.
+    // TAT values beyond 7 days are re-edit noise — exclude them so they don't
+    // inflate the average. Real buyer onboarding completes in < 2 days.
+    if (tat !== null && cfg.audience === 'buyer' && tat > 7) tat = null;
 
     var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
