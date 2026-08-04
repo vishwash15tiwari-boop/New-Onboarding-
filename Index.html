@@ -9891,7 +9891,7 @@ function _dmVendor(hd,bd,E) {
 // ═══════════════════════════════════════════════════════════════
 // TRANSACTION VENDORS MODAL
 // ═══════════════════════════════════════════════════════════════
-var _ta = { aud:'seller', cat:'All', q:'', sk:'txnCount', sd:-1, pg:0, pgSz:25, rows:[] };
+var _ta = { aud:'seller', cat:'All', q:'', sk:'txnValue', sd:-1, pg:0, pgSz:25, rows:[] };
 // Backend-sourced data for the TaModal — uses txnDate filter, matching the Hero Card.
 // sellers/buyers===null means still loading; []|[...] means loaded.
 var _taBackend = { pKey: null, sellers: null, buyers: null };
@@ -9996,7 +9996,7 @@ function openTaModal() {
   var isOpen = m && m.classList.contains('ta-open');
   if (!isOpen) {
     _ta.aud = 'seller'; _ta.cat = 'All'; _ta.q = '';
-    _ta.sk = 'txnCount'; _ta.sd = -1; _ta.pg = 0;
+    _ta.sk = 'txnValue'; _ta.sd = -1; _ta.pg = 0;
   }
   _taFetch();
   _taRender();
@@ -10080,7 +10080,7 @@ function _taFiltered() {
 function _taSorted(rows) {
   var k = _ta.sk, d = _ta.sd;
   return rows.slice().sort(function(a, b) {
-    if (k === 'txnValue' || k === 'txnCount') return d * ((+(a[k]||0)) - (+(b[k]||0)));
+    if (k === 'txnValue') return d * ((+(a[k]||0)) - (+(b[k]||0)));
     if (k === 'avgTxnValue') {
       var aAvg = (a.txnCount && a.txnValue) ? a.txnValue / a.txnCount : 0;
       var bAvg = (b.txnCount && b.txnValue) ? b.txnValue / b.txnCount : 0;
@@ -10127,7 +10127,6 @@ function _taTblHtml() {
     { key:'vendorType',  lbl:'Vendor Type'   },
     { key:'_normCat',    lbl:'Category'      },
     { key:'state',       lbl:'State'         },
-    { key:'txnCount',    lbl:'Txn Count'     },
     { key:'txnValue',    lbl:'Total GMV'     },
     { key:'avgTxnValue', lbl:'Avg Txn Value' },
     { key:'txnDate',     lbl:'Last Txn Date' },
@@ -10150,7 +10149,6 @@ function _taTblHtml() {
       + '<td>' + esc(r.vendorType||'—') + '</td>'
       + '<td>' + (r._normCat !== 'Other' ? '<span class="ta-cat-badge" style="background:' + catBg + ';color:' + catClr + '">' + esc(r._normCat) + '</span>' : '—') + '</td>'
       + '<td>' + esc(r.state||'—') + '</td>'
-      + '<td style="text-align:right;font-weight:600">' + fmt(r.txnCount || 1) + '</td>'
       + '<td style="text-align:right">' + (r.txnValue > 0 ? fmtINR(r.txnValue) : '—') + '</td>'
       + '<td style="text-align:right">' + (avg > 0 ? fmtINR(avg) : '—') + '</td>'
       + '<td>' + esc(r.txnDate !== '—' ? r.txnDate : '—') + '</td>'
@@ -10158,7 +10156,7 @@ function _taTblHtml() {
   }).join('');
 
   if (!trHtml) {
-    trHtml = '<tr><td colspan="9" class="ta-no-data">'
+    trHtml = '<tr><td colspan="8" class="ta-no-data">'
       + (_ta.q ? 'No match for &ldquo;' + esc(_ta.q) + '&rdquo;' : 'No vendors found.') + '</td></tr>';
   }
 
