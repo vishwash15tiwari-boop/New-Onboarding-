@@ -6260,7 +6260,7 @@ function _renderTxnDetail(wrap, data) {
   var totalTxns = 0, totalGMV = 0;
   // GMV is sourced from sellers only — Seller→Buyer is one transaction;
   // adding buyer-side values would double-count the same transaction.
-  sellers.forEach(function(r) { totalTxns += (r.txnCount || 1); totalGMV += (r.txnValue || 0); });
+  sellers.forEach(function(r) { totalTxns += (r.txnCount || 0); totalGMV += (r.txnValue || 0); });
 
   var smry = '<div class="km-txn-smry">'
     + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + fmt(totalTxns) + '</div><div class="km-txn-smry-lbl">Total Unique Txns</div></div>'
@@ -6291,7 +6291,7 @@ function _renderTxnDetail(wrap, data) {
         + '<td style="font-weight:500;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name || '—') + '</td>'
         + '<td style="font-family:monospace;font-size:10px;color:var(--txt3)">' + esc(r.gstin || '—') + '</td>'
         + '<td>' + catHtml + '</td>'
-        + '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmt(r.txnCount || 1) + '</td>'
+        + '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + (r.txnCount > 0 ? fmt(r.txnCount) : '—') + '</td>'
         + '<td style="text-align:right;font-weight:600;color:var(--st-transacted-tx);font-variant-numeric:tabular-nums">' + (r.txnValue > 0 ? fmtINR(r.txnValue) : '—') + '</td>'
         + '</tr>';
     });
@@ -10613,7 +10613,7 @@ function _taRender() {
       vendorType: r.vendorType || '—', _normCat: _taNormCat(r.category),
       state: r.state || '—', txnDate: r.txnDate || '—',
       txnValue: r.txnValue || 0,
-      txnCount: r.total_orders || r.txnCount || 0 };
+      txnCount: r.txnCount || 0 };
   }
   var allSeller = loading ? [] : (_taBackend.sellers || []).filter(_isValidRec).map(function(r) { return mapRow(r, 'seller'); });
   var allBuyer  = loading ? [] : (_taBackend.buyers  || []).filter(_isValidRec).map(function(r) { return mapRow(r, 'buyer');  });

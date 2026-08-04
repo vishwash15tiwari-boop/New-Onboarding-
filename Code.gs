@@ -1125,8 +1125,9 @@ function vStats(data, txnData) {
     if (r.status === 'COMPLETED') rs.onboarded++;
     if (r.status === 'DRAFT')     rs.draft++;
     if (r.status === 'IN_REVIEW') rs.inReview++;
-    if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
-      rs.txnValue += r.txnValue; rs.hasTxnVal = true;
+    var txnR = txnById[r.id];
+    if (txnR && txnR.txnValue !== null && txnR.txnValue !== undefined && txnR.txnValue > 0) {
+      rs.txnValue += txnR.txnValue; rs.hasTxnVal = true;
     }
   });
   var regions = Object.keys(regionMap).map(function(k) {
@@ -1154,10 +1155,11 @@ function vStats(data, txnData) {
     var fyTotal     = d.length;
     var fyCompleted = countFn(d, function(r) { return r.status === 'COMPLETED'; });
     var fyHasTxn    = d.some(function(r) { return r.hasTxn; });
-    var fyTransacted = fyHasTxn ? countFn(d, function(r) { return r.hasTransacted && r.status === 'COMPLETED'; }) : null;
+    var fyTransacted = fyHasTxn ? countFn(d, function(r) { return txnById[r.id] && r.status === 'COMPLETED'; }) : null;
     var fyTxnSum = 0, fyHasTxnVal = false;
     d.forEach(function(r) {
-      if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) { fyHasTxnVal = true; fyTxnSum += r.txnValue; }
+      var txnR = txnById[r.id];
+      if (txnR && txnR.txnValue !== null && txnR.txnValue !== undefined && txnR.txnValue > 0) { fyHasTxnVal = true; fyTxnSum += txnR.txnValue; }
     });
     var fyTats = d.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS; })
                   .map(function(r) { return r.onbTAT; });
