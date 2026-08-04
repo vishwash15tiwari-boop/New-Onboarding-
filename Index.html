@@ -1248,6 +1248,29 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .ta-metric-card{flex:1;min-width:120px;background:var(--bg2);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:3px}
 .ta-metric-val{font-size:17px;font-weight:700;line-height:1.2}
 .ta-metric-lbl{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em}
+/* ── Non-Transacted Ageing 6th card ── */
+.ta-nt-card{cursor:pointer;min-width:160px;border:1.5px solid transparent;outline:none;transition:border-color .15s,box-shadow .15s}
+.ta-nt-card:hover,.ta-nt-card:focus-visible{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,93,255,.1)}
+.ta-nt-hd{display:flex;align-items:center;gap:5px;margin-bottom:2px}
+.ta-nt-rows{margin-top:5px;display:flex;flex-direction:column;gap:3px}
+.ta-nt-brow{display:flex;align-items:center;gap:5px}
+.ta-nt-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ta-nt-blbl{font-size:10px;font-weight:600;color:var(--txt3);flex:1}
+.ta-nt-bval{font-size:11px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+/* ageing day badges */
+.ta-nt-age{display:inline-block;font-weight:700;font-variant-numeric:tabular-nums;padding:2px 7px;border-radius:6px;font-size:11.5px}
+.ta-nt-age-ok{background:rgba(0,93,255,.08);color:#005DFF}
+.ta-nt-age-warn{background:rgba(255,159,10,.1);color:#C07000}
+.ta-nt-age-hot{background:rgba(255,55,95,.1);color:#FF375F}
+/* non-transacted vendor table */
+.ta-nt-vl-tbl{width:100%;border-collapse:collapse;min-width:820px}
+.ta-nt-vl-tbl thead th{padding:8px 10px;text-align:left;font-size:10.5px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:1;white-space:nowrap;cursor:pointer;user-select:none}
+.ta-nt-vl-tbl thead th .s-ic{margin-left:3px;opacity:.5;font-size:9px}
+.ta-nt-vl-tbl thead th.ta-th-asc .s-ic,.ta-nt-vl-tbl thead th.ta-th-desc .s-ic{opacity:1}
+.ta-nt-vl-tbl tbody tr td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--txt1);vertical-align:middle;white-space:nowrap}
+.ta-nt-vl-tbl tbody tr:hover td{background:var(--bg2)}
+.ta-bkt-chip{padding:4px 10px;border-radius:16px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;transition:background .12s,border-color .12s,color .12s;background:var(--card);color:var(--txt2);white-space:nowrap;font-family:inherit}
+.ta-bkt-chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
 
 /* ═══════════════════════════════════════════════════════════════
    GST PAYABLES VIEW — warm cream / burnt-orange enterprise palette
@@ -10817,32 +10840,64 @@ function _dmVendor(hd,bd,E) {
 // ═══════════════════════════════════════════════════════════════
 // TRANSACTION VENDORS MODAL
 // ═══════════════════════════════════════════════════════════════
-var _ta = { aud:'seller', cat:'All', q:'', sk:'txnValue', sd:-1, pg:0, pgSz:25, rows:[] };
-// Backend-sourced data for the TaModal — uses txnDate filter, matching the Hero Card.
+var _ta = {
+  aud:'seller', cat:'All', q:'', sk:'txnValue', sd:-1, pg:0, pgSz:25, rows:[],
+  view:'transacted',           // 'transacted' | 'nonTransacted'
+  ntBucket:'All',              // bucket quick-filter for non-transacted view
+  ntSk:'ageing', ntSd:1,      // non-transacted sort
+  ntPg:0,                      // non-transacted page
+};
+// Backend-sourced data for the TaModal.
 // sellers/buyers===null means still loading; []|[...] means loaded.
-var _taBackend = { pKey: null, sellers: null, buyers: null };
+var _taBackend = { pKey: null, sellers: null, buyers: null, nonSellers: null, nonBuyers: null };
 
 function _taFetch() {
   var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
-  if (_taBackend.pKey === myPKey && _taBackend.sellers !== null) return;
-  _taBackend = { pKey: myPKey, sellers: null, buyers: null };
+  var allLoaded = _taBackend.pKey === myPKey
+    && _taBackend.sellers !== null && _taBackend.nonSellers !== null;
+  if (allLoaded) return;
+  var needTxn    = _taBackend.pKey !== myPKey || _taBackend.sellers === null;
+  var needNonTxn = _taBackend.pKey !== myPKey || _taBackend.nonSellers === null;
+  if (_taBackend.pKey !== myPKey) {
+    _taBackend = { pKey: myPKey, sellers: null, buyers: null, nonSellers: null, nonBuyers: null };
+  }
   var f = { period: currentPeriod };
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
-  google.script.run
-    .withSuccessHandler(function(res) {
-      try {
-        var data = JSON.parse(res);
-        if (_taBackend.pKey !== myPKey) return;
-        _taBackend.sellers = data.success ? (data.sellers || []) : [];
-        _taBackend.buyers  = data.success ? (data.buyers  || []) : [];
-      } catch (e) { _taBackend.sellers = _taBackend.buyers = []; }
-      _taRender();
-    })
-    .withFailureHandler(function() {
-      if (_taBackend.pKey === myPKey) { _taBackend.sellers = _taBackend.buyers = []; }
-      _taRender();
-    })
-    .getTransactedVendors(JSON.stringify(f));
+  var fStr = JSON.stringify(f);
+  if (needTxn) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        try {
+          var data = JSON.parse(res);
+          if (_taBackend.pKey !== myPKey) return;
+          _taBackend.sellers = data.success ? (data.sellers || []) : [];
+          _taBackend.buyers  = data.success ? (data.buyers  || []) : [];
+        } catch (e) { _taBackend.sellers = _taBackend.buyers = []; }
+        _taRender();
+      })
+      .withFailureHandler(function() {
+        if (_taBackend.pKey === myPKey) { _taBackend.sellers = _taBackend.buyers = []; }
+        _taRender();
+      })
+      .getTransactedVendors(fStr);
+  }
+  if (needNonTxn) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        try {
+          var data = JSON.parse(res);
+          if (_taBackend.pKey !== myPKey) return;
+          _taBackend.nonSellers = data.success ? (data.sellers || []) : [];
+          _taBackend.nonBuyers  = data.success ? (data.buyers  || []) : [];
+        } catch (e) { _taBackend.nonSellers = _taBackend.nonBuyers = []; }
+        _taRender();
+      })
+      .withFailureHandler(function() {
+        if (_taBackend.pKey === myPKey) { _taBackend.nonSellers = _taBackend.nonBuyers = []; }
+        _taRender();
+      })
+      .getNonTransactedVendors(fStr);
+  }
 }
 
 function _taNormCat(c) {
@@ -10923,6 +10978,7 @@ function openTaModal() {
   if (!isOpen) {
     _ta.aud = 'seller'; _ta.cat = 'All'; _ta.q = '';
     _ta.sk = 'txnValue'; _ta.sd = -1; _ta.pg = 0;
+    _ta.view = 'transacted'; _ta.ntBucket = 'All'; _ta.ntPg = 0;
   }
   _taFetch();
   _taRender();
@@ -10949,13 +11005,46 @@ function _taRender() {
   var seg  = document.getElementById('ta-seg-bar');
   var body = document.getElementById('ta-body');
   if (!hd || !body) return;
+
+  // ── Non-Transacted Ageing view ───────────────────────────────
+  if (_ta.view === 'nonTransacted') {
+    var ntIco = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg>';
+    var nS = (_taBackend.nonSellers || []).length;
+    var nB = (_taBackend.nonBuyers  || []).length;
+    hd.innerHTML = '<button class="ta-hd-back" onclick="taCloseNt()" title="Back to Transacted Vendors">&#8592;</button>'
+      + '<div class="ta-hd-ico">' + ntIco + '</div>'
+      + '<div class="ta-hd-txt"><div class="ta-hd-title">Non-Transacted Ageing</div>'
+      + '<div class="ta-hd-sub">Onboarded vendors with zero transactions · ageing from completion date</div></div>'
+      + '<button class="ta-hd-close" onclick="closeTaModal()" title="Close">×</button>';
+    if (seg) {
+      seg.style.display = '';
+      seg.innerHTML = [
+        { aud:'seller', lbl:'Sellers (' + fmt(nS) + ')' },
+        { aud:'buyer',  lbl:'Buyers ('  + fmt(nB) + ')' }
+      ].map(function(a) {
+        return '<button class="ta-seg-tab' + (_ta.aud === a.aud ? ' active' : '') + '" onclick="taSetAud(\'' + a.aud + '\')">' + a.lbl + '</button>';
+      }).join('')
+      + '<span style="width:1px;background:var(--border);align-self:stretch;margin:0 4px;flex-shrink:0"></span>'
+      + [
+        { key:'All',   lbl:'All' },
+        { key:'0-30',  lbl:'0–30 Days' },
+        { key:'31-90', lbl:'31–90 Days' },
+        { key:'90+',   lbl:'90+ Days' },
+      ].map(function(c) {
+        return '<button class="ta-bkt-chip' + (_ta.ntBucket === c.key ? ' active' : '') + '" onclick="taSetNtBucket(\'' + c.key + '\')">' + c.lbl + '</button>';
+      }).join('');
+    }
+    body.innerHTML = _taNtTblHtml();
+    return;
+  }
+
+  // ── Default: Transacted Vendors view ────────────────────────
   var loading = _taBackend.sellers === null;
   function mapRow(r, aud) {
     return { id: r.id, name: r.name, audience: aud,
       vendorType: r.vendorType || '—', _normCat: _taNormCat(r.category),
       state: r.state || '—', txnDate: r.txnDate || '—',
-      txnValue: r.txnValue || 0,
-      txnCount: r.txnCount || 0 };
+      txnValue: r.txnValue || 0, txnCount: r.txnCount || 0 };
   }
   var allSeller = loading ? [] : (_taBackend.sellers || []).filter(_isValidRec).map(function(r) { return mapRow(r, 'seller'); });
   var allBuyer  = loading ? [] : (_taBackend.buyers  || []).filter(_isValidRec).map(function(r) { return mapRow(r, 'buyer');  });
@@ -11039,6 +11128,7 @@ function _taTblHtml() {
     + _taMetricCard('Total GMV',          totalGMV > 0 ? fmtINR(totalGMV) : '—',        '#FF9F0A')
     + _taMetricCard('Avg Txns / Vendor',  avgPerVend > 0 ? avgPerVend.toFixed(1) : '—', 'var(--txt2)')
     + _taMetricCard('Avg Txn Value',      avgTxnVal  > 0 ? fmtINR(avgTxnVal)  : '—',   'var(--txt2)')
+    + _taNtMetricCard()
     + '</div>';
 
   if (!total) {
@@ -11115,6 +11205,197 @@ function taPg(d) {
   var max = Math.max(0, Math.ceil(_taFiltered().length / _ta.pgSz) - 1);
   _ta.pg = Math.max(0, Math.min(_ta.pg + d, max));
   _taRender();
+}
+
+// ── Non-Transacted Ageing helpers ───────────────────────────────────────────
+
+function taOpenNt()        { _ta.view = 'nonTransacted'; _ta.ntBucket = 'All'; _ta.q = ''; _ta.ntPg = 0; _taRender(); }
+function taCloseNt()       { _ta.view = 'transacted'; _ta.q = ''; _taRender(); }
+function taSetNtBucket(b)  { _ta.ntBucket = b; _ta.ntPg = 0; _taRender(); }
+function taNtSrt(key)      { _ta.ntSd = (_ta.ntSk === key) ? -_ta.ntSd : 1; _ta.ntSk = key; _ta.ntPg = 0; _taRender(); }
+function taNtPg(d) {
+  var max = Math.max(0, Math.ceil(_taNtFiltered().length / _ta.pgSz) - 1);
+  _ta.ntPg = Math.max(0, Math.min(_ta.ntPg + d, max));
+  _taRender();
+}
+
+// Ageing buckets: 0-30, 31-90, 90+ days since onboarding completion.
+function _taNtBucketOf(ageing) {
+  if (ageing === null) return null;
+  if (ageing <= 30) return '0-30';
+  if (ageing <= 90) return '31-90';
+  return '90+';
+}
+
+// Vendor rows for the current audience + bucket + search filter.
+function _taNtFiltered() {
+  var src = _ta.aud === 'seller'
+    ? (_taBackend.nonSellers || []).filter(_isValidRec)
+    : (_taBackend.nonBuyers  || []);
+  var rows = src.map(function(r) {
+    return {
+      id: r.id, name: r.name || '—', audience: _ta.aud,
+      vendorType: r.vendorType || '—', _normCat: _taNormCat(r.category),
+      state: r.state || '—', onbDate: r.onbDate || '—',
+      status: r.status || '—', ageing: _taDaysSince(r.onbDate)
+    };
+  });
+  if (_ta.cat !== 'All') rows = rows.filter(function(r) { return r._normCat === _ta.cat; });
+  if (_ta.ntBucket !== 'All') rows = rows.filter(function(r) { return _taNtBucketOf(r.ageing) === _ta.ntBucket; });
+  var q = (_ta.q || '').toLowerCase().trim();
+  if (q) rows = rows.filter(function(r) {
+    return (r.name).toLowerCase().indexOf(q) >= 0
+        || (r.id||'').toLowerCase().indexOf(q) >= 0
+        || (r.state).toLowerCase().indexOf(q) >= 0
+        || (r._normCat).toLowerCase().indexOf(q) >= 0
+        || (r.vendorType).toLowerCase().indexOf(q) >= 0;
+  });
+  return rows;
+}
+
+function _taNtSorted(rows) {
+  var k = _ta.ntSk, d = _ta.ntSd;
+  return rows.slice().sort(function(a, b) {
+    if (k === 'ageing') return d * ((a.ageing === null ? 9999 : a.ageing) - (b.ageing === null ? 9999 : b.ageing));
+    return d * String(a[k]||'').localeCompare(String(b[k]||''));
+  });
+}
+
+// Ageing bucket counts for the currently selected audience+category — drives the 6th card.
+function _taNtAgeing() {
+  var src = _ta.aud === 'seller'
+    ? (_taBackend.nonSellers || []).filter(_isValidRec)
+    : (_taBackend.nonBuyers  || []);
+  if (_ta.cat !== 'All') src = src.filter(function(r) { return _taNormCat(r.category) === _ta.cat; });
+  var b1 = 0, b2 = 0, b3 = 0;
+  src.forEach(function(r) {
+    var a = _taDaysSince(r.onbDate);
+    if (a === null) return;
+    if (a <= 30) b1++; else if (a <= 90) b2++; else b3++;
+  });
+  return { total: src.length, b1: b1, b2: b2, b3: b3 };
+}
+
+// 6th metric card: Non-Transacted Ageing summary — clickable to open drill-down.
+function _taNtMetricCard() {
+  var loading = _taBackend.nonSellers === null;
+  var nt = loading ? { total:0, b1:0, b2:0, b3:0 } : _taNtAgeing();
+  var ico = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg>';
+  var buckets = [
+    { lbl:'0–30d',  cnt: loading ? '…' : fmt(nt.b1), color:'#005DFF' },
+    { lbl:'31–90d', cnt: loading ? '…' : fmt(nt.b2), color:'#C07000' },
+    { lbl:'90+d',   cnt: loading ? '…' : fmt(nt.b3), color:'#FF375F' },
+  ];
+  return '<div class="ta-metric-card ta-nt-card" role="button" tabindex="0"'
+    + ' onclick="taOpenNt()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();taOpenNt()}"'
+    + ' title="View non-transacted vendor ageing">'
+    + '<div class="ta-nt-hd">' + ico
+    + '<span class="ta-metric-lbl" style="margin:0">Non-Transacted</span></div>'
+    + '<div class="ta-metric-val">' + (loading ? '…' : fmt(nt.total)) + '</div>'
+    + '<div class="ta-metric-lbl">Vendors Inactive</div>'
+    + '<div class="ta-nt-rows">'
+    + buckets.map(function(b) {
+        return '<div class="ta-nt-brow">'
+          + '<span class="ta-nt-dot" style="background:' + b.color + '"></span>'
+          + '<span class="ta-nt-blbl">' + b.lbl + '</span>'
+          + '<span class="ta-nt-bval">' + b.cnt + '</span>'
+          + '</div>';
+      }).join('')
+    + '</div></div>';
+}
+
+// Non-transacted vendor table.
+function _taNtTblHtml() {
+  var loading = _taBackend.nonSellers === null;
+  var filtered = _taNtFiltered();
+  var sorted   = _taNtSorted(filtered);
+  var total    = sorted.length;
+  var pgSz = _ta.pgSz, pg = _ta.ntPg;
+  var start = pg * pgSz;
+  var page  = sorted.slice(start, start + pgSz);
+  var maxPg = Math.max(0, Math.ceil(total / pgSz) - 1);
+
+  var b1=0, b2=0, b3=0, sumAge=0, cntAge=0;
+  filtered.forEach(function(r) {
+    var a = r.ageing;
+    if (a === null) return;
+    sumAge += a; cntAge++;
+    if (a <= 30) b1++; else if (a <= 90) b2++; else b3++;
+  });
+  var avgAge = cntAge ? Math.round(sumAge / cntAge) : null;
+
+  var metricsHtml = '<div class="ta-metrics">'
+    + _taMetricCard('Total Vendors', loading ? '…' : fmt(total),                    'var(--txt)')
+    + _taMetricCard('0–30 Days',     loading ? '…' : fmt(b1),                       '#005DFF')
+    + _taMetricCard('31–90 Days',    loading ? '…' : fmt(b2),                       '#C07000')
+    + _taMetricCard('90+ Days',      loading ? '…' : fmt(b3),                       '#FF375F')
+    + _taMetricCard('Avg Ageing',    loading ? '…' : (avgAge !== null ? avgAge+'d' : '—'), 'var(--txt2)')
+    + '</div>';
+
+  if (loading) return metricsHtml + '<div class="ta-no-data">Loading vendor data…</div>';
+  if (!total) {
+    return metricsHtml + '<div class="ta-no-data">'
+      + 'No non-transacted vendors'
+      + (_ta.ntBucket !== 'All' ? ' in the <b>' + esc(_ta.ntBucket) + ' days</b> bucket' : '')
+      + (_ta.q ? ' matching &ldquo;' + esc(_ta.q) + '&rdquo;' : '') + '.</div>';
+  }
+
+  var cols = [
+    { key:'name',       lbl:'Company Name'  },
+    { key:'id',         lbl:'Vendor ID'     },
+    { key:'audience',   lbl:'Type'          },
+    { key:'vendorType', lbl:'Vendor Type'   },
+    { key:'_normCat',   lbl:'Category'      },
+    { key:'state',      lbl:'State'         },
+    { key:'onbDate',    lbl:'Onboarded On'  },
+    { key:'ageing',     lbl:'Ageing'        },
+    { key:'status',     lbl:'Status'        },
+  ];
+  var thHtml = cols.map(function(c) {
+    var isAsc  = _ta.ntSk === c.key && _ta.ntSd ===  1;
+    var isDesc = _ta.ntSk === c.key && _ta.ntSd === -1;
+    return '<th class="' + (isAsc ? 'ta-th-asc' : isDesc ? 'ta-th-desc' : '') + '" onclick="taNtSrt(\'' + c.key + '\')">'
+      + esc(c.lbl) + '<span class="s-ic">' + (isAsc ? '&#9650;' : isDesc ? '&#9660;' : '&#9651;') + '</span></th>';
+  }).join('');
+
+  var trHtml = page.map(function(r) {
+    var catBg  = r._normCat === 'Plastic' ? 'rgba(255,159,10,.15)' : r._normCat === 'Metal' ? 'rgba(29,199,151,.12)' : 'rgba(99,99,102,.12)';
+    var catClr = r._normCat === 'Plastic' ? '#B25000' : r._normCat === 'Metal' ? '#0A7044' : '#636366';
+    var a = r.ageing;
+    var ageBadge = a === null ? '<span style="color:var(--txt3)">—</span>'
+      : a > 90  ? '<span class="ta-nt-age ta-nt-age-hot">'  + a + 'd</span>'
+      : a > 30  ? '<span class="ta-nt-age ta-nt-age-warn">' + a + 'd</span>'
+      :           '<span class="ta-nt-age ta-nt-age-ok">'   + a + 'd</span>';
+    var isSeller = r.audience === 'seller';
+    var audBg  = isSeller ? 'rgba(0,93,255,.08)' : 'rgba(52,199,89,.1)';
+    var audClr = isSeller ? '#005DFF' : '#1a7a38';
+    var stClr  = r.status === 'COMPLETED' ? '#0A7044' : '#636366';
+    var stBg   = r.status === 'COMPLETED' ? 'rgba(29,199,151,.12)' : 'rgba(99,99,102,.12)';
+    return '<tr>'
+      + '<td><strong>' + esc(r.name) + '</strong></td>'
+      + '<td style="font-family:monospace;font-size:11px;color:var(--txt3)">' + esc(r.id||'—') + '</td>'
+      + '<td><span class="ta-aud-badge" style="background:' + audBg + ';color:' + audClr + '">' + (isSeller ? 'Seller' : 'Buyer') + '</span></td>'
+      + '<td>' + esc(r.vendorType) + '</td>'
+      + '<td>' + (r._normCat !== 'Other' ? '<span class="ta-cat-badge" style="background:' + catBg + ';color:' + catClr + '">' + esc(r._normCat) + '</span>' : '—') + '</td>'
+      + '<td>' + esc(r.state) + '</td>'
+      + '<td style="color:var(--txt2)">' + esc(r.onbDate !== '—' ? r.onbDate : '—') + '</td>'
+      + '<td>' + ageBadge + '</td>'
+      + '<td><span class="ta-st-badge" style="background:' + stBg + ';color:' + stClr + '">' + esc(r.status) + '</span></td>'
+      + '</tr>';
+  }).join('');
+
+  if (!trHtml) trHtml = '<tr><td colspan="9" class="ta-no-data">No vendors found.</td></tr>';
+
+  return metricsHtml
+    + '<div class="ta-toolbar">'
+    + '<input class="ta-search" type="text" placeholder="Search name, ID, state, type…" value="' + esc(_ta.q) + '" oninput="taSetQ(this.value)">'
+    + '<span class="ta-count">' + total + ' vendor' + (total !== 1 ? 's' : '') + '</span></div>'
+    + '<div class="ta-vl-wrap"><table class="ta-nt-vl-tbl"><thead><tr>' + thHtml + '</tr></thead><tbody>' + trHtml + '</tbody></table></div>'
+    + '<div class="ta-pg"><span>Showing ' + (total ? start+1 : 0) + '–' + Math.min(start+pgSz,total) + ' of ' + total + '</span>'
+    + '<div class="ta-pg-btns">'
+    + '<button class="ta-pg-btn" onclick="taNtPg(-1)"' + (pg<=0   ? ' disabled' : '') + '>‹ Prev</button>'
+    + '<button class="ta-pg-btn" onclick="taNtPg(1)"'  + (pg>=maxPg ? ' disabled' : '') + '>Next ›</button>'
+    + '</div></div>';
 }
 
 // ═══════════════════════════════════════════════════════════════

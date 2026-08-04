@@ -418,6 +418,35 @@ function getTransactedVendors(filtersJson) {
   }
 }
 
+// Returns OMP COMPLETED vendors with zero transactions, including onbDate so the
+// frontend can compute ageing (today − onboarding completion date).
+function getNonTransactedVendors(filtersJson) {
+  try {
+    var f = filtersJson ? JSON.parse(filtersJson) : {};
+    var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cache = CacheService.getScriptCache();
+
+    function fetchNonTxn(aud) {
+      var cacheKey = 'vntxn_v1_' + aud + '_' + periodKey;
+      var hit = cache.get(cacheKey);
+      if (hit) { try { var d = JSON.parse(hit); if (Array.isArray(d)) return d; } catch (e) {} }
+      var cfg = AUDIENCE_CFG[aud];
+      var raw = readData(aud);
+      var all = normalizeRows(raw, cfg);
+      var rows = all.filter(function(r) {
+        return r.vertical === 'OMP' && r.status === 'COMPLETED' && !r.hasTransacted
+          && applyDateFilter(r, f);
+      }).map(vertRow);
+      try { cache.put(cacheKey, JSON.stringify(rows), CONFIG.CACHE_TTL); } catch (e) {}
+      return rows;
+    }
+
+    return JSON.stringify({ success: true, sellers: fetchNonTxn('seller'), buyers: fetchNonTxn('buyer') });
+  } catch (err) {
+    return JSON.stringify({ success: false, error: (err && err.message) ? err.message : String(err) });
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // DATA READ + NORMALIZATION
 // ─────────────────────────────────────────────────────────────
