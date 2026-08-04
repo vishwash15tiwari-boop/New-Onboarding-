@@ -2499,6 +2499,18 @@ body.view-gst #vert-tabs-bar{display:none}
 .rgn-co-gmv{font-size:12.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
 .rgn-co-txn{font-size:10.5px;color:var(--txt3);white-space:nowrap}
 .rgn-co-empty{padding:36px 18px;text-align:center;color:var(--txt3);font-size:13px}
+/* State drill-down centered modal */
+#state-modal{position:fixed;inset:0;z-index:1002;display:none;align-items:center;justify-content:center;padding:16px}
+#state-modal.stm-open{display:flex}
+.stm-bd{position:absolute;inset:0;background:rgba(0,0,0,.48);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.stm-pn{position:relative;z-index:1;width:min(680px,96vw);max-height:85vh;background:var(--card);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+.stm-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.stm-head-info{min-width:0;flex:1}
+.stm-title{font-size:16px;font-weight:700;color:var(--txt);letter-spacing:-.3px}
+.stm-sub{font-size:11.5px;color:var(--txt3);margin-top:2px}
+.stm-close{width:30px;height:30px;border-radius:8px;border:none;background:var(--bg2);color:var(--txt2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .12s}
+.stm-close:hover{background:var(--hover)}
+.stm-list{overflow-y:auto;flex:1;min-height:0}
 /* Company profile */
 .rgn-cp-sec{padding:12px 18px;border-bottom:1px solid var(--border)}
 .rgn-cp-sec:last-child{border-bottom:none}
@@ -3858,6 +3870,12 @@ button:active:not(:disabled),
 <div id="kpi-modal" role="dialog" aria-modal="true" aria-label="KPI details">
   <div class="km-bd" onclick="closeKpiModal()"></div>
   <div class="km-pn" id="km-pn"></div>
+</div>
+
+<!-- State Drill-down Modal -->
+<div id="state-modal" role="dialog" aria-modal="true" aria-label="State details">
+  <div class="stm-bd" onclick="closeStateModal()"></div>
+  <div class="stm-pn" id="stm-pn"></div>
 </div>
 
 <!-- Document Detail Modal — Open Marketplace document management -->
@@ -7056,6 +7074,214 @@ function _regionSetState(st) {
   _regionRender(false);
 }
 
+// ── State Drill-down Modal ──────────────────────────────────────────────────
+var _stM = {
+  stateName: '',
+  search: '',
+  filter: { cat: 'All', status: 'All', txn: 'All' },
+  sort: { key: 'gmv', dir: -1 }
+};
+
+function openStateModal(stateName) {
+  _stM.stateName = stateName;
+  _stM.search = '';
+  _stM.filter = { cat: 'All', status: 'All', txn: 'All' };
+  _stM.sort = { key: 'gmv', dir: -1 };
+  _stModalRender();
+  var m = document.getElementById('state-modal');
+  if (m && !m.classList.contains('stm-open')) {
+    m.classList.add('stm-open');
+    document.addEventListener('keydown', _stmEsc);
+  }
+}
+
+function closeStateModal() {
+  var m = document.getElementById('state-modal');
+  if (m) m.classList.remove('stm-open');
+  document.removeEventListener('keydown', _stmEsc);
+}
+
+function _stmEsc(e) { if (e.key === 'Escape') closeStateModal(); }
+
+function _stmStateRows() {
+  var aud = _rgn.aud, region = _rgn.region, sName = _stM.stateName;
+  return (_rgn.rows[aud] || []).filter(function(r) {
+    return _stateToRegionFE(r.state) === region && (r.state || '') === sName;
+  });
+}
+
+function _stmFilteredRows() {
+  var rows = _stmStateRows();
+  var q = (_stM.search || '').trim().toLowerCase();
+  var f = _stM.filter;
+  var STATUS_MAP = { 'Onboarded': 'COMPLETED', 'In Review': 'IN_REVIEW', 'Draft': 'DRAFT', 'Rejected': 'REJECTED' };
+  var filtered = rows.filter(function(r) {
+    if (q && (String(r.name || '').toLowerCase().indexOf(q) === -1 && String(r.id || '').toLowerCase().indexOf(q) === -1)) return false;
+    if (f.cat !== 'All' && String(r.category || '').toLowerCase() !== f.cat.toLowerCase()) return false;
+    if (f.status !== 'All' && r.status !== (STATUS_MAP[f.status] || f.status)) return false;
+    if (f.txn === 'Transacted' && !(r.txnValue != null && r.txnValue > 0)) return false;
+    if (f.txn === 'No Txn' && (r.txnValue != null && r.txnValue > 0)) return false;
+    return true;
+  });
+  var sk = _stM.sort.key, dir = _stM.sort.dir;
+  filtered.sort(function(a, b) {
+    if (sk === 'gmv')  return dir * ((Number(b.txnValue) || 0) - (Number(a.txnValue) || 0));
+    if (sk === 'txn')  return dir * ((Number(b.txnCount) || 0) - (Number(a.txnCount) || 0));
+    if (sk === 'name') return dir * String(a.name || '').localeCompare(String(b.name || ''));
+    if (sk === 'date') return dir * (new Date(b.onbDate || 0) - new Date(a.onbDate || 0));
+    return 0;
+  });
+  return filtered;
+}
+
+function _stmSetSearch(q) {
+  _stM.search = q;
+  var el = document.getElementById('stm-vlist');
+  if (el) el.innerHTML = _stmBuildCoList(_stmFilteredRows());
+}
+
+function _stmSetFilter(key, val) {
+  _stM.filter[key] = val;
+  var chips = document.getElementById('stm-fil-chips');
+  var vlist = document.getElementById('stm-vlist');
+  if (chips) chips.innerHTML = _stmFilChipsHtml();
+  if (vlist) vlist.innerHTML = _stmBuildCoList(_stmFilteredRows());
+}
+
+function _stmSetSort(key) {
+  if (_stM.sort.key === key) { _stM.sort.dir *= -1; }
+  else { _stM.sort.key = key; _stM.sort.dir = -1; }
+  var sortBar = document.getElementById('stm-sort-bar');
+  var vlist = document.getElementById('stm-vlist');
+  if (sortBar) sortBar.innerHTML = _stmSortBarHtml();
+  if (vlist) vlist.innerHTML = _stmBuildCoList(_stmFilteredRows());
+}
+
+function _stmFilChipsHtml() {
+  var stRows = _stmStateRows();
+  var hasMetal   = stRows.some(function(r) { return String(r.category || '').toLowerCase() === 'metal'; });
+  var hasPlastic = stRows.some(function(r) { return String(r.category || '').toLowerCase() === 'plastic'; });
+  var c = function(key, val) {
+    var on = _stM.filter[key] === val ? ' on' : '';
+    return '<button class="rgn-sd-chip' + on + '" onclick="_stmSetFilter(' + JSON.stringify(key) + ',' + JSON.stringify(val) + ')">' + esc(val) + '</button>';
+  };
+  return '<span class="rgn-sd-lbl">Cat:</span>'
+    + c('cat', 'All')
+    + (hasMetal   ? c('cat', 'Metal')   : '')
+    + (hasPlastic ? c('cat', 'Plastic') : '')
+    + '<div class="rgn-sd-divider"></div>'
+    + '<span class="rgn-sd-lbl">Status:</span>'
+    + c('status', 'All') + c('status', 'Onboarded') + c('status', 'In Review') + c('status', 'Draft')
+    + '<div class="rgn-sd-divider"></div>'
+    + '<span class="rgn-sd-lbl">Txn:</span>'
+    + c('txn', 'All') + c('txn', 'Transacted') + c('txn', 'No Txn');
+}
+
+function _stmSortBarHtml() {
+  var sk = _stM.sort.key, dir = _stM.sort.dir;
+  var arr = dir === -1 ? ' ↓' : ' ↑';
+  var s = function(key, lbl) {
+    var on = sk === key ? ' on' : '';
+    return '<button class="rgn-sd-chip' + on + '" onclick="_stmSetSort(' + JSON.stringify(key) + ')">'
+      + lbl + (sk === key ? arr : '') + '</button>';
+  };
+  return '<span class="rgn-sd-lbl">Sort:</span>'
+    + s('gmv', 'GMV') + s('txn', 'Txns') + s('name', 'Name') + s('date', 'Date');
+}
+
+window._stmCoRows = [];
+
+function _stmBuildCoList(rows) {
+  window._stmCoRows = rows;
+  var aud = _rgn.aud;
+  if (!rows.length) {
+    return '<div class="rgn-co-empty">No matching companies</div>';
+  }
+  var ST = {
+    'COMPLETED': { bg: 'var(--st-onboarded-bg)', tx: 'var(--st-onboarded-tx)', lbl: 'Onboarded' },
+    'IN_REVIEW': { bg: 'rgba(228,136,0,.12)',     tx: '#7A4F00',                lbl: 'In Review' },
+    'DRAFT':     { bg: 'var(--bg2)',               tx: 'var(--txt3)',            lbl: 'Draft'     },
+    'REJECTED':  { bg: 'var(--st-rejected-bg)',    tx: 'var(--st-rejected-tx)', lbl: 'Rejected'  }
+  };
+  return rows.map(function(r, i) {
+    var st = ST[r.status] || { bg: 'var(--bg2)', tx: 'var(--txt3)', lbl: r.status || '—' };
+    var catLo = String(r.category || '').toLowerCase();
+    var catBg = catLo === 'metal' ? 'rgba(29,199,151,.12)' : catLo === 'plastic' ? 'rgba(228,136,0,.12)' : 'var(--bg2)';
+    var catTx = catLo === 'metal' ? '#0A7044' : catLo === 'plastic' ? '#7A4F00' : 'var(--txt3)';
+    var gmvHtml = (aud === 'seller' && r.txnValue != null && r.txnValue > 0) ? '<div class="rgn-co-gmv">' + fmtINR(r.txnValue) + '</div>' : '';
+    var txnHtml = (r.txnCount != null && r.txnCount > 0) ? '<div class="rgn-co-txn">' + fmt(r.txnCount) + ' txns</div>' : '';
+    return '<div class="rgn-co-row" role="button" tabindex="0"'
+      + ' onclick="_stmToCompany(' + i + ')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_stmToCompany(' + i + ')}">'
+      + '<div class="rgn-co-main">'
+      +   '<div class="rgn-co-nm">' + esc(r.name || '—') + '</div>'
+      +   '<div class="rgn-co-sub">'
+      +     (r.id ? '<span>#' + esc(r.id) + '</span>' : '')
+      +     (r.category ? '<span class="rgn-co-cat" style="background:' + catBg + ';color:' + catTx + '">' + esc(r.category) + '</span>' : '')
+      +     (r.vendorType ? '<span style="color:var(--txt3);flex-shrink:0">' + esc(r.vendorType) + '</span>' : '')
+      +     '<span class="rgn-co-stbadge" style="background:' + st.bg + ';color:' + st.tx + '">' + st.lbl + '</span>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="rgn-co-side">' + gmvHtml + txnHtml + '</div>'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="width:13px;height:13px;flex-shrink:0;color:var(--txt3)"><path d="M9 18l6-6-6-6"/></svg>'
+      + '</div>';
+  }).join('');
+}
+
+function _stmToCompany(i) {
+  var r = window._stmCoRows[i];
+  if (!r) return;
+  closeStateModal();
+  _rgn.state = _stM.stateName;
+  _rgn.company = r;
+  _regionRender(false);
+}
+
+function _stModalRender() {
+  var pn = document.getElementById('stm-pn');
+  if (!pn) return;
+  var aud = _rgn.aud;
+  var audLbl = aud === 'seller' ? 'Sellers' : 'Buyers';
+  var cfg = getVertCfg().filter(function(c) { return c.key === _rgn.key; })[0];
+  var vname = (cfg && cfg.name) || _rgn.key || '';
+  var stRows = _stmStateRows();
+  var sm = { total: stRows.length, onb: 0, rev: 0, draft: 0, gmv: 0, txns: 0, hasGmv: false };
+  stRows.forEach(function(r) {
+    if (r.status === 'COMPLETED') sm.onb++;
+    else if (r.status === 'IN_REVIEW') sm.rev++;
+    else if (r.status === 'DRAFT') sm.draft++;
+    if (r.txnValue != null && r.txnValue > 0) { sm.gmv += Number(r.txnValue); sm.hasGmv = true; }
+    if (r.txnCount != null && r.txnCount > 0) sm.txns += Number(r.txnCount);
+  });
+  var tile = function(v, l) {
+    return '<div class="rgn-tile"><div class="rgn-tile-v">' + v + '</div><div class="rgn-tile-l">' + l + '</div></div>';
+  };
+  var tiles = '<div class="rgn-tiles" style="flex-shrink:0">'
+    + tile(fmt(sm.total), 'Total')
+    + tile(fmt(sm.onb), 'Onboarded')
+    + tile(fmt(sm.rev), 'In Review')
+    + tile(fmt(sm.draft), 'Draft')
+    + (aud === 'seller' && sm.hasGmv ? tile(fmtINR(sm.gmv), 'GMV') : '')
+    + (sm.txns > 0 ? tile(fmt(sm.txns), 'Transactions') : '')
+    + '</div>';
+  var toolbar = '<div class="rgn-sd-tb" style="flex-shrink:0">'
+    + '<div class="rgn-sd-srch">'
+    +   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>'
+    +   '<input id="stm-sinput" type="text" placeholder="Search by name or vendor ID…" oninput="_stmSetSearch(this.value)" onkeydown="event.stopPropagation()">'
+    + '</div>'
+    + '<div id="stm-fil-chips" class="rgn-sd-row">' + _stmFilChipsHtml() + '</div>'
+    + '<div id="stm-sort-bar" class="rgn-sd-row">' + _stmSortBarHtml() + '</div>'
+    + '</div>';
+  var head = '<div class="stm-head">'
+    + '<div class="stm-head-info">'
+    +   '<div class="stm-title">' + esc(_stM.stateName) + '</div>'
+    +   '<div class="stm-sub">' + esc(vname) + ' · ' + audLbl + ' · ' + fmt(stRows.length) + ' records</div>'
+    + '</div>'
+    + '<button class="stm-close" onclick="closeStateModal()" aria-label="Close">✕</button>'
+    + '</div>';
+  pn.innerHTML = head + tiles + toolbar + '<div id="stm-vlist" class="stm-list">' + _stmBuildCoList(_stmFilteredRows()) + '</div>';
+}
+
 // Render if rows for the active audience are available, else fetch them first.
 function _regionShow() {
   if (_rgn.rows[_rgn.aud] == null) { _regionFetch(_rgn.aud); return; }
@@ -7155,14 +7381,11 @@ function _regionRender(loading) {
 
   var allRegion = (_rgn.rows[aud] || []).filter(function(r) { return _stateToRegionFE(r.state) === region; });
 
-  // ── STATE DETAIL VIEW ─────────────────────────────────────────────
+  // ── STATE DETAIL VIEW → redirects to centered state modal ────────
   if (state) {
-    var stRows = allRegion.filter(function(r) { return (r.state || '') === state; });
-    el.innerHTML = head + audToggle + _buildStateDetail(stRows, aud);
+    _rgn.state = null;
+    openStateModal(state);
     if (!modal.classList.contains('km-open')) { modal.classList.add('km-open'); document.addEventListener('keydown', _kpiEsc); }
-    // Re-apply search value (innerHTML reset clears it)
-    var si = document.getElementById('rgn-st-sinput');
-    if (si && _rgn.stSearch) si.value = _rgn.stSearch;
     return;
   }
 
@@ -7252,8 +7475,8 @@ function _buildStateSection(regionRows, aud) {
   var rows = states.map(function(s) {
     var sj = JSON.stringify(s.name);
     return '<div class="rgn-state-row" role="button" tabindex="0"'
-      + ' onclick="_regionSetState(' + sj + ')"'
-      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_regionSetState(' + sj + ')}">'
+      + ' onclick="openStateModal(' + sj + ')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openStateModal(' + sj + ')}">'
       + '<span class="rgn-state-nm">' + esc(s.name) + '</span>'
       + '<span class="rgn-state-meta">'
       +   '<span class="rgn-state-chip">' + fmt(s.total) + ' total</span>'
