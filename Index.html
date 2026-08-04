@@ -3825,37 +3825,27 @@ button:active:not(:disabled),
 </style>
 
 <style id="omp-tree-css">
-/* ══ OMP ENTERPRISE PROCESS TREE ══════════════════════════════════════════
-   Root (Open Marketplace) → L2 (Draft · In Review · Rejected · Onboarded)
-   → L3 (7 children, branching from Onboarded only).
-   Nodes are neutral surfaces; colour is reserved for status semantics.
-   Connectors are drawn into #omp-tree-svg by _drawOMPConnectors().
+/* ══ OMP STORY CARDS ══════════════════════════════════════════════════════
+   The Open Marketplace journey told as a sequence of standalone cards:
+   Open Marketplace → Total Logged In Cases → the funnel (Draft · In Review ·
+   Rejected · Onboarded) → the seven post-onboarding cards.
+   No connectors — each card pops in on its own as the story reaches it.
+   Cards are neutral surfaces; colour is reserved for status semantics.
    ═══════════════════════════════════════════════════════════════════════ */
 .omp-tree{position:relative;width:100%;padding:4px 0 2px}
-#omp-tree-svg{
-  position:absolute;top:0;left:0;width:100%;height:100%;
-  pointer-events:none;z-index:0;overflow:visible;
-}
-.otc{fill:none;stroke:var(--border);stroke-width:1.25;stroke-linecap:round;
-     stroke-linejoin:round;
-     transition:stroke .18s ease,stroke-width .18s ease,
-                stroke-dashoffset .24s cubic-bezier(.4,0,.2,1)}
-.otc.otc-hot{stroke:var(--vc,#005DFF);stroke-width:2}
 
-.otr{position:relative;z-index:1;display:flex;justify-content:center;align-items:stretch}
-.otr-root{margin-bottom:58px}
-.otr-logged{margin-bottom:62px}
-.otr-l2{gap:14px;margin-bottom:62px}
+.otr{position:relative;display:flex;justify-content:center;align-items:stretch}
+.otr-root{margin-bottom:14px}
+.otr-logged{margin-bottom:22px}
+.otr-l2{gap:14px;margin-bottom:22px}
 .otr-l2 > .otn{flex:1 1 0;min-width:0}
-.ot-l3group{position:relative;z-index:1;padding-left:44px}
-.otr-l3{flex-wrap:wrap;justify-content:flex-start;
-        column-gap:14px;row-gap:58px;align-items:flex-start}
+.otr-l3{flex-wrap:wrap;justify-content:flex-start;gap:14px;align-items:flex-start}
 .otr-l3 > .otn{flex:0 1 calc(50% - 7px);min-width:0}
 
-/* ── Story reveal — each node fades and lifts into place in turn ──────── */
-.otn-rv{opacity:0;transform:translateY(18px);
-        transition:opacity .22s cubic-bezier(.4,0,.2,1),
-                   transform .22s cubic-bezier(.4,0,.2,1),
+/* ── Story reveal — each card pops into place on its own ──────────────── */
+.otn-rv{opacity:0;transform:scale(.94);
+        transition:opacity .2s ease-out,
+                   transform .22s cubic-bezier(.34,1.42,.64,1),
                    box-shadow .16s ease,border-color .16s ease}
 .otn-rv.is-in{opacity:1;transform:none}
 
@@ -3882,11 +3872,14 @@ button:active:not(:disabled),
   border-radius:0 0 2px 2px;background:var(--otn-ac,transparent);
   opacity:.9;
 }
-.otn-root{width:min(430px,100%);padding:19px 24px 20px;border-radius:20px}
-.otn-logged{width:min(470px,100%);padding:19px 24px 20px;border-radius:20px}
+.otn-root{width:100%;padding:17px 22px 18px}
+.otn-logged{width:100%;padding:18px 22px 19px}
 .otn-l2{padding:14px 16px 15px}
 .otn-l3{padding:15px 17px 16px;border-radius:18px}
-.otn-title{font-size:25px;font-weight:800;letter-spacing:-.02em;color:var(--txt);line-height:1.15}
+.otn-title{font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--txt);line-height:1.15}
+/* Root reads as a banner: name on the left, framing line beside it. */
+.otn-band{display:flex;align-items:baseline;column-gap:16px;row-gap:2px;flex-wrap:wrap}
+.otn-band .otn-sub{margin-top:0;flex:1 1 260px}
 /* The question this node answers — the thread that carries the story on. */
 .otn-q{font-size:11px;color:var(--txt2);margin:-3px 0 10px;line-height:1.4}
 
@@ -3976,23 +3969,20 @@ button:active:not(:disabled),
 
 /* ── Responsive ───────────────────────────────────────────────────────── */
 @media(max-width:820px){
-  .otr-l2{flex-wrap:wrap;justify-content:flex-start;row-gap:58px;padding-left:44px}
+  .otr-l2{flex-wrap:wrap;justify-content:flex-start}
   .otr-l2 > .otn{flex:0 1 calc(50% - 7px)}
 }
 @media(max-width:600px){
   .otr-l2 > .otn,.otr-l3 > .otn{flex:1 1 100%}
-  .otr-l2{gap:10px;padding-left:0}
-  .otr-l3{column-gap:10px;row-gap:10px}
-  .ot-l3group{padding-left:0}
-  .otr-root,.otr-logged,.otr-l2{margin-bottom:10px}
+  .otr-l2,.otr-l3{gap:10px}
+  .otr-root{margin-bottom:10px}
+  .otr-logged,.otr-l2{margin-bottom:16px}
   .otn-title{font-size:21px}
-  #omp-tree-svg{display:none}
 }
 /* Reduced motion: the story is told, not animated — everything is present. */
 @media(prefers-reduced-motion:reduce){
-  .otn,.otn-rv,.otc,.otn-bar-f,.otn-stack i,.otn-star-f{transition:none}
+  .otn,.otn-rv,.otn-bar-f,.otn-stack i,.otn-star-f{transition:none}
   .otn-rv{opacity:1;transform:none}
-  .otc{stroke-dashoffset:0 !important}
 }
 </style>
 </head>
@@ -5229,9 +5219,7 @@ function renderVertKPIs(key) {
     el.style.display = 'block';
     _ompResetStory();
     el.innerHTML = _buildOMPProcessTree(vs, vb);
-    _ompBindTreeHover();
     requestAnimationFrame(function() {
-      _drawOMPConnectors();
       _ompInitStory();
       _patchOMPTreeRows();
     });
@@ -7181,9 +7169,11 @@ function _buildOMPProcessTree(vs, vb) {
   function sub(s, b) { return '<div class="otn-sub"><b>' + fmt(s) + '</b> sellers · <b>' + fmt(b) + '</b> buyers</div>'; }
 
   // ── STEP 1 · ROOT — the entry point ─────────────────────────────────
-  var rootBody = '<div class="otn-title">Open Marketplace</div>'
+  var rootBody = '<div class="otn-band">'
+    + '<div class="otn-title">Open Marketplace</div>'
     + '<div class="otn-sub">The onboarding lifecycle, end to end — from the first '
-    + 'logged-in case through to post-onboarding performance.</div>';
+    + 'logged-in case through to post-onboarding performance.</div>'
+    + '</div>';
   var root = _ompNode({ id: 'otn-root', lvl: 'root', ac: OMP_AC.root,
     title: 'Vertical', body: rootBody });
 
@@ -7348,12 +7338,11 @@ function _buildOMPProcessTree(vs, vb) {
     title: 'OSV Status · Seller', q: 'What is their OSV verification status?',
     body: osvBody, onclick: "openKpiModal('osv')" });
 
-  var l3Group = '<div class="ot-l3group"><div class="otr otr-l3">'
+  var l3Group = '<div class="otr otr-l3">'
     + nVol + nTxn + nGmv + nRate + nGeo + nChurn + nOsv
-    + '</div></div>';
+    + '</div>';
 
   return '<div class="omp-tree" id="omp-tree" style="' + vcVars('OMP') + '">'
-    + '<svg id="omp-tree-svg" aria-hidden="true" preserveAspectRatio="none"></svg>'
     + '<div class="otr otr-root">' + root + '</div>'
     + '<div class="otr otr-logged">' + logged + '</div>'
     + l2Row
@@ -7366,135 +7355,10 @@ function _ompOpenChurn() {
   try { taOpenNt(); } catch (e) {}
 }
 
-// ── Connectors ────────────────────────────────────────────────────────
+// ── Card identity ─────────────────────────────────────────────────────
 var OMP_L2_IDS = ['otn-draft', 'otn-review', 'otn-rejected', 'otn-onboarded'];
 var OMP_L3_IDS = ['otn-vol', 'otn-txn', 'otn-gmv', 'otn-rating',
                   'otn-geo', 'otn-churn', 'otn-osv'];
-
-function _ompSgn(n) { return n > 0 ? 1 : n < 0 ? -1 : 0; }
-
-// Orthogonal polyline with rounded corners. pts = [[x,y], …], axis-aligned.
-// Returns the path data plus a length used to seed the draw-in animation —
-// the Manhattan sum, which slightly overshoots the rounded path so the dash
-// fully hides it at full offset.
-function _ompOrtho(pts, r) {
-  var d = 'M' + pts[0][0] + ' ' + pts[0][1], len = 0;
-  for (var i = 1; i < pts.length; i++) {
-    len += Math.abs(pts[i][0] - pts[i - 1][0]) + Math.abs(pts[i][1] - pts[i - 1][1]);
-  }
-  for (i = 1; i < pts.length - 1; i++) {
-    var p0 = pts[i - 1], p1 = pts[i], p2 = pts[i + 1];
-    var l1 = Math.abs(p1[0] - p0[0]) + Math.abs(p1[1] - p0[1]);
-    var l2 = Math.abs(p2[0] - p1[0]) + Math.abs(p2[1] - p1[1]);
-    var rr = Math.min(r, l1 / 2, l2 / 2);
-    if (rr < 0.5) { d += 'L' + p1[0] + ' ' + p1[1]; continue; }
-    var a = _ompSgn(p1[0] - p0[0]), b = _ompSgn(p1[1] - p0[1]);
-    var c = _ompSgn(p2[0] - p1[0]), e = _ompSgn(p2[1] - p1[1]);
-    d += 'L' + (p1[0] - a * rr) + ' ' + (p1[1] - b * rr)
-       + 'Q' + p1[0] + ' ' + p1[1] + ' ' + (p1[0] + c * rr) + ' ' + (p1[1] + e * rr);
-  }
-  var last = pts[pts.length - 1];
-  return { d: d + 'L' + last[0] + ' ' + last[1], len: Math.ceil(len) + 2 };
-}
-
-function _drawOMPConnectors() {
-  var wrap = document.getElementById('omp-tree');
-  var svg  = document.getElementById('omp-tree-svg');
-  if (!wrap || !svg) return;
-  var base = wrap.getBoundingClientRect();
-  var W = Math.round(base.width), H = Math.round(base.height);
-  if (!W || !H) return;
-  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-
-  function box(id) {
-    var e = document.getElementById(id);
-    if (!e) return null;
-    var r = e.getBoundingClientRect();
-    return { t: r.top - base.top, b: r.bottom - base.top, cx: r.left - base.left + r.width / 2 };
-  }
-  function kids(ids) {
-    return ids.map(function(id) { var b = box(id); return b ? { box: b, id: id } : null; })
-              .filter(Boolean);
-  }
-  var root = box('otn-root'), logged = box('otn-logged'), onb = box('otn-onboarded');
-  var l2 = kids(OMP_L2_IDS);
-  var l3 = kids(OMP_L3_IDS);
-  if (!root || !logged || !onb || !l2.length) { svg.innerHTML = ''; return; }
-
-  // Stacked (mobile) layout: rows share a column, so connectors read as noise.
-  if (l2.length > 1 && Math.abs(l2[0].box.cx - l2[1].box.cx) < 2) { svg.innerHTML = ''; return; }
-
-  var R = 10, out = [];
-  // toId drives hover highlighting; rvId drives the draw-in on story reveal.
-  function seg(pts, toId, rvId) {
-    var p = _ompOrtho(pts, R);
-    var rv = rvId || toId;
-    var shown = _ompRv.done[rv];
-    out.push('<path class="otc" data-to="' + toId + '" data-rv="' + rv + '" d="' + p.d
-      + '" stroke-dasharray="' + p.len + '" stroke-dashoffset="' + (shown ? 0 : p.len) + '"/>');
-  }
-  // Group children into the visual lines flex-wrap actually produced.
-  function visualLines(list) {
-    var g = [];
-    list.forEach(function(k) {
-      var line = null;
-      for (var i = 0; i < g.length; i++) if (Math.abs(g[i].t - k.box.t) < 6) { line = g[i]; break; }
-      if (!line) { line = { t: k.box.t, b: k.box.b, items: [] }; g.push(line); }
-      line.t = Math.min(line.t, k.box.t);
-      line.b = Math.max(line.b, k.box.b);
-      line.items.push(k);
-    });
-    return g.sort(function(a, b) { return a.t - b.t; });
-  }
-  function spineOf(sel, fallback) {
-    var e = wrap.querySelector(sel);
-    if (!e) return fallback;
-    var pad = parseFloat(getComputedStyle(e).paddingLeft) || 0;
-    if (pad < 8) return fallback;
-    return Math.round((e.getBoundingClientRect().left - base.left) + pad * 0.42);
-  }
-  // Fan a parent out to its children: one bus per wrapped line, chained down a
-  // left-hand spine when the children occupy more than one line.
-  function branch(p, list, spineX) {
-    var g = visualLines(list);
-    var bus = (p.b + g[0].t) / 2;
-    if (g.length === 1) {
-      g[0].items.forEach(function(k) {
-        seg([[p.cx, p.b], [p.cx, bus], [k.box.cx, bus], [k.box.cx, k.box.t]], k.id);
-      });
-      return;
-    }
-    // Each spine run draws in with the first card of the line it feeds.
-    seg([[p.cx, p.b], [p.cx, bus], [spineX, bus]], 'spine', g[0].items[0].id);
-    var prevBus = bus, prevBot = g[0].b;
-    g.forEach(function(line, i) {
-      var lb = bus;
-      if (i > 0) {
-        lb = (prevBot + line.t) / 2;
-        seg([[spineX, prevBus], [spineX, lb]], 'spine', line.items[0].id);
-        prevBus = lb;
-      }
-      line.items.forEach(function(k) {
-        seg([[spineX, lb], [k.box.cx, lb], [k.box.cx, k.box.t]], k.id);
-      });
-      prevBot = line.b;
-    });
-  }
-
-  // Open Marketplace → Total Logged In Cases → the funnel → post-onboarding.
-  seg([[root.cx, root.b], [root.cx, logged.t]], 'otn-logged');
-  branch(logged, l2, spineOf('.otr-l2', 14));
-  if (l3.length) branch(onb, l3, spineOf('.ot-l3group', 14));
-  svg.innerHTML = out.join('');
-}
-
-var _ompRedrawT = null;
-function _ompScheduleRedraw() {
-  if (!document.getElementById('omp-tree')) return;
-  clearTimeout(_ompRedrawT);
-  _ompRedrawT = setTimeout(_drawOMPConnectors, 120);
-}
-window.addEventListener('resize', _ompScheduleRedraw);
 
 // ── Story reveal ──────────────────────────────────────────────────────
 // The tree is told as a sequence, not shown as a grid: each node waits for
@@ -7552,33 +7416,6 @@ function _ompRevealStep(id) {
   if (!el) return;
   el.classList.add('is-in');
   animateCounters(el);
-  var svg = document.getElementById('omp-tree-svg');
-  if (!svg) return;
-  svg.querySelectorAll('path[data-rv="' + id + '"]').forEach(function(p) {
-    p.style.strokeDashoffset = '0';
-  });
-}
-
-function _ompBindTreeHover() {
-  var wrap = document.getElementById('omp-tree');
-  if (!wrap) return;
-  wrap.querySelectorAll('.otn').forEach(function(n) {
-    n.addEventListener('mouseenter', function() { _ompHot(n.id, true); });
-    n.addEventListener('mouseleave', function() { _ompHot(n.id, false); });
-    n.addEventListener('focus', function() { _ompHot(n.id, true); });
-    n.addEventListener('blur', function() { _ompHot(n.id, false); });
-  });
-}
-function _ompHot(id, on) {
-  var svg = document.getElementById('omp-tree-svg');
-  if (!svg) return;
-  var ids = [id];
-  if (OMP_L3_IDS.indexOf(id) >= 0) ids.push('spine');
-  ids.forEach(function(k) {
-    svg.querySelectorAll('path[data-to="' + k + '"]').forEach(function(p) {
-      p.classList.toggle('otc-hot', on);
-    });
-  });
 }
 
 // ── Async patches ─────────────────────────────────────────────────────
@@ -7632,7 +7469,6 @@ function _patchOMPTreeCards(qd) {
         }).join('')
       : '';
   }
-  _ompScheduleRedraw();
 }
 
 // Volume matrix, top states and churn buckets — derived from record rows.
@@ -7710,7 +7546,6 @@ function _patchOMPTreeRows() {
       + _ompCell('31–90d', fmt(b90), 'slowing', OMP_AC.review)
       + _ompCell('90d+', fmt(bOld), 'at risk', OMP_AC.churn);
   }
-  _ompScheduleRedraw();
 }
 
 function renderPipelinePair(key) {
