@@ -9619,12 +9619,15 @@ function _vtbVlBody() {
   var catFzSt  = catNames.length > 10 ? ' style=”font-size:13px;line-height:1.35;white-space:normal”' : '';
   var isOmpVtb = (typeof activeVertKey !== 'undefined' && activeVertKey === 'OMP');
   var ratSt    = avgRat !== null ? '' : ' style=”color:var(--txt3)”';
-  var statStrip = '<div class=”vtb-kpi-strip”>'
-    + '<div class=”vtb-kpi-card”><div class=”vtb-kpi-val”>' + fmt(allRows.length) + '</div><div class=”vtb-kpi-lbl”>Total Vendors</div></div>'
-    + '<div class=”vtb-kpi-card”><div class=”vtb-kpi-val” style=”font-size:14px”>' + esc(audLbl) + '</div><div class=”vtb-kpi-lbl”>Active Pipeline</div></div>'
-    + '<div class=”vtb-kpi-card”><div class=”vtb-kpi-val”' + catFzSt + '>' + esc(catNames) + '</div><div class=”vtb-kpi-lbl”>Material Category</div></div>'
-    + (isOmpVtb ? '<div class=”vtb-kpi-card”><div class=”vtb-kpi-val”' + ratSt + '>' + (avgRat !== null ? avgRat + ' / 10' : '—') + '</div><div class=”vtb-kpi-lbl”>Avg Vendor Rating</div></div>' : '')
-    + '<div class=”vtb-kpi-card”><div class=”vtb-kpi-val”>' + fmt(total) + '</div><div class=”vtb-kpi-lbl”>Vendors Displayed</div></div>'
+  var _kSt = 'display:flex;flex-direction:column;gap:4px;padding:10px 14px;background:#F5F5F7;border:1px solid rgba(0,0,0,.13);border-radius:10px;min-width:0;overflow:hidden';
+  var _vSt = 'font-size:18px;font-weight:700;color:#1D1D1F;font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+  var _lSt = 'font-size:10px;font-weight:600;color:#86868B;text-transform:uppercase;letter-spacing:.05em;margin-top:1px';
+  var statStrip = '<div class=”vtb-kpi-strip” style=”display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;width:100%;padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.09);box-sizing:border-box;flex-shrink:0”>'
+    + '<div class=”vtb-kpi-card” style=”' + _kSt + '”><div class=”vtb-kpi-val” style=”' + _vSt + '”>' + fmt(allRows.length) + '</div><div class=”vtb-kpi-lbl” style=”' + _lSt + '”>Total Vendors</div></div>'
+    + '<div class=”vtb-kpi-card” style=”' + _kSt + '”><div class=”vtb-kpi-val” style=”' + _vSt + ';font-size:14px”>' + esc(audLbl) + '</div><div class=”vtb-kpi-lbl” style=”' + _lSt + '”>Active Pipeline</div></div>'
+    + '<div class=”vtb-kpi-card” style=”' + _kSt + '”><div class=”vtb-kpi-val” style=”' + _vSt + (catNames.length > 10 ? ';font-size:13px;line-height:1.35;white-space:normal' : '') + '”>' + esc(catNames) + '</div><div class=”vtb-kpi-lbl” style=”' + _lSt + '”>Material Category</div></div>'
+    + (isOmpVtb ? '<div class=”vtb-kpi-card” style=”' + _kSt + '”><div class=”vtb-kpi-val” style=”' + _vSt + (avgRat === null ? ';color:#86868B' : '') + '”>' + (avgRat !== null ? avgRat + ' / 10' : '—') + '</div><div class=”vtb-kpi-lbl” style=”' + _lSt + '”>Avg Vendor Rating</div></div>' : '')
+    + '<div class=”vtb-kpi-card” style=”' + _kSt + '”><div class=”vtb-kpi-val” style=”' + _vSt + '”>' + fmt(total) + '</div><div class=”vtb-kpi-lbl” style=”' + _lSt + '”>Vendors Displayed</div></div>'
     + '</div>';
 
   var cols = [
