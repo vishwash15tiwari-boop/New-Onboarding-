@@ -3824,127 +3824,160 @@ button:active:not(:disabled),
 .vkpi-card.vk-transacted .vkpi-val { color: var(--blue) !important }
 </style>
 
-<style id="omp-hero-css">
-/* ══ OMP 8 HERO CARDS ═════════════════════════════════════════════════════ */
-.omp-hero-grid{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  grid-template-rows:auto auto auto;
-  gap:10px;
-  width:100%;
+<style id="omp-tree-css">
+/* ══ OMP ENTERPRISE PROCESS TREE ══════════════════════════════════════════
+   Root (Open Marketplace) → L2 (Draft · In Review · Rejected · Onboarded)
+   → L3 (7 children, branching from Onboarded only).
+   Nodes are neutral surfaces; colour is reserved for status semantics.
+   Connectors are drawn into #omp-tree-svg by _drawOMPConnectors().
+   ═══════════════════════════════════════════════════════════════════════ */
+.omp-tree{position:relative;width:100%;padding:4px 0 2px}
+#omp-tree-svg{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:0;overflow:visible;
 }
-/* Row 1: Funnel 2-col + Volume 2-col */
-.ohc-funnel{grid-column:span 2}
-.ohc-volume{grid-column:span 2}
-/* Row 3: Geo 2-col + OSV 2-col */
-.ohc-geo  {grid-column:span 2}
-.ohc-osv  {grid-column:span 2}
+.otc{fill:none;stroke:var(--border);stroke-width:1.25;stroke-linecap:round;
+     stroke-linejoin:round;transition:stroke .18s ease,stroke-width .18s ease}
+.otc.otc-hot{stroke:var(--vc,#005DFF);stroke-width:2}
 
-.ohc{
+.otr{position:relative;z-index:1;display:flex;justify-content:center;align-items:stretch}
+.otr-root{margin-bottom:58px}
+.otr-l2{gap:14px;margin-bottom:62px}
+.otr-l2 > .otn{flex:1 1 0;min-width:0}
+.ot-l3group{position:relative;z-index:1;padding-left:44px;display:flex;flex-direction:column;gap:58px}
+.otr-l3{gap:14px;align-items:flex-start}
+.otr-l3 > .otn{flex:1 1 0;min-width:0}
+
+/* ── Node shell ───────────────────────────────────────────────────────── */
+.otn{
+  position:relative;
   background:var(--card);
   border:1px solid var(--border);
-  border-radius:14px;
-  padding:16px 18px;
+  border-radius:18px;
+  padding:15px 17px 16px;
   box-shadow:var(--shadow-sm);
-  overflow:hidden;
-  position:relative;
-  display:flex;
-  flex-direction:column;
-  gap:0;
+  display:flex;flex-direction:column;
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
 }
-.ohc-badge{
-  display:inline-flex;align-items:center;gap:5px;
-  font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
-  color:var(--txt3);margin-bottom:10px;
+.otn-click{cursor:pointer}
+.otn-click:hover,.otn-click:focus-visible{
+  transform:translateY(-2px);
+  box-shadow:0 6px 20px rgba(0,0,0,.09);
+  border-color:var(--vc,#005DFF);
+  outline:none;
 }
-.ohc-badge-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.ohc-big{
-  font-size:30px;font-weight:800;letter-spacing:-1.2px;
-  color:var(--txt);font-variant-numeric:tabular-nums;line-height:1;
-  margin-bottom:3px;
+.otn::before{
+  content:'';position:absolute;left:17px;right:17px;top:0;height:2px;
+  border-radius:0 0 2px 2px;background:var(--otn-ac,transparent);
+  opacity:.9;
 }
-.ohc-sub{font-size:11px;color:var(--txt3);line-height:1.4}
-.ohc-divider{height:1px;background:var(--border);margin:12px 0;flex-shrink:0}
+.otn-root{width:min(420px,100%);padding:19px 24px 20px;border-radius:20px}
+.otn-l2{padding:14px 16px 15px}
+.otn-l3{padding:14px 15px 15px;border-radius:18px}
 
-/* ── Funnel ── */
-.ohc-funnel-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
-.ohc-funnel-lbl{font-size:10px;font-weight:600;color:var(--txt2);width:76px;flex-shrink:0}
-.ohc-funnel-track{flex:1;height:20px;background:var(--bg2);border-radius:5px;overflow:hidden;position:relative}
-.ohc-funnel-fill{height:100%;border-radius:5px;transition:width .5s cubic-bezier(.4,0,.2,1)}
-.ohc-funnel-count{font-size:11px;font-weight:700;color:var(--txt);width:44px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
-.ohc-funnel-pct{font-size:9px;font-weight:600;color:var(--txt3);width:28px;text-align:right;flex-shrink:0}
-.ohc-funnel-sb{display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
-.ohc-funnel-sb-item{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--txt2)}
-.ohc-funnel-sb-dot{width:8px;height:8px;border-radius:50%}
+/* ── Node header ──────────────────────────────────────────────────────── */
+.otn-hd{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.otn-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;
+         background:var(--otn-ac,var(--txt3))}
+.otn-ttl{font-size:9.5px;font-weight:700;letter-spacing:.075em;
+         text-transform:uppercase;color:var(--txt3);white-space:nowrap;
+         overflow:hidden;text-overflow:ellipsis}
+.otn-chip{margin-left:auto;font-size:9px;font-weight:700;line-height:1;
+          padding:3px 6px;border-radius:5px;background:var(--chip-bg,var(--bg2));
+          color:var(--otn-ac,var(--txt2));white-space:nowrap}
 
-/* ── Volume metrics ── */
-.ohc-vol-splits{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
-.ohc-vol-cell{border:1px solid var(--border);border-radius:9px;padding:7px 9px}
-.ohc-vol-cell-lbl{font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:3px}
-.ohc-vol-cell-val{font-size:17px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
-.ohc-vol-cell-sub{font-size:9px;color:var(--txt3);margin-top:1px}
-.ohc-vol-matrix{width:100%;border-collapse:separate;border-spacing:0;font-size:10px}
-.ohc-vol-matrix th{
-  font-size:8.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--txt3);padding:5px 6px 4px;border-bottom:1px solid var(--border);
-  text-align:left;white-space:nowrap;
+/* ── Numbers ──────────────────────────────────────────────────────────── */
+.otn-big{font-size:34px;font-weight:800;line-height:1;letter-spacing:-.025em;
+         color:var(--txt);font-variant-numeric:tabular-nums}
+.otn-l2 .otn-big{font-size:26px}
+.otn-l3 .otn-big{font-size:23px}
+.otn-big.ac{color:var(--otn-ac)}
+.otn-sub{font-size:10.5px;color:var(--txt3);margin-top:5px;line-height:1.45}
+.otn-sub b{color:var(--txt2);font-weight:700}
+.otn-sep{height:1px;background:var(--border);margin:12px 0 11px;opacity:.75}
+
+/* ── Split bar (root) ─────────────────────────────────────────────────── */
+.otn-splitbar{display:flex;height:6px;border-radius:3px;overflow:hidden;
+              background:var(--bg2);margin-top:13px;gap:2px}
+.otn-splitbar i{display:block;height:100%;border-radius:2px}
+.otn-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:9px}
+.otn-legend-i{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--txt3)}
+.otn-legend-i b{color:var(--txt2);font-weight:700}
+.otn-legend-d{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+
+/* ── Stat grid (2×N mini cells) ───────────────────────────────────────── */
+.otn-cells{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.otn-cells-3{grid-template-columns:repeat(3,1fr)}
+.otn-cell{background:var(--bg2);border-radius:9px;padding:8px 9px;min-width:0}
+.otn-cell-l{font-size:8.5px;font-weight:700;letter-spacing:.05em;
+            text-transform:uppercase;color:var(--txt3);
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.otn-cell-v{font-size:16px;font-weight:800;color:var(--txt);margin-top:3px;
+            line-height:1.1;font-variant-numeric:tabular-nums}
+.otn-cell-s{font-size:8.5px;color:var(--txt3);margin-top:2px;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── Labelled bar rows (geo / GMV / rating) ───────────────────────────── */
+.otn-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.otn-bar:last-child{margin-bottom:0}
+.otn-bar-l{flex:0 0 62px;font-size:10px;color:var(--txt2);
+           white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.otn-bar-t{flex:1;height:6px;border-radius:3px;background:var(--bg2);overflow:hidden}
+.otn-bar-f{height:100%;border-radius:3px;background:var(--otn-ac,#005DFF);
+           opacity:.85;transition:width .35s cubic-bezier(.4,0,.2,1)}
+.otn-bar-v{flex:0 0 auto;font-size:10px;font-weight:700;color:var(--txt2);
+           font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
+
+/* ── Matrix table (volume) ────────────────────────────────────────────── */
+.otn-tbl{width:100%;border-collapse:collapse;font-size:10px;margin-top:2px}
+.otn-tbl th{font-size:8.5px;font-weight:700;letter-spacing:.04em;
+            text-transform:uppercase;color:var(--txt3);text-align:right;
+            padding:0 0 5px;border-bottom:1px solid var(--border)}
+.otn-tbl th:first-child,.otn-tbl td:first-child{text-align:left}
+.otn-tbl td{padding:5px 0;text-align:right;color:var(--txt2);font-weight:600;
+            font-variant-numeric:tabular-nums;
+            border-bottom:1px solid color-mix(in srgb,var(--border) 55%,transparent)}
+.otn-tbl tr:last-child td{border-bottom:0}
+.otn-tbl td:first-child{color:var(--txt3);font-weight:600}
+
+/* ── Stacked progress (OSV) ───────────────────────────────────────────── */
+.otn-stack{display:flex;height:8px;border-radius:4px;overflow:hidden;
+           background:var(--bg2);margin-top:11px;gap:2px}
+.otn-stack i{display:block;height:100%;border-radius:2px;
+             transition:width .35s cubic-bezier(.4,0,.2,1)}
+
+/* ── Rating stars ─────────────────────────────────────────────────────── */
+.otn-star{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.otn-star:last-child{margin-bottom:0}
+.otn-star-l{flex:0 0 20px;font-size:9.5px;color:var(--txt3);
+            font-variant-numeric:tabular-nums}
+.otn-star-t{flex:1;height:5px;border-radius:3px;background:var(--bg2);overflow:hidden}
+.otn-star-f{height:100%;border-radius:3px;background:#E48800;opacity:.85;
+            transition:width .35s cubic-bezier(.4,0,.2,1)}
+.otn-star-c{flex:0 0 26px;text-align:right;font-size:9.5px;font-weight:700;
+            color:var(--txt2);font-variant-numeric:tabular-nums}
+
+.otn-empty{font-size:10px;color:var(--txt3);padding:6px 0}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media(max-width:1180px){
+  .otr-l3{flex-wrap:wrap;justify-content:flex-start;row-gap:58px}
+  .otr-l3 > .otn{flex:0 1 calc(50% - 7px)}
 }
-.ohc-vol-matrix td{
-  padding:5px 6px;color:var(--txt);font-weight:500;
-  border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums;
+@media(max-width:820px){
+  .otr-l2{flex-wrap:wrap;justify-content:flex-start;row-gap:58px;padding-left:44px}
+  .otr-l2 > .otn{flex:0 1 calc(50% - 7px)}
 }
-.ohc-vol-matrix tr:last-child td{border-bottom:none}
-.ohc-vol-matrix .r{text-align:right;font-weight:700}
-.ohc-vol-matrix .r-s{text-align:right;font-weight:700;color:#1DC797}
-.ohc-vol-matrix .r-b{text-align:right;font-weight:700;color:#005DFF}
-.ohc-vol-matrix .fy-tag{font-size:8.5px;color:var(--txt3);font-weight:500}
-
-/* ── Transacted & GMV ── */
-.ohc-mat-pair{display:flex;gap:6px;margin-top:10px}
-.ohc-mat-cell{flex:1;border-radius:9px;padding:8px 10px;text-align:center}
-.ohc-mat-cell-lbl{font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px}
-.ohc-mat-cell-val{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
-.ohc-mat-cell-sub{font-size:9px;color:var(--txt3);margin-top:2px}
-
-/* ── Vendor Rating ── */
-.ohc-rating-big{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1}
-.ohc-star-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
-.ohc-star-lbl{font-size:9px;font-weight:600;color:var(--txt2);width:22px;text-align:right;flex-shrink:0}
-.ohc-star-track{flex:1;height:9px;background:var(--bg2);border-radius:4px;overflow:hidden}
-.ohc-star-fill{height:100%;border-radius:4px;background:#E48800}
-.ohc-star-count{font-size:9px;font-weight:600;color:var(--txt3);width:28px;text-align:right;flex-shrink:0}
-
-/* ── Geo Split ── */
-.ohc-geo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
-.ohc-geo-bar-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
-.ohc-geo-bar-lbl{font-size:10px;font-weight:600;color:var(--txt2);width:64px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ohc-geo-bar-track{flex:1;height:16px;background:var(--bg2);border-radius:4px;overflow:hidden}
-.ohc-geo-bar-fill{height:100%;border-radius:4px}
-.ohc-geo-bar-val{font-size:10px;font-weight:700;color:var(--txt);width:32px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
-
-/* ── Churn/Inactivity ── */
-.ohc-churn-pills{display:flex;gap:7px;margin-top:10px}
-.ohc-churn-pill{flex:1;border-radius:10px;padding:10px;text-align:center}
-.ohc-churn-pill-val{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
-.ohc-churn-pill-lbl{font-size:8.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
-
-/* ── OSV ── */
-.ohc-osv-stages{display:flex;gap:7px;margin-top:10px}
-.ohc-osv-stage{flex:1;border-radius:10px;padding:10px;text-align:center}
-.ohc-osv-stage-val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
-.ohc-osv-stage-lbl{font-size:8.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
-.ohc-osv-bar-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:12px}
-.ohc-osv-bar-fill{height:100%;border-radius:3px;background:#30D158;transition:width .5s cubic-bezier(.4,0,.2,1)}
-
-/* Responsive */
-@media(max-width:1100px){
-  .omp-hero-grid{grid-template-columns:repeat(2,1fr)}
-  .ohc-funnel,.ohc-volume,.ohc-geo,.ohc-osv{grid-column:span 2}
+@media(max-width:600px){
+  .otr-l2 > .otn,.otr-l3 > .otn{flex:1 1 100%}
+  .otr-l2,.otr-l3{gap:10px}
+  .ot-l3group{padding-left:0;gap:10px}
+  .otr-root{margin-bottom:10px}
+  .otr-l2{margin-bottom:10px}
+  #omp-tree-svg{display:none}
 }
-@media(max-width:640px){
-  .omp-hero-grid{grid-template-columns:1fr}
-  .ohc-funnel,.ohc-volume,.ohc-geo,.ohc-osv{grid-column:span 1}
-  .ohc-vol-splits{grid-template-columns:repeat(2,1fr)}
+@media(prefers-reduced-motion:reduce){
+  .otn,.otc,.otn-bar-f,.otn-stack i,.otn-star-f{transition:none}
 }
 </style>
 </head>
@@ -5179,8 +5212,10 @@ function renderVertKPIs(key) {
     el.style.gridTemplateColumns = '1fr';
     el.classList.remove('vkpi-grid-4');
     el.style.display = 'block';
-    el.innerHTML = _buildOMPHeroGrid(vs, vb);
+    el.innerHTML = _buildOMPProcessTree(vs, vb);
     animateCounters(el);
+    _ompBindTreeHover();
+    requestAnimationFrame(function() { _drawOMPConnectors(); _patchOMPTreeRows(); });
     loadQualityData();
     return;
   }
@@ -6604,10 +6639,8 @@ function _patchQualityKpiCards() {
   var bqEl = document.getElementById('biz-qual');
   if (bqEl) bqEl.outerHTML = _buildRailQual(qc, true); // always OMP when quality data is loaded
 
-  // Patch OMP hero cards 5 (Rating) and 8 (OSV) if visible
-  if (document.getElementById('omp-hc-rating') || document.getElementById('omp-hc-osv')) {
-    _patchOMPHeroCards(qd);
-  }
+  // Patch the OMP process-tree Rating / OSV nodes if the tree is on screen
+  if (document.getElementById('omp-tree')) _patchOMPTreeCards(qd);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -7042,265 +7075,533 @@ function _buildSellerQualStrip(qc) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// OMP 8-CARD HERO GRID
+// OMP ENTERPRISE PROCESS TREE
+// Root (Open Marketplace) → L2 (Draft · In Review · Rejected · Onboarded)
+// → L3 (7 children of Onboarded). Connectors are SVG, drawn after layout.
 // ═══════════════════════════════════════════════════════════════
-function _buildOMPHeroGrid(vs, vb) {
+var OMP_AC = {
+  root: '#005DFF', draft: '#8E8E93', review: '#E48800', reject: '#FF3B30',
+  onb: '#049769', vol: '#8460D4', txn: '#049769', gmv: '#E48800',
+  rate: '#E48800', geo: '#32ADE6', churn: '#FF3B30', osv: '#005DFF',
+};
+
+// Rows for an audience: the live set when it is the open one, else the
+// period-matched localStorage snapshot the vertical loader wrote.
+function _ompRowsFor(aud) {
+  if ((selectedAud || 'seller') === aud && Array.isArray(vertRows) && vertRows.length) return vertRows;
+  try {
+    var pKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+    var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_OMP') || 'null');
+    if (sv && sv.pKey === pKey && Array.isArray(sv.rows) && sv.rows.length) return sv.rows;
+  } catch (e) {}
+  return null;
+}
+
+function _ompParseDMY(s) {
+  if (!s || s === '—') return null;
+  var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(s));
+  if (!m) return null;
+  var d = new Date(+m[3], +m[2] - 1, +m[1]);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function _ompNode(o) {
+  var clickable = !!o.onclick;
+  return '<div class="otn otn-' + o.lvl + (clickable ? ' otn-click' : '')
+    + '" id="' + o.id + '" style="--otn-ac:' + o.ac + '"'
+    + (clickable ? ' tabindex="0" role="button"'
+        + ' onclick="' + o.onclick + '"'
+        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + o.onclick + '}"' : '')
+    + '>'
+    + '<div class="otn-hd"><span class="otn-dot"></span>'
+    + '<span class="otn-ttl">' + o.title + '</span>'
+    + (o.chip ? '<span class="otn-chip">' + o.chip + '</span>' : '')
+    + '</div>'
+    + o.body
+    + '</div>';
+}
+
+function _ompBar(label, value, max, color, display) {
+  var w = max > 0 ? Math.max(2, Math.round(value / max * 100)) : 0;
+  return '<div class="otn-bar">'
+    + '<div class="otn-bar-l" title="' + esc(label) + '">' + esc(label) + '</div>'
+    + '<div class="otn-bar-t"><div class="otn-bar-f" style="width:' + w + '%'
+    + (color ? ';background:' + color : '') + '"></div></div>'
+    + '<div class="otn-bar-v">' + (display != null ? display : fmt(value)) + '</div>'
+    + '</div>';
+}
+
+function _ompCell(label, value, sub, color) {
+  return '<div class="otn-cell">'
+    + '<div class="otn-cell-l"' + (color ? ' style="color:' + color + '"' : '') + '>' + label + '</div>'
+    + '<div class="otn-cell-v"' + (color ? ' style="color:' + color + '"' : '') + '>' + value + '</div>'
+    + (sub ? '<div class="otn-cell-s">' + sub + '</div>' : '')
+    + '</div>';
+}
+
+function _buildOMPProcessTree(vs, vb) {
   var totalS = vs.total || 0,      totalB = vb.total || 0;
   var compS  = vs.completed || 0,  compB  = vb.completed || 0;
   var draftS = vs.draft || 0,      draftB = vb.draft || 0;
   var revS   = vs.inReview || 0,   revB   = vb.inReview || 0;
   var rejS   = vs.rejected || 0,   rejB   = vb.rejected || 0;
-  var txnS   = vs.transacted || 0;
-  var pTxn   = vs.plasticTransacted || 0;
-  var mTxn   = vs.metalTransacted   || 0;
-  var txnVal = vs.totalTxnValue != null ? vs.totalTxnValue : null;
-  var oldS   = vs.oldVendors || 0, oldB = vb.oldVendors || 0;
-  var newS   = vs.newVendors || 0, newB = vb.newVendors || 0;
-  var aging  = vs.aging  || 0;
-  var overdue= vs.overdue|| 0;
-  var txnPct = compS > 0 ? Math.round(txnS / compS * 100) : 0;
-  var regions= vs.regions || [];
-
-  function badge(dot, label) {
-    return '<div class="ohc-badge">'
-      + '<div class="ohc-badge-dot" style="background:' + dot + '"></div>'
-      + label + '</div>';
-  }
-
-  // ── Card 1: Onboarding Funnel ─────────────────────────────────
   var totAll = totalS + totalB;
-  var stages = [
-    { lbl:'Total Cases', n: totalS + totalB,   col:'#005DFF' },
-    { lbl:'Draft',       n: draftS + draftB,   col:'#8E8E93' },
-    { lbl:'In Review',   n: revS   + revB,     col:'#E48800' },
-    { lbl:'Rejected',    n: rejS   + rejB,     col:'#FF3B30' },
-    { lbl:'Onboarded',   n: compS  + compB,    col:'#30D158' },
+  var draftT = draftS + draftB, revT = revS + revB, rejT = rejS + rejB, onbT = compS + compB;
+
+  var txnS   = vs.transacted || 0;
+  var txnCnt = vs.totalTxnCount;
+  var txnVal = vs.totalTxnValue;
+  var pTxn   = vs.plasticTransacted || 0;
+  var mTxn   = vs.metalTransacted || 0;
+  var txnPct = compS > 0 ? Math.round(txnS / compS * 100) : 0;
+  var regions   = vs.regions || [];
+  var categories= vs.categories || [];
+
+  function shr(n) { return totAll > 0 ? Math.round(n / totAll * 100) + '%' : '—'; }
+  function sub(s, b) { return '<div class="otn-sub"><b>' + fmt(s) + '</b> sellers · <b>' + fmt(b) + '</b> buyers</div>'; }
+
+  // ── ROOT ────────────────────────────────────────────────────────────
+  var segs = [
+    { n: draftT, c: OMP_AC.draft,  l: 'Draft' },
+    { n: revT,   c: OMP_AC.review, l: 'In Review' },
+    { n: rejT,   c: OMP_AC.reject, l: 'Rejected' },
+    { n: onbT,   c: OMP_AC.onb,    l: 'Onboarded' },
   ];
-  var maxFn = totAll || 1;
-  var funnelRows = stages.map(function(s) {
-    var pctOfTotal = totAll > 0 ? Math.round(s.n / totAll * 100) : 0;
-    var barW = Math.round(s.n / maxFn * 100);
-    return '<div class="ohc-funnel-row">'
-      + '<div class="ohc-funnel-lbl">' + s.lbl + '</div>'
-      + '<div class="ohc-funnel-track">'
-      + '<div class="ohc-funnel-fill" style="width:' + barW + '%;background:' + s.col + '"></div>'
-      + '</div>'
-      + '<div class="ohc-funnel-count">' + fmt(s.n) + '</div>'
-      + '<div class="ohc-funnel-pct">' + pctOfTotal + '%</div>'
-      + '</div>';
-  }).join('');
-  var c1 = '<div class="ohc ohc-funnel">'
-    + badge('#005DFF', 'Onboarding Funnel')
-    + funnelRows
-    + '<div class="ohc-funnel-sb">'
-    + '<div class="ohc-funnel-sb-item"><div class="ohc-funnel-sb-dot" style="background:#1DC797"></div><b>' + fmt(compS) + '</b>&nbsp;Sellers Onboarded</div>'
-    + '<div class="ohc-funnel-sb-item"><div class="ohc-funnel-sb-dot" style="background:#005DFF"></div><b>' + fmt(compB) + '</b>&nbsp;Buyers Onboarded</div>'
+  var segSum = segs.reduce(function(a, s) { return a + s.n; }, 0) || 1;
+  var rootBody = '<div class="otn-big" data-count="' + totAll + '">' + fmt(totAll) + '</div>'
+    + '<div class="otn-sub">Total logged-in cases · <b>' + fmt(totalS) + '</b> sellers · <b>' + fmt(totalB) + '</b> buyers</div>'
+    + '<div class="otn-splitbar">'
+    + segs.map(function(s) {
+        return s.n > 0 ? '<i style="flex:' + s.n + ';background:' + s.c + '"></i>' : '';
+      }).join('')
     + '</div>'
+    + '<div class="otn-legend">'
+    + segs.map(function(s) {
+        return '<span class="otn-legend-i"><span class="otn-legend-d" style="background:' + s.c + '"></span>'
+          + s.l + ' <b>' + Math.round(s.n / segSum * 100) + '%</b></span>';
+      }).join('')
     + '</div>';
+  var root = _ompNode({ id: 'otn-root', lvl: 'root', ac: OMP_AC.root,
+    title: 'Open Marketplace', body: rootBody,
+    onclick: "openKpiModal('total')" });
 
-  // ── Card 2: Volume Metrics ────────────────────────────────────
-  var existing = oldS + oldB, newVnd = newS + newB;
-  var activeSellers = txnS, dormant = Math.max(0, compS - txnS);
-  var fysSell = (vs.fyBreakdown || []).slice(0, 5).reverse();
-  var fysBuy  = (vb.fyBreakdown || []).slice(0, 5).reverse();
-  var fyBuyMap = {};
-  fysBuy.forEach(function(f) { fyBuyMap[f.fy] = f; });
-  var matRows = fysSell.map(function(f) {
-    var bf = fyBuyMap[f.fy] || {};
-    return '<tr>'
-      + '<td>' + (f.fy || '—') + '</td>'
-      + '<td class="r-s">' + fmt(f.total || 0) + '</td>'
-      + '<td class="r-b">' + fmt(bf.total || 0) + '</td>'
-      + '<td class="r" style="color:#30D158">' + fmt(f.onboarded || 0) + '</td>'
-      + '<td class="r" style="color:#005DFF">' + fmt(bf.onboarded || 0) + '</td>'
-      + '</tr>';
-  }).join('');
-  var c2 = '<div class="ohc ohc-volume">'
-    + badge('#8460D4', 'Volume Metrics')
-    + '<div class="ohc-vol-splits">'
-    + '<div class="ohc-vol-cell"><div class="ohc-vol-cell-lbl">Existing</div><div class="ohc-vol-cell-val" style="color:var(--txt)">' + fmt(existing) + '</div><div class="ohc-vol-cell-sub">' + fmt(oldS) + ' S · ' + fmt(oldB) + ' B</div></div>'
-    + '<div class="ohc-vol-cell"><div class="ohc-vol-cell-lbl" style="color:#1DC797">New</div><div class="ohc-vol-cell-val" style="color:#1DC797">' + fmt(newVnd) + '</div><div class="ohc-vol-cell-sub">' + fmt(newS) + ' S · ' + fmt(newB) + ' B</div></div>'
-    + '<div class="ohc-vol-cell"><div class="ohc-vol-cell-lbl" style="color:#30D158">Active</div><div class="ohc-vol-cell-val" style="color:#30D158">' + fmt(activeSellers) + '</div><div class="ohc-vol-cell-sub">Transacted</div></div>'
-    + '<div class="ohc-vol-cell"><div class="ohc-vol-cell-lbl" style="color:#8E8E93">Dormant</div><div class="ohc-vol-cell-val" style="color:#8E8E93">' + fmt(dormant) + '</div><div class="ohc-vol-cell-sub">Not transacted</div></div>'
-    + '</div>'
-    + '<table class="ohc-vol-matrix"><thead><tr>'
-    + '<th>FY</th><th style="color:#1DC797">New S</th><th style="color:#005DFF">New B</th><th style="color:#30D158">Onb S</th><th style="color:#005DFF">Onb B</th>'
-    + '</tr></thead><tbody>' + (matRows || '<tr><td colspan="5" style="color:var(--txt3);text-align:center">No FY data</td></tr>') + '</tbody></table>'
-    + '</div>';
-
-  // ── Card 3: Transacted (Seller) ───────────────────────────────
-  var c3 = '<div class="ohc">'
-    + badge('#30D158', 'Transacted · Seller')
-    + '<div class="ohc-big" style="color:#30D158">' + fmt(txnS) + '</div>'
-    + '<div class="ohc-sub">' + txnPct + '% of onboarded sellers have transacted</div>'
-    + '<div class="ohc-divider"></div>'
-    + '<div class="ohc-mat-pair">'
-    + '<div class="ohc-mat-cell" style="background:rgba(255,159,10,.1)">'
-    + '<div class="ohc-mat-cell-lbl" style="color:#E48800">Plastic</div>'
-    + '<div class="ohc-mat-cell-val" style="color:#E48800">' + fmt(pTxn) + '</div>'
-    + '<div class="ohc-mat-cell-sub">vendors</div>'
-    + '</div>'
-    + '<div class="ohc-mat-cell" style="background:rgba(142,142,147,.1)">'
-    + '<div class="ohc-mat-cell-lbl" style="color:#636366">Metal</div>'
-    + '<div class="ohc-mat-cell-val" style="color:var(--txt2)">' + fmt(mTxn) + '</div>'
-    + '<div class="ohc-mat-cell-sub">vendors</div>'
-    + '</div>'
-    + '</div>'
-    + (txnVal != null ? '<div style="margin-top:10px;font-size:10px;color:var(--txt3)">Total GMV&nbsp;<b style="font-size:13px;color:var(--txt)">' + fmtINR(txnVal) + '</b></div>' : '')
-    + '</div>';
-
-  // ── Card 4: Total GMV (Category wise) ────────────────────────
-  var gmvFySpark = '';
-  var fyG = (vs.fyBreakdown || []).filter(function(f) { return f.totalTxnValue != null; }).slice(0,5).reverse();
-  if (fyG.length > 1) {
-    var maxGmv = Math.max.apply(null, fyG.map(function(f){ return f.totalTxnValue || 0; })) || 1;
-    gmvFySpark = '<div style="display:flex;align-items:flex-end;gap:3px;height:32px;margin-top:10px">'
-      + fyG.map(function(f) {
-          var h = Math.max(4, Math.round((f.totalTxnValue || 0) / maxGmv * 32));
-          return '<div style="flex:1;height:' + h + 'px;background:rgba(228,136,0,.5);border-radius:2px 2px 0 0;min-width:4px" title="' + (f.fy || '') + ': ' + fmtINR(f.totalTxnValue) + '"></div>';
-        }).join('')
-      + '</div>'
-      + '<div style="display:flex;justify-content:space-between;font-size:8px;color:var(--txt3);margin-top:2px">'
-      + '<span>' + (fyG[0].fy || '') + '</span><span>' + (fyG[fyG.length-1].fy || '') + '</span>'
-      + '</div>';
+  // ── LEVEL 2 ─────────────────────────────────────────────────────────
+  function l2(id, title, ac, s, b, total, click, footer) {
+    return _ompNode({ id: id, lvl: 'l2', ac: ac, title: title, chip: shr(total),
+      onclick: click,
+      body: '<div class="otn-big ac" data-count="' + total + '">' + fmt(total) + '</div>'
+        + sub(s, b) + (footer || '') });
   }
-  var c4 = '<div class="ohc">'
-    + badge('#E48800', 'Total GMV')
-    + '<div class="ohc-big">' + (txnVal != null ? fmtINR(txnVal) : '—') + '</div>'
-    + '<div class="ohc-sub">Seller transaction value (OMP)</div>'
-    + '<div class="ohc-divider"></div>'
-    + '<div class="ohc-mat-pair">'
-    + '<div class="ohc-mat-cell" style="background:rgba(255,159,10,.1)">'
-    + '<div class="ohc-mat-cell-lbl" style="color:#E48800">Plastic</div>'
-    + '<div class="ohc-mat-cell-val" style="color:#E48800">' + fmt(pTxn) + '</div>'
-    + '<div class="ohc-mat-cell-sub">transacted vendors</div>'
-    + '</div>'
-    + '<div class="ohc-mat-cell" style="background:rgba(142,142,147,.1)">'
-    + '<div class="ohc-mat-cell-lbl" style="color:#636366">Metal</div>'
-    + '<div class="ohc-mat-cell-val" style="color:var(--txt2)">' + fmt(mTxn) + '</div>'
-    + '<div class="ohc-mat-cell-sub">transacted vendors</div>'
-    + '</div>'
-    + '</div>'
-    + gmvFySpark
+  var aud = selectedAud || 'seller';
+  var l2Row = '<div class="otr otr-l2">'
+    + l2('otn-draft', 'Draft', OMP_AC.draft, draftS, draftB, draftT,
+         "openSlModal('" + aud + "','DRAFT')")
+    + l2('otn-review', 'In Review', OMP_AC.review, revS, revB, revT,
+         "openSlModal('" + aud + "','IN_REVIEW')",
+         (vs.aging || vs.overdue)
+           ? '<div class="otn-sub">' + fmt(vs.aging || 0) + ' aging · ' + fmt(vs.overdue || 0) + ' overdue</div>' : '')
+    + l2('otn-rejected', 'Rejected', OMP_AC.reject, rejS, rejB, rejT,
+         "openSlModal('" + aud + "','REJECTED')")
+    + l2('otn-onboarded', 'Onboarded', OMP_AC.onb, compS, compB, onbT,
+         "openKpiModal('onboarded')",
+         '<div class="otn-sub">Completion <b>' + (totAll > 0 ? Math.round(onbT / totAll * 100) : 0) + '%</b>'
+         + (vs.avgTAT != null ? ' · Avg TAT <b>' + vs.avgTAT + 'd</b>' : '') + '</div>')
     + '</div>';
 
-  // ── Card 5: Vendor Rating (patched async) ─────────────────────
-  var c5 = '<div class="ohc" id="omp-hc-rating">'
-    + badge('#E48800', 'Vendor Rating · Seller')
-    + '<div class="ohc-big ohc-rating-big" id="omp-rating-big" style="color:#E48800">—</div>'
-    + '<div class="ohc-sub" id="omp-rating-sub" style="margin-bottom:10px">Loading ratings…</div>'
-    + '<div id="omp-rating-dist"></div>'
+  // ── L3 · 1 · Volume Metrics ─────────────────────────────────────────
+  var volBody = '<div class="otn-cells otn-cells-3">'
+    + _ompCell('Existing S', fmt(vs.oldVendors || 0), 'sellers')
+    + _ompCell('New S', fmt(vs.newVendors || 0), 'sellers', OMP_AC.onb)
+    + _ompCell('Active', fmt(txnS), 'transacted', OMP_AC.onb)
+    + _ompCell('Existing B', fmt(vb.oldVendors || 0), 'buyers')
+    + _ompCell('New B', fmt(vb.newVendors || 0), 'buyers', OMP_AC.root)
+    + _ompCell('Dormant', fmt(Math.max(0, compS - txnS)), 'no txn', OMP_AC.draft)
+    + '</div>'
+    + '<div class="otn-sep"></div>'
+    + '<table class="otn-tbl" id="omp-vol-matrix"><thead><tr>'
+    + '<th>Onboarded</th><th>Sellers</th><th>Buyers</th>'
+    + '</tr></thead><tbody>'
+    + '<tr><td>Daily</td><td>—</td><td>—</td></tr>'
+    + '<tr><td>Weekly</td><td>—</td><td>—</td></tr>'
+    + '<tr><td>Monthly</td><td>—</td><td>—</td></tr>'
+    + '</tbody></table>';
+  var nVol = _ompNode({ id: 'otn-vol', lvl: 'l3', ac: OMP_AC.vol,
+    title: 'Volume Metrics', body: volBody, onclick: "openKpiModal('oldvsnew')" });
+
+  // ── L3 · 2 · Transacted Sellers ─────────────────────────────────────
+  var avgTxn = (txnCnt != null && txnS > 0) ? (txnCnt / txnS) : null;
+  var txnBody = '<div class="otn-big ac" data-count="' + txnS + '">' + fmt(txnS) + '</div>'
+    + '<div class="otn-sub"><b>' + txnPct + '%</b> of onboarded sellers have transacted</div>'
+    + '<div class="otn-sep"></div>'
+    + '<div class="otn-cells">'
+    + _ompCell('Total Txns', txnCnt != null ? fmt(txnCnt) : '—', 'transactions')
+    + _ompCell('Avg / Seller', avgTxn != null ? avgTxn.toFixed(1) : '—', 'transactions')
+    + _ompCell('Plastic', fmt(pTxn), 'vendors', OMP_AC.gmv)
+    + _ompCell('Metal', fmt(mTxn), 'vendors', OMP_AC.draft)
+    + '</div>';
+  var nTxn = _ompNode({ id: 'otn-txn', lvl: 'l3', ac: OMP_AC.txn,
+    title: 'Transacted · Seller', body: txnBody, onclick: 'openTaModal()' });
+
+  // ── L3 · 3 · Total GMV (category-wise) ──────────────────────────────
+  var gmvCats = categories.filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
+                          .sort(function(a, b) { return b.txnValue - a.txnValue; });
+  var gmvTop = gmvCats.slice(0, 4);
+  var gmvRest = gmvCats.slice(4).reduce(function(a, c) { return a + c.txnValue; }, 0);
+  if (gmvRest > 0) gmvTop.push({ category: 'Others', txnValue: gmvRest });
+  var gmvMax = gmvTop.length ? gmvTop[0].txnValue : 0;
+  var gmvBody = '<div class="otn-big">' + (txnVal != null ? fmtINR(txnVal) : '—') + '</div>'
+    + '<div class="otn-sub">Seller transaction value · Open Marketplace</div>'
+    + '<div class="otn-sep"></div>'
+    + (gmvTop.length
+        ? gmvTop.map(function(c) {
+            return _ompBar(c.category, c.txnValue, gmvMax, OMP_AC.gmv, fmtINR(c.txnValue));
+          }).join('')
+        : '<div class="otn-empty">No category-level GMV recorded</div>');
+  var nGmv = _ompNode({ id: 'otn-gmv', lvl: 'l3', ac: OMP_AC.gmv,
+    title: 'Total GMV · Category', body: gmvBody, onclick: 'openTaModal()' });
+
+  // ── L3 · 4 · Vendor Rating (async) ──────────────────────────────────
+  var rateBody = '<div class="otn-big ac" id="omp-rate-big">—</div>'
+    + '<div class="otn-sub" id="omp-rate-sub">Loading ratings…</div>'
+    + '<div class="otn-sep"></div>'
+    + '<div id="omp-rate-dist"></div>';
+  var nRate = _ompNode({ id: 'otn-rating', lvl: 'l3', ac: OMP_AC.rate,
+    title: 'Vendor Rating · Seller', body: rateBody, onclick: "openKpiModal('rating')" });
+
+  // ── L3 · 5 · Geographical Split ─────────────────────────────────────
+  var geoMax = regions.length ? Math.max.apply(null, regions.map(function(r) { return r.onboarded || 0; })) : 0;
+  var geoBody = (regions.length
+      ? regions.slice(0, 5).map(function(r) {
+          return _ompBar(r.region, r.onboarded || 0, geoMax, OMP_AC.geo);
+        }).join('')
+      : '<div class="otn-empty">No region data available</div>')
+    + '<div class="otn-sep"></div>'
+    + '<div class="otn-cell-l" style="margin-bottom:7px">Top States · Onboarded</div>'
+    + '<div id="omp-geo-states"><div class="otn-empty">Loading states…</div></div>';
+  var nGeo = _ompNode({ id: 'otn-geo', lvl: 'l3', ac: OMP_AC.geo,
+    title: 'Geographical Split', body: geoBody, onclick: "vkpiOpen('all')" });
+
+  // ── L3 · 6 · Churn / Inactivity ─────────────────────────────────────
+  var never = Math.max(0, compS - txnS);
+  var churnBody = '<div class="otn-big ac" data-count="' + never + '">' + fmt(never) + '</div>'
+    + '<div class="otn-sub">Never transacted · <b>'
+    + (compS > 0 ? Math.round(never / compS * 100) : 0) + '%</b> of onboarded sellers</div>'
+    + '<div class="otn-sep"></div>'
+    + '<div class="otn-cell-l" style="margin-bottom:7px">Since Last Transaction</div>'
+    + '<div class="otn-cells otn-cells-3" id="omp-churn-buckets">'
+    + _ompCell('0–30d', '—', 'active', OMP_AC.onb)
+    + _ompCell('31–90d', '—', 'slowing', OMP_AC.review)
+    + _ompCell('90d+', '—', 'at risk', OMP_AC.churn)
+    + '</div>';
+  var nChurn = _ompNode({ id: 'otn-churn', lvl: 'l3', ac: OMP_AC.churn,
+    title: 'Churn / Inactivity', body: churnBody, onclick: '_ompOpenChurn()' });
+
+  // ── L3 · 7 · OSV Status (async) ─────────────────────────────────────
+  var osvBody = '<div class="otn-cells otn-cells-3">'
+    + '<div class="otn-cell"><div class="otn-cell-l" style="color:' + OMP_AC.onb + '">Completed</div>'
+    + '<div class="otn-cell-v" style="color:' + OMP_AC.onb + '" id="omp-osv-done">—</div></div>'
+    + '<div class="otn-cell"><div class="otn-cell-l" style="color:' + OMP_AC.review + '">In Progress</div>'
+    + '<div class="otn-cell-v" style="color:' + OMP_AC.review + '" id="omp-osv-prog">—</div></div>'
+    + '<div class="otn-cell"><div class="otn-cell-l" style="color:' + OMP_AC.draft + '">Not Initiated</div>'
+    + '<div class="otn-cell-v" style="color:' + OMP_AC.draft + '" id="omp-osv-ni">—</div></div>'
+    + '</div>'
+    + '<div class="otn-stack" id="omp-osv-stack"></div>'
+    + '<div class="otn-sub" id="omp-osv-sub">Loading OSV data…</div>';
+  var nOsv = _ompNode({ id: 'otn-osv', lvl: 'l3', ac: OMP_AC.osv,
+    title: 'OSV Status · Seller', body: osvBody, onclick: "openKpiModal('osv')" });
+
+  var l3Group = '<div class="ot-l3group">'
+    + '<div class="otr otr-l3">' + nVol + nTxn + nGmv + nRate + '</div>'
+    + '<div class="otr otr-l3">' + nGeo + nChurn + nOsv + '</div>'
     + '</div>';
 
-  // ── Card 6: Geographical Split ────────────────────────────────
-  var maxRegOnb = regions.length ? Math.max.apply(null, regions.map(function(r){ return r.onboarded || 0; })) : 1;
-  var geoRows = regions.slice(0, 8).map(function(r) {
-    var barW = maxRegOnb > 0 ? Math.round((r.onboarded || 0) / maxRegOnb * 100) : 0;
-    return '<div class="ohc-geo-bar-row">'
-      + '<div class="ohc-geo-bar-lbl">' + esc(r.region) + '</div>'
-      + '<div class="ohc-geo-bar-track"><div class="ohc-geo-bar-fill" style="width:' + barW + '%;background:#005DFF;opacity:.8"></div></div>'
-      + '<div class="ohc-geo-bar-val">' + fmt(r.onboarded || 0) + '</div>'
-      + '</div>';
-  }).join('');
-  var c6 = '<div class="ohc ohc-geo">'
-    + badge('#32ADE6', 'Geographical Split · Seller Onboarded')
-    + (geoRows || '<div style="color:var(--txt3);font-size:11px;padding:8px 0">No region data available</div>')
-    + '</div>';
-
-  // ── Card 7: Churn / Inactivity ────────────────────────────────
-  var nonTxn = Math.max(0, compS - txnS);
-  var churnPct = compS > 0 ? Math.round(nonTxn / compS * 100) : 0;
-  var c7 = '<div class="ohc">'
-    + badge('#FF3B30', 'Churn / Inactivity')
-    + '<div class="ohc-big" style="color:#FF3B30">' + fmt(nonTxn) + '</div>'
-    + '<div class="ohc-sub">' + churnPct + '% of onboarded sellers have not transacted</div>'
-    + '<div class="ohc-churn-pills">'
-    + '<div class="ohc-churn-pill" style="background:rgba(255,159,10,.1)">'
-    + '<div class="ohc-churn-pill-val" style="color:#E48800">' + fmt(aging) + '</div>'
-    + '<div class="ohc-churn-pill-lbl" style="color:#E48800">Aging<br><span style="font-size:8px;font-weight:500;text-transform:none">14–30 days</span></div>'
-    + '</div>'
-    + '<div class="ohc-churn-pill" style="background:rgba(255,59,48,.1)">'
-    + '<div class="ohc-churn-pill-val" style="color:#FF3B30">' + fmt(overdue) + '</div>'
-    + '<div class="ohc-churn-pill-lbl" style="color:#FF3B30">Overdue<br><span style="font-size:8px;font-weight:500;text-transform:none">&gt;30 days</span></div>'
-    + '</div>'
-    + '</div>'
-    + '</div>';
-
-  // ── Card 8: OSV Status (patched async) ───────────────────────
-  var c8 = '<div class="ohc ohc-osv" id="omp-hc-osv">'
-    + badge('#005DFF', 'OSV Status · Seller')
-    + '<div class="ohc-osv-stages">'
-    + '<div class="ohc-osv-stage" style="background:rgba(48,209,88,.1)">'
-    + '<div class="ohc-osv-stage-val" style="color:#30D158" id="omp-osv-done">—</div>'
-    + '<div class="ohc-osv-stage-lbl" style="color:#30D158">Done</div>'
-    + '</div>'
-    + '<div class="ohc-osv-stage" style="background:rgba(228,136,0,.1)">'
-    + '<div class="ohc-osv-stage-val" style="color:#E48800" id="omp-osv-prog">—</div>'
-    + '<div class="ohc-osv-stage-lbl" style="color:#E48800">In Progress</div>'
-    + '</div>'
-    + '<div class="ohc-osv-stage" style="background:rgba(142,142,147,.1)">'
-    + '<div class="ohc-osv-stage-val" style="color:#8E8E93" id="omp-osv-ni">—</div>'
-    + '<div class="ohc-osv-stage-lbl" style="color:#8E8E93">Not Initiated</div>'
-    + '</div>'
-    + '</div>'
-    + '<div class="ohc-osv-bar-wrap"><div class="ohc-osv-bar-fill" id="omp-osv-bar" style="width:0%"></div></div>'
-    + '<div id="omp-osv-sub" style="font-size:10px;color:var(--txt3);margin-top:6px">Loading OSV data…</div>'
-    + '</div>';
-
-  return '<div class="omp-hero-grid" style="' + vcVars('OMP') + '">'
-    + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8
+  return '<div class="omp-tree" id="omp-tree" style="' + vcVars('OMP') + '">'
+    + '<svg id="omp-tree-svg" aria-hidden="true" preserveAspectRatio="none"></svg>'
+    + '<div class="otr otr-root">' + root + '</div>'
+    + l2Row
+    + l3Group
     + '</div>';
 }
 
-// Patch OMP hero cards 5 (Rating) and 8 (OSV) when qualityData arrives
-function _patchOMPHeroCards(qd) {
-  var qc = (qd && qd.seller) || {};
+function _ompOpenChurn() {
+  openTaModal();
+  try { taOpenNt(); } catch (e) {}
+}
 
-  // Rating card
-  var r = qc.rating || {};
-  var rBig = document.getElementById('omp-rating-big');
-  var rSub = document.getElementById('omp-rating-sub');
-  var rDist= document.getElementById('omp-rating-dist');
-  if (rBig) rBig.textContent = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
-  if (rSub) rSub.textContent = fmt(r.rated || 0) + ' rated · ' + fmt(Math.max(0, (r.total || 0) - (r.rated || 0))) + ' unrated';
-  if (rDist && r.dist) {
-    var distMax = Math.max.apply(null, r.dist) || 1;
-    rDist.innerHTML = [5,4,3,2,1].map(function(star) {
-      var cnt = r.dist[star - 1] || 0;
-      var bw  = Math.round(cnt / distMax * 100);
-      return '<div class="ohc-star-row">'
-        + '<span class="ohc-star-lbl">' + star + '★</span>'
-        + '<div class="ohc-star-track"><div class="ohc-star-fill" style="width:' + bw + '%"></div></div>'
-        + '<span class="ohc-star-count">' + cnt + '</span>'
-        + '</div>';
-    }).join('');
-  } else if (rDist) {
-    rDist.innerHTML = '<div style="font-size:10px;color:var(--txt3)">No rating data</div>';
+// ── Connectors ────────────────────────────────────────────────────────
+var OMP_L2_IDS = ['otn-draft', 'otn-review', 'otn-rejected', 'otn-onboarded'];
+var OMP_L3A_IDS = ['otn-vol', 'otn-txn', 'otn-gmv', 'otn-rating'];
+var OMP_L3B_IDS = ['otn-geo', 'otn-churn', 'otn-osv'];
+
+function _ompSgn(n) { return n > 0 ? 1 : n < 0 ? -1 : 0; }
+
+// Orthogonal polyline with rounded corners. pts = [[x,y], …], axis-aligned.
+function _ompOrtho(pts, r) {
+  var d = 'M' + pts[0][0] + ' ' + pts[0][1];
+  for (var i = 1; i < pts.length - 1; i++) {
+    var p0 = pts[i - 1], p1 = pts[i], p2 = pts[i + 1];
+    var l1 = Math.abs(p1[0] - p0[0]) + Math.abs(p1[1] - p0[1]);
+    var l2 = Math.abs(p2[0] - p1[0]) + Math.abs(p2[1] - p1[1]);
+    var rr = Math.min(r, l1 / 2, l2 / 2);
+    if (rr < 0.5) { d += 'L' + p1[0] + ' ' + p1[1]; continue; }
+    var a = _ompSgn(p1[0] - p0[0]), b = _ompSgn(p1[1] - p0[1]);
+    var c = _ompSgn(p2[0] - p1[0]), e = _ompSgn(p2[1] - p1[1]);
+    d += 'L' + (p1[0] - a * rr) + ' ' + (p1[1] - b * rr)
+       + 'Q' + p1[0] + ' ' + p1[1] + ' ' + (p1[0] + c * rr) + ' ' + (p1[1] + e * rr);
+  }
+  var last = pts[pts.length - 1];
+  return d + 'L' + last[0] + ' ' + last[1];
+}
+
+function _drawOMPConnectors() {
+  var wrap = document.getElementById('omp-tree');
+  var svg  = document.getElementById('omp-tree-svg');
+  if (!wrap || !svg) return;
+  var base = wrap.getBoundingClientRect();
+  var W = Math.round(base.width), H = Math.round(base.height);
+  if (!W || !H) return;
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+  function box(id) {
+    var e = document.getElementById(id);
+    if (!e) return null;
+    var r = e.getBoundingClientRect();
+    return { t: r.top - base.top, b: r.bottom - base.top, cx: r.left - base.left + r.width / 2 };
+  }
+  function kids(ids) {
+    return ids.map(function(id) { var b = box(id); return b ? { box: b, id: id } : null; })
+              .filter(Boolean);
+  }
+  var root = box('otn-root'), onb = box('otn-onboarded');
+  var l2 = kids(OMP_L2_IDS);
+  var l3 = kids(OMP_L3A_IDS.concat(OMP_L3B_IDS));
+  if (!root || !onb || !l2.length) { svg.innerHTML = ''; return; }
+
+  // Stacked (mobile) layout: rows share a column, so connectors read as noise.
+  if (l2.length > 1 && Math.abs(l2[0].box.cx - l2[1].box.cx) < 2) { svg.innerHTML = ''; return; }
+
+  var R = 10, out = [];
+  function seg(pts, toId) {
+    out.push('<path class="otc" data-to="' + toId + '" d="' + _ompOrtho(pts, R) + '"/>');
+  }
+  // Group children into the visual lines flex-wrap actually produced.
+  function visualLines(list) {
+    var g = [];
+    list.forEach(function(k) {
+      var line = null;
+      for (var i = 0; i < g.length; i++) if (Math.abs(g[i].t - k.box.t) < 6) { line = g[i]; break; }
+      if (!line) { line = { t: k.box.t, b: k.box.b, items: [] }; g.push(line); }
+      line.t = Math.min(line.t, k.box.t);
+      line.b = Math.max(line.b, k.box.b);
+      line.items.push(k);
+    });
+    return g.sort(function(a, b) { return a.t - b.t; });
+  }
+  function spineOf(sel, fallback) {
+    var e = wrap.querySelector(sel);
+    if (!e) return fallback;
+    var pad = parseFloat(getComputedStyle(e).paddingLeft) || 0;
+    if (pad < 8) return fallback;
+    return Math.round((e.getBoundingClientRect().left - base.left) + pad * 0.42);
+  }
+  // Fan a parent out to its children: one bus per wrapped line, chained down a
+  // left-hand spine when the children occupy more than one line.
+  function branch(p, list, spineX) {
+    var g = visualLines(list);
+    var bus = (p.b + g[0].t) / 2;
+    if (g.length === 1) {
+      g[0].items.forEach(function(k) {
+        seg([[p.cx, p.b], [p.cx, bus], [k.box.cx, bus], [k.box.cx, k.box.t]], k.id);
+      });
+      return;
+    }
+    seg([[p.cx, p.b], [p.cx, bus], [spineX, bus]], 'spine');
+    var prevBus = bus, prevBot = g[0].b;
+    g.forEach(function(line, i) {
+      var lb = bus;
+      if (i > 0) {
+        lb = (prevBot + line.t) / 2;
+        seg([[spineX, prevBus], [spineX, lb]], 'spine');
+        prevBus = lb;
+      }
+      line.items.forEach(function(k) {
+        seg([[spineX, lb], [k.box.cx, lb], [k.box.cx, k.box.t]], k.id);
+      });
+      prevBot = line.b;
+    });
   }
 
-  // OSV card
-  var o   = qc.osv || {};
-  var oDn = o.completed   || 0;
-  var oIp = o.inProgress  || 0;
-  var oNI = Math.max(0, (o.total || 0) - oDn - oIp);
-  var oTot= o.total || 0;
-  var oPct= oTot > 0 ? Math.round(oDn / oTot * 100) : 0;
-  var eD  = document.getElementById('omp-osv-done');
-  var eIp = document.getElementById('omp-osv-prog');
-  var eNI = document.getElementById('omp-osv-ni');
-  var eSub= document.getElementById('omp-osv-sub');
-  var eBar= document.getElementById('omp-osv-bar');
-  if (eD)   eD.textContent   = fmt(oDn);
-  if (eIp)  eIp.textContent  = fmt(oIp);
-  if (eNI)  eNI.textContent  = fmt(oNI);
-  if (eSub) eSub.textContent = oPct + '% complete · ' + fmt(oTot) + ' total';
-  if (eBar) eBar.style.width = oPct + '%';
+  branch(root, l2, spineOf('.otr-l2', 14));
+  if (l3.length) branch(onb, l3, spineOf('.ot-l3group', 14));
+  svg.innerHTML = out.join('');
+}
+
+var _ompRedrawT = null;
+function _ompScheduleRedraw() {
+  if (!document.getElementById('omp-tree')) return;
+  clearTimeout(_ompRedrawT);
+  _ompRedrawT = setTimeout(_drawOMPConnectors, 120);
+}
+window.addEventListener('resize', _ompScheduleRedraw);
+
+function _ompBindTreeHover() {
+  var wrap = document.getElementById('omp-tree');
+  if (!wrap) return;
+  wrap.querySelectorAll('.otn').forEach(function(n) {
+    n.addEventListener('mouseenter', function() { _ompHot(n.id, true); });
+    n.addEventListener('mouseleave', function() { _ompHot(n.id, false); });
+    n.addEventListener('focus', function() { _ompHot(n.id, true); });
+    n.addEventListener('blur', function() { _ompHot(n.id, false); });
+  });
+}
+function _ompHot(id, on) {
+  var svg = document.getElementById('omp-tree-svg');
+  if (!svg) return;
+  var ids = [id];
+  if (OMP_L3A_IDS.indexOf(id) >= 0 || OMP_L3B_IDS.indexOf(id) >= 0) ids.push('spine');
+  ids.forEach(function(k) {
+    svg.querySelectorAll('path[data-to="' + k + '"]').forEach(function(p) {
+      p.classList.toggle('otc-hot', on);
+    });
+  });
+}
+
+// ── Async patches ─────────────────────────────────────────────────────
+
+// Rating + OSV nodes, once getQualityData() resolves.
+function _patchOMPTreeCards(qd) {
+  var qc = (qd && qd.seller) || {};
+
+  var r = qc.rating || {};
+  var rBig  = document.getElementById('omp-rate-big');
+  var rSub  = document.getElementById('omp-rate-sub');
+  var rDist = document.getElementById('omp-rate-dist');
+  if (rBig) rBig.textContent = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
+  if (rSub) rSub.innerHTML = '<b>' + fmt(r.rated || 0) + '</b> rated · <b>'
+    + fmt(Math.max(0, (r.total || 0) - (r.rated || 0))) + '</b> unrated';
+  if (rDist) {
+    if (r.dist && r.dist.length) {
+      var dMax = Math.max.apply(null, r.dist) || 1;
+      rDist.innerHTML = [5, 4, 3, 2, 1].map(function(star) {
+        var cnt = r.dist[star - 1] || 0;
+        return '<div class="otn-star"><span class="otn-star-l">' + star + '★</span>'
+          + '<div class="otn-star-t"><div class="otn-star-f" style="width:'
+          + Math.round(cnt / dMax * 100) + '%"></div></div>'
+          + '<span class="otn-star-c">' + fmt(cnt) + '</span></div>';
+      }).join('');
+    } else {
+      rDist.innerHTML = '<div class="otn-empty">No rating distribution available</div>';
+    }
+  }
+
+  var o    = qc.osv || {};
+  var oDn  = o.completed  || 0;
+  var oIp  = o.inProgress || 0;
+  var oTot = o.total || 0;
+  var oNI  = Math.max(0, oTot - oDn - oIp);
+  var eD = document.getElementById('omp-osv-done');
+  var eP = document.getElementById('omp-osv-prog');
+  var eN = document.getElementById('omp-osv-ni');
+  var eS = document.getElementById('omp-osv-sub');
+  var eK = document.getElementById('omp-osv-stack');
+  if (eD) eD.textContent = fmt(oDn);
+  if (eP) eP.textContent = fmt(oIp);
+  if (eN) eN.textContent = fmt(oNI);
+  if (eS) eS.innerHTML = oTot > 0
+    ? '<b>' + Math.round(oDn / oTot * 100) + '%</b> verified of ' + fmt(oTot) + ' sellers'
+    : 'No OSV records available';
+  if (eK) {
+    eK.innerHTML = oTot > 0
+      ? [[oDn, OMP_AC.onb], [oIp, OMP_AC.review], [oNI, OMP_AC.draft]].map(function(s) {
+          return s[0] > 0 ? '<i style="flex:' + s[0] + ';background:' + s[1] + '"></i>' : '';
+        }).join('')
+      : '';
+  }
+  _ompScheduleRedraw();
+}
+
+// Volume matrix, top states and churn buckets — derived from record rows.
+function _patchOMPTreeRows() {
+  if (!document.getElementById('omp-tree')) return;
+  var sRows = _ompRowsFor('seller');
+  var bRows = _ompRowsFor('buyer');
+
+  // Onboarded in the trailing 1 / 7 / 30 days, per audience.
+  function windows(rows) {
+    if (!rows) return null;
+    var now = new Date(); now.setHours(23, 59, 59, 999);
+    var d1 = new Date(now); d1.setDate(d1.getDate() - 1);
+    var d7 = new Date(now); d7.setDate(d7.getDate() - 7);
+    var d30 = new Date(now); d30.setDate(d30.getDate() - 30);
+    var o = { d: 0, w: 0, m: 0 };
+    rows.forEach(function(r) {
+      if (r.status !== 'COMPLETED') return;
+      var dt = _ompParseDMY(r.onbDate);
+      if (!dt) return;
+      if (dt >= d1) o.d++;
+      if (dt >= d7) o.w++;
+      if (dt >= d30) o.m++;
+    });
+    return o;
+  }
+  var ws = windows(sRows), wb = windows(bRows);
+  var mx = document.getElementById('omp-vol-matrix');
+  if (mx) {
+    var body = mx.querySelector('tbody');
+    if (body) {
+      body.innerHTML = [['Daily', 'd'], ['Weekly', 'w'], ['Monthly', 'm']].map(function(p) {
+        return '<tr><td>' + p[0] + '</td>'
+          + '<td>' + (ws ? fmt(ws[p[1]]) : '—') + '</td>'
+          + '<td>' + (wb ? fmt(wb[p[1]]) : '—') + '</td></tr>';
+      }).join('');
+    }
+  }
+
+  // Top states by onboarded seller count.
+  var stEl = document.getElementById('omp-geo-states');
+  if (stEl) {
+    if (sRows) {
+      var map = {};
+      sRows.forEach(function(r) {
+        if (r.status !== 'COMPLETED') return;
+        var st = (r.state || '').trim();
+        if (!st) return;
+        map[st] = (map[st] || 0) + 1;
+      });
+      var list = Object.keys(map).map(function(k) { return { s: k, n: map[k] }; })
+                       .sort(function(a, b) { return b.n - a.n; }).slice(0, 5);
+      stEl.innerHTML = list.length
+        ? list.map(function(x) { return _ompBar(x.s, x.n, list[0].n, OMP_AC.geo); }).join('')
+        : '<div class="otn-empty">No state recorded on onboarded sellers</div>';
+    } else {
+      stEl.innerHTML = '<div class="otn-empty">Open the Sellers records to load states</div>';
+    }
+  }
+
+  // Days since last transaction, for sellers that have transacted.
+  var chEl = document.getElementById('omp-churn-buckets');
+  if (chEl && sRows) {
+    var b30 = 0, b90 = 0, bOld = 0, today = new Date();
+    sRows.forEach(function(r) {
+      if (!r.hasTransacted) return;
+      var dt = _ompParseDMY(r.txnDate);
+      if (!dt) return;
+      var days = Math.floor((today - dt) / 86400000);
+      if (days <= 30) b30++;
+      else if (days <= 90) b90++;
+      else bOld++;
+    });
+    chEl.innerHTML = _ompCell('0–30d', fmt(b30), 'active', OMP_AC.onb)
+      + _ompCell('31–90d', fmt(b90), 'slowing', OMP_AC.review)
+      + _ompCell('90d+', fmt(bOld), 'at risk', OMP_AC.churn);
+  }
+  _ompScheduleRedraw();
 }
 
 function renderPipelinePair(key) {
   var el = document.getElementById('vert-pipeline-pair');
   if (!el) return;
-  // OMP uses the 8-card hero grid in #vert-kpi-row — pipeline pair is not needed
+  // OMP renders the process tree in #vert-kpi-row — pipeline pair is not needed
   if (key === 'OMP') {
     el.innerHTML = '';
     var bizRail = document.getElementById('vert-biz-rail');
@@ -8402,6 +8703,7 @@ function renderInlineDetail(key) {
   if (!key) { el.style.display = 'none'; return; }
   var vcStyle = vcVars(key);
   el.style.cssText = 'display:block;' + vcStyle;
+  if (key === 'OMP') { try { _patchOMPTreeRows(); } catch (e) {} }
 
   var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
   var aud = selectedAud || 'seller';
