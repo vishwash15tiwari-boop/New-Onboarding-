@@ -3742,6 +3742,63 @@ button:active:not(:disabled),
   letter-spacing: .05em;
   margin-top: 1px;
 }
+
+/* ══ 37. TOP SECTION — COLOUR & VISUAL ONLY ═══════════════════════════════
+   Only colours, shadows, opacity, border-colour, background, and corner
+   rounding. Zero layout changes: no padding, margin, font-size, display,
+   grid, width, height, or position values are touched.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── 37-A. NAV TABS — underline active indicator (colour/shadow only) ── */
+.vert-tabs-bar {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.vert-tab-thumb { display: none !important }
+
+.vert-tab {
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--txt2) !important;
+}
+.vert-tab:hover { color: var(--txt) !important; background: transparent !important; box-shadow: none !important }
+
+.vert-tab.active::before,
+.vert-tabs-bar.has-thumb .vert-tab.active::before { display: none !important }
+
+.vert-tab.active,
+.vert-tabs-bar.has-thumb .vert-tab.active {
+  background: transparent !important;
+  color: var(--vc-ink, var(--blue)) !important;
+  box-shadow: inset 0 -2px 0 0 var(--vc, var(--blue)) !important;
+}
+
+.vert-tab-gst         { border-radius: 0 !important }
+.vert-tab-gst.active  { border-radius: 0 !important; border-left-color: rgba(0,0,0,.10) !important }
+
+/* ── 37-B. PERIOD FILTER CHIPS — charcoal active fill ── */
+.qf-chip.active,
+.qf-chip.active:hover {
+  background: #1D1D1F !important;
+  color: #fff !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.18) !important;
+}
+
+/* ── 37-C. VERTICAL CONTEXT TITLE — plain ink, no gradient ── */
+.vert-ctx-name {
+  background: none !important;
+  -webkit-text-fill-color: var(--txt) !important;
+  color: var(--txt) !important;
+}
+
+/* ── 37-D. KPI CARDS — Details link opacity ── */
+.vkpi-card .cfd { opacity: .50 !important; color: var(--txt3) !important }
+.vkpi-card:hover .cfd,
+.vkpi-card:focus-visible .cfd { opacity: 1 !important; color: var(--blue) !important }
+
+.vkpi-card.vk-onboarded .vkpi-val { color: #049769 !important }
+.vkpi-card.vk-transacted .vkpi-val { color: var(--blue) !important }
 </style>
 </head>
 
