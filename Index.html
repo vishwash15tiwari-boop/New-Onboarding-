@@ -6475,6 +6475,7 @@ function renderDocsSection() {
   var el = document.getElementById('vert-docs-section');
   if (!el) return;
   if (activeVertKey !== 'OMP') { el.style.display = 'none'; return; }
+  el.style.display = 'none'; return; // TEMP: section hidden — delete this line to re-enable
   // Keep the full set; audience selection + OMP scoping happen per-audience in
   // renderDocsRows so one audience matching OMP never hides the other.
   window._docEntities = (qualityData && qualityData.vendorDocs) || [];
