@@ -382,8 +382,9 @@ function getVerticalRows(vertKey, filtersJson) {
   }
 }
 
-// Returns transacted OMP vendors (both seller + buyer) for the drill-down table.
-// Uses the vertical-rows cache populated by getDashboardData so no extra reads occur.
+// Returns OMP transacted vendors filtered by txnDate — same filter as the Hero Card.
+// Uses a SEPARATE cache key from getVerticalRows (which filters by onboarding date)
+// to avoid returning the wrong dataset on a cache hit.
 function getTransactedVendors(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
@@ -391,21 +392,20 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v20_' + aud + '_OMP_' + periodKey;
+      // 'vtxn_v1_*' is distinct from 'vrows_v20_*' which stores onboarding-date-filtered rows.
+      var cacheKey = 'vtxn_v1_' + aud + '_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
-        try {
-          var d = JSON.parse(hit);
-          if (d && d.rows) return d.rows.filter(function(r) { return r.hasTransacted; });
-        } catch (e) {}
+        try { var d = JSON.parse(hit); if (Array.isArray(d)) return d; } catch (e) {}
       }
-      // Cache miss: read from source
       var cfg = AUDIENCE_CFG[aud];
       var raw = readData(aud);
       var all = normalizeRows(raw, cfg);
-      return all.filter(function(r) {
+      var rows = all.filter(function(r) {
         return r.vertical === 'OMP' && r.hasTransacted && applyTxnDateFilter(r, f);
       }).map(vertRow);
+      try { cache.put(cacheKey, JSON.stringify(rows), CONFIG.CACHE_TTL); } catch (e) {}
+      return rows;
     }
 
     return JSON.stringify({

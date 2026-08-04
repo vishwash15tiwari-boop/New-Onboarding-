@@ -3534,7 +3534,7 @@ function loadData(silent) {
       var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
       if (selectedVert && _vertRowsPKey !== newPKey) {
         vertRows = []; vertRowsLoading = false; vertRowsError = null;
-        _ovnRows = {};
+        _ovnRows = {}; _taBackend = { pKey: null, sellers: null, buyers: null };
         loadVertRows(selectedVert);
       }
       done();
@@ -7324,7 +7324,7 @@ function openVertDetail(key, aud) {
     vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '', region: 'All', ratingMin: '', ratingMax: '' }; vdPage = 0;
     vdSort = { key: '', dir: 1 };
     vertRows = []; vertRowsLoading = true; vertRowsError = null;
-    _vertRowsPKey = null; ++_vertRowsGen; _ovnRows = {};
+    _vertRowsPKey = null; ++_vertRowsGen; _ovnRows = {}; _taBackend = { pKey: null, sellers: null, buyers: null };
     document.querySelectorAll('.vert-tab[data-key]').forEach(function(t) {
       t.classList.toggle('active', t.dataset.key === key);
     });
@@ -9892,6 +9892,32 @@ function _dmVendor(hd,bd,E) {
 // TRANSACTION VENDORS MODAL
 // ═══════════════════════════════════════════════════════════════
 var _ta = { aud:'seller', cat:'All', q:'', sk:'txnCount', sd:-1, pg:0, pgSz:25, rows:[] };
+// Backend-sourced data for the TaModal — uses txnDate filter, matching the Hero Card.
+// sellers/buyers===null means still loading; []|[...] means loaded.
+var _taBackend = { pKey: null, sellers: null, buyers: null };
+
+function _taFetch() {
+  var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  if (_taBackend.pKey === myPKey && _taBackend.sellers !== null) return;
+  _taBackend = { pKey: myPKey, sellers: null, buyers: null };
+  var f = { period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      try {
+        var data = JSON.parse(res);
+        if (_taBackend.pKey !== myPKey) return;
+        _taBackend.sellers = data.success ? (data.sellers || []) : [];
+        _taBackend.buyers  = data.success ? (data.buyers  || []) : [];
+      } catch (e) { _taBackend.sellers = _taBackend.buyers = []; }
+      _taRender();
+    })
+    .withFailureHandler(function() {
+      if (_taBackend.pKey === myPKey) { _taBackend.sellers = _taBackend.buyers = []; }
+      _taRender();
+    })
+    .getTransactedVendors(JSON.stringify(f));
+}
 
 function _taNormCat(c) {
   if (!c) return 'Other';
@@ -9964,39 +9990,6 @@ function _applyTxnDateFilter(dateStr) {
   return true;
 }
 
-function _taGatherTransacted(aud) {
-  var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
-  var seen = {}, rows = [];
-  var cfg = getVertCfg();
-  cfg.forEach(function(v) {
-    try {
-      var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + v.key) || 'null');
-      if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
-        sv.rows.forEach(function(r) {
-          if (r.hasTransacted && !seen[r.id] && _isValidRec(r) && _applyTxnDateFilter(r.txnDate)) {
-            seen[r.id] = true;
-            rows.push({ id: r.id, name: r.name, audience: aud,
-              vendorType: r.vendorType || '—', _normCat: _taNormCat(r.category),
-              state: r.state || '—', txnDate: r.txnDate || '—',
-              txnValue: r.txnValue || 0, txnCount: r.txnCount || 1 });
-          }
-        });
-      }
-    } catch(e) {}
-  });
-  if (Array.isArray(vertRows)) {
-    vertRows.forEach(function(r) {
-      if ((r.audience || 'seller') === aud && r.hasTransacted && !seen[r.id] && _isValidRec(r) && _applyTxnDateFilter(r.txnDate)) {
-        seen[r.id] = true;
-        rows.push({ id: r.id, name: r.name, audience: aud,
-          vendorType: r.vendorType || '—', _normCat: _taNormCat(r.category),
-          state: r.state || '—', txnDate: r.txnDate || '—',
-          txnValue: r.txnValue || 0, txnCount: r.txnCount || 1 });
-      }
-    });
-  }
-  return rows;
-}
 
 function openTaModal() {
   var m = document.getElementById('ta-modal');
@@ -10005,8 +9998,7 @@ function openTaModal() {
     _ta.aud = 'seller'; _ta.cat = 'All'; _ta.q = '';
     _ta.sk = 'txnCount'; _ta.sd = -1; _ta.pg = 0;
   }
-  _ovnEnsureAud('seller');
-  _ovnEnsureAud('buyer');
+  _taFetch();
   _taRender();
   if (m && !isOpen) { void m.offsetHeight; m.classList.add('ta-open'); }
   if (!isOpen) document.addEventListener('keydown', _taEsc);
@@ -10031,12 +10023,19 @@ function _taRender() {
   var seg  = document.getElementById('ta-seg-bar');
   var body = document.getElementById('ta-body');
   if (!hd || !body) return;
-  var allSeller = _taGatherTransacted('seller');
-  var allBuyer  = _taGatherTransacted('buyer');
+  var loading = _taBackend.sellers === null;
+  function mapRow(r, aud) {
+    return { id: r.id, name: r.name, audience: aud,
+      vendorType: r.vendorType || '—', _normCat: _taNormCat(r.category),
+      state: r.state || '—', txnDate: r.txnDate || '—',
+      txnValue: r.txnValue || 0, txnCount: r.txnCount || 1 };
+  }
+  var allSeller = loading ? [] : (_taBackend.sellers || []).filter(_isValidRec).map(function(r) { return mapRow(r, 'seller'); });
+  var allBuyer  = loading ? [] : (_taBackend.buyers  || []).filter(_isValidRec).map(function(r) { return mapRow(r, 'buyer');  });
   _ta.rows = allSeller.concat(allBuyer);
   var sCnt = allSeller.length, bCnt = allBuyer.length;
   hd.innerHTML = _taHdHtml(sCnt, bCnt);
-  if (seg) { seg.style.display = ''; seg.innerHTML = _taSegTabsHtml(sCnt, bCnt); }
+  if (seg) { seg.style.display = (loading || sCnt + bCnt === 0) ? 'none' : ''; seg.innerHTML = _taSegTabsHtml(sCnt, bCnt); }
   body.innerHTML = _taTblHtml();
 }
 
@@ -10117,7 +10116,7 @@ function _taTblHtml() {
 
   if (!total) {
     return metricsHtml + '<div class="ta-no-data">'
-      + (_ta.rows.length === 0 ? 'Loading vendor data…'
+      + (_taBackend.sellers === null ? 'Loading vendor data…'
         : 'No transacted ' + _ta.aud + 's' + (_ta.cat !== 'All' ? ' with <em>' + esc(_ta.cat) + '</em> category' : '') + ' in the current period.')
       + '</div>';
   }
