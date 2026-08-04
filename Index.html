@@ -2563,6 +2563,68 @@ body:not(.view-gst) #vert-ctx-hdr{display:none}
 .rec-sheet-body{overflow-y:auto;padding:16px 22px 44px;flex:1;min-height:0}
 body.rec-open{overflow:hidden}
 @media(max-width:640px){.rec-sheet{width:100vw}}
+
+/* ══════════════════════════════════════════════════
+   INTERACTIVE BRANCH NAVIGATOR — multi-level drill-down
+   ══════════════════════════════════════════════════ */
+.bn-crumbs{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:2px 0 16px}
+.bn-crumb{font-family:inherit;font-size:12px;font-weight:600;color:var(--txt2);background:var(--card);border:1px solid var(--border);border-radius:var(--pill);padding:6px 13px;cursor:pointer;white-space:nowrap;transition:.15s var(--ease-out)}
+.bn-crumb:hover{border-color:rgba(0,93,255,.35);color:var(--blue-ink)}
+.bn-crumb.here{background:var(--blue);border-color:var(--blue);color:#fff;cursor:default}
+.bn-crumb-sep{color:var(--txt3);font-size:12px}
+.bn-explorer{display:grid;grid-template-columns:minmax(300px,430px) minmax(0,1fr);gap:24px;align-items:start}
+@media(max-width:900px){.bn-explorer{grid-template-columns:1fr}}
+.bn-tree{min-width:0}
+.bn-sub{position:relative;margin-left:14px;padding-left:20px;border-left:1.5px solid var(--rail,rgba(0,0,0,.16))}
+.bn-sub.root0{margin-left:0;padding-left:0;border-left:none}
+.bn-node{position:relative;margin:4px 0}
+.bn-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;cursor:pointer;border:1px solid transparent;transition:background .15s var(--ease-out),border-color .15s var(--ease-out)}
+.bn-sub:not(.root0) .bn-node>.bn-row::before{content:'';position:absolute;left:-20px;top:20px;width:18px;height:1.5px;background:var(--rail,rgba(0,0,0,.16))}
+.bn-row:hover{background:var(--hover)}
+.bn-dot{width:8px;height:8px;border-radius:50%;background:var(--txt3);flex-shrink:0}
+.bn-lbl{font-size:13px;font-weight:600;color:var(--txt);flex:1;min-width:0}
+.bn-val{font-size:12px;font-weight:700;color:var(--txt2);font-variant-numeric:tabular-nums}
+.bn-caret{font-size:11px;color:var(--txt3);width:12px;text-align:center;transition:transform .2s var(--ease-out)}
+.bn-node.on-path>.bn-row{background:var(--accent-soft);border-color:rgba(0,93,255,.25)}
+.bn-node.on-path>.bn-row .bn-lbl{color:var(--blue-ink);font-weight:700}
+.bn-node.on-path>.bn-row .bn-dot{background:var(--blue)}
+.bn-node.on-path>.bn-row .bn-caret{transform:rotate(90deg);color:var(--blue)}
+.bn-node.here>.bn-row{background:var(--blue);border-color:var(--blue)}
+.bn-node.here>.bn-row .bn-lbl,.bn-node.here>.bn-row .bn-val{color:#fff}
+.bn-node.here>.bn-row .bn-dot{background:#fff}
+.bn-node.dim>.bn-row{opacity:.5}
+.bn-node.dim>.bn-row:hover{opacity:.85}
+.bn-open{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);background:var(--accent-soft);padding:2px 7px;border-radius:5px}
+.bn-node.here .bn-open{background:rgba(255,255,255,.22);color:#fff}
+/* Dashboard destination panel */
+.bn-panel{position:sticky;top:72px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);min-height:280px;overflow:hidden}
+.bn-p-hd{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.bn-p-code{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--vc-ink,var(--blue-ink));background:var(--vc-soft,var(--accent-soft));padding:3px 8px;border-radius:5px}
+.bn-p-ttl{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.bn-p-sub{font-size:11px;color:var(--txt3);margin-top:1px}
+.bn-p-body{padding:18px 20px 22px}
+.bn-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:56px 30px;color:var(--txt3)}
+.bn-empty svg{width:32px;height:32px;margin-bottom:12px;opacity:.5}
+.bn-empty b{color:var(--txt2);font-weight:600;font-size:13px}
+.bn-empty span{font-size:11.5px;margin-top:4px;max-width:280px}
+.bn-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
+.bn-tile{border:1px solid var(--border);border-radius:10px;padding:13px 14px;background:var(--bg2)}
+.bn-tl{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3)}
+.bn-tv{font-size:22px;font-weight:700;letter-spacing:-.8px;margin-top:6px;line-height:1;font-variant-numeric:tabular-nums}
+.bn-tv small{font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:0}
+.bn-ts{font-size:10.5px;color:var(--txt2);margin-top:6px}
+.bn-tile.dark{background:#1A1A1C;border-color:#1A1A1C}
+.bn-tile.dark .bn-tl{color:rgba(255,255,255,.55)}.bn-tile.dark .bn-tv{color:#fff}.bn-tile.dark .bn-ts{color:rgba(255,255,255,.6)}
+.bn-bars{margin-top:16px;display:flex;flex-direction:column;gap:11px}
+.bn-bar{display:flex;align-items:center;gap:12px}
+.bn-bar-nm{width:96px;font-size:12px;font-weight:600;color:var(--txt2);flex-shrink:0}
+.bn-bar-tk{flex:1;height:8px;border-radius:4px;background:#EAEAEE;overflow:hidden}
+.bn-bar-fl{height:100%;border-radius:4px}
+.bn-bar-vl{width:92px;text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.bn-cta{margin-top:16px;display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-size:12px;font-weight:600;color:#fff;background:var(--blue);border:none;border-radius:9px;padding:9px 15px;cursor:pointer}
+.bn-cta.ghost{background:transparent;color:var(--blue);border:1px solid var(--border)}
+.bn-note{font-size:11px;color:var(--txt3);margin-top:14px;padding-top:12px;border-top:1px solid var(--border);line-height:1.6}
+.bn-soon{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--txt3);background:var(--bg2);border:1px solid var(--border);padding:3px 9px;border-radius:var(--pill);margin-bottom:10px}
 .osv-list{display:flex;flex-direction:column;gap:9px;margin-top:2px}
 .osv-row{display:flex;align-items:center;gap:9px;font-size:12px}
 .osv-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -2687,83 +2749,25 @@ body.rec-open{overflow:hidden}
     <div class="gp-year-chips" id="gp-year-chips" style="display:none"></div>
   </div>
 
-  <!-- ── VIEW: ONBOARDING — guided information journey ── -->
+  <!-- ── VIEW: ONBOARDING — interactive branch navigator ── -->
   <div id="tab-overview">
-
-    <!-- Root of the mind map: the active business vertical -->
-    <div class="branch-root">
-      <span class="br-code" id="mm-code">OMP</span>
-      <span class="br-name" id="mm-name">Open Marketplace</span>
-      <span class="br-hint">Branches unfold below — open Records for the full tables</span>
+    <!-- Active-path breadcrumb -->
+    <div class="bn-crumbs" id="bn-crumbs"></div>
+    <!-- Drill tree (left) · dashboard destination (right) -->
+    <div class="bn-explorer">
+      <div class="bn-tree" id="bn-tree"></div>
+      <div class="bn-panel" id="bn-panel"></div>
     </div>
-
-    <!-- Connected branch tree — each node hangs off the rail -->
-    <div class="mm-tree" id="mm-tree">
-      <div class="mm-rail" id="mm-rail"></div>
-
-      <!-- Business Overview -->
-      <div class="tnode" data-ri="0">
-        <span class="knob"></span><span class="stub"></span>
-        <div class="mm-card">
-          <div class="node-hd"><span class="node-ttl">Business Overview</span><span class="node-tag">Summary</span></div>
-          <div id="sec-summary"></div>
-        </div>
-      </div>
-
-      <!-- Hero KPIs -->
-      <div class="tnode" data-ri="1">
-        <span class="knob"></span><span class="stub"></span>
-        <div class="mm-card">
-          <div class="node-hd"><span class="node-ttl">Hero KPIs</span><span class="node-tag">Logged In · Onboarded · Transacted · Existing vs New</span></div>
-          <div id="vert-kpi-row" class="vkpi-grid"></div>
-        </div>
-      </div>
-
-      <!-- Onboarding Funnel -->
-      <div class="tnode" data-ri="2" id="sec-funnel-wrap">
-        <span class="knob"></span><span class="stub"></span>
-        <div class="mm-card">
-          <div class="node-hd"><span class="node-ttl">Onboarding Funnel</span><span class="node-tag">Draft · In Review · Completed · Rejected</span></div>
-          <div id="sec-funnel"></div>
-        </div>
-      </div>
-
-      <!-- Seller Pipeline -->
-      <div class="tnode" data-ri="3">
-        <span class="knob"></span><span class="stub"></span>
-        <div class="mm-branch">
-          <div class="node-hd"><span class="node-ttl">Seller Pipeline</span><span class="node-tag" id="mm-seller-tag"></span><button class="node-open" onclick="openRecordsSheet('seller')">View records &rarr;</button></div>
-          <div id="mm-seller"></div>
-        </div>
-      </div>
-
-      <!-- Buyer Pipeline -->
-      <div class="tnode" data-ri="4">
-        <span class="knob"></span><span class="stub"></span>
-        <div class="mm-branch">
-          <div class="node-hd"><span class="node-ttl">Buyer Pipeline</span><span class="node-tag" id="mm-buyer-tag"></span><button class="node-open" onclick="openRecordsSheet('buyer')">View records &rarr;</button></div>
-          <div id="mm-buyer"></div>
-        </div>
-      </div>
-
-      <!-- Operational Metrics -->
-      <div class="tnode" data-ri="5" id="sec-ops-wrap">
-        <span class="knob"></span><span class="stub"></span>
-        <div class="mm-card">
-          <div class="node-hd"><span class="node-ttl">Operational Metrics</span><span class="node-tag">TAT · GMV · Vendor Rating · OSV · Regional Split</span></div>
-          <div id="sec-ops"></div>
-          <div id="sec-perf" style="margin-top:12px"></div>
-        </div>
-      </div>
-
-      <!-- Detailed Records — opens a slide-over -->
-      <div class="tnode lf" data-ri="6">
-        <span class="knob"></span><span class="stub"></span>
-        <div class="mm-card tap" role="button" tabindex="0" onclick="openRecordsSheet()"
-             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openRecordsSheet()}">
-          <div class="node-hd"><span class="node-ttl">Detailed Records</span><span class="node-tag">Tables · transaction history · analytics</span><span class="node-lead">Open &rarr;</span></div>
-        </div>
-      </div>
+    <!-- Hidden data sink: the existing section renderers populate these so the
+         KPI / GMV / quality snapshots that power the modals stay warm. -->
+    <div id="bn-sink" style="display:none" aria-hidden="true">
+      <div id="sec-summary"></div>
+      <div id="vert-kpi-row" class="vkpi-grid"></div>
+      <div id="sec-funnel-wrap"><div id="sec-funnel"></div></div>
+      <div id="mm-seller"></div><span id="mm-seller-tag"></span>
+      <div id="mm-buyer"></div><span id="mm-buyer-tag"></span>
+      <div id="sec-ops-wrap"><div id="sec-ops"></div></div>
+      <div id="sec-perf-wrap"><div id="sec-perf"></div></div>
     </div>
   </div>
 
@@ -3636,15 +3640,12 @@ function renderVerticals() {
   renderVNav();
   renderVertTabBar();
   renderVertCtxHdr(activeVertKey);
-  renderSummaryRibbon(activeVertKey);
+  // Warm the KPI / GMV / quality snapshots (into the hidden sink) so the modals work…
   renderVertKPIs(activeVertKey);
-  renderFunnel(activeVertKey);
   renderPipelinePair(activeVertKey);
-
-  var detEl = document.getElementById('vert-detail-section');
-  if (detEl) detEl.style.display = '';
   renderInlineDetail(activeVertKey);
-  runJourneyReveal();
+  // …then paint the interactive branch navigator.
+  renderBranchNav(activeVertKey);
 }
 
 // ── Mind-map navigation tree ──────────────────────────────────────
@@ -3794,6 +3795,273 @@ function mmGrowRail() {
   rail.style.height = (last.offsetTop + 16) + 'px';
 }
 
+// ═══════════════════════════════════════════════════════════════
+// INTERACTIVE BRANCH NAVIGATOR — multi-level drill-down mirroring the
+// onboarding data model. Each click reveals the next level; the active
+// path stays highlighted; terminal nodes open the dashboard section
+// (an inline panel, or an existing modal / records slide-over).
+// ═══════════════════════════════════════════════════════════════
+var bnPath = [];      // keys from the vertical down to the current node
+var _bnKey = null;    // vertical the tree was built for
+
+// Build the hierarchy for the active vertical from live data.
+function buildVertTree(key) {
+  var vs = (DS && DS.verticals || {})[key] || {};
+  var vb = (DB && DB.verticals || {})[key] || {};
+  var q  = (qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
+  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0] || {};
+  var tot = (vs.total || 0) + (vb.total || 0);
+  var onb = (vs.completed || 0) + (vb.completed || 0);
+  var txn = (vs.transacted || 0) + (vb.transacted || 0);
+  var active = (vs.draft || 0) + (vb.draft || 0) + (vs.inReview || 0) + (vb.inReview || 0);
+  var regNode = function(regs) {
+    var by = {}; (regs || []).forEach(function(r) { by[r.region] = r; });
+    return ['North', 'South', 'East', 'West'].map(function(rn) {
+      var r = by[rn], v = r ? (r.onboarded || r.total || 0) : 0;
+      return rn === 'North'
+        ? { k:'reg_north', label:rn, val:fmt(v), region:rn, children:[
+            { k:'rn_list', label:'Vendor List', panel:'region', region:rn },
+            { k:'rn_dash', label:'View Dashboard', panel:'region', region:rn },
+          ]}
+        : { k:'reg_' + rn.toLowerCase(), label:rn, val:fmt(v), region:rn, panel:'region' };
+    });
+  };
+  var catKids = (vs.categories || []).filter(function(c) { return (c.total || 0) > 0; })
+    .map(function(c) { return { k:'cat_' + c.category, label:c.category, val:fmt(c.onboarded || 0), panel:'gmvcat', cat:c.category }; })
+    .concat([{ k:'txndetails', label:'Transaction Details', panel:'records', aud:'seller' }]);
+
+  return { k:key, label:cfg.name || key, children:[
+    { k:'overview', label:'Overview', val:fmt(tot), children:[
+      { k:'ov_total',  label:'Total Cases', val:fmt(tot), panel:'kpi', kpi:'total' },
+      { k:'ov_active', label:'Active Cases', val:fmt(active), panel:'active' },
+      { k:'ov_onb',    label:'Onboarded', val:fmt(onb), panel:'kpi', kpi:'onboarded' },
+      { k:'ov_txn',    label:'Transacted', val:fmt(txn), children:[
+        { k:'tx_seller', label:'Seller Split', val:fmt(vs.transacted || 0), panel:'kpi', kpi:'transacted' },
+        { k:'tx_buyer',  label:'Buyer Split', val:fmt(vb.transacted || 0), panel:'kpi', kpi:'transacted' },
+        { k:'tx_gmv',    label:'Total GMV', val:(vs.totalTxnValue != null ? fmtINR(vs.totalTxnValue) : '—'), panel:'gmv' },
+      ]},
+    ]},
+    { k:'funnel', label:'Onboarding Funnel', val:fmt(tot), children:[
+      { k:'fn_login', label:'Logged In', val:fmt(tot), panel:'stage', stage:'ALL' },
+      { k:'fn_draft', label:'Draft', val:fmt((vs.draft || 0) + (vb.draft || 0)), panel:'stage', stage:'DRAFT' },
+      { k:'fn_review',label:'In Review', val:fmt((vs.inReview || 0) + (vb.inReview || 0)), children:[
+        { k:'fn_docval', label:'Document Validation', soon:true, children:[
+          { k:'dv_p', label:'Pending', soon:true, panel:'soon' },
+          { k:'dv_c', label:'Completed', soon:true, panel:'soon' },
+          { k:'dv_r', label:'Rejected', soon:true, panel:'soon' },
+        ]},
+        { k:'fn_gst',  label:'GST Verification', soon:true, panel:'soon' },
+        { k:'fn_comm', label:'Committee Approval', soon:true, panel:'soon' },
+      ]},
+      { k:'fn_appr', label:'Approved', val:fmt(onb), panel:'stage', stage:'COMPLETED' },
+      { k:'fn_comp', label:'Completed', val:fmt(onb), panel:'stage', stage:'COMPLETED' },
+    ]},
+    { k:'sellers', label:'Sellers', val:fmt(vs.total || 0), children:[
+      { k:'se_env', label:'Existing vs New', val:fmt((vs.oldVendors || 0) + (vs.newVendors || 0)), children:[
+        { k:'se_exist', label:'Existing', val:fmt(vs.oldVendors || 0), panel:'envnew', which:'existing' },
+        { k:'se_new',   label:'New', val:fmt(vs.newVendors || 0), panel:'kpi', kpi:'oldvsnew' },
+      ]},
+      { k:'se_txn', label:'Transacted', val:fmt(vs.transacted || 0), children:catKids },
+      { k:'se_nontxn', label:'Non-Transacted', soon:true, children:[
+        { k:'nt_30', label:'0–30 Days', soon:true, panel:'soon' },
+        { k:'nt_90', label:'31–90 Days', soon:true, panel:'soon' },
+        { k:'nt_p',  label:'90+ Days', soon:true, panel:'soon' },
+      ]},
+      { k:'se_region', label:'Regional Split', children:regNode(vs.regions) },
+      { k:'se_docs', label:'Documents', panel:'docs' },
+    ]},
+    { k:'buyers', label:'Buyers', val:fmt(vb.total || 0), children:[
+      { k:'by_env', label:'Existing vs New', val:fmt((vb.oldVendors || 0) + (vb.newVendors || 0)), panel:'records', aud:'buyer' },
+      { k:'by_txn', label:'Transacted', val:fmt(vb.transacted || 0), panel:'records', aud:'buyer' },
+      { k:'by_region', label:'Regional Split', children:regNode(vb.regions) },
+      { k:'by_coll', label:'Collections', soon:true, children:[
+        { k:'co_out', label:'Outstanding', soon:true, panel:'soon' },
+        { k:'co_over',label:'Overdue', soon:true, panel:'soon' },
+        { k:'co_rec', label:'Recovered', soon:true, panel:'soon' },
+      ]},
+    ]},
+    { k:'ops', label:'Operational Insights', children:[
+      { k:'op_tat', label:'Average TAT', children:[
+        { k:'tat_s', label:'Seller', val:(vs.avgTAT != null ? vs.avgTAT + 'd' : '—'), panel:'tat' },
+        { k:'tat_b', label:'Buyer', val:(vb.avgTAT != null ? vb.avgTAT + 'd' : '—'), panel:'tat' },
+        { k:'tat_v', label:'Business Vertical', val:(vs.avgTAT != null ? vs.avgTAT + 'd' : '—'), panel:'tat' },
+      ]},
+      { k:'op_team', label:'Team Productivity', soon:true, panel:'soon' },
+      { k:'op_osv', label:'OSV Status', val:(q && q.osv && q.osv.total ? fmt(q.osv.completed || 0) : '—'), panel:'osv' },
+      { k:'op_rating', label:'Vendor Ratings', val:(q && q.rating && q.rating.avg != null ? q.rating.avg.toFixed(1) + '★' : '—'), panel:'rating' },
+      { k:'op_recent', label:'Recent Activities', panel:'records', aud:'seller' },
+    ]},
+  ]};
+}
+
+function _bnFind(path) {
+  var node = _bnTree, chain = [_bnTree];
+  for (var i = 0; i < path.length; i++) {
+    var kids = node.children || [], nx = null;
+    for (var j = 0; j < kids.length; j++) { if (kids[j].k === path[i]) { nx = kids[j]; break; } }
+    if (!nx) break; node = nx; chain.push(node);
+  }
+  return { node:node, chain:chain };
+}
+var _bnTree = null;
+
+function renderBranchNav(key) {
+  if (currentView === 'gst') return;
+  if (_bnKey !== key) { bnPath = []; _bnKey = key; }
+  _bnTree = buildVertTree(key);
+  _bnRenderCrumbs();
+  _bnRenderTree();
+  var res = _bnFind(bnPath);
+  var node = res.node;
+  var hasKids = node.children && node.children.length;
+  _bnRenderPanel((bnPath.length && !hasKids) ? node : null, res.chain);
+}
+
+function _bnRenderCrumbs() {
+  var el = document.getElementById('bn-crumbs'); if (!el) return;
+  var chain = _bnFind(bnPath).chain;
+  el.innerHTML = chain.map(function(n, i) {
+    var here = i === chain.length - 1;
+    var toPath = chain.slice(1, i + 1).map(function(x) { return x.k; });
+    return '<button class="bn-crumb' + (here ? ' here' : '') + '" onclick="bnGo(' + _bnEnc(toPath) + ')">' + esc(n.label) + '</button>'
+      + (here ? '' : '<span class="bn-crumb-sep">›</span>');
+  }).join('');
+}
+function _bnEnc(path) { return '[' + path.map(function(k) { return '&quot;' + k + '&quot;'; }).join(',') + ']'; }
+
+function _bnRenderTree() {
+  var el = document.getElementById('bn-tree'); if (!el) return;
+  var top = (_bnTree.children || []);
+  el.innerHTML = '<div class="bn-sub root0">' + top.map(function(c) { return _bnNode(c, [c.k]); }).join('') + '</div>';
+}
+function _bnNode(node, path) {
+  var onPath = path.length <= bnPath.length && path.every(function(k, i) { return bnPath[i] === k; });
+  var here = bnPath.length === path.length && onPath;
+  var hasKids = node.children && node.children.length;
+  var top = path.length === 1;
+  var cls = 'bn-node' + (here ? ' here' : (onPath ? ' on-path' : (top ? '' : ' dim')));
+  var right = hasKids ? '<span class="bn-caret">›</span>'
+    : (node.soon ? '<span class="bn-open" style="color:var(--txt3);background:var(--bg2)">soon</span>' : '<span class="bn-open">open</span>');
+  var val = node.val ? '<span class="bn-val">' + esc(node.val) + '</span>' : '';
+  return '<div class="' + cls + '">'
+    + '<div class="bn-row" onclick="bnGo(' + _bnEnc(path) + ')">'
+    +   '<i class="bn-dot"></i><span class="bn-lbl">' + esc(node.label) + '</span>' + val + right
+    + '</div>'
+    + (onPath && hasKids ? '<div class="bn-sub">' + node.children.map(function(c) { return _bnNode(c, path.concat(c.k)); }).join('') + '</div>' : '')
+    + '</div>';
+}
+
+function bnGo(path) {
+  bnPath = (path || []).slice();
+  var res = _bnFind(bnPath);
+  var node = res.node;
+  var hasKids = node.children && node.children.length;
+  _bnRenderCrumbs(); _bnRenderTree();
+  _bnRenderPanel(hasKids ? null : node, res.chain);
+}
+
+// ── Panel helpers ──
+function _bnTile(lbl, v, sub, dark) { return '<div class="bn-tile' + (dark ? ' dark' : '') + '"><div class="bn-tl">' + lbl + '</div><div class="bn-tv">' + v + '</div>' + (sub ? '<div class="bn-ts">' + sub + '</div>' : '') + '</div>'; }
+function _bnBar(nm, val, pct, color) { return '<div class="bn-bar"><span class="bn-bar-nm">' + nm + '</span><div class="bn-bar-tk"><i class="bn-bar-fl" style="width:' + Math.max(0, pct) + '%;background:' + color + '"></i></div><span class="bn-bar-vl">' + val + '</span></div>'; }
+function _bnCta(label, action, ghost) { return '<button class="bn-cta' + (ghost ? ' ghost' : '') + '" onclick="' + action + '">' + label + '</button>'; }
+
+function _bnRenderPanel(node, chain) {
+  var el = document.getElementById('bn-panel'); if (!el) return;
+  var key = _bnKey;
+  var vs = (DS && DS.verticals || {})[key] || {};
+  var vb = (DB && DB.verticals || {})[key] || {};
+  var q  = (qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
+  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0] || {};
+
+  // Home / parent nodes → a compact summary of the current context.
+  if (!node) {
+    var cur = chain[chain.length - 1];
+    var tot = (vs.total || 0) + (vb.total || 0), onb = (vs.completed || 0) + (vb.completed || 0), txn = (vs.transacted || 0) + (vb.transacted || 0);
+    var body;
+    if (bnPath.length === 0) {
+      body = '<div class="bn-tiles">' + _bnTile('Total Cases', fmt(tot), fmt(vs.total || 0) + ' sellers · ' + fmt(vb.total || 0) + ' buyers')
+        + _bnTile('Onboarded', fmt(onb), (tot ? Math.round(onb / tot * 100) : 0) + '% completion')
+        + _bnTile('Transacted', fmt(txn)) + '</div>'
+        + '<div class="bn-note">Pick a branch on the left to drill into the onboarding workflow. Each step reveals the next level; the last node opens its dashboard section here.</div>';
+    } else {
+      body = '<div class="bn-empty">'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>'
+        + '<b>' + esc(cur.label) + '</b><span>Select a sub-branch to continue — the dashboard opens when you reach the end of a path.</span></div>';
+    }
+    el.innerHTML = _bnPanelHead(cur.label, chain, cfg) + '<div class="bn-p-body">' + body + '</div>';
+    return;
+  }
+
+  var body = '';
+  var p = node.panel;
+  if (node.soon || p === 'soon') {
+    body = '<span class="bn-soon">Not tracked yet</span>'
+      + '<div class="bn-note">“' + esc(node.label) + '” isn’t in the current onboarding feed. This branch is reserved in the map for when the data source is connected.</div>';
+  } else if (p === 'kpi') {
+    var lbl = { total:'Total Cases', onboarded:'Onboarded', transacted:'Transacted', oldvsnew:'Existing vs New' }[node.kpi] || node.label;
+    var val = node.val || '—';
+    body = '<div class="bn-tiles">' + _bnTile(lbl, val, cfg.name || '') + '</div>'
+      + _bnCta('Open full breakdown →', "openKpiModal('" + node.kpi + "')");
+  } else if (p === 'active') {
+    body = '<div class="bn-tiles">' + _bnTile('Active Cases', node.val || '0', 'in progress')
+      + _bnTile('Draft', fmt((vs.draft || 0) + (vb.draft || 0))) + _bnTile('In Review', fmt((vs.inReview || 0) + (vb.inReview || 0))) + '</div>';
+  } else if (p === 'gmv') {
+    var gmv = vs.totalTxnValue;
+    var cats = (vs.categories || []).filter(function(c) { return c.txnValue != null && c.txnValue > 0; }).sort(function(a, b) { return b.txnValue - a.txnValue; }).slice(0, 4);
+    var mx = cats.reduce(function(m, c) { return Math.max(m, c.txnValue || 0); }, 0) || 1;
+    body = '<div class="bn-tiles">' + _bnTile('Total GMV', (gmv != null ? fmtINR(gmv) : '—'), 'all commodities', true) + '</div>'
+      + '<div class="bn-bars">' + cats.map(function(c, i) { return _bnBar(c.category, fmtINR(c.txnValue), c.txnValue / mx * 100, ['#005DFF', '#1DC797', '#8460D4', '#FF9500'][i % 4]); }).join('') + '</div>'
+      + _bnCta('Open GMV breakdown →', "openGmvCatModal('seller')");
+  } else if (p === 'gmvcat') {
+    var c = (vs.categories || []).filter(function(x) { return x.category === node.cat; })[0] || {};
+    body = '<div class="bn-tiles">' + _bnTile(node.cat + ' — Onboarded', fmt(c.onboarded || 0))
+      + _bnTile('GMV', (c.txnValue != null ? fmtINR(c.txnValue) : '—')) + _bnTile('Total', fmt(c.total || 0)) + '</div>'
+      + _bnCta('Open GMV breakdown →', "openGmvCatModal('seller')");
+  } else if (p === 'stage') {
+    body = '<div class="bn-tiles">' + _bnTile(node.label, node.val || '—', 'cases at this stage') + '</div>'
+      + _bnCta('View records →', "openRecordsSheet('seller')");
+  } else if (p === 'envnew') {
+    body = '<div class="bn-tiles">' + _bnTile('Existing', fmt(vs.oldVendors || 0)) + _bnTile('New', fmt(vs.newVendors || 0)) + '</div>'
+      + _bnCta('Open Existing vs New →', "openKpiModal('oldvsnew')");
+  } else if (p === 'region') {
+    var reg = node.region;
+    var rObj = ((vs.regions || []).filter(function(r) { return r.region === reg; })[0]) || {};
+    body = '<div class="bn-tiles">' + _bnTile(reg + ' — Onboarded', fmt(rObj.onboarded || 0))
+      + _bnTile('Total', fmt(rObj.total || 0)) + _bnTile('GMV', (rObj.txnValue != null ? fmtINR(rObj.txnValue) : '—')) + '</div>'
+      + ((rObj.total || 0) > 0 ? _bnCta('Open ' + reg + ' vendors →', "openRegionModal('" + reg + "')")
+         : '<div class="bn-note">No vendors mapped to ' + esc(reg) + ' for the selected period yet.</div>');
+  } else if (p === 'osv') {
+    var o = q && q.osv ? q.osv : null;
+    if (o && o.total) {
+      var pf = function(n) { return o.total ? Math.round(n / o.total * 100) : 0; };
+      body = '<div class="bn-bars">' + _bnBar('Done', fmt(o.completed || 0), pf(o.completed || 0), 'var(--st-onboarded)')
+        + _bnBar('In Progress', fmt(o.pending || 0), pf(o.pending || 0), 'var(--st-review)')
+        + _bnBar('Not Initiated', fmt(o.notInitiated || 0), pf(o.notInitiated || 0), '#C9C9CE') + '</div>'
+        + _bnCta('Open OSV detail →', "openKpiModal('osv')");
+    } else { body = '<div class="bn-note">OSV status is still syncing.</div>'; }
+  } else if (p === 'rating') {
+    var r = q && q.rating ? q.rating : null;
+    body = '<div class="bn-tiles">' + _bnTile('Vendor Rating', (r && r.avg != null ? r.avg.toFixed(1) + '★' : '—'), (r ? fmt(r.rated || 0) + ' of ' + fmt(r.total || 0) + ' rated' : '')) + '</div>'
+      + _bnCta('Open rating detail →', "openKpiModal('rating')");
+  } else if (p === 'tat') {
+    body = '<div class="bn-tiles">' + _bnTile(node.label + ' TAT', node.val || '—', 'average turnaround') + '</div>'
+      + '<div class="bn-bars">' + _bnBar('Seller', (vs.avgTAT != null ? vs.avgTAT + 'd' : '—'), (vs.avgTAT || 0) / 30 * 100, 'var(--st-onboarded)')
+      + _bnBar('Buyer', (vb.avgTAT != null ? vb.avgTAT + 'd' : '—'), (vb.avgTAT || 0) / 30 * 100, 'var(--st-review)') + '</div>';
+  } else if (p === 'docs') {
+    body = '<div class="bn-note">Document completeness for every ' + esc(cfg.name || '') + ' vendor.</div>'
+      + _bnCta('Open documents →', "openRecordsSheet('seller')");
+  } else { // records
+    body = '<div class="bn-note">Full vendor records — board, table, filters and transaction history.</div>'
+      + _bnCta('Open records →', "openRecordsSheet('" + (node.aud || 'seller') + "')");
+  }
+  el.innerHTML = _bnPanelHead(node.label, chain, cfg) + '<div class="bn-p-body">' + body + '</div>';
+}
+function _bnPanelHead(title, chain, cfg) {
+  var trail = chain.slice(1).map(function(x) { return esc(x.label); }).join(' › ');
+  return '<div class="bn-p-hd" style="' + vcVars(_bnKey) + '"><span class="bn-p-code">' + esc(cfg.code || _bnKey) + '</span>'
+    + '<div><div class="bn-p-ttl">' + esc(title) + '</div><div class="bn-p-sub">' + trail + '</div></div></div>';
+}
+
 // Detailed Records slide-over
 function openRecordsSheet(aud) {
   var key = activeVertKey || selectedVert;
@@ -3885,14 +4153,10 @@ function selectVertTab(key) {
   positionVertThumb(true);
   setAura(key);
   renderVertCtxHdr(key);
-  renderSummaryRibbon(key);
   renderVertKPIs(key);
-  renderFunnel(key);
   renderPipelinePair(key);
-  var detEl = document.getElementById('vert-detail-section');
-  if (detEl) detEl.style.display = '';
   renderInlineDetail(key);
-  runJourneyReveal();
+  renderBranchNav(key);
   loadVertRows(key);
 }
 
@@ -4967,6 +5231,7 @@ function _patchQualitySects() {
   });
   _patchQualityKpiCards();
   refreshBizRail();      // fill Vendor Rating / OSV in Operational Insights
+  if (typeof renderBranchNav === 'function' && currentView !== 'gst' && _bnKey) renderBranchNav(_bnKey);
   renderDocsSection();
 }
 
