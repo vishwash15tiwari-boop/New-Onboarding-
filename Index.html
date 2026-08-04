@@ -2249,8 +2249,9 @@ body.view-gst #vert-tabs-bar{display:none}
 .vert-dash-grid #vert-kpi-row{grid-column:1/-1;margin-bottom:0}
 .vert-dash-grid #vert-pipeline-pair{grid-column:1/4;align-self:stretch}
 .vert-dash-grid #vert-biz-rail{grid-column:4/5;align-self:stretch}
-.vpipe-pair{display:grid;grid-template-columns:1fr;gap:2px;align-content:start}
-.vpipe-card{cursor:default;border-radius:var(--r-card)!important;padding:8px 14px!important;box-shadow:var(--shadow-sm)!important;border:1px solid var(--border)!important;transition:var(--t-card)}
+.vpipe-pair{display:grid;grid-template-columns:1fr 1fr;gap:5px;align-items:stretch}
+.vpipe-card{cursor:default;border-radius:var(--r-card)!important;padding:8px 14px!important;box-shadow:var(--shadow-sm)!important;border:1px solid var(--border)!important;transition:var(--t-card);display:flex;flex-direction:column}
+.vpipe-card .vpipe-mats{margin-top:auto;padding-top:8px}
 .vpipe-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.09)!important;border-color:rgba(0,0,0,.14)!important}
 .vpipe-card:active{transform:none!important;transition-duration:.18s}
 .vpipe-card.det-active{
@@ -9678,7 +9679,7 @@ function _vtbGatherRows(vtType) {
       var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + v.key) || 'null');
       if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
         sv.rows.forEach(function(r) {
-          if (r.status === 'COMPLETED' && (r.vendorType || 'Unknown').trim() === vtType && !seen[r.id] && _isValidRec(r)) {
+          if (r.status === 'COMPLETED' && (r.vendorType || 'Unknown').trim() === vtType && !seen[r.id]) {
             seen[r.id] = true; rows.push(r);
           }
         });
@@ -9695,8 +9696,7 @@ function _vtbGatherRows(vtType) {
       if ((r.audience ? r.audience === aud : vertRowsAud === aud)
           && r.status === 'COMPLETED'
           && (r.vendorType || 'Unknown').trim() === vtType
-          && !seen[r.id]
-          && _isValidRec(r)) {
+          && !seen[r.id]) {
         seen[r.id] = true; rows.push(r);
       }
     });
@@ -9803,11 +9803,26 @@ function _vtbFetchRows() {
         if (data.success && Array.isArray(data.rows)) {
           try { localStorage.setItem(lsKey, JSON.stringify({ pKey: pKey, rows: data.rows })); } catch(e) {}
           if (_vtb.view === 'vendors' && _vtb.vtType) {
-            _vtb.vtRows = _vtbGatherRows(_vtb.vtType);
+            var vtType = _vtb.vtType;
+            // Re-scan localStorage first (picks up all verticals already cached)
+            var gathered = _vtbGatherRows(vtType);
+            // If localStorage scan returns nothing, directly filter the freshly-fetched rows
+            // (handles cases where localStorage write failed or key mismatches)
+            if (!gathered.length) {
+              var seen2 = {};
+              data.rows.forEach(function(r) {
+                if (r.status === 'COMPLETED' && (r.vendorType || 'Unknown').trim() === vtType && r.id && !seen2[r.id]) {
+                  seen2[r.id] = true; gathered.push(r);
+                }
+              });
+            }
+            _vtb.vtRows = gathered;
             _vtbRender();
           }
+        } else {
+          if (_vtb.view === 'vendors') _vtbRender();
         }
-      } catch(e) {}
+      } catch(e) { if (_vtb.view === 'vendors') _vtbRender(); }
     })
     .withFailureHandler(function() {
       _vtb.rowsLoading = false;

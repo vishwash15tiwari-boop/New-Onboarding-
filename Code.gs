@@ -252,7 +252,7 @@ function getDashboardData(filtersJson) {
         .sort(function(a, b) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
-      var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
+      var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(function(r) { var row = vertRow(r); row.audience = audience; return row; }) });
       if (v.length <= 100000) batchCache['vrows_v20_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
