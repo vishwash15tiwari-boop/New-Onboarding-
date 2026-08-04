@@ -4889,21 +4889,13 @@ function renderVertKPIs(key) {
   var nonTxnSub   = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
   var oldTotalSub = '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>';
   var txnPct = compS > 0 ? Math.round(txnTotal / compS * 100) : 0;
-  // Total orders = sum of txnCount per transacted seller.
-  // Primary: backend field; fallback: sum from loaded seller detail rows.
-  var totalOrders = vs.totalTxnCount || 0;
-  if (!totalOrders && Array.isArray(vertRows) && vertRows.length > 0) {
-    totalOrders = vertRows.reduce(function(s, r) {
-      return s + (r.txnCount != null && Number(r.txnCount) > 0 ? Number(r.txnCount) : 0);
-    }, 0);
-  }
   // Save snapshot so openKpiModal() can read it without recomputing
   window._kpiSnap = {
     key: key,
     totalS: totalS, totalB: totalB,
     compS: compS, compB: compB, compPct: compPct,
     txnS: txnS, txnB: txnB, txnTotal: txnTotal, txnPct: txnPct, nonTxnTotal: nonTxnTotal,
-    txnUniqueTotal: vs.totalTxnCount || 0, totalOrders: totalOrders,
+    txnUniqueTotal: vs.totalTxnCount || 0,
     newS: newS, oldS: oldS, newB: newB, oldB: oldB,
     vs: vs, vb: vb,
     pTotal: pTotal, mTotal: mTotal,
@@ -4911,15 +4903,10 @@ function renderVertKPIs(key) {
     pTxn: pTxn, mTxn: mTxn,
     pNew: pNew, mNew: mNew,
   };
-  var txnCardSub = '<b>' + fmt(pTxn) + '</b> Plastic | <b>' + fmt(mTxn) + '</b> Metal'
-    + (totalOrders > 0
-        ? '<div style="margin-top:3px;font-size:9.5px;font-weight:600;color:var(--txt3);letter-spacing:.01em">'
-          + fmt(totalOrders) + ' total orders</div>'
-        : '');
   var cards = [
     mk(icFunnel, 'Logged In Cases', fmt(totalS + totalB), '<b>' + fmt(totalS) + '</b> sellers | <b>' + fmt(totalB) + '</b> buyers', 'vk-total',     'total',      null),
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   '<b>' + fmt(compS) + '</b> sellers | <b>' + fmt(compB) + '</b> buyers',  'vk-onboarded', 'onboarded'),
-    mk(icZap,    'Transacted',  fmt(txnTotal),         txnCardSub, 'vk-transacted', 'transacted'),
+    mk(icZap,    'Transacted',  fmt(txnTotal),         '<b>' + fmt(pTxn) + '</b> Plastic | <b>' + fmt(mTxn) + '</b> Metal', 'vk-transacted', 'transacted'),
   ];
   if (key === 'OMP') {
     var enTotal = (oldS + oldB) + (newS + newB);
@@ -10578,7 +10565,8 @@ function _taRender() {
     return { id: r.id, name: r.name, audience: aud,
       vendorType: r.vendorType || '—', _normCat: _taNormCat(r.category),
       state: r.state || '—', txnDate: r.txnDate || '—',
-      txnValue: r.txnValue || 0, txnCount: r.txnCount || 1 };
+      txnValue: r.txnValue || 0,
+      txnCount: r.total_orders || r.txnCount || 0 };
   }
   var allSeller = loading ? [] : (_taBackend.sellers || []).filter(_isValidRec).map(function(r) { return mapRow(r, 'seller'); });
   var allBuyer  = loading ? [] : (_taBackend.buyers  || []).filter(_isValidRec).map(function(r) { return mapRow(r, 'buyer');  });
@@ -10630,7 +10618,7 @@ function _taFiltered() {
 function _taSorted(rows) {
   var k = _ta.sk, d = _ta.sd;
   return rows.slice().sort(function(a, b) {
-    if (k === 'txnValue') return d * ((+(a[k]||0)) - (+(b[k]||0)));
+    if (k === 'txnValue' || k === 'txnCount') return d * ((+(a[k]||0)) - (+(b[k]||0)));
     if (k === 'avgTxnValue') {
       var aAvg = (a.txnCount && a.txnValue) ? a.txnValue / a.txnCount : 0;
       var bAvg = (b.txnCount && b.txnValue) ? b.txnValue / b.txnCount : 0;
@@ -10651,7 +10639,7 @@ function _taTblHtml() {
   var maxPg = Math.max(0, Math.ceil(total / pgSz) - 1);
 
   var uniqueVendors = filtered.length;
-  var totalTxns  = filtered.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
+  var totalTxns  = filtered.reduce(function(s, r) { return s + (r.txnCount || 0); }, 0);
   var totalGMV   = filtered.reduce(function(s, r) { return s + (r.txnValue || 0); }, 0);
   var avgPerVend = uniqueVendors ? (totalTxns / uniqueVendors) : 0;
   var avgTxnVal  = totalTxns ? (totalGMV / totalTxns) : 0;
@@ -10672,14 +10660,15 @@ function _taTblHtml() {
   }
 
   var cols = [
-    { key:'name',        lbl:'Company Name'  },
-    { key:'id',          lbl:'Vendor ID'     },
-    { key:'vendorType',  lbl:'Vendor Type'   },
-    { key:'_normCat',    lbl:'Category'      },
-    { key:'state',       lbl:'State'         },
-    { key:'txnValue',    lbl:'Total GMV'     },
-    { key:'avgTxnValue', lbl:'Avg Txn Value' },
-    { key:'txnDate',     lbl:'Last Txn Date' },
+    { key:'name',        lbl:'Company Name'     },
+    { key:'id',          lbl:'Vendor ID'        },
+    { key:'vendorType',  lbl:'Vendor Type'      },
+    { key:'_normCat',    lbl:'Category'         },
+    { key:'state',       lbl:'State'            },
+    { key:'txnCount',    lbl:'Transaction Count'},
+    { key:'txnValue',    lbl:'Total GMV'        },
+    { key:'avgTxnValue', lbl:'Avg Txn Value'    },
+    { key:'txnDate',     lbl:'Last Txn Date'    },
   ];
   var thHtml = cols.map(function(c) {
     var isAsc  = _ta.sk === c.key && _ta.sd ===  1;
@@ -10699,6 +10688,7 @@ function _taTblHtml() {
       + '<td>' + esc(r.vendorType||'—') + '</td>'
       + '<td>' + (r._normCat !== 'Other' ? '<span class="ta-cat-badge" style="background:' + catBg + ';color:' + catClr + '">' + esc(r._normCat) + '</span>' : '—') + '</td>'
       + '<td>' + esc(r.state||'—') + '</td>'
+      + '<td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">' + (r.txnCount > 0 ? fmt(r.txnCount) : '—') + '</td>'
       + '<td style="text-align:right">' + (r.txnValue > 0 ? fmtINR(r.txnValue) : '—') + '</td>'
       + '<td style="text-align:right">' + (avg > 0 ? fmtINR(avg) : '—') + '</td>'
       + '<td>' + esc(r.txnDate !== '—' ? r.txnDate : '—') + '</td>'
@@ -10706,7 +10696,7 @@ function _taTblHtml() {
   }).join('');
 
   if (!trHtml) {
-    trHtml = '<tr><td colspan="8" class="ta-no-data">'
+    trHtml = '<tr><td colspan="9" class="ta-no-data">'
       + (_ta.q ? 'No match for &ldquo;' + esc(_ta.q) + '&rdquo;' : 'No vendors found.') + '</td></tr>';
   }
 
