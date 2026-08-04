@@ -9385,7 +9385,7 @@ function tatChip(t) {
 // ═══════════════════════════════════════════════════════════════
 var _vtb = { view: 'summary', vtType: null, vtCol: '#005DFF',
              aud: 'seller',
-             vtRows: [], row: null,
+             vtRows: [], row: null, rowsLoading: false,
              q: '', sk: 'name', sd: 1, pg: 0, pgSz: 15,
              txnRows: [], txnLoading: false, txnError: false,
              txnQ: '', txnSk: 'txnDate', txnSd: -1, txnPg: 0, txnPgSz: 20 };
@@ -9461,10 +9461,14 @@ function _vtbGatherRows(vtType) {
       }
     } catch(e) {}
   });
-  // Supplement with live vertRows if they match the audience
+  // Supplement with live vertRows if they match the audience.
+  // Rows fetched before the Code.gs audience-field fix won't have r.audience set,
+  // so fall back to comparing selectedAud (which is always the audience vertRows
+  // were loaded for) when the field is missing.
   if (Array.isArray(vertRows)) {
+    var vertRowsAud = selectedAud;
     vertRows.forEach(function(r) {
-      if ((r.audience || 'seller') === aud
+      if ((r.audience ? r.audience === aud : vertRowsAud === aud)
           && r.status === 'COMPLETED'
           && (r.vendorType || 'Unknown').trim() === vtType
           && !seen[r.id]
@@ -9549,8 +9553,43 @@ function vtbDrilldown(ci) {
   _vtb.vtCol  = _VTB_CLR[ci % _VTB_CLR.length];
   _vtb.view   = 'vendors';
   _vtb.q = ''; _vtb.sk = 'name'; _vtb.sd = 1; _vtb.pg = 0;
+  _vtb.rowsLoading = false;
   _vtb.vtRows = _vtbGatherRows(t.type);
   _vtbRender();
+  // Rows for this audience/vertical may not be cached yet (e.g. user never opened
+  // the buyer detail tab). Fetch them from the server and re-render when they arrive.
+  if (_vtb.vtRows.length === 0 && t.onboarded > 0) _vtbFetchRows();
+}
+
+function _vtbFetchRows() {
+  var aud = _vtb.aud;
+  var key = (typeof activeVertKey !== 'undefined' && activeVertKey) || selectedVert;
+  if (!key) return;
+  _vtb.rowsLoading = true;
+  _vtbRender();
+  var pKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  var lsKey = STORE_PFX + 'vr_' + aud + '_' + key;
+  var f = { audience: aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      _vtb.rowsLoading = false;
+      try {
+        var data = JSON.parse(res);
+        if (data.success && Array.isArray(data.rows)) {
+          try { localStorage.setItem(lsKey, JSON.stringify({ pKey: pKey, rows: data.rows })); } catch(e) {}
+          if (_vtb.view === 'vendors' && _vtb.vtType) {
+            _vtb.vtRows = _vtbGatherRows(_vtb.vtType);
+            _vtbRender();
+          }
+        }
+      } catch(e) {}
+    })
+    .withFailureHandler(function() {
+      _vtb.rowsLoading = false;
+      if (_vtb.view === 'vendors') _vtbRender();
+    })
+    .getVerticalRows(key, JSON.stringify(f));
 }
 
 function _vtbFiltered() {
@@ -9679,8 +9718,11 @@ function _vtbVlBody() {
   }).join('');
 
   if (!trHtml) {
-    trHtml = '<tr><td colspan=”9” class=”vtb-no-data”>No vendors found'
-      + (_vtb.q ? ' for “' + esc(_vtb.q) + '”' : '') + '.</td></tr>';
+    trHtml = '<tr><td colspan=”9” class=”vtb-no-data”>'
+      + (_vtb.rowsLoading
+          ? 'Loading vendors…'
+          : 'No vendors found' + (_vtb.q ? ' for “' + esc(_vtb.q) + '”' : '') + '.')
+      + '</td></tr>';
   }
 
   var searchQ = _vtb.q || '';

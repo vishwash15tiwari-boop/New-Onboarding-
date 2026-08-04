@@ -374,7 +374,7 @@ function getVerticalRows(vertKey, filtersJson) {
       return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
     });
 
-    var out = JSON.stringify({ success: true, vertKey: vertKey, rows: vrows.map(vertRow) });
+    var out = JSON.stringify({ success: true, vertKey: vertKey, rows: vrows.map(function(r) { var row = vertRow(r); row.audience = audience; return row; }) });
     try { cache.put(cacheKey, out, CONFIG.CACHE_TTL); } catch (e) {}
     return out;
   } catch (err) {
