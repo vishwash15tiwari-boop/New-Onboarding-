@@ -7920,13 +7920,17 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
 
   // ── 3 Operational cards (Right 20%) ─────────────────────────────
   var fys = (v.fyBreakdown || []).filter(function(f) { return !f.fyStart || f.fyStart >= 2019; });
-  var curFY = '';
+  var curFyObj = null;
   if (fys.length) {
     var fySorted = fys.slice().sort(function(a, b) { return (a.fyStart || 0) - (b.fyStart || 0); });
-    curFY = fySorted[fySorted.length - 1].fy || '';
+    curFyObj = fySorted[fySorted.length - 1];
   }
+  var curFY = curFyObj ? (curFyObj.fy || '') : '';
+  // Show current FY's avgTAT — excludes old records whose onboarding_updated_date may
+  // have drifted (re-edited after completion), falling back to the overall average.
+  var displayTAT = (curFyObj && curFyObj.avgTAT != null) ? curFyObj.avgTAT : v.avgTAT;
   var opsData = [
-    { lbl:'Avg TAT',    val: v.avgTAT != null ? v.avgTAT + 'd' : '—' },
+    { lbl:'Avg TAT',    val: displayTAT != null ? displayTAT + 'd' : '—' },
     { lbl:'Current FY', val: curFY || '—' },
   ];
   var opsCol = '<div class="vpipe-ops-col">'
