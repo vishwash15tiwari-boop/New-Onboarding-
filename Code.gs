@@ -628,7 +628,16 @@ function normalizeRows(raw, cfg) {
       || gv(row, idx, 'marketplace_vertical')
       || '';
     var created  = parseDate(gv(row, idx, 'onboarding_created_date'));
-    var onboarded = cfg.onbCol ? parseDate(gv(row, idx, cfg.onbCol)) : null;
+    // Try specific completion-date columns first; fall back to cfg.onbCol (which for buyers
+    // is onboarding_updated_date — a "last modified" stamp that shifts on any field edit,
+    // not just on status→COMPLETED, so more precise columns take precedence when present).
+    var onboarded = parseDate(
+      gv(row, idx, 'onboarded_date') ||
+      gv(row, idx, 'onboarding_completed_date') ||
+      gv(row, idx, 'completed_date') ||
+      gv(row, idx, 'completed_at') ||
+      (cfg.onbCol ? gv(row, idx, cfg.onbCol) : '')
+    );
     var recId    = String(gv(row, idx, cfg.idCol)   || '').replace(/,/g, '').trim();
     var recName  = String(gv(row, idx, cfg.nameCol) || '').trim();
     // TAT = start → Onboarded, for completed records only. Start is the record's
