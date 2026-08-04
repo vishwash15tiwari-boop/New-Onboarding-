@@ -3149,6 +3149,194 @@ thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
   #dash-content{padding:0 16px 60px}
 }
 </style>
+
+<style id="premium-refresh">
+/* ═══════════════════════════════════════════════════════════════════
+   PREMIUM ENTERPRISE VISUAL REFRESH — Notion · Linear · Stripe · Apple
+   85-90 % monochromatic. Color limited to charts, status, and CTAs.
+   Layout, grid, spacing, font sizes, and hierarchy are untouched.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Token refinements ──────────────────────────────────────── */
+:root {
+  --bg2:         #F7F7F8;
+  --card2:       #FAFAFA;
+  --hover:       rgba(0,0,0,.025);
+  --border:      rgba(0,0,0,.07);
+  --border2:     rgba(0,0,0,.12);
+  --shadow-sm:   0 1px 2px rgba(0,0,0,.04), 0 2px 6px rgba(0,0,0,.025);
+  --shadow:      0 2px 8px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.055);
+  --shadow-lg:   0 4px 16px rgba(0,0,0,.07), 0 16px 40px rgba(0,0,0,.08);
+  --shadow-card: 0 0 0 1px rgba(0,0,0,.055), 0 2px 4px rgba(0,0,0,.04), 0 8px 20px rgba(0,0,0,.04);
+  --r2:          14px;
+  --t-card:      box-shadow .2s ease, border-color .2s ease;
+}
+
+/* ── 2. Scrollbar — 4 px premium slim ──────────────────────────── */
+::-webkit-scrollbar { width:4px; height:4px }
+::-webkit-scrollbar-thumb {
+  border:none;
+  background:rgba(0,0,0,.18);
+  border-radius:4px;
+}
+::-webkit-scrollbar-thumb:hover { background:rgba(0,0,0,.28) }
+
+/* ── 3. Header — finer separator ───────────────────────────────── */
+#header { border-bottom-color:rgba(0,0,0,.06) }
+#header.scrolled { box-shadow:0 1px 0 rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.04) }
+
+/* ── 4. Tables — neutral hover; remove blue tinting everywhere ─── */
+tbody tr:hover,
+tbody tr.vd-tr:hover      { background:rgba(0,0,0,.025) !important }
+tbody tr:nth-child(even)  { background:rgba(0,0,0,.014) }
+.vd-tbl tbody tr:hover    { background:rgba(0,0,0,.025) !important }
+.vd-tbl tbody tr:nth-child(even)  { background:rgba(0,0,0,.014) }
+.vd-tbl tbody tr:nth-child(odd)   { background:transparent }
+.ovn-tbl tbody tr:hover td        { background:rgba(0,0,0,.025) !important }
+.ovn-tbl tbody tr:nth-child(even) td { background:rgba(0,0,0,.014) }
+.dm-tbl  tr:hover td    { background:rgba(0,0,0,.025) !important }
+.gmc-cat-card:hover     { background:rgba(0,0,0,.025) !important }
+.gmc-mat-row:hover      { background:rgba(0,0,0,.025) !important }
+.vtb-sum-row:hover      { background:rgba(0,0,0,.025) }
+.vtb-vl-row:hover       { background:rgba(0,0,0,.025) }
+.sl-row:hover td        { background:rgba(0,0,0,.025) }
+.rgn-state-row:hover    { background:rgba(0,0,0,.025) }
+.rgn-co-row:hover       { background:rgba(0,0,0,.025) }
+.vt-tr:hover            { background:rgba(0,0,0,.025) }
+.ta-vl-row:hover td     { background:rgba(0,0,0,.025) !important }
+.ta-age-row:hover       { background:rgba(0,0,0,.025) }
+.gp-table tbody tr:hover{ background:rgba(0,0,0,.025) }
+.km-dtbl tbody tr:hover td { background:rgba(0,0,0,.025) }
+.km-vrow:hover          { background:rgba(0,0,0,.025) }
+.rgn-sd-chip:hover:not(.on) { background:rgba(0,0,0,.04) }
+
+/* ── 5. KPI card — remove green border on onboarded ─────────────
+      Value stays green; only the card border goes neutral.         */
+.vkpi-card.vk-onboarded {
+  border-color: var(--border);
+  box-shadow:   var(--shadow-sm);
+}
+.vkpi-card.vk-onboarded:hover { border-color:rgba(0,0,0,.12) }
+
+/* ── 6. Stage accent bars — 2 px (was 3–4 px) ──────────────────── */
+.pipe-kpi::before { width:2px }
+.gp-kpi::before   { width:3px }
+.kb-col           { border-top-width:2px }
+
+/* ── 7. Status chips — desaturated tint + hairline border ───────── */
+.status-chip { border:1px solid transparent; border-radius:6px }
+.chip-completed { background:rgba(4,151,105,.07);  color:#0A7044; border-color:rgba(4,151,105,.16) }
+.chip-draft     { background:rgba(132,96,212,.07); color:#5B3FA8; border-color:rgba(132,96,212,.16) }
+.chip-review    { background:rgba(178,80,0,.07);   color:#B25000; border-color:rgba(178,80,0,.15) }
+.chip-rejected  { background:rgba(215,0,21,.07);   color:#D70015; border-color:rgba(215,0,21,.14) }
+
+/* ── 8. Card hover — clean, neutral lift ────────────────────────── */
+.compare-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04);
+  border-color: rgba(0,0,0,.10);
+}
+.vkpi-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
+  border-color: rgba(0,0,0,.12);
+}
+.kb-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04);
+  border-color: rgba(0,0,0,.12);
+}
+.vd-kpi:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04);
+  border-color: rgba(0,0,0,.12);
+}
+
+/* ── 9. Segment tabs — tighter active shadow ────────────────────── */
+.qf-chip.active,
+.aud-tab.active {
+  box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.05);
+}
+.vd-toggle-btn.active {
+  box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.04);
+}
+
+/* ── 10. Vertical tabs — refined active state ───────────────────── */
+.vert-tab.active {
+  box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.05);
+}
+.vert-tab.active::before { width:4px; height:4px }
+
+/* ── 11. Pipeline cards — consistent radius ─────────────────────── */
+.vpipe-card         { border-radius:var(--r)!important }
+.vpipe-stat-card    {
+  border-radius:10px;
+  transition:box-shadow .2s ease, border-color .2s ease;
+}
+.vpipe-stat-card[role="button"]:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04);
+  border-color: rgba(0,0,0,.12);
+}
+.vpipe-ops-card { border-radius:10px }
+
+/* ── 12. Biz rail — radius consistency ─────────────────────────── */
+.biz-tile  {
+  border-radius: var(--r2);
+  transition: box-shadow .2s ease, border-color .2s ease;
+}
+.biz-panel { border-radius:var(--r2) }
+
+/* ── 13. Modal panels — 18 px consistent radius ─────────────────── */
+.km-pn                         { border-radius:18px }
+@media(min-width:600px){.km-pn { border-radius:18px }}
+.vtb-pn, .sl-pn, .dm-pn, .ta-pn { border-radius:18px }
+
+/* ── 14. Selected card ring — 2 px sharp blue ───────────────────── */
+.compare-card.selected {
+  box-shadow: 0 0 0 2px var(--blue), 0 4px 16px rgba(0,0,0,.07);
+}
+
+/* ── 15. Metric tiles — consistent neutral ──────────────────────── */
+.ta-metric-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.km-sg-item { border-radius:10px }
+.km-mb      { border-radius:10px }
+
+/* ── 16. GST cards — unify with main token set ──────────────────── */
+.gp-kpi {
+  border-color: var(--border);
+  box-shadow:   var(--shadow-sm);
+}
+.gp-kpi:hover  { box-shadow:var(--shadow); border-color:var(--border2) }
+.gp-card {
+  border-color: var(--border);
+  box-shadow:   var(--shadow-sm);
+  border-radius:var(--r);
+}
+.gp-card:hover { box-shadow:var(--shadow); border-color:var(--border2) }
+
+/* ── 17. Spotlight — neutral hover, not blue ────────────────────── */
+.sp-item:hover:not(.sp-active) { background:rgba(0,0,0,.035) }
+
+/* ── 18. Sidenav — monochrome active states ─────────────────────── */
+.sn-grp:hover     { background:rgba(0,0,0,.035) }
+.sn-grp.sn-active { background:rgba(0,0,0,.05) }
+.sn-sub:hover     { background:rgba(0,0,0,.03) }
+
+/* ── 19. Focus rings — consistent 2 px blue ─────────────────────── */
+:focus-visible { box-shadow:0 0 0 2px rgba(0,93,255,.28); border-radius:var(--r2) }
+
+/* ── 20. Misc polish ─────────────────────────────────────────────── */
+.cc-stat        { border-radius:10px }
+.rgn-tile       { border-radius:10px }
+.vd-summary     { border-radius:12px }
+.vtb-badge-s,.vtb-badge-b,.vtb-badge-m,.vtb-badge-p,
+.vtb-badge-ok,.vtb-badge-pend { border-radius:6px }
+.ovn-badge      { border-radius:5px }
+.dm-badge-m,.dm-badge-p,.dm-badge-s,.dm-badge-b { border-radius:6px }
+.gp-chip        { border-radius:6px }
+.vd-tbl thead th { letter-spacing:.06em }
+.biz-reg-bar    { height:3px; border-radius:3px }
+</style>
 </head>
 
 <body>
