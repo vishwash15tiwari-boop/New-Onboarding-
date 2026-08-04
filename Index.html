@@ -3824,165 +3824,220 @@ button:active:not(:disabled),
 .vkpi-card.vk-transacted .vkpi-val { color: var(--blue) !important }
 </style>
 
-<style id="omp-tree-css">
-/* ══ OMP STORY CARDS ══════════════════════════════════════════════════════
-   The Open Marketplace journey told as a sequence of standalone cards:
-   Open Marketplace → Total Logged In Cases → the funnel (Draft · In Review ·
-   Rejected · Onboarded) → the seven post-onboarding cards.
-   No connectors — each card pops in on its own as the story reaches it.
-   Cards are neutral surfaces; colour is reserved for status semantics.
+<style id="vex-css">
+/* The vertical tab strip and the retired pipeline/rail cells are superseded
+   by the explorer's own first column. */
+#vert-tabs-bar{display:none!important}
+#vert-pipeline-pair,#vert-biz-rail{display:none!important}
+.vert-dash-grid{display:block!important}
+
+/* ══ VERTICAL EXPLORER — progressive, branch-by-branch disclosure ═════════
+   Column 1 (verticals) is all that shows at rest. Picking one opens the
+   KPI branch; picking a KPI opens its detail branch. Every column shares
+   the same header height, gutter and row rhythm so the three read as one
+   continuous surface rather than three stacked panels.
    ═══════════════════════════════════════════════════════════════════════ */
-.omp-tree{position:relative;width:100%;padding:4px 0 2px}
-
-.otr{position:relative;display:flex;justify-content:center;align-items:stretch}
-.otr-root{margin-bottom:14px}
-.otr-logged{margin-bottom:22px}
-.otr-l2{gap:14px;margin-bottom:22px}
-.otr-l2 > .otn{flex:1 1 0;min-width:0}
-.otr-l3{flex-wrap:wrap;justify-content:flex-start;gap:14px;align-items:flex-start}
-.otr-l3 > .otn{flex:0 1 calc(50% - 7px);min-width:0}
-
-/* ── Story reveal — each card pops into place on its own ──────────────── */
-.otn-rv{opacity:0;transform:scale(.94);
-        transition:opacity .2s ease-out,
-                   transform .22s cubic-bezier(.34,1.42,.64,1),
-                   box-shadow .16s ease,border-color .16s ease}
-.otn-rv.is-in{opacity:1;transform:none}
-
-/* ── Node shell ───────────────────────────────────────────────────────── */
-.otn{
-  position:relative;
+.vex{
+  display:flex;align-items:stretch;
+  width:fit-content;max-width:100%;
   background:var(--card);
   border:1px solid var(--border);
   border-radius:18px;
-  padding:15px 17px 16px;
   box-shadow:var(--shadow-sm);
-  display:flex;flex-direction:column;
-  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+  overflow:hidden;
+  transition:width .28s cubic-bezier(.32,.72,0,1);
 }
-.otn-click{cursor:pointer}
-.otn-rv.is-in.otn-click:hover,.otn-rv.is-in.otn-click:focus-visible{
-  transform:translateY(-2px);
-  box-shadow:0 6px 20px rgba(0,0,0,.09);
-  border-color:var(--vc,#005DFF);
-  outline:none;
+.vex.vex-wide{width:100%}
+.vex-col{
+  display:flex;flex-direction:column;min-width:0;
+  border-right:1px solid var(--border);
 }
-.otn::before{
-  content:'';position:absolute;left:17px;right:17px;top:0;height:2px;
-  border-radius:0 0 2px 2px;background:var(--otn-ac,transparent);
-  opacity:.9;
-}
-.otn-root{width:100%;padding:17px 22px 18px}
-.otn-logged{width:100%;padding:18px 22px 19px}
-.otn-l2{padding:14px 16px 15px}
-.otn-l3{padding:15px 17px 16px;border-radius:18px}
-.otn-title{font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--txt);line-height:1.15}
-/* Root reads as a banner: name on the left, framing line beside it. */
-.otn-band{display:flex;align-items:baseline;column-gap:16px;row-gap:2px;flex-wrap:wrap}
-.otn-band .otn-sub{margin-top:0;flex:1 1 260px}
-/* The question this node answers — the thread that carries the story on. */
-.otn-q{font-size:11px;color:var(--txt2);margin:-3px 0 10px;line-height:1.4}
+.vex-col:last-child{border-right:0}
+.vex-c1{flex:0 0 262px}
+.vex-c2{flex:0 0 312px}
+.vex-c3{flex:1 1 auto;min-width:0;background:var(--card2)}
 
-/* ── Node header ──────────────────────────────────────────────────────── */
-.otn-hd{display:flex;align-items:center;gap:7px;margin-bottom:9px}
-.otn-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;
-         background:var(--otn-ac,var(--txt3))}
-.otn-ttl{font-size:9.5px;font-weight:700;letter-spacing:.075em;
-         text-transform:uppercase;color:var(--txt3);white-space:nowrap;
-         overflow:hidden;text-overflow:ellipsis}
-.otn-chip{margin-left:auto;font-size:9px;font-weight:700;line-height:1;
-          padding:3px 6px;border-radius:5px;background:var(--chip-bg,var(--bg2));
-          color:var(--otn-ac,var(--txt2));white-space:nowrap}
+/* A branch sliding open. */
+@keyframes vexIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+.vex-col-enter{animation:vexIn .26s cubic-bezier(.32,.72,0,1) both}
 
-/* ── Numbers ──────────────────────────────────────────────────────────── */
-.otn-big{font-size:34px;font-weight:800;line-height:1;letter-spacing:-.025em;
+/* ── Column header — identical box in all three, so rows line up ──────── */
+.vex-hd{
+  padding:14px 17px 13px;
+  border-bottom:1px solid var(--border);
+  height:70px;flex:0 0 70px;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.vex-eyebrow{
+  font-size:9px;font-weight:750;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--txt3);display:flex;align-items:center;gap:6px;
+}
+.vex-eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--vc,var(--txt3));
+               flex-shrink:0;display:block}
+.vex-title{
+  font-size:15px;font-weight:750;color:var(--txt);margin-top:4px;
+  letter-spacing:-.015em;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.vex-title-sub{font-size:10.5px;font-weight:500;color:var(--txt3);margin-top:3px;
+               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.vex-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px}
+.vex-c3 .vex-body{padding:17px 20px 20px}
+/* Detail keeps a reading measure however wide the column gets. */
+.vex-pane{max-width:680px}
+.vex-body::-webkit-scrollbar{width:7px}
+.vex-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.vex-body::-webkit-scrollbar-track{background:transparent}
+
+/* ── Selectable row ───────────────────────────────────────────────────── */
+.vex-item{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:9px 10px;margin-bottom:2px;
+  border:1px solid transparent;border-radius:11px;
+  background:transparent;text-align:left;cursor:pointer;
+  font:inherit;color:inherit;
+  transition:background .14s ease,border-color .14s ease,transform .14s ease;
+}
+.vex-item:last-child{margin-bottom:0}
+.vex-item:hover{background:var(--hover)}
+.vex-item:focus-visible{outline:2px solid var(--vc,#005DFF);outline-offset:-2px}
+.vex-item.active{background:var(--vc-soft,rgba(0,93,255,.09));
+                 border-color:var(--vc-line,rgba(0,93,255,.3))}
+.vex-item:active{transform:scale(.985)}
+
+.vex-tick{width:3px;align-self:stretch;border-radius:2px;flex-shrink:0;
+          background:var(--it,var(--border2));opacity:.45;
+          transition:opacity .14s ease}
+.vex-item:hover .vex-tick,.vex-item.active .vex-tick{opacity:1}
+
+.vex-it{flex:1 1 auto;min-width:0;display:block}
+.vex-it-name{display:block;font-size:12.5px;font-weight:650;color:var(--txt);line-height:1.25;
+             white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vex-item.active .vex-it-name{color:var(--vc-ink,var(--txt))}
+.vex-it-sub{display:block;font-size:10px;color:var(--txt3);margin-top:2px;line-height:1.3;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vex-it-val{display:block;font-size:14.5px;font-weight:800;color:var(--txt);flex-shrink:0;
+            font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.vex-it-val.ac{color:var(--it)}
+
+/* The chevron is the affordance: dim at rest, solid on hover/active. */
+.vex-chev{width:14px;height:14px;flex-shrink:0;opacity:.22;
+          transition:opacity .14s ease,transform .16s ease;color:var(--txt2)}
+.vex-item:hover .vex-chev{opacity:.55;transform:translateX(2px)}
+.vex-item.active .vex-chev{opacity:1;color:var(--vc,var(--txt))}
+
+.vex-sep{
+  display:flex;align-items:center;gap:8px;
+  padding:14px 10px 7px;
+  font-size:8.5px;font-weight:750;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--txt3);
+}
+.vex-sep::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Resting state — the invitation to open a branch ──────────────────── */
+.vex-rest{
+  flex:1 1 auto;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:9px;padding:34px 26px;text-align:center;
+}
+.vex-rest-ic{width:34px;height:34px;color:var(--txt3);opacity:.4}
+.vex-rest-t{font-size:12.5px;font-weight:650;color:var(--txt2)}
+.vex-rest-s{font-size:11px;color:var(--txt3);max-width:230px;line-height:1.5}
+
+/* ── Detail panel (column 3) ──────────────────────────────────────────── */
+.vex-q{font-size:11.5px;color:var(--txt2);margin-bottom:14px;line-height:1.45}
+.vex-big{font-size:38px;font-weight:800;line-height:1;letter-spacing:-.03em;
          color:var(--txt);font-variant-numeric:tabular-nums}
-.otn-l2 .otn-big{font-size:26px}
-.otn-l3 .otn-big{font-size:23px}
-.otn-big.ac{color:var(--otn-ac)}
-.otn-sub{font-size:10.5px;color:var(--txt3);margin-top:5px;line-height:1.45}
-.otn-sub b{color:var(--txt2);font-weight:700}
-.otn-sep{height:1px;background:var(--border);margin:12px 0 11px;opacity:.75}
+.vex-big.ac{color:var(--it,var(--vc))}
+.vex-sub{font-size:11.5px;color:var(--txt3);margin-top:7px;line-height:1.5}
+.vex-sub b{color:var(--txt2);font-weight:700}
+.vex-sec{margin-top:20px}
+.vex-sec-t{font-size:9px;font-weight:750;letter-spacing:.1em;text-transform:uppercase;
+           color:var(--txt3);margin-bottom:9px}
+.vex-act{
+  margin-top:20px;display:inline-flex;align-items:center;gap:7px;
+  padding:9px 15px;border-radius:10px;cursor:pointer;font:inherit;
+  font-size:11.5px;font-weight:650;
+  border:1px solid var(--vc-line,var(--border2));
+  background:var(--vc-soft,var(--bg2));color:var(--vc-ink,var(--txt));
+  transition:background .14s ease,transform .14s ease;
+}
+.vex-act:hover{background:var(--vc,#005DFF);color:#fff;border-color:transparent}
+.vex-act:active{transform:scale(.97)}
 
-/* ── Split bar (root) ─────────────────────────────────────────────────── */
-.otn-splitbar{display:flex;height:6px;border-radius:3px;overflow:hidden;
-              background:var(--bg2);margin-top:13px;gap:2px}
-.otn-splitbar i{display:block;height:100%;border-radius:2px}
-.otn-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:9px}
-.otn-legend-i{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--txt3)}
-.otn-legend-i b{color:var(--txt2);font-weight:700}
-.otn-legend-d{width:7px;height:7px;border-radius:2px;flex-shrink:0}
-
-/* ── Stat grid (2×N mini cells) ───────────────────────────────────────── */
-.otn-cells{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.otn-cells-3{grid-template-columns:repeat(3,1fr)}
-.otn-cell{background:var(--bg2);border-radius:9px;padding:8px 9px;min-width:0}
-.otn-cell-l{font-size:8.5px;font-weight:700;letter-spacing:.05em;
-            text-transform:uppercase;color:var(--txt3);
+/* ── Shared primitives: cells, bars, matrix, stack, stars ─────────────── */
+.vex-cells{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.vex-cells-3{grid-template-columns:repeat(3,1fr)}
+.vex-cell{background:var(--bg2);border-radius:10px;padding:10px 11px;min-width:0}
+.vex-cell-l{font-size:8.5px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;
+            color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vex-cell-v{font-size:18px;font-weight:800;color:var(--txt);margin-top:4px;line-height:1.1;
+            font-variant-numeric:tabular-nums}
+.vex-cell-s{font-size:9px;color:var(--txt3);margin-top:2px;
             white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.otn-cell-v{font-size:16px;font-weight:800;color:var(--txt);margin-top:3px;
-            line-height:1.1;font-variant-numeric:tabular-nums}
-.otn-cell-s{font-size:8.5px;color:var(--txt3);margin-top:2px;
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* ── Labelled bar rows (geo / GMV / rating) ───────────────────────────── */
-.otn-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.otn-bar:last-child{margin-bottom:0}
-.otn-bar-l{flex:0 0 62px;font-size:10px;color:var(--txt2);
+.vex-bar{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.vex-bar:last-child{margin-bottom:0}
+.vex-bar-l{flex:0 0 88px;font-size:11px;color:var(--txt2);
            white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.otn-bar-t{flex:1;height:6px;border-radius:3px;background:var(--bg2);overflow:hidden}
-.otn-bar-f{height:100%;border-radius:3px;background:var(--otn-ac,#005DFF);
-           opacity:.85;transition:width .35s cubic-bezier(.4,0,.2,1)}
-.otn-bar-v{flex:0 0 auto;font-size:10px;font-weight:700;color:var(--txt2);
-           font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
+.vex-bar-t{flex:1;height:7px;border-radius:4px;background:var(--bg2);overflow:hidden}
+.vex-bar-f{height:100%;border-radius:4px;background:var(--it,var(--vc,#005DFF));opacity:.85;
+           transition:width .4s cubic-bezier(.4,0,.2,1)}
+.vex-bar-v{flex:0 0 auto;min-width:52px;text-align:right;font-size:11px;font-weight:700;
+           color:var(--txt2);font-variant-numeric:tabular-nums}
 
-/* ── Matrix table (volume) ────────────────────────────────────────────── */
-.otn-tbl{width:100%;border-collapse:collapse;font-size:10px;margin-top:2px}
-.otn-tbl th{font-size:8.5px;font-weight:700;letter-spacing:.04em;
-            text-transform:uppercase;color:var(--txt3);text-align:right;
-            padding:0 0 5px;border-bottom:1px solid var(--border)}
-.otn-tbl th:first-child,.otn-tbl td:first-child{text-align:left}
-.otn-tbl td{padding:5px 0;text-align:right;color:var(--txt2);font-weight:600;
+.vex-splitbar{display:flex;height:8px;border-radius:4px;overflow:hidden;
+              background:var(--bg2);gap:2px;margin-top:16px}
+.vex-splitbar i{display:block;height:100%;border-radius:2px}
+.vex-legend{display:flex;flex-wrap:wrap;gap:7px 15px;margin-top:11px}
+.vex-legend-i{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txt3)}
+.vex-legend-i b{color:var(--txt2);font-weight:700}
+.vex-legend-d{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+.vex-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.vex-tbl th{font-size:8.5px;font-weight:750;letter-spacing:.05em;text-transform:uppercase;
+            color:var(--txt3);text-align:right;padding:0 0 7px;
+            border-bottom:1px solid var(--border)}
+.vex-tbl th:first-child,.vex-tbl td:first-child{text-align:left}
+.vex-tbl td{padding:7px 0;text-align:right;color:var(--txt2);font-weight:600;
             font-variant-numeric:tabular-nums;
             border-bottom:1px solid color-mix(in srgb,var(--border) 55%,transparent)}
-.otn-tbl tr:last-child td{border-bottom:0}
-.otn-tbl td:first-child{color:var(--txt3);font-weight:600}
+.vex-tbl tr:last-child td{border-bottom:0}
+.vex-tbl td:first-child{color:var(--txt3)}
 
-/* ── Stacked progress (OSV) ───────────────────────────────────────────── */
-.otn-stack{display:flex;height:8px;border-radius:4px;overflow:hidden;
-           background:var(--bg2);margin-top:11px;gap:2px}
-.otn-stack i{display:block;height:100%;border-radius:2px;
-             transition:width .35s cubic-bezier(.4,0,.2,1)}
+.vex-stack{display:flex;height:10px;border-radius:5px;overflow:hidden;
+           background:var(--bg2);gap:2px;margin-top:14px}
+.vex-stack i{display:block;height:100%;border-radius:2px;
+             transition:width .4s cubic-bezier(.4,0,.2,1)}
 
-/* ── Rating stars ─────────────────────────────────────────────────────── */
-.otn-star{display:flex;align-items:center;gap:7px;margin-bottom:4px}
-.otn-star:last-child{margin-bottom:0}
-.otn-star-l{flex:0 0 20px;font-size:9.5px;color:var(--txt3);
-            font-variant-numeric:tabular-nums}
-.otn-star-t{flex:1;height:5px;border-radius:3px;background:var(--bg2);overflow:hidden}
-.otn-star-f{height:100%;border-radius:3px;background:#E48800;opacity:.85;
-            transition:width .35s cubic-bezier(.4,0,.2,1)}
-.otn-star-c{flex:0 0 26px;text-align:right;font-size:9.5px;font-weight:700;
+.vex-star{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.vex-star:last-child{margin-bottom:0}
+.vex-star-l{flex:0 0 24px;font-size:10.5px;color:var(--txt3);font-variant-numeric:tabular-nums}
+.vex-star-t{flex:1;height:6px;border-radius:3px;background:var(--bg2);overflow:hidden}
+.vex-star-f{height:100%;border-radius:3px;background:#E48800;opacity:.85;
+            transition:width .4s cubic-bezier(.4,0,.2,1)}
+.vex-star-c{flex:0 0 34px;text-align:right;font-size:10.5px;font-weight:700;
             color:var(--txt2);font-variant-numeric:tabular-nums}
 
-.otn-empty{font-size:10px;color:var(--txt3);padding:6px 0}
+.vex-empty{font-size:11px;color:var(--txt3);padding:8px 0}
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
-@media(max-width:820px){
-  .otr-l2{flex-wrap:wrap;justify-content:flex-start}
-  .otr-l2 > .otn{flex:0 1 calc(50% - 7px)}
+/* ── Responsive — columns become stacked sections, order preserved ────── */
+@media(max-width:1080px){
+  .vex-c1{flex:0 0 230px}
+  .vex-c2{flex:0 0 268px}
 }
-@media(max-width:600px){
-  .otr-l2 > .otn,.otr-l3 > .otn{flex:1 1 100%}
-  .otr-l2,.otr-l3{gap:10px}
-  .otr-root{margin-bottom:10px}
-  .otr-logged,.otr-l2{margin-bottom:16px}
-  .otn-title{font-size:21px}
+@media(max-width:860px){
+  .vex,.vex.vex-wide{width:100%;flex-direction:column}
+  .vex-col{border-right:0;border-bottom:1px solid var(--border)}
+  .vex-col:last-child{border-bottom:0}
+  .vex-c1,.vex-c2,.vex-c3{flex:0 0 auto}
+  .vex-body{max-height:none;overflow:visible}
+  .vex-hd{height:auto;flex:0 0 auto;padding:13px 15px 12px}
+  @keyframes vexIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 }
-/* Reduced motion: the story is told, not animated — everything is present. */
 @media(prefers-reduced-motion:reduce){
-  .otn,.otn-rv,.otn-bar-f,.otn-stack i,.otn-star-f{transition:none}
-  .otn-rv{opacity:1;transform:none}
+  .vex,.vex-item,.vex-chev,.vex-bar-f,.vex-stack i,.vex-star-f{transition:none}
+  .vex-col-enter{animation:none}
 }
 </style>
 </head>
@@ -4484,6 +4539,8 @@ function switchAudience(a) {
   // the overview and keep the combined data.
   currentView = 'onboarding';
   updateViewChrome();
+  // Coming back from GST: repaint the branch the user had open.
+  if (activeVertKey) { renderVertExplorer(); renderInlineDetail(activeVertKey); }
 }
 
 // Switch to the GST Payables view (paint cached data instantly, then refresh).
@@ -4971,25 +5028,13 @@ function renderVerticals() {
     return;
   }
 
-  // First render — initialize the active tab to the first vertical
-  if (!activeVertKey) {
-    var cfg0 = getVertCfg();
-    activeVertKey = cfg0.length ? cfg0[0].key : 'OMP';
-    selectedVert  = activeVertKey;
-    selectedAud   = 'seller';
-    vertRows = []; vertRowsLoading = true; vertRowsError = null;
-    _ovnRows = {};
-    _vertRowsPKey = null; ++_vertRowsGen;
-    loadVertRows(activeVertKey);
-  }
+  // The explorer opens on the vertical list alone — no vertical is preselected,
+  // so the first thing on screen is the choice, not somebody else's dashboard.
 
   renderVertTabBar();
   renderVertCtxHdr(activeVertKey);
   renderVertKPIs(activeVertKey);
   renderPipelinePair(activeVertKey);
-
-  var detEl = document.getElementById('vert-detail-section');
-  if (detEl) detEl.style.display = '';
   renderInlineDetail(activeVertKey);
 }
 
@@ -5072,8 +5117,6 @@ function selectVertTab(key) {
   renderVertCtxHdr(key);
   renderVertKPIs(key);
   renderPipelinePair(key);
-  var detEl = document.getElementById('vert-detail-section');
-  if (detEl) detEl.style.display = '';
   renderInlineDetail(key);
   loadVertRows(key);
 }
@@ -5127,73 +5170,17 @@ function renderVertKPIs(key) {
   var nonTxnTotal = Math.max(0, compS - txnTotal);
   var newS = vs.newVendors || 0, newB = vb.newVendors || 0;
   var oldS = vs.oldVendors || 0, oldB = vb.oldVendors || 0;
-  var vars = vcVars(key);
-  function sideRow(v, tag, clr) {
-    return '<span class="vkpi-side-row">'
-      + '<i class="vkpi-side-dot" style="background:' + clr + '"></i>'
-      + '<b class="vkpi-side-num">' + v + '</b>'
-      + '<em class="vkpi-side-tag">' + tag + '</em>'
-      + '</span>';
-  }
-  // sides: [{val,tag,clr}] → renders as left column; big number anchors right.
-  // sub: plain string shown below the value when no sides are given.
-  // id: optional DOM id so cards can be patched after async data arrives.
-  function mk(icon, lbl, val, sub, cls, action, id, note) {
-    return '<div' + (id ? ' id="' + id + '"' : '') + ' class="vkpi-card' + (cls ? ' ' + cls : '') + '" style="' + vars + '"'
-      + ' role="button" tabindex="0"'
-      + ' onclick="openKpiModal(\'' + action + '\')"'
-      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'' + action + '\')}">'
-      + '<div class="vkpi-lbl">' + lbl + '</div>'
-      + '<div class="vkpi-val">' + val + '</div>'
-      + (sub != null ? '<div class="vkpi-sub">' + (sub || '') + '</div>' : '')
-      + _cfdHtml
-      + '</div>';
-  }
-  function svg(paths) {
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
-  }
-  var icFunnel = svg('<path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/>');
-  var icCheck  = svg('<circle cx="12" cy="12" r="8.4"/><path d="M8.6 12.4l2.4 2.4 4.4-5"/>');
-  var icZap    = svg('<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>');
-  var icUsers  = svg('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>');
-
-  // FY sparklines from real breakdown data (skipped when <2 years exist)
-  var spTotal = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'total'),      'var(--vc, #005DFF)', false);
-  var spOnb   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'onboarded'),  '#30D158', true);
-  var spTxn   = sparkBars((vs.fyBreakdown || []).map(function(f){ return f.transacted != null ? f.transacted : null; }), 'var(--st-transacted)', false);
-
-  // Completion meter on the ink card — onboarded share of the whole pipeline
   var totAll  = totalS + totalB;
   var compPct = totAll > 0 ? Math.round(((compS + compB) / totAll) * 100) : 0;
-  var meter   = '<div class="vkpi-meter" title="' + compPct + '% of pipeline onboarded"><i style="width:' + compPct + '%"></i></div>';
-
-  var S = '#1DC797', B = '#005DFF';
-  var G2 = 'rgba(52,199,89,.38)', B2 = 'rgba(0,122,255,.38)';
-  // Plastic vs Metal combined (S + B) per metric
-  var PC = '#FF9F0A', MC = '#8E8E93';
-  function matLine(p, m) {
-    if (!p && !m) return '';
-    return '<div class="vkpi-mat">'
-      + '<span class="vkpi-mat-chip"><i class="vkpi-mat-dot" style="background:' + PC + '"></i>' + fmt(p) + ' plastic</span>'
-      + '<span class="vkpi-mat-chip"><i class="vkpi-mat-dot" style="background:' + MC + '"></i>' + fmt(m) + ' metal</span>'
-      + '</div>';
-  }
-  function matBracket(p, m) {
-    if (!p && !m) return '';
-    return '<span class="vkpi-mat-br">(' + p + 'P · ' + m + 'M)</span>';
-  }
-  var pTotal   = (vs.plasticTotal      || 0) + (vb.plasticTotal      || 0);
-  var mTotal   = (vs.metalTotal        || 0) + (vb.metalTotal        || 0);
-  var pOnb     = (vs.plasticOnboarded  || 0) + (vb.plasticOnboarded  || 0);
-  var mOnb     = (vs.metalOnboarded    || 0) + (vb.metalOnboarded    || 0);
+  var pTotal   = (vs.plasticTotal     || 0) + (vb.plasticTotal     || 0);
+  var mTotal   = (vs.metalTotal       || 0) + (vb.metalTotal       || 0);
+  var pOnb     = (vs.plasticOnboarded || 0) + (vb.plasticOnboarded || 0);
+  var mOnb     = (vs.metalOnboarded   || 0) + (vb.metalOnboarded   || 0);
   var pTxn     = vs.plasticTransacted || 0;
   var mTxn     = vs.metalTransacted   || 0;
-  var pNew     = (vs.plasticNew        || 0) + (vb.plasticNew        || 0);
-  var mNew     = (vs.metalNew          || 0) + (vb.metalNew          || 0);
-
-  var nonTxnSub   = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
-  var oldTotalSub = '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>';
-  var txnPct = compS > 0 ? Math.round(txnTotal / compS * 100) : 0;
+  var pNew     = (vs.plasticNew       || 0) + (vb.plasticNew       || 0);
+  var mNew     = (vs.metalNew         || 0) + (vb.metalNew         || 0);
+  var txnPct   = compS > 0 ? Math.round(txnTotal / compS * 100) : 0;
   // Save snapshot so openKpiModal() can read it without recomputing
   window._kpiSnap = {
     key: key,
@@ -5208,30 +5195,8 @@ function renderVertKPIs(key) {
     pTxn: pTxn, mTxn: mTxn,
     pNew: pNew, mNew: mNew,
   };
-  var cards = [
-    mk(icFunnel, 'Logged In Cases', fmt(totalS + totalB), '<b>' + fmt(totalS) + '</b> sellers | <b>' + fmt(totalB) + '</b> buyers', 'vk-total',     'total',      null),
-    mk(icCheck,  'Onboarded',   fmt(compS + compB),   '<b>' + fmt(compS) + '</b> sellers | <b>' + fmt(compB) + '</b> buyers',  'vk-onboarded', 'onboarded'),
-    mk(icZap,    'Transacted',  fmt(txnTotal),         '<b>' + fmt(pTxn) + '</b> Plastic | <b>' + fmt(mTxn) + '</b> Metal', 'vk-transacted', 'transacted'),
-  ];
-  if (key === 'OMP') {
-    el.style.gridTemplateColumns = '1fr';
-    el.classList.remove('vkpi-grid-4');
-    el.style.display = 'block';
-    _ompResetStory();
-    el.innerHTML = _buildOMPProcessTree(vs, vb);
-    requestAnimationFrame(function() {
-      _ompInitStory();
-      _patchOMPTreeRows();
-    });
-    loadQualityData();
-    return;
-  }
-  // 3-card verticals use auto-fit; the 4-card non-OMP row uses an explicit grid
-  el.style.gridTemplateColumns = '';
-  el.style.display = '';
-  el.classList.toggle('vkpi-grid-4', cards.length === 4);
-  el.innerHTML = cards.join('');
-  animateCounters(el);
+  // Every vertical is presented the same way — through the explorer.
+  renderVertExplorer();
 }
 
 function vkpiOpen(action) {
@@ -6647,7 +6612,7 @@ function _patchQualityKpiCards() {
   if (bqEl) bqEl.outerHTML = _buildRailQual(qc, true); // always OMP when quality data is loaded
 
   // Patch the OMP process-tree Rating / OSV nodes if the tree is on screen
-  if (document.getElementById('omp-tree')) _patchOMPTreeCards(qd);
+  if (document.getElementById('vex')) _vexPatchQuality(qd);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -7086,25 +7051,37 @@ function _buildSellerQualStrip(qc) {
 // Root (Open Marketplace) → L2 (Draft · In Review · Rejected · Onboarded)
 // → L3 (7 children of Onboarded). Connectors are SVG, drawn after layout.
 // ═══════════════════════════════════════════════════════════════
-var OMP_AC = {
-  root: '#005DFF', draft: '#8E8E93', review: '#E48800', reject: '#FF3B30',
+// VERTICAL EXPLORER
+// A three-column branch walk: verticals → hero KPIs → the detail
+// behind the number. Nothing past column 1 exists until it is asked
+// for, so the screen opens on the business list alone.
+// ═══════════════════════════════════════════════════════════════
+var VEX_AC = {
+  logged: '#005DFF', draft: '#8E8E93', review: '#E48800', reject: '#FF3B30',
   onb: '#049769', vol: '#8460D4', txn: '#049769', gmv: '#E48800',
-  rate: '#E48800', geo: '#32ADE6', churn: '#FF3B30', osv: '#005DFF',
+  rating: '#E48800', geo: '#32ADE6', churn: '#FF3B30', osv: '#005DFF',
 };
+var _vexKpi = null;   // which KPI branch is open, null = none
+
+var VEX_CHEV = '<svg class="vex-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+  + ' stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M9 18l6-6-6-6"/></svg>';
 
 // Rows for an audience: the live set when it is the open one, else the
 // period-matched localStorage snapshot the vertical loader wrote.
-function _ompRowsFor(aud) {
+function _vexRowsFor(aud, key) {
+  key = key || activeVertKey;
+  if (!key) return null;
   if ((selectedAud || 'seller') === aud && Array.isArray(vertRows) && vertRows.length) return vertRows;
   try {
     var pKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
-    var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_OMP') || 'null');
+    var sv = JSON.parse(localStorage.getItem(STORE_PFX + 'vr_' + aud + '_' + key) || 'null');
     if (sv && sv.pKey === pKey && Array.isArray(sv.rows) && sv.rows.length) return sv.rows;
   } catch (e) {}
   return null;
 }
 
-function _ompParseDMY(s) {
+function _vexParseDMY(s) {
   if (!s || s === '—') return null;
   var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(s));
   if (!m) return null;
@@ -7112,487 +7089,589 @@ function _ompParseDMY(s) {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function _ompNode(o) {
-  var clickable = !!o.onclick;
-  return '<div class="otn otn-' + o.lvl + ' otn-rv' + (clickable ? ' otn-click' : '')
-    + '" id="' + o.id + '" style="--otn-ac:' + o.ac + '"'
-    + (clickable ? ' tabindex="0" role="button"'
-        + ' onclick="' + o.onclick + '"'
-        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + o.onclick + '}"' : '')
-    + '>'
-    + '<div class="otn-hd"><span class="otn-dot"></span>'
-    + '<span class="otn-ttl">' + o.title + '</span>'
-    + (o.chip ? '<span class="otn-chip">' + o.chip + '</span>' : '')
-    + '</div>'
-    + (o.q ? '<div class="otn-q">' + o.q + '</div>' : '')
-    + o.body
+// ── Shared primitives ─────────────────────────────────────────────────
+function _vexCell(label, value, sub, color) {
+  return '<div class="vex-cell">'
+    + '<div class="vex-cell-l"' + (color ? ' style="color:' + color + '"' : '') + '>' + label + '</div>'
+    + '<div class="vex-cell-v"' + (color ? ' style="color:' + color + '"' : '') + '>' + value + '</div>'
+    + (sub ? '<div class="vex-cell-s">' + sub + '</div>' : '')
     + '</div>';
 }
-
-function _ompBar(label, value, max, color, display) {
+function _vexBar(label, value, max, color, display) {
   var w = max > 0 ? Math.max(2, Math.round(value / max * 100)) : 0;
-  return '<div class="otn-bar">'
-    + '<div class="otn-bar-l" title="' + esc(label) + '">' + esc(label) + '</div>'
-    + '<div class="otn-bar-t"><div class="otn-bar-f" style="width:' + w + '%'
+  return '<div class="vex-bar">'
+    + '<div class="vex-bar-l" title="' + esc(label) + '">' + esc(label) + '</div>'
+    + '<div class="vex-bar-t"><div class="vex-bar-f" style="width:' + w + '%'
     + (color ? ';background:' + color : '') + '"></div></div>'
-    + '<div class="otn-bar-v">' + (display != null ? display : fmt(value)) + '</div>'
+    + '<div class="vex-bar-v">' + (display != null ? display : fmt(value)) + '</div>'
+    + '</div>';
+}
+function _vexSec(title, inner) {
+  return '<div class="vex-sec"><div class="vex-sec-t">' + title + '</div>' + inner + '</div>';
+}
+function _vexItem(o) {
+  return '<button type="button" class="vex-item' + (o.active ? ' active' : '') + '"'
+    + ' style="--it:' + o.color + (o.vc ? ';' + o.vc : '') + '"'
+    + ' onclick="' + o.onclick + '">'
+    + '<span class="vex-tick"></span>'
+    + '<span class="vex-it">'
+    + '<span class="vex-it-name">' + esc(o.name) + '</span>'
+    + (o.sub ? '<span class="vex-it-sub">' + o.sub + '</span>' : '')
+    + '</span>'
+    + (o.val != null ? '<span class="vex-it-val' + (o.ac ? ' ac' : '') + '">' + o.val + '</span>' : '')
+    + VEX_CHEV
+    + '</button>';
+}
+function _vexHead(eyebrow, title, sub, vc) {
+  return '<div class="vex-hd"' + (vc ? ' style="' + vc + '"' : '') + '>'
+    + '<div class="vex-eyebrow"><i></i>' + esc(eyebrow) + '</div>'
+    + '<div class="vex-title">' + esc(title) + '</div>'
+    + (sub ? '<div class="vex-title-sub">' + sub + '</div>' : '')
+    + '</div>';
+}
+function _vexRest(title, sub) {
+  return '<div class="vex-rest">'
+    + '<svg class="vex-rest-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+    + ' stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'
+    + '<path d="M4 6h6M4 12h6M4 18h6"/><path d="M14 12h6"/><path d="M17 9l3 3-3 3"/></svg>'
+    + '<div class="vex-rest-t">' + esc(title) + '</div>'
+    + '<div class="vex-rest-s">' + esc(sub) + '</div>'
     + '</div>';
 }
 
-function _ompCell(label, value, sub, color) {
-  return '<div class="otn-cell">'
-    + '<div class="otn-cell-l"' + (color ? ' style="color:' + color + '"' : '') + '>' + label + '</div>'
-    + '<div class="otn-cell-v"' + (color ? ' style="color:' + color + '"' : '') + '>' + value + '</div>'
-    + (sub ? '<div class="otn-cell-s">' + sub + '</div>' : '')
-    + '</div>';
-}
-
-function _buildOMPProcessTree(vs, vb) {
-  var totalS = vs.total || 0,      totalB = vb.total || 0;
-  var compS  = vs.completed || 0,  compB  = vb.completed || 0;
-  var draftS = vs.draft || 0,      draftB = vb.draft || 0;
-  var revS   = vs.inReview || 0,   revB   = vb.inReview || 0;
-  var rejS   = vs.rejected || 0,   rejB   = vb.rejected || 0;
-  var totAll = totalS + totalB;
-  var draftT = draftS + draftB, revT = revS + revB, rejT = rejS + rejB, onbT = compS + compB;
-
-  var txnS   = vs.transacted || 0;
-  var txnCnt = vs.totalTxnCount;
-  var txnVal = vs.totalTxnValue;
-  var pTxn   = vs.plasticTransacted || 0;
-  var mTxn   = vs.metalTransacted || 0;
-  var txnPct = compS > 0 ? Math.round(txnS / compS * 100) : 0;
-  var regions   = vs.regions || [];
-  var categories= vs.categories || [];
-
-  function shr(n) { return totAll > 0 ? Math.round(n / totAll * 100) + '%' : '—'; }
-  function sub(s, b) { return '<div class="otn-sub"><b>' + fmt(s) + '</b> sellers · <b>' + fmt(b) + '</b> buyers</div>'; }
-
-  // ── STEP 1 · ROOT — the entry point ─────────────────────────────────
-  var rootBody = '<div class="otn-band">'
-    + '<div class="otn-title">Open Marketplace</div>'
-    + '<div class="otn-sub">The onboarding lifecycle, end to end — from the first '
-    + 'logged-in case through to post-onboarding performance.</div>'
-    + '</div>';
-  var root = _ompNode({ id: 'otn-root', lvl: 'root', ac: OMP_AC.root,
-    title: 'Vertical', body: rootBody });
-
-  // ── STEP 2 · TOTAL LOGGED IN CASES ──────────────────────────────────
-  var segs = [
-    { n: draftT, c: OMP_AC.draft,  l: 'Draft' },
-    { n: revT,   c: OMP_AC.review, l: 'In Review' },
-    { n: rejT,   c: OMP_AC.reject, l: 'Rejected' },
-    { n: onbT,   c: OMP_AC.onb,    l: 'Onboarded' },
+// ── The KPI catalogue for a vertical ──────────────────────────────────
+// A card is listed only when the vertical actually carries that measure,
+// so an empty branch is never offered.
+function _vexKpiList(key, vs, vb) {
+  var isOMP = key === 'OMP';
+  var L = [
+    { id:'logged', name:'Total Logged In Cases', color:VEX_AC.logged, group:'Onboarding funnel',
+      val:(vs.total||0)+(vb.total||0), sub:fmt(vs.total||0)+' S · '+fmt(vb.total||0)+' B' },
+    { id:'draft', name:'Draft', color:VEX_AC.draft,
+      val:(vs.draft||0)+(vb.draft||0), sub:'Not yet submitted' },
+    { id:'review', name:'In Review', color:VEX_AC.review,
+      val:(vs.inReview||0)+(vb.inReview||0), sub:'Awaiting approval' },
+    { id:'reject', name:'Rejected', color:VEX_AC.reject,
+      val:(vs.rejected||0)+(vb.rejected||0), sub:'Did not pass review' },
+    { id:'onb', name:'Onboarded', color:VEX_AC.onb,
+      val:(vs.completed||0)+(vb.completed||0), sub:'Live on the platform' },
+    { id:'vol', name:'Volume Metrics', color:VEX_AC.vol, group:'Post-onboarding',
+      val:(vs.newVendors||0)+(vb.newVendors||0), sub:'New this period' },
   ];
-  var segSum = segs.reduce(function(a, s) { return a + s.n; }, 0) || 1;
-  var loggedBody = '<div class="otn-big" data-count="' + totAll + '">' + fmt(totAll) + '</div>'
-    + '<div class="otn-sub"><b>' + fmt(totalS) + '</b> sellers · <b>' + fmt(totalB) + '</b> buyers</div>'
-    + '<div class="otn-splitbar">'
-    + segs.map(function(s) {
-        return s.n > 0 ? '<i style="flex:' + s.n + ';background:' + s.c + '"></i>' : '';
-      }).join('')
-    + '</div>'
-    + '<div class="otn-legend">'
-    + segs.map(function(s) {
-        return '<span class="otn-legend-i"><span class="otn-legend-d" style="background:' + s.c + '"></span>'
-          + s.l + ' <b>' + Math.round(s.n / segSum * 100) + '%</b></span>';
-      }).join('')
-    + '</div>';
-  var logged = _ompNode({ id: 'otn-logged', lvl: 'logged', ac: OMP_AC.root,
-    title: 'Total Logged In Cases', q: 'How many cases entered the system?',
-    body: loggedBody, onclick: "openKpiModal('total')" });
-
-  // ── STEP 3 · THE FUNNEL ─────────────────────────────────────────────
-  function l2(id, title, q, ac, s, b, total, click, footer) {
-    return _ompNode({ id: id, lvl: 'l2', ac: ac, title: title, q: q, chip: shr(total),
-      onclick: click,
-      body: '<div class="otn-big ac" data-count="' + total + '">' + fmt(total) + '</div>'
-        + sub(s, b) + (footer || '') });
+  if (vs.transacted != null) {
+    L.push({ id:'txn', name:'Transacted', color:VEX_AC.txn,
+             val:vs.transacted||0, sub:'Sellers with a transaction' });
   }
-  var aud = selectedAud || 'seller';
-  var l2Row = '<div class="otr otr-l2">'
-    + l2('otn-draft', 'Draft', 'How many are still unsubmitted?',
-         OMP_AC.draft, draftS, draftB, draftT,
-         "openSlModal('" + aud + "','DRAFT')")
-    + l2('otn-review', 'In Review', 'How many are awaiting review?',
-         OMP_AC.review, revS, revB, revT,
-         "openSlModal('" + aud + "','IN_REVIEW')",
-         (vs.aging || vs.overdue)
-           ? '<div class="otn-sub">' + fmt(vs.aging || 0) + ' aging · ' + fmt(vs.overdue || 0) + ' overdue</div>' : '')
-    + l2('otn-rejected', 'Rejected', 'How many did not make it through?',
-         OMP_AC.reject, rejS, rejB, rejT,
-         "openSlModal('" + aud + "','REJECTED')")
-    + l2('otn-onboarded', 'Onboarded', 'How many were successfully onboarded?',
-         OMP_AC.onb, compS, compB, onbT,
-         "openKpiModal('onboarded')",
-         '<div class="otn-sub">Completion <b>' + (totAll > 0 ? Math.round(onbT / totAll * 100) : 0) + '%</b>'
-         + (vs.avgTAT != null ? ' · Avg TAT <b>' + vs.avgTAT + 'd</b>' : '') + '</div>')
-    + '</div>';
-
-  // ── L3 · 1 · Volume Metrics ─────────────────────────────────────────
-  var volBody = '<div class="otn-cells otn-cells-3">'
-    + _ompCell('Existing S', fmt(vs.oldVendors || 0), 'sellers')
-    + _ompCell('New S', fmt(vs.newVendors || 0), 'sellers', OMP_AC.onb)
-    + _ompCell('Active', fmt(txnS), 'transacted', OMP_AC.onb)
-    + _ompCell('Existing B', fmt(vb.oldVendors || 0), 'buyers')
-    + _ompCell('New B', fmt(vb.newVendors || 0), 'buyers', OMP_AC.root)
-    + _ompCell('Dormant', fmt(Math.max(0, compS - txnS)), 'no txn', OMP_AC.draft)
-    + '</div>'
-    + '<div class="otn-sep"></div>'
-    + '<table class="otn-tbl" id="omp-vol-matrix"><thead><tr>'
-    + '<th>Onboarded</th><th>Sellers</th><th>Buyers</th>'
-    + '</tr></thead><tbody>'
-    + '<tr><td>Daily</td><td>—</td><td>—</td></tr>'
-    + '<tr><td>Weekly</td><td>—</td><td>—</td></tr>'
-    + '<tr><td>Monthly</td><td>—</td><td>—</td></tr>'
-    + '</tbody></table>';
-  var nVol = _ompNode({ id: 'otn-vol', lvl: 'l3', ac: OMP_AC.vol,
-    title: 'Volume Metrics', q: 'What is the onboarding volume?',
-    body: volBody, onclick: "openKpiModal('oldvsnew')" });
-
-  // ── L3 · 2 · Transacted Sellers ─────────────────────────────────────
-  var avgTxn = (txnCnt != null && txnS > 0) ? (txnCnt / txnS) : null;
-  var txnBody = '<div class="otn-big ac" data-count="' + txnS + '">' + fmt(txnS) + '</div>'
-    + '<div class="otn-sub"><b>' + txnPct + '%</b> of onboarded sellers have transacted</div>'
-    + '<div class="otn-sep"></div>'
-    + '<div class="otn-cells">'
-    + _ompCell('Total Txns', txnCnt != null ? fmt(txnCnt) : '—', 'transactions')
-    + _ompCell('Avg / Seller', avgTxn != null ? avgTxn.toFixed(1) : '—', 'transactions')
-    + _ompCell('Plastic', fmt(pTxn), 'vendors', OMP_AC.gmv)
-    + _ompCell('Metal', fmt(mTxn), 'vendors', OMP_AC.draft)
-    + '</div>';
-  var nTxn = _ompNode({ id: 'otn-txn', lvl: 'l3', ac: OMP_AC.txn,
-    title: 'Transacted · Seller', q: 'How many sellers are actually transacting?',
-    body: txnBody, onclick: 'openTaModal()' });
-
-  // ── L3 · 3 · Total GMV (category-wise) ──────────────────────────────
-  var gmvCats = categories.filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
-                          .sort(function(a, b) { return b.txnValue - a.txnValue; });
-  var gmvTop = gmvCats.slice(0, 4);
-  var gmvRest = gmvCats.slice(4).reduce(function(a, c) { return a + c.txnValue; }, 0);
-  if (gmvRest > 0) gmvTop.push({ category: 'Others', txnValue: gmvRest });
-  var gmvMax = gmvTop.length ? gmvTop[0].txnValue : 0;
-  var gmvBody = '<div class="otn-big">' + (txnVal != null ? fmtINR(txnVal) : '—') + '</div>'
-    + '<div class="otn-sub">Seller transaction value · Open Marketplace</div>'
-    + '<div class="otn-sep"></div>'
-    + (gmvTop.length
-        ? gmvTop.map(function(c) {
-            return _ompBar(c.category, c.txnValue, gmvMax, OMP_AC.gmv, fmtINR(c.txnValue));
-          }).join('')
-        : '<div class="otn-empty">No category-level GMV recorded</div>');
-  var nGmv = _ompNode({ id: 'otn-gmv', lvl: 'l3', ac: OMP_AC.gmv,
-    title: 'Total GMV · Category', q: 'What GMV have they generated?',
-    body: gmvBody, onclick: 'openTaModal()' });
-
-  // ── L3 · 4 · Vendor Rating (async) ──────────────────────────────────
-  var rateBody = '<div class="otn-big ac" id="omp-rate-big">—</div>'
-    + '<div class="otn-sub" id="omp-rate-sub">Loading ratings…</div>'
-    + '<div class="otn-sep"></div>'
-    + '<div id="omp-rate-dist"></div>';
-  var nRate = _ompNode({ id: 'otn-rating', lvl: 'l3', ac: OMP_AC.rate,
-    title: 'Vendor Rating · Seller', q: 'What is the quality of these vendors?',
-    body: rateBody, onclick: "openKpiModal('rating')" });
-
-  // ── L3 · 5 · Geographical Split ─────────────────────────────────────
-  var geoMax = regions.length ? Math.max.apply(null, regions.map(function(r) { return r.onboarded || 0; })) : 0;
-  var geoBody = (regions.length
-      ? regions.slice(0, 5).map(function(r) {
-          return _ompBar(r.region, r.onboarded || 0, geoMax, OMP_AC.geo);
-        }).join('')
-      : '<div class="otn-empty">No region data available</div>')
-    + '<div class="otn-sep"></div>'
-    + '<div class="otn-cell-l" style="margin-bottom:7px">Top States · Onboarded</div>'
-    + '<div id="omp-geo-states"><div class="otn-empty">Loading states…</div></div>';
-  var nGeo = _ompNode({ id: 'otn-geo', lvl: 'l3', ac: OMP_AC.geo,
-    title: 'Geographical Split', q: 'Where are these vendors located?',
-    body: geoBody, onclick: "vkpiOpen('all')" });
-
-  // ── L3 · 6 · Churn / Inactivity ─────────────────────────────────────
-  var never = Math.max(0, compS - txnS);
-  var churnBody = '<div class="otn-big ac" data-count="' + never + '">' + fmt(never) + '</div>'
-    + '<div class="otn-sub">Never transacted · <b>'
-    + (compS > 0 ? Math.round(never / compS * 100) : 0) + '%</b> of onboarded sellers</div>'
-    + '<div class="otn-sep"></div>'
-    + '<div class="otn-cell-l" style="margin-bottom:7px">Since Last Transaction</div>'
-    + '<div class="otn-cells otn-cells-3" id="omp-churn-buckets">'
-    + _ompCell('0–30d', '—', 'active', OMP_AC.onb)
-    + _ompCell('31–90d', '—', 'slowing', OMP_AC.review)
-    + _ompCell('90d+', '—', 'at risk', OMP_AC.churn)
-    + '</div>';
-  var nChurn = _ompNode({ id: 'otn-churn', lvl: 'l3', ac: OMP_AC.churn,
-    title: 'Churn / Inactivity', q: 'Which vendors have gone inactive?',
-    body: churnBody, onclick: '_ompOpenChurn()' });
-
-  // ── L3 · 7 · OSV Status (async) ─────────────────────────────────────
-  var osvBody = '<div class="otn-cells otn-cells-3">'
-    + '<div class="otn-cell"><div class="otn-cell-l" style="color:' + OMP_AC.onb + '">Completed</div>'
-    + '<div class="otn-cell-v" style="color:' + OMP_AC.onb + '" id="omp-osv-done">—</div></div>'
-    + '<div class="otn-cell"><div class="otn-cell-l" style="color:' + OMP_AC.review + '">In Progress</div>'
-    + '<div class="otn-cell-v" style="color:' + OMP_AC.review + '" id="omp-osv-prog">—</div></div>'
-    + '<div class="otn-cell"><div class="otn-cell-l" style="color:' + OMP_AC.draft + '">Not Initiated</div>'
-    + '<div class="otn-cell-v" style="color:' + OMP_AC.draft + '" id="omp-osv-ni">—</div></div>'
-    + '</div>'
-    + '<div class="otn-stack" id="omp-osv-stack"></div>'
-    + '<div class="otn-sub" id="omp-osv-sub">Loading OSV data…</div>';
-  var nOsv = _ompNode({ id: 'otn-osv', lvl: 'l3', ac: OMP_AC.osv,
-    title: 'OSV Status · Seller', q: 'What is their OSV verification status?',
-    body: osvBody, onclick: "openKpiModal('osv')" });
-
-  var l3Group = '<div class="otr otr-l3">'
-    + nVol + nTxn + nGmv + nRate + nGeo + nChurn + nOsv
-    + '</div>';
-
-  return '<div class="omp-tree" id="omp-tree" style="' + vcVars('OMP') + '">'
-    + '<div class="otr otr-root">' + root + '</div>'
-    + '<div class="otr otr-logged">' + logged + '</div>'
-    + l2Row
-    + l3Group
-    + '</div>';
+  if (vs.totalTxnValue != null) {
+    L.push({ id:'gmv', name:'Total GMV', color:VEX_AC.gmv,
+             val:null, sub:fmtINR(vs.totalTxnValue) + ' · category split' });
+  }
+  if (isOMP) {
+    L.push({ id:'rating', name:'Vendor Rating', color:VEX_AC.rating,
+             val:null, sub:'Seller quality score' });
+  }
+  if ((vs.regions || []).length) {
+    L.push({ id:'geo', name:'Geographical Split', color:VEX_AC.geo,
+             val:vs.regions.length, sub:'Regions covered' });
+  }
+  if (vs.transacted != null) {
+    L.push({ id:'churn', name:'Churn / Inactivity', color:VEX_AC.churn,
+             val:Math.max(0, (vs.completed||0) - (vs.transacted||0)), sub:'Never transacted' });
+  }
+  if (isOMP) {
+    L.push({ id:'osv', name:'OSV Status', color:VEX_AC.osv,
+             val:null, sub:'On-site verification' });
+  }
+  return L;
 }
 
-function _ompOpenChurn() {
+// ── Column 1 · the business verticals ─────────────────────────────────
+function _vexColVerticals() {
+  var cfg = getVertCfg();
+  var items = cfg.map(function(c) {
+    var v = (DS && DS.verticals && DS.verticals[c.key]) || {};
+    var b = (DB && DB.verticals && DB.verticals[c.key]) || {};
+    var tot = (v.total || 0) + (b.total || 0);
+    var onb = (v.completed || 0) + (b.completed || 0);
+    return _vexItem({
+      name: c.name, color: (VERT_COLORS[c.key] || VERT_COLORS.Others).c,
+      vc: vcVars(c.key),
+      active: activeVertKey === c.key,
+      val: tot ? fmt(tot) : '—',
+      sub: tot ? fmt(onb) + ' onboarded' : 'No cases in this period',
+      onclick: "vexOpenVert('" + c.key + "')",
+    });
+  }).join('');
+
+  return '<div class="vex-col vex-c1">'
+    + _vexHead('Recykal', 'Business Verticals',
+               cfg.length + ' verticals · pick one to open', vcVars(activeVertKey || 'OMP'))
+    + '<div class="vex-body">'
+    + items
+    + '<div class="vex-sep">Separate register</div>'
+    + _vexItem({ name:'GST Payables', color:'#FF9500',
+                 vc:'--vc:#FF9500;--vc-ink:#B25000;--vc-soft:rgba(255,149,0,.09);--vc-line:rgba(255,149,0,.3)',
+                 active:false, val:null, sub:'Vendor payables register',
+                 onclick:"switchView('gst')" })
+    + '</div></div>';
+}
+
+// ── Column 2 · the hero KPIs of the chosen vertical ───────────────────
+function _vexColKpis(key, vs, vb) {
+  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0] || { name: key };
+  var list = _vexKpiList(key, vs, vb);
+  var out = '', lastGroup = null;
+  list.forEach(function(k) {
+    if (k.group && k.group !== lastGroup) {
+      out += '<div class="vex-sep">' + esc(k.group) + '</div>';
+      lastGroup = k.group;
+    }
+    out += _vexItem({
+      name: k.name, color: k.color, active: _vexKpi === k.id, ac: true,
+      val: k.val != null ? fmt(k.val) : null, sub: k.sub,
+      onclick: "vexOpenKpi('" + k.id + "')",
+    });
+  });
+  var tot = (vs.total || 0) + (vb.total || 0);
+  return '<div class="vex-col vex-c2 vex-col-enter" style="' + vcVars(key) + '">'
+    + _vexHead('Vertical', cfg.name, fmt(tot) + ' logged-in cases')
+    + '<div class="vex-body">' + out + '</div></div>';
+}
+
+// ── Column 3 · what sits behind the number ────────────────────────────
+function _vexColDetail(key, vs, vb) {
+  var list = _vexKpiList(key, vs, vb);
+  var meta = list.filter(function(k) { return k.id === _vexKpi; })[0];
+  if (!meta) return '';
+  var d = _vexDetail(key, vs, vb, _vexKpi);
+  return '<div class="vex-col vex-c3 vex-col-enter" style="'
+    + vcVars(key) + '--it:' + meta.color + ';">'
+    + _vexHead('Detail', meta.name, d.head || '')
+    + '<div class="vex-body"><div class="vex-pane">' + d.body + '</div></div></div>';
+}
+
+function _vexDetail(key, vs, vb, id) {
+  var aud    = selectedAud || 'seller';
+  var totalS = vs.total || 0,     totalB = vb.total || 0;
+  var compS  = vs.completed || 0, compB  = vb.completed || 0;
+  var totAll = totalS + totalB;
+  var txnS   = vs.transacted || 0;
+
+  function pair(s, b) {
+    return '<div class="vex-cells" style="margin-top:18px">'
+      + _vexCell('Sellers', fmt(s), 'records')
+      + _vexCell('Buyers',  fmt(b), 'records') + '</div>';
+  }
+  function share(n) { return totAll > 0 ? Math.round(n / totAll * 100) + '% of all logged-in cases' : ''; }
+  function act(label, onclick) {
+    return '<button type="button" class="vex-act" onclick="' + onclick + '">' + esc(label)
+      + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+      + ' stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M9 18l6-6-6-6"/></svg></button>';
+  }
+
+  // ── Total Logged In Cases ───────────────────────────────────────────
+  if (id === 'logged') {
+    var segs = [
+      { n: (vs.draft||0)+(vb.draft||0),       c: VEX_AC.draft,  l: 'Draft' },
+      { n: (vs.inReview||0)+(vb.inReview||0), c: VEX_AC.review, l: 'In Review' },
+      { n: (vs.rejected||0)+(vb.rejected||0), c: VEX_AC.reject, l: 'Rejected' },
+      { n: compS + compB,                     c: VEX_AC.onb,    l: 'Onboarded' },
+    ];
+    var sum = segs.reduce(function(a, s) { return a + s.n; }, 0) || 1;
+    var fyRows = (vs.fyBreakdown || []).slice(0, 6).map(function(f) {
+      var bf = (vb.fyBreakdown || []).filter(function(x) { return x.fy === f.fy; })[0] || {};
+      return '<tr><td>' + esc(f.fy || '—') + '</td>'
+        + '<td>' + fmt(f.total || 0) + '</td>'
+        + '<td>' + fmt(bf.total || 0) + '</td>'
+        + '<td>' + fmt((f.onboarded || 0) + (bf.onboarded || 0)) + '</td></tr>';
+    }).join('');
+    return { head: 'How many cases entered the system?', body:
+      '<div class="vex-q">Every seller and buyer record logged against this vertical, whatever stage it has reached.</div>'
+      + '<div class="vex-big" data-count="' + totAll + '">' + fmt(totAll) + '</div>'
+      + '<div class="vex-sub"><b>' + fmt(totalS) + '</b> sellers · <b>' + fmt(totalB) + '</b> buyers</div>'
+      + '<div class="vex-splitbar">'
+      + segs.map(function(s) { return s.n > 0 ? '<i style="flex:' + s.n + ';background:' + s.c + '"></i>' : ''; }).join('')
+      + '</div>'
+      + '<div class="vex-legend">'
+      + segs.map(function(s) {
+          return '<span class="vex-legend-i"><span class="vex-legend-d" style="background:' + s.c + '"></span>'
+            + s.l + ' <b>' + fmt(s.n) + '</b> · ' + Math.round(s.n / sum * 100) + '%</span>';
+        }).join('')
+      + '</div>'
+      + (fyRows ? _vexSec('By financial year',
+          '<table class="vex-tbl"><thead><tr><th>FY</th><th>Sellers</th><th>Buyers</th><th>Onboarded</th>'
+          + '</tr></thead><tbody>' + fyRows + '</tbody></table>') : '')
+      + act('Open the full breakdown', "openKpiModal('total')") };
+  }
+
+  // ── Funnel stages ───────────────────────────────────────────────────
+  if (id === 'draft' || id === 'review' || id === 'reject') {
+    var M = {
+      draft:  { s: vs.draft||0,    b: vb.draft||0,    st:'DRAFT',
+                q:'Started but never submitted for review.', label:'Draft' },
+      review: { s: vs.inReview||0, b: vb.inReview||0, st:'IN_REVIEW',
+                q:'Submitted and sitting with the review team.', label:'In Review' },
+      reject: { s: vs.rejected||0, b: vb.rejected||0, st:'REJECTED',
+                q:'Reviewed and turned down — the leak in the funnel.', label:'Rejected' },
+    }[id];
+    var n = M.s + M.b;
+    var agingBlock = '';
+    if (id === 'review' && (vs.aging != null || vs.overdue != null)) {
+      agingBlock = _vexSec('How long they have been waiting',
+        '<div class="vex-cells">'
+        + _vexCell('Aging', fmt(vs.aging || 0), '14–30 days', VEX_AC.review)
+        + _vexCell('Overdue', fmt(vs.overdue || 0), 'over 30 days', VEX_AC.reject)
+        + '</div>');
+    }
+    return { head: M.q, body:
+      '<div class="vex-q">' + esc(M.q) + '</div>'
+      + '<div class="vex-big ac" data-count="' + n + '">' + fmt(n) + '</div>'
+      + '<div class="vex-sub">' + share(n) + '</div>'
+      + pair(M.s, M.b)
+      + agingBlock
+      + act('List these ' + M.label.toLowerCase() + ' records', "openSlModal('" + aud + "','" + M.st + "')") };
+  }
+
+  // ── Onboarded ───────────────────────────────────────────────────────
+  if (id === 'onb') {
+    var onbT = compS + compB;
+    var fyOnb = (vs.fyBreakdown || []).slice(0, 6).map(function(f) {
+      return '<tr><td>' + esc(f.fy || '—') + '</td>'
+        + '<td>' + fmt(f.onboarded || 0) + '</td>'
+        + '<td>' + (f.completionPct != null ? f.completionPct + '%' : '—') + '</td>'
+        + '<td>' + (f.avgTAT != null ? f.avgTAT + 'd' : '—') + '</td></tr>';
+    }).join('');
+    return { head: 'How many were successfully onboarded?', body:
+      '<div class="vex-q">Records that cleared review and are live on the platform.</div>'
+      + '<div class="vex-big ac" data-count="' + onbT + '">' + fmt(onbT) + '</div>'
+      + '<div class="vex-sub">' + share(onbT) + '</div>'
+      + '<div class="vex-cells vex-cells-3" style="margin-top:18px">'
+      + _vexCell('Sellers', fmt(compS), 'onboarded')
+      + _vexCell('Buyers', fmt(compB), 'onboarded')
+      + _vexCell('Avg TAT', vs.avgTAT != null ? vs.avgTAT + 'd' : '—', 'seller median')
+      + '</div>'
+      + (fyOnb ? _vexSec('Onboarding by financial year',
+          '<table class="vex-tbl"><thead><tr><th>FY</th><th>Onboarded</th><th>Rate</th><th>TAT</th>'
+          + '</tr></thead><tbody>' + fyOnb + '</tbody></table>') : '')
+      + act('Open the onboarding breakdown', "openKpiModal('onboarded')") };
+  }
+
+  // ── Volume Metrics ──────────────────────────────────────────────────
+  if (id === 'vol') {
+    return { head: 'What is the onboarding volume?', body:
+      '<div class="vex-q">Who is already on the platform, who joined this period, and who is actually using it.</div>'
+      + '<div class="vex-cells vex-cells-3">'
+      + _vexCell('Existing S', fmt(vs.oldVendors || 0), 'sellers')
+      + _vexCell('New S', fmt(vs.newVendors || 0), 'sellers', VEX_AC.onb)
+      + _vexCell('Active', fmt(txnS), 'transacted', VEX_AC.onb)
+      + _vexCell('Existing B', fmt(vb.oldVendors || 0), 'buyers')
+      + _vexCell('New B', fmt(vb.newVendors || 0), 'buyers', VEX_AC.logged)
+      + _vexCell('Dormant', fmt(Math.max(0, compS - txnS)), 'no txn', VEX_AC.draft)
+      + '</div>'
+      + _vexSec('Newly onboarded',
+          '<table class="vex-tbl" id="vex-vol-matrix"><thead><tr>'
+          + '<th>Window</th><th>Sellers</th><th>Buyers</th></tr></thead><tbody>'
+          + '<tr><td>Last 24 hours</td><td>—</td><td>—</td></tr>'
+          + '<tr><td>Last 7 days</td><td>—</td><td>—</td></tr>'
+          + '<tr><td>Last 30 days</td><td>—</td><td>—</td></tr>'
+          + '</tbody></table>')
+      + act('Compare existing vs new', "openKpiModal('oldvsnew')") };
+  }
+
+  // ── Transacted ──────────────────────────────────────────────────────
+  if (id === 'txn') {
+    var txnCnt = vs.totalTxnCount;
+    var avgTxn = (txnCnt != null && txnS > 0) ? (txnCnt / txnS) : null;
+    var txnPct = compS > 0 ? Math.round(txnS / compS * 100) : 0;
+    return { head: 'How many sellers are actually transacting?', body:
+      '<div class="vex-q">Onboarding is only the start — this is how many of those sellers went on to trade.</div>'
+      + '<div class="vex-big ac" data-count="' + txnS + '">' + fmt(txnS) + '</div>'
+      + '<div class="vex-sub"><b>' + txnPct + '%</b> of the ' + fmt(compS) + ' onboarded sellers</div>'
+      + '<div class="vex-cells" style="margin-top:18px">'
+      + _vexCell('Total Txns', txnCnt != null ? fmt(txnCnt) : '—', 'transactions')
+      + _vexCell('Avg / Seller', avgTxn != null ? avgTxn.toFixed(1) : '—', 'transactions')
+      + _vexCell('Plastic', fmt(vs.plasticTransacted || 0), 'vendors', VEX_AC.gmv)
+      + _vexCell('Metal', fmt(vs.metalTransacted || 0), 'vendors', VEX_AC.draft)
+      + '</div>'
+      + act('Open the transacted register', 'openTaModal()') };
+  }
+
+  // ── Total GMV ───────────────────────────────────────────────────────
+  if (id === 'gmv') {
+    var cats = (vs.categories || [])
+      .filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
+      .sort(function(a, b) { return b.txnValue - a.txnValue; });
+    var top = cats.slice(0, 5);
+    var rest = cats.slice(5).reduce(function(a, c) { return a + c.txnValue; }, 0);
+    if (rest > 0) top.push({ category: 'Others', txnValue: rest });
+    var mx = top.length ? top[0].txnValue : 0;
+    return { head: 'What GMV have they generated?', body:
+      '<div class="vex-q">Total seller transaction value, and which categories are carrying it.</div>'
+      + '<div class="vex-big ac">' + fmtINR(vs.totalTxnValue) + '</div>'
+      + '<div class="vex-sub">Across <b>' + fmt(vs.totalTxnCount || 0) + '</b> transactions by <b>'
+      + fmt(txnS) + '</b> sellers</div>'
+      + _vexSec('By category', top.length
+          ? top.map(function(c) { return _vexBar(c.category, c.txnValue, mx, null, fmtINR(c.txnValue)); }).join('')
+          : '<div class="vex-empty">No category-level GMV recorded</div>')
+      + act('Open the transacted register', 'openTaModal()') };
+  }
+
+  // ── Vendor Rating ───────────────────────────────────────────────────
+  if (id === 'rating') {
+    return { head: 'What is the quality of these vendors?', body:
+      '<div class="vex-q">The average score these sellers carry, and how that score is distributed.</div>'
+      + '<div class="vex-big ac" id="vex-rate-big">—</div>'
+      + '<div class="vex-sub" id="vex-rate-sub">Loading ratings…</div>'
+      + '<div class="vex-sec"><div class="vex-sec-t">Distribution</div>'
+      + '<div id="vex-rate-dist"><div class="vex-empty">Loading…</div></div></div>'
+      + act('Open the rating breakdown', "openKpiModal('rating')") };
+  }
+
+  // ── Geographical Split ──────────────────────────────────────────────
+  if (id === 'geo') {
+    var regions = vs.regions || [];
+    var gmax = regions.length ? Math.max.apply(null, regions.map(function(r) { return r.onboarded || 0; })) : 0;
+    return { head: 'Where are these vendors located?', body:
+      '<div class="vex-q">Onboarded sellers by zone, and the states doing the heavy lifting.</div>'
+      + '<div class="vex-sec" style="margin-top:0"><div class="vex-sec-t">By region</div>'
+      + (regions.length
+          ? regions.map(function(r) { return _vexBar(r.region, r.onboarded || 0, gmax); }).join('')
+          : '<div class="vex-empty">No region data available</div>')
+      + '</div>'
+      + _vexSec('Top states', '<div id="vex-geo-states"><div class="vex-empty">Loading states…</div></div>')
+      + act('Browse the vendor records', "vkpiOpen('all')") };
+  }
+
+  // ── Churn / Inactivity ──────────────────────────────────────────────
+  if (id === 'churn') {
+    var never = Math.max(0, compS - txnS);
+    return { head: 'Which vendors have gone inactive?', body:
+      '<div class="vex-q">Sellers who were onboarded but never traded, plus how stale the active ones are getting.</div>'
+      + '<div class="vex-big ac" data-count="' + never + '">' + fmt(never) + '</div>'
+      + '<div class="vex-sub">Never transacted · <b>'
+      + (compS > 0 ? Math.round(never / compS * 100) : 0) + '%</b> of onboarded sellers</div>'
+      + _vexSec('Days since last transaction',
+          '<div class="vex-cells vex-cells-3" id="vex-churn-buckets">'
+          + _vexCell('0–30d', '—', 'active', VEX_AC.onb)
+          + _vexCell('31–90d', '—', 'slowing', VEX_AC.review)
+          + _vexCell('90d+', '—', 'at risk', VEX_AC.churn)
+          + '</div>')
+      + act('List the non-transacting vendors', '_vexOpenChurn()') };
+  }
+
+  // ── OSV Status ──────────────────────────────────────────────────────
+  if (id === 'osv') {
+    return { head: 'What is their OSV verification status?', body:
+      '<div class="vex-q">On-site verification is the last gate — this is how far through it the seller base is.</div>'
+      + '<div class="vex-big ac" id="vex-osv-pct">—</div>'
+      + '<div class="vex-sub" id="vex-osv-sub">Loading OSV data…</div>'
+      + '<div class="vex-stack" id="vex-osv-stack"></div>'
+      + '<div class="vex-cells vex-cells-3" style="margin-top:18px">'
+      + '<div class="vex-cell"><div class="vex-cell-l" style="color:' + VEX_AC.onb + '">Completed</div>'
+      + '<div class="vex-cell-v" style="color:' + VEX_AC.onb + '" id="vex-osv-done">—</div></div>'
+      + '<div class="vex-cell"><div class="vex-cell-l" style="color:' + VEX_AC.review + '">In Progress</div>'
+      + '<div class="vex-cell-v" style="color:' + VEX_AC.review + '" id="vex-osv-prog">—</div></div>'
+      + '<div class="vex-cell"><div class="vex-cell-l" style="color:' + VEX_AC.draft + '">Not Initiated</div>'
+      + '<div class="vex-cell-v" style="color:' + VEX_AC.draft + '" id="vex-osv-ni">—</div></div>'
+      + '</div>'
+      + act('Open the OSV breakdown', "openKpiModal('osv')") };
+  }
+
+  return { head: '', body: '<div class="vex-empty">No detail available.</div>' };
+}
+
+// ── Assembly ──────────────────────────────────────────────────────────
+function renderVertExplorer() {
+  var el = document.getElementById('vert-kpi-row');
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.gridTemplateColumns = '1fr';
+  el.classList.remove('vkpi-grid-4');
+
+  var key = activeVertKey;
+  var vs = null, vb = null;
+  if (key) {
+    vs = (DS && DS.verticals && DS.verticals[key]) || {};
+    vb = (DB && DB.verticals && DB.verticals[key]) || {};
+  }
+
+  // Each branch exists only once it has been asked for: the list alone at
+  // rest, the KPIs once a vertical is picked, the detail once a KPI is.
+  var cols = _vexColVerticals();
+  if (key && vs) {
+    cols += _vexColKpis(key, vs, vb);
+    if (_vexKpi) cols += _vexColDetail(key, vs, vb);
+  }
+
+  el.innerHTML = '<div class="vex' + (key && _vexKpi ? ' vex-wide' : '') + '" id="vex">'
+    + cols + '</div>';
+  animateCounters(el);
+  if (key === 'OMP') loadQualityData();
+  if (_vexKpi) { _vexPatchQuality(qualityData); _vexPatchRows(); }
+}
+
+function vexOpenVert(key) {
+  if (activeVertKey === key) {
+    // Re-picking the open vertical collapses its branches rather than
+    // doing nothing — the walk stays reversible at every level.
+    _vexKpi = null;
+    renderVertExplorer();
+    renderInlineDetail(key);
+    return;
+  }
+  _vexKpi = null;
+  selectVertTab(key);
+}
+
+function vexOpenKpi(id) {
+  _vexKpi = (_vexKpi === id) ? null : id;
+  renderVertExplorer();
+  renderInlineDetail(activeVertKey);
+}
+
+function _vexOpenChurn() {
   openTaModal();
   try { taOpenNt(); } catch (e) {}
 }
 
-// ── Card identity ─────────────────────────────────────────────────────
-var OMP_L2_IDS = ['otn-draft', 'otn-review', 'otn-rejected', 'otn-onboarded'];
-var OMP_L3_IDS = ['otn-vol', 'otn-txn', 'otn-gmv', 'otn-rating',
-                  'otn-geo', 'otn-churn', 'otn-osv'];
-
-// ── Story reveal ──────────────────────────────────────────────────────
-// The tree is told as a sequence, not shown as a grid: each node waits for
-// the one before it to land AND for itself to reach the viewport, so a
-// scroll introduces one new insight at a time.
-var OMP_STORY = ['otn-root', 'otn-logged'].concat(OMP_L2_IDS, OMP_L3_IDS);
-var OMP_STEP_MS = 170;
-var _ompRv = { done: {}, ready: {}, idx: 0, io: null, t: null };
-
-function _ompResetStory() {
-  if (_ompRv.io) { try { _ompRv.io.disconnect(); } catch (e) {} }
-  clearTimeout(_ompRv.t);
-  _ompRv = { done: {}, ready: {}, idx: 0, io: null, t: null };
-}
-
-function _ompInitStory() {
-  _ompResetStory();
-  // Reduced motion (or no observer support) gets the whole story at once.
-  if (!motionOK() || !('IntersectionObserver' in window)) {
-    OMP_STORY.forEach(_ompRevealStep);
-    return;
-  }
-  _ompRv.io = new IntersectionObserver(function(entries) {
-    entries.forEach(function(e) {
-      if (!e.isIntersecting) return;
-      _ompRv.ready[e.target.id] = true;
-      _ompRv.io.unobserve(e.target);
-    });
-    _ompPumpStory();
-  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.01 });
-  OMP_STORY.forEach(function(id) {
-    var e = document.getElementById(id);
-    if (e) _ompRv.io.observe(e);
-  });
-  _ompRv.ready['otn-root'] = true;   // the entry point opens the story
-  _ompPumpStory();
-}
-
-function _ompPumpStory() {
-  if (_ompRv.t) return;
-  while (_ompRv.idx < OMP_STORY.length && !document.getElementById(OMP_STORY[_ompRv.idx])) {
-    _ompRv.idx++;
-  }
-  var id = OMP_STORY[_ompRv.idx];
-  if (!id || !_ompRv.ready[id]) return;
-  _ompRevealStep(id);
-  _ompRv.idx++;
-  _ompRv.t = setTimeout(function() { _ompRv.t = null; _ompPumpStory(); }, OMP_STEP_MS);
-}
-
-function _ompRevealStep(id) {
-  if (_ompRv.done[id]) return;
-  _ompRv.done[id] = true;
-  var el = document.getElementById(id);
-  if (!el) return;
-  el.classList.add('is-in');
-  animateCounters(el);
-}
-
 // ── Async patches ─────────────────────────────────────────────────────
 
-// Rating + OSV nodes, once getQualityData() resolves.
-function _patchOMPTreeCards(qd) {
+// Rating + OSV panels, once getQualityData() resolves.
+function _vexPatchQuality(qd) {
   var qc = (qd && qd.seller) || {};
 
   var r = qc.rating || {};
-  var rBig  = document.getElementById('omp-rate-big');
-  var rSub  = document.getElementById('omp-rate-sub');
-  var rDist = document.getElementById('omp-rate-dist');
-  if (rBig) rBig.textContent = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
-  if (rSub) rSub.innerHTML = '<b>' + fmt(r.rated || 0) + '</b> rated · <b>'
-    + fmt(Math.max(0, (r.total || 0) - (r.rated || 0))) + '</b> unrated';
-  if (rDist) {
-    if (r.dist && r.dist.length) {
-      var dMax = Math.max.apply(null, r.dist) || 1;
-      rDist.innerHTML = [5, 4, 3, 2, 1].map(function(star) {
-        var cnt = r.dist[star - 1] || 0;
-        return '<div class="otn-star"><span class="otn-star-l">' + star + '★</span>'
-          + '<div class="otn-star-t"><div class="otn-star-f" style="width:'
-          + Math.round(cnt / dMax * 100) + '%"></div></div>'
-          + '<span class="otn-star-c">' + fmt(cnt) + '</span></div>';
-      }).join('');
-    } else {
-      rDist.innerHTML = '<div class="otn-empty">No rating distribution available</div>';
+  var rBig  = document.getElementById('vex-rate-big');
+  if (rBig) {
+    rBig.textContent = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
+    var rSub = document.getElementById('vex-rate-sub');
+    if (rSub) rSub.innerHTML = '<b>' + fmt(r.rated || 0) + '</b> rated · <b>'
+      + fmt(Math.max(0, (r.total || 0) - (r.rated || 0))) + '</b> still unrated';
+    var rDist = document.getElementById('vex-rate-dist');
+    if (rDist) {
+      if (r.dist && r.dist.length) {
+        var dMax = Math.max.apply(null, r.dist) || 1;
+        rDist.innerHTML = [5, 4, 3, 2, 1].map(function(star) {
+          var cnt = r.dist[star - 1] || 0;
+          return '<div class="vex-star"><span class="vex-star-l">' + star + '★</span>'
+            + '<div class="vex-star-t"><div class="vex-star-f" style="width:'
+            + Math.round(cnt / dMax * 100) + '%"></div></div>'
+            + '<span class="vex-star-c">' + fmt(cnt) + '</span></div>';
+        }).join('');
+      } else {
+        rDist.innerHTML = '<div class="vex-empty">No rating distribution available</div>';
+      }
     }
   }
 
-  var o    = qc.osv || {};
-  var oDn  = o.completed  || 0;
-  var oIp  = o.inProgress || 0;
-  var oTot = o.total || 0;
-  var oNI  = Math.max(0, oTot - oDn - oIp);
-  var eD = document.getElementById('omp-osv-done');
-  var eP = document.getElementById('omp-osv-prog');
-  var eN = document.getElementById('omp-osv-ni');
-  var eS = document.getElementById('omp-osv-sub');
-  var eK = document.getElementById('omp-osv-stack');
-  if (eD) eD.textContent = fmt(oDn);
-  if (eP) eP.textContent = fmt(oIp);
-  if (eN) eN.textContent = fmt(oNI);
-  if (eS) eS.innerHTML = oTot > 0
-    ? '<b>' + Math.round(oDn / oTot * 100) + '%</b> verified of ' + fmt(oTot) + ' sellers'
-    : 'No OSV records available';
-  if (eK) {
-    eK.innerHTML = oTot > 0
-      ? [[oDn, OMP_AC.onb], [oIp, OMP_AC.review], [oNI, OMP_AC.draft]].map(function(s) {
+  var o = qc.osv || {};
+  var eD = document.getElementById('vex-osv-done');
+  if (eD) {
+    var oDn = o.completed || 0, oIp = o.inProgress || 0, oTot = o.total || 0;
+    var oNI = Math.max(0, oTot - oDn - oIp);
+    eD.textContent = fmt(oDn);
+    var eP = document.getElementById('vex-osv-prog'); if (eP) eP.textContent = fmt(oIp);
+    var eN = document.getElementById('vex-osv-ni');   if (eN) eN.textContent = fmt(oNI);
+    var eB = document.getElementById('vex-osv-pct');
+    if (eB) eB.textContent = oTot > 0 ? Math.round(oDn / oTot * 100) + '%' : '—';
+    var eS = document.getElementById('vex-osv-sub');
+    if (eS) eS.innerHTML = oTot > 0
+      ? 'verified of <b>' + fmt(oTot) + '</b> sellers on record'
+      : 'No OSV records available';
+    var eK = document.getElementById('vex-osv-stack');
+    if (eK) eK.innerHTML = oTot > 0
+      ? [[oDn, VEX_AC.onb], [oIp, VEX_AC.review], [oNI, VEX_AC.draft]].map(function(s) {
           return s[0] > 0 ? '<i style="flex:' + s[0] + ';background:' + s[1] + '"></i>' : '';
         }).join('')
       : '';
   }
 }
 
-// Volume matrix, top states and churn buckets — derived from record rows.
-function _patchOMPTreeRows() {
-  if (!document.getElementById('omp-tree')) return;
-  var sRows = _ompRowsFor('seller');
-  var bRows = _ompRowsFor('buyer');
+// Volume windows, top states and churn buckets — derived from record rows.
+function _vexPatchRows() {
+  var key = activeVertKey;
+  if (!key) return;
+  var sRows = _vexRowsFor('seller', key);
+  var bRows = _vexRowsFor('buyer', key);
 
-  // Onboarded in the trailing 1 / 7 / 30 days, per audience.
-  function windows(rows) {
-    if (!rows) return null;
-    var now = new Date(); now.setHours(23, 59, 59, 999);
-    var d1 = new Date(now); d1.setDate(d1.getDate() - 1);
-    var d7 = new Date(now); d7.setDate(d7.getDate() - 7);
-    var d30 = new Date(now); d30.setDate(d30.getDate() - 30);
-    var o = { d: 0, w: 0, m: 0 };
-    rows.forEach(function(r) {
-      if (r.status !== 'COMPLETED') return;
-      var dt = _ompParseDMY(r.onbDate);
-      if (!dt) return;
-      if (dt >= d1) o.d++;
-      if (dt >= d7) o.w++;
-      if (dt >= d30) o.m++;
-    });
-    return o;
-  }
-  var ws = windows(sRows), wb = windows(bRows);
-  var mx = document.getElementById('omp-vol-matrix');
+  var mx = document.getElementById('vex-vol-matrix');
   if (mx) {
+    function windows(rows) {
+      if (!rows) return null;
+      var now = new Date(); now.setHours(23, 59, 59, 999);
+      var d1 = new Date(now);  d1.setDate(d1.getDate() - 1);
+      var d7 = new Date(now);  d7.setDate(d7.getDate() - 7);
+      var d30 = new Date(now); d30.setDate(d30.getDate() - 30);
+      var o = { d: 0, w: 0, m: 0 };
+      rows.forEach(function(r) {
+        if (r.status !== 'COMPLETED') return;
+        var dt = _vexParseDMY(r.onbDate);
+        if (!dt) return;
+        if (dt >= d1) o.d++;
+        if (dt >= d7) o.w++;
+        if (dt >= d30) o.m++;
+      });
+      return o;
+    }
+    var ws = windows(sRows), wb = windows(bRows);
     var body = mx.querySelector('tbody');
     if (body) {
-      body.innerHTML = [['Daily', 'd'], ['Weekly', 'w'], ['Monthly', 'm']].map(function(p) {
-        return '<tr><td>' + p[0] + '</td>'
-          + '<td>' + (ws ? fmt(ws[p[1]]) : '—') + '</td>'
-          + '<td>' + (wb ? fmt(wb[p[1]]) : '—') + '</td></tr>';
-      }).join('');
+      body.innerHTML = [['Last 24 hours', 'd'], ['Last 7 days', 'w'], ['Last 30 days', 'm']]
+        .map(function(p) {
+          return '<tr><td>' + p[0] + '</td>'
+            + '<td>' + (ws ? fmt(ws[p[1]]) : '—') + '</td>'
+            + '<td>' + (wb ? fmt(wb[p[1]]) : '—') + '</td></tr>';
+        }).join('');
     }
   }
 
-  // Top states by onboarded seller count.
-  var stEl = document.getElementById('omp-geo-states');
+  var stEl = document.getElementById('vex-geo-states');
   if (stEl) {
     if (sRows) {
       var map = {};
       sRows.forEach(function(r) {
         if (r.status !== 'COMPLETED') return;
         var st = (r.state || '').trim();
-        if (!st) return;
-        map[st] = (map[st] || 0) + 1;
+        if (st) map[st] = (map[st] || 0) + 1;
       });
       var list = Object.keys(map).map(function(k) { return { s: k, n: map[k] }; })
-                       .sort(function(a, b) { return b.n - a.n; }).slice(0, 5);
+                       .sort(function(a, b) { return b.n - a.n; }).slice(0, 8);
       stEl.innerHTML = list.length
-        ? list.map(function(x) { return _ompBar(x.s, x.n, list[0].n, OMP_AC.geo); }).join('')
-        : '<div class="otn-empty">No state recorded on onboarded sellers</div>';
+        ? list.map(function(x) { return _vexBar(x.s, x.n, list[0].n); }).join('')
+        : '<div class="vex-empty">No state recorded on onboarded sellers</div>';
     } else {
-      stEl.innerHTML = '<div class="otn-empty">Open the Sellers records to load states</div>';
+      stEl.innerHTML = '<div class="vex-empty">Loading seller records…</div>';
     }
   }
 
-  // Days since last transaction, for sellers that have transacted.
-  var chEl = document.getElementById('omp-churn-buckets');
+  var chEl = document.getElementById('vex-churn-buckets');
   if (chEl && sRows) {
     var b30 = 0, b90 = 0, bOld = 0, today = new Date();
     sRows.forEach(function(r) {
       if (!r.hasTransacted) return;
-      var dt = _ompParseDMY(r.txnDate);
+      var dt = _vexParseDMY(r.txnDate);
       if (!dt) return;
       var days = Math.floor((today - dt) / 86400000);
       if (days <= 30) b30++;
       else if (days <= 90) b90++;
       else bOld++;
     });
-    chEl.innerHTML = _ompCell('0–30d', fmt(b30), 'active', OMP_AC.onb)
-      + _ompCell('31–90d', fmt(b90), 'slowing', OMP_AC.review)
-      + _ompCell('90d+', fmt(bOld), 'at risk', OMP_AC.churn);
+    chEl.innerHTML = _vexCell('0–30d', fmt(b30), 'active', VEX_AC.onb)
+      + _vexCell('31–90d', fmt(b90), 'slowing', VEX_AC.review)
+      + _vexCell('90d+', fmt(bOld), 'at risk', VEX_AC.churn);
   }
 }
 
 function renderPipelinePair(key) {
   var el = document.getElementById('vert-pipeline-pair');
   if (!el) return;
-  // OMP renders the process tree in #vert-kpi-row — pipeline pair is not needed
-  if (key === 'OMP') {
-    el.innerHTML = '';
-    var bizRail = document.getElementById('vert-biz-rail');
-    if (bizRail) bizRail.innerHTML = '';
-    return;
-  }
-  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
-  if (!cfg || !DS || !DS.verticals) {
-    if (_dashLoading) {
-      var skBody = '<div class="sk-pipe" style="padding:16px">'
-        + '<div class="sk-line" style="width:40%;height:8px;border-radius:4px"></div>'
-        + '<div style="display:flex;gap:8px;margin:12px 0">'
-        + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
-        + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
-        + '<div class="sk-line" style="flex:1;height:44px;border-radius:6px;margin:0"></div>'
-        + '</div>'
-        + '<div class="sk-line" style="width:70%"></div>'
-        + '<div class="sk-line" style="width:50%"></div>'
-        + '</div>';
-      el.innerHTML = skBody + skBody;
-      renderBizRail(cfg, null);
-    } else {
-      el.innerHTML = '';
-      renderBizRail(cfg, null);
-    }
-    return;
-  }
-  var vs = (DS.verticals || {})[key] || {};
-  var vb = (DB && DB.verticals || {})[key] || {};
-  window._gmvCats = { seller: vs.categories || [], buyer: vb.categories || [] };
-  el.classList.remove('three-col');
-  el.innerHTML = buildInlinePipeCard(cfg, vs, 'Seller Pipeline', 'seller', 0)
-    + buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1);
-  renderBizRail(cfg, vs);
-  animateCounters(el);
-  if (key === 'OMP') {
-    loadQualityData();       // populates the quality strips AND the Documents section
-  } else {
-    var de = document.getElementById('vert-docs-section');
-    if (de) de.style.display = 'none';   // Document Management is Open Marketplace only
-  }
+  // The explorer in #vert-kpi-row carries every vertical now — the legacy
+  // pipeline pair and insights rail are no longer part of the layout.
+  el.innerHTML = '';
+  var bizRail = document.getElementById('vert-biz-rail');
+  if (bizRail) bizRail.innerHTML = '';
+
 }
 
 // ── Business Insights rail (right column) ─────────────────────────
@@ -7706,14 +7785,9 @@ function _regionsFromRows(rows) {
 }
 // Recompute cfg + seller summary for the active vertical and repaint the rail.
 // Called after detail rows load so the region fallback can fill the card.
-function refreshBizRail() {
-  var key = (typeof activeVertKey !== 'undefined' && activeVertKey) || selectedVert;
-  if (!key) return;
-  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
-  if (!cfg) return;
-  var vs = (DS && DS.verticals) ? DS.verticals[key] : null;
-  renderBizRail(cfg, vs || null);
-}
+// The insights rail was retired with the explorer. The row-load callbacks
+// still ping this, so it stays as a no-op rather than a scattered guard.
+function refreshBizRail() {}
 // Region-wise bifurcation card for the Business Insights rail. Shows onboarded
 // sellers per region with a proportional share bar; empty when no region data.
 function _buildRailRegions(vs) {
@@ -8650,10 +8724,12 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
 function renderInlineDetail(key) {
   var el = document.getElementById('vert-detail-section');
   if (!el) return;
-  if (!key) { el.style.display = 'none'; return; }
+  // The records table is the last branch of the walk: it only exists once a
+  // KPI has been opened, so the screen stays on the vertical list at rest.
+  try { _vexPatchRows(); } catch (e) {}
+  if (!key || !_vexKpi) { el.style.display = 'none'; return; }
   var vcStyle = vcVars(key);
   el.style.cssText = 'display:block;' + vcStyle;
-  if (key === 'OMP') { try { _patchOMPTreeRows(); } catch (e) {} }
 
   var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
   var aud = selectedAud || 'seller';
@@ -8869,10 +8945,11 @@ function openVertDetail(key, aud) {
     document.querySelectorAll('.vert-tab[data-key]').forEach(function(t) {
       t.classList.toggle('active', t.dataset.key === key);
     });
+    _vexKpi = null;   // a fresh vertical opens on its KPI list, not a stale branch
+    renderVertCtxHdr(key);
+    setAura(key);
     renderVertKPIs(key);
     renderPipelinePair(key);
-    var detEl = document.getElementById('vert-detail-section');
-    if (detEl) detEl.style.display = '';
     renderInlineDetail(key);
     loadVertRows(key);
   } else {
