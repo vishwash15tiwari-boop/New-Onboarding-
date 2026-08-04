@@ -6112,11 +6112,14 @@ function _ovnBuildContent() {
     return sd * av.localeCompare(bv2);
   });
 
-  var cExist = 0, cNew = 0, cMetal = 0, cPlastic = 0;
+  var cExist = 0, cNew = 0;
+  var cExistMetal = 0, cExistPlastic = 0, cNewMetal = 0, cNewPlastic = 0;
   filtered.forEach(function(r) {
-    if (r.isOldVendor) cExist++; else cNew++;
-    if (r.category === 'Metal') cMetal++;
-    if (r.category === 'Plastic') cPlastic++;
+    var isOld = r.isOldVendor;
+    var isMt  = r.category === 'Metal';
+    var isPl  = r.category === 'Plastic';
+    if (isOld) { cExist++; if (isMt) cExistMetal++; if (isPl) cExistPlastic++; }
+    else        { cNew++;   if (isMt) cNewMetal++;   if (isPl) cNewPlastic++; }
   });
 
   function chip(n, lbl, col) {
@@ -6126,10 +6129,12 @@ function _ovnBuildContent() {
   }
   var chipsHtml = '<div class="ovn-chips">'
     + chip(filtered.length, 'Total')
-    + chip(cExist, 'Existing', 'var(--txt2)')
-    + chip(cNew,   'New',      '#1DC797')
-    + chip(cMetal, 'Metal',    '#636366')
-    + chip(cPlastic,'Plastic', '#E48800')
+    + chip(cExist,        'Existing',      'var(--txt2)')
+    + chip(cExistMetal,   'Existing Metal', '#636366')
+    + chip(cExistPlastic, 'Existing Plastic', '#E48800')
+    + chip(cNew,          'New',            '#1DC797')
+    + chip(cNewMetal,     'New Metal',      '#636366')
+    + chip(cNewPlastic,   'New Plastic',    '#E48800')
     + '</div>';
 
   function selEl(key, opts, placeholder) {
@@ -8214,7 +8219,7 @@ function openVertDetail(key, aud) {
     vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '', region: 'All', ratingMin: '', ratingMax: '' }; vdPage = 0;
     vdSort = { key: '', dir: 1 };
     vertRows = []; vertRowsLoading = true; vertRowsError = null;
-    _vertRowsPKey = null; ++_vertRowsGen; _ovnRows = {}; _taBackend = { pKey: null, sellers: null, buyers: null };
+    _vertRowsPKey = null; ++_vertRowsGen; _ovnRows = {}; _taBackend = { pKey: null, sellers: null, buyers: null, nonSellers: null, nonBuyers: null };
     document.querySelectorAll('.vert-tab[data-key]').forEach(function(t) {
       t.classList.toggle('active', t.dataset.key === key);
     });
@@ -10981,9 +10986,9 @@ function openTaModal() {
     _ta.view = 'transacted'; _ta.ntBucket = 'All'; _ta.ntPg = 0;
   }
   _taFetch();
-  _taRender();
   if (m && !isOpen) { void m.offsetHeight; m.classList.add('ta-open'); }
   if (!isOpen) document.addEventListener('keydown', _taEsc);
+  try { _taRender(); } catch (e) {}
 }
 
 function closeTaModal() {

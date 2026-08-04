@@ -1210,7 +1210,7 @@ function vStats(data, txnData) {
       transacted:    fyTransacted,
       pctTransacted: fyTransacted === null ? null : pct(fyTransacted, fyCompleted),
       totalTxnValue: fyHasTxnVal ? fyTxnSum : null,
-      avgTAT:        fyTats.length ? Math.round(avg(fyTats)) : null,
+      avgTAT:        fyTats.length ? Math.round(median(fyTats)) : null,
     };
   }).filter(function(f) { return f.fyStart >= 2019; })
     .sort(function(a, b) { return b.fyStart - a.fyStart; });
@@ -1223,7 +1223,7 @@ function vStats(data, txnData) {
     rejected: rejected,
     completionPct: pct(completed, total),
     completedThisWeek: completedThisWeek,
-    avgTAT: tats.length ? Math.round(avg(tats)) : null,
+    avgTAT: tats.length ? Math.round(median(tats)) : null,
     transacted: transacted,
     pctTransacted: transacted === null ? null : pct(transactedCompleted, completed),
     totalTxnCount: hasTxnData ? txnCountSum : null,
@@ -1428,6 +1428,12 @@ function stateToRegion_(state) {
 function count(arr, field, val) { return arr.filter(function(r) { return r[field] === val; }).length; }
 function countFn(arr, fn) { return arr.filter(fn).length; }
 function avg(arr) { return arr.length ? arr.reduce(function(a, b) { return a + b; }, 0) / arr.length : 0; }
+function median(arr) {
+  if (!arr.length) return 0;
+  var s = arr.slice().sort(function(a, b) { return a - b; });
+  var m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
 function pct(n, d) { return d ? Math.round((n / d) * 100) : 0; }
 function fmtDate(d) {
   if (!d) return '—';
