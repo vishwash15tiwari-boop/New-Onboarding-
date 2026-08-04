@@ -3677,6 +3677,14 @@ button:active:not(:disabled),
 .gp-fy-card, .vpipe-stat-card, .biz-tile, .vkpi-card, .qcard {
   transition:var(--t-card);
 }
+
+/* ══ 35. BIZ RAIL LAYOUT — Regional Split parallel to material rows ════════ */
+/* GMV tile and quality tiles shrink to content height; only Regional Split
+   fills the remaining space, so its top edge aligns with the material rows
+   in the adjacent pipeline pair card (which also start after the header + KPI section). */
+.biz-tile-gmv                        { flex: 0 0 auto !important }
+.biz-tile--right:not(.biz-tile-region) { flex: 0 0 auto !important }
+.biz-tile-region                     { flex: 1 !important; min-height: 80px }
 </style>
 </head>
 
@@ -4881,13 +4889,21 @@ function renderVertKPIs(key) {
   var nonTxnSub   = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
   var oldTotalSub = '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>';
   var txnPct = compS > 0 ? Math.round(txnTotal / compS * 100) : 0;
+  // Total orders = sum of txnCount per transacted seller.
+  // Primary: backend field; fallback: sum from loaded seller detail rows.
+  var totalOrders = vs.totalTxnCount || 0;
+  if (!totalOrders && Array.isArray(vertRows) && vertRows.length > 0) {
+    totalOrders = vertRows.reduce(function(s, r) {
+      return s + (r.txnCount != null && Number(r.txnCount) > 0 ? Number(r.txnCount) : 0);
+    }, 0);
+  }
   // Save snapshot so openKpiModal() can read it without recomputing
   window._kpiSnap = {
     key: key,
     totalS: totalS, totalB: totalB,
     compS: compS, compB: compB, compPct: compPct,
     txnS: txnS, txnB: txnB, txnTotal: txnTotal, txnPct: txnPct, nonTxnTotal: nonTxnTotal,
-    txnUniqueTotal: vs.totalTxnCount || 0,
+    txnUniqueTotal: vs.totalTxnCount || 0, totalOrders: totalOrders,
     newS: newS, oldS: oldS, newB: newB, oldB: oldB,
     vs: vs, vb: vb,
     pTotal: pTotal, mTotal: mTotal,
@@ -4895,10 +4911,15 @@ function renderVertKPIs(key) {
     pTxn: pTxn, mTxn: mTxn,
     pNew: pNew, mNew: mNew,
   };
+  var txnCardSub = '<b>' + fmt(pTxn) + '</b> Plastic | <b>' + fmt(mTxn) + '</b> Metal'
+    + (totalOrders > 0
+        ? '<div style="margin-top:3px;font-size:9.5px;font-weight:600;color:var(--txt3);letter-spacing:.01em">'
+          + fmt(totalOrders) + ' total orders</div>'
+        : '');
   var cards = [
     mk(icFunnel, 'Logged In Cases', fmt(totalS + totalB), '<b>' + fmt(totalS) + '</b> sellers | <b>' + fmt(totalB) + '</b> buyers', 'vk-total',     'total',      null),
     mk(icCheck,  'Onboarded',   fmt(compS + compB),   '<b>' + fmt(compS) + '</b> sellers | <b>' + fmt(compB) + '</b> buyers',  'vk-onboarded', 'onboarded'),
-    mk(icZap,    'Transacted',  fmt(txnTotal),         '<b>' + fmt(pTxn) + '</b> Plastic | <b>' + fmt(mTxn) + '</b> Metal', 'vk-transacted', 'transacted'),
+    mk(icZap,    'Transacted',  fmt(txnTotal),         txnCardSub, 'vk-transacted', 'transacted'),
   ];
   if (key === 'OMP') {
     var enTotal = (oldS + oldB) + (newS + newB);
