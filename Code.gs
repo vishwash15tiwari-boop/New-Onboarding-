@@ -751,6 +751,11 @@ function normalizeRows(raw, cfg) {
       txnDate:       txnDate,
       onbTAT:        tat,
       reviewDate:    reviewDate,
+      totalOrders:   (function() {
+        var raw = gv(row, idx, 'total_orders') || gv(row, idx, 'order_count') || gv(row, idx, 'orders_count') || '';
+        var n = parseInt(String(raw).replace(/[^0-9]/g, ''), 10);
+        return isNaN(n) ? null : n;
+      }()),
     };
   }).filter(function(r) {
     var nNm = (r.name || '').trim();
@@ -785,7 +790,10 @@ function normalizeRows(raw, cfg) {
     var key = r.id + '\x00' + r.vertical;
     if (seen[key]) return false;
     seen[key] = true;
-    r.txnCount = txnCounts[key] || 1;
+    // Prefer total_orders from the sheet; fall back to pre-dedup row count.
+    r.txnCount = (r.totalOrders !== null && r.totalOrders !== undefined)
+      ? r.totalOrders
+      : (txnCounts[key] || 0);
     // Replace per-row txnValue with the cumulative sum across all pre-dedup rows
     // so vStats GMV totals and the detail table both see total GMV per vendor.
     if (txnValSums[key] != null) r.txnValue = txnValSums[key];
@@ -1042,7 +1050,7 @@ function vStats(data, txnData) {
   txnArr.forEach(function(r) {
     var cat = String(r.category || '').trim().toLowerCase();
     if (r.status === 'COMPLETED') transactedCompleted++;
-    txnCountSum += (r.txnCount || 1);
+    txnCountSum += (r.txnCount || 0);
     if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
       hasTxnValData = true; txnValSum += r.txnValue;
     }
@@ -1205,7 +1213,7 @@ function vertRow(r) {
     tat: (r.onbTAT === null ? '—' : r.onbTAT),
     hasTxn:       r.hasTxn,
     hasTransacted: r.hasTransacted,
-    txnCount:     r.txnCount || 1,
+    txnCount:     r.txnCount || 0,
     txnValue:     r.txnValue !== null && r.txnValue !== undefined ? r.txnValue : null,
     txnDate:      fmtDate(r.txnDate),
     isOldVendor:  !!r.isOldVendor,
