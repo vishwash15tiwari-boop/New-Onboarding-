@@ -2517,6 +2517,52 @@ body:not(.view-gst) #dash-content{max-width:1200px;margin:0;padding:20px 34px 80
 .jr-perf .biz-card{padding:18px 20px}
 .jr-perf .biz-card .biz-region{margin-top:0;padding-top:0;border-top:none}
 body:not(.view-gst) #vert-ctx-hdr{display:none}
+
+/* ══════════════════════════════════════════════════
+   OPERATIONAL MIND MAP — connected branch tree
+   ══════════════════════════════════════════════════ */
+.branch-root{display:flex;align-items:center;gap:11px;margin:4px 0 2px;padding-left:2px;flex-wrap:wrap}
+.br-code{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--vc-ink,var(--blue-ink));background:var(--vc-soft,var(--accent-soft));padding:4px 9px;border-radius:6px}
+.br-name{font-size:20px;font-weight:700;letter-spacing:-.5px;color:var(--txt)}
+.br-hint{margin-left:auto;font-size:11px;color:var(--txt3);font-weight:500}
+.mm-tree{position:relative;padding-left:44px;margin-top:12px}
+.mm-rail{position:absolute;left:19px;top:-6px;width:1.5px;height:0;background:rgba(0,0,0,.16);transition:height .55s var(--ease-out)}
+.tnode{position:relative;margin-bottom:24px;opacity:0;transform:translateX(-10px)}
+.tnode.in{opacity:1;transform:none;transition:opacity .5s var(--ease-out),transform .5s var(--ease-out)}
+.tnode .stub{position:absolute;left:-25px;top:9px;width:24px;height:1.5px;background:rgba(0,0,0,.16);transform:scaleX(0);transform-origin:left;transition:transform .4s var(--ease-out) .06s}
+.tnode.in .stub{transform:scaleX(1)}
+.tnode .knob{position:absolute;left:-29px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--card);border:1.6px solid rgba(0,0,0,.28);z-index:1}
+.tnode.lf .knob{border-color:var(--blue);background:var(--blue)}
+/* Branch body: transparent wrapper — title + the vertical's own content cards.
+   No card-in-card; the connector rail + title carry the hierarchy. */
+.mm-card,.mm-branch{background:transparent;border:none;padding:0}
+.node-hd{display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap}
+.node-ttl{font-size:13px;font-weight:700;letter-spacing:-.1px;color:var(--txt)}
+.node-tag{font-size:10.5px;font-weight:500;color:var(--txt3)}
+.node-open{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--blue);background:none;border:none;font-family:inherit;cursor:pointer;padding:0}
+.node-lead{margin-left:auto;font-size:12px;font-weight:600;color:var(--blue)}
+/* Detailed Records leaf — a real tappable card (no inner content) */
+.tnode.lf .mm-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px 17px;transition:border-color .2s var(--ease-out),box-shadow .2s var(--ease-out)}
+.tnode.lf .mm-card .node-hd{margin-bottom:0}
+.tnode.lf .mm-card.tap{cursor:pointer}
+.tnode.lf .mm-card.tap:hover{border-color:rgba(0,93,255,.35);box-shadow:0 12px 30px -16px rgba(0,0,0,.32)}
+/* Journey section-eyebrows are unused in the tree */
+.mm-tree .jr-hd{display:none}
+/* Reveal-safe: prevent the old .reveal opacity from hiding tree nodes */
+.tnode.reveal{opacity:0}
+
+/* Detailed Records slide-over */
+.rec-ovl{position:fixed;inset:0;background:rgba(20,20,22,.42);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .3s var(--ease-out);z-index:300;display:flex;justify-content:flex-end}
+.rec-ovl.show{opacity:1;pointer-events:auto}
+.rec-sheet{width:min(880px,96vw);height:100%;background:var(--card);box-shadow:-24px 0 64px rgba(0,0,0,.24);transform:translateX(40px);transition:transform .4s var(--ease-out);display:flex;flex-direction:column}
+.rec-ovl.show .rec-sheet{transform:none}
+.rec-sheet-hd{display:flex;align-items:center;gap:12px;padding:17px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
+.rs-ttl{font-size:15px;font-weight:700;color:var(--txt);letter-spacing:-.2px}
+.rs-sub{font-size:11px;color:var(--txt3);margin-top:2px}
+.rec-sheet-x{margin-left:auto;width:30px;height:30px;border-radius:50%;border:none;background:var(--bg2);cursor:pointer;font-size:14px;color:var(--txt2);flex-shrink:0}
+.rec-sheet-body{overflow-y:auto;padding:16px 22px 44px;flex:1;min-height:0}
+body.rec-open{overflow:hidden}
+@media(max-width:640px){.rec-sheet{width:100vw}}
 .osv-list{display:flex;flex-direction:column;gap:9px;margin-top:2px}
 .osv-row{display:flex;align-items:center;gap:9px;font-size:12px}
 .osv-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -2644,47 +2690,81 @@ body:not(.view-gst) #vert-ctx-hdr{display:none}
   <!-- ── VIEW: ONBOARDING — guided information journey ── -->
   <div id="tab-overview">
 
-    <!-- 1 · Overall business summary -->
-    <section class="jr-sec reveal" data-ri="0" id="sec-summary"></section>
+    <!-- Root of the mind map: the active business vertical -->
+    <div class="branch-root">
+      <span class="br-code" id="mm-code">OMP</span>
+      <span class="br-name" id="mm-name">Open Marketplace</span>
+      <span class="br-hint">Branches unfold below — open Records for the full tables</span>
+    </div>
 
-    <!-- 2 · Hero KPI cards -->
-    <section class="jr-sec reveal" data-ri="1">
-      <div class="jr-hd"><span class="jr-step">01</span><span class="jr-ttl">Overview</span><span class="jr-sp"></span></div>
-      <div id="vert-kpi-row" class="vkpi-grid"></div>
-    </section>
+    <!-- Connected branch tree — each node hangs off the rail -->
+    <div class="mm-tree" id="mm-tree">
+      <div class="mm-rail" id="mm-rail"></div>
 
-    <!-- 3 · Onboarding funnel -->
-    <section class="jr-sec reveal" data-ri="2" id="sec-funnel-wrap">
-      <div class="jr-hd"><span class="jr-step">02</span><span class="jr-ttl">Onboarding Funnel</span><span class="jr-sp"></span></div>
-      <div id="sec-funnel"></div>
-    </section>
+      <!-- Business Overview -->
+      <div class="tnode" data-ri="0">
+        <span class="knob"></span><span class="stub"></span>
+        <div class="mm-card">
+          <div class="node-hd"><span class="node-ttl">Business Overview</span><span class="node-tag">Summary</span></div>
+          <div id="sec-summary"></div>
+        </div>
+      </div>
 
-    <!-- 4 & 5 · Seller + Buyer onboarding pipelines -->
-    <section class="jr-sec reveal" data-ri="3">
-      <div class="jr-hd"><span class="jr-step">03</span><span class="jr-ttl">Onboarding Pipeline</span><span class="jr-sp"></span><button class="jr-link" onclick="setDetailAud(selectedAud||'seller')">View records &rarr;</button></div>
-      <div id="vert-pipeline-pair" class="vpipe-pair"></div>
-    </section>
+      <!-- Hero KPIs -->
+      <div class="tnode" data-ri="1">
+        <span class="knob"></span><span class="stub"></span>
+        <div class="mm-card">
+          <div class="node-hd"><span class="node-ttl">Hero KPIs</span><span class="node-tag">Logged In · Onboarded · Transacted · Existing vs New</span></div>
+          <div id="vert-kpi-row" class="vkpi-grid"></div>
+        </div>
+      </div>
 
-    <!-- 6 · Operational insights (Vendor Rating · Avg TAT · OSV) -->
-    <section class="jr-sec reveal" data-ri="4" id="sec-ops-wrap">
-      <div class="jr-hd"><span class="jr-step">04</span><span class="jr-ttl">Operational Insights</span><span class="jr-sp"></span></div>
-      <div id="sec-ops"></div>
-    </section>
+      <!-- Onboarding Funnel -->
+      <div class="tnode" data-ri="2" id="sec-funnel-wrap">
+        <span class="knob"></span><span class="stub"></span>
+        <div class="mm-card">
+          <div class="node-hd"><span class="node-ttl">Onboarding Funnel</span><span class="node-tag">Draft · In Review · Completed · Rejected</span></div>
+          <div id="sec-funnel"></div>
+        </div>
+      </div>
 
-    <!-- 7 · Business performance (GMV · Regional Split) -->
-    <section class="jr-sec reveal" data-ri="5" id="sec-perf-wrap">
-      <div class="jr-hd"><span class="jr-step">05</span><span class="jr-ttl">Business Performance</span><span class="jr-sp"></span></div>
-      <div id="sec-perf"></div>
-    </section>
+      <!-- Seller Pipeline -->
+      <div class="tnode" data-ri="3">
+        <span class="knob"></span><span class="stub"></span>
+        <div class="mm-branch">
+          <div class="node-hd"><span class="node-ttl">Seller Pipeline</span><span class="node-tag" id="mm-seller-tag"></span><button class="node-open" onclick="openRecordsSheet('seller')">View records &rarr;</button></div>
+          <div id="mm-seller"></div>
+        </div>
+      </div>
 
-    <!-- 8 · Supporting analytics & detailed records -->
-    <section class="jr-sec reveal" data-ri="6">
-      <div class="jr-hd"><span class="jr-step">06</span><span class="jr-ttl">Records &amp; Analytics</span><span class="jr-sp"></span></div>
-      <!-- Inline detailed view with SELLERS/BUYERS toggle -->
-      <div id="vert-detail-section" class="vds-wrap" style="display:none"></div>
-      <!-- Document Management — Open Marketplace only -->
-      <div id="vert-docs-section" class="docs-wrap" style="display:none"></div>
-    </section>
+      <!-- Buyer Pipeline -->
+      <div class="tnode" data-ri="4">
+        <span class="knob"></span><span class="stub"></span>
+        <div class="mm-branch">
+          <div class="node-hd"><span class="node-ttl">Buyer Pipeline</span><span class="node-tag" id="mm-buyer-tag"></span><button class="node-open" onclick="openRecordsSheet('buyer')">View records &rarr;</button></div>
+          <div id="mm-buyer"></div>
+        </div>
+      </div>
+
+      <!-- Operational Metrics -->
+      <div class="tnode" data-ri="5" id="sec-ops-wrap">
+        <span class="knob"></span><span class="stub"></span>
+        <div class="mm-card">
+          <div class="node-hd"><span class="node-ttl">Operational Metrics</span><span class="node-tag">TAT · GMV · Vendor Rating · OSV · Regional Split</span></div>
+          <div id="sec-ops"></div>
+          <div id="sec-perf" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- Detailed Records — opens a slide-over -->
+      <div class="tnode lf" data-ri="6">
+        <span class="knob"></span><span class="stub"></span>
+        <div class="mm-card tap" role="button" tabindex="0" onclick="openRecordsSheet()"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openRecordsSheet()}">
+          <div class="node-hd"><span class="node-ttl">Detailed Records</span><span class="node-tag">Tables · transaction history · analytics</span><span class="node-lead">Open &rarr;</span></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ── VIEW: GST PAYABLES ── -->
@@ -2696,6 +2776,22 @@ body:not(.view-gst) #vert-ctx-hdr{display:none}
   <nav id="side-nav"></nav>
 
 </div><!-- /main -->
+
+<!-- Detailed Records — slide-over panel (opened from the mind-map leaf) -->
+<div class="rec-ovl" id="rec-ovl" onclick="if(event.target===this)closeRecordsSheet()">
+  <aside class="rec-sheet" role="dialog" aria-modal="true" aria-label="Detailed records">
+    <div class="rec-sheet-hd">
+      <div class="rs-htxt"><div class="rs-ttl">Detailed Records</div><div class="rs-sub" id="rs-sub"></div></div>
+      <button class="rec-sheet-x" onclick="closeRecordsSheet()" aria-label="Close">✕</button>
+    </div>
+    <div class="rec-sheet-body">
+      <!-- Inline detailed view with SELLERS/BUYERS toggle -->
+      <div id="vert-detail-section" class="vds-wrap" style="display:none"></div>
+      <!-- Document Management — Open Marketplace only -->
+      <div id="vert-docs-section" class="docs-wrap" style="display:none"></div>
+    </div>
+  </aside>
+</div>
 
 <!-- Vertical Detail — full-page overlay (outside main layout) -->
 <div id="vert-detail" style="display:none;pointer-events:none"></div>
@@ -3508,7 +3604,7 @@ function renderVerticals() {
 
   if (D && D.dataSource === 'empty') {
     var kEl = document.getElementById('vert-kpi-row');
-    var pEl = document.getElementById('vert-pipeline-pair');
+    var pEl = document.getElementById('mm-seller');
     var dEl = document.getElementById('vert-detail-section');
     if (kEl) kEl.innerHTML = '';
     if (pEl) pEl.innerHTML = '<div style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:36px 32px;text-align:center;box-shadow:var(--shadow-sm)">'
@@ -3618,11 +3714,15 @@ function renderSummaryRibbon(key) {
   var onb = (vs.completed || 0) + (vb.completed || 0);
   var txn = (vs.transacted || 0) + (vb.transacted || 0);
   var pctC = tot > 0 ? Math.round(onb / tot * 100) : 0;
+  // Mind-map root header (the vertical name atop the tree)
+  var mmCode = document.getElementById('mm-code');
+  var mmName = document.getElementById('mm-name');
+  if (mmCode) mmCode.textContent = cfg.code || cfg.key;
+  if (mmName) mmName.textContent = cfg.name;
+  var broot = document.querySelector('.branch-root');
+  if (broot) broot.setAttribute('style', vcVars(key));
   el.setAttribute('style', vcVars(key));
   el.innerHTML = '<div class="jr-summary">'
-    + '<div class="jrs-title"><span class="jrs-code">' + esc(cfg.code || cfg.key) + '</span>'
-    +   '<span class="jrs-name">' + esc(cfg.name) + '</span></div>'
-    + '<div class="jrs-div"></div>'
     + '<div class="jrs-stat"><b>' + fmt(tot) + '</b><span>logged in</span></div>'
     + '<div class="jrs-stat"><b>' + fmt(onb) + '</b><span>onboarded</span></div>'
     + '<div class="jrs-stat"><b>' + fmt(txn) + '</b><span>transacted</span></div>'
@@ -3637,37 +3737,81 @@ function renderFunnel(key) {
   if (!el) return;
   var vs  = (DS && DS.verticals || {})[key] || {};
   var vb  = (DB && DB.verticals || {})[key] || {};
-  var tot = (vs.total || 0) + (vb.total || 0);
-  var onb = (vs.completed || 0) + (vb.completed || 0);
-  var txn = (vs.transacted || 0) + (vb.transacted || 0);
-  if (!tot) { el.innerHTML = ''; document.getElementById('sec-funnel-wrap').style.display = 'none'; return; }
-  document.getElementById('sec-funnel-wrap').style.display = '';
-  var onbPct = tot > 0 ? Math.round(onb / tot * 100) : 0;
-  var txnPct = onb > 0 ? Math.round(txn / onb * 100) : 0;
-  var row = function(lbl, val, widthPct, color, meta) {
+  var draft  = (vs.draft    || 0) + (vb.draft    || 0);
+  var review = (vs.inReview || 0) + (vb.inReview || 0);
+  var done   = (vs.completed|| 0) + (vb.completed|| 0);
+  var rej    = (vs.rejected || 0) + (vb.rejected || 0);
+  var tot    = draft + review + done + rej;
+  var wrap   = document.getElementById('sec-funnel-wrap');
+  if (!tot) { el.innerHTML = ''; if (wrap) wrap.style.display = 'none'; return; }
+  if (wrap) wrap.style.display = '';
+  var max = Math.max(draft, review, done, rej, 1);
+  var row = function(lbl, val, color) {
+    var w = val > 0 ? Math.max(3, val / max * 100) : 0;
+    var pct = tot > 0 ? Math.round(val / tot * 100) : 0;
     return '<div class="fn-row"><div class="fn-lbl">' + lbl + '</div>'
-      + '<div class="fn-track"><div class="fn-fill" style="width:' + Math.max(2, widthPct) + '%;background:' + color + '">' + fmt(val) + '</div></div>'
-      + '<div class="fn-meta">' + meta + '</div></div>';
+      + '<div class="fn-track"><div class="fn-fill" style="width:' + w.toFixed(1) + '%;background:' + color + '">' + fmt(val) + '</div></div>'
+      + '<div class="fn-meta"><b>' + pct + '%</b> of pipeline</div></div>';
   };
   el.innerHTML = '<div class="jr-funnel">'
-    + row('Logged In',  tot, 100,                          'var(--st-draft)',      '100%')
-    + row('Onboarded',  onb, tot > 0 ? onb / tot * 100 : 0, 'var(--st-onboarded)', '<b>' + onbPct + '%</b> of logged in')
-    + row('Transacted', txn, tot > 0 ? txn / tot * 100 : 0, 'var(--st-transacted)','<b>' + txnPct + '%</b> of onboarded')
+    + row('Draft',     draft,  'var(--st-draft)')
+    + row('In Review', review, 'var(--st-review)')
+    + row('Completed', done,   'var(--st-onboarded)')
+    + row('Rejected',  rej,    'var(--st-rejected)')
     + '</div>';
 }
 
-// ── Guided-journey reveal — cascade the sections into view on select ──
+// ── Mind-map reveal — branches unfold down the rail, one after another ──
 function runJourneyReveal() {
-  var secs = document.querySelectorAll('#tab-overview .jr-sec');
-  if (!secs.length) return;
-  if (!motionOK()) { secs.forEach(function(s) { s.classList.add('visible'); }); return; }
-  secs.forEach(function(s, i) {
-    s.classList.remove('visible');
-    // eslint-disable-next-line no-unused-expressions
-    void s.offsetWidth;   // restart the transition
-    setTimeout(function() { s.classList.add('visible'); }, 60 + i * 95);
+  var tree = document.getElementById('mm-tree');
+  if (!tree) return;
+  var nodes = Array.prototype.slice.call(tree.querySelectorAll('.tnode'));
+  if (!nodes.length) return;
+  var rail = document.getElementById('mm-rail');
+  var grow = function(i) {
+    if (!rail || !nodes[i]) return;
+    rail.style.height = (nodes[i].offsetTop + 16) + 'px';   // down to the knob centre
+  };
+  if (!motionOK()) {
+    nodes.forEach(function(n) { n.classList.add('in'); });
+    grow(nodes.length - 1);
+    return;
+  }
+  nodes.forEach(function(n) { n.classList.remove('in'); void n.offsetWidth; });
+  nodes.forEach(function(n, i) {
+    setTimeout(function() { n.classList.add('in'); grow(i); }, 70 + i * 140);
   });
 }
+// Recompute the rail to reach the last branch — call after async content
+// (quality data, detail rows) changes a node's height.
+function mmGrowRail() {
+  var tree = document.getElementById('mm-tree');
+  var rail = document.getElementById('mm-rail');
+  if (!tree || !rail) return;
+  var nodes = tree.querySelectorAll('.tnode.in');
+  if (!nodes.length) return;
+  var last = nodes[nodes.length - 1];
+  rail.style.height = (last.offsetTop + 16) + 'px';
+}
+
+// Detailed Records slide-over
+function openRecordsSheet(aud) {
+  var key = activeVertKey || selectedVert;
+  if (aud && aud !== selectedAud) { setDetailAud(aud); return; }   // setDetailAud opens the sheet
+  if (key) { renderInlineDetail(key); if (!vertRows.length && !vertRowsLoading) loadVertRows(key); }
+  _showRecSheet(key);
+}
+function closeRecordsSheet() {
+  var ovl = document.getElementById('rec-ovl');
+  if (ovl) ovl.classList.remove('show');
+  document.body.classList.remove('rec-open');
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var ovl = document.getElementById('rec-ovl');
+    if (ovl && ovl.classList.contains('show')) { e.stopPropagation(); closeRecordsSheet(); }
+  }
+});
 
 function renderVertTabBar() {
   var bar = document.getElementById('vert-tabs-bar');
@@ -3925,7 +4069,7 @@ function vkpiOpen(action) {
       var e = document.getElementById('vdf-status'); if (e) e.value = 'COMPLETED';
     }
     renderVdRecords();
-    detEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    _showRecSheet();
   } else {
     setDetailAud(aud);
   }
@@ -4452,9 +4596,9 @@ function openKpiModal(cardId) {
   }
 
   var footAction = isQuality
-    ? 'closeKpiModal();(function(){var p=document.getElementById(\'vert-pipeline-pair\');if(p)p.scrollIntoView({behavior:\'smooth\',block:\'start\'});})();'
+    ? 'closeKpiModal();(function(){var p=document.getElementById(\'sec-ops-wrap\');if(p)p.scrollIntoView({behavior:\'smooth\',block:\'start\'});})();'
     : (cardId !== 'transacted' && cardId !== 'oldvsnew' ? 'closeKpiModal();vkpiOpen(\'' + (cardId === 'onboarded' ? 'onboarded' : 'all') + '\')' : null);
-  var footLabel  = isQuality ? 'View quality detail in pipeline cards ↓' : 'View vendor detail ↓';
+  var footLabel  = isQuality ? 'View quality detail in Operational Metrics ↓' : 'View vendor detail ↓';
 
   el.innerHTML =
     '<div class="km-head">'
@@ -5300,8 +5444,10 @@ function _buildSellerQualStrip(qc) {
 }
 
 function renderPipelinePair(key) {
-  var el = document.getElementById('vert-pipeline-pair');
-  if (!el) return;
+  // Mind-map: seller and buyer pipelines are two separate branch nodes.
+  var sEl = document.getElementById('mm-seller');
+  var bEl = document.getElementById('mm-buyer');
+  if (!sEl && !bEl) return;
   var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
   if (!cfg || !DS || !DS.verticals) {
     if (_dashLoading) {
@@ -5315,10 +5461,12 @@ function renderPipelinePair(key) {
         + '<div class="sk-line" style="width:70%"></div>'
         + '<div class="sk-line" style="width:50%"></div>'
         + '</div>';
-      el.innerHTML = skBody + skBody;
+      if (sEl) sEl.innerHTML = skBody;
+      if (bEl) bEl.innerHTML = skBody;
       renderBizRail(cfg, null);
     } else {
-      el.innerHTML = '';
+      if (sEl) sEl.innerHTML = '';
+      if (bEl) bEl.innerHTML = '';
       renderBizRail(cfg, null);
     }
     return;
@@ -5326,11 +5474,15 @@ function renderPipelinePair(key) {
   var vs = (DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
   window._gmvCats = { seller: vs.categories || [], buyer: vb.categories || [] };
-  el.classList.remove('three-col');
-  el.innerHTML = buildInlinePipeCard(cfg, vs, 'Seller Pipeline', 'seller', 0)
-    + buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1);
+  if (sEl) sEl.innerHTML = buildInlinePipeCard(cfg, vs, 'Seller Pipeline', 'seller', 0);
+  if (bEl) bEl.innerHTML = buildInlinePipeCard(cfg, vb, 'Buyer Pipeline', 'buyer', 1);
+  var sTag = document.getElementById('mm-seller-tag');
+  var bTag = document.getElementById('mm-buyer-tag');
+  if (sTag) sTag.textContent = fmt(vs.total || 0) + ' cases';
+  if (bTag) bTag.textContent = fmt(vb.total || 0) + ' cases';
   renderBizRail(cfg, vs);
-  animateCounters(el);
+  if (sEl) animateCounters(sEl);
+  if (bEl) animateCounters(bEl);
   if (key === 'OMP') {
     loadQualityData();       // populates the quality strips AND the Documents section
   } else {
@@ -5464,6 +5616,7 @@ function renderBizRail(cfg, vs) {
       : ('<div class="jr-perf" style="grid-template-columns:1fr">' + gmvCard + '</div>');
     if (perfWrap) perfWrap.style.display = '';
   }
+  mmGrowRail();   // Operational Metrics height changed — re-reach the rail to the last branch
 }
 
 // Fixed accent per region so the split reads as a consistent legend.
@@ -5972,9 +6125,8 @@ function renderInlineDetail(key) {
 function setDetailAud(aud) {
   var key = activeVertKey || selectedVert;
   if (selectedAud === aud && vertRows.length > 0 && !vertRowsLoading) {
-    // Already active — just scroll to the detail section
-    var el = document.getElementById('vert-detail-section');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    renderInlineDetail(key);
+    _showRecSheet(key);
     return;
   }
   selectedAud = aud;
@@ -5985,12 +6137,21 @@ function setDetailAud(aud) {
   vertRows = []; vertRowsLoading = true; vertRowsError = null;
   _vertRowsPKey = null; ++_vertRowsGen;
   var detEl = document.getElementById('vert-detail-section');
-  if (detEl) {
-    detEl.style.display = '';
-    setTimeout(function() { detEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
-  }
+  if (detEl) detEl.style.display = '';
   renderInlineDetail(key);
   loadVertRows(key);
+  _showRecSheet(key);
+}
+// Reveal the Detailed Records slide-over and label it for the active context.
+function _showRecSheet(key) {
+  key = key || activeVertKey || selectedVert;
+  var sub = document.getElementById('rs-sub');
+  if (sub) {
+    var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+    sub.textContent = ((cfg && cfg.name) || key || '') + ' · ' + (selectedAud === 'buyer' ? 'Buyers' : 'Sellers');
+  }
+  var ovl = document.getElementById('rec-ovl');
+  if (ovl) { ovl.classList.add('show'); document.body.classList.add('rec-open'); }
 }
 
 // Redirect renderVertDetail() to the inline section (backward compat for existing callers).
