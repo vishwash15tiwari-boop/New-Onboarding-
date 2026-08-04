@@ -2439,6 +2439,116 @@ body.view-gst #vert-tabs-bar{display:none}
 @media(max-width:760px){
   #dash-content{padding:0 16px 60px}
 }
+
+/* ══════════════════════════════════════════════════
+   MIND-MAP NAV + GUIDED JOURNEY  (redesign)
+   ══════════════════════════════════════════════════ */
+/* Left navigation tree — one expandable node per business vertical. */
+#vnav{flex:0 0 262px;position:sticky;top:56px;align-self:flex-start;height:calc(100vh - 56px);overflow-y:auto;padding:22px 16px 40px;border-right:1px solid var(--border);scrollbar-width:thin}
+#vnav::-webkit-scrollbar{width:3px}
+#vnav::-webkit-scrollbar-thumb{background:var(--border2,rgba(0,0,0,.15));border-radius:4px}
+.vnav-eyebrow{font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--txt3);padding:0 8px 12px}
+.vnav-tree{display:flex;flex-direction:column;gap:8px}
+.vnode{position:relative;border:1px solid var(--border);border-radius:var(--r2);background:var(--card);cursor:pointer;transition:border-color .25s var(--ease-out),box-shadow .25s var(--ease-out),background .25s var(--ease-out)}
+.vnode:hover{border-color:rgba(0,0,0,.18)}
+.vnode.muted{cursor:default;background:transparent;border-style:dashed}
+.vnode.muted:hover{border-color:var(--border)}
+.vn-head{display:flex;align-items:center;gap:10px;padding:13px 14px}
+.vn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--vn-hue,var(--txt3))}
+.vn-main{flex:1;min-width:0}
+.vn-name{font-size:13.5px;font-weight:600;letter-spacing:-.1px;line-height:1.2;color:var(--txt)}
+.vn-sub{font-size:11px;font-weight:500;color:var(--txt3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vn-toggle{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--txt3);font-size:16px;line-height:1}
+.vnode.on{background:#1A1A1C;border-color:#1A1A1C;box-shadow:0 12px 28px -14px rgba(0,0,0,.55)}
+.vnode.on .vn-name{color:#fff}
+.vnode.on .vn-sub{color:rgba(255,255,255,.62)}
+.vnode.on .vn-dot{background:var(--vn-hue,var(--blue));box-shadow:0 0 0 4px rgba(0,93,255,.20)}
+.vnode.on .vn-toggle{color:rgba(255,255,255,.7)}
+.vnode.muted .vn-name{color:var(--txt2)}
+.vnav-sep{height:1px;background:var(--border);margin:14px 8px 12px}
+.vn-util-ic{width:22px;height:22px;border-radius:6px;background:rgba(120,120,128,.14);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--txt2);flex-shrink:0}
+.vnode-gst.on .vn-util-ic{background:rgba(255,255,255,.16);color:#fff}
+body.view-gst #vnav .vnode:not(.vnode-gst){opacity:.55}
+
+/* Canvas: single-column guided journey. Left-align next to the nav rail. */
+body:not(.view-gst) #dash-content{max-width:1200px;margin:0;padding:20px 34px 80px}
+.jr-sec{margin-bottom:24px}
+.jr-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:13px}
+.jr-step{font-size:10px;font-weight:700;color:var(--txt3);font-variant-numeric:tabular-nums;letter-spacing:.05em}
+.jr-ttl{font-size:12px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--txt2)}
+.jr-sp{flex:1;height:1px;background:var(--border);align-self:center;margin-left:4px}
+.jr-link{font-size:11.5px;font-weight:600;color:var(--blue);cursor:pointer;white-space:nowrap;background:none;border:none;font-family:inherit;padding:0}
+/* 1 · Summary ribbon */
+.jr-summary{display:flex;align-items:center;gap:20px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;flex-wrap:wrap;box-shadow:var(--shadow-card)}
+.jrs-title{display:flex;align-items:center;gap:11px}
+.jrs-code{font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--vc-ink,var(--blue-ink));background:var(--vc-soft,var(--accent-soft));padding:4px 9px;border-radius:6px}
+.jrs-name{font-size:19px;font-weight:700;letter-spacing:-.4px;color:var(--txt)}
+.jrs-div{width:1px;height:32px;background:var(--border)}
+.jrs-stat b{font-size:18px;font-weight:700;letter-spacing:-.4px;font-variant-numeric:tabular-nums;color:var(--txt)}
+.jrs-stat span{font-size:11px;font-weight:500;color:var(--txt3);margin-left:6px}
+.jrs-prog{flex:1;min-width:150px;max-width:280px}
+.jrs-prog-top{display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;color:var(--txt2);margin-bottom:6px}
+.jrs-prog-bar{height:6px;border-radius:3px;background:var(--bg2);overflow:hidden}
+.jrs-prog-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--blue),var(--st-onboarded));transition:width .8s var(--ease-out)}
+/* 3 · Onboarding funnel */
+.jr-funnel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.fn-row{display:flex;align-items:center;gap:16px}
+.fn-lbl{width:104px;flex-shrink:0;font-size:12.5px;font-weight:600;color:var(--txt2)}
+.fn-track{flex:1;height:32px;border-radius:8px;background:var(--bg2);overflow:hidden}
+.fn-fill{height:100%;border-radius:8px;display:flex;align-items:center;padding:0 13px;color:#fff;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;transition:width .7s var(--ease-out);min-width:2px}
+.fn-meta{width:120px;flex-shrink:0;text-align:right;font-size:11.5px;font-weight:600;color:var(--txt3)}
+.fn-meta b{color:var(--txt);font-weight:700}
+/* 5 · Operational insights */
+.jr-ops{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.op-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:17px 18px;cursor:pointer;transition:box-shadow .25s var(--ease-out),transform .25s var(--ease-out)}
+.op-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.op-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.op-lbl{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3)}
+.op-link{font-size:11px;font-weight:600;color:var(--blue)}
+.op-big{font-size:27px;font-weight:700;letter-spacing:-1px;line-height:1;color:var(--txt);font-variant-numeric:tabular-nums}
+.op-big small{font-size:14px;font-weight:600;color:var(--txt3);letter-spacing:0}
+.op-star{color:var(--blue);font-size:15px;margin-left:4px}
+.op-sub{font-size:11px;font-weight:500;color:var(--txt3);margin-top:8px}
+.op-bar{height:6px;border-radius:3px;background:var(--bg2);overflow:hidden;margin-top:11px}
+.op-bar i{display:block;height:100%;border-radius:3px;background:var(--blue);transition:width .7s var(--ease-out)}
+.op-sync{font-size:13px;font-weight:600;color:var(--txt3);margin-top:4px}
+.op-card.static{cursor:default}
+.op-card.static:hover{transform:none;box-shadow:var(--shadow)}
+.jr-perf .biz-card{padding:18px 20px}
+.jr-perf .biz-card .biz-region{margin-top:0;padding-top:0;border-top:none}
+body:not(.view-gst) #vert-ctx-hdr{display:none}
+.osv-list{display:flex;flex-direction:column;gap:9px;margin-top:2px}
+.osv-row{display:flex;align-items:center;gap:9px;font-size:12px}
+.osv-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.osv-nm{color:var(--txt2);font-weight:500}
+.osv-v{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt)}
+.osv-pct{color:var(--txt3);font-weight:600;font-size:11px;width:36px;text-align:right;font-variant-numeric:tabular-nums}
+/* 6 · Business performance */
+.jr-perf{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px;align-items:start}
+.gmv-dark{background:#1A1A1C;color:#fff;border-radius:var(--r);padding:20px 22px;display:flex;flex-direction:column;cursor:pointer}
+.gmv-dark-top{display:flex;align-items:flex-start;justify-content:space-between}
+.gmv-dark-lb{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.gmv-dark-link{font-size:11px;font-weight:600;color:rgba(255,255,255,.72)}
+.gmv-dark-vl{font-size:35px;font-weight:700;letter-spacing:-1.5px;margin-top:6px;font-variant-numeric:tabular-nums}
+.gmv-dark-split{margin-top:18px;display:flex;flex-direction:column;gap:12px}
+.gmv-dr{display:flex;align-items:center;gap:12px}
+.gmv-dr-nm{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);width:60px;letter-spacing:.02em}
+.gmv-dr-track{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
+.gmv-dr-fill{height:100%;border-radius:3px;transition:width .7s var(--ease-out)}
+.gmv-dr-vl{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;width:88px;text-align:right}
+.gmv-dark-empty{margin-top:14px;font-size:12px;color:rgba(255,255,255,.6)}
+/* Pipeline pair now stands alone (rail removed) — seller + buyer side by side. */
+.vpipe-pair{grid-template-columns:1fr 1fr}
+@media(max-width:1100px){.jr-perf{grid-template-columns:1fr}}
+@media(max-width:960px){
+  #main{flex-direction:column}
+  #vnav{flex:none;width:100%;position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow-x:auto;padding:12px 16px}
+  #vnav .vnav-eyebrow,#vnav .vnav-sep{display:none}
+  .vnav-tree{flex-direction:row}
+  .vnode{min-width:212px;flex-shrink:0}
+  body:not(.view-gst) #dash-content{padding:18px 18px 60px}
+  .jr-ops,.vpipe-pair{grid-template-columns:1fr}
+}
 </style>
 </head>
 
@@ -2497,12 +2607,15 @@ body.view-gst #vert-tabs-bar{display:none}
 <!-- Main -->
 <div id="main">
 
+  <!-- Mind-map navigation tree — one expandable node per business vertical -->
+  <nav id="vnav" aria-label="Business verticals"></nav>
+
   <div id="dash-content">
 
-  <!-- Vertical tab navigation — the page's top nav -->
-  <div id="vert-tabs-bar" class="vert-tabs-bar"></div>
+  <!-- Legacy horizontal tab bar — superseded by the mind-map nav, kept hidden -->
+  <div id="vert-tabs-bar" class="vert-tabs-bar" style="display:none"></div>
 
-  <!-- Hero row: vertical identity left · period controls right -->
+  <!-- Top toolbar: period controls (vertical identity now lives in the journey ribbon) -->
   <div class="section-title reveal" style="flex-wrap:wrap">
     <span id="view-title">Business Verticals</span>
     <div id="vert-ctx-hdr" class="vert-ctx-hdr"></div>
@@ -2528,19 +2641,50 @@ body.view-gst #vert-tabs-bar{display:none}
     <div class="gp-year-chips" id="gp-year-chips" style="display:none"></div>
   </div>
 
-  <!-- ── VIEW: ONBOARDING ── -->
+  <!-- ── VIEW: ONBOARDING — guided information journey ── -->
   <div id="tab-overview">
-    <!-- Combined KPI hero row (4 cards, S+B merged) -->
-    <div id="vert-kpi-row" class="vkpi-grid"></div>
-    <!-- Left: stacked Seller + Buyer pipelines · Right: Business Insights rail -->
-    <div class="vpipe-layout">
+
+    <!-- 1 · Overall business summary -->
+    <section class="jr-sec reveal" data-ri="0" id="sec-summary"></section>
+
+    <!-- 2 · Hero KPI cards -->
+    <section class="jr-sec reveal" data-ri="1">
+      <div class="jr-hd"><span class="jr-step">01</span><span class="jr-ttl">Overview</span><span class="jr-sp"></span></div>
+      <div id="vert-kpi-row" class="vkpi-grid"></div>
+    </section>
+
+    <!-- 3 · Onboarding funnel -->
+    <section class="jr-sec reveal" data-ri="2" id="sec-funnel-wrap">
+      <div class="jr-hd"><span class="jr-step">02</span><span class="jr-ttl">Onboarding Funnel</span><span class="jr-sp"></span></div>
+      <div id="sec-funnel"></div>
+    </section>
+
+    <!-- 4 & 5 · Seller + Buyer onboarding pipelines -->
+    <section class="jr-sec reveal" data-ri="3">
+      <div class="jr-hd"><span class="jr-step">03</span><span class="jr-ttl">Onboarding Pipeline</span><span class="jr-sp"></span><button class="jr-link" onclick="setDetailAud(selectedAud||'seller')">View records &rarr;</button></div>
       <div id="vert-pipeline-pair" class="vpipe-pair"></div>
-      <aside id="vert-biz-rail" class="biz-rail"></aside>
-    </div>
-    <!-- Inline detailed view with SELLERS/BUYERS toggle -->
-    <div id="vert-detail-section" class="vds-wrap" style="display:none"></div>
-    <!-- Document Management — Open Marketplace only -->
-    <div id="vert-docs-section" class="docs-wrap" style="display:none"></div>
+    </section>
+
+    <!-- 6 · Operational insights (Vendor Rating · Avg TAT · OSV) -->
+    <section class="jr-sec reveal" data-ri="4" id="sec-ops-wrap">
+      <div class="jr-hd"><span class="jr-step">04</span><span class="jr-ttl">Operational Insights</span><span class="jr-sp"></span></div>
+      <div id="sec-ops"></div>
+    </section>
+
+    <!-- 7 · Business performance (GMV · Regional Split) -->
+    <section class="jr-sec reveal" data-ri="5" id="sec-perf-wrap">
+      <div class="jr-hd"><span class="jr-step">05</span><span class="jr-ttl">Business Performance</span><span class="jr-sp"></span></div>
+      <div id="sec-perf"></div>
+    </section>
+
+    <!-- 8 · Supporting analytics & detailed records -->
+    <section class="jr-sec reveal" data-ri="6">
+      <div class="jr-hd"><span class="jr-step">06</span><span class="jr-ttl">Records &amp; Analytics</span><span class="jr-sp"></span></div>
+      <!-- Inline detailed view with SELLERS/BUYERS toggle -->
+      <div id="vert-detail-section" class="vds-wrap" style="display:none"></div>
+      <!-- Document Management — Open Marketplace only -->
+      <div id="vert-docs-section" class="docs-wrap" style="display:none"></div>
+    </section>
   </div>
 
   <!-- ── VIEW: GST PAYABLES ── -->
@@ -2877,7 +3021,7 @@ function updateViewChrome() {
   if (ov) ov.style.display = isGst ? 'none' : '';
   if (gt) gt.style.display = isGst ? 'block' : 'none';
   if (pc) pc.style.display = isGst ? 'none' : 'inline-flex';
-  if (tb) tb.style.display = isGst ? 'none' : '';
+  if (tb) tb.style.display = 'none';   // legacy tab bar — superseded by the mind-map nav
 
   if (vt) vt.textContent = isGst ? 'GST Payables' : 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
@@ -2909,6 +3053,7 @@ function switchView(view) {
   if (selectedVert) closeVertDetail();
   document.body.style.overflow = '';
   updateViewChrome();
+  renderVNav();   // reflect GST-active state in the mind-map nav
 
   var swrDone = false;
   try {
@@ -3392,14 +3537,136 @@ function renderVerticals() {
     loadVertRows(activeVertKey);
   }
 
+  renderVNav();
   renderVertTabBar();
   renderVertCtxHdr(activeVertKey);
+  renderSummaryRibbon(activeVertKey);
   renderVertKPIs(activeVertKey);
+  renderFunnel(activeVertKey);
   renderPipelinePair(activeVertKey);
 
   var detEl = document.getElementById('vert-detail-section');
   if (detEl) detEl.style.display = '';
   renderInlineDetail(activeVertKey);
+  runJourneyReveal();
+}
+
+// ── Mind-map navigation tree ──────────────────────────────────────
+// One expandable node per business vertical. The active vertical is the
+// dark, expanded node; verticals with no data read "feed not mapped yet".
+// GST Payables sits below a hairline as a utility node.
+function renderVNav() {
+  var nav = document.getElementById('vnav');
+  if (!nav) return;
+  var cfg   = getVertCfg();
+  var isGST = currentView === 'gst';
+
+  var nodes = cfg.map(function(c) {
+    var vs  = (DS && DS.verticals || {})[c.key] || {};
+    var vb  = (DB && DB.verticals || {})[c.key] || {};
+    var tot = (vs.total || 0) + (vb.total || 0);
+    var onb = (vs.completed || 0) + (vb.completed || 0);
+    var mapped = tot > 0;
+    var isOn   = !isGST && mapped && c.key === activeVertKey;
+    var vc  = VERT_COLORS[c.key] || VERT_COLORS.Others;
+    var sub = mapped
+      ? (fmt(tot) + ' logged in · ' + fmt(onb) + ' onboarded')
+      : 'feed not mapped yet';
+    var cls = 'vnode' + (mapped ? '' : ' muted') + (isOn ? ' on' : '');
+    var click = mapped ? ' onclick="selectVertTab(\'' + c.key + '\')"' : ' onclick="vnavPoke(this)"';
+    return '<div class="' + cls + '" data-key="' + esc(c.key) + '" style="--vn-hue:' + vc.c + '"'
+      + ' role="button" tabindex="0"' + click
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click()}">'
+      + '<div class="vn-head">'
+      +   '<i class="vn-dot"></i>'
+      +   '<div class="vn-main"><div class="vn-name">' + esc(c.name) + '</div>'
+      +     '<div class="vn-sub">' + sub + '</div></div>'
+      +   '<div class="vn-toggle">' + (isOn ? '−' : '+') + '</div>'
+      + '</div></div>';
+  }).join('');
+
+  var gstNode = '<div class="vnode vnode-gst' + (isGST ? ' on' : '') + '"'
+    + ' role="button" tabindex="0" onclick="switchView(\'' + (isGST ? 'onboarding' : 'gst') + '\')"'
+    + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click()}">'
+    + '<div class="vn-head"><span class="vn-util-ic">₹</span>'
+    + '<div class="vn-main"><div class="vn-name">GST Payables</div></div></div></div>';
+
+  nav.innerHTML = '<div class="vnav-eyebrow">Business Verticals</div>'
+    + '<div class="vnav-tree">' + nodes + '</div>'
+    + '<div class="vnav-sep"></div>' + gstNode;
+}
+
+// Brief acknowledgement when an unmapped vertical node is tapped.
+function vnavPoke(el) {
+  var sub = el && el.querySelector('.vn-sub');
+  if (!sub || el._poking) return;
+  el._poking = true;
+  var old = sub.textContent;
+  sub.textContent = 'feed not mapped yet — coming soon';
+  setTimeout(function() { sub.textContent = old; el._poking = false; }, 1500);
+}
+
+// ── 1 · Overall business summary ribbon ───────────────────────────
+function renderSummaryRibbon(key) {
+  var el = document.getElementById('sec-summary');
+  if (!el) return;
+  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  if (!cfg) { el.innerHTML = ''; return; }
+  var vs  = (DS && DS.verticals || {})[key] || {};
+  var vb  = (DB && DB.verticals || {})[key] || {};
+  var tot = (vs.total || 0) + (vb.total || 0);
+  var onb = (vs.completed || 0) + (vb.completed || 0);
+  var txn = (vs.transacted || 0) + (vb.transacted || 0);
+  var pctC = tot > 0 ? Math.round(onb / tot * 100) : 0;
+  el.setAttribute('style', vcVars(key));
+  el.innerHTML = '<div class="jr-summary">'
+    + '<div class="jrs-title"><span class="jrs-code">' + esc(cfg.code || cfg.key) + '</span>'
+    +   '<span class="jrs-name">' + esc(cfg.name) + '</span></div>'
+    + '<div class="jrs-div"></div>'
+    + '<div class="jrs-stat"><b>' + fmt(tot) + '</b><span>logged in</span></div>'
+    + '<div class="jrs-stat"><b>' + fmt(onb) + '</b><span>onboarded</span></div>'
+    + '<div class="jrs-stat"><b>' + fmt(txn) + '</b><span>transacted</span></div>'
+    + '<div class="jrs-prog"><div class="jrs-prog-top"><span>Onboarding completion</span><span>' + pctC + '%</span></div>'
+    +   '<div class="jrs-prog-bar"><div class="jrs-prog-fill" style="width:' + pctC + '%"></div></div></div>'
+    + '</div>';
+}
+
+// ── 3 · Onboarding funnel ─────────────────────────────────────────
+function renderFunnel(key) {
+  var el = document.getElementById('sec-funnel');
+  if (!el) return;
+  var vs  = (DS && DS.verticals || {})[key] || {};
+  var vb  = (DB && DB.verticals || {})[key] || {};
+  var tot = (vs.total || 0) + (vb.total || 0);
+  var onb = (vs.completed || 0) + (vb.completed || 0);
+  var txn = (vs.transacted || 0) + (vb.transacted || 0);
+  if (!tot) { el.innerHTML = ''; document.getElementById('sec-funnel-wrap').style.display = 'none'; return; }
+  document.getElementById('sec-funnel-wrap').style.display = '';
+  var onbPct = tot > 0 ? Math.round(onb / tot * 100) : 0;
+  var txnPct = onb > 0 ? Math.round(txn / onb * 100) : 0;
+  var row = function(lbl, val, widthPct, color, meta) {
+    return '<div class="fn-row"><div class="fn-lbl">' + lbl + '</div>'
+      + '<div class="fn-track"><div class="fn-fill" style="width:' + Math.max(2, widthPct) + '%;background:' + color + '">' + fmt(val) + '</div></div>'
+      + '<div class="fn-meta">' + meta + '</div></div>';
+  };
+  el.innerHTML = '<div class="jr-funnel">'
+    + row('Logged In',  tot, 100,                          'var(--st-draft)',      '100%')
+    + row('Onboarded',  onb, tot > 0 ? onb / tot * 100 : 0, 'var(--st-onboarded)', '<b>' + onbPct + '%</b> of logged in')
+    + row('Transacted', txn, tot > 0 ? txn / tot * 100 : 0, 'var(--st-transacted)','<b>' + txnPct + '%</b> of onboarded')
+    + '</div>';
+}
+
+// ── Guided-journey reveal — cascade the sections into view on select ──
+function runJourneyReveal() {
+  var secs = document.querySelectorAll('#tab-overview .jr-sec');
+  if (!secs.length) return;
+  if (!motionOK()) { secs.forEach(function(s) { s.classList.add('visible'); }); return; }
+  secs.forEach(function(s, i) {
+    s.classList.remove('visible');
+    // eslint-disable-next-line no-unused-expressions
+    void s.offsetWidth;   // restart the transition
+    setTimeout(function() { s.classList.add('visible'); }, 60 + i * 95);
+  });
 }
 
 function renderVertTabBar() {
@@ -3458,32 +3725,30 @@ function renderVertCtxHdr(key) {
 }
 
 function selectVertTab(key) {
+  if (currentView === 'gst') switchView('onboarding');
   if (activeVertKey === key) return;
   activeVertKey = key;
   selectedVert  = key;
+  selectedAud   = 'seller';
   // Reset rows — new vertical, fresh load
   vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
   vdSort = { key: '', dir: 1 };
   vertRows = []; vertRowsLoading = true; vertRowsError = null;
   _ovnRows = {};
   _vertRowsPKey = null; ++_vertRowsGen;
-  // Update tab active states in-place (faster than full re-render)
-  var actTab = null;
-  document.querySelectorAll('.vert-tab[data-key]').forEach(function(t) {
-    t.classList.toggle('active', t.dataset.key === key);
-    if (t.dataset.key === key) { t.setAttribute('style', vcVars(key)); actTab = t; }
-  });
+  renderVNav();
+  renderVertTabBar();
   positionVertThumb(true);
   setAura(key);
-  if (actTab && actTab.scrollIntoView) {
-    try { actTab.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'nearest', inline: 'nearest' }); } catch (e) {}
-  }
   renderVertCtxHdr(key);
+  renderSummaryRibbon(key);
   renderVertKPIs(key);
+  renderFunnel(key);
   renderPipelinePair(key);
   var detEl = document.getElementById('vert-detail-section');
   if (detEl) detEl.style.display = '';
   renderInlineDetail(key);
+  runJourneyReveal();
   loadVertRows(key);
 }
 
@@ -4557,6 +4822,7 @@ function _patchQualitySects() {
     el.innerHTML = buildQualitySect(qualityData, aud);
   });
   _patchQualityKpiCards();
+  refreshBizRail();      // fill Vendor Rating / OSV in Operational Insights
   renderDocsSection();
 }
 
@@ -5078,73 +5344,126 @@ function renderPipelinePair(key) {
 // per-category GMV, plus Vendor Rating & OSV Consent (OMP only). The
 // quality rows start as "Syncing…" and are patched by _patchQualityKpiCards.
 function renderBizRail(cfg, vs) {
-  var rail = document.getElementById('vert-biz-rail');
-  if (!rail) return;
+  var ops      = document.getElementById('sec-ops');
+  var perf     = document.getElementById('sec-perf');
+  var opsWrap  = document.getElementById('sec-ops-wrap');
+  var perfWrap = document.getElementById('sec-perf-wrap');
+  if (!ops && !perf) return;
   var isOMP = cfg && cfg.key === 'OMP';
-  var vname = (cfg && cfg.code) || (cfg && cfg.key) || '';
+  var key   = cfg && cfg.key;
+  var vb    = (key && DB && DB.verticals) ? (DB.verticals[key] || {}) : {};
 
-  // Loading / no-vertical state → skeleton so the rail never flashes empty.
-  if (!vs) {
-    var sk = _dashLoading
-      ? ('<div class="biz-card biz-main">'
-         + '<div class="biz-split">'
-         +   '<div class="biz-split-l"><div class="biz-gmv"><div class="biz-sk" style="width:40%"></div>'
-         +     '<div class="biz-sk" style="width:72%;height:22px;margin-top:8px"></div></div>'
-         +     '<div class="biz-sk" style="width:100%"></div><div class="biz-sk" style="width:100%"></div></div>'
-         +   '<div class="biz-split-r">' + (isOMP ? _buildRailQual(null, vname) : '') + '</div>'
-         + '</div>'
-         + '<div class="biz-region"><div class="biz-hd"><div class="biz-sk" style="width:35%;height:13px"></div>'
-         +   '<div class="biz-sk" style="width:55%"></div></div>'
-         +   '<div class="biz-sk" style="width:100%;height:14px;margin:8px 0"></div>'
-         +   '<div class="biz-sk" style="width:100%;height:14px;margin:8px 0"></div></div>'
-         + '</div>')
+  // ── small builders ──
+  function opCard(action, label, body, clickable) {
+    var can = clickable && action;
+    var attrs = can
+      ? ' role="button" tabindex="0" onclick="openKpiModal(\'' + action + '\')"'
+        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openKpiModal(\'' + action + '\')}"'
       : '';
-    rail.innerHTML = sk;
+    var link = can ? '<span class="op-link">Details ›</span>' : '';
+    return '<div class="op-card' + (can ? '' : ' static') + '"' + attrs + '>'
+      + '<div class="op-hd"><span class="op-lbl">' + label + '</span>' + link + '</div>'
+      + body + '</div>';
+  }
+  function osvRow(color, name, val, p) {
+    return '<div class="osv-row"><i class="osv-dot" style="background:' + color + '"></i>'
+      + '<span class="osv-nm">' + name + '</span><span class="osv-v">' + fmt(val) + '</span>'
+      + '<span class="osv-pct">' + p + '%</span></div>';
+  }
+
+  // Loading / no-vertical → skeletons so the sections never flash empty.
+  if (!vs) {
+    var skc = '<div class="op-card static"><div class="biz-sk" style="width:45%"></div>'
+      + '<div class="biz-sk" style="width:62%;height:22px;margin-top:12px"></div></div>';
+    if (ops)  ops.innerHTML  = _dashLoading ? '<div class="jr-ops">' + skc + skc + skc + '</div>' : '';
+    if (perf) perf.innerHTML = _dashLoading
+      ? '<div class="jr-perf"><div class="gmv-dark"><div class="biz-sk" style="width:40%;background:rgba(255,255,255,.18)"></div>'
+        + '<div class="biz-sk" style="width:60%;height:26px;margin-top:12px;background:rgba(255,255,255,.18)"></div></div>'
+        + '<div class="biz-card"><div class="biz-sk" style="width:38%"></div><div class="biz-sk" style="width:100%;height:14px;margin-top:10px"></div></div></div>'
+      : '';
     return;
   }
 
+  // ── 6 · Operational Insights (Vendor Rating · Avg TAT · OSV) ──
+  var opCards = [];
+  var q = (isOMP && qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
+  if (isOMP) {
+    var r = q && q.rating ? q.rating : null;
+    if (r && r.avg != null) {
+      var rPct = Math.min(100, r.avg / 5 * 100);
+      opCards.push(opCard('rating', 'Vendor Rating',
+        '<div class="op-big">' + r.avg.toFixed(1) + '<span class="op-star">★</span></div>'
+        + '<div class="op-sub">' + fmt(r.rated || 0) + (r.total > 0 ? ' of ' + fmt(r.total) + ' OMP' : '') + ' rated</div>'
+        + '<div class="op-bar"><i style="width:' + rPct.toFixed(0) + '%"></i></div>', true));
+    } else {
+      opCards.push(opCard('rating', 'Vendor Rating', '<div class="op-sync">Syncing…</div>', true));
+    }
+  }
+  if (vs.avgTAT != null) {
+    var tatSub = (vb.avgTAT != null) ? ('Sellers · Buyers ' + vb.avgTAT + ' days') : 'Seller onboarding';
+    opCards.push(opCard(null, 'Avg Turnaround',
+      '<div class="op-big">' + vs.avgTAT + '<small> days</small></div><div class="op-sub">' + tatSub + '</div>', false));
+  }
+  if (isOMP) {
+    var o = q && q.osv ? q.osv : null;
+    if (o && o.total > 0) {
+      var oT = o.total, pf = function(n) { return oT > 0 ? Math.round(n / oT * 100) : 0; };
+      opCards.push(opCard('osv', 'OSV Status',
+        '<div class="osv-list">'
+        + osvRow('var(--st-onboarded)', 'Done',          o.completed || 0,    pf(o.completed || 0))
+        + osvRow('var(--st-review)',    'In Progress',   o.pending || 0,      pf(o.pending || 0))
+        + osvRow('#D1D1D6',             'Not Initiated', o.notInitiated || 0, pf(o.notInitiated || 0))
+        + '</div>', true));
+    } else {
+      opCards.push(opCard('osv', 'OSV Status', '<div class="op-sync">Syncing…</div>', true));
+    }
+  }
+  if (!isOMP && vs.withGST != null) {
+    opCards.push(opCard(null, 'GST Active',
+      '<div class="op-big">' + fmt(vs.withGST) + '</div><div class="op-sub">GSTIN active sellers</div>', false));
+  }
+  if (ops) {
+    if (opCards.length) { ops.innerHTML = '<div class="jr-ops">' + opCards.join('') + '</div>'; if (opsWrap) opsWrap.style.display = ''; }
+    else { ops.innerHTML = ''; if (opsWrap) opsWrap.style.display = 'none'; }
+  }
+
+  // ── 7 · Business Performance (Total GMV dark card + Regional Split) ──
   var gmv = vs.totalTxnValue;
-  var cats = (vs.categories || [])
-    .filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
-    .slice().sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); })
-    .slice(0, 6);
-
-  var catRows = cats.length
-    ? cats.map(function(c) {
-        return '<div class="biz-catrow" role="button" tabindex="0"'
-          + ' onclick="openGmvCatModal(\'seller\')"'
-          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openGmvCatModal(\'seller\')}">'
-          + '<span class="bc-badge">' + esc(c.category) + '</span>'
-          + '<span class="bc-val">' + fmtINR(c.txnValue) + '</span></div>';
-      }).join('')
+  var gmvCats = (vs.categories || []).filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
+    .slice().sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); }).slice(0, 4);
+  var gmvMax = gmvCats.reduce(function(m, c) { return Math.max(m, c.txnValue || 0); }, 0) || 1;
+  var GMV_COLORS = ['#005DFF', '#1DC797', '#8460D4', '#FF9500'];
+  var gmvBody;
+  if (gmv != null && gmv > 0) {
+    var splitRows = gmvCats.map(function(c, i) {
+      var w = (c.txnValue || 0) / gmvMax * 100;
+      return '<div class="gmv-dr"><span class="gmv-dr-nm">' + esc(c.category) + '</span>'
+        + '<div class="gmv-dr-track"><i class="gmv-dr-fill" style="width:' + w.toFixed(0) + '%;background:' + GMV_COLORS[i % GMV_COLORS.length] + '"></i></div>'
+        + '<span class="gmv-dr-vl">' + fmtINR(c.txnValue) + '</span></div>';
+    }).join('');
+    gmvBody = '<div class="gmv-dark-vl">' + fmtINR(gmv) + '</div>'
+      + (splitRows ? '<div class="gmv-dark-split">' + splitRows + '</div>' : '');
+  } else {
+    gmvBody = '<div class="gmv-dark-empty">No GMV recorded for this segment yet</div>';
+  }
+  var gmvClick = (gmv != null && gmv > 0)
+    ? ' role="button" tabindex="0" onclick="openGmvCatModal(\'seller\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openGmvCatModal(\'seller\')}"'
     : '';
+  var gmvCard = '<div class="gmv-dark"' + gmvClick + '>'
+    + '<div class="gmv-dark-top"><span class="gmv-dark-lb">Total GMV</span>'
+    +   ((gmv != null && gmv > 0) ? '<span class="gmv-dark-link">Details ›</span>' : '') + '</div>'
+    + gmvBody + '</div>';
 
-  var gmvBlock = (gmv != null && gmv > 0)
-    ? ('<div class="biz-gmv" role="button" tabindex="0"'
-       + ' onclick="openGmvCatModal(\'seller\')"'
-       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openGmvCatModal(\'seller\')}"'
-       + ' style="cursor:pointer">'
-       + '<div class="biz-gmv-lb">Total GMV</div>'
-       + '<div class="biz-gmv-vl">' + fmtINR(gmv) + '</div></div>'
-       + catRows)
-    : '<div class="biz-empty">No GMV recorded for this segment yet</div>';
+  var regionInner = _buildRailRegions(vs);
+  var regionCard  = regionInner ? '<div class="biz-card">' + regionInner + '</div>' : '';
 
-  // Vendor Rating / OSV Consent — OMP only (that's where the fields exist).
-  var qual = isOMP
-    ? _buildRailQual(qualityData && qualityData.success ? (qualityData.seller || {}) : null, vname)
-    : '';
-  // Region-wise bifurcation section (North / South), rendered inside the card.
-  var regionSection = _buildRailRegions(vs);
-
-  // Top of the card: GMV (+ categories) on the left, quality on the right.
-  var top = qual
-    ? ('<div class="biz-split">'
-       + '<div class="biz-split-l">' + gmvBlock + '</div>'
-       + '<div class="biz-split-r">' + qual + '</div>'
-       + '</div>')
-    : gmvBlock;
-
-  rail.innerHTML = '<div class="biz-card biz-main">' + top + regionSection + '</div>';
+  if (perf) {
+    perf.innerHTML = regionCard
+      ? ('<div class="jr-perf">' + gmvCard + regionCard + '</div>')
+      : ('<div class="jr-perf" style="grid-template-columns:1fr">' + gmvCard + '</div>');
+    if (perfWrap) perfWrap.style.display = '';
+  }
 }
 
 // Fixed accent per region so the split reads as a consistent legend.
