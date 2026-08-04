@@ -3152,234 +3152,259 @@ thead th.sort-asc::after,thead th.sort-desc::after{color:var(--blue)}
 
 <style id="premium-refresh">
 /* ═══════════════════════════════════════════════════════════════════════════
-   WORLD-CLASS ENTERPRISE VISUAL SYSTEM
-   Apple HIG · Stripe · Linear · Arc · Bloomberg Terminal · Notion Enterprise
-   ▸ ~85 % monochromatic  ▸ Color = meaning only (charts, status, actions)
-   ▸ Layout, grid, spacing, fonts, hierarchy: UNTOUCHED
+   ENTERPRISE VISUAL SYSTEM v3
+   Reference: Orders dashboard · Apple HIG · Stripe · Linear · Notion
+   ▸ Document-panel aesthetic — flat, white, 1px borders, zero decorative color
+   ▸ Color = meaning only: KPI trends, status chips, chart fills, alerts
+   ▸ Layout, grid, spacing, component tree, functionality: UNTOUCHED
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ══ 1. DESIGN TOKEN SYSTEM ════════════════════════════════════════════════ */
 :root {
-  /* Surface hierarchy */
-  --bg:          #FFFFFF;
-  --bg2:         #F5F5F7;
-  --bg3:         #EFEFEF;
-  --card:        #FFFFFF;
-  --card2:       #FAFAFA;
-  --hover:       rgba(0,0,0,.028);
+  /* Surfaces */
+  --bg:    #FFFFFF;
+  --bg2:   #F5F5F7;
+  --bg3:   #EBEBED;
+  --card:  #FFFFFF;
+  --card2: #FAFAFA;
+  --hover: rgba(0,0,0,.026);
 
-  /* Border hierarchy */
-  --border:      rgba(0,0,0,.075);
-  --border2:     rgba(0,0,0,.13);
-  --border3:     rgba(0,0,0,.20);
+  /* Borders — hairline hierarchy */
+  --border:  rgba(0,0,0,.072);
+  --border2: rgba(0,0,0,.13);
+  --border3: rgba(0,0,0,.22);
 
-  /* 4-level elevation system */
-  --e0:          none;
-  --e1:          0 0 0 1px rgba(0,0,0,.055), 0 1px 2px rgba(0,0,0,.04);
-  --e2:          0 0 0 1px rgba(0,0,0,.055), 0 2px 4px rgba(0,0,0,.05),
-                 0 8px 20px rgba(0,0,0,.04);
-  --e3:          0 0 0 1px rgba(0,0,0,.06),  0 4px 12px rgba(0,0,0,.07),
-                 0 16px 32px rgba(0,0,0,.06);
-  --e4:          0 0 0 1px rgba(0,0,0,.07),  0 8px 24px rgba(0,0,0,.10),
-                 0 32px 64px rgba(0,0,0,.12);
+  /* 4-level elevation */
+  --e0: none;
+  --e1: 0 0 0 1px rgba(0,0,0,.052), 0 1px 2px rgba(0,0,0,.032);
+  --e2: 0 0 0 1px rgba(0,0,0,.052), 0 2px 4px rgba(0,0,0,.042),
+        0 8px 20px rgba(0,0,0,.032);
+  --e3: 0 0 0 1px rgba(0,0,0,.058), 0 4px 12px rgba(0,0,0,.062),
+        0 16px 32px rgba(0,0,0,.052);
+  --e4: 0 0 0 1px rgba(0,0,0,.068), 0 8px 24px rgba(0,0,0,.098),
+        0 32px 64px rgba(0,0,0,.12);
 
-  /* Legacy shadow aliases — map to elevation system */
+  /* Shadow aliases */
   --shadow-sm:   var(--e1);
   --shadow:      var(--e2);
   --shadow-lg:   var(--e3);
   --shadow-card: var(--e2);
 
   /* Geometry */
-  --r:           18px;
-  --r2:          14px;
-  --r-card:      14px;
-  --r-sm:        10px;
-  --r-xs:        6px;
+  --r:      18px;
+  --r2:     14px;
+  --r-card: 14px;
+  --r-sm:   10px;
+  --r-xs:   6px;
 
-  /* Motion — unified timing system */
+  /* Motion */
   --dur-snap:    80ms;
   --dur-fast:    140ms;
-  --dur-base:    220ms;
-  --dur-slow:    360ms;
+  --dur-base:    200ms;
+  --dur-slow:    340ms;
   --ease-out:    cubic-bezier(.16,1,.3,1);
   --ease-in-out: cubic-bezier(.4,0,.2,1);
-
-  /* Card transition shorthand */
   --t-card:      box-shadow var(--dur-base) var(--ease-out),
                  border-color var(--dur-base) var(--ease-out),
                  transform var(--dur-base) var(--ease-out);
-
-  /* Typography refinements */
-  --txt:         #1D1D1F;
-  --txt2:        #6E6E73;
-  --txt3:        #86868B;
 }
 
 /* ══ 2. SCROLLBAR — 3 px hairline ══════════════════════════════════════════ */
 ::-webkit-scrollbar              { width:3px; height:3px }
 ::-webkit-scrollbar-track        { background:transparent }
-::-webkit-scrollbar-thumb        { background:rgba(0,0,0,.16); border-radius:3px; border:none }
+::-webkit-scrollbar-thumb        { background:rgba(0,0,0,.15); border-radius:3px }
 ::-webkit-scrollbar-thumb:hover  { background:rgba(0,0,0,.28) }
 ::-webkit-scrollbar-corner       { background:transparent }
 
-/* ══ 3. HEADER — frosted glass, refined separator ══════════════════════════ */
+/* ══ 3. HEADER — frosted glass ═════════════════════════════════════════════ */
 #header {
-  border-bottom: 1px solid rgba(0,0,0,.055);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  background: rgba(255,255,255,.88);
+  border-bottom:1px solid rgba(0,0,0,.055);
+  background:rgba(255,255,255,.88);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
 }
-#header.scrolled {
-  box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 4px 20px rgba(0,0,0,.04);
+#header.scrolled { box-shadow:0 1px 0 rgba(0,0,0,.06), 0 4px 20px rgba(0,0,0,.04) }
+
+/* Logo badge → charcoal for executive premium feel */
+.logo-badge { background:#1D1D1F !important; box-shadow:0 1px 3px rgba(0,0,0,.24) !important }
+
+/* ══ 4. KPI CARDS — flat white, document-panel style ═══════════════════════ */
+.vkpi-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--r2);
+  box-shadow:var(--e1);
+  transition:var(--t-card);
+}
+.vkpi-card:hover {
+  box-shadow:var(--e2);
+  border-color:rgba(0,0,0,.12);
+  transform:translateY(-1px);
+}
+/* Remove all color-specific card treatments — value color stays, border/bg go neutral */
+.vkpi-card.vk-onboarded {
+  background:var(--card);
+  border-color:var(--border);
+  box-shadow:var(--e1);
+}
+.vkpi-card.vk-onboarded:hover { border-color:rgba(0,0,0,.12) }
+.vkpi-card.vk-onboarded .vkpi-val { color:#049769 }
+.vkpi-card.vk-transacted .vkpi-val { color:var(--blue) }
+
+/* KPI label — tighter all-caps */
+.vkpi-lbl {
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  color:var(--txt3);
+  line-height:1.2;
+}
+/* KPI value — bold, tabular */
+.vkpi-val { font-size:22px; font-weight:800; letter-spacing:-1px; color:var(--txt) }
+
+/* ══ 5. STATUS CHIPS — outlined pill (inspired by reference "Issued" badge) ═ */
+.status-chip {
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10.5px;font-weight:600;
+  padding:3px 10px;border-radius:20px;
+  white-space:nowrap;letter-spacing:.01em;
+  border:1px solid transparent;
+}
+.chip-completed { background:rgba(4,151,105,.055);  color:#0A7044; border-color:rgba(4,151,105,.22) }
+.chip-draft     { background:rgba(132,96,212,.055); color:#5238A0; border-color:rgba(132,96,212,.22) }
+.chip-review    { background:rgba(178,80,0,.055);   color:#A85800; border-color:rgba(178,80,0,.22) }
+.chip-rejected  { background:rgba(215,0,21,.055);   color:#C40012; border-color:rgba(215,0,21,.20) }
+
+/* ══ 6. TABLE SYSTEM — complete neutral aesthetic ══════════════════════════ */
+
+/* Global header reset — all-caps, fine tracking, muted color */
+thead th {
+  background:var(--card);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--txt3);
+  border-bottom:1px solid var(--border);
+  padding:11px 16px;
 }
 
-/* ══ 4. COMPLETE TABLE NEUTRAL HOVER — zero blue tinting ═══════════════════ */
-/* Generic catch-all */
-tbody tr:hover                       { background:rgba(0,0,0,.025) !important }
-tbody tr:nth-child(even)             { background:rgba(0,0,0,.014) }
-tbody tr:nth-child(odd)              { background:transparent }
+/* Row separators — ultra-light */
+tbody tr { border-bottom:1px solid rgba(0,0,0,.048) }
+tbody tr:last-child { border-bottom:none }
 
-/* Vendor detail table */
-.vd-tbl tbody tr:hover               { background:rgba(0,0,0,.025) !important }
-.vd-tbl tbody tr:nth-child(even)     { background:rgba(0,0,0,.014) }
-.vd-tbl tbody tr:nth-child(odd)      { background:transparent }
-.vd-tr:hover                         { background:rgba(0,0,0,.025) !important }
+/* Complete neutral hover — zero blue tinting */
+tbody tr:hover,
+tbody tr.vd-tr:hover    { background:var(--hover) !important }
+tbody tr:nth-child(even){ background:rgba(0,0,0,.012) }
+tbody tr:nth-child(odd) { background:transparent }
+
+/* Vendor detail */
+.vd-tbl thead           { background:var(--bg2) }
+.vd-tbl thead th        { background:var(--bg2); font-size:9.5px; padding:9px 12px }
+.vd-tbl tbody tr:hover  { background:var(--hover) !important }
+.vd-tbl tbody tr:nth-child(even) { background:rgba(0,0,0,.012) }
+.vd-tr:hover            { background:var(--hover) !important }
 
 /* Overview table */
-.ovn-tbl tbody tr:hover td           { background:rgba(0,0,0,.025) !important }
-.ovn-tbl tbody tr:nth-child(even) td { background:rgba(0,0,0,.014) }
+.ovn-tbl thead th                   { background:var(--card) }
+.ovn-tbl tbody tr:hover td          { background:var(--hover) !important }
+.ovn-tbl tbody tr:nth-child(even) td{ background:rgba(0,0,0,.012) }
 
 /* Document modal */
-.dm-tbl tr:hover td                  { background:rgba(0,0,0,.025) !important }
-
-/* GMC / category */
-.gmc-cat-card:hover                  { background:rgba(0,0,0,.025) !important }
-.gmc-mat-row:hover                   { background:rgba(0,0,0,.025) !important }
+.dm-tbl th          { background:var(--bg2) }
+.dm-tbl tr:hover td { background:var(--hover) !important }
 
 /* VTB modal */
-.vtb-sum-row:hover                   { background:rgba(0,0,0,.025) }
-.vtb-vl-row:hover                    { background:rgba(0,0,0,.025) }
+.vtb-sum-tbl thead th { background:var(--card) }
+.vtb-vl-tbl thead th  { background:var(--card) }
+.vtb-sum-row:hover    { background:var(--hover) }
+.vtb-vl-row:hover     { background:var(--hover) }
 
 /* SL modal */
-.sl-row:hover td                     { background:rgba(0,0,0,.025) }
+.sl-tbl thead th  { background:var(--card) }
+.sl-row:hover td  { background:var(--hover) }
 
 /* Regional */
-.rgn-state-row:hover                 { background:rgba(0,0,0,.025) }
-.rgn-co-row:hover                    { background:rgba(0,0,0,.025) }
-.rgn-sd-chip:hover:not(.on)          { background:rgba(0,0,0,.04) }
+.rgn-state-row:hover    { background:var(--hover) }
+.rgn-co-row:hover       { background:var(--hover) }
+.rgn-sd-chip:hover:not(.on) { background:rgba(0,0,0,.038) }
 
-/* Vendor-type & compare */
-.vt-tr:hover                         { background:rgba(0,0,0,.025) }
+/* Vendor-type */
+.vt-tr:hover { background:var(--hover) }
 
 /* Transacted */
-.ta-vl-row:hover td                  { background:rgba(0,0,0,.025) !important }
-.ta-age-row:hover                    { background:rgba(0,0,0,.025) }
+.ta-age-tbl thead th { background:var(--card) }
+.ta-vl-tbl thead th  { background:var(--card) }
+.ta-vl-row:hover td  { background:var(--hover) !important }
+.ta-age-row:hover    { background:var(--hover) }
 
-/* GST / GP */
-.gp-table tbody tr:hover             { background:rgba(0,0,0,.025) }
+/* GMC / category */
+.gmc-cat-card:hover { background:var(--hover) !important }
+.gmc-mat-row:hover  { background:var(--hover) !important }
 
-/* Knowledge / KM */
-.km-dtbl tbody tr:hover td           { background:rgba(0,0,0,.025) }
-.km-vrow:hover                       { background:rgba(0,0,0,.025) }
+/* GST table */
+.gp-table thead th         { background:var(--card); color:var(--txt3) }
+.gp-table tbody tr:hover   { background:var(--hover) }
+.gp-table tbody tr:nth-child(even) { background:rgba(0,0,0,.012) }
 
-/* Column header refinement */
-.vd-tbl thead th                     { letter-spacing:.055em; font-weight:600 }
+/* GST drill-down */
+.gm-tbl tbody tr:hover td { background:var(--hover) }
 
-/* ══ 5. CARD HOVER SYSTEM — elevation lift + translateY ════════════════════ */
-/* Base transition applied broadly */
+/* KM modal */
+.km-dtbl th        { background:var(--bg2) }
+.km-dtbl tbody tr:hover td { background:var(--hover) }
+.km-vrow:hover     { background:var(--hover) }
+
+/* ══ 7. CARD HOVER — elevation lift ════════════════════════════════════════ */
 .compare-card, .vkpi-card, .kb-card, .biz-tile,
 .vd-kpi, .gp-kpi, .gp-card, .vpipe-stat-card { transition:var(--t-card) }
 
-/* compare-card */
-.compare-card:hover {
-  box-shadow: var(--e3);
-  border-color: rgba(0,0,0,.11);
-  transform: translateY(-1px);
-}
-.compare-card.selected {
-  box-shadow: 0 0 0 2px var(--blue), 0 4px 20px rgba(0,0,0,.08);
-  transform: translateY(-1px);
-}
+.compare-card:hover         { box-shadow:var(--e3); transform:translateY(-1px) }
+.compare-card.selected      { box-shadow:0 0 0 2px var(--blue), var(--e3) }
+.kb-card:hover              { box-shadow:var(--e3); border-color:rgba(0,0,0,.12); transform:translateY(-1px) }
+.biz-tile:hover             { box-shadow:var(--e2); border-color:rgba(0,0,0,.12); transform:translateY(-1px) }
+.vd-kpi:hover               { box-shadow:var(--e2); border-color:rgba(0,0,0,.12); transform:translateY(-1px) }
+.vpipe-stat-card[role="button"]:hover { box-shadow:var(--e2); border-color:rgba(0,0,0,.12); transform:translateY(-1px) }
+.gp-kpi                     { border-color:var(--border); box-shadow:var(--e1) }
+.gp-kpi:hover               { box-shadow:var(--e2); border-color:rgba(0,0,0,.12); transform:translateY(-1px) }
+.gp-card                    { border-color:var(--border); box-shadow:var(--e1); border-radius:var(--r) }
+.gp-card:hover              { box-shadow:var(--e2); border-color:rgba(0,0,0,.12); transform:translateY(-1px) }
 
-/* KPI card */
-.vkpi-card:hover {
-  box-shadow: var(--e2);
-  border-color: rgba(0,0,0,.12);
-  transform: translateY(-1px);
-}
-.vkpi-card.vk-onboarded           { border-color:var(--border); box-shadow:var(--e1) }
-.vkpi-card.vk-onboarded:hover     { border-color:rgba(0,0,0,.12) }
-
-/* KB / pipeline board card */
-.kb-card:hover {
-  box-shadow: var(--e3);
-  border-color: rgba(0,0,0,.12);
-  transform: translateY(-1px);
-}
-
-/* Biz rail tile */
-.biz-tile:hover {
-  box-shadow: var(--e2);
-  border-color: rgba(0,0,0,.12);
-  transform: translateY(-1px);
-}
-
-/* Vendor detail KPI */
-.vd-kpi:hover {
-  box-shadow: var(--e2);
-  border-color: rgba(0,0,0,.12);
-  transform: translateY(-1px);
-}
-
-/* Pipeline stat card */
-.vpipe-stat-card[role="button"]:hover {
-  box-shadow: var(--e2);
-  border-color: rgba(0,0,0,.12);
-  transform: translateY(-1px);
-}
-
-/* GST cards */
-.gp-kpi  { border-color:var(--border); box-shadow:var(--e1) }
-.gp-kpi:hover  { box-shadow:var(--e2); border-color:rgba(0,0,0,.12); transform:translateY(-1px) }
-.gp-card { border-color:var(--border); box-shadow:var(--e1); border-radius:var(--r) }
-.gp-card:hover { box-shadow:var(--e2); border-color:rgba(0,0,0,.12); transform:translateY(-1px) }
-
-/* ══ 6. STAGE ACCENT BARS ══════════════════════════════════════════════════ */
+/* ══ 8. STAGE ACCENT BARS ══════════════════════════════════════════════════ */
 .pipe-kpi::before { width:2px }
 .gp-kpi::before   { width:3px }
 .kb-col           { border-top-width:2px }
 
-/* ══ 7. STATUS CHIPS — semantic tint, hairline border ══════════════════════ */
-.status-chip    { border:1px solid transparent; border-radius:var(--r-xs) }
-.chip-completed { background:rgba(4,151,105,.07);  color:#0A7044; border-color:rgba(4,151,105,.17) }
-.chip-draft     { background:rgba(132,96,212,.07); color:#5238A0; border-color:rgba(132,96,212,.17) }
-.chip-review    { background:rgba(178,80,0,.07);   color:#A85800; border-color:rgba(178,80,0,.16) }
-.chip-rejected  { background:rgba(215,0,21,.07);   color:#C40012; border-color:rgba(215,0,21,.15) }
+/* ══ 9. SEGMENT CONTROLS & TABS ════════════════════════════════════════════ */
+.qf-chip.active, .aud-tab.active {
+  box-shadow:0 1px 4px rgba(0,0,0,.09), 0 0 0 .5px rgba(0,0,0,.06);
+}
+.vd-toggle-btn.active   { box-shadow:0 1px 4px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.05) }
+.vert-tab.active        { box-shadow:0 1px 4px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.05) }
+.vert-tab.active::before{ width:4px; height:4px }
 
-/* ══ 8. SEGMENT CONTROLS & TABS ════════════════════════════════════════════ */
-.qf-chip.active,
-.aud-tab.active {
-  box-shadow: 0 1px 4px rgba(0,0,0,.09), 0 0 0 .5px rgba(0,0,0,.06);
-}
-.vd-toggle-btn.active {
-  box-shadow: 0 1px 4px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.05);
-}
-.vert-tab.active {
-  box-shadow: 0 1px 4px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.05);
-}
-.vert-tab.active::before { width:4px; height:4px }
-
-/* ══ 9. PIPELINE CARDS — geometry ══════════════════════════════════════════ */
+/* ══ 10. PIPELINE CARDS ════════════════════════════════════════════════════ */
 .vpipe-card      { border-radius:var(--r) !important }
 .vpipe-stat-card { border-radius:var(--r-sm) }
 .vpipe-ops-card  { border-radius:var(--r-sm) }
 
-/* ══ 10. BIZ RAIL ═══════════════════════════════════════════════════════════ */
+/* View Details pill — neutral outline, not blue */
+.vpipe-vd-btn {
+  color:var(--txt2);
+  background:transparent;
+  border:1px solid var(--border2);
+  transition:background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.vpipe-vd-btn:hover { background:var(--hover); border-color:var(--border2); color:var(--txt) }
+
+/* ══ 11. BIZ RAIL ══════════════════════════════════════════════════════════ */
 .biz-tile  { border-radius:var(--r2) }
 .biz-panel { border-radius:var(--r2) }
 .biz-reg-bar { height:3px; border-radius:3px }
 
-/* ══ 11. MODAL PANELS — premium depth, 18 px radius ═══════════════════════ */
+/* ══ 12. MODAL PANELS — premium depth, 18 px radius ═══════════════════════ */
 .km-pn  { border-radius:18px; box-shadow:var(--e4) }
 @media(min-width:600px) { .km-pn { border-radius:18px } }
 .vtb-pn { border-radius:18px; box-shadow:var(--e4) }
@@ -3387,7 +3412,7 @@ tbody tr:nth-child(odd)              { background:transparent }
 .dm-pn  { border-radius:18px; box-shadow:var(--e4) }
 .ta-pn  { border-radius:18px; box-shadow:var(--e4) }
 
-/* ══ 12. METRIC / SUMMARY TILES ════════════════════════════════════════════ */
+/* ══ 13. METRIC TILES & SUMMARY ════════════════════════════════════════════ */
 .ta-metric-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px }
 .km-sg-item     { border-radius:var(--r-sm) }
 .km-mb          { border-radius:var(--r-sm) }
@@ -3395,44 +3420,68 @@ tbody tr:nth-child(odd)              { background:transparent }
 .rgn-tile       { border-radius:var(--r-sm) }
 .vd-summary     { border-radius:12px }
 
-/* ══ 13. BADGES & CHIPS ════════════════════════════════════════════════════ */
+/* Summary strip — tighter dividers */
+.vd-summ-lbl { font-size:9.5px; letter-spacing:.07em }
+
+/* ══ 14. BADGES & INLINE PILLS ═════════════════════════════════════════════ */
 .vtb-badge-s,.vtb-badge-b,.vtb-badge-m,.vtb-badge-p,
-.vtb-badge-ok,.vtb-badge-pend              { border-radius:var(--r-xs) }
+.vtb-badge-ok,.vtb-badge-pend              { border-radius:var(--r-xs); border:1px solid transparent }
 .dm-badge-m,.dm-badge-p,.dm-badge-s,.dm-badge-b { border-radius:var(--r-xs) }
 .ovn-badge                                 { border-radius:5px }
 .gp-chip                                   { border-radius:var(--r-xs) }
 
-/* ══ 14. SIDENAV — monochromatic, no blue hover ════════════════════════════ */
+/* VTB badges → outlined to match status chips */
+.vtb-badge-s   { background:rgba(29,199,151,.06); color:#1A9A7D; border-color:rgba(29,199,151,.22) }
+.vtb-badge-b   { background:rgba(0,93,255,.06);   color:#0047D0; border-color:rgba(0,93,255,.20) }
+.vtb-badge-m   { background:rgba(100,89,200,.06); color:#5C4FC0; border-color:rgba(100,89,200,.20) }
+.vtb-badge-p   { background:rgba(255,107,53,.06); color:#D4461C; border-color:rgba(255,107,53,.20) }
+.vtb-badge-ok  { background:rgba(29,199,151,.06); color:#1A9A7D; border-color:rgba(29,199,151,.22) }
+.vtb-badge-pend{ background:rgba(255,159,10,.06); color:#A85800; border-color:rgba(255,159,10,.22) }
+
+/* Draft modal audience tiles — neutral hover */
+.dm-aud-tile:hover { border-color:var(--border2); background:var(--hover) }
+
+/* ══ 15. SIDENAV — fully monochromatic ════════════════════════════════════ */
 .sn-grp:hover     { background:rgba(0,0,0,.035); transition:background var(--dur-fast) ease }
 .sn-grp.sn-active { background:rgba(0,0,0,.052) }
-.sn-sub:hover     { background:rgba(0,0,0,.03)  }
+.sn-sub:hover     { background:rgba(0,0,0,.030) }
 
-/* ══ 15. SPOTLIGHT — neutral active, crisp border ══════════════════════════ */
-.sp-item:hover:not(.sp-active)       { background:rgba(0,0,0,.035) }
-.sp-active                           { background:rgba(0,0,0,.055) !important }
+/* ══ 16. SPOTLIGHT ═════════════════════════════════════════════════════════ */
+.sp-item:hover:not(.sp-active) { background:rgba(0,0,0,.035) }
+.sp-active { background:rgba(0,0,0,.055) !important }
 
-/* ══ 16. FOCUS RINGS — 2 px perimeter blue ═════════════════════════════════ */
+/* ══ 17. FOCUS RINGS ═══════════════════════════════════════════════════════ */
 :focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(0,93,255,.30);
-  border-radius: var(--r2);
+  outline:none;
+  box-shadow:0 0 0 2px rgba(0,93,255,.30);
+  border-radius:var(--r2);
 }
 
-/* ══ 17. MICRO-INTERACTION — button press feedback ═════════════════════════ */
+/* ══ 18. MICRO-INTERACTIONS ════════════════════════════════════════════════ */
 button:active:not(:disabled),
 [role="button"]:active:not([aria-disabled="true"]) {
-  transform: scale(.985);
-  transition: transform var(--dur-snap) ease;
+  transform:scale(.985);
+  transition:transform var(--dur-snap) ease;
 }
 
-/* ══ 18. HEADER LETTER-SPACING ═════════════════════════════════════════════ */
-.vd-tbl thead th,
-.km-dtbl thead th,
-.ovn-tbl thead th,
-.dm-tbl thead th,
-.gp-table thead th,
-.sl-pn thead th,
-.ta-pn thead th { letter-spacing:.055em; font-weight:600 }
+/* ══ 19. TABLE HEADER TYPOGRAPHY — universal coverage ══════════════════════ */
+.vd-tbl thead th, .km-dtbl thead th, .ovn-tbl thead th,
+.dm-tbl thead th, .gp-table thead th, .sl-tbl thead th,
+.ta-pn thead th, .vtb-sum-tbl thead th, .vtb-vl-tbl thead th,
+.ta-age-tbl thead th, .ta-vl-tbl thead th {
+  letter-spacing:.07em;
+  font-weight:700;
+}
+
+/* ══ 20. FILTER CONTROLS — refined pill style ══════════════════════════════ */
+.filter-select, .filter-input { border-radius:9px }
+
+/* ══ 21. PIPELINE "VIEWING" BADGE — neutral ink, no blue fill ══════════════ */
+.pipe-viewing {
+  color:var(--txt2);
+  background:rgba(0,0,0,.045);
+  border:1px solid var(--border2);
+}
 </style>
 </head>
 
