@@ -4533,17 +4533,14 @@ function mmRenderFunnel() {
       + '<div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
       + '<div class="mf-label">' + esc(s.label) + '</div>'
       + '<div class="mf-cats">';
-    if (metal !== null) {
-      html += '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot metal"></span>Metal</span>'
-        + '<span class="mf-cat-val">' + fmt(metal) + '</span></div>'
-        + '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot plastic"></span>Plastic</span>'
-        + '<span class="mf-cat-val">' + fmt(plastic) + '</span></div>';
-    } else {
-      html += '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot seller"></span>Sellers</span>'
-        + '<span class="mf-cat-val">' + fmt(vs[s.field]||0) + '</span></div>'
-        + '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot buyer"></span>Buyers</span>'
-        + '<span class="mf-cat-val">' + fmt(vb[s.field]||0) + '</span></div>';
-    }
+    html += '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot metal"></span>Metal</span>'
+      + '<span class="mf-cat-val">' + (metal !== null ? fmt(metal) : '—') + '</span></div>'
+      + '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot plastic"></span>Plastic</span>'
+      + '<span class="mf-cat-val">' + (plastic !== null ? fmt(plastic) : '—') + '</span></div>'
+      + '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot seller"></span>Sellers</span>'
+      + '<span class="mf-cat-val">' + fmt(vs[s.field]||0) + '</span></div>'
+      + '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot buyer"></span>Buyers</span>'
+      + '<span class="mf-cat-val">' + fmt(vb[s.field]||0) + '</span></div>';
     html += '</div></div>';
     if (i < MF_STAGES.length - 1) {
       var nextSel = mmFunnelStage === MF_STAGES[i + 1].key;
