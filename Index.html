@@ -2615,12 +2615,7 @@ body.rec-open{overflow:hidden}
 .mmn.t-red .mmn-ic{background:#FDECEB;color:#C4271E}
 .mmn.t-ink .mmn-ic{background:#EDEDF0;color:var(--txt)}
 /* root card */
-.mmn.root{background:#17171A;border-color:#17171A;padding:19px 17px}
-.mmn.root .mmn-ttl{color:#fff;font-size:15px;font-weight:700}
-.mmn.root .mmn-s{color:rgba(255,255,255,.6);font-size:11px;margin-top:8px;white-space:normal}
-.mmn.root .mmn-cta{display:inline-flex;align-items:center;gap:5px;margin-top:14px;font-size:11.5px;font-weight:600;color:#fff;background:var(--blue);border-radius:8px;padding:7px 12px}
-.mmn.root .mmn-ic{background:rgba(255,255,255,.14);color:#fff}
-.mmn.root.on{box-shadow:0 0 0 1.5px rgba(0,93,255,.5),0 18px 36px -18px rgba(0,0,0,.6)}
+.mmn.root .mmn-root-lbl{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--txt);line-height:1.35}
 /* vertical + module cards — navigation only, compact height */
 .mmn.vert,.mmn.module{padding:9px 13px}
 .mmn.vert .mmn-dot{width:8px;height:8px;border-radius:50%;background:var(--txt3);flex-shrink:0}
@@ -4341,8 +4336,7 @@ function mmNodeCard(node, colActiveId) {
   var cls, inner;
   if (kind === 'root') {
     cls = 'mmn root' + (on ? ' on' : '');
-    inner = '<div class="mmn-top"><div class="mmn-ic">' + node.ic + '</div><div class="mmn-ttl">' + esc(node.t) + '</div></div>'
-      + '<div class="mmn-s">' + esc(node.s || '') + '</div><div class="mmn-cta">Click to Explore →</div>';
+    inner = '<div class="mmn-root-lbl">Central Onboarding<br>Dashboard</div>';
   } else if (kind === 'vert') {
     cls = 'mmn vert' + (node.muted ? ' muted' : '') + (on ? ' on' : '');
     inner = '<div class="mmn-top"><i class="mmn-dot"></i><div class="mmn-ttl">' + esc(node.t) + '</div>'
