@@ -2689,7 +2689,10 @@ body.rec-open{overflow:hidden}
 :root[data-theme="light"]{--mg-base:#e9ecf2}
 #mm-geo{overflow:hidden;max-height:0;opacity:0;transition:max-height .5s cubic-bezier(.4,0,.2,1),opacity .3s ease;margin:0}
 #mm-geo.mg-open{max-height:1200px;opacity:1;margin:0 0 28px}
-.mg-eye{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);padding:0 2px 10px}
+.mg-eye{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);padding:0 2px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mg-catchip{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);background:var(--accent-soft);border:1px solid rgba(0,93,255,.25);border-radius:999px;padding:4px 10px;cursor:pointer;transition:background .15s}
+.mg-catchip:hover{background:rgba(0,93,255,.14)}
+.mg-catx{opacity:.6;font-size:9px}
 .mg-grid{display:flex;gap:22px;align-items:stretch;flex-wrap:wrap}
 .mg-map{flex:0 0 320px;max-width:340px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;align-items:center;justify-content:center}
 .mg-svg{width:100%;height:auto;max-height:420px;display:block}
@@ -2723,6 +2726,36 @@ body.rec-open{overflow:hidden}
 .mg-dt-v{font-size:1.35rem;font-weight:800;line-height:1;margin-bottom:3px;font-variant-numeric:tabular-nums}
 .mg-dt-l{font-size:.72rem;color:var(--txt2)}
 @media(max-width:720px){.mg-map{flex:1 1 100%;max-width:none}.mg-legend,.mg-loading{min-width:0}}
+
+/* ── Generic inline module panel (Volume / Transactions / Ratings / OSV / Existing) ── */
+#mm-modpanel{overflow:hidden;max-height:0;opacity:0;transition:max-height .5s cubic-bezier(.4,0,.2,1),opacity .3s ease;margin:0}
+#mm-modpanel.mp-open{max-height:900px;opacity:1;margin:0 0 28px}
+.mp-eye{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);padding:0 2px 10px}
+.mp-body{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;max-width:660px}
+.mp-headline{margin-bottom:16px}
+.mp-h-v{font-size:2.6rem;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.mp-h-l{font-size:.78rem;color:var(--txt2);margin-top:5px}
+/* stacked composition bar */
+.mp-bar{display:flex;height:34px;border-radius:9px;overflow:hidden;background:var(--bg);border:1px solid var(--border)}
+.mp-seg{display:flex;align-items:center;justify-content:center;min-width:2px;transition:width .6s cubic-bezier(.4,0,.2,1),filter .15s;overflow:hidden;position:relative}
+.mp-seg-in{font-size:11px;font-weight:700;color:#fff;white-space:nowrap;padding:0 8px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.mp-seg.ch{cursor:pointer}
+.mp-seg.ch:hover{filter:brightness(1.08) saturate(1.1)}
+.mp-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px}
+.mp-leg{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--txt2)}
+.mp-leg i{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+/* stat tiles */
+.mp-tiles{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.mp-tile{flex:1;min-width:104px;background:var(--bg);border:1px solid var(--border);border-radius:calc(var(--r) - 2px);padding:13px 15px}
+.mp-tile.ch{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.mp-tile.ch:hover{border-color:var(--blue);box-shadow:0 6px 18px -10px rgba(0,93,255,.4);transform:translateY(-1px)}
+.mp-tile-v{font-size:1.5rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.mp-tile-l{font-size:.74rem;color:var(--txt2);margin-top:5px;display:flex;align-items:center;gap:5px}
+.mp-go{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);opacity:0;transition:opacity .15s}
+.mp-tile.ch:hover .mp-go{opacity:1}
+.mp-tile-s{font-size:.72rem;color:var(--txt3);margin-top:4px}
+.mp-vd{margin-top:20px}
+@media(max-width:520px){.mp-body{padding:16px}.mp-h-v{font-size:2.1rem}}
 
 /* ══════════════════════════════════════════════════
    INTERACTIVE BRANCH NAVIGATOR — legacy (superseded by mind map)
@@ -2915,6 +2948,7 @@ body.rec-open{overflow:hidden}
     <div class="mm" id="mm"><svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg></div>
     <div id="mm-funnel" class="mf" role="region" aria-label="Onboarding Funnel"></div>
     <div id="mm-geo" class="mg" role="region" aria-label="Geographic Split"></div>
+    <div id="mm-modpanel" class="mp" role="region" aria-label="Module dashboard"></div>
     <!-- Hidden data sink: the existing section renderers populate these so the
          KPI / GMV / quality snapshots that power the modals stay warm. -->
     <div id="bn-sink" style="display:none" aria-hidden="true">
@@ -4203,8 +4237,11 @@ var mmFunnelActive = false;  // inline funnel panel open
 var mmFunnelStage  = null;   // selected stage key
 var mmGeoActive = false;     // inline geo (India map) panel open
 var _geoAnimate = false;     // run the map entrance animation on the next render only
+var mmModActive = false;     // generic inline module panel open (Volume/Txn/Ratings/OSV/Existing)
+var _mmModAnimate = false;   // run mod-panel entrance animation on next render only
 // Geo panel state: which region is expanded, hovered/selected state, cached rows.
-var _geo = { key:null, region:null, state:null, hover:null, pKey:null, rows:{ seller:null, buyer:null }, loading:false };
+// _geo.cat: optional category filter ('metal'|'plastic'|null) set when chained from Volume/Funnel.
+var _geo = { key:null, region:null, state:null, hover:null, pKey:null, cat:null, rows:{ seller:null, buyer:null }, loading:false };
 
 function _mmC(vs, vb, f) { return (vs && vs[f] || 0) + (vb && vb[f] || 0); }
 function _mmParseDate(s) {
@@ -4268,18 +4305,25 @@ function _mmVertModules(key) {
       [ _d('Sellers', fmt(vs.rejected||0), MM_IC.users), _d('Buyers', fmt(vb.rejected||0), MM_IC.users), _vd('rejected') ]),
   ]});
 
-  // 2 — Volume (onboarded composition)
-  mods.push({ t:'Volume', ic:MM_IC.grid, tone:'t-ink', kind:'module', eye:'Onboarded composition', children:[
-    _d('Sellers', fmt(vs.completed||0), MM_IC.users), _d('Buyers', fmt(vb.completed||0), MM_IC.users),
-    _d('Metal', fmt(mOnb)), _d('Plastic', fmt(pOnb)), _vd('onboarded'),
-  ]});
+  // 2 — Volume (onboarded composition — inline panel, chains into Geography)
+  mods.push({ t:'Volume', ic:MM_IC.grid, tone:'t-ink', kind:'module', expand:'inline-panel', eye:'Onboarded composition',
+    panel:{
+      eye:'Onboarded composition',
+      headline:{ v:onb, label:'Total Onboarded', tone:'good' },
+      bar:[ { label:'Metal', v:mOnb, color:'#6366f1', seg:'metal' },
+            { label:'Plastic', v:pOnb, color:'#0ea5e9', seg:'plastic' } ],
+      tiles:[ { label:'Sellers', v:vs.completed||0 }, { label:'Buyers', v:vb.completed||0 },
+              { label:'Metal', v:mOnb, seg:'metal' }, { label:'Plastic', v:pOnb, seg:'plastic' } ],
+      chain:true, records:'onboarded'
+    }
+  });
 
   // 3 — Geographic Split (each region expands an inline interactive India map)
   var regs = (vs.regions || []).filter(function(r){ return (r.onboarded||r.total||0) > 0; });
   if (!regs.length && key === activeVertKey && Array.isArray(vertRows) && vertRows.length)
     regs = _regionsFromRows(vertRows).filter(function(r){ return (r.total||0) > 0; });
   if (regs.length) {
-    mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module', eye:'Onboarded by region',
+    mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module', geoModule:true, eye:'Onboarded by region',
       children: regs.map(function(r) {
         var tone = r.region === 'North' ? 't-blue' : r.region === 'South' ? 't-green' : 't-ink';
         return { t:r.region, v:fmt(r.onboarded || r.total || 0), ic:MM_IC.pin, tone:tone, kind:'kpi',
@@ -4287,61 +4331,82 @@ function _mmVertModules(key) {
       }) });
   }
 
-  // 4 — Transactions (details / non-transacted ageing / GMV)
+  // 4 — Transactions (transacted vs non-transacted ageing / GMV — inline panel)
   if (txn != null || gmv != null) {
-    var txnKids = [];
-    if (txn != null)
-      txnKids.push(f('Transaction Details', txn, MM_IC.bolt, 't-blue',
-        [ _d('Metal', fmt(mTxn)), _d('Plastic', fmt(pTxn)), _vd('transacted') ]));
-    if (txn != null) {
-      var nonTxn = Math.max(0, onb - txn);
-      var ag = _mmAging(key), ntKids;
-      if (ag) {
-        ntKids = [
-          { t:'0–30 Days',  v:fmt(ag.a), ic:MM_IC.clock, tone:'t-green', kind:'kpi', children:[ _vd('records') ] },
-          { t:'31–60 Days', v:fmt(ag.c), ic:MM_IC.clock, tone:'t-amber', kind:'kpi', children:[ _vd('records') ] },
-          { t:'60+ Days',   v:fmt(ag.d), ic:MM_IC.clock, tone:'t-red',   kind:'kpi', children:[ _vd('records') ] },
-        ];
-      } else {
-        ntKids = [ { t:'Ageing bands', v:'—', ic:MM_IC.clock, tone:'t-ink', kind:'detail',
-                     s:'open records to compute', leaf:true }, _vd('records') ];
-      }
-      txnKids.push({ t:'Non-Transacted', v:fmt(nonTxn), ic:MM_IC.clock, tone:'t-amber', kind:'kpi',
-        eye:'Ageing since onboarded', children:ntKids });
+    var nonTxn = txn != null ? Math.max(0, onb - txn) : null;
+    var ag = _mmAging(key);
+    var tTiles = [];
+    if (txn != null) { tTiles.push({ label:'Metal', v:mTxn }, { label:'Plastic', v:pTxn }); }
+    if (ag) {
+      tTiles.push({ label:'0–30 days', v:ag.a, tone:'good' },
+                  { label:'31–60 days', v:ag.c, tone:'warn' },
+                  { label:'60+ days', v:ag.d, tone:'crit' });
     }
-    txnKids.push({ t:'Total GMV', v:(gmv != null ? fmtINR(gmv) : '—'), ic:MM_IC.rupee, tone:'t-ink', kind:'kpi',
-      children:[ _d('Metal', gmvM != null ? fmtINR(gmvM) : '—'), _d('Plastic', gmvP != null ? fmtINR(gmvP) : '—'), _vd('gmv') ] });
-    mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', eye:'Transactions', children:txnKids });
+    if (gmv != null) {
+      tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true });
+      if (gmvM != null) tTiles.push({ label:'GMV · Metal', v:fmtINR(gmvM), raw:true });
+      if (gmvP != null) tTiles.push({ label:'GMV · Plastic', v:fmtINR(gmvP), raw:true });
+    }
+    mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transactions',
+      panel:{
+        eye:'Transaction activity',
+        headline: txn != null ? { v:txn, label:'Transacted', tone:'accent' } : { v:gmv, label:'Total GMV', raw:true, rawv:fmtINR(gmv), tone:'ink' },
+        bar: (txn != null) ? [ { label:'Transacted', v:txn, color:'#16a34a' },
+                               { label:'Non-Transacted', v:nonTxn, color:'#d97706' } ] : null,
+        tiles: tTiles, records:'transacted'
+      }
+    });
   }
 
-  // 5 — Vendor Ratings (OMP quality feed)
+  // 5 — Vendor Ratings (OMP quality feed — inline panel)
   if (q && q.rating && q.rating.total) {
     var unr = Math.max(0, (q.rating.total||0) - (q.rating.rated||0));
-    mods.push({ t:'Vendor Ratings', ic:MM_IC.star, tone:'t-amber', kind:'module', eye:'Seller ratings', children:[
-      _d('Average', (q.rating.avg != null ? q.rating.avg.toFixed(1) + '★' : '—'), MM_IC.star),
-      _d('Rated', fmt(q.rating.rated||0), MM_IC.check), _d('Unrated', fmt(unr), MM_IC.clock), _vd('rating'),
-    ]});
+    mods.push({ t:'Vendor Ratings', ic:MM_IC.star, tone:'t-amber', kind:'module', expand:'inline-panel', eye:'Seller ratings',
+      panel:{
+        eye:'Seller ratings',
+        headline:{ v:(q.rating.avg != null ? q.rating.avg.toFixed(1) : '—'), suffix:'★', raw:true, rawv:(q.rating.avg != null ? q.rating.avg.toFixed(1) + '★' : '—'), label:'Average rating', tone:'warn' },
+        bar:[ { label:'Rated', v:q.rating.rated||0, color:'#16a34a' },
+              { label:'Unrated', v:unr, color:'#8a93a1' } ],
+        tiles:[ { label:'Rated', v:q.rating.rated||0, tone:'good' }, { label:'Unrated', v:unr },
+                { label:'Total sellers', v:q.rating.total||0 } ],
+        records:'rating'
+      }
+    });
   }
 
-  // 6 — OSV Status (OMP quality feed)
+  // 6 — OSV Status (OMP quality feed — inline panel)
   if (q && q.osv && q.osv.total) {
-    mods.push({ t:'OSV Status', ic:MM_IC.shield, tone:'t-green', kind:'module', eye:'On-site verification', children:[
-      _d('Done', fmt(q.osv.completed||0), MM_IC.check),
-      _d('In Progress', fmt(q.osv.pending||0), MM_IC.clock),
-      _d('Not Initiated', fmt(q.osv.notInitiated||0), MM_IC.x), _vd('osv'),
-    ]});
+    var osvDone = q.osv.completed||0, osvProg = q.osv.pending||0, osvNot = q.osv.notInitiated||0;
+    mods.push({ t:'OSV Status', ic:MM_IC.shield, tone:'t-green', kind:'module', expand:'inline-panel', eye:'On-site verification',
+      panel:{
+        eye:'On-site verification',
+        headline:{ v:osvDone, label:'Verification done', tone:'good' },
+        bar:[ { label:'Done', v:osvDone, color:'#16a34a' },
+              { label:'In Progress', v:osvProg, color:'#d97706' },
+              { label:'Not Initiated', v:osvNot, color:'#8a93a1' } ],
+        tiles:[ { label:'Done', v:osvDone, tone:'good' }, { label:'In Progress', v:osvProg, tone:'warn' },
+                { label:'Not Initiated', v:osvNot }, { label:'Total', v:q.osv.total||0 } ],
+        records:'osv'
+      }
+    });
   }
 
-  // 7 — Existing vs New (OMP only — the only vertical where it's computed)
+  // 7 — Existing vs New (OMP only — inline panel)
   if (isOMP && vs.oldVendors != null) {
     var exM = (vs.metalOld||0)+(vb.metalOld||0), exP = (vs.plasticOld||0)+(vb.plasticOld||0);
     var nwM = (vs.metalNew||0)+(vb.metalNew||0), nwP = (vs.plasticNew||0)+(vb.plasticNew||0);
-    mods.push({ t:'Existing vs New', ic:MM_IC.users, tone:'t-purple', kind:'module', eye:'Vendor classification', children:[
-      { t:'Existing', v:fmt((vs.oldVendors||0)+(vb.oldVendors||0)), ic:MM_IC.users, tone:'t-purple', kind:'kpi',
-        children:[ _d('Metal', fmt(exM)), _d('Plastic', fmt(exP)), _vd('oldvsnew') ] },
-      { t:'New', v:fmt((vs.newVendors||0)+(vb.newVendors||0)), ic:MM_IC.users, tone:'t-blue', kind:'kpi',
-        children:[ _d('Metal', fmt(nwM)), _d('Plastic', fmt(nwP)), _vd('oldvsnew') ] },
-    ]});
+    var exAll = (vs.oldVendors||0)+(vb.oldVendors||0), nwAll = (vs.newVendors||0)+(vb.newVendors||0);
+    mods.push({ t:'Existing vs New', ic:MM_IC.users, tone:'t-purple', kind:'module', expand:'inline-panel', eye:'Vendor classification',
+      panel:{
+        eye:'Vendor classification',
+        headline:{ v:exAll+nwAll, label:'Classified onboarded', tone:'ink' },
+        bar:[ { label:'Existing', v:exAll, color:'#8b5cf6' },
+              { label:'New', v:nwAll, color:'#005dff' } ],
+        tiles:[ { label:'Existing', v:exAll, sub:'Metal '+fmt(exM)+' · Plastic '+fmt(exP) },
+                { label:'New', v:nwAll, sub:'Metal '+fmt(nwM)+' · Plastic '+fmt(nwP) } ],
+        records:'oldvsnew'
+      }
+    });
   }
   return mods;
 }
@@ -4381,7 +4446,7 @@ function mmBuildColumns() {
   for (var k = 0; k < chain.length; k++) {
     var parent = chain[k];
     if (!parent.children || !parent.children.length) break;
-    if (parent.expand === 'inline-funnel') break; // children shown in inline panel
+    if (parent.expand) break; // inline-funnel / inline-panel → children shown in a panel, not a column
     cols.push({ cards:parent.children, active: chain[k+1] ? chain[k+1]._id : null, eye:parent.eye || '',
                 wide: parent.kind === 'module' || parent.kind === 'kpi' || parent.kind === 'root' });
   }
@@ -4391,7 +4456,7 @@ function mmBuildColumns() {
 function mmNodeCard(node, colActiveId) {
   var kind = node.kind, on = node._id === colActiveId;
   var hasKids = node.children && node.children.length;
-  var isLeaf = node.leaf || kind === 'vd' || (!hasKids && !node.action && !node.geoRegion);
+  var isLeaf = node.leaf || kind === 'vd' || (!hasKids && !node.action && !node.geoRegion && !node.expand);
   var cls, inner;
   if (kind === 'root') {
     cls = 'mmn root' + (on ? ' on' : '');
@@ -4415,13 +4480,13 @@ function mmNodeCard(node, colActiveId) {
   } else {
     var modCls = (kind === 'module') ? ' module' : '';
     cls = 'mmn ' + (node.tone || 't-ink') + modCls + (on ? ' on' : '') + (isLeaf ? ' leaf' : '');
-    var arrow = (hasKids || node.action || node.geoRegion) ? '<span class="mmn-arr">' + ((node.action || node.geoRegion) && !hasKids ? '→' : '›') + '</span>' : '';
+    var arrow = (hasKids || node.action || node.geoRegion || node.expand) ? '<span class="mmn-arr">' + ((node.action || node.geoRegion) && !hasKids && !node.expand ? '→' : '›') + '</span>' : '';
     inner = '<div class="mmn-top"><div class="mmn-ic">' + (node.ic || MM_IC.grid) + '</div><div class="mmn-ttl">' + esc(node.t) + '</div>' + arrow + '</div>'
       + (node.v ? '<div class="mmn-v tnum">' + esc(node.v) + '</div>' : '')
       + (node.s ? '<div class="mmn-s">' + esc(node.s) + '</div>' : '');
   }
   var dim = (colActiveId && !on) ? ' dim' : '';
-  var clickable = !(node.muted || (isLeaf && !node.action && !node.geoRegion));
+  var clickable = !(node.muted || (isLeaf && !node.action && !node.geoRegion && !node.expand));
   return '<div class="' + cls + dim + '" data-id="' + esc(node._id) + '"'
     + (clickable ? ' role="button" tabindex="0" onclick="mmClickNode(\'' + esc(node._id) + '\')" onkeydown="if(event.key===\'Enter\'){mmClickNode(\'' + esc(node._id) + '\')}"' : '')
     + '>' + inner + '</div>';
@@ -4445,9 +4510,11 @@ function renderBranchNav(key) {
   var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
   if (mmFunnelActive && (!lastNode || lastNode.expand !== 'inline-funnel')) mmFunnelActive = false;
   if (mmGeoActive && (!lastNode || !lastNode.geoRegion)) { mmGeoActive = false; _geo.region = null; _geo.state = null; }
+  if (mmModActive && (!lastNode || lastNode.expand !== 'inline-panel')) mmModActive = false;
   mmRender();
   mmRenderFunnel();
   mmRenderGeo();
+  mmRenderModPanel();
 }
 
 function mmRender() {
@@ -4478,8 +4545,9 @@ function mmGoto(i) {
   mmPath = i <= 0 ? ['root'] : chain.slice(0, i + 1);
   var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
   if (!lastNode || lastNode.expand !== 'inline-funnel') { mmFunnelActive = false; mmFunnelStage = null; }
-  if (!lastNode || !lastNode.geoRegion) { mmGeoActive = false; _geo.region = null; _geo.state = null; }
-  mmRender(); mmRenderFunnel(); mmRenderGeo();
+  if (!lastNode || lastNode.expand !== 'inline-panel') { mmModActive = false; }
+  if (!lastNode || !lastNode.geoRegion) { mmGeoActive = false; _geo.region = null; _geo.state = null; if (!lastNode || !lastNode.geoModule) _geo.cat = null; }
+  mmPaint();
 }
 
 function mmReveal() {
@@ -4507,9 +4575,13 @@ function mmCardAction(action) {
   return openKpiModal(name);   // total/onboarded/transacted/oldvsnew/draft/review/rejected/osv/rating/docs
 }
 
+// Repaint the whole workspace (map + all three inline panels) in one call.
+function mmPaint() { mmRender(); mmRenderFunnel(); mmRenderGeo(); mmRenderModPanel(); }
+
 function _mmCloseInline() {
   mmFunnelActive = false; mmFunnelStage = null;
-  mmGeoActive = false; _geo.region = null; _geo.state = null; _geo.hover = null;
+  mmGeoActive = false; _geo.region = null; _geo.state = null; _geo.hover = null; _geo.cat = null;
+  mmModActive = false;
 }
 
 function mmClickNode(id) {
@@ -4521,36 +4593,68 @@ function mmClickNode(id) {
       mmGeoActive = false; _geo.region = null; _geo.state = null;
       mmPath = mmPath.slice(0, -1);
     } else {
-      mmFunnelActive = false; mmFunnelStage = null;
+      mmFunnelActive = false; mmFunnelStage = null; mmModActive = false;
       mmPath = _mmPathIds(node);
       mmGeoActive = true; _geo.state = null; _geo.hover = null; _geoAnimate = true;
       mmGeoOpen(node.geoRegion);
     }
-    mmRender(); mmRenderFunnel(); mmRenderGeo(); return;
+    mmPaint(); return;
   }
   if (node.action) return mmCardAction(node.action);
-  if (node.muted || node.leaf || !(node.children && node.children.length)) return;
+  if (node.muted || node.leaf || (!(node.children && node.children.length) && !node.expand)) return;
   if (node.kind === 'vert') {
     mmPath = ['root', node._id];
     if (node.vkey && node.vkey !== activeVertKey) { selectVertTab(node.vkey); return; }
     _mmCloseInline();
-    mmRender(); mmRenderFunnel(); mmRenderGeo(); return;
+    mmPaint(); return;
   }
   if (node.expand === 'inline-funnel') {
-    var alreadyOpen = mmFunnelActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
-    mmGeoActive = false; _geo.region = null; _geo.state = null;
-    if (alreadyOpen) {
+    var funOpen = mmFunnelActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
+    mmGeoActive = false; _geo.region = null; _geo.state = null; mmModActive = false;
+    if (funOpen) {
       mmFunnelActive = false; mmFunnelStage = null;
       mmPath = mmPath.slice(0, -1);
     } else {
       mmPath = _mmPathIds(node);
       mmFunnelActive = true; mmFunnelStage = null;
     }
-    mmRender(); mmRenderFunnel(); mmRenderGeo(); return;
+    mmPaint(); return;
+  }
+  if (node.expand === 'inline-panel') {
+    var modOpen = mmModActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
+    mmFunnelActive = false; mmFunnelStage = null; mmGeoActive = false; _geo.region = null; _geo.state = null;
+    if (modOpen) {
+      mmModActive = false;
+      mmPath = mmPath.slice(0, -1);
+    } else {
+      mmPath = _mmPathIds(node);
+      mmModActive = true; _mmModAnimate = true;
+    }
+    mmPaint(); return;
   }
   _mmCloseInline();
   mmPath = _mmPathIds(node);
-  mmRender(); mmRenderFunnel(); mmRenderGeo();
+  mmPaint();
+}
+
+// Chain: from a Volume/Funnel Metal|Plastic segment into Geographic Split,
+// carrying the category filter so the map + legend stay scoped to it.
+function mmChainToGeo(seg) {
+  var vertId = null;
+  for (var i = 0; i < mmPath.length; i++) {
+    var n = mmFindById(mmPath[i]); if (n && n.kind === 'vert') { vertId = n._id; break; }
+  }
+  if (!vertId) return;
+  var vert = mmFindById(vertId);
+  var geoMod = (vert.children || []).filter(function(c){ return c.geoModule; })[0];
+  if (!geoMod) return;
+  _mmCloseInline();
+  _geo.cat = (seg === 'metal' || seg === 'plastic') ? seg : null;
+  mmPath = _mmPathIds(geoMod);   // show the North/South region cards
+  mmPaint();
+  // gently bring the region column into view
+  var mm = document.getElementById('mm');
+  if (mm && mm.scrollTo) mm.scrollTo({ left: mm.scrollWidth, behavior: motionOK() ? 'smooth' : 'auto' });
 }
 
 // ── connectors: elbow bus from each active card to its child column ──
@@ -4752,15 +4856,16 @@ function _geoEnsureRows() {
 
 // Aggregate loaded rows into per-state buckets for the active region (onboarded only).
 function _geoAgg() {
-  var region = _geo.region, by = {};
+  var region = _geo.region, filt = _geo.cat, by = {};
   ['seller', 'buyer'].forEach(function(aud) {
     var rows = _geo.rows[aud]; if (!Array.isArray(rows)) return;
     rows.forEach(function(r) {
       if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
       var id = _geoStateId(r.state); if (!id || !IN_STATES[id] || IN_STATES[id].region !== region) return;
+      var cat = String(r.category || '').trim().toLowerCase();
+      if (filt && cat !== filt) return;   // category filter (chained from Volume/Funnel)
       var b = by[id] || (by[id] = { id:id, total:0, metal:0, plastic:0, seller:0, buyer:0 });
       b.total++; b[aud]++;
-      var cat = String(r.category || '').trim().toLowerCase();
       if (cat === 'metal') b.metal++; else if (cat === 'plastic') b.plastic++;
     });
   });
@@ -4856,7 +4961,12 @@ function mmRenderGeo() {
       + '</div>';
   }
 
-  panel.innerHTML = '<div class="mg-eye">' + esc(region) + ' Region · onboarded distribution</div>'
+  var catChip = _geo.cat
+    ? '<button class="mg-catchip" onclick="_geoClearCat()" title="Clear filter">'
+      + '<span class="mg-swatch" style="background:' + (_geo.cat === 'metal' ? '#6366f1' : '#0ea5e9') + '"></span>'
+      + (_geo.cat === 'metal' ? 'Metal' : 'Plastic') + ' only <span class="mg-catx">✕</span></button>'
+    : '';
+  panel.innerHTML = '<div class="mg-eye"><span>' + esc(region) + ' Region · onboarded distribution</span>' + catChip + '</div>'
     + '<div class="mg-grid">' + mapPanel + legend + '</div>' + detail;
   panel.className = 'mg mg-open';
 
@@ -4869,6 +4979,105 @@ function mmRenderGeo() {
     });
   }
   _geoAnimate = false;
+}
+function _geoClearCat() { _geo.cat = null; _geoAnimate = true; mmRenderGeo(); }
+
+// ── Count-up: animate [data-count] figures from 0 → target within a container ──
+function _mmCountUp(container) {
+  if (!container) return;
+  var els = [].slice.call(container.querySelectorAll('[data-count]'));
+  if (!motionOK()) { els.forEach(function(el){ el.textContent = fmt(+el.getAttribute('data-count')); }); return; }
+  els.forEach(function(el) {
+    var target = +el.getAttribute('data-count') || 0, dur = 620, t0 = null;
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(Math.round(target * eased));
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+// ── Generic inline module panel — Volume / Transactions / Ratings / OSV / Existing ──
+function mmRenderModPanel() {
+  var panel = document.getElementById('mm-modpanel'); if (!panel) return;
+  var node = mmModActive && mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
+  var P = node && node.expand === 'inline-panel' ? node.panel : null;
+  if (!P) { panel.className = 'mp'; panel.innerHTML = ''; return; }
+
+  var toneColor = { good:'#16a34a', warn:'#d97706', crit:'#dc2626', accent:'var(--blue)', ink:'var(--txt)' };
+  var html = '<div class="mp-eye">' + esc(P.eye || node.t) + '</div><div class="mp-body">';
+
+  // headline
+  if (P.headline) {
+    var h = P.headline, col = toneColor[h.tone] || 'var(--txt)';
+    var hv = h.raw ? '<span>' + esc(h.rawv != null ? h.rawv : (h.v + (h.suffix || ''))) + '</span>'
+                   : '<span data-count="' + (+h.v || 0) + '">0</span>' + (h.suffix ? esc(h.suffix) : '');
+    html += '<div class="mp-headline"><div class="mp-h-v" style="color:' + col + '">' + hv + '</div>'
+      + '<div class="mp-h-l">' + esc(h.label || '') + '</div></div>';
+  }
+
+  // stacked composition bar
+  if (P.bar && P.bar.length) {
+    var tot = P.bar.reduce(function(s, x){ return s + (+x.v || 0); }, 0) || 1;
+    var segs = P.bar.map(function(x) {
+      var pctv = Math.max(0, (+x.v || 0) / tot * 100);
+      var clickable = node.panel.chain && x.seg;
+      return '<div class="mp-seg' + (clickable ? ' ch' : '') + '" style="width:' + pctv.toFixed(1) + '%;background:' + x.color + '"'
+        + (clickable ? ' role="button" tabindex="0" onclick="mmChainToGeo(\'' + x.seg + '\')"'
+            + ' onkeydown="if(event.key===\'Enter\'){mmChainToGeo(\'' + x.seg + '\')}" title="View ' + esc(x.label) + ' on the map"' : '')
+        + '><span class="mp-seg-in">' + esc(x.label) + ' · ' + fmt(x.v) + '</span></div>';
+    }).join('');
+    html += '<div class="mp-bar" aria-hidden="false">' + segs + '</div>'
+      + '<div class="mp-legend">' + P.bar.map(function(x) {
+          return '<span class="mp-leg"><i style="background:' + x.color + '"></i>' + esc(x.label) + '</span>';
+        }).join('') + '</div>';
+  }
+
+  // stat tiles
+  if (P.tiles && P.tiles.length) {
+    html += '<div class="mp-tiles">' + P.tiles.map(function(t) {
+      var tc = toneColor[t.tone] || 'var(--txt)';
+      var chainable = node.panel.chain && t.seg;
+      var val = t.raw ? '<span>' + esc(t.v) + '</span>' : '<span data-count="' + (+t.v || 0) + '">0</span>';
+      return '<div class="mp-tile' + (chainable ? ' ch' : '') + '"'
+        + (chainable ? ' role="button" tabindex="0" onclick="mmChainToGeo(\'' + t.seg + '\')"'
+            + ' onkeydown="if(event.key===\'Enter\'){mmChainToGeo(\'' + t.seg + '\')}"' : '')
+        + '><div class="mp-tile-v" style="color:' + tc + '">' + val + '</div>'
+        + '<div class="mp-tile-l">' + esc(t.label) + (chainable ? ' <span class="mp-go">↦ map</span>' : '') + '</div>'
+        + (t.sub ? '<div class="mp-tile-s">' + esc(t.sub) + '</div>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+
+  // records CTA
+  if (P.records) {
+    html += '<button class="mf-detail-vd mp-vd" onclick="mmCardAction(\'' + esc(P.records) + '\')">'
+      + MM_IC.doc + ' View Detailed Records →</button>';
+  }
+
+  html += '</div>';
+  panel.innerHTML = html;
+  panel.className = 'mp mp-open';
+
+  // entrance: count-up figures + grow the bar
+  if (_mmModAnimate) {
+    _mmCountUp(panel);
+    if (motionOK()) {
+      [].slice.call(panel.querySelectorAll('.mp-seg')).forEach(function(s) {
+        var w = s.style.width; s.style.width = '0%';
+        requestAnimationFrame(function(){ s.style.width = w; });
+      });
+      [].slice.call(panel.querySelectorAll('.mp-tile')).forEach(function(t, i) {
+        t.style.opacity = '0'; t.style.transform = 'translateY(8px)';
+        setTimeout(function(){ t.style.transition = 'opacity .34s ease, transform .34s cubic-bezier(.34,1.56,.64,1)'; t.style.opacity = ''; t.style.transform = ''; }, 60 + i * 55);
+      });
+    }
+  } else {
+    [].slice.call(panel.querySelectorAll('[data-count]')).forEach(function(el){ el.textContent = fmt(+el.getAttribute('data-count')); });
+  }
+  _mmModAnimate = false;
 }
 
 // Regional Split → compact modal listing regions; each drills into the
