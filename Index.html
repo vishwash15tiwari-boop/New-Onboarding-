@@ -2576,80 +2576,64 @@ body.rec-open{overflow:hidden}
    Every level shows all its options at once; clicking a card opens
    the standardized detail modal (the final navigation layer).
    ══════════════════════════════════════════════════ */
-.mm{position:relative;display:flex;align-items:flex-start;gap:0}
-.mm-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible}
-.mm-lane{position:relative;z-index:1}
-.mm-col{display:flex;flex-direction:column;gap:9px}
-.mm-eye{font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--txt3);padding:0 4px 12px;white-space:nowrap}
-.mm-lane-v{width:222px;flex-shrink:0}
-.mm-lane-m{width:200px;flex-shrink:0}
-.mm-lane-c{flex:1;min-width:0}
-.mm-gap{width:52px;flex-shrink:0}
-/* Level 1 — vertical node */
-.mmv{border:1px solid var(--border);border-radius:12px;background:var(--card);cursor:pointer;transition:border-color .22s var(--ease-out),box-shadow .22s var(--ease-out),background .22s var(--ease-out)}
-.mmv:hover{border-color:rgba(0,0,0,.18)}
-.mmv.muted{cursor:default;background:transparent;border-style:dashed}
-.mmv.muted:hover{border-color:var(--border)}
-.mmv-h{display:flex;align-items:center;gap:10px;padding:12px 13px}
-.mmv-dot{width:8px;height:8px;border-radius:50%;background:var(--txt3);flex-shrink:0}
-.mmv-main{flex:1;min-width:0}
-.mmv-nm{font-size:13px;font-weight:600;letter-spacing:-.1px;color:var(--txt)}
-.mmv-sub{font-size:10.5px;font-weight:500;color:var(--txt3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mmv.on{background:#1A1A1C;border-color:#1A1A1C;box-shadow:0 12px 26px -14px rgba(0,0,0,.5)}
-.mmv.on .mmv-nm{color:#fff}.mmv.on .mmv-sub{color:rgba(255,255,255,.6)}
-.mmv.on .mmv-dot{background:var(--blue);box-shadow:0 0 0 4px rgba(0,93,255,.22)}
-.mmv.muted .mmv-nm{color:var(--txt2)}
-.mm-vsep{height:1px;background:var(--border);margin:6px 4px}
-.mm-util{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:12px;cursor:pointer;color:var(--txt2);font-size:12.5px;font-weight:600;border:1px solid transparent;transition:.2s var(--ease-out)}
-.mm-util:hover{background:var(--hover)}
-.mm-util.on{background:#1A1A1C;color:#fff}
-.mm-util-ic{width:22px;height:22px;border-radius:6px;background:rgba(120,120,128,.13);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
-.mm-util.on .mm-util-ic{background:rgba(255,255,255,.16);color:#fff}
-/* Level 2 — module node */
-.mmm{border:1px solid var(--border);border-radius:11px;background:var(--card);cursor:pointer;padding:12px 14px;display:flex;align-items:center;gap:10px;transition:border-color .2s var(--ease-out),background .2s var(--ease-out),box-shadow .2s var(--ease-out);opacity:0;transform:translateX(-8px)}
-.mmm.in{opacity:1;transform:none;transition:opacity .45s var(--ease-out),transform .45s var(--ease-out),border-color .2s,background .2s,box-shadow .2s}
-.mmm:hover{border-color:rgba(0,93,255,.4)}
-.mmm-ic{width:26px;height:26px;border-radius:8px;background:var(--accent-soft);color:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mmm-ic svg{width:14px;height:14px}
-.mmm-nm{flex:1;font-size:13px;font-weight:600;letter-spacing:-.1px;color:var(--txt)}
-.mmm-ct{font-size:10.5px;font-weight:600;color:var(--txt3);flex-shrink:0}
-.mmm.on{background:var(--blue);border-color:var(--blue);box-shadow:0 12px 26px -14px rgba(0,93,255,.6)}
-.mmm.on .mmm-nm{color:#fff}.mmm.on .mmm-ct{color:rgba(255,255,255,.75)}
-.mmm.on .mmm-ic{background:rgba(255,255,255,.2);color:#fff}
-/* Level 3 — premium KPI cards */
-.mm-c-hd{display:flex;align-items:baseline;gap:9px;padding:0 2px 12px;min-height:22px}
-.mm-c-ttl{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3)}
-.mm-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
-.mmc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 17px 15px;cursor:pointer;position:relative;overflow:hidden;opacity:0;transform:translateY(10px) scale(.985);transition:box-shadow .25s var(--ease-out),transform .25s var(--ease-out),border-color .25s var(--ease-out)}
-.mmc.in{opacity:1;transform:none}
-.mmc.in:hover{box-shadow:0 16px 34px -18px rgba(0,0,0,.34);transform:translateY(-3px);border-color:rgba(0,93,255,.3)}
-.mmc.na{cursor:default;background:var(--bg2);border-style:dashed}
-.mmc.na:hover{box-shadow:none;transform:none;border-color:var(--border)}
-.mmc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
-.mmc-ic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center}
-.mmc-ic svg{width:16px;height:16px}
-.mmc-go{font-size:11px;font-weight:600;color:var(--blue);opacity:0;transition:opacity .2s}
-.mmc.in:hover .mmc-go{opacity:1}
-.mmc-v{font-size:29px;font-weight:700;letter-spacing:-1.2px;line-height:1;color:var(--txt)}
-.mmc-v small{font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:0;margin-left:2px}
-.mmc-l{font-size:12.5px;font-weight:600;color:var(--txt);margin-top:9px}
-.mmc-s{font-size:11px;font-weight:500;color:var(--txt3);margin-top:3px}
-.mmc-na{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3)}
-.mmc.t-blue .mmc-ic{background:var(--accent-soft);color:var(--blue)}
-.mmc.t-green .mmc-ic{background:#E3F8F1;color:var(--green-ink)}
-.mmc.t-purple .mmc-ic{background:#F1ECFB;color:#5B3FA8}
-.mmc.t-amber .mmc-ic{background:#FFF3E0;color:#B26A00}
-.mmc.t-red .mmc-ic{background:#FDECEB;color:#C4271E}
-.mmc.t-ink .mmc-ic{background:#EDEDF0;color:var(--txt)}
-@media(prefers-reduced-motion:reduce){.mmm,.mmc{opacity:1!important;transform:none!important}}
-@media(max-width:1040px){
-  .mm{flex-direction:column;gap:0}
-  .mm-svg{display:none}
-  .mm-lane{width:100%!important}
-  .mm-col{flex-direction:row;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-  .mm-gap{display:none}
-  .mmv,.mmm{min-width:180px}
-}
+/* ── Card-based horizontal mind map: every node is a card; accumulating
+      columns; connectors carry only relationships. ── */
+.mmcrumbs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:0 2px 16px}
+.mmcrumb{font-family:inherit;font-size:12px;font-weight:600;color:var(--txt2);background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 12px;cursor:pointer;white-space:nowrap;transition:.18s var(--ease-out)}
+.mmcrumb:hover{border-color:rgba(0,93,255,.35);color:var(--blue)}
+.mmcrumb.here{background:var(--blue);border-color:var(--blue);color:#fff;cursor:default}
+.mmcrumb-sep{color:var(--txt3);font-size:12px}
+.mm{position:relative;display:flex;align-items:flex-start;gap:0;padding:2px 0 30px;overflow-x:auto;overflow-y:hidden}
+.mm-svg{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:visible}
+.mmcol{position:relative;z-index:1;display:flex;flex-direction:column;gap:11px;flex-shrink:0;width:216px;align-self:center}
+.mmcol.wide{width:232px}
+.mmcolgap{width:52px;flex-shrink:0}
+.mmcoleye{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);padding:0 3px 5px;white-space:nowrap;min-height:15px}
+.mmn{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 15px;cursor:pointer;position:relative;opacity:0;transform:translateY(9px) scale(.98);
+  transition:box-shadow .24s var(--ease-out),transform .24s var(--ease-out),border-color .24s var(--ease-out),opacity .24s var(--ease-out)}
+.mmn.in{opacity:1;transform:none}
+.mmn.in:hover{box-shadow:0 14px 30px -18px rgba(0,0,0,.34);transform:translateY(-2px);border-color:rgba(0,93,255,.3)}
+.mmn.dim{opacity:.42}
+.mmn.dim.in:hover{opacity:.85}
+.mmn.on{border-color:var(--blue);box-shadow:0 0 0 1.5px rgba(0,93,255,.4),0 14px 30px -18px rgba(0,93,255,.4)}
+.mmn.leaf{cursor:default}
+.mmn.leaf.in:hover{box-shadow:none;transform:none;border-color:var(--border)}
+.mmn-top{display:flex;align-items:center;gap:9px;margin-bottom:2px}
+.mmn-ic{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mmn-ic svg{width:15px;height:15px}
+.mmn-ttl{font-size:12.5px;font-weight:600;letter-spacing:-.1px;color:var(--txt);line-height:1.25}
+.mmn-arr{margin-left:auto;color:var(--txt3);font-size:13px;flex-shrink:0}
+.mmn.on .mmn-arr{color:var(--blue)}
+.mmn-v{font-size:25px;font-weight:700;letter-spacing:-1.1px;line-height:1;color:var(--txt);margin-top:8px}
+.mmn-v small{font-size:12px;font-weight:600;color:var(--txt3);letter-spacing:0}
+.mmn-s{font-size:10.5px;font-weight:500;color:var(--txt3);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* tones */
+.mmn.t-blue .mmn-ic{background:var(--accent-soft);color:var(--blue)}
+.mmn.t-green .mmn-ic{background:#E3F8F1;color:var(--green-ink)}
+.mmn.t-purple .mmn-ic{background:#F1ECFB;color:#5B3FA8}
+.mmn.t-amber .mmn-ic{background:#FFF3E0;color:#B26A00}
+.mmn.t-red .mmn-ic{background:#FDECEB;color:#C4271E}
+.mmn.t-ink .mmn-ic{background:#EDEDF0;color:var(--txt)}
+/* root card */
+.mmn.root{background:#17171A;border-color:#17171A;padding:19px 17px}
+.mmn.root .mmn-ttl{color:#fff;font-size:15px;font-weight:700}
+.mmn.root .mmn-s{color:rgba(255,255,255,.6);font-size:11px;margin-top:8px;white-space:normal}
+.mmn.root .mmn-cta{display:inline-flex;align-items:center;gap:5px;margin-top:14px;font-size:11.5px;font-weight:600;color:#fff;background:var(--blue);border-radius:8px;padding:7px 12px}
+.mmn.root .mmn-ic{background:rgba(255,255,255,.14);color:#fff}
+.mmn.root.on{box-shadow:0 0 0 1.5px rgba(0,93,255,.5),0 18px 36px -18px rgba(0,0,0,.6)}
+/* vertical card */
+.mmn.vert .mmn-dot{width:8px;height:8px;border-radius:50%;background:var(--txt3);flex-shrink:0}
+.mmn.vert.on .mmn-dot{background:var(--blue);box-shadow:0 0 0 4px rgba(0,93,255,.18)}
+.mmn.vert.muted{border-style:dashed;cursor:default;background:transparent}
+.mmn.vert.muted .mmn-ttl{color:var(--txt2)}
+.mmn.vert.muted.in:hover{box-shadow:none;transform:none;border-color:var(--border)}
+/* View Details / action card */
+.mmn.vd{background:var(--blue);border-color:var(--blue)}
+.mmn.vd .mmn-ttl{color:#fff}
+.mmn.vd .mmn-ic{background:rgba(255,255,255,.2);color:#fff}
+.mmn.vd .mmn-arr{color:rgba(255,255,255,.85)}
+.mmn.vd.in:hover{box-shadow:0 16px 32px -16px rgba(0,93,255,.7);border-color:var(--blue);transform:translateY(-2px)}
+@media(prefers-reduced-motion:reduce){.mmn{opacity:1!important;transform:none!important}}
 
 /* ══════════════════════════════════════════════════
    INTERACTIVE BRANCH NAVIGATOR — legacy (superseded by mind map)
@@ -2836,25 +2820,10 @@ body.rec-open{overflow:hidden}
     <div class="gp-year-chips" id="gp-year-chips" style="display:none"></div>
   </div>
 
-  <!-- ── VIEW: ONBOARDING — horizontal mind map (Vertical → Module → Cards) ── -->
+  <!-- ── VIEW: ONBOARDING — card-based mind map (Root → Vertical → Module → KPI → Detail → Modal) ── -->
   <div id="tab-overview">
-    <div class="mm" id="mm">
-      <svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg>
-      <div class="mm-lane mm-lane-v">
-        <div class="mm-eye">Business Verticals</div>
-        <div id="mm-verts" class="mm-col"></div>
-      </div>
-      <div class="mm-gap"></div>
-      <div class="mm-lane mm-lane-m">
-        <div class="mm-eye" id="mm-mod-eye">Modules</div>
-        <div id="mm-mods" class="mm-col"></div>
-      </div>
-      <div class="mm-gap"></div>
-      <div class="mm-lane mm-lane-c">
-        <div class="mm-c-hd" id="mm-cards-hd"><span class="mm-c-ttl" id="mm-cards-ttl"></span></div>
-        <div id="mm-cards" class="mm-cards"></div>
-      </div>
-    </div>
+    <div class="mmcrumbs" id="mm-crumbs"></div>
+    <div class="mm" id="mm"><svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg></div>
     <!-- Hidden data sink: the existing section renderers populate these so the
          KPI / GMV / quality snapshots that power the modals stay warm. -->
     <div id="bn-sink" style="display:none" aria-hidden="true">
@@ -4133,194 +4102,333 @@ var MM_IC = {
   doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
   grid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
   gauge:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l4-4M20 12a8 8 0 1 0-16 0"/></svg>',
+  hub:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 7l3 3M17 7l-3 3M7 17l3-3M17 17l-3-3"/></svg>',
 };
 
-// Module → card model for the active vertical, wired to live data.
-function mmModules(key) {
+var mmTree = null;        // root node — rebuilt each render from live data
+var mmPath = [];          // node IDs from 'root' down = the expanded chain
+var _mmById = {};         // id → node for the current tree
+
+function _mmC(vs, vb, f) { return (vs && vs[f] || 0) + (vb && vb[f] || 0); }
+function _mmParseDate(s) {
+  if (!s || s === '—') return null;
+  var m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/.exec(String(s).trim());
+  if (!m) return null;
+  var yy = +m[3]; if (yy < 100) yy += 2000;
+  var d = new Date(yy, (+m[2]) - 1, +m[1]);
+  return isNaN(d.getTime()) ? null : d;
+}
+// Non-transacted onboarded rows bucketed by days-since-onboarding — only
+// computable for the active vertical whose rows are loaded; else null.
+function _mmAging(key) {
+  if (key !== activeVertKey || !Array.isArray(vertRows) || !vertRows.length) return null;
+  var now = new Date(), b = { a:0, c:0, d:0 }, any = false;
+  vertRows.forEach(function(r) {
+    if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
+    if (r.txnValue != null && r.txnValue > 0) return;   // transacted → excluded
+    var dt = _mmParseDate(r.onbDate); if (!dt) return;
+    var days = Math.floor((now - dt) / 86400000); if (days < 0) days = 0;
+    any = true;
+    if (days <= 30) b.a++; else if (days <= 60) b.c++; else b.d++;
+  });
+  return any ? b : null;
+}
+
+// ── node factory helpers ──
+function _d(t, v, ic) { return { t:t, v:v, ic:ic || MM_IC.grid, kind:'detail', tone:'t-ink', leaf:true }; }
+function _vd(action) { return { t:'View Details', ic:MM_IC.doc, kind:'vd', action:action || 'records' }; }
+
+// Module list for one vertical, wired to live DS/DB/quality data.
+function _mmVertModules(key) {
   var vs = (DS && DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
-  var q  = (qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
+  var q  = (key === 'OMP' && qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
   var isOMP = key === 'OMP';
-  var tot = (vs.total || 0) + (vb.total || 0), onb = (vs.completed || 0) + (vb.completed || 0);
-  var txn = (vs.transacted || 0) + (vb.transacted || 0);
-  var ex = (vs.oldVendors || 0) + (vb.oldVendors || 0), nw = (vs.newVendors || 0) + (vb.newVendors || 0);
-  var gmv = vs.totalTxnValue, blend = _bnBlendTAT(vs, vb);
-  var rating = (q && q.rating && q.rating.avg != null) ? q.rating.avg.toFixed(1) + '★' : null;
-  var ratedSub = (q && q.rating) ? fmt(q.rating.rated || 0) + ' of ' + fmt(q.rating.total || 0) + ' rated' : '';
-  var osvDone = (q && q.osv && q.osv.total) ? (q.osv.completed || 0) : null;
-  var osvSub  = (q && q.osv && q.osv.total) ? fmt(q.osv.completed || 0) + ' done · ' + fmt(q.osv.notInitiated || 0) + ' not initiated' : 'Open Marketplace only';
-  var dObj = q && q.docs ? q.docs : null;
-  var docsC = dObj ? (dObj.complete != null ? dObj.complete : (dObj.completed != null ? dObj.completed : null)) : null;
-  var card = function(ic, tone, v, l, s, action, na) { return { ic:ic, tone:tone, v:v, l:l, s:s, action:action, na:!!na }; }
-  var regCard = function(regs, aud) {
-    var r = (regs || []).filter(function(x) { return (x.onboarded || x.total || 0) > 0; });
-    if (!r.length && aud === selectedAud && Array.isArray(vertRows) && vertRows.length)
-      r = _regionsFromRows(vertRows).filter(function(x) { return (x.total || 0) > 0; });
-    var has = r.length > 0;
-    var byN = {}; r.forEach(function(x) { byN[x.region] = x; });
-    var n = byN.North || {}, s = byN.South || {};
-    var sub = has ? (fmt(n.onboarded || n.total || 0) + ' North · ' + fmt(s.onboarded || s.total || 0) + ' South')
-                  : (aud === 'buyer' ? 'awaiting buyer state data' : 'awaiting region data');
-    return card(MM_IC.pin, 't-blue', has ? 'N / S' : '—', 'Regional Split', sub, 'region:' + aud, !has);
-  };
-  return [
-    { k:'overview', n:'Overview', ic:MM_IC.grid, cards:[
-      card(MM_IC.funnel, 't-blue',  fmt(tot), 'Logged In Cases', fmt(vs.total || 0) + ' sellers · ' + fmt(vb.total || 0) + ' buyers', 'total'),
-      card(MM_IC.check,  't-green', fmt(onb), 'Successfully Onboarded', fmt(vs.completed || 0) + ' sellers · ' + fmt(vb.completed || 0) + ' buyers', 'onboarded'),
-      card(MM_IC.bolt,   't-blue',  fmt(txn), 'Transacted Vendors', gmv != null ? fmtINR(gmv) + ' GMV' : 'onboarded vendors transacted', 'transacted'),
-      isOMP ? card(MM_IC.users, 't-purple', fmt(ex + nw), 'Vendor Classification', fmt(ex) + ' existing · ' + fmt(nw) + ' new', 'oldvsnew')
-            : card(MM_IC.users, 't-purple', '—', 'Vendor Classification', 'Open Marketplace only', null, true),
-    ]},
-    { k:'onboarding', n:'Onboarding', ic:MM_IC.funnel, cards:[
-      card(MM_IC.funnel, 't-blue',   fmt(tot), 'Logged In', 'all pipeline entries', 'total'),
-      card(MM_IC.draft,  't-purple', fmt((vs.draft || 0) + (vb.draft || 0)), 'Draft Cases', fmt(vs.draft || 0) + ' sellers · ' + fmt(vb.draft || 0) + ' buyers', 'draft'),
-      card(MM_IC.clock,  't-amber',  fmt((vs.inReview || 0) + (vb.inReview || 0)), 'Under Review', fmt(vs.inReview || 0) + ' sellers · ' + fmt(vb.inReview || 0) + ' buyers', 'review'),
-      card(MM_IC.check,  't-green',  fmt(onb), 'Onboarded', fmt(vs.completed || 0) + ' sellers · ' + fmt(vb.completed || 0) + ' buyers', 'onboarded'),
-      card(MM_IC.x,      't-red',    fmt((vs.rejected || 0) + (vb.rejected || 0)), 'Rejected', fmt(vs.rejected || 0) + ' sellers · ' + fmt(vb.rejected || 0) + ' buyers', 'rejected'),
-    ]},
-    { k:'sellers', n:'Sellers', ic:MM_IC.users, cards:[
-      card(MM_IC.funnel, 't-blue',  fmt(vs.total || 0), 'Logged In', 'seller pipeline', 'total'),
-      card(MM_IC.check,  't-green', fmt(vs.completed || 0), 'Onboarded', fmt(vs.completed || 0) + ' of ' + fmt(vs.total || 0) + ' sellers', 'onboarded'),
-      isOMP ? card(MM_IC.users, 't-purple', fmt((vs.oldVendors || 0) + (vs.newVendors || 0)), 'Existing vs New', fmt(vs.oldVendors || 0) + ' existing · ' + fmt(vs.newVendors || 0) + ' new', 'oldvsnew')
-            : card(MM_IC.users, 't-purple', '—', 'Existing vs New', 'Open Marketplace only', null, true),
-      regCard(vs.regions, 'seller'),
-      card(MM_IC.star, 't-amber', rating || '—', 'Vendor Ratings', rating ? ratedSub : 'Open Marketplace only', 'rating', !rating),
-    ]},
-    { k:'buyers', n:'Buyers', ic:MM_IC.users, cards:[
-      card(MM_IC.funnel, 't-blue',  fmt(vb.total || 0), 'Logged In', 'buyer pipeline', 'total'),
-      card(MM_IC.check,  't-green', fmt(vb.completed || 0), 'Onboarded', fmt(vb.completed || 0) + ' of ' + fmt(vb.total || 0) + ' buyers', 'onboarded'),
-      isOMP ? card(MM_IC.users, 't-purple', fmt((vb.oldVendors || 0) + (vb.newVendors || 0)), 'Existing vs New', fmt(vb.oldVendors || 0) + ' existing · ' + fmt(vb.newVendors || 0) + ' new', 'oldvsnew')
-            : card(MM_IC.users, 't-purple', '—', 'Existing vs New', 'Open Marketplace only', null, true),
-      regCard(vb.regions, 'buyer'),
-    ]},
-    { k:'insights', n:'Insights', ic:MM_IC.gauge, cards:[
-      card(MM_IC.rupee,  't-ink',    gmv != null ? fmtINR(gmv) : '—', 'Total GMV', gmv != null ? 'seller transaction value' : 'no GMV recorded', 'gmv', gmv == null),
-      card(MM_IC.clock,  't-blue',   blend != null ? blend + 'd' : '—', 'Average TAT', (vs.avgTAT != null ? 'Sellers ' + vs.avgTAT + 'd' : '') + (vb.avgTAT != null ? ' · Buyers ' + vb.avgTAT + 'd' : ''), 'tat', blend == null),
-      card(MM_IC.shield, 't-green',  osvDone != null ? fmt(osvDone) : '—', 'OSV Status', osvSub, 'osv', osvDone == null),
-      card(MM_IC.star,   't-amber',  rating || '—', 'Vendor Ratings', rating ? ratedSub : 'Open Marketplace only', 'rating', !rating),
-      card(MM_IC.doc,    't-purple', docsC != null ? fmt(docsC) : '—', 'Documents', docsC != null ? 'complete document sets' : 'Open Marketplace only', 'docs', docsC == null),
-    ]},
-  ];
+  var onb  = _mmC(vs, vb, 'completed');
+  var mTot = _mmC(vs, vb, 'metalTotal'),      pTot = _mmC(vs, vb, 'plasticTotal');
+  var mOnb = _mmC(vs, vb, 'metalOnboarded'),  pOnb = _mmC(vs, vb, 'plasticOnboarded');
+  var mTxn = _mmC(vs, vb, 'metalTransacted'), pTxn = _mmC(vs, vb, 'plasticTransacted');
+  var txn  = (vs.transacted != null || vb.transacted != null) ? _mmC(vs, vb, 'transacted') : null;
+  var gmv  = vs.totalTxnValue;
+  var cat  = function(c) { return (vs.categories || []).filter(function(x){ return x.category === c; })[0] || {}; };
+  var gmvM = cat('Metal').txnValue, gmvP = cat('Plastic').txnValue;
+  var f = function(t, v, ic, tone, kids) { return { t:t, v:fmt(v), ic:ic, tone:tone, kind:'kpi', children:kids }; };
+  var mods = [];
+
+  // 1 — Funnel (stages → audience + category detail cards)
+  mods.push({ t:'Funnel', ic:MM_IC.funnel, tone:'t-blue', kind:'module', eye:'Funnel · stages', children:[
+    f('Logged In Cases', _mmC(vs,vb,'total'), MM_IC.funnel, 't-blue',
+      [ _d('Sellers', fmt(vs.total||0), MM_IC.users), _d('Buyers', fmt(vb.total||0), MM_IC.users),
+        _d('Metal', fmt(mTot)), _d('Plastic', fmt(pTot)), _vd('total') ]),
+    f('Draft Cases', _mmC(vs,vb,'draft'), MM_IC.draft, 't-purple',
+      [ _d('Sellers', fmt(vs.draft||0), MM_IC.users), _d('Buyers', fmt(vb.draft||0), MM_IC.users), _vd('draft') ]),
+    f('Cases Under Review', _mmC(vs,vb,'inReview'), MM_IC.clock, 't-amber',
+      [ _d('Sellers', fmt(vs.inReview||0), MM_IC.users), _d('Buyers', fmt(vb.inReview||0), MM_IC.users), _vd('review') ]),
+    f('Successfully Onboarded', onb, MM_IC.check, 't-green',
+      [ _d('Sellers', fmt(vs.completed||0), MM_IC.users), _d('Buyers', fmt(vb.completed||0), MM_IC.users),
+        _d('Metal', fmt(mOnb)), _d('Plastic', fmt(pOnb)), _vd('onboarded') ]),
+    f('Rejected Cases', _mmC(vs,vb,'rejected'), MM_IC.x, 't-red',
+      [ _d('Sellers', fmt(vs.rejected||0), MM_IC.users), _d('Buyers', fmt(vb.rejected||0), MM_IC.users), _vd('rejected') ]),
+  ]});
+
+  // 2 — Volume (onboarded composition)
+  mods.push({ t:'Volume', ic:MM_IC.grid, tone:'t-ink', kind:'module', eye:'Onboarded composition', children:[
+    _d('Sellers', fmt(vs.completed||0), MM_IC.users), _d('Buyers', fmt(vb.completed||0), MM_IC.users),
+    _d('Metal', fmt(mOnb)), _d('Plastic', fmt(pOnb)), _vd('onboarded'),
+  ]});
+
+  // 3 — Geographic Split (each region opens its vendor-list modal)
+  var regs = (vs.regions || []).filter(function(r){ return (r.onboarded||r.total||0) > 0; });
+  if (!regs.length && key === activeVertKey && Array.isArray(vertRows) && vertRows.length)
+    regs = _regionsFromRows(vertRows).filter(function(r){ return (r.total||0) > 0; });
+  if (regs.length) {
+    mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module', eye:'Onboarded by region',
+      children: regs.map(function(r) {
+        var tone = r.region === 'North' ? 't-blue' : r.region === 'South' ? 't-green' : 't-ink';
+        return { t:r.region, v:fmt(r.onboarded || r.total || 0), ic:MM_IC.pin, tone:tone, kind:'kpi',
+                 action:'regionmodal:' + r.region };
+      }) });
+  }
+
+  // 4 — Transactions (details / non-transacted ageing / GMV)
+  if (txn != null || gmv != null) {
+    var txnKids = [];
+    if (txn != null)
+      txnKids.push(f('Transaction Details', txn, MM_IC.bolt, 't-blue',
+        [ _d('Metal', fmt(mTxn)), _d('Plastic', fmt(pTxn)), _vd('transacted') ]));
+    if (txn != null) {
+      var nonTxn = Math.max(0, onb - txn);
+      var ag = _mmAging(key), ntKids;
+      if (ag) {
+        ntKids = [
+          { t:'0–30 Days',  v:fmt(ag.a), ic:MM_IC.clock, tone:'t-green', kind:'kpi', children:[ _vd('records') ] },
+          { t:'31–60 Days', v:fmt(ag.c), ic:MM_IC.clock, tone:'t-amber', kind:'kpi', children:[ _vd('records') ] },
+          { t:'60+ Days',   v:fmt(ag.d), ic:MM_IC.clock, tone:'t-red',   kind:'kpi', children:[ _vd('records') ] },
+        ];
+      } else {
+        ntKids = [ { t:'Ageing bands', v:'—', ic:MM_IC.clock, tone:'t-ink', kind:'detail',
+                     s:'open records to compute', leaf:true }, _vd('records') ];
+      }
+      txnKids.push({ t:'Non-Transacted', v:fmt(nonTxn), ic:MM_IC.clock, tone:'t-amber', kind:'kpi',
+        eye:'Ageing since onboarded', children:ntKids });
+    }
+    txnKids.push({ t:'Total GMV', v:(gmv != null ? fmtINR(gmv) : '—'), ic:MM_IC.rupee, tone:'t-ink', kind:'kpi',
+      children:[ _d('Metal', gmvM != null ? fmtINR(gmvM) : '—'), _d('Plastic', gmvP != null ? fmtINR(gmvP) : '—'), _vd('gmv') ] });
+    mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', eye:'Transactions', children:txnKids });
+  }
+
+  // 5 — Vendor Ratings (OMP quality feed)
+  if (q && q.rating && q.rating.total) {
+    var unr = Math.max(0, (q.rating.total||0) - (q.rating.rated||0));
+    mods.push({ t:'Vendor Ratings', ic:MM_IC.star, tone:'t-amber', kind:'module', eye:'Seller ratings', children:[
+      _d('Average', (q.rating.avg != null ? q.rating.avg.toFixed(1) + '★' : '—'), MM_IC.star),
+      _d('Rated', fmt(q.rating.rated||0), MM_IC.check), _d('Unrated', fmt(unr), MM_IC.clock), _vd('rating'),
+    ]});
+  }
+
+  // 6 — OSV Status (OMP quality feed)
+  if (q && q.osv && q.osv.total) {
+    mods.push({ t:'OSV Status', ic:MM_IC.shield, tone:'t-green', kind:'module', eye:'On-site verification', children:[
+      _d('Done', fmt(q.osv.completed||0), MM_IC.check),
+      _d('In Progress', fmt(q.osv.pending||0), MM_IC.clock),
+      _d('Not Initiated', fmt(q.osv.notInitiated||0), MM_IC.x), _vd('osv'),
+    ]});
+  }
+
+  // 7 — Existing vs New (OMP only — the only vertical where it's computed)
+  if (isOMP && vs.oldVendors != null) {
+    var exM = (vs.metalOld||0)+(vb.metalOld||0), exP = (vs.plasticOld||0)+(vb.plasticOld||0);
+    var nwM = (vs.metalNew||0)+(vb.metalNew||0), nwP = (vs.plasticNew||0)+(vb.plasticNew||0);
+    mods.push({ t:'Existing vs New', ic:MM_IC.users, tone:'t-purple', kind:'module', eye:'Vendor classification', children:[
+      { t:'Existing', v:fmt((vs.oldVendors||0)+(vb.oldVendors||0)), ic:MM_IC.users, tone:'t-purple', kind:'kpi',
+        children:[ _d('Metal', fmt(exM)), _d('Plastic', fmt(exP)), _vd('oldvsnew') ] },
+      { t:'New', v:fmt((vs.newVendors||0)+(vb.newVendors||0)), ic:MM_IC.users, tone:'t-blue', kind:'kpi',
+        children:[ _d('Metal', fmt(nwM)), _d('Plastic', fmt(nwP)), _vd('oldvsnew') ] },
+    ]});
+  }
+  return mods;
 }
 
-// Entry point (kept name for existing callers). Animates only on vertical change.
+// Whole tree: ROOT → every business vertical → its modules.
+function mmBuildTree() {
+  var cfg = getVertCfg(), totAll = 0;
+  var verts = cfg.map(function(c) {
+    var vs = (DS && DS.verticals || {})[c.key] || {}, vb = (DB && DB.verticals || {})[c.key] || {};
+    var tot = (vs.total||0)+(vb.total||0), onb = (vs.completed||0)+(vb.completed||0);
+    totAll += tot;
+    if (tot <= 0) return { t:c.name, kind:'vert', vkey:c.key, muted:true, s:'feed not mapped yet' };
+    return { t:c.name, kind:'vert', vkey:c.key, v:fmt(tot), s:fmt(onb) + ' onboarded',
+             eye:'Modules', children:_mmVertModules(c.key) };
+  });
+  return { t:'Central Onboarding', kind:'root', ic:MM_IC.hub,
+           s:'Complete Operational View · ' + fmt(totAll) + ' cases', eye:'Business Verticals', children:verts };
+}
+
+// Stable, path-based ids + parent links; indexed by id.
+function mmAssignIds() {
+  _mmById = {};
+  (function walk(n, parent, pid) {
+    var id = n.kind === 'root' ? 'root'
+           : pid + '/' + (n.vkey || String(n.t).replace(/[^A-Za-z0-9]+/g, ''));
+    if (_mmById[id]) { var i = 2; while (_mmById[id + '~' + i]) i++; id = id + '~' + i; }
+    n._id = id; n._parent = parent; _mmById[id] = n;
+    (n.children || []).forEach(function(c){ walk(c, n, id); });
+  })(mmTree, null, '');
+}
+function mmFindById(id) { return _mmById[id] || null; }
+function _mmPathIds(node) { var p = [], c = node; while (c) { p.unshift(c._id); c = c._parent; } return p; }
+
+function mmBuildColumns() {
+  var chain = mmPath.map(mmFindById).filter(Boolean);
+  var cols = [{ cards:[mmTree], active: chain.length ? mmTree._id : null, eye:'Central', wide:true }];
+  for (var k = 0; k < chain.length; k++) {
+    var parent = chain[k];
+    if (!parent.children || !parent.children.length) break;
+    cols.push({ cards:parent.children, active: chain[k+1] ? chain[k+1]._id : null, eye:parent.eye || '',
+                wide: parent.kind === 'module' || parent.kind === 'kpi' || parent.kind === 'root' });
+  }
+  return cols;
+}
+
+function mmNodeCard(node, colActiveId) {
+  var kind = node.kind, on = node._id === colActiveId;
+  var hasKids = node.children && node.children.length;
+  var isLeaf = node.leaf || kind === 'vd' || (!hasKids && !node.action);
+  var cls, inner;
+  if (kind === 'root') {
+    cls = 'mmn root' + (on ? ' on' : '');
+    inner = '<div class="mmn-top"><div class="mmn-ic">' + node.ic + '</div><div class="mmn-ttl">' + esc(node.t) + '</div></div>'
+      + '<div class="mmn-s">' + esc(node.s || '') + '</div><div class="mmn-cta">Click to Explore →</div>';
+  } else if (kind === 'vert') {
+    cls = 'mmn vert' + (node.muted ? ' muted' : '') + (on ? ' on' : '');
+    inner = '<div class="mmn-top"><i class="mmn-dot"></i><div class="mmn-ttl">' + esc(node.t) + '</div>'
+      + (hasKids && !node.muted ? '<span class="mmn-arr">›</span>' : '') + '</div>'
+      + (node.v ? '<div class="mmn-v tnum">' + esc(node.v) + '</div>' : '')
+      + (node.s ? '<div class="mmn-s">' + esc(node.s) + '</div>' : '');
+  } else if (kind === 'vd') {
+    cls = 'mmn vd';
+    inner = '<div class="mmn-top"><div class="mmn-ic">' + (node.ic || MM_IC.doc) + '</div><div class="mmn-ttl">' + esc(node.t) + '</div><span class="mmn-arr">→</span></div>';
+  } else {
+    cls = 'mmn ' + (node.tone || 't-ink') + (on ? ' on' : '') + (isLeaf ? ' leaf' : '');
+    var arrow = (hasKids || node.action) ? '<span class="mmn-arr">' + (node.action && !hasKids ? '→' : '›') + '</span>' : '';
+    inner = '<div class="mmn-top"><div class="mmn-ic">' + (node.ic || MM_IC.grid) + '</div><div class="mmn-ttl">' + esc(node.t) + '</div>' + arrow + '</div>'
+      + (node.v ? '<div class="mmn-v tnum">' + esc(node.v) + '</div>' : '')
+      + (node.s ? '<div class="mmn-s">' + esc(node.s) + '</div>' : '');
+  }
+  var dim = (colActiveId && !on) ? ' dim' : '';
+  var clickable = !(node.muted || (isLeaf && !node.action));
+  return '<div class="' + cls + dim + '" data-id="' + esc(node._id) + '"'
+    + (clickable ? ' role="button" tabindex="0" onclick="mmClickNode(\'' + esc(node._id) + '\')" onkeydown="if(event.key===\'Enter\'){mmClickNode(\'' + esc(node._id) + '\')}"' : '')
+    + '>' + inner + '</div>';
+}
+
+// Entry point (kept name for existing callers: refresh + selectVertTab).
 function renderBranchNav(key) {
   if (currentView === 'gst') return;
-  var vertChanged = _mmVert !== key;
-  if (vertChanged) { _mmVert = key; _mmMod = 'overview'; }
-  renderMMVerts(key);
-  renderMMModules(vertChanged);
-  renderMMCards(vertChanged);
-  requestAnimationFrame(mmDrawConnectors);
+  if (key) _mmVert = key;
+  mmTree = mmBuildTree();
+  mmAssignIds();
+  // A vertical is expanded but the active vertical changed (top tab bar) →
+  // retarget the map to the newly active vertical.
+  if (mmPath.length >= 2 && _mmVert) {
+    var want = 'root/' + _mmVert;
+    if (mmPath[1] !== want) mmPath = mmFindById(want) ? ['root', want] : [];
+  }
+  // Drop any ids that no longer resolve after the rebuild.
+  if (!mmPath.every(function(id){ return mmFindById(id); })) mmPath = [];
+  mmRender();
 }
 
-function renderMMVerts(activeKey) {
-  var el = document.getElementById('mm-verts'); if (!el) return;
-  var cfg = getVertCfg();
-  el.innerHTML = cfg.map(function(c) {
-    var vs = (DS && DS.verticals || {})[c.key] || {}, vb = (DB && DB.verticals || {})[c.key] || {};
-    var tot = (vs.total || 0) + (vb.total || 0), onb = (vs.completed || 0) + (vb.completed || 0);
-    var mapped = tot > 0, on = mapped && c.key === activeKey;
-    var sub = mapped ? (fmt(tot) + ' logged in · ' + fmt(onb) + ' onboarded') : 'feed not mapped yet';
-    return '<div class="mmv' + (mapped ? '' : ' muted') + (on ? ' on' : '') + '" data-v="' + esc(c.key) + '"'
-      + (mapped ? ' role="button" tabindex="0" onclick="selectVertTab(\'' + c.key + '\')" onkeydown="if(event.key===\'Enter\'){selectVertTab(\'' + c.key + '\')}"' : '') + '>'
-      + '<div class="mmv-h"><i class="mmv-dot"></i><div class="mmv-main"><div class="mmv-nm">' + esc(c.name) + '</div>'
-      + '<div class="mmv-sub">' + sub + '</div></div></div></div>';
-  }).join('')
-  + '<div class="mm-vsep"></div>'
-  + '<div class="mm-util" role="button" tabindex="0" onclick="switchView(\'gst\')" onkeydown="if(event.key===\'Enter\'){switchView(\'gst\')}"><span class="mm-util-ic">₹</span>GST Payables</div>';
+function mmRender() {
+  var map = document.getElementById('mm'); if (!map || !mmTree) return;
+  var cols = mmBuildColumns();
+  var html = '<svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg>';
+  cols.forEach(function(col, ci) {
+    html += '<div class="mmcol' + (col.wide ? ' wide' : '') + '"><div class="mmcoleye">' + esc(col.eye || '') + '</div>'
+      + col.cards.map(function(n){ return mmNodeCard(n, col.active); }).join('') + '</div>';
+    if (ci < cols.length - 1) html += '<div class="mmcolgap"></div>';
+  });
+  map.innerHTML = html;
+  mmRenderCrumbs();
+  mmReveal();
 }
 
-function renderMMModules(animate) {
-  var el = document.getElementById('mm-mods'); if (!el) return;
-  var mods = mmModules(_mmVert);
-  el.innerHTML = mods.map(function(m) {
-    return '<div class="mmm' + (m.k === _mmMod ? ' on' : '') + '" data-m="' + m.k + '" role="button" tabindex="0"'
-      + ' onclick="mmPickMod(\'' + m.k + '\')" onkeydown="if(event.key===\'Enter\'){mmPickMod(\'' + m.k + '\')}">'
-      + '<span class="mmm-ic">' + m.ic + '</span><span class="mmm-nm">' + m.n + '</span><span class="mmm-ct">' + m.cards.length + '</span></div>';
+function mmRenderCrumbs() {
+  var el = document.getElementById('mm-crumbs'); if (!el || !mmTree) return;
+  var chain = mmPath.length ? mmPath.map(mmFindById).filter(Boolean) : [mmTree];
+  el.innerHTML = chain.map(function(n, i) {
+    var here = i === chain.length - 1;
+    return '<button class="mmcrumb' + (here ? ' here' : '') + '" onclick="mmGoto(' + i + ')">' + esc(n.t) + '</button>'
+      + (here ? '' : '<span class="mmcrumb-sep">›</span>');
   }).join('');
-  _mmReveal([].slice.call(el.querySelectorAll('.mmm')), animate);
+}
+function mmGoto(i) {
+  var chain = mmPath.length ? mmPath.slice() : ['root'];
+  mmPath = i <= 0 ? ['root'] : chain.slice(0, i + 1);
+  mmRender();
 }
 
-function renderMMCards(animate) {
-  var el = document.getElementById('mm-cards'); if (!el) return;
-  var mods = mmModules(_mmVert);
-  var mod = mods.filter(function(m) { return m.k === _mmMod; })[0] || mods[0];
-  var hd = document.getElementById('mm-cards-ttl');
-  if (hd) hd.textContent = mod.n + ' · ' + mod.cards.length + ' metrics';
-  el.innerHTML = mod.cards.map(function(c) {
-    var body = '<div class="mmc-top"><div class="mmc-ic">' + c.ic + '</div>'
-      + (c.na ? '<span class="mmc-na">soon</span>' : '<span class="mmc-go">Open →</span>') + '</div>'
-      + '<div class="mmc-v tnum">' + esc(c.v) + '</div><div class="mmc-l">' + esc(c.l) + '</div>'
-      + '<div class="mmc-s">' + esc(c.s) + '</div>';
-    return '<div class="mmc ' + c.tone + (c.na ? ' na' : '') + '"'
-      + (c.na ? '' : ' role="button" tabindex="0" onclick="mmCardAction(\'' + c.action + '\')" onkeydown="if(event.key===\'Enter\'){mmCardAction(\'' + c.action + '\')}"')
-      + '>' + body + '</div>';
-  }).join('');
-  _mmReveal([].slice.call(el.querySelectorAll('.mmc')), animate);
-}
-
-function mmPickMod(k) {
-  _mmMod = k;
-  document.querySelectorAll('#mm-mods .mmm').forEach(function(n) { n.classList.toggle('on', n.dataset.m === k); });
-  renderMMCards(true);
-  requestAnimationFrame(mmDrawConnectors);
-}
-
-function _mmReveal(nodes, animate) {
-  if (!nodes.length) return;
-  if (!motionOK() || !animate) { nodes.forEach(function(n) { n.classList.add('in'); }); mmDrawConnectors(); return; }
-  nodes.forEach(function(n) { n.classList.remove('in'); void n.offsetWidth; });
-  nodes.forEach(function(n, i) { setTimeout(function() { n.classList.add('in'); mmDrawConnectors(); }, 80 + i * 70); });
-  setTimeout(mmDrawConnectors, 80 + nodes.length * 70 + 60);
+function mmReveal() {
+  var cols = [].slice.call(document.querySelectorAll('#mm .mmcol'));
+  var animate = motionOK();
+  cols.forEach(function(col, ci) {
+    var last = ci === cols.length - 1;
+    [].slice.call(col.querySelectorAll('.mmn')).forEach(function(n, i) {
+      if (!animate || !last) { n.classList.add('in'); return; }
+      setTimeout(function(){ n.classList.add('in'); mmDraw(); }, 60 + i * 70);
+    });
+  });
+  requestAnimationFrame(mmDraw);
+  setTimeout(mmDraw, 520);
 }
 
 function mmCardAction(action) {
   if (!action) return;
   var a = String(action).split(':'), name = a[0], arg = a[1];
-  if (name === 'gmv')     return openGmvCatModal('seller');
-  if (name === 'region')  return openRegionSplitModal(arg || 'seller');
-  if (name === 'tat')     return openTatModal();
-  if (name === 'records') return openRecordsSheet(arg || 'seller');
-  return openKpiModal(name);   // total/onboarded/transacted/oldvsnew/draft/review/rejected/nontxn/osv/rating/docs
+  if (name === 'gmv')         return openGmvCatModal('seller');
+  if (name === 'region')      return openRegionSplitModal(arg || 'seller');
+  if (name === 'regionmodal') return openRegionModal(arg);
+  if (name === 'tat')         return openTatModal();
+  if (name === 'records')     return openRecordsSheet(arg || (selectedAud || 'seller'));
+  return openKpiModal(name);   // total/onboarded/transacted/oldvsnew/draft/review/rejected/osv/rating/docs
 }
 
-// ── connector lines (elbow ├── from active parent to its children) ──
-function _mmBusPath(px, py, kids, gapL, gapR) {
-  if (!kids.length) return '';
-  var busX = (gapL + gapR) / 2;
-  var ys = kids.map(function(k) { return k.cy; }).concat(py);
-  var top = Math.min.apply(null, ys), bot = Math.max.apply(null, ys);
-  var d = 'M ' + px + ' ' + py + ' L ' + busX + ' ' + py + ' M ' + busX + ' ' + top + ' L ' + busX + ' ' + bot + ' ';
-  kids.forEach(function(k) { d += 'M ' + busX + ' ' + k.cy + ' L ' + k.x + ' ' + k.cy + ' '; });
-  return d;
+function mmClickNode(id) {
+  var node = mmFindById(id); if (!node) return;
+  if (node.action) return mmCardAction(node.action);
+  if (node.muted || node.leaf || !(node.children && node.children.length)) return;
+  if (node.kind === 'vert') {
+    mmPath = ['root', node._id];
+    if (node.vkey && node.vkey !== activeVertKey) { selectVertTab(node.vkey); return; }
+    mmRender(); return;
+  }
+  mmPath = _mmPathIds(node);
+  mmRender();
 }
-function mmDrawConnectors() {
-  var mm = document.getElementById('mm'), svg = document.getElementById('mm-svg');
-  if (!mm || !svg) return;
-  var R = mm.getBoundingClientRect();
-  if (!R.width) return;
+
+// ── connectors: elbow bus from each active card to its child column ──
+function mmDraw() {
+  var map = document.getElementById('mm'), svg = document.getElementById('mm-svg');
+  if (!map || !svg) return;
+  var R = map.getBoundingClientRect(); if (!R.width) return;
   svg.setAttribute('width', R.width); svg.setAttribute('height', R.height);
   svg.setAttribute('viewBox', '0 0 ' + R.width + ' ' + R.height);
-  var rel = function(el) { var b = el.getBoundingClientRect(); return { l:b.left - R.left, r:b.right - R.left, cy:b.top - R.top + b.height / 2 }; };
-  var d = '';
-  var av = document.querySelector('#mm-verts .mmv.on');
-  var mods = [].slice.call(document.querySelectorAll('#mm-mods .mmm.in'));
-  if (av && mods.length) {
-    var p = rel(av);
-    d += _mmBusPath(p.r, p.cy, mods.map(function(n) { var q = rel(n); return { x:q.l, cy:q.cy }; }), p.r, rel(mods[0]).l);
-  }
-  var am = document.querySelector('#mm-mods .mmm.on');
-  var cards = [].slice.call(document.querySelectorAll('#mm-cards .mmc.in'));
-  if (am && cards.length) {
-    var p2 = rel(am);
-    var minL = Math.min.apply(null, cards.map(function(c) { return rel(c).l; }));
-    var firstCol = cards.filter(function(c) { return Math.abs(rel(c).l - minL) < 4; });
-    d += _mmBusPath(p2.r, p2.cy, firstCol.map(function(n) { var q = rel(n); return { x:q.l, cy:q.cy }; }), p2.r, minL);
+  var rel = function(el) { var b = el.getBoundingClientRect(); return { l:b.left-R.left, r:b.right-R.left, cy:b.top-R.top+b.height/2 }; };
+  var cols = [].slice.call(map.querySelectorAll('.mmcol')), d = '';
+  for (var i = 0; i < cols.length - 1; i++) {
+    var act = cols[i].querySelector('.mmn.on'); if (!act) continue;
+    var kids = [].slice.call(cols[i+1].querySelectorAll('.mmn.in')); if (!kids.length) continue;
+    var p = rel(act), kr = kids.map(rel);
+    var busX = (p.r + kr[0].l) / 2;
+    var ys = kr.map(function(k){ return k.cy; }).concat(p.cy);
+    var top = Math.min.apply(null, ys), bot = Math.max.apply(null, ys);
+    d += 'M ' + p.r + ' ' + p.cy + ' L ' + busX + ' ' + p.cy + ' M ' + busX + ' ' + top + ' L ' + busX + ' ' + bot + ' ';
+    kr.forEach(function(k){ d += 'M ' + busX + ' ' + k.cy + ' L ' + k.l + ' ' + k.cy + ' '; });
   }
   svg.innerHTML = d ? '<path d="' + d + '" fill="none" stroke="rgba(0,0,0,.16)" stroke-width="1.5" stroke-linecap="round"/>' : '';
 }
-window.addEventListener('resize', function() { if (currentView !== 'gst') mmDrawConnectors(); });
+function mmDrawConnectors() { mmDraw(); }   // alias kept for any external caller
+window.addEventListener('resize', function() { if (currentView !== 'gst') mmDraw(); });
 
 // Regional Split → compact modal listing regions; each drills into the
 // per-region vendor modal (reuses the KPI-modal shell + scroll lock).
