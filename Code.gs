@@ -208,7 +208,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v34_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v35_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -257,21 +257,21 @@ function getDashboardData(filtersJson) {
 
 // Returns seller + buyer dashboard data in one call so the frontend can
 // render both pipelines side-by-side without two round trips.
-// Fast path: compose from individual dash_v34_ cache entries when both are warm
+// Fast path: compose from individual dash_v35_ cache entries when both are warm
 // (they are pre-warmed by syncAllOnboarding for every period). Only falls through
 // to the slow double-read when both individual caches are cold.
 function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v34_cmb_' + periodKey;
+    var cacheKey  = 'dash_v35_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v34_seller_' + periodKey;
-    var bIndKey = 'dash_v34_buyer_'  + periodKey;
+    var sIndKey = 'dash_v35_seller_' + periodKey;
+    var bIndKey = 'dash_v35_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -790,7 +790,7 @@ function buildDashboard(audience, cfg, allRows, f) {
   });
   var verticals = {};
   VERTICALS.forEach(function(vc) {
-    verticals[vc.key] = vStats(byVert[vc.key] || []);
+    verticals[vc.key] = vStats(byVert[vc.key] || [], vc.key);
   });
 
   return {
@@ -873,7 +873,12 @@ function debugExistingVsNew() {
 }
 
 // Per-vertical KPIs + onboarded-by-category breakdown + detail rows.
-function vStats(data) {
+// vertKey is used only to gate Existing-vs-New: isOldVendor (set in
+// buildDashboard) is computed for OMP rows exclusively, so newVendors/
+// oldVendors are only meaningful there — every other vertical returns null
+// rather than a fabricated "100% new" split (see buildDashboard's
+// existingNames comment for why the match is OMP-scoped).
+function vStats(data, vertKey) {
   var now = new Date(), weekAgo = new Date(now.getTime() - 7 * 86400000);
   var nowMs = now.getTime();
   var AGE_WARN_MS = 14 * 86400000, AGE_DUE_MS = 30 * 86400000;
@@ -1070,13 +1075,15 @@ function vStats(data) {
     totalTxnValue: totalTxnValue,
     aging:       agingCount   > 0 ? agingCount   : null,
     overdue:     overdueCount > 0 ? overdueCount : null,
-    newVendors: newVendors,
-    oldVendors: oldVendors,
+    // Existing-vs-New is only ever computed for OMP (see comment above) — every
+    // other vertical gets null here, not a misleading 100%-new split.
+    newVendors: vertKey === 'OMP' ? newVendors : null,
+    oldVendors: vertKey === 'OMP' ? oldVendors : null,
     plasticTotal: plasticTotal,       metalTotal: metalTotal,
     plasticOnboarded: plasticOnboarded, metalOnboarded: metalOnboarded,
     plasticTransacted: plasticTransacted, metalTransacted: metalTransacted,
-    plasticNew: plasticNew,           metalNew: metalNew,
-    plasticOld: plasticOld,           metalOld: metalOld,
+    plasticNew: vertKey === 'OMP' ? plasticNew : null, metalNew: vertKey === 'OMP' ? metalNew : null,
+    plasticOld: vertKey === 'OMP' ? plasticOld : null, metalOld: vertKey === 'OMP' ? metalOld : null,
     fyBreakdown: fyBreakdown,
     categories:  categories,
     regions:     regions,

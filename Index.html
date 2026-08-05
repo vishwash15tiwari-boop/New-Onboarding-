@@ -2870,7 +2870,7 @@ var _isFirstLoad     = true;
 
 // localStorage key prefix — bump the version suffix when the data shape changes
 // so stale entries from an old schema are silently ignored.
-var STORE_PFX = 'ebt_v11_';
+var STORE_PFX = 'ebt_v12_';   // bumped: newVendors/oldVendors now null (not 0) for non-OMP verticals
 
 // Stale-while-revalidate: if we have a previous response in localStorage, paint
 // it immediately so the user sees real data with zero wait, then fetch fresh data
@@ -3804,16 +3804,30 @@ function mmGrowRail() {
 var bnPath = [];      // keys from the vertical down to the current node
 var _bnKey = null;    // vertical the tree was built for
 
+// Weighted seller+buyer average (weights = completed count — TAT is only ever
+// defined for completed records, see Code.gs normalizeRows). Null when neither
+// side has a value; falls back to whichever side does when only one exists.
+function _bnBlendTAT(vs, vb) {
+  var sT = vs.avgTAT, bT = vb.avgTAT, sN = vs.completed || 0, bN = vb.completed || 0;
+  if (sT == null && bT == null) return null;
+  if (sT == null) return bT;
+  if (bT == null) return sT;
+  var w = sN + bN;
+  return w > 0 ? Math.round((sT * sN + bT * bN) / w) : Math.round((sT + bT) / 2);
+}
+
 // Build the hierarchy for the active vertical from live data.
 function buildVertTree(key) {
   var vs = (DS && DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
   var q  = (qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
   var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0] || {};
+  var isOMP = key === 'OMP';
   var tot = (vs.total || 0) + (vb.total || 0);
   var onb = (vs.completed || 0) + (vb.completed || 0);
   var txn = (vs.transacted || 0) + (vb.transacted || 0);
   var active = (vs.draft || 0) + (vb.draft || 0) + (vs.inReview || 0) + (vb.inReview || 0);
+  var blendTAT = _bnBlendTAT(vs, vb);
   var regNode = function(regs) {
     var by = {}; (regs || []).forEach(function(r) { by[r.region] = r; });
     return ['North', 'South', 'East', 'West'].map(function(rn) {
@@ -3829,6 +3843,9 @@ function buildVertTree(key) {
   var catKids = (vs.categories || []).filter(function(c) { return (c.total || 0) > 0; })
     .map(function(c) { return { k:'cat_' + c.category, label:c.category, val:fmt(c.onboarded || 0), panel:'gmvcat', cat:c.category }; })
     .concat([{ k:'txndetails', label:'Transaction Details', panel:'records', aud:'seller' }]);
+  var buyerCatKids = (vb.categories || []).filter(function(c) { return (c.total || 0) > 0; })
+    .map(function(c) { return { k:'bcat_' + c.category, label:c.category, val:fmt(c.onboarded || 0), panel:'buyercat', cat:c.category }; })
+    .concat([{ k:'btxndetails', label:'Transaction Details', panel:'records', aud:'buyer' }]);
 
   return { k:key, label:cfg.name || key, children:[
     { k:'overview', label:'Overview', val:fmt(tot), children:[
@@ -3853,14 +3870,17 @@ function buildVertTree(key) {
         { k:'fn_gst',  label:'GST Verification', soon:true, panel:'soon' },
         { k:'fn_comm', label:'Committee Approval', soon:true, panel:'soon' },
       ]},
-      { k:'fn_appr', label:'Approved', val:fmt(onb), panel:'stage', stage:'COMPLETED' },
+      { k:'fn_appr', label:'Approved', val:fmt(onb), panel:'stage', stage:'COMPLETED',
+        note:'This onboarding flow doesn’t record a separate Approved step — Approved and Completed share the same terminal status.' },
       { k:'fn_comp', label:'Completed', val:fmt(onb), panel:'stage', stage:'COMPLETED' },
     ]},
     { k:'sellers', label:'Sellers', val:fmt(vs.total || 0), children:[
-      { k:'se_env', label:'Existing vs New', val:fmt((vs.oldVendors || 0) + (vs.newVendors || 0)), children:[
-        { k:'se_exist', label:'Existing', val:fmt(vs.oldVendors || 0), panel:'envnew', which:'existing' },
-        { k:'se_new',   label:'New', val:fmt(vs.newVendors || 0), panel:'kpi', kpi:'oldvsnew' },
-      ]},
+      isOMP
+        ? { k:'se_env', label:'Existing vs New', val:fmt((vs.oldVendors || 0) + (vs.newVendors || 0)), children:[
+            { k:'se_exist', label:'Existing', val:fmt(vs.oldVendors || 0), panel:'envnew', aud:'seller' },
+            { k:'se_new',   label:'New', val:fmt(vs.newVendors || 0), panel:'kpi', kpi:'oldvsnew' },
+          ]}
+        : { k:'se_env', label:'Existing vs New', panel:'gated', gateNote:'Existing-vs-New matching is tracked for Open Marketplace only — ' + esc(cfg.name || key) + ' vendors aren’t compared against other verticals.' },
       { k:'se_txn', label:'Transacted', val:fmt(vs.transacted || 0), children:catKids },
       { k:'se_nontxn', label:'Non-Transacted', soon:true, children:[
         { k:'nt_30', label:'0–30 Days', soon:true, panel:'soon' },
@@ -3871,8 +3891,13 @@ function buildVertTree(key) {
       { k:'se_docs', label:'Documents', panel:'docs' },
     ]},
     { k:'buyers', label:'Buyers', val:fmt(vb.total || 0), children:[
-      { k:'by_env', label:'Existing vs New', val:fmt((vb.oldVendors || 0) + (vb.newVendors || 0)), panel:'records', aud:'buyer' },
-      { k:'by_txn', label:'Transacted', val:fmt(vb.transacted || 0), panel:'records', aud:'buyer' },
+      isOMP
+        ? { k:'by_env', label:'Existing vs New', val:fmt((vb.oldVendors || 0) + (vb.newVendors || 0)), children:[
+            { k:'by_exist', label:'Existing', val:fmt(vb.oldVendors || 0), panel:'envnew', aud:'buyer' },
+            { k:'by_new',   label:'New', val:fmt(vb.newVendors || 0), panel:'kpi', kpi:'oldvsnew' },
+          ]}
+        : { k:'by_env', label:'Existing vs New', panel:'gated', gateNote:'Existing-vs-New matching is tracked for Open Marketplace only — ' + esc(cfg.name || key) + ' vendors aren’t compared against other verticals.' },
+      { k:'by_txn', label:'Transacted', val:fmt(vb.transacted || 0), children:buyerCatKids },
       { k:'by_region', label:'Regional Split', children:regNode(vb.regions) },
       { k:'by_coll', label:'Collections', soon:true, children:[
         { k:'co_out', label:'Outstanding', soon:true, panel:'soon' },
@@ -3882,9 +3907,9 @@ function buildVertTree(key) {
     ]},
     { k:'ops', label:'Operational Insights', children:[
       { k:'op_tat', label:'Average TAT', children:[
-        { k:'tat_s', label:'Seller', val:(vs.avgTAT != null ? vs.avgTAT + 'd' : '—'), panel:'tat' },
-        { k:'tat_b', label:'Buyer', val:(vb.avgTAT != null ? vb.avgTAT + 'd' : '—'), panel:'tat' },
-        { k:'tat_v', label:'Business Vertical', val:(vs.avgTAT != null ? vs.avgTAT + 'd' : '—'), panel:'tat' },
+        { k:'tat_s', label:'Seller', val:(vs.avgTAT != null ? vs.avgTAT + 'd' : '—'), panel:'tat', which:'seller' },
+        { k:'tat_b', label:'Buyer', val:(vb.avgTAT != null ? vb.avgTAT + 'd' : '—'), panel:'tat', which:'buyer' },
+        { k:'tat_v', label:'Business Vertical', val:(blendTAT != null ? blendTAT + 'd' : '—'), panel:'tat', which:'blend' },
       ]},
       { k:'op_team', label:'Team Productivity', soon:true, panel:'soon' },
       { k:'op_osv', label:'OSV Status', val:(q && q.osv && q.osv.total ? fmt(q.osv.completed || 0) : '—'), panel:'osv' },
@@ -3941,7 +3966,9 @@ function _bnNode(node, path) {
   var top = path.length === 1;
   var cls = 'bn-node' + (here ? ' here' : (onPath ? ' on-path' : (top ? '' : ' dim')));
   var right = hasKids ? '<span class="bn-caret">›</span>'
-    : (node.soon ? '<span class="bn-open" style="color:var(--txt3);background:var(--bg2)">soon</span>' : '<span class="bn-open">open</span>');
+    : (node.soon ? '<span class="bn-open" style="color:var(--txt3);background:var(--bg2)">soon</span>'
+      : (node.panel === 'gated' ? '<span class="bn-open" style="color:var(--txt3);background:var(--bg2)">i</span>'
+        : '<span class="bn-open">open</span>'));
   var val = node.val ? '<span class="bn-val">' + esc(node.val) + '</span>' : '';
   return '<div class="' + cls + '">'
     + '<div class="bn-row" onclick="bnGo(' + _bnEnc(path) + ')">'
@@ -4017,11 +4044,24 @@ function _bnRenderPanel(node, chain) {
     body = '<div class="bn-tiles">' + _bnTile(node.cat + ' — Onboarded', fmt(c.onboarded || 0))
       + _bnTile('GMV', (c.txnValue != null ? fmtINR(c.txnValue) : '—')) + _bnTile('Total', fmt(c.total || 0)) + '</div>'
       + _bnCta('Open GMV breakdown →', "openGmvCatModal('seller')");
+  } else if (p === 'buyercat') {
+    // GMV is a seller-side-only figure by business rule (seller→buyer is one
+    // transaction; counting both sides would double-count it) — so the buyer
+    // category tile shows pipeline counts, not a fabricated GMV split.
+    var bc = (vb.categories || []).filter(function(x) { return x.category === node.cat; })[0] || {};
+    body = '<div class="bn-tiles">' + _bnTile(node.cat + ' — Onboarded', fmt(bc.onboarded || 0))
+      + _bnTile('Transacted', fmt(bc.transacted || 0)) + _bnTile('Total', fmt(bc.total || 0)) + '</div>'
+      + _bnCta('Open records →', "openRecordsSheet('buyer')");
   } else if (p === 'stage') {
     body = '<div class="bn-tiles">' + _bnTile(node.label, node.val || '—', 'cases at this stage') + '</div>'
+      + (node.note ? '<div class="bn-note">' + esc(node.note) + '</div>' : '')
       + _bnCta('View records →', "openRecordsSheet('seller')");
+  } else if (p === 'gated') {
+    body = '<span class="bn-soon">Not applicable here</span>'
+      + '<div class="bn-note">' + (node.gateNote || 'Not tracked for this vertical.') + '</div>';
   } else if (p === 'envnew') {
-    body = '<div class="bn-tiles">' + _bnTile('Existing', fmt(vs.oldVendors || 0)) + _bnTile('New', fmt(vs.newVendors || 0)) + '</div>'
+    var envSrc = node.aud === 'buyer' ? vb : vs;
+    body = '<div class="bn-tiles">' + _bnTile('Existing', fmt(envSrc.oldVendors || 0)) + _bnTile('New', fmt(envSrc.newVendors || 0)) + '</div>'
       + _bnCta('Open Existing vs New →', "openKpiModal('oldvsnew')");
   } else if (p === 'region') {
     var reg = node.region;
