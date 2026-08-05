@@ -1735,17 +1735,31 @@ function getQualityData() {
           }
         }
 
-        // — OSV consent (OMP-onboarded sellers only; binary: verified vs not_initiated) —
+        // — OSV consent (OMP-onboarded sellers only; three-way: verified /
+        //   in-progress / not-initiated). The source column carries accepted,
+        //   pending and not-yet-started states — classify each so "In Progress"
+        //   reflects vendors mid-verification instead of folding them into
+        //   not-initiated. A blank cell means verification never started. —
         var vid_ = String(row[vidC] || '').trim();
         var ompInfo = ompMap[vid_];
         if (ompInfo) {
           var osRaw = String(row[oC] || '').trim();
           var osUp  = osRaw.toUpperCase().replace(/\s+/g, '_');
-          var osvStatus = (osUp === 'CONSENT_ACCEPTED' || osUp === 'YES' || osUp === 'Y' || osUp === 'TRUE')
-            ? 'verified' : 'not_initiated';
+          var osvStatus =
+            (osUp === 'CONSENT_ACCEPTED' || osUp === 'YES' || osUp === 'Y' || osUp === 'TRUE'
+             || osUp === 'DONE' || osUp === 'COMPLETED' || osUp === 'VERIFIED' || osUp === 'POSITIVE')
+              ? 'verified'
+            : (osUp === 'CONSENT_PENDING' || osUp === 'PENDING' || osUp === 'IN_PROGRESS'
+               || osUp === 'INITIATED' || osUp === 'ONGOING' || osUp === 'PROCESSING'
+               || osUp === 'SCHEDULED' || osUp === 'VISIT_SCHEDULED' || osUp === 'PARTIAL')
+              ? 'in_progress'
+            : 'not_initiated';
           if (osvStatus === 'verified') {
             acc['seller'].o.completed   += 1;
             acc['combined'].o.completed += 1;
+          } else if (osvStatus === 'in_progress') {
+            acc['seller'].o.pending   += 1;
+            acc['combined'].o.pending += 1;
           }
           vendorOSV.push({
             id:               vid_.slice(0, 30),
@@ -1844,11 +1858,12 @@ function getQualityData() {
   acc['buyer'].r.total    = Object.keys(ompGstinBuyers).length;
   acc['combined'].r.total = Object.keys(ompGstinSellers).length + Object.keys(ompGstinBuyers).length;
 
-  // OSV denominator = OMP-onboarded count; not_initiated fills the gap
+  // OSV denominator = OMP-onboarded count. Not-initiated is whatever remains
+  // after the verified (completed) and in-progress (pending) vendors, so the
+  // three bands always sum to the total.
   ['seller', 'combined'].forEach(function(t) {
     acc[t].o.total        = ompTotal;
-    acc[t].o.notInitiated = Math.max(0, ompTotal - acc[t].o.completed);
-    acc[t].o.pending      = 0;
+    acc[t].o.notInitiated = Math.max(0, ompTotal - acc[t].o.completed - acc[t].o.pending);
     acc[t].o.failed       = 0;
   });
 
