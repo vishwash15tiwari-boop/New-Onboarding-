@@ -2652,12 +2652,19 @@ body.rec-open{overflow:hidden}
 .mmdetail #mm-funnel,.mmdetail #mm-geo,.mmdetail #mm-modpanel{max-height:none;opacity:1;overflow:visible;margin:0}
 .mmdetail #mm-funnel:not(.mf-open),.mmdetail #mm-geo:not(.mg-open),.mmdetail #mm-modpanel:not(.mp-open){display:none}
 /* Funnel → vertical stack in the side canvas */
-.mmdetail .mf-flow{flex-direction:column;overflow:visible;gap:0;padding:2px}
-.mmdetail .mf-card{width:100%;max-width:none;min-width:0;padding:15px 16px}
+.mmdetail .mf-flow{flex-direction:column;overflow:visible;gap:0;padding:2px;align-items:center}
+.mmdetail .mf-card{width:var(--mf-w,100%);max-width:none;min-width:0;padding:9px 14px;border-width:1px;margin:0 auto}
+.mmdetail .mf-card.sel{border-width:1.5px}
 .mmdetail .mf-card.sel::after{display:none}
-.mmdetail .mf-sep{width:100%;height:22px}
-.mmdetail .mf-sep svg{width:24px;height:24px;transform:rotate(90deg)}
-.mmdetail .mf-detail{margin-top:16px;padding-top:16px}
+.mmdetail .mf-v{font-size:1.5rem;margin-bottom:1px}
+.mmdetail .mf-label{font-size:.68rem;margin-bottom:7px}
+.mmdetail .mf-matrix{padding-top:7px;margin-top:2px;gap:2px 4px}
+.mmdetail .mf-mx-hd{font-size:.6rem;padding-bottom:2px}
+.mmdetail .mf-mx-lbl{font-size:.64rem;padding:2px 6px 2px 0}
+.mmdetail .mf-mx-cell{font-size:.76rem;padding:3px 4px}
+.mmdetail .mf-sep{width:100%;height:15px}
+.mmdetail .mf-sep svg{width:20px;height:20px;transform:rotate(90deg)}
+.mmdetail .mf-detail{margin-top:14px;padding-top:14px}
 /* Geo → map above legend, stacked */
 .mmdetail .mg-grid{flex-direction:column;gap:14px}
 .mmdetail .mg-map{flex:none;width:100%;max-width:none}
@@ -4724,12 +4731,15 @@ function mmRenderFunnel() {
   var vs = (DS && DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
 
+  var nStages = MF_STAGES.length;
   var html = '<div class="mf-flow">';
   MF_STAGES.forEach(function(s, i) {
     var total   = (vs[s.field]||0) + (vb[s.field]||0);
     var catRows = s.catField ? _mmCatRows(vs, vb, s.catField) : null;
     var sel     = mmFunnelStage === s.key;
-    html += '<div class="mf-card' + (sel ? ' sel' : '') + '" role="button" tabindex="0"'
+    // Funnel taper: each successive stage a little narrower (side/vertical layout).
+    var tw = (100 - (i / (nStages - 1)) * 26).toFixed(1);
+    html += '<div class="mf-card' + (sel ? ' sel' : '') + '" role="button" tabindex="0" style="--mf-w:' + tw + '%"'
       + ' onclick="mmSelectFunnelStage(\'' + s.key + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){mmSelectFunnelStage(\'' + s.key + '\')}">'
       + '<div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
