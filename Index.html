@@ -2642,6 +2642,46 @@ body.rec-open{overflow:hidden}
 .mmn.vd.in:hover{box-shadow:0 16px 32px -16px rgba(0,93,255,.7);border-color:var(--blue);transform:translateY(-2px)}
 @media(prefers-reduced-motion:reduce){.mmn{opacity:1!important;transform:none!important}}
 
+/* ── Workspace split: navigation (left) + detail canvas (right, parallel) ── */
+.mmworkspace{display:flex;align-items:flex-start;gap:0}
+.mmnav{flex:1 1 auto;min-width:0}
+.mmdetail{flex:0 0 0px;opacity:0;overflow:hidden;align-self:stretch;
+  transition:flex-basis .45s cubic-bezier(.4,0,.2,1),opacity .35s ease}
+.mmworkspace.has-panel{gap:26px}
+.mmworkspace.has-panel .mmdetail{flex-basis:clamp(380px,44%,600px);opacity:1;
+  position:sticky;top:14px;max-height:calc(100vh - 34px);overflow-y:auto;overflow-x:hidden;
+  scrollbar-width:thin}
+.mmworkspace.has-panel .mmdetail::-webkit-scrollbar{width:8px}
+.mmworkspace.has-panel .mmdetail::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
+/* inside the side canvas the panels are simply shown/hidden — the canvas slide is the reveal */
+.mmdetail #mm-funnel,.mmdetail #mm-geo,.mmdetail #mm-modpanel{max-height:none;opacity:1;overflow:visible;margin:0}
+.mmdetail #mm-funnel:not(.mf-open),.mmdetail #mm-geo:not(.mg-open),.mmdetail #mm-modpanel:not(.mp-open){display:none}
+/* Funnel → vertical stack in the side canvas */
+.mmdetail .mf-flow{flex-direction:column;overflow:visible;gap:0;padding:2px}
+.mmdetail .mf-card{width:100%;max-width:none;min-width:0;padding:15px 16px}
+.mmdetail .mf-card.sel::after{display:none}
+.mmdetail .mf-sep{width:100%;height:22px}
+.mmdetail .mf-sep svg{width:24px;height:24px;transform:rotate(90deg)}
+.mmdetail .mf-detail{margin-top:16px;padding-top:16px}
+/* Geo → map above legend, stacked */
+.mmdetail .mg-grid{flex-direction:column;gap:14px}
+.mmdetail .mg-map{flex:none;width:100%;max-width:none}
+.mmdetail .mg-svg{max-height:360px}
+.mmdetail .mg-legend,.mmdetail .mg-loading{min-width:0;width:100%}
+.mmdetail .mg-rows{max-height:230px}
+/* Module panels fill the canvas width */
+.mmdetail .mp-body{max-width:none}
+@media(max-width:900px){
+  .mmworkspace,.mmworkspace.has-panel{flex-direction:column;gap:0}
+  .mmworkspace.has-panel .mmdetail{flex-basis:auto;width:100%;position:static;max-height:none;
+    overflow:visible;margin-top:12px}
+  .mmdetail .mf-flow{flex-direction:row;overflow-x:auto}
+  .mmdetail .mf-card{width:auto;min-width:148px}
+  .mmdetail .mf-sep{width:44px;height:44px}
+  .mmdetail .mf-sep svg{transform:none;width:44px;height:44px}
+  .mmdetail .mg-grid{flex-direction:row;flex-wrap:wrap}
+}
+
 /* ── Inline Funnel Panel ── */
 #mm-funnel{overflow:hidden;max-height:0;opacity:0;transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .3s ease;margin:0}
 #mm-funnel.mf-open{max-height:900px;opacity:1;margin:0 0 28px}
@@ -2945,10 +2985,16 @@ body.rec-open{overflow:hidden}
   <!-- ── VIEW: ONBOARDING — card-based mind map (Root → Vertical → Module → KPI → Detail → Modal) ── -->
   <div id="tab-overview">
     <div class="mmcrumbs" id="mm-crumbs"></div>
-    <div class="mm" id="mm"><svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg></div>
-    <div id="mm-funnel" class="mf" role="region" aria-label="Onboarding Funnel"></div>
-    <div id="mm-geo" class="mg" role="region" aria-label="Geographic Split"></div>
-    <div id="mm-modpanel" class="mp" role="region" aria-label="Module dashboard"></div>
+    <div class="mmworkspace" id="mm-workspace">
+      <div class="mmnav" id="mm-nav">
+        <div class="mm" id="mm"><svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg></div>
+      </div>
+      <aside class="mmdetail" id="mm-detail">
+        <div id="mm-funnel" class="mf" role="region" aria-label="Onboarding Funnel"></div>
+        <div id="mm-geo" class="mg" role="region" aria-label="Geographic Split"></div>
+        <div id="mm-modpanel" class="mp" role="region" aria-label="Module dashboard"></div>
+      </aside>
+    </div>
     <!-- Hidden data sink: the existing section renderers populate these so the
          KPI / GMV / quality snapshots that power the modals stay warm. -->
     <div id="bn-sink" style="display:none" aria-hidden="true">
@@ -4515,6 +4561,7 @@ function renderBranchNav(key) {
   mmRenderFunnel();
   mmRenderGeo();
   mmRenderModPanel();
+  _mmSyncDetail();
 }
 
 function mmRender() {
@@ -4575,8 +4622,27 @@ function mmCardAction(action) {
   return openKpiModal(name);   // total/onboarded/transacted/oldvsnew/draft/review/rejected/osv/rating/docs
 }
 
+// Split the workspace into nav + side detail whenever any panel is open.
+function _mmSyncDetail() {
+  var ws = document.getElementById('mm-workspace');
+  if (!ws) return;
+  var open = !!(mmFunnelActive || mmGeoActive || mmModActive);
+  ws.classList.toggle('has-panel', open);
+  // With a panel docked, the nav narrows; once it settles, keep the active
+  // (deepest) column in view rather than clipping it at the edge.
+  if (open) {
+    setTimeout(function(){
+      var mm = document.getElementById('mm');
+      if (mm && mm.scrollWidth > mm.clientWidth + 4) {
+        if (mm.scrollTo) mm.scrollTo({ left: mm.scrollWidth, behavior: motionOK() ? 'smooth' : 'auto' });
+        else mm.scrollLeft = mm.scrollWidth;
+      }
+    }, motionOK() ? 480 : 0);
+  }
+}
+
 // Repaint the whole workspace (map + all three inline panels) in one call.
-function mmPaint() { mmRender(); mmRenderFunnel(); mmRenderGeo(); mmRenderModPanel(); }
+function mmPaint() { mmRender(); mmRenderFunnel(); mmRenderGeo(); mmRenderModPanel(); _mmSyncDetail(); }
 
 function _mmCloseInline() {
   mmFunnelActive = false; mmFunnelStage = null;
