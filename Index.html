@@ -791,6 +791,11 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 /* Footer */
 .km-foot{padding:12px 18px 20px;border-top:1px solid var(--border);text-align:center}
 .km-foot-link{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:var(--accent,#005DFF);cursor:pointer;text-decoration:none;background:none;border:none;padding:0}
+/* Honest "not tracked yet" line inside a modal section — same language as
+   the branch navigator's gated/soon nodes, so a missing data source reads
+   the same way everywhere in the app. */
+.km-soon-pill{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3);background:var(--bg2);border:1px solid var(--border);padding:3px 9px;border-radius:999px;margin-bottom:8px}
+.km-soon-note{font-size:12px;color:var(--txt3);line-height:1.55}
 /* ===== Record Detail Modal — Apple sheet style ===== */
 @keyframes rmUp{from{opacity:0;transform:translateY(32px) scale(.97)}to{opacity:1;transform:none}}
 #rec-modal{position:fixed;inset:0;z-index:700;display:flex;align-items:flex-end;justify-content:center;padding:0}
@@ -3923,9 +3928,9 @@ function buildVertTree(key) {
 
   return { k:key, label:cfg.name || key, children:[
     { k:'overview', label:'Overview', val:fmt(tot), children:[
-      { k:'ov_total',  label:'Total Cases', val:fmt(tot), panel:'kpi', kpi:'total' },
+      { k:'ov_total',  label:'Logged In Cases', val:fmt(tot), panel:'kpi', kpi:'total' },
       { k:'ov_active', label:'Active Cases', val:fmt(active), panel:'active' },
-      { k:'ov_onb',    label:'Onboarded', val:fmt(onb), panel:'kpi', kpi:'onboarded' },
+      { k:'ov_onb',    label:'Successfully Onboarded', val:fmt(onb), panel:'kpi', kpi:'onboarded' },
       { k:'ov_txn',    label:'Transacted', val:fmt(txn), children:[
         { k:'tx_seller', label:'Seller Split', val:fmt(vs.transacted || 0), panel:'kpi', kpi:'transacted' },
         { k:'tx_buyer',  label:'Buyer Split', val:fmt(vb.transacted || 0), panel:'kpi', kpi:'transacted' },
@@ -3934,8 +3939,8 @@ function buildVertTree(key) {
     ]},
     { k:'funnel', label:'Onboarding Funnel', val:fmt(tot), children:[
       { k:'fn_login', label:'Logged In', val:fmt(tot), panel:'stage', stage:'ALL' },
-      { k:'fn_draft', label:'Draft', val:fmt((vs.draft || 0) + (vb.draft || 0)), panel:'stage', stage:'DRAFT' },
-      { k:'fn_review',label:'In Review', val:fmt((vs.inReview || 0) + (vb.inReview || 0)), children:[
+      { k:'fn_draft', label:'Draft Cases', val:fmt((vs.draft || 0) + (vb.draft || 0)), panel:'kpi', kpi:'draft' },
+      { k:'fn_review',label:'Cases Under Review', val:fmt((vs.inReview || 0) + (vb.inReview || 0)), panel:'kpi', kpi:'review', children:[
         { k:'fn_docval', label:'Document Validation', soon:true, children:[
           { k:'dv_p', label:'Pending', soon:true, panel:'soon' },
           { k:'dv_c', label:'Completed', soon:true, panel:'soon' },
@@ -3944,9 +3949,10 @@ function buildVertTree(key) {
         { k:'fn_gst',  label:'GST Verification', soon:true, panel:'soon' },
         { k:'fn_comm', label:'Committee Approval', soon:true, panel:'soon' },
       ]},
-      { k:'fn_appr', label:'Approved', val:fmt(onb), panel:'stage', stage:'COMPLETED',
+      { k:'fn_appr', label:'Approved', val:fmt(onb), panel:'kpi', kpi:'onboarded',
         note:'This onboarding flow doesn’t record a separate Approved step — Approved and Completed share the same terminal status.' },
-      { k:'fn_comp', label:'Completed', val:fmt(onb), panel:'stage', stage:'COMPLETED' },
+      { k:'fn_comp', label:'Completed', val:fmt(onb), panel:'kpi', kpi:'onboarded' },
+      { k:'fn_rej',  label:'Rejected Cases', val:fmt((vs.rejected || 0) + (vb.rejected || 0)), panel:'kpi', kpi:'rejected' },
     ]},
     { k:'sellers', label:'Sellers', val:fmt(vs.total || 0), children:[
       isOMP
@@ -3956,7 +3962,7 @@ function buildVertTree(key) {
           ]}
         : { k:'se_env', label:'Existing vs New', panel:'gated', gateNote:'Existing-vs-New matching is tracked for Open Marketplace only — ' + esc(cfg.name || key) + ' vendors aren’t compared against other verticals.' },
       { k:'se_txn', label:'Transacted', val:fmt(vs.transacted || 0), children:catKids },
-      { k:'se_nontxn', label:'Non-Transacted', soon:true, children:[
+      { k:'se_nontxn', label:'Non-Transacted', panel:'kpi', kpi:'nontxn', children:[
         { k:'nt_30', label:'0–30 Days', soon:true, panel:'soon' },
         { k:'nt_90', label:'31–90 Days', soon:true, panel:'soon' },
         { k:'nt_p',  label:'90+ Days', soon:true, panel:'soon' },
@@ -4004,6 +4010,15 @@ function _bnFind(path) {
 }
 var _bnTree = null;
 
+// A node with children normally just expands (panel shows "pick a sub-branch").
+// If it also declares its own `panel`, that summary+CTA renders instead — the
+// children still expand below it in the tree, so both stay reachable.
+function _bnPanelTarget(node, hasKids) {
+  if (!node) return null;
+  if (node.panel) return node;
+  return hasKids ? null : node;
+}
+
 function renderBranchNav(key) {
   if (currentView === 'gst') return;
   if (_bnKey !== key) { bnPath = []; _bnKey = key; }
@@ -4013,7 +4028,7 @@ function renderBranchNav(key) {
   var res = _bnFind(bnPath);
   var node = res.node;
   var hasKids = node.children && node.children.length;
-  _bnRenderPanel((bnPath.length && !hasKids) ? node : null, res.chain);
+  _bnRenderPanel(bnPath.length ? _bnPanelTarget(node, hasKids) : null, res.chain);
 }
 
 function _bnRenderCrumbs() {
@@ -4058,7 +4073,7 @@ function bnGo(path) {
   var node = res.node;
   var hasKids = node.children && node.children.length;
   _bnRenderCrumbs(); _bnRenderTree();
-  _bnRenderPanel(hasKids ? null : node, res.chain);
+  _bnRenderPanel(_bnPanelTarget(node, hasKids), res.chain);
 }
 
 // ── Panel helpers ──
@@ -4099,10 +4114,15 @@ function _bnRenderPanel(node, chain) {
     body = '<span class="bn-soon">Not tracked yet</span>'
       + '<div class="bn-note">“' + esc(node.label) + '” isn’t in the current onboarding feed. This branch is reserved in the map for when the data source is connected.</div>';
   } else if (p === 'kpi') {
-    var lbl = { total:'Total Cases', onboarded:'Onboarded', transacted:'Transacted', oldvsnew:'Existing vs New' }[node.kpi] || node.label;
+    var lbl = {
+      total: 'Logged In Cases', onboarded: 'Successfully Onboarded', transacted: 'Transacted Vendors',
+      oldvsnew: 'Vendor Classification', draft: 'Draft Cases', review: 'Cases Under Review',
+      rejected: 'Rejected Cases', nontxn: 'Non-Transacted Vendors',
+    }[node.kpi] || node.label;
     var val = node.val || '—';
     body = '<div class="bn-tiles">' + _bnTile(lbl, val, cfg.name || '') + '</div>'
-      + _bnCta('Open full breakdown →', "openKpiModal('" + node.kpi + "')");
+      + (node.note ? '<div class="bn-note">' + esc(node.note) + '</div>' : '')
+      + _bnCta('View Detailed Records →', "openKpiModal('" + node.kpi + "')");
   } else if (p === 'active') {
     body = '<div class="bn-tiles">' + _bnTile('Active Cases', node.val || '0', 'in progress')
       + _bnTile('Draft', fmt((vs.draft || 0) + (vb.draft || 0))) + _bnTile('In Review', fmt((vs.inReview || 0) + (vb.inReview || 0))) + '</div>';
@@ -4441,12 +4461,13 @@ function vkpiOpen(action) {
       var e = document.getElementById(id); if (e) e.value = 'All';
     });
     var s = document.getElementById('vdf-search'); if (s) s.value = '';
+    var STATUS_FOR_ACTION = { onboarded: 'COMPLETED', draft: 'DRAFT', review: 'IN_REVIEW', rejected: 'REJECTED' };
     if (action === 'missing') {
       vdF.gst = 'Inactive';
       var e = document.getElementById('vdf-gst'); if (e) e.value = 'Inactive';
-    } else if (action === 'onboarded') {
-      vdF.status = 'COMPLETED';
-      var e = document.getElementById('vdf-status'); if (e) e.value = 'COMPLETED';
+    } else if (STATUS_FOR_ACTION[action]) {
+      vdF.status = STATUS_FOR_ACTION[action];
+      var e = document.getElementById('vdf-status'); if (e) e.value = STATUS_FOR_ACTION[action];
     }
     renderVdRecords();
     _showRecSheet();
@@ -4589,232 +4610,119 @@ function openKpiModal(cardId) {
   var content = '', title = '', subtitle = '', iconHtml = '';
   var vs = d ? d.vs : {}, vb = d ? d.vb : {};
 
+  // Honest "not tracked yet" line — used wherever the spec calls for a field
+  // this data source doesn't carry. Never fabricate a number for these.
+  function notTracked(msg) {
+    return '<span class="km-soon-pill">Not tracked yet</span><div class="km-soon-note">' + msg + '</div>';
+  }
+
   if (cardId === 'total') {
-    title = 'Logged In Cases';
+    title = 'Total Logged In Cases';
     subtitle = 'All pipeline entries across sellers & buyers';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>';
-    var dComb = (vs.draft || 0) + (vb.draft || 0);
-    var rComb = (vs.inReview || 0) + (vb.inReview || 0);
-    var jComb = (vs.rejected || 0) + (vb.rejected || 0);
     content =
-      hero(fmt(d.totalS + d.totalB), 'Logged In Cases')
+      hero(fmt(d.totalS + d.totalB), 'Total Logged In Cases')
       + srow([
           {v: fmt(d.totalS), l: 'Sellers', c: S},
           {v: fmt(d.totalB), l: 'Buyers',  c: B},
         ])
-      + sec('Pipeline Status',
-          sbar([
-            {w: d.compS + d.compB, color: 'var(--st-onboarded)'},
-            {w: dComb,             color: 'var(--st-draft)'},
-            {w: rComb,             color: 'var(--st-review)'},
-            {w: jComb,             color: 'var(--st-rejected)'},
-          ])
-          + sgrid([
-              {v: fmt(d.compS + d.compB), l: 'Onboarded', c: 'var(--st-onboarded)'},
-              {v: fmt(dComb),             l: 'Draft',      c: 'var(--st-draft)'},
-              {v: fmt(rComb),             l: 'In Review',  c: 'var(--st-review)'},
-              {v: fmt(jComb),             l: 'Rejected',   c: 'var(--st-rejected)'},
-            ])
-        )
-      + (d.pTotal + d.mTotal > 0 ? sec('Material Mix', matBadges(d.pTotal, d.mTotal)) : '');
+      + (d.pTotal + d.mTotal > 0 ? sec('Category Distribution', matBadges(d.pTotal, d.mTotal)) : '');
 
   } else if (cardId === 'onboarded') {
-    title = 'Onboarded';
+    title = 'Successfully Onboarded';
     subtitle = 'Vendors who completed onboarding';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M8.6 12.4l2.4 2.4 4.4-5"/></svg>';
-    var tatS = vs.avgTAT != null ? vs.avgTAT + 'd avg TAT' : null;
-    var tatB = vb.avgTAT != null ? vb.avgTAT + 'd avg TAT' : null;
     content =
-      hero(fmt(d.compS + d.compB), 'Onboarded')
+      hero(fmt(d.compS + d.compB), 'Total Successfully Onboarded')
       + srow([
-          {v: fmt(d.compS), l: 'Sellers', c: S, s: tatS},
-          {v: fmt(d.compB), l: 'Buyers',  c: B, s: tatB},
+          {v: fmt(d.compS), l: 'Sellers Onboarded', c: S},
+          {v: fmt(d.compB), l: 'Buyers Onboarded',  c: B},
         ])
+      + (d.pOnb + d.mOnb > 0 ? sec('Category Distribution', matBadges(d.pOnb, d.mOnb)) : '');
+
+  } else if (cardId === 'draft') {
+    title = 'Draft Cases';
+    subtitle = 'Cases started but not yet submitted for review';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+    var draftS = (vs.draft || 0), draftB = (vb.draft || 0);
+    content =
+      hero(fmt(draftS + draftB), 'Total Draft Cases')
       + srow([
-          {v: d.compPct + '%', l: 'Completion Rate', s: 'of total pipeline'},
-          {v: fmt(((d.vs.draft||0)+(d.vb.draft||0))+((d.vs.inReview||0)+(d.vb.inReview||0))), l: 'Active Pipeline', s: 'draft + in review'},
+          {v: fmt(draftS), l: 'Sellers', c: S},
+          {v: fmt(draftB), l: 'Buyers',  c: B},
         ])
-      + (d.pOnb + d.mOnb > 0 ? sec('Material Mix', matBadges(d.pOnb, d.mOnb)) : '');
+      + sec('Pending Documents', notTracked('Per-case document checklists aren’t captured as a distinct field in the current onboarding feed.'));
+
+  } else if (cardId === 'review') {
+    title = 'Cases Under Review';
+    subtitle = 'Cases currently being verified before approval';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>';
+    var revS = (vs.inReview || 0), revB = (vb.inReview || 0);
+    content =
+      hero(fmt(revS + revB), 'Total Cases Under Review')
+      + srow([
+          {v: fmt(revS), l: 'Sellers', c: S},
+          {v: fmt(revB), l: 'Buyers',  c: B},
+        ])
+      + sec('Current Review Stage', notTracked('Workflow sub-stages (document validation, GST verification, committee approval) aren’t tracked as separate steps in the current onboarding feed.'));
+
+  } else if (cardId === 'rejected') {
+    title = 'Rejected Cases';
+    subtitle = 'Cases that did not pass onboarding review';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
+    var rejS = (vs.rejected || 0), rejB = (vb.rejected || 0);
+    content =
+      hero(fmt(rejS + rejB), 'Total Rejected Cases')
+      + srow([
+          {v: fmt(rejS), l: 'Sellers', c: S},
+          {v: fmt(rejB), l: 'Buyers',  c: B},
+        ])
+      + sec('Rejection Reason Summary', notTracked('Rejection reasons aren’t captured as a distinct field in the current onboarding feed.'));
 
   } else if (cardId === 'transacted') {
-    title = 'Transacted';
+    title = 'Transacted Vendors';
     subtitle = 'Onboarded vendors who have made a transaction';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
-    // Pre-load rows for both audiences so vendor tiles render immediately
-    _ovnEnsureAud('seller');
-    _ovnEnsureAud('buyer');
     // GMV = seller transactions only. Seller→Buyer is one transaction; counting
     // buyer-side values would double-count the same underlying transaction.
     var gmvCombined = vs.totalTxnValue || 0;
-    var sPMSub = (vs.plasticTransacted || vs.metalTransacted)
-      ? fmt(vs.plasticTransacted || 0) + 'P · ' + fmt(vs.metalTransacted || 0) + 'M' : 'sellers transacted';
-    var bPMSub = (vb.plasticTransacted || vb.metalTransacted)
-      ? fmt(vb.plasticTransacted || 0) + 'P · ' + fmt(vb.metalTransacted || 0) + 'M' : 'buyers transacted';
-    var metricItems = [{v: d.txnPct > 0 ? d.txnPct + '%' : '—', l: 'Txn Rate', s: 'of onboarded'}];
-    if (gmvCombined > 0) metricItems.push({v: fmtINR(gmvCombined), l: 'Total GMV'});
-    metricItems.push({v: fmt(d.nonTxnTotal), l: 'Not Transacted', s: 'onboarded · no txn'});
     var txnUnique = d.txnUniqueTotal || d.txnTotal;
-
-    function txnAudTile(aud, count, acColor) {
-      var gid = 'txn-' + aud;
-      var pid = gid + '-p';
-      var audRows = _ovnRows[aud];
-      var hasRows = Array.isArray(audRows);
-      var tileHtml = count === 0
-        ? '<div class="km-sg-item"><div class="km-sg-v">' + fmt(count) + '</div>'
-          + '<div class="km-sg-l"><i class="km-dot" style="background:' + acColor + '"></i>'
-          + (aud === 'seller' ? 'Sellers' : 'Buyers') + '</div></div>'
-        : '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
-          + ' onclick="_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)"'
-          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)}">'
-          + '<div class="km-sg-v">' + fmt(count) + '</div>'
-          + '<div class="km-sg-l"><i class="km-dot" style="background:' + acColor + '"></i>'
-          + (aud === 'seller' ? 'Sellers' : 'Buyers') + ' <span class="km-star-arr">▶</span></div>'
-          + '</div>';
-      var panelHtml = '<div id="' + pid + '" class="km-tile-vlist" style="display:none">';
-      if (!hasRows) {
-        panelHtml += '<div style="padding:12px 4px;text-align:center;color:var(--txt3);font-size:11px">Loading…</div>';
-      } else {
-        var filtered = audRows.filter(function(r) { return !!r.hasTransacted; });
-        if (filtered.length === 0) {
-          panelHtml += '<div class="km-vrow" style="color:var(--txt3);font-size:11px">No transacted vendors found</div>';
-        } else {
-          panelHtml += filtered.slice(0, 80).map(function(r) {
-            var catBg  = r.category === 'Plastic' ? 'rgba(255,159,10,.15)' : 'rgba(142,142,147,.15)';
-            var catClr = r.category === 'Plastic' ? '#B25000' : '#636366';
-            var gmvStr = r.txnValue ? fmtINR(r.txnValue) : null;
-            return '<div class="km-vrow" style="flex-wrap:wrap;gap:4px 8px;align-items:center">'
-              + '<span class="km-vname" style="flex:1;min-width:120px">' + esc(r.name || 'Unknown') + '</span>'
-              + '<span style="font-size:9.5px;font-family:monospace;color:var(--txt3);flex-shrink:0">' + esc(r.gstin || '—') + '</span>'
-              + (r.category ? '<span class="km-vbadge" style="background:' + catBg + ';color:' + catClr + '">' + esc(r.category) + '</span>' : '')
-              + (gmvStr ? '<span class="km-vbadge" style="background:rgba(52,199,89,.12);color:#248A3D">' + gmvStr + '</span>' : '')
-              + '</div>';
-          }).join('');
-          if (filtered.length > 80) {
-            panelHtml += '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (filtered.length - 80) + ' more</span></div>';
-          }
-        }
-      }
-      panelHtml += '</div>';
-      return '<div id="' + gid + '-g" class="km-sg km-sg-1">' + tileHtml + '</div>' + panelHtml;
-    }
-
     content =
-      hero(fmt(d.txnTotal), 'Transacted')
+      hero(fmt(d.txnTotal), 'Total Transacted Vendors')
+      + (d.pTxn + d.mTxn > 0 ? sec('Category Distribution', matBadges(d.pTxn, d.mTxn)) : '')
       + srow([
-          {v: fmt(txnUnique),                          l: 'Unique Transactions', s: 'distinct txns completed'},
-          {v: fmt(d.txnS != null ? d.txnS : 0), c: S, l: 'Unique Sellers',      s: sPMSub},
-          {v: fmt(d.txnB != null ? d.txnB : 0), c: B, l: 'Unique Buyers',       s: bPMSub},
+          {v: fmt(txnUnique), l: 'Total Transactions'},
+          {v: gmvCombined > 0 ? fmtINR(gmvCombined) : '—', l: 'Total GMV'},
+        ]);
+
+  } else if (cardId === 'nontxn') {
+    title = 'Non-Transacted Vendors';
+    subtitle = 'Onboarded vendors who haven’t made a transaction yet';
+    iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>';
+    var ntS = Math.max(0, d.compS - (d.txnS || 0));
+    var ntB = Math.max(0, d.compB - (d.txnB || 0));
+    content =
+      hero(fmt(d.nonTxnTotal), 'Total Non-Transacted Vendors')
+      + srow([
+          {v: fmt(ntS), l: 'Sellers', c: S},
+          {v: fmt(ntB), l: 'Buyers',  c: B},
         ])
-      + srow(metricItems)
-      + (d.pTxn + d.mTxn > 0 ? sec('Material Split',
-          '<div class="km-mat">'
-          + '<div class="km-mb"><div class="km-mb-dot" style="background:' + PC + '"></div>'
-          + '<div><div class="km-mb-v">' + fmt(d.pTxn) + '</div>'
-          + '<div class="km-mb-l">Plastic</div>'
-          + ((vs.plasticTransacted || vb.plasticTransacted)
-              ? '<div class="km-mb-sub">' + fmt(vs.plasticTransacted || 0) + ' sellers · ' + fmt(vb.plasticTransacted || 0) + ' buyers</div>'
-              : '')
-          + '</div></div>'
-          + '<div class="km-mb"><div class="km-mb-dot" style="background:' + MC + '"></div>'
-          + '<div><div class="km-mb-v">' + fmt(d.mTxn) + '</div>'
-          + '<div class="km-mb-l">Metal</div>'
-          + ((vs.metalTransacted || vb.metalTransacted)
-              ? '<div class="km-mb-sub">' + fmt(vs.metalTransacted || 0) + ' sellers · ' + fmt(vb.metalTransacted || 0) + ' buyers</div>'
-              : '')
-          + '</div></div>'
-          + '</div>'
-        ) : '')
-      + sec('Vendors',
-          txnAudTile('seller', d.txnS != null ? d.txnS : 0, S)
-          + txnAudTile('buyer',  d.txnB != null ? d.txnB : 0, B));
+      + sec('Days Since Onboarding', notTracked('0–30 / 31–90 / 90+ day aging bands aren’t computed yet — the total above is accurate; the breakdown needs a backend aggregation pass.'));
 
   } else if (cardId === 'oldvsnew') {
-    title = 'Existing vs New';
-    subtitle = 'OMP vendors — existing in other verticals vs first-time';
+    title = 'Vendor Classification';
+    subtitle = 'Existing vs. new vendors onboarded through Open Marketplace';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
-    // Auto-load rows for both audiences in parallel (no manual button needed)
-    _ovnEnsureAud('seller');
-    _ovnEnsureAud('buyer');
     var totalOnb  = (d.newS + d.oldS) + (d.newB + d.oldB);
     var totalNew  = d.newS + d.newB;
     var totalExst = d.oldS + d.oldB;
-
-    function ovnBlock(aud, nCount, eCount) {
-      var gid     = 'ovn-' + aud;
-      var audRows = _ovnRows[aud];               // null = loading, array = ready
-      var hasRows = Array.isArray(audRows);
-      var acNew   = aud === 'seller' ? S : B;
-      var acExst  = aud === 'seller' ? '#22c55e' : '#60a5fa';
-
-      function tile(count, label, pid, color) {
-        if (count === 0) {
-          return '<div class="km-sg-item">'
-            + '<div class="km-sg-v">' + fmt(count) + '</div>'
-            + '<div class="km-sg-l"><i class="km-dot" style="background:' + color + '"></i>' + label + '</div>'
-            + '</div>';
-        }
-        return '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
-          + ' onclick="_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)"'
-          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmTileToggle(\'' + pid + '\',\'' + gid + '\',this)}">'
-          + '<div class="km-sg-v">' + fmt(count) + '</div>'
-          + '<div class="km-sg-l"><i class="km-dot" style="background:' + color + '"></i>'
-          + label + ' <span class="km-star-arr">▶</span></div>'
-          + '</div>';
-      }
-
-      var h = '<div id="' + gid + '-g" class="km-sg km-sg-2">'
-        + tile(nCount, 'New',      gid + '-n', acNew)
-        + tile(eCount, 'Existing', gid + '-e', acExst)
-        + '</div>';
-
-      [['n', false, nCount], ['e', true, eCount]].forEach(function(spec) {
-        var k = spec[0], isOld = spec[1], count = spec[2];
-        if (count === 0) return;
-        var pid = gid + '-' + k;
-        h += '<div id="' + pid + '" class="km-tile-vlist" style="display:none">';
-        if (!hasRows) {
-          // still loading — show spinner; data will arrive and re-render the modal
-          h += '<div style="padding:12px 4px;text-align:center;color:var(--txt3);font-size:11px">Loading…</div>';
-        } else {
-          var filtered = audRows.filter(function(r) {
-            return r.status === 'COMPLETED' && !!r.isOldVendor === isOld;
-          });
-          if (filtered.length === 0) {
-            h += '<div class="km-vrow" style="color:var(--txt3);font-size:11px">No vendors in this segment</div>';
-          } else {
-            var audLabel = aud === 'seller' ? 'Seller' : 'Buyer';
-            var stLbl    = isOld ? 'Existing' : 'New';
-            var stBg     = isOld ? 'rgba(142,142,147,.15)' : (aud === 'seller' ? 'rgba(48,209,88,.14)' : 'rgba(0,122,255,.12)');
-            var stClr    = isOld ? 'var(--txt2)'           : (aud === 'seller' ? '#248A3D'             : '#024C8A');
-            h += filtered.slice(0, 80).map(function(r) {
-              return '<div class="km-vrow" style="flex-wrap:wrap;gap:4px 8px;align-items:center">'
-                + '<span class="km-vname" style="flex:1;min-width:120px">' + esc(r.name || 'Unknown') + '</span>'
-                + '<span style="font-size:9.5px;font-family:monospace;color:var(--txt3);flex-shrink:0">' + esc(r.gstin || '—') + '</span>'
-                + '<span class="km-vbadge" style="background:' + (aud === 'seller' ? 'rgba(48,209,88,.14)' : 'rgba(0,122,255,.12)') + ';color:' + (aud === 'seller' ? '#248A3D' : '#024C8A') + '">' + esc(audLabel) + '</span>'
-                + '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A">' + esc(r.vertical || 'OMP') + '</span>'
-                + '<span class="km-vbadge" style="background:' + stBg + ';color:' + stClr + '">' + stLbl + '</span>'
-                + '</div>';
-            }).join('');
-            if (filtered.length > 80) {
-              h += '<div class="km-vrow"><span class="km-vname" style="color:var(--txt3);font-size:10px">… and ' + (filtered.length - 80) + ' more</span></div>';
-            }
-          }
-        }
-        h += '</div>';
-      });
-
-      return h;
-    }
-
     content =
-      hero(fmt(totalOnb), 'Total Onboarded in OMP')
+      hero(fmt(totalOnb), 'Total Vendors')
       + srow([
-          {v: fmt(totalNew),  l: 'New',      s: 'first-time in OMP'},
-          {v: fmt(totalExst), l: 'Existing', s: 'active in other verticals'},
+          {v: fmt(totalExst), l: 'Existing Vendors'},
+          {v: fmt(totalNew),  l: 'New Vendors'},
         ])
-      + sec('Sellers', ovnBlock('seller', d.newS, d.oldS))
-      + sec('Buyers',  ovnBlock('buyer',  d.newB, d.oldB));
+      + (d.pOnb + d.mOnb > 0 ? sec('Category Distribution', matBadges(d.pOnb, d.mOnb)) : '');
   }
 
   // ── Quality card modals ──────────────────────────────────────
@@ -4975,10 +4883,11 @@ function openKpiModal(cardId) {
     }
   }
 
+  var VKPI_ACTION = { onboarded: 'onboarded', draft: 'draft', review: 'review', rejected: 'rejected' };
   var footAction = isQuality
     ? 'closeKpiModal();(function(){var p=document.getElementById(\'sec-ops-wrap\');if(p)p.scrollIntoView({behavior:\'smooth\',block:\'start\'});})();'
-    : (cardId !== 'transacted' && cardId !== 'oldvsnew' ? 'closeKpiModal();vkpiOpen(\'' + (cardId === 'onboarded' ? 'onboarded' : 'all') + '\')' : null);
-  var footLabel  = isQuality ? 'View quality detail in Operational Metrics ↓' : 'View vendor detail ↓';
+    : 'closeKpiModal();vkpiOpen(\'' + (VKPI_ACTION[cardId] || 'all') + '\')';
+  var footLabel  = isQuality ? 'View quality detail in Operational Metrics ↓' : 'View Detailed Records ↓';
 
   el.innerHTML =
     '<div class="km-head">'
