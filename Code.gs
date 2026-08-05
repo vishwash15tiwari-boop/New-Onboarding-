@@ -891,16 +891,10 @@ function vStats(data, vertKey) {
   var hasTxnValData = false, txnValSum = 0;
   var agingCount = 0, overdueCount = 0;
   var tats = [];
-  var plasticTotal = 0, metalTotal = 0;
-  var plasticOnboarded = 0, metalOnboarded = 0;
-  var plasticTransacted = 0, metalTransacted = 0;
-  var plasticNew = 0, metalNew = 0, plasticOld = 0, metalOld = 0;
 
   data.forEach(function(r) {
     var isDone = r.status === 'COMPLETED';
     var isOld  = !!r.isOldVendor, isNew = !r.isOldVendor;
-    var cat    = String(r.category || '').trim().toLowerCase();
-    var isPl   = cat === 'plastic', isMt = cat === 'metal';
 
     if (isDone)                    completed++;
     else if (r.status === 'DRAFT')      draft++;
@@ -927,21 +921,6 @@ function vStats(data, vertKey) {
       var elapsed = nowMs - r.createdDate.getTime();
       if (elapsed > AGE_DUE_MS)       { overdueCount++; agingCount++; }
       else if (elapsed > AGE_WARN_MS) { agingCount++; }
-    }
-
-    if (isPl) {
-      plasticTotal++;
-      if (isDone)          plasticOnboarded++;
-      if (r.hasTransacted) plasticTransacted++;
-      if (isDone && isNew) plasticNew++;
-      if (isDone && isOld) plasticOld++;
-    }
-    if (isMt) {
-      metalTotal++;
-      if (isDone)          metalOnboarded++;
-      if (r.hasTransacted) metalTransacted++;
-      if (isDone && isNew) metalNew++;
-      if (isDone && isOld) metalOld++;
     }
   });
 
@@ -1079,11 +1058,6 @@ function vStats(data, vertKey) {
     // other vertical gets null here, not a misleading 100%-new split.
     newVendors: vertKey === 'OMP' ? newVendors : null,
     oldVendors: vertKey === 'OMP' ? oldVendors : null,
-    plasticTotal: plasticTotal,       metalTotal: metalTotal,
-    plasticOnboarded: plasticOnboarded, metalOnboarded: metalOnboarded,
-    plasticTransacted: plasticTransacted, metalTransacted: metalTransacted,
-    plasticNew: vertKey === 'OMP' ? plasticNew : null, metalNew: vertKey === 'OMP' ? metalNew : null,
-    plasticOld: vertKey === 'OMP' ? plasticOld : null, metalOld: vertKey === 'OMP' ? metalOld : null,
     fyBreakdown: fyBreakdown,
     categories:  categories,
     regions:     regions,

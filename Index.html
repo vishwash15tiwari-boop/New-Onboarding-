@@ -782,8 +782,8 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .km-sg-l{font-size:9.5px;font-weight:600;color:var(--txt3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:3px}
 .km-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;display:inline-block}
 /* Material badges */
-.km-mat{display:flex;gap:8px}
-.km-mb{flex:1;display:flex;align-items:center;gap:9px;background:var(--bg2);border-radius:10px;padding:10px 12px}
+.km-mat{display:flex;gap:8px;flex-wrap:wrap}
+.km-mb{flex:1 1 120px;min-width:108px;display:flex;align-items:center;gap:9px;background:var(--bg2);border-radius:10px;padding:10px 12px}
 .km-mb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .km-mb-v{font-size:15px;font-weight:700;color:var(--txt);letter-spacing:-.3px;font-variant-numeric:tabular-nums}
 .km-mb-l{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-top:1px}
@@ -2755,8 +2755,8 @@ body.rec-open{overflow:hidden}
 .mg-row-n{text-align:right;font-size:12.5px;font-variant-numeric:tabular-nums}
 .mg-legend-hd .mg-row-n{text-align:right}
 .mg-total{font-weight:700;color:var(--txt)}
-.mg-metal{color:#6366f1;font-weight:600}
-.mg-plastic{color:#0ea5e9;font-weight:600}
+.mg-seller{color:#1DC797;font-weight:600}
+.mg-buyer{color:#005DFF;font-weight:600}
 .mg-loading{flex:1;min-width:300px;display:flex;align-items:center;justify-content:center;padding:50px 20px;color:var(--txt3);font-size:13px;text-align:center;background:var(--card);border:1px solid var(--border);border-radius:var(--r)}
 /* state detail */
 .mg-detail{margin-top:18px;border-top:1px solid var(--border);padding-top:18px;animation:mfDetailIn .32s cubic-bezier(.4,0,.2,1) both}
@@ -4112,8 +4112,6 @@ function mmGrowRail() {
 // path stays highlighted; terminal nodes open the dashboard section
 // (an inline panel, or an existing modal / records slide-over).
 // ═══════════════════════════════════════════════════════════════
-var bnPath = [];      // keys from the vertical down to the current node
-var _bnKey = null;    // vertical the tree was built for
 
 // Weighted seller+buyer average (weights = completed count — TAT is only ever
 // defined for completed records, see Code.gs normalizeRows). Null when neither
@@ -4125,130 +4123,6 @@ function _bnBlendTAT(vs, vb) {
   if (bT == null) return sT;
   var w = sN + bN;
   return w > 0 ? Math.round((sT * sN + bT * bN) / w) : Math.round((sT + bT) / 2);
-}
-
-// Build the hierarchy for the active vertical from live data.
-function buildVertTree(key) {
-  var vs = (DS && DS.verticals || {})[key] || {};
-  var vb = (DB && DB.verticals || {})[key] || {};
-  var q  = (qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
-  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0] || {};
-  var isOMP = key === 'OMP';
-  var tot = (vs.total || 0) + (vb.total || 0);
-  var onb = (vs.completed || 0) + (vb.completed || 0);
-  var txn = (vs.transacted || 0) + (vb.transacted || 0);
-  var active = (vs.draft || 0) + (vb.draft || 0) + (vs.inReview || 0) + (vb.inReview || 0);
-  var blendTAT = _bnBlendTAT(vs, vb);
-  var regNode = function(regs) {
-    var by = {}; (regs || []).forEach(function(r) { by[r.region] = r; });
-    return ['North', 'South', 'East', 'West'].map(function(rn) {
-      var r = by[rn], v = r ? (r.onboarded || r.total || 0) : 0;
-      return rn === 'North'
-        ? { k:'reg_north', label:rn, val:fmt(v), region:rn, children:[
-            { k:'rn_list', label:'Vendor List', panel:'region', region:rn },
-            { k:'rn_dash', label:'View Dashboard', panel:'region', region:rn },
-          ]}
-        : { k:'reg_' + rn.toLowerCase(), label:rn, val:fmt(v), region:rn, panel:'region' };
-    });
-  };
-  var catKids = (vs.categories || []).filter(function(c) { return (c.total || 0) > 0; })
-    .map(function(c) { return { k:'cat_' + c.category, label:c.category, val:fmt(c.onboarded || 0), panel:'gmvcat', cat:c.category }; })
-    .concat([{ k:'txndetails', label:'Transaction Details', panel:'records', aud:'seller' }]);
-  var buyerCatKids = (vb.categories || []).filter(function(c) { return (c.total || 0) > 0; })
-    .map(function(c) { return { k:'bcat_' + c.category, label:c.category, val:fmt(c.onboarded || 0), panel:'buyercat', cat:c.category }; })
-    .concat([{ k:'btxndetails', label:'Transaction Details', panel:'records', aud:'buyer' }]);
-
-  return { k:key, label:cfg.name || key, children:[
-    { k:'overview', label:'Overview', val:fmt(tot), children:[
-      { k:'ov_total',  label:'Logged In Cases', val:fmt(tot), panel:'kpi', kpi:'total' },
-      { k:'ov_active', label:'Active Cases', val:fmt(active), panel:'active' },
-      { k:'ov_onb',    label:'Successfully Onboarded', val:fmt(onb), panel:'kpi', kpi:'onboarded' },
-      { k:'ov_txn',    label:'Transacted', val:fmt(txn), children:[
-        { k:'tx_seller', label:'Seller Split', val:fmt(vs.transacted || 0), panel:'kpi', kpi:'transacted' },
-        { k:'tx_buyer',  label:'Buyer Split', val:fmt(vb.transacted || 0), panel:'kpi', kpi:'transacted' },
-        { k:'tx_gmv',    label:'Total GMV', val:(vs.totalTxnValue != null ? fmtINR(vs.totalTxnValue) : '—'), panel:'gmv' },
-      ]},
-    ]},
-    { k:'funnel', label:'Onboarding Funnel', val:fmt(tot), children:[
-      { k:'fn_login', label:'Logged In', val:fmt(tot), panel:'stage', stage:'ALL' },
-      { k:'fn_draft', label:'Draft Cases', val:fmt((vs.draft || 0) + (vb.draft || 0)), panel:'kpi', kpi:'draft' },
-      { k:'fn_review',label:'Cases Under Review', val:fmt((vs.inReview || 0) + (vb.inReview || 0)), panel:'kpi', kpi:'review', children:[
-        { k:'fn_docval', label:'Document Validation', soon:true, children:[
-          { k:'dv_p', label:'Pending', soon:true, panel:'soon' },
-          { k:'dv_c', label:'Completed', soon:true, panel:'soon' },
-          { k:'dv_r', label:'Rejected', soon:true, panel:'soon' },
-        ]},
-        { k:'fn_gst',  label:'GST Verification', soon:true, panel:'soon' },
-        { k:'fn_comm', label:'Committee Approval', soon:true, panel:'soon' },
-      ]},
-      { k:'fn_appr', label:'Approved', val:fmt(onb), panel:'kpi', kpi:'onboarded',
-        note:'This onboarding flow doesn’t record a separate Approved step — Approved and Completed share the same terminal status.' },
-      { k:'fn_comp', label:'Completed', val:fmt(onb), panel:'kpi', kpi:'onboarded' },
-      { k:'fn_rej',  label:'Rejected Cases', val:fmt((vs.rejected || 0) + (vb.rejected || 0)), panel:'kpi', kpi:'rejected' },
-    ]},
-    { k:'sellers', label:'Sellers', val:fmt(vs.total || 0), children:[
-      isOMP
-        ? { k:'se_env', label:'Existing vs New', val:fmt((vs.oldVendors || 0) + (vs.newVendors || 0)), children:[
-            { k:'se_exist', label:'Existing', val:fmt(vs.oldVendors || 0), panel:'envnew', aud:'seller' },
-            { k:'se_new',   label:'New', val:fmt(vs.newVendors || 0), panel:'kpi', kpi:'oldvsnew' },
-          ]}
-        : { k:'se_env', label:'Existing vs New', panel:'gated', gateNote:'Existing-vs-New matching is tracked for Open Marketplace only — ' + esc(cfg.name || key) + ' vendors aren’t compared against other verticals.' },
-      { k:'se_txn', label:'Transacted', val:fmt(vs.transacted || 0), children:catKids },
-      { k:'se_nontxn', label:'Non-Transacted', panel:'kpi', kpi:'nontxn', children:[
-        { k:'nt_30', label:'0–30 Days', soon:true, panel:'soon' },
-        { k:'nt_90', label:'31–90 Days', soon:true, panel:'soon' },
-        { k:'nt_p',  label:'90+ Days', soon:true, panel:'soon' },
-      ]},
-      { k:'se_region', label:'Regional Split', children:regNode(vs.regions) },
-      { k:'se_docs', label:'Documents', panel:'docs' },
-    ]},
-    { k:'buyers', label:'Buyers', val:fmt(vb.total || 0), children:[
-      isOMP
-        ? { k:'by_env', label:'Existing vs New', val:fmt((vb.oldVendors || 0) + (vb.newVendors || 0)), children:[
-            { k:'by_exist', label:'Existing', val:fmt(vb.oldVendors || 0), panel:'envnew', aud:'buyer' },
-            { k:'by_new',   label:'New', val:fmt(vb.newVendors || 0), panel:'kpi', kpi:'oldvsnew' },
-          ]}
-        : { k:'by_env', label:'Existing vs New', panel:'gated', gateNote:'Existing-vs-New matching is tracked for Open Marketplace only — ' + esc(cfg.name || key) + ' vendors aren’t compared against other verticals.' },
-      { k:'by_txn', label:'Transacted', val:fmt(vb.transacted || 0), children:buyerCatKids },
-      { k:'by_region', label:'Regional Split', children:regNode(vb.regions) },
-      { k:'by_coll', label:'Collections', soon:true, children:[
-        { k:'co_out', label:'Outstanding', soon:true, panel:'soon' },
-        { k:'co_over',label:'Overdue', soon:true, panel:'soon' },
-        { k:'co_rec', label:'Recovered', soon:true, panel:'soon' },
-      ]},
-    ]},
-    { k:'ops', label:'Operational Insights', children:[
-      { k:'op_tat', label:'Average TAT', children:[
-        { k:'tat_s', label:'Seller', val:(vs.avgTAT != null ? vs.avgTAT + 'd' : '—'), panel:'tat', which:'seller' },
-        { k:'tat_b', label:'Buyer', val:(vb.avgTAT != null ? vb.avgTAT + 'd' : '—'), panel:'tat', which:'buyer' },
-        { k:'tat_v', label:'Business Vertical', val:(blendTAT != null ? blendTAT + 'd' : '—'), panel:'tat', which:'blend' },
-      ]},
-      { k:'op_team', label:'Team Productivity', soon:true, panel:'soon' },
-      { k:'op_osv', label:'OSV Status', val:(q && q.osv && q.osv.total ? fmt(q.osv.completed || 0) : '—'), panel:'osv' },
-      { k:'op_rating', label:'Vendor Ratings', val:(q && q.rating && q.rating.avg != null ? q.rating.avg.toFixed(1) + '★' : '—'), panel:'rating' },
-      { k:'op_recent', label:'Recent Activities', panel:'records', aud:'seller' },
-    ]},
-  ]};
-}
-
-function _bnFind(path) {
-  var node = _bnTree, chain = [_bnTree];
-  for (var i = 0; i < path.length; i++) {
-    var kids = node.children || [], nx = null;
-    for (var j = 0; j < kids.length; j++) { if (kids[j].k === path[i]) { nx = kids[j]; break; } }
-    if (!nx) break; node = nx; chain.push(node);
-  }
-  return { node:node, chain:chain };
-}
-var _bnTree = null;
-
-// A node with children normally just expands (panel shows "pick a sub-branch").
-// If it also declares its own `panel`, that summary+CTA renders instead — the
-// children still expand below it in the tree, so both stay reachable.
-function _bnPanelTarget(node, hasKids) {
-  if (!node) return null;
-  if (node.panel) return node;
-  return hasKids ? null : node;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4318,6 +4192,56 @@ function _mmAging(key) {
 function _d(t, v, ic) { return { t:t, v:v, ic:ic || MM_IC.grid, kind:'detail', tone:'t-ink', leaf:true }; }
 function _vd(action) { return { t:'View Details', ic:MM_IC.doc, kind:'vd', action:action || 'records' }; }
 
+// ── Data-driven category / region rows (seller + buyer) ───────────────────
+// Every vertical shows ONLY the categories it actually has (no hardcoded
+// Metal/Plastic), and every row carries both audiences so the split is always
+// visible. Union of the seller (vs) and buyer (vb) breakdowns from the backend.
+var MM_CAT_COLORS = ['#6366f1','#0ea5e9','#14b8a6','#f59e0b','#a855f7','#ec4899','#10b981','#f97316'];
+function _mmSB(s, b) { return fmt(s || 0) + ' S · ' + fmt(b || 0) + ' B'; }
+// Categories that the inline India map can filter by (chain target).
+function _mmGeoSeg(cat) { var c = String(cat || '').trim().toLowerCase().replace(/['"\\]/g, ''); return c || null; }
+function _mmCatRows(vs, vb, field) {
+  var m = {}, order = [];
+  function add(list, side) {
+    (list || []).forEach(function(c) {
+      var k = c.category || 'Other';
+      if (!m[k]) { m[k] = { cat:k, s:0, b:0 }; order.push(k); }
+      m[k][side] = c[field] || 0;
+    });
+  }
+  add(vs && vs.categories, 's'); add(vb && vb.categories, 'b');
+  return order.map(function(k){ return m[k]; })
+    .filter(function(x){ return (x.s + x.b) > 0; })
+    .sort(function(a, b){ return (b.s + b.b) - (a.s + a.b); });
+}
+function _mmCatGmvRows(vs, vb) {
+  var m = {}, order = [];
+  function add(list, side) {
+    (list || []).forEach(function(c) {
+      if (c.txnValue == null || c.txnValue <= 0) return;
+      var k = c.category || 'Other';
+      if (!m[k]) { m[k] = { cat:k, s:0, b:0 }; order.push(k); }
+      m[k][side] = c.txnValue;
+    });
+  }
+  add(vs && vs.categories, 's'); add(vb && vb.categories, 'b');
+  return order.map(function(k){ return m[k]; }).sort(function(a, b){ return (b.s + b.b) - (a.s + a.b); });
+}
+function _mmRegRows(vs, vb) {
+  var m = {}, order = [];
+  function add(list, side) {
+    (list || []).forEach(function(r) {
+      var k = r.region;
+      if (!m[k]) { m[k] = { region:k, s:0, b:0 }; order.push(k); }
+      m[k][side] = r.onboarded || r.total || 0;
+    });
+  }
+  add(vs && vs.regions, 's'); add(vb && vb.regions, 'b');
+  return order.map(function(k){ return m[k]; })
+    .filter(function(x){ return (x.s + x.b) > 0; })
+    .sort(function(a, b){ return (b.s + b.b) - (a.s + a.b); });
+}
+
 // Module list for one vertical, wired to live DS/DB/quality data.
 function _mmVertModules(key) {
   var vs = (DS && DS.verticals || {})[key] || {};
@@ -4325,54 +4249,64 @@ function _mmVertModules(key) {
   var q  = (key === 'OMP' && qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
   var isOMP = key === 'OMP';
   var onb  = _mmC(vs, vb, 'completed');
-  var mTot = _mmC(vs, vb, 'metalTotal'),      pTot = _mmC(vs, vb, 'plasticTotal');
-  var mOnb = _mmC(vs, vb, 'metalOnboarded'),  pOnb = _mmC(vs, vb, 'plasticOnboarded');
-  var mTxn = _mmC(vs, vb, 'metalTransacted'), pTxn = _mmC(vs, vb, 'plasticTransacted');
   var txn  = (vs.transacted != null || vb.transacted != null) ? _mmC(vs, vb, 'transacted') : null;
   var gmv  = vs.totalTxnValue;
-  var cat  = function(c) { return (vs.categories || []).filter(function(x){ return x.category === c; })[0] || {}; };
-  var gmvM = cat('Metal').txnValue, gmvP = cat('Plastic').txnValue;
+  // Data-driven category + region breakdowns for THIS vertical, seller + buyer.
+  var catTot  = _mmCatRows(vs, vb, 'total');
+  var catOnb  = _mmCatRows(vs, vb, 'onboarded');
+  var catTxn  = _mmCatRows(vs, vb, 'transacted');
+  var catGmv  = _mmCatGmvRows(vs, vb);
+  var regRows = _mmRegRows(vs, vb);
+  var hasCat  = catOnb.length > 0 || catTot.length > 0;
+  function _catDetails(rows) { return rows.map(function(x){ return _d(x.cat, _mmSB(x.s, x.b)); }); }
   var f = function(t, v, ic, tone, kids) { return { t:t, v:fmt(v), ic:ic, tone:tone, kind:'kpi', children:kids }; };
   var mods = [];
 
   // 1 — Funnel (expands inline as a horizontal stage dashboard)
   mods.push({ t:'Funnel', ic:MM_IC.funnel, tone:'t-blue', kind:'module', expand:'inline-funnel', eye:'Funnel · stages', children:[
     f('Logged In Cases', _mmC(vs,vb,'total'), MM_IC.funnel, 't-blue',
-      [ _d('Sellers', fmt(vs.total||0), MM_IC.users), _d('Buyers', fmt(vb.total||0), MM_IC.users),
-        _d('Metal', fmt(mTot)), _d('Plastic', fmt(pTot)), _vd('total') ]),
+      [ _d('Sellers', fmt(vs.total||0), MM_IC.users), _d('Buyers', fmt(vb.total||0), MM_IC.users) ]
+        .concat(_catDetails(catTot)).concat([ _vd('total') ])),
     f('Draft Cases', _mmC(vs,vb,'draft'), MM_IC.draft, 't-purple',
       [ _d('Sellers', fmt(vs.draft||0), MM_IC.users), _d('Buyers', fmt(vb.draft||0), MM_IC.users), _vd('draft') ]),
     f('Cases Under Review', _mmC(vs,vb,'inReview'), MM_IC.clock, 't-amber',
       [ _d('Sellers', fmt(vs.inReview||0), MM_IC.users), _d('Buyers', fmt(vb.inReview||0), MM_IC.users), _vd('review') ]),
     f('Successfully Onboarded', onb, MM_IC.check, 't-green',
-      [ _d('Sellers', fmt(vs.completed||0), MM_IC.users), _d('Buyers', fmt(vb.completed||0), MM_IC.users),
-        _d('Metal', fmt(mOnb)), _d('Plastic', fmt(pOnb)), _vd('onboarded') ]),
+      [ _d('Sellers', fmt(vs.completed||0), MM_IC.users), _d('Buyers', fmt(vb.completed||0), MM_IC.users) ]
+        .concat(_catDetails(catOnb)).concat([ _vd('onboarded') ])),
     f('Rejected Cases', _mmC(vs,vb,'rejected'), MM_IC.x, 't-red',
       [ _d('Sellers', fmt(vs.rejected||0), MM_IC.users), _d('Buyers', fmt(vb.rejected||0), MM_IC.users), _vd('rejected') ]),
   ]});
 
-  // 2 — Volume (onboarded composition — inline panel, chains into Geography)
-  mods.push({ t:'Volume', ic:MM_IC.grid, tone:'t-ink', kind:'module', expand:'inline-panel', eye:'Onboarded composition',
+  // 2 — Volume (onboarded composition — inline panel, chains into Geography).
+  //     Category bars are data-driven per vertical; each tile carries S · B.
+  var volBar = catOnb.length
+    ? catOnb.map(function(x, i){ return { label:x.cat, v:x.s + x.b, color:MM_CAT_COLORS[i % MM_CAT_COLORS.length], seg:_mmGeoSeg(x.cat) }; })
+    : [ { label:'Sellers', v:vs.completed||0, color:'#6366f1' }, { label:'Buyers', v:vb.completed||0, color:'#0ea5e9' } ];
+  var volTiles = [ { label:'Sellers', v:vs.completed||0 }, { label:'Buyers', v:vb.completed||0 } ]
+    .concat(catOnb.map(function(x){ return { label:x.cat, v:x.s + x.b, sub:_mmSB(x.s, x.b), seg:_mmGeoSeg(x.cat) }; }));
+  mods.push({ t:'Volume', ic:MM_IC.grid, tone:'t-ink', kind:'module', expand:'inline-panel',
+    eye: hasCat ? 'Onboarded composition · seller / buyer' : 'Onboarded composition',
     panel:{
-      eye:'Onboarded composition',
+      eye: hasCat ? 'Onboarded by category · seller / buyer' : 'Onboarded composition',
       headline:{ v:onb, label:'Total Onboarded', tone:'good' },
-      bar:[ { label:'Metal', v:mOnb, color:'#6366f1', seg:'metal' },
-            { label:'Plastic', v:pOnb, color:'#0ea5e9', seg:'plastic' } ],
-      tiles:[ { label:'Sellers', v:vs.completed||0 }, { label:'Buyers', v:vb.completed||0 },
-              { label:'Metal', v:mOnb, seg:'metal' }, { label:'Plastic', v:pOnb, seg:'plastic' } ],
-      chain:true, records:'onboarded'
+      bar:volBar, tiles:volTiles, chain:true, records:'onboarded'
     }
   });
 
-  // 3 — Geographic Split (each region expands an inline interactive India map)
-  var regs = (vs.regions || []).filter(function(r){ return (r.onboarded||r.total||0) > 0; });
-  if (!regs.length && key === activeVertKey && Array.isArray(vertRows) && vertRows.length)
-    regs = _regionsFromRows(vertRows).filter(function(r){ return (r.total||0) > 0; });
+  // 3 — Geographic Split (each region expands an inline interactive India map).
+  //     Regions carry BOTH audiences — each card shows onboarded seller · buyer.
+  var regs = regRows;
+  if (!regs.length && key === activeVertKey && Array.isArray(vertRows) && vertRows.length) {
+    regs = _regionsFromRows(vertRows).filter(function(r){ return (r.total||0) > 0; })
+      .map(function(r){ return { region:r.region, s:r.total||0, b:0 }; });
+  }
   if (regs.length) {
-    mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module', geoModule:true, eye:'Onboarded by region',
+    mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module', geoModule:true,
+      eye:'Onboarded by region · seller / buyer',
       children: regs.map(function(r) {
         var tone = r.region === 'North' ? 't-blue' : r.region === 'South' ? 't-green' : 't-ink';
-        return { t:r.region, v:fmt(r.onboarded || r.total || 0), ic:MM_IC.pin, tone:tone, kind:'kpi',
+        return { t:r.region, v:fmt(r.s + r.b), s:_mmSB(r.s, r.b), ic:MM_IC.pin, tone:tone, kind:'kpi',
                  geoRegion:r.region };
       }) });
   }
@@ -4382,7 +4316,10 @@ function _mmVertModules(key) {
     var nonTxn = txn != null ? Math.max(0, onb - txn) : null;
     var ag = _mmAging(key);
     var tTiles = [];
-    if (txn != null) { tTiles.push({ label:'Metal', v:mTxn }, { label:'Plastic', v:pTxn }); }
+    if (txn != null) {
+      tTiles.push({ label:'Sellers', v:vs.transacted||0 }, { label:'Buyers', v:vb.transacted||0 });
+      catTxn.forEach(function(x){ tTiles.push({ label:x.cat, v:x.s + x.b, sub:_mmSB(x.s, x.b) }); });
+    }
     if (ag) {
       tTiles.push({ label:'0–30 days', v:ag.a, tone:'good' },
                   { label:'31–60 days', v:ag.c, tone:'warn' },
@@ -4390,8 +4327,7 @@ function _mmVertModules(key) {
     }
     if (gmv != null) {
       tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true });
-      if (gmvM != null) tTiles.push({ label:'GMV · Metal', v:fmtINR(gmvM), raw:true });
-      if (gmvP != null) tTiles.push({ label:'GMV · Plastic', v:fmtINR(gmvP), raw:true });
+      catGmv.forEach(function(x){ tTiles.push({ label:'GMV · ' + x.cat, v:fmtINR((x.s||0) + (x.b||0)), raw:true }); });
     }
     mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transactions',
       panel:{
@@ -4437,19 +4373,17 @@ function _mmVertModules(key) {
     });
   }
 
-  // 7 — Existing vs New (OMP only — inline panel)
+  // 7 — Existing vs New (OMP only — inline panel). Split shown seller / buyer.
   if (isOMP && vs.oldVendors != null) {
-    var exM = (vs.metalOld||0)+(vb.metalOld||0), exP = (vs.plasticOld||0)+(vb.plasticOld||0);
-    var nwM = (vs.metalNew||0)+(vb.metalNew||0), nwP = (vs.plasticNew||0)+(vb.plasticNew||0);
     var exAll = (vs.oldVendors||0)+(vb.oldVendors||0), nwAll = (vs.newVendors||0)+(vb.newVendors||0);
     mods.push({ t:'Existing vs New', ic:MM_IC.users, tone:'t-purple', kind:'module', expand:'inline-panel', eye:'Vendor classification',
       panel:{
-        eye:'Vendor classification',
+        eye:'Vendor classification · seller / buyer',
         headline:{ v:exAll+nwAll, label:'Classified onboarded', tone:'ink' },
         bar:[ { label:'Existing', v:exAll, color:'#8b5cf6' },
               { label:'New', v:nwAll, color:'#005dff' } ],
-        tiles:[ { label:'Existing', v:exAll, sub:'Metal '+fmt(exM)+' · Plastic '+fmt(exP) },
-                { label:'New', v:nwAll, sub:'Metal '+fmt(nwM)+' · Plastic '+fmt(nwP) } ],
+        tiles:[ { label:'Existing', v:exAll, sub:_mmSB(vs.oldVendors||0, vb.oldVendors||0) },
+                { label:'New', v:nwAll, sub:_mmSB(vs.newVendors||0, vb.newVendors||0) } ],
         records:'oldvsnew'
       }
     });
@@ -4703,8 +4637,8 @@ function mmClickNode(id) {
   mmPaint();
 }
 
-// Chain: from a Volume/Funnel Metal|Plastic segment into Geographic Split,
-// carrying the category filter so the map + legend stay scoped to it.
+// Chain: from any Volume category segment into Geographic Split, carrying that
+// category as a filter so the map + legend stay scoped to it (seller / buyer).
 function mmChainToGeo(seg) {
   var vertId = null;
   for (var i = 0; i < mmPath.length; i++) {
@@ -4715,7 +4649,7 @@ function mmChainToGeo(seg) {
   var geoMod = (vert.children || []).filter(function(c){ return c.geoModule; })[0];
   if (!geoMod) return;
   _mmCloseInline();
-  _geo.cat = (seg === 'metal' || seg === 'plastic') ? seg : null;
+  _geo.cat = seg ? String(seg).toLowerCase() : null;
   mmPath = _mmPathIds(geoMod);   // show the North/South region cards
   mmPaint();
   // gently bring the region column into view
@@ -4752,14 +4686,17 @@ window.addEventListener('resize', function() { if (currentView !== 'gst') mmDraw
 // Each entry: n=name, r=North|South region, d=SVG path. Self-contained, no external assets.
 var IN_STATES = {"AN":{"name":"Andaman & Nicobar Island","region":"South","d":"M863.3 1007.3L866.0 1014.5L862.9 1022.3L857.0 1010.8L863.3 1007.3ZM858.8 1000.9L859.2 1005.1L856.1 1006.3L858.8 1000.9ZM848.0 982.9L850.6 985.6L847.8 987.2L845.6 984.8L848.0 982.9ZM852.7 976.4L853.6 981.3L851.3 982.0L852.7 976.4ZM828.7 944.9L829.8 947.3L826.7 948.6L828.7 944.9ZM819.6 893.3L822.2 899.5L819.0 905.3L815.1 897.5L819.6 893.3ZM823.6 874.3L825.2 878.5L822.2 879.3L823.6 874.3ZM834.5 857.6L837.1 862.0L833.3 859.4L834.5 857.6ZM825.4 851.5L828.4 863.1L826.5 874.0L823.8 873.9L819.4 863.7L825.4 851.5ZM829.6 849.5L831.3 852.5L826.9 855.8L829.6 849.5ZM832.0 830.4L834.6 842.0L829.8 849.5L825.5 848.6L826.3 833.2L832.0 830.4ZM825.4 828.1L826.2 831.8L825.4 828.1ZM836.4 810.0L836.6 825.2L828.7 830.4L831.2 813.1L836.4 810.0Z"},"AP":{"name":"Andhra Pradesh","region":"South","d":"M453.9 724.0L450.0 725.7L453.9 724.0ZM564.9 638.4L543.4 662.7L529.8 668.9L513.9 684.9L492.3 695.2L483.7 702.4L482.0 706.4L485.8 708.6L483.6 716.6L464.8 724.7L449.5 724.4L446.0 735.1L439.7 742.6L434.5 743.0L432.1 737.9L419.4 742.1L409.6 763.9L414.5 779.0L412.3 790.9L416.2 803.2L415.5 812.8L408.6 812.2L406.1 816.9L397.7 820.0L389.3 817.4L389.4 821.6L383.0 823.3L380.6 827.2L369.0 825.1L363.0 828.3L360.8 836.9L354.8 839.6L350.2 837.1L350.6 832.2L357.8 828.6L361.3 819.0L354.3 816.4L355.2 809.4L345.3 807.3L346.1 801.0L338.1 798.7L327.0 805.6L317.5 799.7L315.1 804.1L308.6 802.4L310.8 798.8L306.0 791.5L310.3 791.0L310.4 794.8L319.9 795.7L323.5 799.7L320.8 794.7L322.5 791.3L326.5 791.0L322.6 786.2L307.5 789.0L305.7 784.3L308.7 781.6L301.7 777.9L305.1 766.5L301.8 766.3L302.9 762.5L313.2 764.4L315.0 760.1L310.8 754.2L312.1 737.0L317.8 735.5L345.9 739.6L355.8 731.6L366.9 733.5L376.1 726.5L382.8 726.3L384.2 716.7L401.0 711.4L406.4 714.4L410.7 708.8L408.1 707.2L409.9 704.0L414.8 702.4L426.9 710.4L427.6 705.3L422.9 704.7L424.7 699.8L435.4 701.8L438.1 696.7L455.8 691.0L457.8 684.6L467.6 673.8L474.9 670.0L482.0 672.4L485.2 670.3L485.9 659.1L489.9 655.8L493.4 663.8L500.3 658.1L509.2 659.5L507.8 654.2L519.7 644.6L517.9 640.5L522.5 640.6L527.3 636.2L535.6 646.3L542.8 648.6L550.7 647.1L561.5 636.8L564.9 638.4Z"},"AR":{"name":"Arunanchal Pradesh","region":"North","d":"M909.0 401.6L907.6 390.5L916.2 387.7L918.7 383.4L934.5 380.2L930.2 378.0L926.1 369.0L933.3 361.7L921.1 362.0L884.8 373.8L877.8 373.2L862.0 387.0L863.0 389.4L850.9 393.6L836.1 394.4L824.3 390.5L806.2 395.0L803.2 377.5L791.3 376.6L788.2 372.0L791.8 365.0L798.7 369.1L811.1 364.8L812.8 367.4L821.1 366.1L827.0 360.8L825.0 356.9L841.9 350.6L846.5 340.8L866.3 339.5L875.5 326.7L886.8 322.3L889.2 318.5L894.6 324.3L916.2 328.2L919.2 322.7L936.8 315.0L941.9 321.8L947.1 321.4L939.1 327.8L941.6 331.6L948.5 328.3L954.1 335.8L942.8 347.7L955.9 346.2L979.2 353.7L979.3 363.4L963.5 372.6L964.0 377.5L972.5 387.8L962.4 385.8L960.4 380.9L941.7 383.0L915.0 401.4L909.0 401.6Z"},"AS":{"name":"Assam","region":"North","d":"M907.6 390.5L897.4 393.9L881.3 406.5L877.9 408.0L877.6 405.4L868.7 417.1L867.7 425.3L861.0 427.7L861.2 424.2L858.0 425.7L846.4 437.0L851.0 444.4L841.7 460.1L839.1 460.2L836.5 471.8L829.8 472.8L827.6 469.0L820.0 479.8L809.5 477.4L810.7 456.8L818.9 458.0L816.8 453.0L828.6 445.1L822.5 441.0L816.3 430.9L808.1 433.3L808.0 423.9L811.0 421.9L808.4 420.3L798.7 421.9L796.7 419.1L790.5 424.6L788.5 421.9L785.4 427.3L777.1 431.5L774.8 427.5L765.9 424.3L740.6 424.1L733.4 431.3L737.0 435.7L732.1 439.1L732.6 423.6L727.7 414.8L732.3 410.8L732.3 400.9L743.1 398.8L744.4 396.1L780.9 398.5L799.3 394.3L804.5 396.4L824.3 390.5L836.1 394.4L857.7 392.7L877.8 373.2L884.8 373.8L928.3 361.4L933.3 361.7L926.1 369.0L930.2 378.0L934.5 380.2L918.7 383.4L916.2 387.7L907.6 390.5Z"},"BR":{"name":"Bihar","region":"North","d":"M674.7 406.0L680.3 411.1L666.0 421.4L665.5 426.8L672.9 432.6L672.1 436.7L664.2 440.0L666.3 444.7L664.2 447.1L657.0 443.6L649.0 447.0L647.9 451.1L644.2 452.0L639.8 465.7L633.6 468.0L625.2 466.4L620.7 473.3L615.2 466.8L609.7 466.1L607.1 460.9L596.9 459.5L594.5 467.0L571.7 473.4L566.8 468.8L556.0 476.2L548.3 468.4L543.4 470.1L539.6 465.3L535.5 468.5L523.3 468.7L524.5 466.0L519.6 460.8L517.4 453.5L520.4 446.2L532.7 441.6L542.1 432.3L556.8 432.9L560.2 429.3L539.9 416.9L545.0 414.8L545.5 411.3L536.8 407.1L544.9 403.0L553.5 403.3L547.4 395.8L541.6 395.1L534.5 377.9L543.4 375.5L548.6 379.3L560.2 381.1L560.8 390.2L578.9 395.8L579.4 399.1L594.7 396.5L596.8 402.7L600.5 403.9L616.7 403.6L629.5 409.6L640.5 404.6L641.2 408.7L649.3 411.9L664.3 408.2L671.4 411.7L674.7 406.0Z"},"CT":{"name":"Chhattisgarh","region":"North","d":"M539.9 531.2L539.8 535.9L528.2 540.3L525.2 544.3L526.6 550.1L519.4 559.4L519.2 567.9L515.8 566.8L513.3 574.1L495.0 573.9L489.8 583.2L485.1 583.5L487.1 608.1L497.5 610.1L497.0 614.9L489.7 612.7L485.3 614.9L482.7 610.5L471.9 606.5L469.4 608.9L469.4 612.7L475.8 616.1L475.6 623.9L479.7 627.3L482.0 643.5L472.6 650.7L465.7 661.0L458.6 663.8L453.9 677.9L443.6 678.4L439.6 668.0L432.5 666.5L434.1 664.3L429.1 655.7L424.4 652.4L419.6 653.6L416.2 648.6L419.7 646.6L417.1 641.1L421.0 633.2L426.7 628.4L432.9 631.9L437.6 626.3L426.0 616.6L425.5 605.8L420.8 602.1L428.6 599.5L425.9 580.7L422.2 578.3L423.3 573.2L429.3 570.6L432.6 555.1L435.0 555.2L438.4 543.6L441.2 545.5L444.7 533.7L461.2 530.7L466.3 526.3L466.4 520.2L472.1 517.6L472.0 513.9L479.0 511.9L480.3 506.2L471.3 499.7L461.1 500.4L463.8 493.8L460.9 489.8L463.0 487.5L467.9 491.1L492.0 491.6L500.6 486.3L511.1 488.5L517.6 482.0L520.9 482.5L532.4 497.6L540.5 497.5L540.8 511.4L546.9 517.0L552.0 517.0L547.4 526.0L539.9 531.2Z"},"PY":{"name":"Puducherry","region":"South","d":"M403.2 890.5L403.1 895.5L398.9 891.2L403.2 890.5ZM401.6 864.2L398.9 865.3L401.6 864.2ZM395.8 858.0L396.3 862.1L395.8 858.0ZM402.8 860.4L399.6 863.8L396.9 858.6L402.8 860.4Z"},"PB":{"name":"Punjab","region":"North","d":"M302.4 270.0L304.3 274.5L299.7 274.7L307.1 279.7L305.4 285.6L301.6 285.1L294.5 295.7L285.2 294.6L283.8 303.2L278.3 306.1L258.7 304.9L251.3 310.6L250.0 303.3L247.4 304.4L237.5 298.5L230.5 300.8L207.6 299.0L209.9 283.0L225.9 268.0L232.8 265.3L233.5 263.0L227.9 262.8L232.4 252.7L226.8 244.5L241.8 233.8L253.0 232.2L254.8 225.3L267.6 222.9L272.9 218.0L274.6 223.1L264.6 228.6L264.2 232.8L273.6 237.5L283.8 257.6L288.8 254.2L297.9 260.5L297.1 267.0L302.4 270.0Z"},"RJ":{"name":"Rajasthan","region":"North","d":"M228.2 300.0L226.6 306.2L231.0 305.9L229.9 316.7L239.1 316.9L246.6 322.2L256.5 321.2L256.5 327.3L260.8 329.1L262.2 341.5L278.6 353.6L276.1 364.9L282.5 366.7L282.7 358.8L288.0 359.7L288.7 356.2L292.4 356.0L294.3 361.3L304.3 353.6L308.5 356.2L306.1 369.4L308.8 371.3L311.0 366.3L319.7 367.3L320.9 375.5L330.9 384.3L327.6 388.2L332.5 392.5L323.4 396.7L324.9 399.0L334.9 393.8L350.3 393.9L345.5 401.6L313.4 415.8L294.2 429.2L296.5 442.0L308.3 444.9L319.6 440.6L323.0 447.1L319.5 451.5L305.3 453.8L307.9 458.0L303.1 459.5L311.6 465.2L308.3 470.9L303.5 468.6L306.3 481.2L297.0 477.0L293.9 480.1L283.5 478.0L280.8 478.8L281.1 482.3L275.4 484.5L275.9 487.3L262.9 491.5L259.1 485.8L260.7 483.7L268.9 485.3L270.5 475.9L268.0 472.7L273.5 471.4L274.2 468.5L271.4 462.5L251.3 462.3L254.0 452.7L248.9 453.2L245.1 458.4L239.4 456.1L239.1 459.9L244.2 460.5L243.7 463.1L239.6 464.4L237.7 461.3L234.3 469.4L239.1 471.2L235.6 476.6L239.7 476.6L243.5 484.3L241.2 495.5L228.3 506.3L232.8 510.1L221.3 514.4L211.5 505.9L198.7 502.2L199.5 496.9L189.6 489.7L191.5 483.5L186.1 484.8L180.5 479.4L184.0 474.7L180.9 469.7L175.3 474.9L162.8 469.4L160.2 472.4L146.6 463.0L121.7 466.1L115.4 463.7L108.4 449.2L101.2 441.6L101.5 433.1L88.5 431.9L82.6 424.8L85.0 405.6L72.8 404.2L62.4 397.7L65.9 386.0L91.6 360.2L98.8 360.2L104.6 369.0L109.1 369.5L141.7 361.7L158.4 336.1L176.3 328.3L191.4 299.9L210.0 292.1L207.6 299.0L228.2 300.0Z"},"SK":{"name":"Sikkim","region":"North","d":"M696.0 387.1L690.7 385.6L685.4 389.2L671.6 384.9L677.6 367.1L675.9 361.7L690.2 357.8L699.0 360.8L699.2 370.8L696.5 374.1L700.8 383.1L696.0 387.1Z"},"TN":{"name":"Tamil Nadu","region":"South","d":"M401.7 864.2L398.9 865.3L401.4 865.7L403.2 890.5L398.9 891.2L403.1 895.5L404.1 912.2L387.9 911.2L384.3 913.8L383.9 920.2L372.7 934.2L372.0 938.2L378.3 944.4L351.6 951.7L343.6 972.4L327.7 981.1L319.9 979.8L312.7 974.5L318.8 966.6L315.8 960.4L318.2 957.4L314.4 951.8L322.5 937.7L321.2 934.2L315.4 932.0L318.1 913.1L315.2 910.2L309.3 914.1L303.9 911.9L306.5 897.0L298.2 892.1L301.3 886.4L291.4 883.6L294.6 878.9L284.2 872.3L293.4 868.1L295.1 870.8L304.9 871.1L306.5 865.5L324.0 865.8L325.9 860.8L331.6 860.1L333.7 853.5L325.1 852.3L329.6 847.6L329.4 839.3L334.4 837.2L336.9 831.9L357.9 839.4L363.0 828.3L369.0 825.1L380.6 827.2L383.0 823.3L389.4 821.6L389.3 817.4L397.7 820.0L406.1 816.9L408.6 812.2L415.5 812.8L416.9 810.3L419.5 818.1L416.4 835.1L402.8 860.4L396.9 858.6L397.8 862.5L401.7 864.2Z"},"CH":{"name":"Chandigarh","region":"North","d":"M304.3 274.5L304.0 276.9L299.7 274.7L304.3 274.5Z"},"TS":{"name":"Telangana","region":"South","d":"M417.1 649.5L419.6 653.6L424.4 652.4L429.1 655.7L434.1 664.3L432.5 666.5L439.6 668.0L443.6 678.4L466.2 675.1L455.8 691.0L438.1 696.7L435.4 701.8L424.7 699.8L422.9 704.7L427.6 705.3L426.9 710.4L418.8 707.0L417.0 702.6L409.9 704.0L408.1 707.2L410.7 708.8L406.4 714.4L401.0 711.4L384.2 716.7L382.8 726.3L376.1 726.5L366.9 733.5L355.8 731.6L345.9 739.6L326.4 736.6L325.6 726.4L329.1 724.4L317.8 719.6L324.5 715.3L326.0 702.9L322.0 696.3L331.2 686.8L324.1 684.9L331.1 673.0L326.9 661.4L329.2 654.9L334.1 653.7L339.1 645.0L334.8 641.4L337.9 631.5L348.5 633.4L355.6 614.9L370.3 617.2L370.7 620.4L381.6 626.6L383.8 621.7L390.9 625.3L401.0 622.2L407.4 628.3L403.7 637.5L406.1 647.4L411.8 650.8L417.1 649.5Z"},"TR":{"name":"Tripura","region":"North","d":"M810.2 469.5L809.5 477.4L813.2 478.7L811.3 493.7L800.6 495.5L801.8 501.2L795.6 506.7L796.6 513.2L790.1 518.0L784.7 508.2L781.4 513.3L775.0 493.0L783.8 481.7L794.9 480.5L794.3 477.5L799.7 480.7L800.2 474.6L810.2 469.5Z"},"UP":{"name":"Uttar Pradesh","region":"North","d":"M410.4 334.7L420.3 340.8L426.4 339.0L448.0 349.4L451.9 356.2L455.0 355.2L470.2 365.0L476.2 362.9L488.9 370.6L496.5 369.3L498.3 376.0L512.7 377.5L516.9 381.4L519.9 376.8L526.7 377.0L536.8 381.4L541.6 395.1L547.4 395.8L553.0 402.0L544.9 403.0L536.6 408.9L545.5 411.3L545.0 414.8L539.9 416.9L541.4 419.8L560.2 429.3L556.8 432.9L542.1 432.3L532.7 441.6L518.5 447.8L519.6 460.8L524.5 466.0L519.8 469.6L521.3 474.3L513.2 487.6L505.4 489.1L498.6 484.8L499.3 465.2L487.9 463.2L487.6 466.5L483.9 465.6L480.9 460.3L472.6 459.1L470.9 454.6L458.8 448.3L457.1 451.7L450.0 449.0L446.5 455.4L436.5 456.1L437.0 451.9L433.0 449.6L424.0 454.3L419.8 449.7L422.3 448.7L418.5 441.9L414.5 441.4L403.3 446.7L402.6 450.9L388.2 450.4L389.7 446.6L386.4 443.8L384.0 444.4L385.8 449.3L379.8 450.7L368.6 445.0L373.5 437.5L366.4 439.7L367.7 442.9L362.4 441.1L359.7 445.2L363.1 455.3L367.7 458.4L367.3 466.5L371.5 465.3L374.4 474.1L368.3 479.5L359.0 473.0L355.2 476.7L353.2 474.8L348.2 457.7L357.1 449.2L352.2 442.6L358.3 436.0L368.7 434.9L367.6 431.7L379.3 411.9L374.9 401.6L366.1 398.0L349.5 396.9L350.3 393.9L347.2 393.1L334.9 393.8L324.9 399.0L323.4 396.7L332.5 392.5L328.1 390.3L330.9 384.3L320.9 375.5L318.8 366.7L326.8 362.8L325.3 357.4L327.4 354.8L319.5 343.2L320.5 339.1L316.2 335.7L316.9 329.4L313.9 326.3L312.6 310.8L315.7 301.4L330.8 285.5L340.0 290.4L333.0 302.4L334.7 307.2L341.0 308.1L342.0 312.3L353.6 304.7L365.5 313.7L372.4 315.3L366.6 319.8L389.1 334.0L401.1 332.9L408.1 338.3L410.4 334.7Z"},"UK":{"name":"Uttarakhand","region":"North","d":"M410.4 334.7L408.1 338.3L401.1 332.9L389.1 334.0L366.6 319.8L372.4 315.3L361.7 311.4L358.7 306.4L353.6 304.7L342.0 312.3L341.0 308.1L334.7 307.2L333.0 302.4L340.0 290.4L328.4 285.7L336.2 282.4L332.5 274.4L336.4 265.5L352.7 258.2L375.6 263.5L372.6 259.1L377.5 252.5L389.3 266.1L395.1 269.0L403.8 267.9L416.3 275.3L415.5 280.2L441.2 290.0L442.3 292.1L436.6 292.8L421.5 304.7L417.0 324.8L412.6 327.1L410.4 334.7Z"},"WB":{"name":"West Bengal","region":"North","d":"M705.9 556.1L706.9 558.7L704.7 558.5L705.9 556.1ZM678.3 554.9L680.6 561.0L678.3 554.9ZM698.4 554.7L697.6 558.6L698.4 554.7ZM681.9 551.7L681.0 554.9L681.9 551.7ZM675.6 551.3L674.9 559.1L672.5 556.2L675.6 551.3ZM685.7 550.4L685.6 553.5L685.7 550.4ZM698.5 550.0L703.1 551.6L700.3 553.3L698.5 550.0ZM697.7 546.8L700.9 549.6L695.7 548.7L697.7 546.8ZM704.5 545.8L706.0 549.5L703.1 547.6L704.5 545.8ZM702.2 541.5L703.7 550.3L700.7 545.4L702.2 541.5ZM704.0 541.3L703.3 544.9L704.0 541.3ZM693.9 540.9L697.0 542.1L691.9 544.1L693.9 540.9ZM700.5 530.3L699.4 534.6L700.5 530.3ZM701.3 529.8L703.9 534.1L701.5 534.7L701.3 529.8ZM696.0 387.1L708.4 397.6L721.4 397.3L732.3 400.9L733.0 404.6L732.3 410.8L727.7 417.7L725.0 416.1L722.0 422.9L709.3 418.5L706.9 410.3L703.5 409.8L704.1 413.6L696.0 413.2L684.0 403.6L682.9 406.9L688.2 410.9L676.4 419.5L674.1 426.1L674.9 429.1L680.0 428.7L689.3 437.9L698.5 439.0L698.9 442.5L704.1 444.6L701.3 448.8L685.6 447.7L684.1 455.7L682.1 457.9L676.8 455.7L671.5 464.3L682.4 473.3L695.4 476.9L695.2 487.7L690.1 489.4L689.7 496.1L695.6 501.2L694.1 507.1L702.7 510.3L699.7 513.2L702.9 521.0L698.9 534.0L701.9 538.1L700.7 541.9L693.1 541.1L688.4 552.0L684.8 550.5L678.1 554.8L676.5 545.1L665.7 556.3L654.2 559.8L652.9 554.7L647.5 553.5L646.1 548.7L639.4 551.5L638.9 546.0L629.0 542.9L633.2 534.9L630.6 534.2L630.3 529.5L619.2 523.1L618.4 517.0L600.1 510.2L600.9 502.2L606.9 500.9L606.7 498.0L612.9 502.6L617.1 501.8L620.2 496.6L631.5 494.8L634.9 488.8L643.2 491.5L642.8 489.2L648.0 488.5L646.0 484.3L652.8 485.7L654.6 481.5L661.0 480.4L664.5 467.6L668.4 464.5L666.0 462.1L670.1 457.7L663.7 450.9L666.3 444.7L664.2 440.0L672.1 436.7L672.9 432.6L664.9 425.0L680.3 411.1L674.7 406.0L676.7 395.8L670.8 388.3L671.6 384.9L685.4 389.2L690.7 385.6L696.0 387.1Z"},"OD":{"name":"Odisha","region":"North","d":"M629.2 540.6L629.0 542.9L638.9 546.0L639.4 551.5L646.1 548.7L647.5 553.5L652.9 554.7L654.2 559.8L636.5 567.6L633.0 573.7L638.7 588.4L631.2 593.2L631.1 599.5L617.4 611.4L584.0 622.7L564.9 638.4L561.5 636.8L556.6 639.4L550.7 647.1L542.8 648.6L535.6 646.3L527.3 636.2L522.5 640.6L517.9 640.5L519.7 644.6L507.8 654.2L509.2 659.5L500.3 658.1L493.4 663.8L489.9 655.8L485.9 659.1L485.2 670.3L482.0 672.4L474.9 670.0L461.4 677.6L453.9 677.9L458.6 663.8L465.7 661.0L472.6 650.7L482.0 643.5L479.7 627.3L475.6 623.9L475.8 616.1L469.4 612.7L469.4 608.9L471.9 606.5L482.7 610.5L485.3 614.9L489.7 612.7L497.0 614.9L497.5 610.1L487.1 608.1L485.1 583.5L489.8 583.2L495.0 573.9L513.3 574.1L515.8 566.8L519.2 567.9L519.4 559.4L526.6 550.1L524.5 548.4L528.2 540.3L539.8 535.9L539.9 531.2L549.3 536.8L574.4 532.4L576.1 538.2L573.4 543.8L579.5 546.0L586.1 542.5L602.0 548.0L606.3 541.5L603.9 533.1L607.8 530.4L629.2 540.6Z"},"DN":{"name":"Dadara & Nagar Havelli","region":"North","d":"M184.8 605.9L177.7 606.1L175.8 600.6L183.5 600.0L181.0 602.6L184.8 605.9Z"},"DD":{"name":"Daman & Diu","region":"North","d":"M171.5 598.0L172.8 594.9L174.1 598.2L171.5 598.0Z"},"GA":{"name":"Goa","region":"North","d":"M214.7 745.1L219.0 745.0L221.9 756.3L219.7 756.8L220.6 764.2L213.7 768.7L200.2 742.9L206.2 740.6L210.7 746.4L214.7 745.1Z"},"GJ":{"name":"Gujarat","region":"North","d":"M25.4 491.2L27.4 493.7L23.3 498.3L25.4 491.2ZM26.6 488.9L26.7 491.7L26.6 488.9ZM31.2 486.8L30.8 489.6L31.2 486.8ZM30.0 486.1L28.5 488.8L30.0 486.1ZM25.4 485.9L21.4 495.1L20.5 491.0L25.4 485.9ZM115.4 463.7L121.7 466.1L146.6 463.0L160.2 472.4L162.8 469.4L175.3 474.9L180.9 469.7L184.0 474.7L180.5 479.4L186.1 484.8L191.5 483.5L189.6 489.7L199.5 496.9L198.7 502.2L205.0 502.4L215.2 508.1L214.9 510.7L218.9 510.7L223.3 519.2L225.9 519.1L223.3 527.5L213.6 531.6L219.7 535.2L213.1 536.3L215.5 548.9L205.0 553.4L206.1 563.2L220.3 561.2L220.8 563.7L212.5 564.4L204.8 573.3L198.7 574.5L204.0 576.5L208.7 585.9L202.3 592.1L192.8 587.5L191.7 603.4L184.8 605.9L181.0 602.6L183.5 600.0L179.5 599.5L169.1 605.5L171.5 598.0L174.1 598.2L174.1 590.8L164.6 568.8L167.9 562.1L165.7 559.4L172.1 558.1L163.1 558.1L165.2 551.7L162.1 551.2L161.8 547.6L163.5 541.9L171.4 539.9L157.2 539.9L153.5 550.8L155.2 559.0L148.8 572.2L126.7 582.6L106.3 588.2L82.6 575.4L45.0 539.7L46.7 533.8L52.7 534.3L53.8 539.4L85.0 530.1L94.9 515.8L73.6 520.8L69.3 524.3L52.9 521.3L35.1 511.4L29.7 496.5L35.6 489.4L31.7 486.1L38.3 486.1L38.9 476.6L65.8 476.1L70.5 479.8L79.9 479.9L82.9 476.0L98.2 472.0L98.2 477.2L103.0 478.3L115.9 472.8L112.3 471.3L111.9 466.3L115.4 463.7Z"},"HR":{"name":"Haryana","region":"North","d":"M328.8 286.4L315.7 301.4L312.6 310.8L315.9 333.6L307.9 335.1L308.0 339.4L304.3 342.5L315.2 348.0L320.9 344.9L324.1 347.2L327.3 360.9L317.4 367.3L311.0 366.3L308.8 371.3L306.1 369.4L308.5 356.2L304.3 353.6L294.3 361.3L292.4 356.0L288.7 356.2L288.0 359.7L282.7 358.8L282.5 366.7L276.1 364.9L278.6 353.6L262.2 341.5L260.8 329.1L256.5 327.3L256.5 321.2L246.6 322.2L239.1 316.9L229.9 316.7L231.0 305.9L226.6 306.2L228.2 300.0L237.5 298.5L247.4 304.4L250.0 303.3L251.3 310.6L258.7 304.9L278.3 306.1L283.8 303.2L285.2 294.6L294.5 295.7L301.6 285.1L305.4 285.6L307.1 279.7L302.4 270.0L314.9 276.8L313.5 280.6L316.5 282.8L328.8 286.4Z"},"HP":{"name":"Himachal Pradesh","region":"North","d":"M355.5 219.5L360.0 223.0L358.1 227.3L368.2 236.0L365.5 242.5L370.1 247.7L366.6 250.3L375.6 263.5L355.0 258.2L339.6 262.2L332.5 274.4L336.2 282.4L328.8 286.4L313.5 280.6L314.9 276.8L297.1 267.0L297.9 260.5L288.8 254.2L283.8 257.6L273.6 237.5L264.2 232.8L264.6 228.6L274.6 223.1L272.3 220.4L274.2 212.3L270.1 208.1L277.7 207.3L289.8 199.0L303.4 199.4L320.6 210.3L333.5 205.7L342.1 217.5L352.7 213.8L355.6 216.6L352.7 218.0L353.1 221.2L355.5 219.5Z"},"JK":{"name":"Jammu & Kashmir","region":"North","d":"M355.5 219.5L353.1 221.2L352.7 218.0L355.6 216.6L352.7 213.8L342.1 217.5L333.5 205.7L320.6 210.3L303.4 199.4L295.2 198.2L277.7 207.3L270.1 208.1L274.6 215.8L267.6 222.9L259.5 226.0L244.8 220.5L233.2 220.7L231.1 212.3L204.4 205.6L198.8 202.0L197.2 176.7L191.1 162.3L192.7 155.7L198.3 155.4L203.4 148.7L211.8 146.2L214.2 137.9L201.8 133.7L203.8 126.1L187.0 122.8L180.5 114.8L167.9 116.4L162.7 113.9L164.7 103.0L180.0 94.5L180.7 90.0L207.6 89.2L201.4 82.8L212.6 86.1L234.1 77.7L240.9 83.0L252.4 78.5L268.3 92.9L299.5 107.1L302.9 109.7L300.3 112.8L303.0 116.0L321.3 120.0L325.0 126.2L321.9 125.3L321.9 127.5L339.2 127.8L341.2 124.6L346.8 125.6L356.2 117.9L379.1 116.3L383.1 111.7L399.7 117.5L408.1 116.3L417.8 123.6L418.9 127.7L410.4 151.3L400.6 154.2L401.3 158.5L391.9 158.9L394.4 166.1L387.5 172.6L375.7 172.0L372.1 174.3L378.7 185.6L372.5 185.0L374.9 194.5L390.1 196.6L387.8 205.6L395.8 212.9L389.9 219.3L386.4 217.4L379.0 223.9L369.5 222.2L367.0 214.7L355.5 219.5Z"},"JH":{"name":"Jharkhand","region":"North","d":"M664.2 447.1L663.7 450.9L670.1 457.7L666.0 462.1L668.4 464.5L664.5 467.6L661.0 480.4L654.6 481.5L652.8 485.7L646.0 484.3L648.0 488.5L642.8 489.2L643.2 491.5L634.9 488.8L631.5 494.8L620.2 496.6L617.1 501.8L612.9 502.6L606.7 498.0L606.9 500.9L600.9 502.2L600.1 510.2L618.4 517.0L619.2 523.1L630.3 529.5L630.6 534.2L633.2 534.9L629.2 540.6L607.8 530.4L604.5 531.7L606.3 541.5L602.0 548.0L586.1 542.5L579.5 546.0L573.4 543.8L576.1 538.2L574.4 532.4L549.3 536.8L539.9 531.2L547.4 526.0L552.0 517.0L546.9 517.0L540.8 511.4L540.5 497.5L532.4 497.6L523.7 484.3L517.6 482.0L521.3 474.3L519.8 469.6L535.5 468.5L539.6 465.3L543.4 470.1L548.3 468.4L556.0 476.2L566.8 468.8L571.7 473.4L594.5 467.0L596.9 459.5L607.1 460.9L609.7 466.1L615.2 466.8L620.7 473.3L625.2 466.4L633.6 468.0L639.8 465.7L644.2 452.0L647.9 451.1L649.0 447.0L657.0 443.6L664.2 447.1Z"},"KA":{"name":"Karnataka","region":"South","d":"M327.6 662.9L331.1 673.0L324.1 684.9L331.2 686.8L322.0 696.3L326.0 702.9L324.5 715.3L317.8 719.6L329.1 724.4L325.6 726.4L326.4 736.6L312.1 737.0L310.8 754.2L315.0 760.1L313.2 764.4L302.9 762.5L301.8 766.3L305.1 766.5L301.7 777.9L308.7 781.6L305.7 784.3L307.5 789.0L314.7 785.9L326.1 788.3L326.5 791.0L322.5 791.3L320.8 794.7L323.5 799.7L319.9 795.7L310.4 794.8L310.3 791.0L306.0 791.5L310.8 798.8L308.6 802.4L315.1 804.1L317.5 799.7L327.0 805.6L338.1 798.7L343.9 799.9L346.1 801.0L345.3 807.3L355.2 809.4L354.3 816.4L361.3 819.0L357.8 828.6L350.0 835.2L336.9 831.9L334.4 837.2L329.4 839.3L329.6 847.6L325.1 852.3L333.7 853.5L331.6 860.1L325.9 860.8L324.0 865.8L306.5 865.5L304.9 871.1L296.9 871.1L280.4 863.4L280.3 859.7L272.7 860.7L257.9 849.7L255.9 843.7L245.2 838.3L243.9 834.4L239.2 835.3L231.0 801.8L219.5 774.1L214.4 772.1L213.7 768.7L220.6 764.2L219.7 756.8L221.9 756.3L219.0 745.0L214.7 745.1L216.1 742.1L222.2 741.6L226.7 731.5L227.4 727.4L222.1 725.2L219.7 718.1L226.9 714.7L229.5 717.1L240.8 709.8L243.7 704.8L251.2 708.1L253.0 704.6L264.8 704.7L264.5 688.3L274.3 693.1L289.1 693.5L287.5 684.6L293.8 679.5L299.4 681.2L306.7 673.9L308.0 666.2L314.1 665.5L319.8 658.3L324.8 663.9L327.6 662.9Z"},"KL":{"name":"Kerala","region":"South","d":"M290.7 869.4L284.2 872.3L294.6 878.9L291.4 883.6L301.3 886.4L298.2 892.1L306.5 897.0L303.9 911.9L309.3 914.1L315.2 910.2L318.1 913.1L315.4 932.0L321.2 934.2L322.5 937.7L314.4 951.8L318.2 957.4L315.8 960.4L318.8 966.6L312.7 974.5L294.8 955.8L268.0 879.0L250.3 858.4L239.2 835.3L243.9 834.4L245.2 838.3L255.9 843.7L262.8 854.1L270.0 856.5L272.7 860.7L280.3 859.7L280.4 863.4L290.2 866.5L290.7 869.4Z"},"LD":{"name":"Lakshadweep","region":"South","d":"M214.1 883.7L210.6 879.2L214.1 883.7ZM140.0 864.1L136.4 860.2L138.1 858.9L140.0 864.1Z"},"MP":{"name":"Madhya Pradesh","region":"North","d":"M500.6 486.3L492.0 491.6L467.9 491.1L463.0 487.5L460.9 489.8L463.8 493.8L461.1 500.4L471.3 499.7L480.3 506.2L479.0 511.9L472.0 513.9L472.1 517.6L466.4 520.2L466.3 526.3L461.2 530.7L444.7 533.7L441.2 545.5L438.4 543.6L435.0 555.2L432.6 555.1L429.9 568.3L423.0 566.0L416.8 559.3L394.3 561.7L391.5 557.6L383.1 556.4L374.6 559.4L373.1 563.5L356.9 562.9L356.4 559.9L339.1 566.9L331.6 567.1L324.0 563.9L323.5 561.8L328.2 562.1L325.9 555.3L318.7 555.0L302.7 560.1L297.1 572.6L282.7 575.8L279.8 567.0L250.9 565.8L245.5 561.0L230.1 557.9L227.6 556.1L228.1 550.3L223.4 546.8L217.5 549.8L214.0 547.4L213.1 536.3L219.7 535.2L213.6 531.6L223.3 527.5L226.0 522.1L221.3 514.4L232.8 510.1L228.3 506.3L230.9 502.0L238.8 499.0L241.8 493.5L240.6 489.3L243.5 484.3L239.7 476.6L235.6 476.6L239.1 471.2L234.3 469.4L237.7 461.3L241.9 464.6L244.2 460.5L239.1 459.9L238.0 457.2L245.1 458.4L248.9 453.2L254.0 452.7L251.3 462.3L271.4 462.5L274.2 468.5L273.5 471.4L268.0 472.7L270.5 475.9L268.9 485.3L260.7 483.7L259.1 485.8L262.9 491.5L275.9 487.3L275.4 484.5L281.1 482.3L280.8 478.8L283.5 478.0L293.9 480.1L297.0 477.0L306.3 481.2L303.5 468.6L308.3 470.9L311.6 465.2L303.1 459.5L307.9 458.0L305.3 453.8L319.5 451.5L323.0 447.1L319.6 440.6L308.3 444.9L296.5 442.0L294.2 429.2L313.4 415.8L345.5 401.6L349.5 396.9L354.5 395.9L374.9 401.6L379.3 411.9L367.6 431.7L368.7 434.9L358.3 436.0L352.2 442.6L357.1 449.2L348.2 457.7L355.2 476.7L359.0 473.0L368.3 479.5L374.4 474.1L371.5 465.3L367.3 466.5L367.7 458.4L363.1 455.3L359.7 445.2L362.4 441.1L367.7 442.9L366.4 439.7L373.5 437.5L368.6 445.0L379.8 450.7L385.8 449.3L384.0 444.4L386.4 443.8L389.7 446.6L388.2 450.4L402.6 450.9L403.3 446.7L414.5 441.4L418.5 441.9L422.3 448.7L419.8 449.7L424.0 454.3L433.0 449.6L437.0 451.9L436.5 456.1L446.5 455.4L450.0 449.0L457.1 451.7L458.8 448.3L470.9 454.6L472.6 459.1L480.9 460.3L483.9 465.6L487.6 466.5L487.9 463.2L499.3 465.2L497.4 482.6L500.6 486.3Z"},"MH":{"name":"Maharashtra","region":"North","d":"M429.9 568.3L423.3 573.2L422.2 578.3L425.9 580.7L428.6 599.5L420.8 602.1L425.5 605.8L426.0 616.6L437.6 626.3L432.9 631.9L426.7 628.4L421.0 633.2L417.1 641.1L419.7 646.6L417.1 649.5L411.8 650.8L406.1 647.4L403.7 637.5L407.4 628.3L401.0 622.2L390.9 625.3L383.8 621.7L381.6 626.6L370.7 620.4L370.3 617.2L355.6 614.9L348.5 633.4L337.9 631.5L334.8 641.4L339.1 645.0L334.1 653.7L329.2 654.9L327.6 662.9L324.8 663.9L319.8 658.3L314.1 665.5L308.0 666.2L306.7 673.9L299.4 681.2L293.8 679.5L287.5 684.6L289.1 693.5L274.3 693.1L264.5 688.3L264.8 704.7L253.0 704.6L251.2 708.1L243.7 704.8L240.8 709.8L229.5 717.1L226.9 714.7L219.7 718.1L222.1 725.2L227.4 727.4L226.7 731.5L222.2 741.6L216.1 742.1L214.7 745.1L210.7 746.4L206.2 740.6L200.2 742.9L194.0 735.1L166.3 614.8L169.2 612.6L169.1 605.5L173.8 602.7L183.0 607.5L191.7 603.4L192.8 587.5L202.3 592.1L208.7 585.9L204.0 576.5L198.7 574.5L204.8 573.3L212.5 564.4L220.8 563.7L220.3 561.2L206.1 563.2L205.0 553.4L223.4 546.8L228.1 550.3L227.6 556.1L230.1 557.9L245.5 561.0L250.9 565.8L279.8 567.0L282.7 575.8L297.1 572.6L302.7 560.1L318.7 555.0L325.9 555.3L328.2 562.1L323.5 561.8L324.0 563.9L331.6 567.1L339.1 566.9L356.4 559.9L356.9 562.9L373.1 563.5L374.6 559.4L383.1 556.4L391.5 557.6L394.3 561.7L416.8 559.3L423.0 566.0L429.9 568.3Z"},"MN":{"name":"Manipur","region":"North","d":"M890.6 439.8L888.0 448.1L892.7 449.9L892.6 453.4L873.5 489.9L834.9 481.2L839.1 460.2L841.7 460.1L848.7 445.8L851.0 444.4L855.4 447.8L862.9 436.6L878.2 438.8L887.8 432.7L886.6 438.2L890.6 439.8Z"},"ML":{"name":"Meghalaya","region":"North","d":"M816.8 453.0L805.1 448.2L751.5 449.5L730.8 442.4L733.2 436.6L737.0 435.7L733.4 431.3L740.6 424.1L765.9 424.3L774.8 427.5L777.1 431.5L785.4 427.3L788.5 421.9L790.5 424.6L796.7 419.1L798.7 421.9L808.4 420.3L811.0 421.9L808.0 423.9L808.1 433.3L816.3 430.9L822.5 441.0L828.6 445.1L816.8 453.0Z"},"MZ":{"name":"Mizoram","region":"North","d":"M835.4 472.7L834.9 481.2L846.5 483.5L848.5 487.4L848.3 509.4L845.3 516.1L839.7 514.9L840.7 541.8L837.0 541.2L831.9 547.1L825.7 542.7L822.3 547.1L811.3 493.7L812.3 477.3L820.0 479.8L827.6 469.0L829.8 472.8L835.4 472.7Z"},"NL":{"name":"Nagaland","region":"North","d":"M909.0 401.6L903.4 408.4L907.2 420.4L902.0 425.5L902.8 430.5L894.9 438.8L886.6 438.2L887.8 432.7L878.2 438.8L862.9 436.6L855.4 447.8L851.9 446.2L846.4 437.0L858.0 425.7L861.2 424.2L861.0 427.7L867.7 425.3L868.7 417.1L877.6 405.4L877.9 408.0L881.3 406.5L897.4 393.9L907.6 390.5L909.0 401.6Z"},"DL":{"name":"NCT of Delhi","region":"North","d":"M315.9 333.6L320.5 339.1L320.9 344.9L315.2 348.0L310.3 344.0L305.8 344.3L304.3 342.5L308.0 339.4L307.9 335.1L315.9 333.6Z"}};
 
+// Each stage carries the vstat field for its total, and — where the backend
+// provides a per-category breakdown for that stage (Logged In → total,
+// Onboarded → onboarded) — a `catField` naming which category metric to split.
+// Draft / Under Review / Rejected have no per-category feed, so they fall back
+// to a plain Sellers vs Buyers split. No category is ever hardcoded.
 var MF_STAGES = [
-  { key:'total',     label:'Logged In',             color:'blue',   field:'total',     vdAction:'total',
-    mx:function(vs,vb){return{sm:vs.metalTotal||0,sp:vs.plasticTotal||0,bm:vb.metalTotal||0,bp:vb.plasticTotal||0};} },
-  { key:'draft',     label:'Draft',                 color:'purple', field:'draft',     vdAction:'draft',    mx:null },
-  { key:'review',    label:'Under Review',           color:'amber',  field:'inReview',  vdAction:'review',   mx:null },
-  { key:'onboarded', label:'Successfully Onboarded', color:'green',  field:'completed', vdAction:'onboarded',
-    mx:function(vs,vb){return{sm:vs.metalOnboarded||0,sp:vs.plasticOnboarded||0,bm:vb.metalOnboarded||0,bp:vb.plasticOnboarded||0};} },
-  { key:'rejected',  label:'Rejected',              color:'red',    field:'rejected',  vdAction:'rejected', mx:null },
+  { key:'total',     label:'Logged In',             color:'blue',   field:'total',     vdAction:'total',     catField:'total'     },
+  { key:'draft',     label:'Draft',                 color:'purple', field:'draft',     vdAction:'draft',     catField:null        },
+  { key:'review',    label:'Under Review',           color:'amber',  field:'inReview',  vdAction:'review',    catField:null        },
+  { key:'onboarded', label:'Successfully Onboarded', color:'green',  field:'completed', vdAction:'onboarded', catField:'onboarded' },
+  { key:'rejected',  label:'Rejected',              color:'red',    field:'rejected',  vdAction:'rejected',  catField:null        },
 ];
 
 function mmSelectFunnelStage(k) {
@@ -4770,19 +4707,28 @@ function mmSelectFunnelStage(k) {
 function _mfCell(v, na) {
   return '<div class="mf-mx-cell' + (na ? ' na' : '') + '">' + (na ? '—' : esc(v)) + '</div>';
 }
-function _mfMatrix(mx, sellerTotal, buyerTotal) {
-  var na = !mx;
-  return '<div class="mf-matrix">'
-    + '<div class="mf-mx-corner"></div>'
-    + '<div class="mf-mx-hd"><span class="mf-cat-dot metal"></span>Metal</div>'
-    + '<div class="mf-mx-hd"><span class="mf-cat-dot plastic"></span>Plastic</div>'
-    + '<div class="mf-mx-lbl"><span class="mf-cat-dot seller"></span>Sellers</div>'
-    + _mfCell(mx ? fmt(mx.sm) : '', na)
-    + _mfCell(mx ? fmt(mx.sp) : '', na)
-    + '<div class="mf-mx-lbl"><span class="mf-cat-dot buyer"></span>Buyers</div>'
-    + _mfCell(mx ? fmt(mx.bm) : '', na)
-    + _mfCell(mx ? fmt(mx.bp) : '', na)
-    + '</div>';
+// Stage breakdown grid: rows = Sellers / Buyers, columns = the vertical's own
+// categories (data-driven, widest `maxCols` first). When the stage has no
+// per-category feed, a single "Count" column carries the plain audience split.
+function _mfMatrix(catRows, sTot, bTot, maxCols) {
+  var cols = (catRows && catRows.length) ? catRows.slice(0, maxCols || 2) : null;
+  var n = cols ? cols.length : 1;
+  var head = '<div class="mf-mx-corner"></div>';
+  var sRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot seller"></span>Sellers</div>';
+  var bRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot buyer"></span>Buyers</div>';
+  if (cols) {
+    cols.forEach(function(c, i) {
+      head += '<div class="mf-mx-hd"><span class="mf-cat-dot" style="background:' + MM_CAT_COLORS[i % MM_CAT_COLORS.length] + '"></span>' + esc(c.cat) + '</div>';
+      sRow += _mfCell(fmt(c.s), false);
+      bRow += _mfCell(fmt(c.b), false);
+    });
+  } else {
+    head += '<div class="mf-mx-hd">Count</div>';
+    sRow += _mfCell(fmt(sTot || 0), false);
+    bRow += _mfCell(fmt(bTot || 0), false);
+  }
+  return '<div class="mf-matrix" style="grid-template-columns:auto repeat(' + n + ',1fr)">'
+    + head + sRow + bRow + '</div>';
 }
 
 function mmRenderFunnel() {
@@ -4796,15 +4742,15 @@ function mmRenderFunnel() {
 
   var html = '<div class="mf-flow">';
   MF_STAGES.forEach(function(s, i) {
-    var total = (vs[s.field]||0) + (vb[s.field]||0);
-    var mx    = s.mx ? s.mx(vs, vb) : null;
-    var sel   = mmFunnelStage === s.key;
+    var total   = (vs[s.field]||0) + (vb[s.field]||0);
+    var catRows = s.catField ? _mmCatRows(vs, vb, s.catField) : null;
+    var sel     = mmFunnelStage === s.key;
     html += '<div class="mf-card' + (sel ? ' sel' : '') + '" role="button" tabindex="0"'
       + ' onclick="mmSelectFunnelStage(\'' + s.key + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){mmSelectFunnelStage(\'' + s.key + '\')}">'
       + '<div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
       + '<div class="mf-label">' + esc(s.label) + '</div>'
-      + _mfMatrix(mx, vs[s.field]||0, vb[s.field]||0)
+      + _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0, 2)
       + '</div>';
     if (i < MF_STAGES.length - 1) {
       var nextSel = mmFunnelStage === MF_STAGES[i + 1].key;
@@ -4819,10 +4765,10 @@ function mmRenderFunnel() {
     var stageObj = null;
     for (var si = 0; si < MF_STAGES.length; si++) { if (MF_STAGES[si].key === mmFunnelStage) { stageObj = MF_STAGES[si]; break; } }
     if (stageObj) {
-      var dmx = stageObj.mx ? stageObj.mx(vs, vb) : null;
+      var dCatRows = stageObj.catField ? _mmCatRows(vs, vb, stageObj.catField) : null;
       html += '<div class="mf-detail" id="mf-detail" role="region" aria-label="' + esc(stageObj.label) + ' details">'
         + '<div class="mf-detail-hd">' + esc(stageObj.label) + ' · Stage Breakdown</div>'
-        + _mfMatrix(dmx, vs[stageObj.field]||0, vb[stageObj.field]||0)
+        + _mfMatrix(dCatRows, vs[stageObj.field]||0, vb[stageObj.field]||0, 8)
         + '<button class="mf-detail-vd" onclick="mmCardAction(\'' + stageObj.vdAction + '\')">'
         + MM_IC.doc + ' View Detailed Records →</button>'
         + '</div>';
@@ -4930,9 +4876,8 @@ function _geoAgg() {
       var id = _geoStateId(r.state); if (!id || !IN_STATES[id] || IN_STATES[id].region !== region) return;
       var cat = String(r.category || '').trim().toLowerCase();
       if (filt && cat !== filt) return;   // category filter (chained from Volume/Funnel)
-      var b = by[id] || (by[id] = { id:id, total:0, metal:0, plastic:0, seller:0, buyer:0 });
+      var b = by[id] || (by[id] = { id:id, total:0, seller:0, buyer:0 });
       b.total++; b[aud]++;
-      if (cat === 'metal') b.metal++; else if (cat === 'plastic') b.plastic++;
     });
   });
   return by;
@@ -5001,13 +4946,13 @@ function mmRenderGeo() {
         + ' onclick="mmGeoSelectState(\'' + id + '\')">'
         + '<span class="mg-row-nm"><span class="mg-swatch" style="background:' + regionColor + '"></span>' + esc(name) + '</span>'
         + '<span class="mg-row-n mg-total">' + fmt(d.total) + '</span>'
-        + '<span class="mg-row-n mg-metal">' + fmt(d.metal) + '</span>'
-        + '<span class="mg-row-n mg-plastic">' + fmt(d.plastic) + '</span>'
+        + '<span class="mg-row-n mg-seller">' + fmt(d.seller) + '</span>'
+        + '<span class="mg-row-n mg-buyer">' + fmt(d.buyer) + '</span>'
         + '</button>';
     }).join('');
     legend = '<div class="mg-legend">'
       + '<div class="mg-legend-hd"><span class="mg-row-nm">State</span>'
-      + '<span class="mg-row-n">Total</span><span class="mg-row-n">Metal</span><span class="mg-row-n">Plastic</span></div>'
+      + '<span class="mg-row-n">Total</span><span class="mg-row-n">Sellers</span><span class="mg-row-n">Buyers</span></div>'
       + '<div class="mg-rows">' + rows + '</div></div>';
   }
 
@@ -5019,9 +4964,8 @@ function mmRenderGeo() {
     detail = '<div class="mg-detail" id="mg-detail" role="region" aria-label="' + esc(nm) + ' detail">'
       + '<div class="mg-detail-hd"><span class="mg-swatch" style="background:' + regionColor + '"></span>' + esc(nm) + ' · State Detail</div>'
       + '<div class="mg-dt-grid">'
-      + cell(d.total, 'Onboarded', regionColor)
+      + cell(d.total, _geo.cat ? 'Onboarded · ' + (_geo.cat.charAt(0).toUpperCase() + _geo.cat.slice(1)) : 'Onboarded', regionColor)
       + cell(d.seller, 'Sellers') + cell(d.buyer, 'Buyers')
-      + cell(d.metal, 'Metal') + cell(d.plastic, 'Plastic')
       + '</div>'
       + '<button class="mf-detail-vd" onclick="openRecordsSheet(selectedAud || \'seller\')">' + MM_IC.doc + ' View Detailed Records →</button>'
       + '</div>';
@@ -5029,8 +4973,8 @@ function mmRenderGeo() {
 
   var catChip = _geo.cat
     ? '<button class="mg-catchip" onclick="_geoClearCat()" title="Clear filter">'
-      + '<span class="mg-swatch" style="background:' + (_geo.cat === 'metal' ? '#6366f1' : '#0ea5e9') + '"></span>'
-      + (_geo.cat === 'metal' ? 'Metal' : 'Plastic') + ' only <span class="mg-catx">✕</span></button>'
+      + '<span class="mg-swatch" style="background:#6366f1"></span>'
+      + esc(_geo.cat.charAt(0).toUpperCase() + _geo.cat.slice(1)) + ' only <span class="mg-catx">✕</span></button>'
     : '';
   panel.innerHTML = '<div class="mg-eye"><span>' + esc(region) + ' Region · onboarded distribution</span>' + catChip + '</div>'
     + '<div class="mg-grid">' + mapPanel + legend + '</div>' + detail;
@@ -5196,126 +5140,6 @@ function openTatModal() {
     + '<div class="km-hero"><div class="km-hero-num">' + (blend != null ? blend + 'd' : '—') + '</div><div class="km-hero-lbl">Blended Average TAT</div></div>'
     + '<div class="km-srow km-srow-2">' + stat('Sellers', vs.avgTAT) + stat('Buyers', vb.avgTAT) + '</div>';
   _modalOpenClass(modal, 'km-open', _kpiEsc);
-}
-
-// ── Panel helpers ──
-function _bnTile(lbl, v, sub, dark) { return '<div class="bn-tile' + (dark ? ' dark' : '') + '"><div class="bn-tl">' + lbl + '</div><div class="bn-tv">' + v + '</div>' + (sub ? '<div class="bn-ts">' + sub + '</div>' : '') + '</div>'; }
-function _bnBar(nm, val, pct, color) { return '<div class="bn-bar"><span class="bn-bar-nm">' + nm + '</span><div class="bn-bar-tk"><i class="bn-bar-fl" style="width:' + Math.max(0, pct) + '%;background:' + color + '"></i></div><span class="bn-bar-vl">' + val + '</span></div>'; }
-function _bnCta(label, action, ghost) { return '<button class="bn-cta' + (ghost ? ' ghost' : '') + '" onclick="' + action + '">' + label + '</button>'; }
-
-function _bnRenderPanel(node, chain) {
-  var el = document.getElementById('bn-panel'); if (!el) return;
-  var key = _bnKey;
-  var vs = (DS && DS.verticals || {})[key] || {};
-  var vb = (DB && DB.verticals || {})[key] || {};
-  var q  = (qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
-  var cfg = getVertCfg().filter(function(c) { return c.key === key; })[0] || {};
-
-  // Home / parent nodes → a compact summary of the current context.
-  if (!node) {
-    var cur = chain[chain.length - 1];
-    var tot = (vs.total || 0) + (vb.total || 0), onb = (vs.completed || 0) + (vb.completed || 0), txn = (vs.transacted || 0) + (vb.transacted || 0);
-    var body;
-    if (bnPath.length === 0) {
-      body = '<div class="bn-tiles">' + _bnTile('Total Cases', fmt(tot), fmt(vs.total || 0) + ' sellers · ' + fmt(vb.total || 0) + ' buyers')
-        + _bnTile('Onboarded', fmt(onb), (tot ? Math.round(onb / tot * 100) : 0) + '% completion')
-        + _bnTile('Transacted', fmt(txn)) + '</div>'
-        + '<div class="bn-note">Pick a branch on the left to drill into the onboarding workflow. Each step reveals the next level; the last node opens its dashboard section here.</div>';
-    } else {
-      body = '<div class="bn-empty">'
-        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>'
-        + '<b>' + esc(cur.label) + '</b><span>Select a sub-branch to continue — the dashboard opens when you reach the end of a path.</span></div>';
-    }
-    el.innerHTML = _bnPanelHead(cur.label, chain, cfg) + '<div class="bn-p-body">' + body + '</div>';
-    return;
-  }
-
-  var body = '';
-  var p = node.panel;
-  if (node.soon || p === 'soon') {
-    body = '<span class="bn-soon">Not tracked yet</span>'
-      + '<div class="bn-note">“' + esc(node.label) + '” isn’t in the current onboarding feed. This branch is reserved in the map for when the data source is connected.</div>';
-  } else if (p === 'kpi') {
-    var lbl = {
-      total: 'Logged In Cases', onboarded: 'Successfully Onboarded', transacted: 'Transacted Vendors',
-      oldvsnew: 'Vendor Classification', draft: 'Draft Cases', review: 'Cases Under Review',
-      rejected: 'Rejected Cases', nontxn: 'Non-Transacted Vendors',
-    }[node.kpi] || node.label;
-    var val = node.val || '—';
-    body = '<div class="bn-tiles">' + _bnTile(lbl, val, cfg.name || '') + '</div>'
-      + (node.note ? '<div class="bn-note">' + esc(node.note) + '</div>' : '')
-      + _bnCta('View Detailed Records →', "openKpiModal('" + node.kpi + "')");
-  } else if (p === 'active') {
-    body = '<div class="bn-tiles">' + _bnTile('Active Cases', node.val || '0', 'in progress')
-      + _bnTile('Draft', fmt((vs.draft || 0) + (vb.draft || 0))) + _bnTile('In Review', fmt((vs.inReview || 0) + (vb.inReview || 0))) + '</div>';
-  } else if (p === 'gmv') {
-    var gmv = vs.totalTxnValue;
-    var cats = (vs.categories || []).filter(function(c) { return c.txnValue != null && c.txnValue > 0; }).sort(function(a, b) { return b.txnValue - a.txnValue; }).slice(0, 4);
-    var mx = cats.reduce(function(m, c) { return Math.max(m, c.txnValue || 0); }, 0) || 1;
-    body = '<div class="bn-tiles">' + _bnTile('Total GMV', (gmv != null ? fmtINR(gmv) : '—'), 'all commodities', true) + '</div>'
-      + '<div class="bn-bars">' + cats.map(function(c, i) { return _bnBar(c.category, fmtINR(c.txnValue), c.txnValue / mx * 100, ['#005DFF', '#1DC797', '#8460D4', '#FF9500'][i % 4]); }).join('') + '</div>'
-      + _bnCta('Open GMV breakdown →', "openGmvCatModal('seller')");
-  } else if (p === 'gmvcat') {
-    var c = (vs.categories || []).filter(function(x) { return x.category === node.cat; })[0] || {};
-    body = '<div class="bn-tiles">' + _bnTile(node.cat + ' — Onboarded', fmt(c.onboarded || 0))
-      + _bnTile('GMV', (c.txnValue != null ? fmtINR(c.txnValue) : '—')) + _bnTile('Total', fmt(c.total || 0)) + '</div>'
-      + _bnCta('Open GMV breakdown →', "openGmvCatModal('seller')");
-  } else if (p === 'buyercat') {
-    // GMV is a seller-side-only figure by business rule (seller→buyer is one
-    // transaction; counting both sides would double-count it) — so the buyer
-    // category tile shows pipeline counts, not a fabricated GMV split.
-    var bc = (vb.categories || []).filter(function(x) { return x.category === node.cat; })[0] || {};
-    body = '<div class="bn-tiles">' + _bnTile(node.cat + ' — Onboarded', fmt(bc.onboarded || 0))
-      + _bnTile('Transacted', fmt(bc.transacted || 0)) + _bnTile('Total', fmt(bc.total || 0)) + '</div>'
-      + _bnCta('Open records →', "openRecordsSheet('buyer')");
-  } else if (p === 'stage') {
-    body = '<div class="bn-tiles">' + _bnTile(node.label, node.val || '—', 'cases at this stage') + '</div>'
-      + (node.note ? '<div class="bn-note">' + esc(node.note) + '</div>' : '')
-      + _bnCta('View records →', "openRecordsSheet('seller')");
-  } else if (p === 'gated') {
-    body = '<span class="bn-soon">Not applicable here</span>'
-      + '<div class="bn-note">' + (node.gateNote || 'Not tracked for this vertical.') + '</div>';
-  } else if (p === 'envnew') {
-    var envSrc = node.aud === 'buyer' ? vb : vs;
-    body = '<div class="bn-tiles">' + _bnTile('Existing', fmt(envSrc.oldVendors || 0)) + _bnTile('New', fmt(envSrc.newVendors || 0)) + '</div>'
-      + _bnCta('Open Existing vs New →', "openKpiModal('oldvsnew')");
-  } else if (p === 'region') {
-    var reg = node.region;
-    var rObj = ((vs.regions || []).filter(function(r) { return r.region === reg; })[0]) || {};
-    body = '<div class="bn-tiles">' + _bnTile(reg + ' — Onboarded', fmt(rObj.onboarded || 0))
-      + _bnTile('Total', fmt(rObj.total || 0)) + _bnTile('GMV', (rObj.txnValue != null ? fmtINR(rObj.txnValue) : '—')) + '</div>'
-      + ((rObj.total || 0) > 0 ? _bnCta('Open ' + reg + ' vendors →', "openRegionModal('" + reg + "')")
-         : '<div class="bn-note">No vendors mapped to ' + esc(reg) + ' for the selected period yet.</div>');
-  } else if (p === 'osv') {
-    var o = q && q.osv ? q.osv : null;
-    if (o && o.total) {
-      var pf = function(n) { return o.total ? Math.round(n / o.total * 100) : 0; };
-      body = '<div class="bn-bars">' + _bnBar('Done', fmt(o.completed || 0), pf(o.completed || 0), 'var(--st-onboarded)')
-        + _bnBar('In Progress', fmt(o.pending || 0), pf(o.pending || 0), 'var(--st-review)')
-        + _bnBar('Not Initiated', fmt(o.notInitiated || 0), pf(o.notInitiated || 0), '#C9C9CE') + '</div>'
-        + _bnCta('Open OSV detail →', "openKpiModal('osv')");
-    } else { body = '<div class="bn-note">OSV status is still syncing.</div>'; }
-  } else if (p === 'rating') {
-    var r = q && q.rating ? q.rating : null;
-    body = '<div class="bn-tiles">' + _bnTile('Vendor Rating', (r && r.avg != null ? r.avg.toFixed(1) + '★' : '—'), (r ? fmt(r.rated || 0) + ' of ' + fmt(r.total || 0) + ' rated' : '')) + '</div>'
-      + _bnCta('Open rating detail →', "openKpiModal('rating')");
-  } else if (p === 'tat') {
-    body = '<div class="bn-tiles">' + _bnTile(node.label + ' TAT', node.val || '—', 'average turnaround') + '</div>'
-      + '<div class="bn-bars">' + _bnBar('Seller', (vs.avgTAT != null ? vs.avgTAT + 'd' : '—'), (vs.avgTAT || 0) / 30 * 100, 'var(--st-onboarded)')
-      + _bnBar('Buyer', (vb.avgTAT != null ? vb.avgTAT + 'd' : '—'), (vb.avgTAT || 0) / 30 * 100, 'var(--st-review)') + '</div>';
-  } else if (p === 'docs') {
-    body = '<div class="bn-note">Document completeness for every ' + esc(cfg.name || '') + ' vendor.</div>'
-      + _bnCta('Open documents →', "openRecordsSheet('seller')");
-  } else { // records
-    body = '<div class="bn-note">Full vendor records — board, table, filters and transaction history.</div>'
-      + _bnCta('Open records →', "openRecordsSheet('" + (node.aud || 'seller') + "')");
-  }
-  el.innerHTML = _bnPanelHead(node.label, chain, cfg) + '<div class="bn-p-body">' + body + '</div>';
-}
-function _bnPanelHead(title, chain, cfg) {
-  var trail = chain.slice(1).map(function(x) { return esc(x.label); }).join(' › ');
-  return '<div class="bn-p-hd" style="' + vcVars(_bnKey) + '"><span class="bn-p-code">' + esc(cfg.code || _bnKey) + '</span>'
-    + '<div><div class="bn-p-ttl">' + esc(title) + '</div><div class="bn-p-sub">' + trail + '</div></div></div>';
 }
 
 // Detailed Records slide-over
@@ -5512,29 +5336,12 @@ function renderVertKPIs(key) {
   var compPct = totAll > 0 ? Math.round(((compS + compB) / totAll) * 100) : 0;
   var meter   = '<div class="vkpi-meter" title="' + compPct + '% of pipeline onboarded"><i style="width:' + compPct + '%"></i></div>';
 
-  var S = '#1DC797', B = '#005DFF';
-  var G2 = 'rgba(52,199,89,.38)', B2 = 'rgba(0,122,255,.38)';
-  // Plastic vs Metal combined (S + B) per metric
-  var PC = '#FF9F0A', MC = '#8E8E93';
-  function matLine(p, m) {
-    if (!p && !m) return '';
-    return '<div class="vkpi-mat">'
-      + '<span class="vkpi-mat-chip"><i class="vkpi-mat-dot" style="background:' + PC + '"></i>' + fmt(p) + ' plastic</span>'
-      + '<span class="vkpi-mat-chip"><i class="vkpi-mat-dot" style="background:' + MC + '"></i>' + fmt(m) + ' metal</span>'
-      + '</div>';
-  }
-  function matBracket(p, m) {
-    if (!p && !m) return '';
-    return '<span class="vkpi-mat-br">(' + p + 'P · ' + m + 'M)</span>';
-  }
-  var pTotal   = (vs.plasticTotal      || 0) + (vb.plasticTotal      || 0);
-  var mTotal   = (vs.metalTotal        || 0) + (vb.metalTotal        || 0);
-  var pOnb     = (vs.plasticOnboarded  || 0) + (vb.plasticOnboarded  || 0);
-  var mOnb     = (vs.metalOnboarded    || 0) + (vb.metalOnboarded    || 0);
-  var pTxn     = (vs.plasticTransacted || 0) + (vb.plasticTransacted || 0);
-  var mTxn     = (vs.metalTransacted   || 0) + (vb.metalTransacted   || 0);
-  var pNew     = (vs.plasticNew        || 0) + (vb.plasticNew        || 0);
-  var mNew     = (vs.metalNew          || 0) + (vb.metalNew          || 0);
+  // Per-category breakdown (seller + buyer union) for this vertical — feeds the
+  // Category Distribution sections of the KPI modals. Data-driven: only the
+  // categories this vertical actually carries, never hardcoded Metal/Plastic.
+  var catTot = _mmCatRows(vs, vb, 'total');
+  var catOnb = _mmCatRows(vs, vb, 'onboarded');
+  var catTxn = _mmCatRows(vs, vb, 'transacted');
 
   var nonTxnSub   = nonTxnTotal > 0 ? '<div class="vkpi-sub">' + fmt(nonTxnTotal) + ' not yet</div>' : '';
   var oldTotalSub = '<div class="vkpi-sub">' + fmt(oldS + oldB) + ' existing</div>';
@@ -5548,10 +5355,7 @@ function renderVertKPIs(key) {
     txnUniqueTotal: (vs.totalTxnCount || 0) + (vb.totalTxnCount || 0),
     newS: newS, oldS: oldS, newB: newB, oldB: oldB,
     vs: vs, vb: vb,
-    pTotal: pTotal, mTotal: mTotal,
-    pOnb: pOnb, mOnb: mOnb,
-    pTxn: pTxn, mTxn: mTxn,
-    pNew: pNew, mNew: mNew,
+    catTot: catTot, catOnb: catOnb, catTxn: catTxn,
   };
   var cards = [
     mk(icFunnel, 'Logged In Cases', fmt(totalS + totalB), fmt(totalS) + ' sellers · ' + fmt(totalB) + ' buyers', 'vk-total',     'total',      null),
@@ -5608,7 +5412,6 @@ function openKpiModal(cardId) {
   if (!el || !modal) return;
 
   var S = '#1DC797', B = '#005DFF';
-  var PC = '#FF9F0A', MC = '#8E8E93';
 
   // ── layout primitives ────────────────────────────────────────
   function hero(num, lbl) {
@@ -5719,13 +5522,18 @@ function openKpiModal(cardId) {
     });
     return h;
   }
-  function matBadges(p, m) {
-    if (!p && !m) return '';
+  // Category Distribution: one badge per category this vertical actually has,
+  // each showing the combined count and its seller / buyer split. Data-driven —
+  // never assumes Metal/Plastic. Rows come from _mmCatRows (seller+buyer union).
+  function catBadges(rows) {
+    if (!rows || !rows.length) return '';
     return '<div class="km-mat">'
-      + '<div class="km-mb"><div class="km-mb-dot" style="background:' + PC + '"></div>'
-      + '<div><div class="km-mb-v">' + fmt(p) + '</div><div class="km-mb-l">Plastic</div></div></div>'
-      + '<div class="km-mb"><div class="km-mb-dot" style="background:' + MC + '"></div>'
-      + '<div><div class="km-mb-v">' + fmt(m) + '</div><div class="km-mb-l">Metal</div></div></div>'
+      + rows.map(function(r, i) {
+          return '<div class="km-mb"><div class="km-mb-dot" style="background:' + MM_CAT_COLORS[i % MM_CAT_COLORS.length] + '"></div>'
+            + '<div><div class="km-mb-v">' + fmt(r.s + r.b) + '</div>'
+            + '<div class="km-mb-l">' + esc(r.cat) + '</div>'
+            + '<div class="km-mb-sub">' + _mmSB(r.s, r.b) + '</div></div></div>';
+        }).join('')
       + '</div>';
   }
 
@@ -5751,7 +5559,7 @@ function openKpiModal(cardId) {
       // Category Distribution reflects the onboarded book, not raw logged-in
       // pipeline entries (many drafts aren't categorized/verified yet) — same
       // basis as every other Category Distribution section in this modal set.
-      + (d.pOnb + d.mOnb > 0 ? sec('Category Distribution', matBadges(d.pOnb, d.mOnb)) : '');
+      + (d.catOnb && d.catOnb.length ? sec('Category Distribution', catBadges(d.catOnb)) : '');
 
   } else if (cardId === 'onboarded') {
     title = 'Successfully Onboarded';
@@ -5763,7 +5571,7 @@ function openKpiModal(cardId) {
           {v: fmt(d.compS), l: 'Sellers Onboarded', c: S},
           {v: fmt(d.compB), l: 'Buyers Onboarded',  c: B},
         ])
-      + (d.pOnb + d.mOnb > 0 ? sec('Category Distribution', matBadges(d.pOnb, d.mOnb)) : '');
+      + (d.catOnb && d.catOnb.length ? sec('Category Distribution', catBadges(d.catOnb)) : '');
 
   } else if (cardId === 'draft') {
     title = 'Draft Cases';
@@ -5814,7 +5622,7 @@ function openKpiModal(cardId) {
     var txnUnique = d.txnUniqueTotal || d.txnTotal;
     content =
       hero(fmt(d.txnTotal), 'Total Transacted Vendors')
-      + (d.pTxn + d.mTxn > 0 ? sec('Category Distribution', matBadges(d.pTxn, d.mTxn)) : '')
+      + (d.catTxn && d.catTxn.length ? sec('Category Distribution', catBadges(d.catTxn)) : '')
       + srow([
           {v: fmt(txnUnique), l: 'Total Transactions'},
           {v: gmvCombined > 0 ? fmtINR(gmvCombined) : '—', l: 'Total GMV'},
@@ -5847,7 +5655,7 @@ function openKpiModal(cardId) {
           {v: fmt(totalExst), l: 'Existing Vendors'},
           {v: fmt(totalNew),  l: 'New Vendors'},
         ])
-      + (d.pOnb + d.mOnb > 0 ? sec('Category Distribution', matBadges(d.pOnb, d.mOnb)) : '');
+      + (d.catOnb && d.catOnb.length ? sec('Category Distribution', catBadges(d.catOnb)) : '');
   }
 
   // ── Quality card modals ──────────────────────────────────────
