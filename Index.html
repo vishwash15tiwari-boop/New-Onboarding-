@@ -2613,11 +2613,14 @@ body.rec-open{overflow:hidden}
 .mmn.root .mmn-root-lbl{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--txt);line-height:1.35}
 /* vertical + module cards — navigation only, compact */
 .mmn.vert,.mmn.module{padding:7px 10px}
-/* progress arc on vert cards */
-.mmn-arc{flex-shrink:0;display:block}
-.mmn-arc-bg{fill:none;stroke:var(--border);stroke-width:2.5}
-.mmn-arc-fg{fill:none;stroke-width:2.5;stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)}
-.mmn.vert.muted .mmn-arc-fg{stroke:var(--border)}
+/* refined progress rail on vert cards — graphic only, no numbers */
+.mmn.vert .mmn-prog{margin-top:7px;height:3px;border-radius:999px;
+  background:color-mix(in srgb,var(--txt3) 20%,transparent);overflow:hidden}
+.mmn.vert .mmn-prog i{display:block;height:100%;border-radius:999px;min-width:3px;
+  background:linear-gradient(90deg,#12b76a,#16a34a);
+  box-shadow:0 0 6px -1px rgba(22,163,74,.5);
+  transition:width .6s cubic-bezier(.4,0,.2,1)}
+.mmn.vert.on .mmn-prog i{background:linear-gradient(90deg,#3b82f6,var(--blue));box-shadow:0 0 6px -1px rgba(0,93,255,.55)}
 /* module cards: colored left accent */
 .mmn.module{border-left-width:3px}
 .mmn.module.t-blue{border-left-color:#005dff}
@@ -4436,16 +4439,10 @@ function mmNodeCard(node, colActiveId) {
   } else if (kind === 'vert') {
     cls = 'mmn vert' + (node.muted ? ' muted' : '') + (on ? ' on' : '');
     var ratio = Math.min(1, Math.max(0, node.ratio || 0));
-    var r = 9, circ = 2 * Math.PI * r;
-    var arcColor = node.muted ? 'var(--border)' : (on ? 'var(--blue)' : '#16a34a');
-    var arc = '<svg class="mmn-arc" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">'
-      + '<circle class="mmn-arc-bg" cx="11" cy="11" r="' + r + '"/>'
-      + '<circle class="mmn-arc-fg" cx="11" cy="11" r="' + r + '" stroke="' + arcColor + '"'
-      + ' stroke-dasharray="' + circ.toFixed(2) + '" stroke-dashoffset="' + (circ * (1 - ratio)).toFixed(2) + '"'
-      + ' transform="rotate(-90 11 11)"/>'
-      + '</svg>';
-    inner = '<div class="mmn-top">' + arc + '<div class="mmn-ttl">' + esc(node.t) + '</div>'
-      + (hasKids && !node.muted ? '<span class="mmn-arr">›</span>' : '') + '</div>';
+    // Refined, graphic-only progress rail along the card's base (no numbers).
+    inner = '<div class="mmn-top"><div class="mmn-ttl">' + esc(node.t) + '</div>'
+      + (hasKids && !node.muted ? '<span class="mmn-arr">›</span>' : '') + '</div>'
+      + (node.muted ? '' : '<div class="mmn-prog"><i style="width:' + (ratio * 100).toFixed(1) + '%"></i></div>');
   } else if (kind === 'vd') {
     cls = 'mmn vd';
     inner = '<div class="mmn-top"><div class="mmn-ic">' + (node.ic || MM_IC.doc) + '</div><div class="mmn-ttl">' + esc(node.t) + '</div><span class="mmn-arr">→</span></div>';
