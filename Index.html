@@ -4373,7 +4373,26 @@ function _mmVertModules(key) {
     });
   }
 
-  // 7 — Existing vs New (OMP only — inline panel). Split shown seller / buyer.
+  // 7 — Documents (OMP quality feed — inline panel). Doc completeness split.
+  if (q && q.docs && q.docs.total) {
+    var dcC = q.docs.complete||0, dcP = q.docs.partial||0, dcI = q.docs.incomplete||0, dcM = q.docs.missing||0;
+    mods.push({ t:'Documents', ic:MM_IC.doc, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Document completeness',
+      panel:{
+        eye:'Document completeness',
+        headline:{ v:dcC, label:'Complete', tone:'good' },
+        bar:[ { label:'Complete', v:dcC, color:'#16a34a' },
+              { label:'Partial', v:dcP, color:'#d97706' },
+              { label:'Incomplete', v:dcI, color:'#8a93a1' },
+              { label:'Missing', v:dcM, color:'#dc2626' } ],
+        tiles:[ { label:'Complete', v:dcC, tone:'good' }, { label:'Partial', v:dcP, tone:'warn' },
+                { label:'Incomplete', v:dcI }, { label:'Missing', v:dcM, tone:'crit' },
+                { label:'Total', v:q.docs.total||0 } ],
+        records:'docs'
+      }
+    });
+  }
+
+  // 8 — Existing vs New (OMP only — inline panel). Split shown seller / buyer.
   if (isOMP && vs.oldVendors != null) {
     var exAll = (vs.oldVendors||0)+(vb.oldVendors||0), nwAll = (vs.newVendors||0)+(vb.newVendors||0);
     mods.push({ t:'Existing vs New', ic:MM_IC.users, tone:'t-purple', kind:'module', expand:'inline-panel', eye:'Vendor classification',

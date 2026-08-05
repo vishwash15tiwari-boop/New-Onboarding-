@@ -803,6 +803,61 @@ function buildDashboard(audience, cfg, allRows, f) {
   };
 }
 
+// ─── DIAGNOSTIC — one-shot audit of EVERY column pulled from EVERY source ────
+// Run from the Apps Script editor (Run ▸ auditMetabaseColumns) then View ▸ Logs.
+// Read-only. For each onboarding card it logs the live source, row count, the
+// full header list, which key columns are present vs MISSING, and the raw
+// business_vertical / category / region distributions the dashboard depends on;
+// then the header lists of the TAT / rating / docs sheets. Use it to confirm
+// exactly what data is being pulled and that no expected column is absent.
+function auditMetabaseColumns() {
+  Logger.log('════════ METABASE / SHEET COLUMN AUDIT ════════');
+
+  ['seller', 'buyer'].forEach(function(aud) {
+    var cfg = AUDIENCE_CFG[aud];
+    Logger.log('\n──────── ' + aud.toUpperCase()
+      + '  (card ' + (CONFIG.MB_CARDS && CONFIG.MB_CARDS[aud] || '?')
+      + ' / sheet ' + (CONFIG.MB_LOCAL_SHEETS && CONFIG.MB_LOCAL_SHEETS[aud] || '?') + ') ────────');
+    var raw;
+    try { raw = readData(aud); } catch (e) { Logger.log('  ✗ readData failed: ' + e.message); return; }
+    Logger.log('  source: ' + raw.source + '   rows: ' + raw.rows.length);
+    Logger.log('  headers (' + raw.headers.length + '): ' + raw.headers.join(', '));
+
+    var must = [cfg.idCol, cfg.nameCol, cfg.vendorCol, cfg.onbCol,
+      'business_vertical', 'business_category', 'onboarding_status',
+      'gst_number', 'gstin', 'gstin_status', 'transaction_activation_status',
+      'transaction_date', 'txn_date', 'state', 'onboarding_created_date', 'in_review_date'];
+    var present = [], missing = [];
+    must.forEach(function(c) { (raw.headers.indexOf(c) >= 0 ? present : missing).push(c); });
+    Logger.log('  ✓ present: ' + present.join(', '));
+    Logger.log('  ✗ MISSING: ' + (missing.length ? missing.join(', ') : '(none)'));
+
+    var rows = normalizeRows(raw, cfg);
+    var bv = {}, cat = {}, reg = {};
+    rows.forEach(function(r) {
+      var b = String(r.bizVertical || '(blank)').trim() || '(blank)';   bv[b]  = (bv[b] || 0) + 1;
+      var c = String(r.category || '(blank)').trim() || '(blank)';      cat[c] = (cat[c] || 0) + 1;
+      var g = stateToRegion_(r.state) || '(unmapped)';                  reg[g] = (reg[g] || 0) + 1;
+    });
+    Logger.log('  raw business_vertical → ' + JSON.stringify(bv));
+    Logger.log('  category → ' + JSON.stringify(cat));
+    Logger.log('  region (state→zone) → ' + JSON.stringify(reg));
+  });
+
+  [['_mb_detail', 'TAT / Onboarding Detail (card 5292)'],
+   ['Vendor Rating', 'Vendor Ratings (card 5662)'],
+   ['Doc Completeness', 'Doc Completeness (card 5674)']].forEach(function(pair) {
+    Logger.log('\n──────── ' + pair[0] + '  [' + pair[1] + '] ────────');
+    var sh = null;
+    try { sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(pair[0]); } catch (e) {}
+    if (!sh || sh.getLastRow() < 1) { Logger.log('  (sheet not found or empty)'); return; }
+    var d = readSheetObj_(sh);
+    Logger.log('  rows: ' + d.rows.length + '   headers (' + d.headers.length + '): ' + d.headers.join(', '));
+  });
+
+  Logger.log('\n════════ END AUDIT ════════');
+}
+
 // ─── DIAGNOSTIC — run from Apps Script editor → View logs ───────────────────
 function debugExistingVsNew() {
   Logger.log('=== Existing vs New Debug ===');
