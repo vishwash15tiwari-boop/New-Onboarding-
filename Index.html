@@ -2653,18 +2653,22 @@ body.rec-open{overflow:hidden}
 .mmdetail #mm-funnel:not(.mf-open),.mmdetail #mm-geo:not(.mg-open),.mmdetail #mm-modpanel:not(.mp-open){display:none}
 /* Funnel → vertical stack in the side canvas */
 .mmdetail .mf-flow{flex-direction:column;overflow:visible;gap:0;padding:2px;align-items:center}
-.mmdetail .mf-card{width:var(--mf-w,100%);max-width:none;min-width:0;padding:9px 14px;border-width:1px;margin:0 auto}
+/* Compact horizontal strip: count + label on the left, breakdown on the right */
+.mmdetail .mf-card{width:var(--mf-w,100%);max-width:none;min-width:0;padding:8px 14px;border-width:1px;margin:0 auto;display:flex;align-items:center;gap:14px}
 .mmdetail .mf-card.sel{border-width:1.5px}
 .mmdetail .mf-card.sel::after{display:none}
-.mmdetail .mf-v{font-size:1.5rem;margin-bottom:1px}
-.mmdetail .mf-label{font-size:.68rem;margin-bottom:7px}
-.mmdetail .mf-matrix{padding-top:7px;margin-top:2px;gap:2px 4px}
-.mmdetail .mf-mx-hd{font-size:.6rem;padding-bottom:2px}
-.mmdetail .mf-mx-lbl{font-size:.64rem;padding:2px 6px 2px 0}
-.mmdetail .mf-mx-cell{font-size:.76rem;padding:3px 4px}
-.mmdetail .mf-sep{width:100%;height:15px}
-.mmdetail .mf-sep svg{width:20px;height:20px;transform:rotate(90deg)}
+.mmdetail .mf-head{flex:0 0 84px;min-width:0}
+.mmdetail .mf-v{font-size:1.35rem;margin:0;line-height:1.05}
+.mmdetail .mf-label{font-size:.66rem;margin:2px 0 0;line-height:1.2}
+.mmdetail .mf-matrix{flex:1;border-top:none;padding:0 0 0 14px;margin:0;gap:1px 4px;border-left:1px solid var(--border)}
+.mmdetail .mf-mx-hd{font-size:.58rem;padding-bottom:1px}
+.mmdetail .mf-mx-lbl{font-size:.62rem;padding:1px 6px 1px 0}
+.mmdetail .mf-mx-cell{font-size:.74rem;padding:2px 4px}
+.mmdetail .mf-sep{width:100%;height:13px}
+.mmdetail .mf-sep svg{width:18px;height:18px;transform:rotate(90deg)}
 .mmdetail .mf-detail{margin-top:14px;padding-top:14px}
+/* the detail-breakdown matrix below the funnel keeps its own full-width layout */
+.mmdetail .mf-detail .mf-matrix{flex:none;border-left:none;padding-left:0}
 /* Geo → map above legend, stacked */
 .mmdetail .mg-grid{flex-direction:column;gap:14px}
 .mmdetail .mg-map{flex:none;width:100%;max-width:none}
@@ -2678,7 +2682,9 @@ body.rec-open{overflow:hidden}
   .mmworkspace.has-panel .mmdetail{flex-basis:auto;width:100%;position:static;max-height:none;
     overflow:visible;margin-top:12px}
   .mmdetail .mf-flow{flex-direction:row;overflow-x:auto}
-  .mmdetail .mf-card{width:auto;min-width:148px}
+  .mmdetail .mf-card{width:auto;min-width:148px;display:block}
+  .mmdetail .mf-head{flex:none}
+  .mmdetail .mf-matrix{border-left:none;padding:8px 0 0;border-top:1px solid var(--border)}
   .mmdetail .mf-sep{width:44px;height:44px}
   .mmdetail .mf-sep svg{transform:none;width:44px;height:44px}
   .mmdetail .mg-grid{flex-direction:row;flex-wrap:wrap}
@@ -4742,8 +4748,8 @@ function mmRenderFunnel() {
     html += '<div class="mf-card' + (sel ? ' sel' : '') + '" role="button" tabindex="0" style="--mf-w:' + tw + '%"'
       + ' onclick="mmSelectFunnelStage(\'' + s.key + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){mmSelectFunnelStage(\'' + s.key + '\')}">'
-      + '<div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
-      + '<div class="mf-label">' + esc(s.label) + '</div>'
+      + '<div class="mf-head"><div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
+      + '<div class="mf-label">' + esc(s.label) + '</div></div>'
       + _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0, 2)
       + '</div>';
     if (i < MF_STAGES.length - 1) {
