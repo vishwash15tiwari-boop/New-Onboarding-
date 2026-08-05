@@ -2636,6 +2636,41 @@ body.rec-open{overflow:hidden}
 .mmn.vd.in:hover{box-shadow:0 16px 32px -16px rgba(0,93,255,.7);border-color:var(--blue);transform:translateY(-2px)}
 @media(prefers-reduced-motion:reduce){.mmn{opacity:1!important;transform:none!important}}
 
+/* ── Inline Funnel Panel ── */
+#mm-funnel{overflow:hidden;max-height:0;opacity:0;transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .3s ease;margin:0}
+#mm-funnel.mf-open{max-height:900px;opacity:1;margin:0 0 28px}
+.mf-flow{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:thin}
+.mf-card{flex:1;min-width:148px;max-width:210px;background:var(--card);border:2px solid var(--border);border-radius:var(--r);padding:20px 16px 16px;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .18s;position:relative;opacity:0;transform:translateY(14px);will-change:transform,opacity}
+.mf-card.mf-in{opacity:1;transform:none;transition:opacity .35s ease,transform .35s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s}
+.mf-card:hover{box-shadow:0 4px 18px -4px rgba(0,0,0,.12);transform:translateY(-1px)}
+.mf-card.sel{border-color:var(--blue);box-shadow:0 0 0 1.5px rgba(0,93,255,.3),0 6px 22px -6px rgba(0,93,255,.2)}
+.mf-card.sel::after{content:'';position:absolute;bottom:-13px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:10px solid var(--blue);pointer-events:none}
+.mf-v{font-size:2.4rem;font-weight:800;line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.mf-v.blue{color:#005dff}.mf-v.purple{color:#8b5cf6}.mf-v.amber{color:#d97706}.mf-v.green{color:#16a34a}.mf-v.red{color:#dc2626}
+.mf-label{font-size:.75rem;color:var(--txt2);margin-bottom:12px;line-height:1.3}
+.mf-cats{display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
+.mf-cat{display:flex;align-items:center;justify-content:space-between;font-size:.8rem}
+.mf-cat-badge{display:inline-flex;align-items:center;gap:5px;color:var(--txt2)}
+.mf-cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.mf-cat-dot.metal{background:#6366f1}.mf-cat-dot.plastic{background:#0ea5e9}
+.mf-cat-dot.seller{background:#8b5cf6}.mf-cat-dot.buyer{background:#06b6d4}
+.mf-cat-val{font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+/* arrow connectors between stage cards */
+.mf-sep{display:flex;align-items:center;justify-content:center;width:44px;flex-shrink:0}
+.mf-sep svg{width:44px;height:44px;overflow:visible}
+.mf-sep-path{stroke:var(--border);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:80;stroke-dashoffset:0;transition:stroke .25s}
+.mf-sep.lit .mf-sep-path{stroke:var(--blue)}
+/* detail strip */
+.mf-detail{border-top:1px solid var(--border);margin-top:20px;padding-top:20px;animation:mfDetailIn .32s cubic-bezier(.4,0,.2,1) both}
+@keyframes mfDetailIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.mf-detail-hd{font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:14px}
+.mf-detail-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.mf-detail-card{flex:1;min-width:110px;background:var(--bg);border:1px solid var(--border);border-radius:calc(var(--r) - 2px);padding:13px 15px}
+.mf-detail-card .dc-v{font-size:1.3rem;font-weight:700;margin-bottom:2px;font-variant-numeric:tabular-nums}
+.mf-detail-card .dc-l{font-size:.73rem;color:var(--txt2)}
+.mf-detail-vd{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;background:var(--blue);color:#fff;border:none;border-radius:999px;font-size:.8rem;font-weight:600;cursor:pointer;transition:opacity .15s,transform .15s}
+.mf-detail-vd:hover{opacity:.88;transform:translateY(-1px)}
+
 /* ══════════════════════════════════════════════════
    INTERACTIVE BRANCH NAVIGATOR — legacy (superseded by mind map)
    ══════════════════════════════════════════════════ */
@@ -2825,6 +2860,7 @@ body.rec-open{overflow:hidden}
   <div id="tab-overview">
     <div class="mmcrumbs" id="mm-crumbs"></div>
     <div class="mm" id="mm"><svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg></div>
+    <div id="mm-funnel" class="mf" role="region" aria-label="Onboarding Funnel"></div>
     <!-- Hidden data sink: the existing section renderers populate these so the
          KPI / GMV / quality snapshots that power the modals stay warm. -->
     <div id="bn-sink" style="display:none" aria-hidden="true">
@@ -4109,6 +4145,8 @@ var MM_IC = {
 var mmTree = null;        // root node — rebuilt each render from live data
 var mmPath = [];          // node IDs from 'root' down = the expanded chain
 var _mmById = {};         // id → node for the current tree
+var mmFunnelActive = false;  // inline funnel panel open
+var mmFunnelStage  = null;   // selected stage key
 
 function _mmC(vs, vb, f) { return (vs && vs[f] || 0) + (vb && vb[f] || 0); }
 function _mmParseDate(s) {
@@ -4156,8 +4194,8 @@ function _mmVertModules(key) {
   var f = function(t, v, ic, tone, kids) { return { t:t, v:fmt(v), ic:ic, tone:tone, kind:'kpi', children:kids }; };
   var mods = [];
 
-  // 1 — Funnel (stages → audience + category detail cards)
-  mods.push({ t:'Funnel', ic:MM_IC.funnel, tone:'t-blue', kind:'module', eye:'Funnel · stages', children:[
+  // 1 — Funnel (expands inline as a horizontal stage dashboard)
+  mods.push({ t:'Funnel', ic:MM_IC.funnel, tone:'t-blue', kind:'module', expand:'inline-funnel', eye:'Funnel · stages', children:[
     f('Logged In Cases', _mmC(vs,vb,'total'), MM_IC.funnel, 't-blue',
       [ _d('Sellers', fmt(vs.total||0), MM_IC.users), _d('Buyers', fmt(vb.total||0), MM_IC.users),
         _d('Metal', fmt(mTot)), _d('Plastic', fmt(pTot)), _vd('total') ]),
@@ -4285,6 +4323,7 @@ function mmBuildColumns() {
   for (var k = 0; k < chain.length; k++) {
     var parent = chain[k];
     if (!parent.children || !parent.children.length) break;
+    if (parent.expand === 'inline-funnel') break; // children shown in inline panel
     cols.push({ cards:parent.children, active: chain[k+1] ? chain[k+1]._id : null, eye:parent.eye || '',
                 wide: parent.kind === 'module' || parent.kind === 'kpi' || parent.kind === 'root' });
   }
@@ -4336,7 +4375,13 @@ function renderBranchNav(key) {
   }
   // Drop any ids that no longer resolve after the rebuild.
   if (!mmPath.every(function(id){ return mmFindById(id); })) mmPath = [];
+  // Validate funnel state after rebuild
+  if (mmFunnelActive) {
+    var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
+    if (!lastNode || lastNode.expand !== 'inline-funnel') mmFunnelActive = false;
+  }
   mmRender();
+  mmRenderFunnel();
 }
 
 function mmRender() {
@@ -4365,7 +4410,9 @@ function mmRenderCrumbs() {
 function mmGoto(i) {
   var chain = mmPath.length ? mmPath.slice() : ['root'];
   mmPath = i <= 0 ? ['root'] : chain.slice(0, i + 1);
-  mmRender();
+  var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
+  if (!lastNode || lastNode.expand !== 'inline-funnel') { mmFunnelActive = false; mmFunnelStage = null; }
+  mmRender(); mmRenderFunnel();
 }
 
 function mmReveal() {
@@ -4400,10 +4447,23 @@ function mmClickNode(id) {
   if (node.kind === 'vert') {
     mmPath = ['root', node._id];
     if (node.vkey && node.vkey !== activeVertKey) { selectVertTab(node.vkey); return; }
-    mmRender(); return;
+    mmFunnelActive = false; mmFunnelStage = null;
+    mmRender(); mmRenderFunnel(); return;
   }
+  if (node.expand === 'inline-funnel') {
+    var alreadyOpen = mmFunnelActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
+    if (alreadyOpen) {
+      mmFunnelActive = false; mmFunnelStage = null;
+      mmPath = mmPath.slice(0, -1);
+    } else {
+      mmPath = _mmPathIds(node);
+      mmFunnelActive = true; mmFunnelStage = null;
+    }
+    mmRender(); mmRenderFunnel(); return;
+  }
+  if (mmFunnelActive) { mmFunnelActive = false; mmFunnelStage = null; }
   mmPath = _mmPathIds(node);
-  mmRender();
+  mmRender(); mmRenderFunnel();
 }
 
 // ── connectors: elbow bus from each active card to its child column ──
@@ -4429,6 +4489,115 @@ function mmDraw() {
 }
 function mmDrawConnectors() { mmDraw(); }   // alias kept for any external caller
 window.addEventListener('resize', function() { if (currentView !== 'gst') mmDraw(); });
+
+// ── Inline Funnel Panel ────────────────────────────────────────────────────
+var MF_STAGES = [
+  { key:'total',     label:'Logged In',             color:'blue',   field:'total',     vdAction:'total',
+    metal:function(vs,vb){return (vs.metalTotal||0)+(vb.metalTotal||0);},
+    plastic:function(vs,vb){return (vs.plasticTotal||0)+(vb.plasticTotal||0);} },
+  { key:'draft',     label:'Draft',                 color:'purple', field:'draft',     vdAction:'draft',    metal:null, plastic:null },
+  { key:'review',    label:'Under Review',           color:'amber',  field:'inReview',  vdAction:'review',   metal:null, plastic:null },
+  { key:'onboarded', label:'Successfully Onboarded', color:'green',  field:'completed', vdAction:'onboarded',
+    metal:function(vs,vb){return (vs.metalOnboarded||0)+(vb.metalOnboarded||0);},
+    plastic:function(vs,vb){return (vs.plasticOnboarded||0)+(vb.plasticOnboarded||0);} },
+  { key:'rejected',  label:'Rejected',              color:'red',    field:'rejected',  vdAction:'rejected', metal:null, plastic:null },
+];
+
+function mmSelectFunnelStage(k) {
+  mmFunnelStage = (mmFunnelStage === k) ? null : k;
+  mmRenderFunnel();
+}
+
+function _mfDCard(label, val) {
+  return '<div class="mf-detail-card"><div class="dc-v">' + esc(val) + '</div><div class="dc-l">' + esc(label) + '</div></div>';
+}
+
+function mmRenderFunnel() {
+  var panel = document.getElementById('mm-funnel');
+  if (!panel) return;
+  if (!mmFunnelActive) { panel.className = 'mf'; panel.innerHTML = ''; return; }
+
+  var key = activeVertKey || _mmVert;
+  var vs = (DS && DS.verticals || {})[key] || {};
+  var vb = (DB && DB.verticals || {})[key] || {};
+
+  var html = '<div class="mf-flow">';
+  MF_STAGES.forEach(function(s, i) {
+    var total   = (vs[s.field]||0) + (vb[s.field]||0);
+    var metal   = s.metal   ? s.metal(vs, vb)   : null;
+    var plastic = s.plastic ? s.plastic(vs, vb) : null;
+    var sel = mmFunnelStage === s.key;
+    html += '<div class="mf-card' + (sel ? ' sel' : '') + '" role="button" tabindex="0"'
+      + ' onclick="mmSelectFunnelStage(\'' + s.key + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){mmSelectFunnelStage(\'' + s.key + '\')}">'
+      + '<div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
+      + '<div class="mf-label">' + esc(s.label) + '</div>'
+      + '<div class="mf-cats">';
+    if (metal !== null) {
+      html += '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot metal"></span>Metal</span>'
+        + '<span class="mf-cat-val">' + fmt(metal) + '</span></div>'
+        + '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot plastic"></span>Plastic</span>'
+        + '<span class="mf-cat-val">' + fmt(plastic) + '</span></div>';
+    } else {
+      html += '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot seller"></span>Sellers</span>'
+        + '<span class="mf-cat-val">' + fmt(vs[s.field]||0) + '</span></div>'
+        + '<div class="mf-cat"><span class="mf-cat-badge"><span class="mf-cat-dot buyer"></span>Buyers</span>'
+        + '<span class="mf-cat-val">' + fmt(vb[s.field]||0) + '</span></div>';
+    }
+    html += '</div></div>';
+    if (i < MF_STAGES.length - 1) {
+      var nextSel = mmFunnelStage === MF_STAGES[i + 1].key;
+      var lit = sel || nextSel;
+      html += '<div class="mf-sep' + (lit ? ' lit' : '') + '">'
+        + '<svg viewBox="0 0 44 44" aria-hidden="true"><path class="mf-sep-path" d="M2 22 L38 22 M28 13 L38 22 L28 31"/></svg></div>';
+    }
+  });
+  html += '</div>';
+
+  if (mmFunnelStage) {
+    var stageObj = null;
+    for (var si = 0; si < MF_STAGES.length; si++) { if (MF_STAGES[si].key === mmFunnelStage) { stageObj = MF_STAGES[si]; break; } }
+    if (stageObj) {
+      var sTotal   = (vs[stageObj.field]||0) + (vb[stageObj.field]||0);
+      var sMetal   = stageObj.metal   ? stageObj.metal(vs, vb)   : null;
+      var sPlastic = stageObj.plastic ? stageObj.plastic(vs, vb) : null;
+      html += '<div class="mf-detail" id="mf-detail" role="region" aria-label="' + esc(stageObj.label) + ' details">'
+        + '<div class="mf-detail-hd">' + esc(stageObj.label) + '</div>'
+        + '<div class="mf-detail-grid">'
+        + _mfDCard('Sellers', fmt(vs[stageObj.field]||0))
+        + _mfDCard('Buyers',  fmt(vb[stageObj.field]||0));
+      if (sMetal !== null) {
+        html += _mfDCard('Metal',   fmt(sMetal))
+              + _mfDCard('Plastic', fmt(sPlastic));
+      }
+      html += '</div>'
+        + '<button class="mf-detail-vd" onclick="mmCardAction(\'' + stageObj.vdAction + '\')">'
+        + MM_IC.doc + ' View Detailed Records →</button>'
+        + '</div>';
+    }
+  }
+
+  panel.innerHTML = html;
+  panel.className = 'mf mf-open';
+
+  var cards = [].slice.call(panel.querySelectorAll('.mf-card'));
+  var anim = motionOK();
+  cards.forEach(function(c, i) {
+    if (!anim) { c.classList.add('mf-in'); return; }
+    setTimeout(function(){ c.classList.add('mf-in'); }, 60 + i * 90);
+  });
+  if (anim && !mmFunnelStage) {
+    var paths = [].slice.call(panel.querySelectorAll('.mf-sep-path'));
+    paths.forEach(function(p, i) {
+      p.style.transition = 'none';
+      p.style.strokeDashoffset = '80';
+      setTimeout(function(){
+        p.style.transition = 'stroke-dashoffset .55s cubic-bezier(.4,0,.2,1) ' + (i * .14 + .25) + 's,stroke .25s';
+        p.style.strokeDashoffset = '0';
+      }, 20);
+    });
+  }
+}
 
 // Regional Split → compact modal listing regions; each drills into the
 // per-region vendor modal (reuses the KPI-modal shell + scroll lock).
