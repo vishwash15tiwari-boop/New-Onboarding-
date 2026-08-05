@@ -2775,9 +2775,8 @@ body.rec-open{overflow:hidden}
 .mp-mx-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
 .mp-mx-rlbl{font-size:.84rem;font-weight:600;color:var(--txt2);padding-right:6px;white-space:nowrap}
 .mp-mx-rlbl.tot{color:var(--txt);font-weight:700}
-.mp-mx-cell{position:relative;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 8px;text-align:center;overflow:hidden;min-width:0}
-.mp-mx-fill{position:absolute;left:0;top:0;bottom:0;opacity:.16;border-radius:8px 0 0 8px;transition:width .55s cubic-bezier(.4,0,.2,1)}
-.mp-mx-n{position:relative;font-size:1.06rem;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+.mp-mx-cell{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 8px;text-align:center;min-width:0}
+.mp-mx-n{font-size:1.06rem;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
 .mp-mx-cell.tot{background:var(--card);border-style:dashed}
 .mp-mx-cell.tot .mp-mx-n{font-weight:800}
 .mp-mx-cell.tot.grand{border-style:solid;border-color:rgba(0,93,255,.3);background:var(--accent-soft)}
@@ -5035,8 +5034,6 @@ function mmRenderModPanel() {
   // Type × Category cross-tab — comparable at a glance (row + column totals, bar-in-cell)
   if (P.matrix) {
     var M = P.matrix, nc = M.cols.length;
-    var maxCell = 1;
-    M.rows.forEach(function(r){ r.vals.forEach(function(v){ if ((+v||0) > maxCell) maxCell = +v; }); });
     var colTot = M.cols.map(function(c, ci){ return M.rows.reduce(function(s, r){ return s + (+r.vals[ci] || 0); }, 0); });
     var grand = colTot.reduce(function(s, v){ return s + v; }, 0);
     var mx = '<div class="mp-mx-corner"></div>'
@@ -5045,9 +5042,7 @@ function mmRenderModPanel() {
     mx += M.rows.map(function(r) {
       var rt = r.vals.reduce(function(s, v){ return s + (+v || 0); }, 0);
       var cells = r.vals.map(function(v, ci) {
-        var w = Math.round((+v || 0) / maxCell * 100);
-        return '<div class="mp-mx-cell"><span class="mp-mx-fill" style="width:' + w + '%;background:' + M.colColors[ci] + '"></span>'
-          + '<span class="mp-mx-n" data-count="' + (+v || 0) + '">0</span></div>';
+        return '<div class="mp-mx-cell"><span class="mp-mx-n" data-count="' + (+v || 0) + '">0</span></div>';
       }).join('');
       return '<div class="mp-mx-rlbl">' + esc(r.label) + '</div>' + cells
         + '<div class="mp-mx-cell tot"><span class="mp-mx-n" data-count="' + rt + '">0</span></div>';
@@ -5092,7 +5087,7 @@ function mmRenderModPanel() {
   if (_mmModAnimate) {
     _mmCountUp(panel);
     if (motionOK()) {
-      [].slice.call(panel.querySelectorAll('.mp-seg, .mp-mx-fill')).forEach(function(s) {
+      [].slice.call(panel.querySelectorAll('.mp-seg')).forEach(function(s) {
         var w = s.style.width; s.style.width = '0%';
         requestAnimationFrame(function(){ s.style.width = w; });
       });
