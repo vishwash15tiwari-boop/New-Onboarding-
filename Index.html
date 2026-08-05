@@ -2678,8 +2678,51 @@ body.rec-open{overflow:hidden}
 @keyframes mfDetailIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .mf-detail-hd{font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:14px}
 
-.mf-detail-vd{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;background:var(--blue);color:#fff;border:none;border-radius:999px;font-size:.8rem;font-weight:600;cursor:pointer;transition:opacity .15s,transform .15s}
+.mf-detail-vd{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;background:var(--blue);color:#fff;border:none;border-radius:999px;font-size:.8rem;font-weight:600;cursor:pointer;transition:opacity .15s,transform .15s;white-space:nowrap}
+.mf-detail-vd svg{width:15px;height:15px;flex-shrink:0}
 .mf-detail-vd:hover{opacity:.88;transform:translateY(-1px)}
+
+/* ── Inline Geographic Split — India map ── */
+:root{--mg-base:#e9ecf2}
+@media(prefers-color-scheme:dark){:root{--mg-base:#2a2d34}}
+:root[data-theme="dark"]{--mg-base:#2a2d34}
+:root[data-theme="light"]{--mg-base:#e9ecf2}
+#mm-geo{overflow:hidden;max-height:0;opacity:0;transition:max-height .5s cubic-bezier(.4,0,.2,1),opacity .3s ease;margin:0}
+#mm-geo.mg-open{max-height:1200px;opacity:1;margin:0 0 28px}
+.mg-eye{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);padding:0 2px 10px}
+.mg-grid{display:flex;gap:22px;align-items:stretch;flex-wrap:wrap}
+.mg-map{flex:0 0 320px;max-width:340px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;align-items:center;justify-content:center}
+.mg-svg{width:100%;height:auto;max-height:420px;display:block}
+.mg-state{transition:fill-opacity .25s ease,stroke-width .15s}
+.mg-state.active{stroke-linejoin:round}
+.mg-state.active.hl{fill-opacity:1!important;stroke-width:2!important}
+.mg-state.sel{stroke-width:2.4!important;fill-opacity:1!important}
+/* legend */
+.mg-legend{flex:1;min-width:300px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:6px 6px 10px;display:flex;flex-direction:column;animation:mgSlide .4s cubic-bezier(.4,0,.2,1) both}
+@keyframes mgSlide{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.mg-legend-hd,.mg-row{display:grid;grid-template-columns:1fr 64px 64px 64px;align-items:center;gap:4px;padding:8px 12px}
+.mg-legend-hd{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card)}
+.mg-rows{overflow-y:auto;max-height:380px}
+.mg-row{border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;font:inherit;transition:background .15s;opacity:0;animation:mgRowIn .3s ease forwards}
+@keyframes mgRowIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.mg-row:hover,.mg-row.hl{background:var(--accent-soft)}
+.mg-row-nm{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--txt);min-width:0}
+.mg-row-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mg-swatch{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.mg-row-n{text-align:right;font-size:12.5px;font-variant-numeric:tabular-nums}
+.mg-legend-hd .mg-row-n{text-align:right}
+.mg-total{font-weight:700;color:var(--txt)}
+.mg-metal{color:#6366f1;font-weight:600}
+.mg-plastic{color:#0ea5e9;font-weight:600}
+.mg-loading{flex:1;min-width:300px;display:flex;align-items:center;justify-content:center;padding:50px 20px;color:var(--txt3);font-size:13px;text-align:center;background:var(--card);border:1px solid var(--border);border-radius:var(--r)}
+/* state detail */
+.mg-detail{margin-top:18px;border-top:1px solid var(--border);padding-top:18px;animation:mfDetailIn .32s cubic-bezier(.4,0,.2,1) both}
+.mg-detail-hd{display:flex;align-items:center;gap:8px;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3);margin-bottom:14px}
+.mg-dt-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.mg-dt-cell{flex:1;min-width:92px;background:var(--bg);border:1px solid var(--border);border-radius:calc(var(--r) - 2px);padding:12px 14px}
+.mg-dt-v{font-size:1.35rem;font-weight:800;line-height:1;margin-bottom:3px;font-variant-numeric:tabular-nums}
+.mg-dt-l{font-size:.72rem;color:var(--txt2)}
+@media(max-width:720px){.mg-map{flex:1 1 100%;max-width:none}.mg-legend,.mg-loading{min-width:0}}
 
 /* ══════════════════════════════════════════════════
    INTERACTIVE BRANCH NAVIGATOR — legacy (superseded by mind map)
@@ -2871,6 +2914,7 @@ body.rec-open{overflow:hidden}
     <div class="mmcrumbs" id="mm-crumbs"></div>
     <div class="mm" id="mm"><svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg></div>
     <div id="mm-funnel" class="mf" role="region" aria-label="Onboarding Funnel"></div>
+    <div id="mm-geo" class="mg" role="region" aria-label="Geographic Split"></div>
     <!-- Hidden data sink: the existing section renderers populate these so the
          KPI / GMV / quality snapshots that power the modals stay warm. -->
     <div id="bn-sink" style="display:none" aria-hidden="true">
@@ -4157,6 +4201,10 @@ var mmPath = [];          // node IDs from 'root' down = the expanded chain
 var _mmById = {};         // id → node for the current tree
 var mmFunnelActive = false;  // inline funnel panel open
 var mmFunnelStage  = null;   // selected stage key
+var mmGeoActive = false;     // inline geo (India map) panel open
+var _geoAnimate = false;     // run the map entrance animation on the next render only
+// Geo panel state: which region is expanded, hovered/selected state, cached rows.
+var _geo = { key:null, region:null, state:null, hover:null, pKey:null, rows:{ seller:null, buyer:null }, loading:false };
 
 function _mmC(vs, vb, f) { return (vs && vs[f] || 0) + (vb && vb[f] || 0); }
 function _mmParseDate(s) {
@@ -4226,7 +4274,7 @@ function _mmVertModules(key) {
     _d('Metal', fmt(mOnb)), _d('Plastic', fmt(pOnb)), _vd('onboarded'),
   ]});
 
-  // 3 — Geographic Split (each region opens its vendor-list modal)
+  // 3 — Geographic Split (each region expands an inline interactive India map)
   var regs = (vs.regions || []).filter(function(r){ return (r.onboarded||r.total||0) > 0; });
   if (!regs.length && key === activeVertKey && Array.isArray(vertRows) && vertRows.length)
     regs = _regionsFromRows(vertRows).filter(function(r){ return (r.total||0) > 0; });
@@ -4235,7 +4283,7 @@ function _mmVertModules(key) {
       children: regs.map(function(r) {
         var tone = r.region === 'North' ? 't-blue' : r.region === 'South' ? 't-green' : 't-ink';
         return { t:r.region, v:fmt(r.onboarded || r.total || 0), ic:MM_IC.pin, tone:tone, kind:'kpi',
-                 action:'regionmodal:' + r.region };
+                 geoRegion:r.region };
       }) });
   }
 
@@ -4343,7 +4391,7 @@ function mmBuildColumns() {
 function mmNodeCard(node, colActiveId) {
   var kind = node.kind, on = node._id === colActiveId;
   var hasKids = node.children && node.children.length;
-  var isLeaf = node.leaf || kind === 'vd' || (!hasKids && !node.action);
+  var isLeaf = node.leaf || kind === 'vd' || (!hasKids && !node.action && !node.geoRegion);
   var cls, inner;
   if (kind === 'root') {
     cls = 'mmn root' + (on ? ' on' : '');
@@ -4367,13 +4415,13 @@ function mmNodeCard(node, colActiveId) {
   } else {
     var modCls = (kind === 'module') ? ' module' : '';
     cls = 'mmn ' + (node.tone || 't-ink') + modCls + (on ? ' on' : '') + (isLeaf ? ' leaf' : '');
-    var arrow = (hasKids || node.action) ? '<span class="mmn-arr">' + (node.action && !hasKids ? '→' : '›') + '</span>' : '';
+    var arrow = (hasKids || node.action || node.geoRegion) ? '<span class="mmn-arr">' + ((node.action || node.geoRegion) && !hasKids ? '→' : '›') + '</span>' : '';
     inner = '<div class="mmn-top"><div class="mmn-ic">' + (node.ic || MM_IC.grid) + '</div><div class="mmn-ttl">' + esc(node.t) + '</div>' + arrow + '</div>'
       + (node.v ? '<div class="mmn-v tnum">' + esc(node.v) + '</div>' : '')
       + (node.s ? '<div class="mmn-s">' + esc(node.s) + '</div>' : '');
   }
   var dim = (colActiveId && !on) ? ' dim' : '';
-  var clickable = !(node.muted || (isLeaf && !node.action));
+  var clickable = !(node.muted || (isLeaf && !node.action && !node.geoRegion));
   return '<div class="' + cls + dim + '" data-id="' + esc(node._id) + '"'
     + (clickable ? ' role="button" tabindex="0" onclick="mmClickNode(\'' + esc(node._id) + '\')" onkeydown="if(event.key===\'Enter\'){mmClickNode(\'' + esc(node._id) + '\')}"' : '')
     + '>' + inner + '</div>';
@@ -4393,13 +4441,13 @@ function renderBranchNav(key) {
   }
   // Drop any ids that no longer resolve after the rebuild.
   if (!mmPath.every(function(id){ return mmFindById(id); })) mmPath = [];
-  // Validate funnel state after rebuild
-  if (mmFunnelActive) {
-    var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
-    if (!lastNode || lastNode.expand !== 'inline-funnel') mmFunnelActive = false;
-  }
+  // Validate inline-panel state after rebuild
+  var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
+  if (mmFunnelActive && (!lastNode || lastNode.expand !== 'inline-funnel')) mmFunnelActive = false;
+  if (mmGeoActive && (!lastNode || !lastNode.geoRegion)) { mmGeoActive = false; _geo.region = null; _geo.state = null; }
   mmRender();
   mmRenderFunnel();
+  mmRenderGeo();
 }
 
 function mmRender() {
@@ -4430,7 +4478,8 @@ function mmGoto(i) {
   mmPath = i <= 0 ? ['root'] : chain.slice(0, i + 1);
   var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
   if (!lastNode || lastNode.expand !== 'inline-funnel') { mmFunnelActive = false; mmFunnelStage = null; }
-  mmRender(); mmRenderFunnel();
+  if (!lastNode || !lastNode.geoRegion) { mmGeoActive = false; _geo.region = null; _geo.state = null; }
+  mmRender(); mmRenderFunnel(); mmRenderGeo();
 }
 
 function mmReveal() {
@@ -4458,18 +4507,38 @@ function mmCardAction(action) {
   return openKpiModal(name);   // total/onboarded/transacted/oldvsnew/draft/review/rejected/osv/rating/docs
 }
 
+function _mmCloseInline() {
+  mmFunnelActive = false; mmFunnelStage = null;
+  mmGeoActive = false; _geo.region = null; _geo.state = null; _geo.hover = null;
+}
+
 function mmClickNode(id) {
   var node = mmFindById(id); if (!node) return;
+  // Region card → toggle the inline India map panel.
+  if (node.geoRegion) {
+    var geoOpen = mmGeoActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
+    if (geoOpen) {
+      mmGeoActive = false; _geo.region = null; _geo.state = null;
+      mmPath = mmPath.slice(0, -1);
+    } else {
+      mmFunnelActive = false; mmFunnelStage = null;
+      mmPath = _mmPathIds(node);
+      mmGeoActive = true; _geo.state = null; _geo.hover = null; _geoAnimate = true;
+      mmGeoOpen(node.geoRegion);
+    }
+    mmRender(); mmRenderFunnel(); mmRenderGeo(); return;
+  }
   if (node.action) return mmCardAction(node.action);
   if (node.muted || node.leaf || !(node.children && node.children.length)) return;
   if (node.kind === 'vert') {
     mmPath = ['root', node._id];
     if (node.vkey && node.vkey !== activeVertKey) { selectVertTab(node.vkey); return; }
-    mmFunnelActive = false; mmFunnelStage = null;
-    mmRender(); mmRenderFunnel(); return;
+    _mmCloseInline();
+    mmRender(); mmRenderFunnel(); mmRenderGeo(); return;
   }
   if (node.expand === 'inline-funnel') {
     var alreadyOpen = mmFunnelActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
+    mmGeoActive = false; _geo.region = null; _geo.state = null;
     if (alreadyOpen) {
       mmFunnelActive = false; mmFunnelStage = null;
       mmPath = mmPath.slice(0, -1);
@@ -4477,11 +4546,11 @@ function mmClickNode(id) {
       mmPath = _mmPathIds(node);
       mmFunnelActive = true; mmFunnelStage = null;
     }
-    mmRender(); mmRenderFunnel(); return;
+    mmRender(); mmRenderFunnel(); mmRenderGeo(); return;
   }
-  if (mmFunnelActive) { mmFunnelActive = false; mmFunnelStage = null; }
+  _mmCloseInline();
   mmPath = _mmPathIds(node);
-  mmRender(); mmRenderFunnel();
+  mmRender(); mmRenderFunnel(); mmRenderGeo();
 }
 
 // ── connectors: elbow bus from each active card to its child column ──
@@ -4509,6 +4578,10 @@ function mmDrawConnectors() { mmDraw(); }   // alias kept for any external calle
 window.addEventListener('resize', function() { if (currentView !== 'gst') mmDraw(); });
 
 // ── Inline Funnel Panel ────────────────────────────────────────────────────
+// India state boundaries (simplified topojson → SVG paths, viewBox 0 0 1000 1100).
+// Each entry: n=name, r=North|South region, d=SVG path. Self-contained, no external assets.
+var IN_STATES = {"AN":{"name":"Andaman & Nicobar Island","region":"South","d":"M863.3 1007.3L866.0 1014.5L862.9 1022.3L857.0 1010.8L863.3 1007.3ZM858.8 1000.9L859.2 1005.1L856.1 1006.3L858.8 1000.9ZM848.0 982.9L850.6 985.6L847.8 987.2L845.6 984.8L848.0 982.9ZM852.7 976.4L853.6 981.3L851.3 982.0L852.7 976.4ZM828.7 944.9L829.8 947.3L826.7 948.6L828.7 944.9ZM819.6 893.3L822.2 899.5L819.0 905.3L815.1 897.5L819.6 893.3ZM823.6 874.3L825.2 878.5L822.2 879.3L823.6 874.3ZM834.5 857.6L837.1 862.0L833.3 859.4L834.5 857.6ZM825.4 851.5L828.4 863.1L826.5 874.0L823.8 873.9L819.4 863.7L825.4 851.5ZM829.6 849.5L831.3 852.5L826.9 855.8L829.6 849.5ZM832.0 830.4L834.6 842.0L829.8 849.5L825.5 848.6L826.3 833.2L832.0 830.4ZM825.4 828.1L826.2 831.8L825.4 828.1ZM836.4 810.0L836.6 825.2L828.7 830.4L831.2 813.1L836.4 810.0Z"},"AP":{"name":"Andhra Pradesh","region":"South","d":"M453.9 724.0L450.0 725.7L453.9 724.0ZM564.9 638.4L543.4 662.7L529.8 668.9L513.9 684.9L492.3 695.2L483.7 702.4L482.0 706.4L485.8 708.6L483.6 716.6L464.8 724.7L449.5 724.4L446.0 735.1L439.7 742.6L434.5 743.0L432.1 737.9L419.4 742.1L409.6 763.9L414.5 779.0L412.3 790.9L416.2 803.2L415.5 812.8L408.6 812.2L406.1 816.9L397.7 820.0L389.3 817.4L389.4 821.6L383.0 823.3L380.6 827.2L369.0 825.1L363.0 828.3L360.8 836.9L354.8 839.6L350.2 837.1L350.6 832.2L357.8 828.6L361.3 819.0L354.3 816.4L355.2 809.4L345.3 807.3L346.1 801.0L338.1 798.7L327.0 805.6L317.5 799.7L315.1 804.1L308.6 802.4L310.8 798.8L306.0 791.5L310.3 791.0L310.4 794.8L319.9 795.7L323.5 799.7L320.8 794.7L322.5 791.3L326.5 791.0L322.6 786.2L307.5 789.0L305.7 784.3L308.7 781.6L301.7 777.9L305.1 766.5L301.8 766.3L302.9 762.5L313.2 764.4L315.0 760.1L310.8 754.2L312.1 737.0L317.8 735.5L345.9 739.6L355.8 731.6L366.9 733.5L376.1 726.5L382.8 726.3L384.2 716.7L401.0 711.4L406.4 714.4L410.7 708.8L408.1 707.2L409.9 704.0L414.8 702.4L426.9 710.4L427.6 705.3L422.9 704.7L424.7 699.8L435.4 701.8L438.1 696.7L455.8 691.0L457.8 684.6L467.6 673.8L474.9 670.0L482.0 672.4L485.2 670.3L485.9 659.1L489.9 655.8L493.4 663.8L500.3 658.1L509.2 659.5L507.8 654.2L519.7 644.6L517.9 640.5L522.5 640.6L527.3 636.2L535.6 646.3L542.8 648.6L550.7 647.1L561.5 636.8L564.9 638.4Z"},"AR":{"name":"Arunanchal Pradesh","region":"North","d":"M909.0 401.6L907.6 390.5L916.2 387.7L918.7 383.4L934.5 380.2L930.2 378.0L926.1 369.0L933.3 361.7L921.1 362.0L884.8 373.8L877.8 373.2L862.0 387.0L863.0 389.4L850.9 393.6L836.1 394.4L824.3 390.5L806.2 395.0L803.2 377.5L791.3 376.6L788.2 372.0L791.8 365.0L798.7 369.1L811.1 364.8L812.8 367.4L821.1 366.1L827.0 360.8L825.0 356.9L841.9 350.6L846.5 340.8L866.3 339.5L875.5 326.7L886.8 322.3L889.2 318.5L894.6 324.3L916.2 328.2L919.2 322.7L936.8 315.0L941.9 321.8L947.1 321.4L939.1 327.8L941.6 331.6L948.5 328.3L954.1 335.8L942.8 347.7L955.9 346.2L979.2 353.7L979.3 363.4L963.5 372.6L964.0 377.5L972.5 387.8L962.4 385.8L960.4 380.9L941.7 383.0L915.0 401.4L909.0 401.6Z"},"AS":{"name":"Assam","region":"North","d":"M907.6 390.5L897.4 393.9L881.3 406.5L877.9 408.0L877.6 405.4L868.7 417.1L867.7 425.3L861.0 427.7L861.2 424.2L858.0 425.7L846.4 437.0L851.0 444.4L841.7 460.1L839.1 460.2L836.5 471.8L829.8 472.8L827.6 469.0L820.0 479.8L809.5 477.4L810.7 456.8L818.9 458.0L816.8 453.0L828.6 445.1L822.5 441.0L816.3 430.9L808.1 433.3L808.0 423.9L811.0 421.9L808.4 420.3L798.7 421.9L796.7 419.1L790.5 424.6L788.5 421.9L785.4 427.3L777.1 431.5L774.8 427.5L765.9 424.3L740.6 424.1L733.4 431.3L737.0 435.7L732.1 439.1L732.6 423.6L727.7 414.8L732.3 410.8L732.3 400.9L743.1 398.8L744.4 396.1L780.9 398.5L799.3 394.3L804.5 396.4L824.3 390.5L836.1 394.4L857.7 392.7L877.8 373.2L884.8 373.8L928.3 361.4L933.3 361.7L926.1 369.0L930.2 378.0L934.5 380.2L918.7 383.4L916.2 387.7L907.6 390.5Z"},"BR":{"name":"Bihar","region":"North","d":"M674.7 406.0L680.3 411.1L666.0 421.4L665.5 426.8L672.9 432.6L672.1 436.7L664.2 440.0L666.3 444.7L664.2 447.1L657.0 443.6L649.0 447.0L647.9 451.1L644.2 452.0L639.8 465.7L633.6 468.0L625.2 466.4L620.7 473.3L615.2 466.8L609.7 466.1L607.1 460.9L596.9 459.5L594.5 467.0L571.7 473.4L566.8 468.8L556.0 476.2L548.3 468.4L543.4 470.1L539.6 465.3L535.5 468.5L523.3 468.7L524.5 466.0L519.6 460.8L517.4 453.5L520.4 446.2L532.7 441.6L542.1 432.3L556.8 432.9L560.2 429.3L539.9 416.9L545.0 414.8L545.5 411.3L536.8 407.1L544.9 403.0L553.5 403.3L547.4 395.8L541.6 395.1L534.5 377.9L543.4 375.5L548.6 379.3L560.2 381.1L560.8 390.2L578.9 395.8L579.4 399.1L594.7 396.5L596.8 402.7L600.5 403.9L616.7 403.6L629.5 409.6L640.5 404.6L641.2 408.7L649.3 411.9L664.3 408.2L671.4 411.7L674.7 406.0Z"},"CT":{"name":"Chhattisgarh","region":"North","d":"M539.9 531.2L539.8 535.9L528.2 540.3L525.2 544.3L526.6 550.1L519.4 559.4L519.2 567.9L515.8 566.8L513.3 574.1L495.0 573.9L489.8 583.2L485.1 583.5L487.1 608.1L497.5 610.1L497.0 614.9L489.7 612.7L485.3 614.9L482.7 610.5L471.9 606.5L469.4 608.9L469.4 612.7L475.8 616.1L475.6 623.9L479.7 627.3L482.0 643.5L472.6 650.7L465.7 661.0L458.6 663.8L453.9 677.9L443.6 678.4L439.6 668.0L432.5 666.5L434.1 664.3L429.1 655.7L424.4 652.4L419.6 653.6L416.2 648.6L419.7 646.6L417.1 641.1L421.0 633.2L426.7 628.4L432.9 631.9L437.6 626.3L426.0 616.6L425.5 605.8L420.8 602.1L428.6 599.5L425.9 580.7L422.2 578.3L423.3 573.2L429.3 570.6L432.6 555.1L435.0 555.2L438.4 543.6L441.2 545.5L444.7 533.7L461.2 530.7L466.3 526.3L466.4 520.2L472.1 517.6L472.0 513.9L479.0 511.9L480.3 506.2L471.3 499.7L461.1 500.4L463.8 493.8L460.9 489.8L463.0 487.5L467.9 491.1L492.0 491.6L500.6 486.3L511.1 488.5L517.6 482.0L520.9 482.5L532.4 497.6L540.5 497.5L540.8 511.4L546.9 517.0L552.0 517.0L547.4 526.0L539.9 531.2Z"},"PY":{"name":"Puducherry","region":"South","d":"M403.2 890.5L403.1 895.5L398.9 891.2L403.2 890.5ZM401.6 864.2L398.9 865.3L401.6 864.2ZM395.8 858.0L396.3 862.1L395.8 858.0ZM402.8 860.4L399.6 863.8L396.9 858.6L402.8 860.4Z"},"PB":{"name":"Punjab","region":"North","d":"M302.4 270.0L304.3 274.5L299.7 274.7L307.1 279.7L305.4 285.6L301.6 285.1L294.5 295.7L285.2 294.6L283.8 303.2L278.3 306.1L258.7 304.9L251.3 310.6L250.0 303.3L247.4 304.4L237.5 298.5L230.5 300.8L207.6 299.0L209.9 283.0L225.9 268.0L232.8 265.3L233.5 263.0L227.9 262.8L232.4 252.7L226.8 244.5L241.8 233.8L253.0 232.2L254.8 225.3L267.6 222.9L272.9 218.0L274.6 223.1L264.6 228.6L264.2 232.8L273.6 237.5L283.8 257.6L288.8 254.2L297.9 260.5L297.1 267.0L302.4 270.0Z"},"RJ":{"name":"Rajasthan","region":"North","d":"M228.2 300.0L226.6 306.2L231.0 305.9L229.9 316.7L239.1 316.9L246.6 322.2L256.5 321.2L256.5 327.3L260.8 329.1L262.2 341.5L278.6 353.6L276.1 364.9L282.5 366.7L282.7 358.8L288.0 359.7L288.7 356.2L292.4 356.0L294.3 361.3L304.3 353.6L308.5 356.2L306.1 369.4L308.8 371.3L311.0 366.3L319.7 367.3L320.9 375.5L330.9 384.3L327.6 388.2L332.5 392.5L323.4 396.7L324.9 399.0L334.9 393.8L350.3 393.9L345.5 401.6L313.4 415.8L294.2 429.2L296.5 442.0L308.3 444.9L319.6 440.6L323.0 447.1L319.5 451.5L305.3 453.8L307.9 458.0L303.1 459.5L311.6 465.2L308.3 470.9L303.5 468.6L306.3 481.2L297.0 477.0L293.9 480.1L283.5 478.0L280.8 478.8L281.1 482.3L275.4 484.5L275.9 487.3L262.9 491.5L259.1 485.8L260.7 483.7L268.9 485.3L270.5 475.9L268.0 472.7L273.5 471.4L274.2 468.5L271.4 462.5L251.3 462.3L254.0 452.7L248.9 453.2L245.1 458.4L239.4 456.1L239.1 459.9L244.2 460.5L243.7 463.1L239.6 464.4L237.7 461.3L234.3 469.4L239.1 471.2L235.6 476.6L239.7 476.6L243.5 484.3L241.2 495.5L228.3 506.3L232.8 510.1L221.3 514.4L211.5 505.9L198.7 502.2L199.5 496.9L189.6 489.7L191.5 483.5L186.1 484.8L180.5 479.4L184.0 474.7L180.9 469.7L175.3 474.9L162.8 469.4L160.2 472.4L146.6 463.0L121.7 466.1L115.4 463.7L108.4 449.2L101.2 441.6L101.5 433.1L88.5 431.9L82.6 424.8L85.0 405.6L72.8 404.2L62.4 397.7L65.9 386.0L91.6 360.2L98.8 360.2L104.6 369.0L109.1 369.5L141.7 361.7L158.4 336.1L176.3 328.3L191.4 299.9L210.0 292.1L207.6 299.0L228.2 300.0Z"},"SK":{"name":"Sikkim","region":"North","d":"M696.0 387.1L690.7 385.6L685.4 389.2L671.6 384.9L677.6 367.1L675.9 361.7L690.2 357.8L699.0 360.8L699.2 370.8L696.5 374.1L700.8 383.1L696.0 387.1Z"},"TN":{"name":"Tamil Nadu","region":"South","d":"M401.7 864.2L398.9 865.3L401.4 865.7L403.2 890.5L398.9 891.2L403.1 895.5L404.1 912.2L387.9 911.2L384.3 913.8L383.9 920.2L372.7 934.2L372.0 938.2L378.3 944.4L351.6 951.7L343.6 972.4L327.7 981.1L319.9 979.8L312.7 974.5L318.8 966.6L315.8 960.4L318.2 957.4L314.4 951.8L322.5 937.7L321.2 934.2L315.4 932.0L318.1 913.1L315.2 910.2L309.3 914.1L303.9 911.9L306.5 897.0L298.2 892.1L301.3 886.4L291.4 883.6L294.6 878.9L284.2 872.3L293.4 868.1L295.1 870.8L304.9 871.1L306.5 865.5L324.0 865.8L325.9 860.8L331.6 860.1L333.7 853.5L325.1 852.3L329.6 847.6L329.4 839.3L334.4 837.2L336.9 831.9L357.9 839.4L363.0 828.3L369.0 825.1L380.6 827.2L383.0 823.3L389.4 821.6L389.3 817.4L397.7 820.0L406.1 816.9L408.6 812.2L415.5 812.8L416.9 810.3L419.5 818.1L416.4 835.1L402.8 860.4L396.9 858.6L397.8 862.5L401.7 864.2Z"},"CH":{"name":"Chandigarh","region":"North","d":"M304.3 274.5L304.0 276.9L299.7 274.7L304.3 274.5Z"},"TS":{"name":"Telangana","region":"South","d":"M417.1 649.5L419.6 653.6L424.4 652.4L429.1 655.7L434.1 664.3L432.5 666.5L439.6 668.0L443.6 678.4L466.2 675.1L455.8 691.0L438.1 696.7L435.4 701.8L424.7 699.8L422.9 704.7L427.6 705.3L426.9 710.4L418.8 707.0L417.0 702.6L409.9 704.0L408.1 707.2L410.7 708.8L406.4 714.4L401.0 711.4L384.2 716.7L382.8 726.3L376.1 726.5L366.9 733.5L355.8 731.6L345.9 739.6L326.4 736.6L325.6 726.4L329.1 724.4L317.8 719.6L324.5 715.3L326.0 702.9L322.0 696.3L331.2 686.8L324.1 684.9L331.1 673.0L326.9 661.4L329.2 654.9L334.1 653.7L339.1 645.0L334.8 641.4L337.9 631.5L348.5 633.4L355.6 614.9L370.3 617.2L370.7 620.4L381.6 626.6L383.8 621.7L390.9 625.3L401.0 622.2L407.4 628.3L403.7 637.5L406.1 647.4L411.8 650.8L417.1 649.5Z"},"TR":{"name":"Tripura","region":"North","d":"M810.2 469.5L809.5 477.4L813.2 478.7L811.3 493.7L800.6 495.5L801.8 501.2L795.6 506.7L796.6 513.2L790.1 518.0L784.7 508.2L781.4 513.3L775.0 493.0L783.8 481.7L794.9 480.5L794.3 477.5L799.7 480.7L800.2 474.6L810.2 469.5Z"},"UP":{"name":"Uttar Pradesh","region":"North","d":"M410.4 334.7L420.3 340.8L426.4 339.0L448.0 349.4L451.9 356.2L455.0 355.2L470.2 365.0L476.2 362.9L488.9 370.6L496.5 369.3L498.3 376.0L512.7 377.5L516.9 381.4L519.9 376.8L526.7 377.0L536.8 381.4L541.6 395.1L547.4 395.8L553.0 402.0L544.9 403.0L536.6 408.9L545.5 411.3L545.0 414.8L539.9 416.9L541.4 419.8L560.2 429.3L556.8 432.9L542.1 432.3L532.7 441.6L518.5 447.8L519.6 460.8L524.5 466.0L519.8 469.6L521.3 474.3L513.2 487.6L505.4 489.1L498.6 484.8L499.3 465.2L487.9 463.2L487.6 466.5L483.9 465.6L480.9 460.3L472.6 459.1L470.9 454.6L458.8 448.3L457.1 451.7L450.0 449.0L446.5 455.4L436.5 456.1L437.0 451.9L433.0 449.6L424.0 454.3L419.8 449.7L422.3 448.7L418.5 441.9L414.5 441.4L403.3 446.7L402.6 450.9L388.2 450.4L389.7 446.6L386.4 443.8L384.0 444.4L385.8 449.3L379.8 450.7L368.6 445.0L373.5 437.5L366.4 439.7L367.7 442.9L362.4 441.1L359.7 445.2L363.1 455.3L367.7 458.4L367.3 466.5L371.5 465.3L374.4 474.1L368.3 479.5L359.0 473.0L355.2 476.7L353.2 474.8L348.2 457.7L357.1 449.2L352.2 442.6L358.3 436.0L368.7 434.9L367.6 431.7L379.3 411.9L374.9 401.6L366.1 398.0L349.5 396.9L350.3 393.9L347.2 393.1L334.9 393.8L324.9 399.0L323.4 396.7L332.5 392.5L328.1 390.3L330.9 384.3L320.9 375.5L318.8 366.7L326.8 362.8L325.3 357.4L327.4 354.8L319.5 343.2L320.5 339.1L316.2 335.7L316.9 329.4L313.9 326.3L312.6 310.8L315.7 301.4L330.8 285.5L340.0 290.4L333.0 302.4L334.7 307.2L341.0 308.1L342.0 312.3L353.6 304.7L365.5 313.7L372.4 315.3L366.6 319.8L389.1 334.0L401.1 332.9L408.1 338.3L410.4 334.7Z"},"UK":{"name":"Uttarakhand","region":"North","d":"M410.4 334.7L408.1 338.3L401.1 332.9L389.1 334.0L366.6 319.8L372.4 315.3L361.7 311.4L358.7 306.4L353.6 304.7L342.0 312.3L341.0 308.1L334.7 307.2L333.0 302.4L340.0 290.4L328.4 285.7L336.2 282.4L332.5 274.4L336.4 265.5L352.7 258.2L375.6 263.5L372.6 259.1L377.5 252.5L389.3 266.1L395.1 269.0L403.8 267.9L416.3 275.3L415.5 280.2L441.2 290.0L442.3 292.1L436.6 292.8L421.5 304.7L417.0 324.8L412.6 327.1L410.4 334.7Z"},"WB":{"name":"West Bengal","region":"North","d":"M705.9 556.1L706.9 558.7L704.7 558.5L705.9 556.1ZM678.3 554.9L680.6 561.0L678.3 554.9ZM698.4 554.7L697.6 558.6L698.4 554.7ZM681.9 551.7L681.0 554.9L681.9 551.7ZM675.6 551.3L674.9 559.1L672.5 556.2L675.6 551.3ZM685.7 550.4L685.6 553.5L685.7 550.4ZM698.5 550.0L703.1 551.6L700.3 553.3L698.5 550.0ZM697.7 546.8L700.9 549.6L695.7 548.7L697.7 546.8ZM704.5 545.8L706.0 549.5L703.1 547.6L704.5 545.8ZM702.2 541.5L703.7 550.3L700.7 545.4L702.2 541.5ZM704.0 541.3L703.3 544.9L704.0 541.3ZM693.9 540.9L697.0 542.1L691.9 544.1L693.9 540.9ZM700.5 530.3L699.4 534.6L700.5 530.3ZM701.3 529.8L703.9 534.1L701.5 534.7L701.3 529.8ZM696.0 387.1L708.4 397.6L721.4 397.3L732.3 400.9L733.0 404.6L732.3 410.8L727.7 417.7L725.0 416.1L722.0 422.9L709.3 418.5L706.9 410.3L703.5 409.8L704.1 413.6L696.0 413.2L684.0 403.6L682.9 406.9L688.2 410.9L676.4 419.5L674.1 426.1L674.9 429.1L680.0 428.7L689.3 437.9L698.5 439.0L698.9 442.5L704.1 444.6L701.3 448.8L685.6 447.7L684.1 455.7L682.1 457.9L676.8 455.7L671.5 464.3L682.4 473.3L695.4 476.9L695.2 487.7L690.1 489.4L689.7 496.1L695.6 501.2L694.1 507.1L702.7 510.3L699.7 513.2L702.9 521.0L698.9 534.0L701.9 538.1L700.7 541.9L693.1 541.1L688.4 552.0L684.8 550.5L678.1 554.8L676.5 545.1L665.7 556.3L654.2 559.8L652.9 554.7L647.5 553.5L646.1 548.7L639.4 551.5L638.9 546.0L629.0 542.9L633.2 534.9L630.6 534.2L630.3 529.5L619.2 523.1L618.4 517.0L600.1 510.2L600.9 502.2L606.9 500.9L606.7 498.0L612.9 502.6L617.1 501.8L620.2 496.6L631.5 494.8L634.9 488.8L643.2 491.5L642.8 489.2L648.0 488.5L646.0 484.3L652.8 485.7L654.6 481.5L661.0 480.4L664.5 467.6L668.4 464.5L666.0 462.1L670.1 457.7L663.7 450.9L666.3 444.7L664.2 440.0L672.1 436.7L672.9 432.6L664.9 425.0L680.3 411.1L674.7 406.0L676.7 395.8L670.8 388.3L671.6 384.9L685.4 389.2L690.7 385.6L696.0 387.1Z"},"OD":{"name":"Odisha","region":"North","d":"M629.2 540.6L629.0 542.9L638.9 546.0L639.4 551.5L646.1 548.7L647.5 553.5L652.9 554.7L654.2 559.8L636.5 567.6L633.0 573.7L638.7 588.4L631.2 593.2L631.1 599.5L617.4 611.4L584.0 622.7L564.9 638.4L561.5 636.8L556.6 639.4L550.7 647.1L542.8 648.6L535.6 646.3L527.3 636.2L522.5 640.6L517.9 640.5L519.7 644.6L507.8 654.2L509.2 659.5L500.3 658.1L493.4 663.8L489.9 655.8L485.9 659.1L485.2 670.3L482.0 672.4L474.9 670.0L461.4 677.6L453.9 677.9L458.6 663.8L465.7 661.0L472.6 650.7L482.0 643.5L479.7 627.3L475.6 623.9L475.8 616.1L469.4 612.7L469.4 608.9L471.9 606.5L482.7 610.5L485.3 614.9L489.7 612.7L497.0 614.9L497.5 610.1L487.1 608.1L485.1 583.5L489.8 583.2L495.0 573.9L513.3 574.1L515.8 566.8L519.2 567.9L519.4 559.4L526.6 550.1L524.5 548.4L528.2 540.3L539.8 535.9L539.9 531.2L549.3 536.8L574.4 532.4L576.1 538.2L573.4 543.8L579.5 546.0L586.1 542.5L602.0 548.0L606.3 541.5L603.9 533.1L607.8 530.4L629.2 540.6Z"},"DN":{"name":"Dadara & Nagar Havelli","region":"North","d":"M184.8 605.9L177.7 606.1L175.8 600.6L183.5 600.0L181.0 602.6L184.8 605.9Z"},"DD":{"name":"Daman & Diu","region":"North","d":"M171.5 598.0L172.8 594.9L174.1 598.2L171.5 598.0Z"},"GA":{"name":"Goa","region":"North","d":"M214.7 745.1L219.0 745.0L221.9 756.3L219.7 756.8L220.6 764.2L213.7 768.7L200.2 742.9L206.2 740.6L210.7 746.4L214.7 745.1Z"},"GJ":{"name":"Gujarat","region":"North","d":"M25.4 491.2L27.4 493.7L23.3 498.3L25.4 491.2ZM26.6 488.9L26.7 491.7L26.6 488.9ZM31.2 486.8L30.8 489.6L31.2 486.8ZM30.0 486.1L28.5 488.8L30.0 486.1ZM25.4 485.9L21.4 495.1L20.5 491.0L25.4 485.9ZM115.4 463.7L121.7 466.1L146.6 463.0L160.2 472.4L162.8 469.4L175.3 474.9L180.9 469.7L184.0 474.7L180.5 479.4L186.1 484.8L191.5 483.5L189.6 489.7L199.5 496.9L198.7 502.2L205.0 502.4L215.2 508.1L214.9 510.7L218.9 510.7L223.3 519.2L225.9 519.1L223.3 527.5L213.6 531.6L219.7 535.2L213.1 536.3L215.5 548.9L205.0 553.4L206.1 563.2L220.3 561.2L220.8 563.7L212.5 564.4L204.8 573.3L198.7 574.5L204.0 576.5L208.7 585.9L202.3 592.1L192.8 587.5L191.7 603.4L184.8 605.9L181.0 602.6L183.5 600.0L179.5 599.5L169.1 605.5L171.5 598.0L174.1 598.2L174.1 590.8L164.6 568.8L167.9 562.1L165.7 559.4L172.1 558.1L163.1 558.1L165.2 551.7L162.1 551.2L161.8 547.6L163.5 541.9L171.4 539.9L157.2 539.9L153.5 550.8L155.2 559.0L148.8 572.2L126.7 582.6L106.3 588.2L82.6 575.4L45.0 539.7L46.7 533.8L52.7 534.3L53.8 539.4L85.0 530.1L94.9 515.8L73.6 520.8L69.3 524.3L52.9 521.3L35.1 511.4L29.7 496.5L35.6 489.4L31.7 486.1L38.3 486.1L38.9 476.6L65.8 476.1L70.5 479.8L79.9 479.9L82.9 476.0L98.2 472.0L98.2 477.2L103.0 478.3L115.9 472.8L112.3 471.3L111.9 466.3L115.4 463.7Z"},"HR":{"name":"Haryana","region":"North","d":"M328.8 286.4L315.7 301.4L312.6 310.8L315.9 333.6L307.9 335.1L308.0 339.4L304.3 342.5L315.2 348.0L320.9 344.9L324.1 347.2L327.3 360.9L317.4 367.3L311.0 366.3L308.8 371.3L306.1 369.4L308.5 356.2L304.3 353.6L294.3 361.3L292.4 356.0L288.7 356.2L288.0 359.7L282.7 358.8L282.5 366.7L276.1 364.9L278.6 353.6L262.2 341.5L260.8 329.1L256.5 327.3L256.5 321.2L246.6 322.2L239.1 316.9L229.9 316.7L231.0 305.9L226.6 306.2L228.2 300.0L237.5 298.5L247.4 304.4L250.0 303.3L251.3 310.6L258.7 304.9L278.3 306.1L283.8 303.2L285.2 294.6L294.5 295.7L301.6 285.1L305.4 285.6L307.1 279.7L302.4 270.0L314.9 276.8L313.5 280.6L316.5 282.8L328.8 286.4Z"},"HP":{"name":"Himachal Pradesh","region":"North","d":"M355.5 219.5L360.0 223.0L358.1 227.3L368.2 236.0L365.5 242.5L370.1 247.7L366.6 250.3L375.6 263.5L355.0 258.2L339.6 262.2L332.5 274.4L336.2 282.4L328.8 286.4L313.5 280.6L314.9 276.8L297.1 267.0L297.9 260.5L288.8 254.2L283.8 257.6L273.6 237.5L264.2 232.8L264.6 228.6L274.6 223.1L272.3 220.4L274.2 212.3L270.1 208.1L277.7 207.3L289.8 199.0L303.4 199.4L320.6 210.3L333.5 205.7L342.1 217.5L352.7 213.8L355.6 216.6L352.7 218.0L353.1 221.2L355.5 219.5Z"},"JK":{"name":"Jammu & Kashmir","region":"North","d":"M355.5 219.5L353.1 221.2L352.7 218.0L355.6 216.6L352.7 213.8L342.1 217.5L333.5 205.7L320.6 210.3L303.4 199.4L295.2 198.2L277.7 207.3L270.1 208.1L274.6 215.8L267.6 222.9L259.5 226.0L244.8 220.5L233.2 220.7L231.1 212.3L204.4 205.6L198.8 202.0L197.2 176.7L191.1 162.3L192.7 155.7L198.3 155.4L203.4 148.7L211.8 146.2L214.2 137.9L201.8 133.7L203.8 126.1L187.0 122.8L180.5 114.8L167.9 116.4L162.7 113.9L164.7 103.0L180.0 94.5L180.7 90.0L207.6 89.2L201.4 82.8L212.6 86.1L234.1 77.7L240.9 83.0L252.4 78.5L268.3 92.9L299.5 107.1L302.9 109.7L300.3 112.8L303.0 116.0L321.3 120.0L325.0 126.2L321.9 125.3L321.9 127.5L339.2 127.8L341.2 124.6L346.8 125.6L356.2 117.9L379.1 116.3L383.1 111.7L399.7 117.5L408.1 116.3L417.8 123.6L418.9 127.7L410.4 151.3L400.6 154.2L401.3 158.5L391.9 158.9L394.4 166.1L387.5 172.6L375.7 172.0L372.1 174.3L378.7 185.6L372.5 185.0L374.9 194.5L390.1 196.6L387.8 205.6L395.8 212.9L389.9 219.3L386.4 217.4L379.0 223.9L369.5 222.2L367.0 214.7L355.5 219.5Z"},"JH":{"name":"Jharkhand","region":"North","d":"M664.2 447.1L663.7 450.9L670.1 457.7L666.0 462.1L668.4 464.5L664.5 467.6L661.0 480.4L654.6 481.5L652.8 485.7L646.0 484.3L648.0 488.5L642.8 489.2L643.2 491.5L634.9 488.8L631.5 494.8L620.2 496.6L617.1 501.8L612.9 502.6L606.7 498.0L606.9 500.9L600.9 502.2L600.1 510.2L618.4 517.0L619.2 523.1L630.3 529.5L630.6 534.2L633.2 534.9L629.2 540.6L607.8 530.4L604.5 531.7L606.3 541.5L602.0 548.0L586.1 542.5L579.5 546.0L573.4 543.8L576.1 538.2L574.4 532.4L549.3 536.8L539.9 531.2L547.4 526.0L552.0 517.0L546.9 517.0L540.8 511.4L540.5 497.5L532.4 497.6L523.7 484.3L517.6 482.0L521.3 474.3L519.8 469.6L535.5 468.5L539.6 465.3L543.4 470.1L548.3 468.4L556.0 476.2L566.8 468.8L571.7 473.4L594.5 467.0L596.9 459.5L607.1 460.9L609.7 466.1L615.2 466.8L620.7 473.3L625.2 466.4L633.6 468.0L639.8 465.7L644.2 452.0L647.9 451.1L649.0 447.0L657.0 443.6L664.2 447.1Z"},"KA":{"name":"Karnataka","region":"South","d":"M327.6 662.9L331.1 673.0L324.1 684.9L331.2 686.8L322.0 696.3L326.0 702.9L324.5 715.3L317.8 719.6L329.1 724.4L325.6 726.4L326.4 736.6L312.1 737.0L310.8 754.2L315.0 760.1L313.2 764.4L302.9 762.5L301.8 766.3L305.1 766.5L301.7 777.9L308.7 781.6L305.7 784.3L307.5 789.0L314.7 785.9L326.1 788.3L326.5 791.0L322.5 791.3L320.8 794.7L323.5 799.7L319.9 795.7L310.4 794.8L310.3 791.0L306.0 791.5L310.8 798.8L308.6 802.4L315.1 804.1L317.5 799.7L327.0 805.6L338.1 798.7L343.9 799.9L346.1 801.0L345.3 807.3L355.2 809.4L354.3 816.4L361.3 819.0L357.8 828.6L350.0 835.2L336.9 831.9L334.4 837.2L329.4 839.3L329.6 847.6L325.1 852.3L333.7 853.5L331.6 860.1L325.9 860.8L324.0 865.8L306.5 865.5L304.9 871.1L296.9 871.1L280.4 863.4L280.3 859.7L272.7 860.7L257.9 849.7L255.9 843.7L245.2 838.3L243.9 834.4L239.2 835.3L231.0 801.8L219.5 774.1L214.4 772.1L213.7 768.7L220.6 764.2L219.7 756.8L221.9 756.3L219.0 745.0L214.7 745.1L216.1 742.1L222.2 741.6L226.7 731.5L227.4 727.4L222.1 725.2L219.7 718.1L226.9 714.7L229.5 717.1L240.8 709.8L243.7 704.8L251.2 708.1L253.0 704.6L264.8 704.7L264.5 688.3L274.3 693.1L289.1 693.5L287.5 684.6L293.8 679.5L299.4 681.2L306.7 673.9L308.0 666.2L314.1 665.5L319.8 658.3L324.8 663.9L327.6 662.9Z"},"KL":{"name":"Kerala","region":"South","d":"M290.7 869.4L284.2 872.3L294.6 878.9L291.4 883.6L301.3 886.4L298.2 892.1L306.5 897.0L303.9 911.9L309.3 914.1L315.2 910.2L318.1 913.1L315.4 932.0L321.2 934.2L322.5 937.7L314.4 951.8L318.2 957.4L315.8 960.4L318.8 966.6L312.7 974.5L294.8 955.8L268.0 879.0L250.3 858.4L239.2 835.3L243.9 834.4L245.2 838.3L255.9 843.7L262.8 854.1L270.0 856.5L272.7 860.7L280.3 859.7L280.4 863.4L290.2 866.5L290.7 869.4Z"},"LD":{"name":"Lakshadweep","region":"South","d":"M214.1 883.7L210.6 879.2L214.1 883.7ZM140.0 864.1L136.4 860.2L138.1 858.9L140.0 864.1Z"},"MP":{"name":"Madhya Pradesh","region":"North","d":"M500.6 486.3L492.0 491.6L467.9 491.1L463.0 487.5L460.9 489.8L463.8 493.8L461.1 500.4L471.3 499.7L480.3 506.2L479.0 511.9L472.0 513.9L472.1 517.6L466.4 520.2L466.3 526.3L461.2 530.7L444.7 533.7L441.2 545.5L438.4 543.6L435.0 555.2L432.6 555.1L429.9 568.3L423.0 566.0L416.8 559.3L394.3 561.7L391.5 557.6L383.1 556.4L374.6 559.4L373.1 563.5L356.9 562.9L356.4 559.9L339.1 566.9L331.6 567.1L324.0 563.9L323.5 561.8L328.2 562.1L325.9 555.3L318.7 555.0L302.7 560.1L297.1 572.6L282.7 575.8L279.8 567.0L250.9 565.8L245.5 561.0L230.1 557.9L227.6 556.1L228.1 550.3L223.4 546.8L217.5 549.8L214.0 547.4L213.1 536.3L219.7 535.2L213.6 531.6L223.3 527.5L226.0 522.1L221.3 514.4L232.8 510.1L228.3 506.3L230.9 502.0L238.8 499.0L241.8 493.5L240.6 489.3L243.5 484.3L239.7 476.6L235.6 476.6L239.1 471.2L234.3 469.4L237.7 461.3L241.9 464.6L244.2 460.5L239.1 459.9L238.0 457.2L245.1 458.4L248.9 453.2L254.0 452.7L251.3 462.3L271.4 462.5L274.2 468.5L273.5 471.4L268.0 472.7L270.5 475.9L268.9 485.3L260.7 483.7L259.1 485.8L262.9 491.5L275.9 487.3L275.4 484.5L281.1 482.3L280.8 478.8L283.5 478.0L293.9 480.1L297.0 477.0L306.3 481.2L303.5 468.6L308.3 470.9L311.6 465.2L303.1 459.5L307.9 458.0L305.3 453.8L319.5 451.5L323.0 447.1L319.6 440.6L308.3 444.9L296.5 442.0L294.2 429.2L313.4 415.8L345.5 401.6L349.5 396.9L354.5 395.9L374.9 401.6L379.3 411.9L367.6 431.7L368.7 434.9L358.3 436.0L352.2 442.6L357.1 449.2L348.2 457.7L355.2 476.7L359.0 473.0L368.3 479.5L374.4 474.1L371.5 465.3L367.3 466.5L367.7 458.4L363.1 455.3L359.7 445.2L362.4 441.1L367.7 442.9L366.4 439.7L373.5 437.5L368.6 445.0L379.8 450.7L385.8 449.3L384.0 444.4L386.4 443.8L389.7 446.6L388.2 450.4L402.6 450.9L403.3 446.7L414.5 441.4L418.5 441.9L422.3 448.7L419.8 449.7L424.0 454.3L433.0 449.6L437.0 451.9L436.5 456.1L446.5 455.4L450.0 449.0L457.1 451.7L458.8 448.3L470.9 454.6L472.6 459.1L480.9 460.3L483.9 465.6L487.6 466.5L487.9 463.2L499.3 465.2L497.4 482.6L500.6 486.3Z"},"MH":{"name":"Maharashtra","region":"North","d":"M429.9 568.3L423.3 573.2L422.2 578.3L425.9 580.7L428.6 599.5L420.8 602.1L425.5 605.8L426.0 616.6L437.6 626.3L432.9 631.9L426.7 628.4L421.0 633.2L417.1 641.1L419.7 646.6L417.1 649.5L411.8 650.8L406.1 647.4L403.7 637.5L407.4 628.3L401.0 622.2L390.9 625.3L383.8 621.7L381.6 626.6L370.7 620.4L370.3 617.2L355.6 614.9L348.5 633.4L337.9 631.5L334.8 641.4L339.1 645.0L334.1 653.7L329.2 654.9L327.6 662.9L324.8 663.9L319.8 658.3L314.1 665.5L308.0 666.2L306.7 673.9L299.4 681.2L293.8 679.5L287.5 684.6L289.1 693.5L274.3 693.1L264.5 688.3L264.8 704.7L253.0 704.6L251.2 708.1L243.7 704.8L240.8 709.8L229.5 717.1L226.9 714.7L219.7 718.1L222.1 725.2L227.4 727.4L226.7 731.5L222.2 741.6L216.1 742.1L214.7 745.1L210.7 746.4L206.2 740.6L200.2 742.9L194.0 735.1L166.3 614.8L169.2 612.6L169.1 605.5L173.8 602.7L183.0 607.5L191.7 603.4L192.8 587.5L202.3 592.1L208.7 585.9L204.0 576.5L198.7 574.5L204.8 573.3L212.5 564.4L220.8 563.7L220.3 561.2L206.1 563.2L205.0 553.4L223.4 546.8L228.1 550.3L227.6 556.1L230.1 557.9L245.5 561.0L250.9 565.8L279.8 567.0L282.7 575.8L297.1 572.6L302.7 560.1L318.7 555.0L325.9 555.3L328.2 562.1L323.5 561.8L324.0 563.9L331.6 567.1L339.1 566.9L356.4 559.9L356.9 562.9L373.1 563.5L374.6 559.4L383.1 556.4L391.5 557.6L394.3 561.7L416.8 559.3L423.0 566.0L429.9 568.3Z"},"MN":{"name":"Manipur","region":"North","d":"M890.6 439.8L888.0 448.1L892.7 449.9L892.6 453.4L873.5 489.9L834.9 481.2L839.1 460.2L841.7 460.1L848.7 445.8L851.0 444.4L855.4 447.8L862.9 436.6L878.2 438.8L887.8 432.7L886.6 438.2L890.6 439.8Z"},"ML":{"name":"Meghalaya","region":"North","d":"M816.8 453.0L805.1 448.2L751.5 449.5L730.8 442.4L733.2 436.6L737.0 435.7L733.4 431.3L740.6 424.1L765.9 424.3L774.8 427.5L777.1 431.5L785.4 427.3L788.5 421.9L790.5 424.6L796.7 419.1L798.7 421.9L808.4 420.3L811.0 421.9L808.0 423.9L808.1 433.3L816.3 430.9L822.5 441.0L828.6 445.1L816.8 453.0Z"},"MZ":{"name":"Mizoram","region":"North","d":"M835.4 472.7L834.9 481.2L846.5 483.5L848.5 487.4L848.3 509.4L845.3 516.1L839.7 514.9L840.7 541.8L837.0 541.2L831.9 547.1L825.7 542.7L822.3 547.1L811.3 493.7L812.3 477.3L820.0 479.8L827.6 469.0L829.8 472.8L835.4 472.7Z"},"NL":{"name":"Nagaland","region":"North","d":"M909.0 401.6L903.4 408.4L907.2 420.4L902.0 425.5L902.8 430.5L894.9 438.8L886.6 438.2L887.8 432.7L878.2 438.8L862.9 436.6L855.4 447.8L851.9 446.2L846.4 437.0L858.0 425.7L861.2 424.2L861.0 427.7L867.7 425.3L868.7 417.1L877.6 405.4L877.9 408.0L881.3 406.5L897.4 393.9L907.6 390.5L909.0 401.6Z"},"DL":{"name":"NCT of Delhi","region":"North","d":"M315.9 333.6L320.5 339.1L320.9 344.9L315.2 348.0L310.3 344.0L305.8 344.3L304.3 342.5L308.0 339.4L307.9 335.1L315.9 333.6Z"}};
+
 var MF_STAGES = [
   { key:'total',     label:'Logged In',             color:'blue',   field:'total',     vdAction:'total',
     mx:function(vs,vb){return{sm:vs.metalTotal||0,sp:vs.plasticTotal||0,bm:vb.metalTotal||0,bp:vb.plasticTotal||0};} },
@@ -4606,6 +4679,196 @@ function mmRenderFunnel() {
       }, 20);
     });
   }
+}
+
+// ── Inline Geographic Split — interactive India map ─────────────────────────
+// Map a raw state string (name, alias, or GST 2-digit code) → the ISO id used
+// by IN_STATES. Returns '' when unresolvable (row skipped).
+var _GEO_GST = { '01':'JK','02':'HP','03':'PB','04':'CH','05':'UK','06':'HR','07':'DL','08':'RJ',
+  '09':'UP','10':'BR','11':'SK','12':'AR','13':'NL','14':'MN','15':'MZ','16':'TR','17':'ML','18':'AS',
+  '19':'WB','20':'JH','21':'OD','22':'CT','23':'MP','24':'GJ','25':'DD','26':'DN','27':'MH','28':'AP',
+  '29':'KA','30':'GA','31':'LD','32':'KL','33':'TN','34':'PY','35':'AN','36':'TS','37':'AP','38':'JK' };
+var _GEO_NAME = (function() {
+  var m = {}, add = function(id, names) { names.forEach(function(n){ m[n] = id; }); };
+  add('AN', ['andamannicobar','andamanandnicobar','andamanandnicobarislands','andamannicobarislands']);
+  add('AP', ['andhrapradesh']); add('AR', ['arunachalpradesh','arunanchalpradesh']);
+  add('AS', ['assam']); add('BR', ['bihar']); add('CT', ['chhattisgarh','chattisgarh']);
+  add('PY', ['puducherry','pondicherry']); add('PB', ['punjab']); add('RJ', ['rajasthan']);
+  add('SK', ['sikkim']); add('TN', ['tamilnadu']); add('CH', ['chandigarh']);
+  add('TS', ['telangana']); add('TR', ['tripura']); add('UP', ['uttarpradesh']);
+  add('UK', ['uttarakhand','uttaranchal']); add('WB', ['westbengal']); add('OD', ['odisha','orissa']);
+  add('DN', ['dadranagarhaveli','dadaranagarhavelli','dadranagarhavelianddamananddiu']);
+  add('DD', ['damandiu','daman','diu']); add('GA', ['goa']); add('GJ', ['gujarat']);
+  add('HR', ['haryana']); add('HP', ['himachalpradesh']); add('JK', ['jammukashmir','jammuandkashmir','ladakh']);
+  add('JH', ['jharkhand']); add('KA', ['karnataka']); add('KL', ['kerala']); add('LD', ['lakshadweep']);
+  add('MP', ['madhyapradesh']); add('MH', ['maharashtra']); add('MN', ['manipur']); add('ML', ['meghalaya']);
+  add('MZ', ['mizoram']); add('NL', ['nagaland']); add('DL', ['delhi','nctofdelhi','newdelhi']);
+  return m;
+}());
+function _geoStateId(raw) {
+  var s = String(raw || '').trim(); if (!s) return '';
+  var digits = s.match(/^\s*(\d{1,2})\b/);
+  if (digits) { var c = digits[1].length === 1 ? '0' + digits[1] : digits[1]; return _GEO_GST[c] || ''; }
+  var key = s.toLowerCase().replace(/&/g, 'and').replace(/[^a-z]/g, '');
+  return _GEO_NAME[key] || '';
+}
+
+// Open the panel for a region; ensure both audiences' rows are loaded.
+function mmGeoOpen(region) {
+  var key = (typeof activeVertKey !== 'undefined' && activeVertKey) || selectedVert;
+  var pKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  if (_geo.key !== key || _geo.pKey !== pKey) _geo.rows = { seller:null, buyer:null };
+  _geo.key = key; _geo.pKey = pKey; _geo.region = region;
+  // Seed the active audience from already-loaded detail rows.
+  var aud = (selectedAud === 'buyer') ? 'buyer' : 'seller';
+  if (_geo.rows[aud] == null && selectedVert === key && Array.isArray(vertRows) && vertRows.length)
+    _geo.rows[aud] = vertRows.slice();
+  _geoEnsureRows();
+}
+function _geoEnsureRows() {
+  var need = [];
+  if (_geo.rows.seller == null) need.push('seller');
+  if (_geo.rows.buyer == null) need.push('buyer');
+  if (!need.length) { _geo.loading = false; return; }
+  _geo.loading = true;
+  need.forEach(function(aud) {
+    var f = { audience: aud, period: currentPeriod };
+    if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+    google.script.run
+      .withSuccessHandler(function(res) {
+        try { var d = JSON.parse(res); _geo.rows[aud] = (d && d.success && Array.isArray(d.rows)) ? d.rows : []; }
+        catch (e) { _geo.rows[aud] = []; }
+        if (_geo.rows.seller != null && _geo.rows.buyer != null) _geo.loading = false;
+        if (mmGeoActive) { _geoAnimate = true; mmRenderGeo(); }
+      })
+      .withFailureHandler(function() {
+        _geo.rows[aud] = [];
+        if (_geo.rows.seller != null && _geo.rows.buyer != null) _geo.loading = false;
+        if (mmGeoActive) mmRenderGeo();
+      })
+      .getVerticalRows(_geo.key, JSON.stringify(f));
+  });
+}
+
+// Aggregate loaded rows into per-state buckets for the active region (onboarded only).
+function _geoAgg() {
+  var region = _geo.region, by = {};
+  ['seller', 'buyer'].forEach(function(aud) {
+    var rows = _geo.rows[aud]; if (!Array.isArray(rows)) return;
+    rows.forEach(function(r) {
+      if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
+      var id = _geoStateId(r.state); if (!id || !IN_STATES[id] || IN_STATES[id].region !== region) return;
+      var b = by[id] || (by[id] = { id:id, total:0, metal:0, plastic:0, seller:0, buyer:0 });
+      b.total++; b[aud]++;
+      var cat = String(r.category || '').trim().toLowerCase();
+      if (cat === 'metal') b.metal++; else if (cat === 'plastic') b.plastic++;
+    });
+  });
+  return by;
+}
+
+function mmGeoHover(id, on) {
+  _geo.hover = on ? id : null;
+  var panel = document.getElementById('mm-geo'); if (!panel) return;
+  [].slice.call(panel.querySelectorAll('[data-geo="' + id + '"]')).forEach(function(el) {
+    el.classList.toggle('hl', on);
+  });
+}
+function mmGeoSelectState(id) {
+  _geo.state = (_geo.state === id) ? null : id;
+  mmRenderGeo();
+}
+
+function mmRenderGeo() {
+  var panel = document.getElementById('mm-geo'); if (!panel) return;
+  if (!mmGeoActive || !_geo.region) { panel.className = 'mg'; panel.innerHTML = ''; return; }
+
+  var region = _geo.region;
+  var regionColor = region === 'South' ? '#16a34a' : '#005dff';
+  var by = _geoAgg();
+  var statesInRegion = Object.keys(IN_STATES).filter(function(id){ return IN_STATES[id].region === region; });
+  var withData = statesInRegion.filter(function(id){ return by[id] && by[id].total > 0; })
+    .sort(function(a, b){ return by[b].total - by[a].total; });
+  var maxT = withData.reduce(function(m, id){ return Math.max(m, by[id].total); }, 0) || 1;
+  var loading = _geo.loading && !withData.length;
+
+  // ---- MAP (left) ----
+  var paths = Object.keys(IN_STATES).map(function(id) {
+    var st = IN_STATES[id], inRegion = st.region === region, d = by[id];
+    var cls = 'mg-state';
+    var fill, stroke = 'var(--border)', sw = '0.8', op = '1';
+    if (!inRegion) { fill = 'var(--mg-base)'; op = '0.5'; }
+    else {
+      // 3 discrete tint steps by onboarded count — subtle, not a heatmap gradient.
+      var lvl = d && d.total > 0 ? (d.total >= maxT * 0.66 ? 0.9 : d.total >= maxT * 0.33 ? 0.62 : 0.36) : 0.14;
+      fill = regionColor; op = String(lvl); stroke = regionColor; sw = '1';
+      cls += ' active';
+      if (_geo.state === id) cls += ' sel';
+    }
+    var handlers = inRegion
+      ? ' data-geo="' + id + '" onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
+        + (d ? ' onclick="mmGeoSelectState(\'' + id + '\')" style="cursor:pointer"' : '')
+      : '';
+    return '<path class="' + cls + '" d="' + st.d + '" fill="' + fill + '" fill-opacity="' + op
+      + '" stroke="' + stroke + '" stroke-width="' + sw + '"' + handlers + '><title>' + esc(st.name)
+      + (d ? ' · ' + fmt(d.total) : '') + '</title></path>';
+  }).join('');
+  var mapPanel = '<div class="mg-map"><svg viewBox="0 0 1000 1100" class="mg-svg" aria-label="India map, '
+    + esc(region) + ' region">' + paths + '</svg></div>';
+
+  // ---- LEGEND (right) ----
+  var legend;
+  if (loading) {
+    legend = '<div class="mg-loading">Loading state distribution…</div>';
+  } else if (!withData.length) {
+    legend = '<div class="mg-loading">No state-level onboarding records for this period.</div>';
+  } else {
+    var rows = withData.map(function(id, i) {
+      var d = by[id], name = IN_STATES[id].name;
+      return '<button class="mg-row" data-geo="' + id + '"' + (motionOK() ? ' style="animation-delay:' + (i*45) + 'ms"' : '')
+        + ' onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
+        + ' onclick="mmGeoSelectState(\'' + id + '\')">'
+        + '<span class="mg-row-nm"><span class="mg-swatch" style="background:' + regionColor + '"></span>' + esc(name) + '</span>'
+        + '<span class="mg-row-n mg-total">' + fmt(d.total) + '</span>'
+        + '<span class="mg-row-n mg-metal">' + fmt(d.metal) + '</span>'
+        + '<span class="mg-row-n mg-plastic">' + fmt(d.plastic) + '</span>'
+        + '</button>';
+    }).join('');
+    legend = '<div class="mg-legend">'
+      + '<div class="mg-legend-hd"><span class="mg-row-nm">State</span>'
+      + '<span class="mg-row-n">Total</span><span class="mg-row-n">Metal</span><span class="mg-row-n">Plastic</span></div>'
+      + '<div class="mg-rows">' + rows + '</div></div>';
+  }
+
+  // ---- STATE DETAIL (below, optional) ----
+  var detail = '';
+  if (_geo.state && by[_geo.state]) {
+    var d = by[_geo.state], nm = IN_STATES[_geo.state].name;
+    var cell = function(v, l, c) { return '<div class="mg-dt-cell"><div class="mg-dt-v"' + (c ? ' style="color:' + c + '"' : '') + '>' + fmt(v) + '</div><div class="mg-dt-l">' + l + '</div></div>'; };
+    detail = '<div class="mg-detail" id="mg-detail" role="region" aria-label="' + esc(nm) + ' detail">'
+      + '<div class="mg-detail-hd"><span class="mg-swatch" style="background:' + regionColor + '"></span>' + esc(nm) + ' · State Detail</div>'
+      + '<div class="mg-dt-grid">'
+      + cell(d.total, 'Onboarded', regionColor)
+      + cell(d.seller, 'Sellers') + cell(d.buyer, 'Buyers')
+      + cell(d.metal, 'Metal') + cell(d.plastic, 'Plastic')
+      + '</div>'
+      + '<button class="mf-detail-vd" onclick="openRecordsSheet(selectedAud || \'seller\')">' + MM_IC.doc + ' View Detailed Records →</button>'
+      + '</div>';
+  }
+
+  panel.innerHTML = '<div class="mg-eye">' + esc(region) + ' Region · onboarded distribution</div>'
+    + '<div class="mg-grid">' + mapPanel + legend + '</div>' + detail;
+  panel.className = 'mg mg-open';
+
+  // sequential fade-in of highlighted states — only on first open / region switch
+  if (_geoAnimate && motionOK() && !loading) {
+    var act = [].slice.call(panel.querySelectorAll('.mg-state.active'));
+    act.forEach(function(p, i) {
+      p.style.opacity = '0';
+      setTimeout(function(){ p.style.transition = 'opacity .4s ease, fill-opacity .3s'; p.style.opacity = ''; }, 40 + i * 40);
+    });
+  }
+  _geoAnimate = false;
 }
 
 // Regional Split → compact modal listing regions; each drills into the
