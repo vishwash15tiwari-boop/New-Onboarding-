@@ -2764,8 +2764,28 @@ body.rec-open{overflow:hidden}
 /* ── Generic inline module panel (Volume / Transactions / Ratings / OSV / Existing) ── */
 #mm-modpanel{overflow:hidden;max-height:0;opacity:0;transition:max-height .5s cubic-bezier(.4,0,.2,1),opacity .3s ease;margin:0}
 #mm-modpanel.mp-open{max-height:900px;opacity:1;margin:0 0 28px}
-.mp-eye{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);padding:0 2px 10px}
+.mp-eye{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);padding:0 2px 10px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.mp-badge{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--blue);background:var(--accent-soft);border:1px solid rgba(0,93,255,.22);border-radius:999px;padding:3px 9px}
 .mp-body{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;max-width:660px}
+/* Type × Category cross-tab */
+.mp-matrix{display:grid;gap:6px 7px;margin-top:18px;align-items:center}
+.mp-mx-corner{min-height:1px}
+.mp-mx-hd{font-size:.66rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--txt3);text-align:center;display:flex;align-items:center;justify-content:center;gap:5px;padding-bottom:2px}
+.mp-mx-hd.tot{color:var(--txt2)}
+.mp-mx-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.mp-mx-rlbl{font-size:.84rem;font-weight:600;color:var(--txt2);padding-right:6px;white-space:nowrap}
+.mp-mx-rlbl.tot{color:var(--txt);font-weight:700}
+.mp-mx-cell{position:relative;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 8px;text-align:center;overflow:hidden;min-width:0}
+.mp-mx-fill{position:absolute;left:0;top:0;bottom:0;opacity:.16;border-radius:8px 0 0 8px;transition:width .55s cubic-bezier(.4,0,.2,1)}
+.mp-mx-n{position:relative;font-size:1.06rem;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+.mp-mx-cell.tot{background:var(--card);border-style:dashed}
+.mp-mx-cell.tot .mp-mx-n{font-weight:800}
+.mp-mx-cell.tot.grand{border-style:solid;border-color:rgba(0,93,255,.3);background:var(--accent-soft)}
+.mp-mx-cell.tot.grand .mp-mx-n{color:var(--blue)}
+.mp-mx-cell.tot.ch{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.mp-mx-cell.tot.ch:hover{border-style:solid;border-color:var(--blue);box-shadow:0 5px 16px -8px rgba(0,93,255,.45);transform:translateY(-1px)}
+.mp-mx-go{position:relative;font-size:9px;font-weight:700;color:var(--blue);margin-left:4px;opacity:0;transition:opacity .15s}
+.mp-mx-cell.tot.ch:hover .mp-mx-go{opacity:1}
 .mp-headline{margin-bottom:16px}
 .mp-h-v{font-size:2.6rem;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .mp-h-l{font-size:.78rem;color:var(--txt2);margin-top:5px}
@@ -4211,19 +4231,27 @@ function _mmVertModules(key) {
       [ _d('Sellers', fmt(vs.rejected||0), MM_IC.users), _d('Buyers', fmt(vb.rejected||0), MM_IC.users), _vd('rejected') ]),
   ]});
 
-  // 2 — Volume (onboarded composition — inline panel, chains into Geography).
-  //     Category bars are data-driven per vertical; each tile carries S · B.
+  // 2 — Volume (onboarded composition — Type × Category cross-tab, chains into Geography).
+  //     Category columns are data-driven per vertical; rows are Sellers / Buyers.
   var volBar = catOnb.length
     ? catOnb.map(function(x, i){ return { label:x.cat, v:x.s + x.b, color:MM_CAT_COLORS[i % MM_CAT_COLORS.length], seg:_mmGeoSeg(x.cat) }; })
     : [ { label:'Sellers', v:vs.completed||0, color:'#6366f1' }, { label:'Buyers', v:vb.completed||0, color:'#0ea5e9' } ];
-  var volTiles = [ { label:'Sellers', v:vs.completed||0 }, { label:'Buyers', v:vb.completed||0 } ]
-    .concat(catOnb.map(function(x){ return { label:x.cat, v:x.s + x.b, sub:_mmSB(x.s, x.b), seg:_mmGeoSeg(x.cat) }; }));
+  var volMatrix = catOnb.length ? {
+    colColors: catOnb.map(function(x, i){ return MM_CAT_COLORS[i % MM_CAT_COLORS.length]; }),
+    cols: catOnb.map(function(x){ return { label:x.cat, seg:_mmGeoSeg(x.cat) }; }),
+    rows: [ { label:'Sellers', vals: catOnb.map(function(x){ return x.s; }) },
+            { label:'Buyers',  vals: catOnb.map(function(x){ return x.b; }) } ],
+    chain:true
+  } : null;
   mods.push({ t:'Volume', ic:MM_IC.grid, tone:'t-ink', kind:'module', expand:'inline-panel',
-    eye: hasCat ? 'Onboarded composition · seller / buyer' : 'Onboarded composition',
+    eye: hasCat ? 'Onboarded by category · seller / buyer' : 'Onboarded composition',
     panel:{
       eye: hasCat ? 'Onboarded by category · seller / buyer' : 'Onboarded composition',
       headline:{ v:onb, label:'Total Onboarded', tone:'good' },
-      bar:volBar, tiles:volTiles, chain:true, records:'onboarded'
+      bar: volBar,
+      matrix: volMatrix,
+      tiles: volMatrix ? null : [ { label:'Sellers', v:vs.completed||0 }, { label:'Buyers', v:vb.completed||0 } ],
+      chain:true, records:'onboarded'
     }
   });
 
@@ -4244,14 +4272,19 @@ function _mmVertModules(key) {
       }) });
   }
 
-  // 4 — Transactions (transacted vs non-transacted ageing / GMV — inline panel)
-  if (txn != null || gmv != null) {
-    var nonTxn = txn != null ? Math.max(0, onb - txn) : null;
-    var ag = _mmAging(key);
+  // 4 — Transactions (SELLERS ONLY — sellers transact with buyers, so buyer
+  //     figures don't apply here). All numbers are seller-side.
+  var sTxn = (vs.transacted != null) ? vs.transacted : null;
+  if (sTxn != null || gmv != null) {
+    var sOnb = vs.completed || 0;
+    var sNonTxn = sTxn != null ? Math.max(0, sOnb - sTxn) : null;
+    var sMtxn = vs.metalTransacted || 0, sPtxn = vs.plasticTransacted || 0;
+    var ag = _mmAging(key);   // ageing is computed from the loaded (seller) rows
     var tTiles = [];
-    if (txn != null) {
-      tTiles.push({ label:'Sellers', v:vs.transacted||0 }, { label:'Buyers', v:vb.transacted||0 });
-      catTxn.forEach(function(x){ tTiles.push({ label:x.cat, v:x.s + x.b, sub:_mmSB(x.s, x.b) }); });
+    if (sTxn != null) {
+      // Sellers only — sellers transact with buyers, so buyer figures don't apply.
+      if (catTxn.length) catTxn.forEach(function(x){ tTiles.push({ label:x.cat, v:x.s }); });
+      else { tTiles.push({ label:'Metal', v:sMtxn }, { label:'Plastic', v:sPtxn }); }
     }
     if (ag) {
       tTiles.push({ label:'0–30 days', v:ag.a, tone:'good' },
@@ -4262,12 +4295,12 @@ function _mmVertModules(key) {
       tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true });
       catGmv.forEach(function(x){ tTiles.push({ label:'GMV · ' + x.cat, v:fmtINR((x.s||0) + (x.b||0)), raw:true }); });
     }
-    mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transactions',
+    mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transaction activity',
       panel:{
-        eye:'Transaction activity',
-        headline: txn != null ? { v:txn, label:'Transacted', tone:'accent' } : { v:gmv, label:'Total GMV', raw:true, rawv:fmtINR(gmv), tone:'ink' },
-        bar: (txn != null) ? [ { label:'Transacted', v:txn, color:'#16a34a' },
-                               { label:'Non-Transacted', v:nonTxn, color:'#d97706' } ] : null,
+        eye:'Transaction activity', badge:'Sellers only',
+        headline: sTxn != null ? { v:sTxn, label:'Transacted sellers', tone:'accent' } : { v:gmv, label:'Total GMV', raw:true, rawv:fmtINR(gmv), tone:'ink' },
+        bar: (sTxn != null) ? [ { label:'Transacted', v:sTxn, color:'#16a34a' },
+                                { label:'Non-Transacted', v:sNonTxn, color:'#d97706' } ] : null,
         tiles: tTiles, records:'transacted'
       }
     });
@@ -4278,7 +4311,7 @@ function _mmVertModules(key) {
     var unr = Math.max(0, (q.rating.total||0) - (q.rating.rated||0));
     mods.push({ t:'Vendor Ratings', ic:MM_IC.star, tone:'t-amber', kind:'module', expand:'inline-panel', eye:'Seller ratings',
       panel:{
-        eye:'Seller ratings',
+        eye:'Seller ratings', badge:'Sellers only',
         headline:{ v:(q.rating.avg != null ? q.rating.avg.toFixed(1) : '—'), suffix:'★', raw:true, rawv:(q.rating.avg != null ? q.rating.avg.toFixed(1) + '★' : '—'), label:'Average rating', tone:'warn' },
         bar:[ { label:'Rated', v:q.rating.rated||0, color:'#16a34a' },
               { label:'Unrated', v:unr, color:'#8a93a1' } ],
@@ -4294,7 +4327,7 @@ function _mmVertModules(key) {
     var osvDone = q.osv.completed||0, osvProg = q.osv.pending||0, osvNot = q.osv.notInitiated||0;
     mods.push({ t:'OSV Status', ic:MM_IC.shield, tone:'t-green', kind:'module', expand:'inline-panel', eye:'On-site verification',
       panel:{
-        eye:'On-site verification',
+        eye:'On-site verification', badge:'Sellers only',
         headline:{ v:osvDone, label:'Verification done', tone:'good' },
         bar:[ { label:'Done', v:osvDone, color:'#16a34a' },
               { label:'In Progress', v:osvProg, color:'#d97706' },
@@ -4311,7 +4344,7 @@ function _mmVertModules(key) {
     var dcC = q.docs.complete||0, dcP = q.docs.partial||0, dcI = q.docs.incomplete||0, dcM = q.docs.missing||0;
     mods.push({ t:'Documents', ic:MM_IC.doc, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Document completeness',
       panel:{
-        eye:'Document completeness',
+        eye:'Document completeness', badge:'Sellers only',
         headline:{ v:dcC, label:'Complete', tone:'good' },
         bar:[ { label:'Complete', v:dcC, color:'#16a34a' },
               { label:'Partial', v:dcP, color:'#d97706' },
@@ -4970,7 +5003,8 @@ function mmRenderModPanel() {
   if (!P) { panel.className = 'mp'; panel.innerHTML = ''; return; }
 
   var toneColor = { good:'#16a34a', warn:'#d97706', crit:'#dc2626', accent:'var(--blue)', ink:'var(--txt)' };
-  var html = '<div class="mp-eye">' + esc(P.eye || node.t) + '</div><div class="mp-body">';
+  var html = '<div class="mp-eye"><span>' + esc(P.eye || node.t) + '</span>'
+    + (P.badge ? '<span class="mp-badge">' + esc(P.badge) + '</span>' : '') + '</div><div class="mp-body">';
 
   // headline
   if (P.headline) {
@@ -4996,6 +5030,37 @@ function mmRenderModPanel() {
       + '<div class="mp-legend">' + P.bar.map(function(x) {
           return '<span class="mp-leg"><i style="background:' + x.color + '"></i>' + esc(x.label) + '</span>';
         }).join('') + '</div>';
+  }
+
+  // Type × Category cross-tab — comparable at a glance (row + column totals, bar-in-cell)
+  if (P.matrix) {
+    var M = P.matrix, nc = M.cols.length;
+    var maxCell = 1;
+    M.rows.forEach(function(r){ r.vals.forEach(function(v){ if ((+v||0) > maxCell) maxCell = +v; }); });
+    var colTot = M.cols.map(function(c, ci){ return M.rows.reduce(function(s, r){ return s + (+r.vals[ci] || 0); }, 0); });
+    var grand = colTot.reduce(function(s, v){ return s + v; }, 0);
+    var mx = '<div class="mp-mx-corner"></div>'
+      + M.cols.map(function(c, ci){ return '<div class="mp-mx-hd"><span class="mp-mx-dot" style="background:' + M.colColors[ci] + '"></span>' + esc(c.label) + '</div>'; }).join('')
+      + '<div class="mp-mx-hd tot">Total</div>';
+    mx += M.rows.map(function(r) {
+      var rt = r.vals.reduce(function(s, v){ return s + (+v || 0); }, 0);
+      var cells = r.vals.map(function(v, ci) {
+        var w = Math.round((+v || 0) / maxCell * 100);
+        return '<div class="mp-mx-cell"><span class="mp-mx-fill" style="width:' + w + '%;background:' + M.colColors[ci] + '"></span>'
+          + '<span class="mp-mx-n" data-count="' + (+v || 0) + '">0</span></div>';
+      }).join('');
+      return '<div class="mp-mx-rlbl">' + esc(r.label) + '</div>' + cells
+        + '<div class="mp-mx-cell tot"><span class="mp-mx-n" data-count="' + rt + '">0</span></div>';
+    }).join('');
+    mx += '<div class="mp-mx-rlbl tot">Total</div>'
+      + colTot.map(function(v, ci) {
+          var ch = M.chain && M.cols[ci].seg;
+          return '<div class="mp-mx-cell tot' + (ch ? ' ch' : '') + '"'
+            + (ch ? ' role="button" tabindex="0" onclick="mmChainToGeo(\'' + M.cols[ci].seg + '\')" onkeydown="if(event.key===\'Enter\'){mmChainToGeo(\'' + M.cols[ci].seg + '\')}" title="View ' + esc(M.cols[ci].label) + ' on the map"' : '')
+            + '><span class="mp-mx-n" data-count="' + v + '">0</span>' + (ch ? '<span class="mp-mx-go">↦</span>' : '') + '</div>';
+        }).join('')
+      + '<div class="mp-mx-cell tot grand"><span class="mp-mx-n" data-count="' + grand + '">0</span></div>';
+    html += '<div class="mp-matrix" style="grid-template-columns:auto repeat(' + (nc + 1) + ',minmax(0,1fr))">' + mx + '</div>';
   }
 
   // stat tiles
@@ -5027,7 +5092,7 @@ function mmRenderModPanel() {
   if (_mmModAnimate) {
     _mmCountUp(panel);
     if (motionOK()) {
-      [].slice.call(panel.querySelectorAll('.mp-seg')).forEach(function(s) {
+      [].slice.call(panel.querySelectorAll('.mp-seg, .mp-mx-fill')).forEach(function(s) {
         var w = s.style.width; s.style.width = '0%';
         requestAnimationFrame(function(){ s.style.width = w; });
       });
