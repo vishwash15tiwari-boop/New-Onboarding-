@@ -743,7 +743,7 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 #kpi-modal.km-open{pointer-events:all;opacity:1}
 @media(min-width:600px){#kpi-modal{align-items:center;padding:20px}}
 .km-bd{position:absolute;inset:0;background:rgba(0,0,0,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.km-pn{position:relative;z-index:1;background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;box-shadow:0 -4px 40px rgba(0,0,0,.18);animation:kmUp .22s var(--ease-out,cubic-bezier(.25,.46,.45,.94)) both}
+.km-pn{position:relative;z-index:1;background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;box-shadow:0 -4px 40px rgba(0,0,0,.18);animation:kmUp .22s var(--ease-out,cubic-bezier(.25,.46,.45,.94)) both}
 @media(min-width:600px){.km-pn{border-radius:20px}}
 /* Header */
 .km-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)}
@@ -800,7 +800,7 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
   position:relative;z-index:1;background:var(--card);
   border-radius:20px 20px 0 0;
   box-shadow:0 -4px 40px rgba(0,0,0,.15),0 -1px 0 rgba(0,0,0,.06);
-  width:100%;max-width:540px;max-height:92vh;overflow-y:auto;
+  width:100%;max-width:540px;max-height:92vh;overflow-y:auto;overscroll-behavior:contain;
   animation:rmUp .4s var(--ease-sheet) both;
   /* Drag handle */
   padding-top:8px;
@@ -2405,7 +2405,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .sp-input:focus,.sp-input:focus-visible{box-shadow:none;outline:none}
 .sp-input::placeholder{color:var(--txt3)}
 .sp-esc{font-family:inherit;font-size:11px;font-weight:600;color:var(--txt3);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:3px 7px;cursor:pointer;flex-shrink:0;letter-spacing:.05em}
-.sp-results{max-height:420px;overflow-y:auto;padding:8px}
+.sp-results{max-height:420px;overflow-y:auto;overscroll-behavior:contain;padding:8px}
 .sp-section{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;padding:12px 12px 6px;line-height:1}
 .sp-item{
   display:flex;align-items:center;gap:12px;
@@ -2560,7 +2560,7 @@ body:not(.view-gst) #vert-ctx-hdr{display:none}
 .rs-ttl{font-size:15px;font-weight:700;color:var(--txt);letter-spacing:-.2px}
 .rs-sub{font-size:11px;color:var(--txt3);margin-top:2px}
 .rec-sheet-x{margin-left:auto;width:30px;height:30px;border-radius:50%;border:none;background:var(--bg2);cursor:pointer;font-size:14px;color:var(--txt2);flex-shrink:0}
-.rec-sheet-body{overflow-y:auto;padding:16px 22px 44px;flex:1;min-height:0}
+.rec-sheet-body{overflow-y:auto;overscroll-behavior:contain;padding:16px 22px 44px;flex:1;min-height:0}
 body.rec-open{overflow:hidden}
 @media(max-width:640px){.rec-sheet{width:100vw}}
 
@@ -2702,7 +2702,7 @@ body.rec-open{overflow:hidden}
 <!-- Spotlight Search Overlay -->
 <div id="spotlight-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Search">
   <div class="sp-bd" onclick="closeSpotlight()"></div>
-  <div class="sp-pn">
+  <div class="sp-pn" data-modal-scroll>
     <div class="sp-search-row">
       <svg class="sp-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input class="sp-input" id="sp-input" type="text" placeholder="Search verticals, pages, actions…" autocomplete="off" oninput="spFilter(this.value)" onkeydown="spKeydown(event)">
@@ -2783,7 +2783,7 @@ body.rec-open{overflow:hidden}
 
 <!-- Detailed Records — slide-over panel (opened from the mind-map leaf) -->
 <div class="rec-ovl" id="rec-ovl" onclick="if(event.target===this)closeRecordsSheet()">
-  <aside class="rec-sheet" role="dialog" aria-modal="true" aria-label="Detailed records">
+  <aside class="rec-sheet" data-modal-scroll role="dialog" aria-modal="true" aria-label="Detailed records">
     <div class="rec-sheet-hd">
       <div class="rs-htxt"><div class="rs-ttl">Detailed Records</div><div class="rs-sub" id="rs-sub"></div></div>
       <button class="rec-sheet-x" onclick="closeRecordsSheet()" aria-label="Close">✕</button>
@@ -2803,25 +2803,25 @@ body.rec-open{overflow:hidden}
 <!-- Record Detail Modal — click any board card or table row to open -->
 <div id="rec-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Record details">
   <div class="rm-bd" onclick="closeRecModal()"></div>
-  <div class="rm-pn" id="rm-pn"></div>
+  <div class="rm-pn" id="rm-pn" data-modal-scroll></div>
 </div>
 
 <!-- KPI Card Detail Modal -->
 <div id="kpi-modal" role="dialog" aria-modal="true" aria-label="KPI details">
   <div class="km-bd" onclick="closeKpiModal()"></div>
-  <div class="km-pn" id="km-pn"></div>
+  <div class="km-pn" id="km-pn" data-modal-scroll></div>
 </div>
 
 <!-- Document Detail Modal — Open Marketplace document management -->
 <div id="doc-modal" role="dialog" aria-modal="true" aria-label="Document details">
   <div class="km-bd" onclick="closeDocModal()"></div>
-  <div class="km-pn" id="doc-pn"></div>
+  <div class="km-pn" id="doc-pn" data-modal-scroll></div>
 </div>
 
 <!-- GST FY Drill-down Modal -->
 <div id="gp-modal" role="dialog" aria-modal="true" aria-label="Vendor balance details">
   <div class="gm-bd" onclick="closeGpModal()"></div>
-  <div class="km-pn" id="gm-pn" style="max-width:620px"></div>
+  <div class="km-pn" id="gm-pn" data-modal-scroll style="max-width:620px"></div>
 </div>
 
 <script>
@@ -2867,6 +2867,80 @@ var _dashLoading     = false; // true while getCombinedDashboard/fallback is in-
 var _countdownTimer  = null;
 var _nextAt          = 0;
 var _isFirstLoad     = true;
+
+// ═══════════════════════════════════════════════════════════════
+// MODAL SCROLL LOCK — true dialog isolation (Notion / Linear / Stripe-style).
+// Freezes the dashboard at its exact scroll position — position:fixed body
+// with a negative top offset is the only technique that also stops iOS
+// Safari's rubber-band background scroll — compensates the vanished
+// scrollbar so nothing shifts horizontally, blocks every background scroll
+// input (wheel, touch, arrow/Page/Home/End/Space keys) while leaving
+// anything inside an open modal panel (any element carrying
+// [data-modal-scroll]) free to scroll and receive keystrokes normally, and
+// restores the exact position on close with no visible jump. Reference-
+// counted so a modal opened from within another (e.g. a KPI card opened
+// from inside the records sheet) doesn't unlock the page until the last one
+// closes.
+// ═══════════════════════════════════════════════════════════════
+var _modalLockCount = 0;
+var _modalScrollY = 0;
+var _MODAL_BLOCK_KEYS = { ArrowUp: 1, ArrowDown: 1, ArrowLeft: 1, ArrowRight: 1, PageUp: 1, PageDown: 1, Home: 1, End: 1, ' ': 1, Spacebar: 1 };
+function _modalScrollAllowed(target) {
+  var el = target;
+  while (el && el.nodeType === 1) {
+    if (el.hasAttribute && el.hasAttribute('data-modal-scroll')) return true;
+    el = el.parentNode;
+  }
+  return false;
+}
+function _modalBlockWheelTouch(e) { if (!_modalScrollAllowed(e.target)) e.preventDefault(); }
+function _modalBlockKeys(e) {
+  if (!_MODAL_BLOCK_KEYS.hasOwnProperty(e.key)) return;
+  if (!_modalScrollAllowed(e.target)) e.preventDefault();
+}
+function lockBodyScroll() {
+  if (_modalLockCount === 0) {
+    _modalScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    var sbw = window.innerWidth - document.documentElement.clientWidth;
+    var b = document.body.style;
+    b.position = 'fixed';
+    b.top = (-_modalScrollY) + 'px';
+    b.left = '0'; b.right = '0'; b.width = '100%';
+    if (sbw > 0) b.paddingRight = sbw + 'px';
+    document.body.classList.add('modal-locked');
+    document.addEventListener('wheel', _modalBlockWheelTouch, { passive: false });
+    document.addEventListener('touchmove', _modalBlockWheelTouch, { passive: false });
+    document.addEventListener('keydown', _modalBlockKeys, true);
+  }
+  _modalLockCount++;
+}
+function unlockBodyScroll() {
+  if (_modalLockCount === 0) return;
+  _modalLockCount--;
+  if (_modalLockCount === 0) {
+    var b = document.body.style;
+    b.position = ''; b.top = ''; b.left = ''; b.right = ''; b.width = ''; b.paddingRight = '';
+    document.body.classList.remove('modal-locked');
+    document.removeEventListener('wheel', _modalBlockWheelTouch, { passive: false });
+    document.removeEventListener('touchmove', _modalBlockWheelTouch, { passive: false });
+    document.removeEventListener('keydown', _modalBlockKeys, true);
+    window.scrollTo(0, _modalScrollY);
+  }
+}
+// Shared open/close for the class-toggled modals (kpi/doc/gp) — guards
+// against double-locking when a modal is re-rendered while already open.
+function _modalOpenClass(modal, cls, escFn) {
+  if (!modal || modal.classList.contains(cls)) return;
+  modal.classList.add(cls);
+  document.addEventListener('keydown', escFn);
+  lockBodyScroll();
+}
+function _modalCloseClass(modal, cls, escFn) {
+  if (!modal || !modal.classList.contains(cls)) return;
+  modal.classList.remove(cls);
+  document.removeEventListener('keydown', escFn);
+  unlockBodyScroll();
+}
 
 // localStorage key prefix — bump the version suffix when the data shape changes
 // so stale entries from an old schema are silently ignored.
@@ -4111,8 +4185,10 @@ function openRecordsSheet(aud) {
 }
 function closeRecordsSheet() {
   var ovl = document.getElementById('rec-ovl');
+  var wasOpen = ovl && ovl.classList.contains('show');
   if (ovl) ovl.classList.remove('show');
   document.body.classList.remove('rec-open');
+  if (wasOpen) unlockBodyScroll();
 }
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
@@ -4919,15 +4995,13 @@ function openKpiModal(cardId) {
       ? '<div class="km-foot"><button class="km-foot-link" onclick="' + footAction + '">' + footLabel + '</button></div>'
       : '');
 
-  modal.classList.add('km-open');
-  document.addEventListener('keydown', _kpiEsc);
+  _modalOpenClass(modal, 'km-open', _kpiEsc);
 }
 
 
 function closeKpiModal() {
   var modal = document.getElementById('kpi-modal');
-  if (modal) modal.classList.remove('km-open');
-  document.removeEventListener('keydown', _kpiEsc);
+  _modalCloseClass(modal, 'km-open', _kpiEsc);
 }
 
 function _gmvCatRender(aud, cats) {
@@ -4964,10 +5038,7 @@ function _gmvCatRender(aud, cats) {
     + '</div>'
     + rows
     + '<div class="km-foot"><button class="km-foot-link" onclick="closeKpiModal();vkpiOpen(\'all\')">View vendor detail ↓</button></div>';
-  if (!modal.classList.contains('km-open')) {
-    modal.classList.add('km-open');
-    document.addEventListener('keydown', _kpiEsc);
-  }
+  _modalOpenClass(modal, 'km-open', _kpiEsc);
 }
 
 function _gmvCatFromRows(rows) {
@@ -5016,8 +5087,7 @@ function openGmvCatModal(aud) {
     + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button>'
     + '</div>'
     + '<div style="padding:32px 18px;text-align:center;color:var(--txt3);font-size:13px">Loading…</div>';
-  modal.classList.add('km-open');
-  document.addEventListener('keydown', _kpiEsc);
+  _modalOpenClass(modal, 'km-open', _kpiEsc);
 
   var f = { audience: aud, period: currentPeriod };
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
@@ -5606,14 +5676,12 @@ function openDocModal(key) {
   pn.innerHTML = head + ent + summary
     + '<div class="km-sec"><div class="km-sec-t">Documents (' + listSubmitted + ' of ' + docList.length + ' submitted)</div>' + docsHtml + '</div>'
     + '<div class="km-sec"><div class="km-sec-t">' + fixTitle + '</div>' + fixInner + '</div>';
-  modal.classList.add('km-open');
-  document.addEventListener('keydown', _docEsc);
+  _modalOpenClass(modal, 'km-open', _docEsc);
 }
 
 function closeDocModal() {
   var modal = document.getElementById('doc-modal');
-  if (modal) modal.classList.remove('km-open');
-  document.removeEventListener('keydown', _docEsc);
+  _modalCloseClass(modal, 'km-open', _docEsc);
 }
 function _docEsc(e) { if (e.key === 'Escape') closeDocModal(); }
 
@@ -6106,7 +6174,7 @@ function _regionRender(loading) {
   if (loading) {
     el.innerHTML = head + audToggle
       + '<div style="padding:40px 18px;text-align:center;color:var(--txt3);font-size:13px">Loading ' + esc(audLbl.toLowerCase()) + '…</div>';
-    if (!modal.classList.contains('km-open')) { modal.classList.add('km-open'); document.addEventListener('keydown', _kpiEsc); }
+    _modalOpenClass(modal, 'km-open', _kpiEsc);
     return;
   }
 
@@ -6456,7 +6524,10 @@ function _showRecSheet(key) {
     sub.textContent = ((cfg && cfg.name) || key || '') + ' · ' + (selectedAud === 'buyer' ? 'Buyers' : 'Sellers');
   }
   var ovl = document.getElementById('rec-ovl');
-  if (ovl) { ovl.classList.add('show'); document.body.classList.add('rec-open'); }
+  if (ovl && !ovl.classList.contains('show')) {
+    ovl.classList.add('show'); document.body.classList.add('rec-open');
+    lockBodyScroll();
+  }
 }
 
 // Redirect renderVertDetail() to the inline section (backward compat for existing callers).
@@ -7122,16 +7193,17 @@ function openRecModal(key) {
     + txnSec
     + gstSec;
 
-  document.getElementById('rec-modal').style.display = 'flex';
-  document.body.style.overflow = 'hidden';
+  var rm = document.getElementById('rec-modal');
+  var wasOpen = rm.style.display === 'flex';
+  rm.style.display = 'flex';
+  if (!wasOpen) lockBodyScroll();
 }
 
 function closeRecModal() {
   var m = document.getElementById('rec-modal');
+  var wasOpen = m && m.style.display === 'flex';
   if (m) m.style.display = 'none';
-  if (!document.getElementById('vert-detail') || document.getElementById('vert-detail').style.display === 'none') {
-    document.body.style.overflow = '';
-  }
+  if (wasOpen) unlockBodyScroll();
 }
 
 // Escape key closes the record modal (or the detail panel if no modal open).
@@ -7488,8 +7560,7 @@ function gstEmptyState() {
 
 function closeGpModal() {
   var el = document.getElementById('gp-modal');
-  if (el) el.classList.remove('gm-open');
-  document.removeEventListener('keydown', _gpModalEsc);
+  _modalCloseClass(el, 'gm-open', _gpModalEsc);
 }
 function _gpModalEsc(e) { if (e.key === 'Escape') closeGpModal(); }
 
@@ -7582,8 +7653,7 @@ function gpFyDrillModal(fy, field, evt) {
     + '<button class="km-close" onclick="closeGpModal()" aria-label="Close">✕</button>'
     + '</div>'
     + content;
-  el.classList.add('gm-open');
-  document.addEventListener('keydown', _gpModalEsc);
+  _modalOpenClass(el, 'gm-open', _gpModalEsc);
 }
 
 function gpSetYear(y) {
@@ -8155,17 +8225,19 @@ function spKeydown(e) {
 function openSpotlight() {
   var overlay = document.getElementById('spotlight-overlay');
   if (!overlay) return;
+  var wasOpen = overlay.style.display === 'flex';
   overlay.style.display = 'flex';
   spRender('');
   var input = document.getElementById('sp-input');
   if (input) { input.value = ''; setTimeout(function() { input.focus(); }, 50); }
-  document.body.style.overflow = 'hidden';
+  if (!wasOpen) lockBodyScroll();
 }
 
 function closeSpotlight() {
   var overlay = document.getElementById('spotlight-overlay');
+  var wasOpen = overlay && overlay.style.display === 'flex';
   if (overlay) overlay.style.display = 'none';
-  document.body.style.overflow = '';
+  if (wasOpen) unlockBodyScroll();
 }
 
 // ⌘K / Ctrl+K global shortcut
