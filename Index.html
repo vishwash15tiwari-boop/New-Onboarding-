@@ -4626,7 +4626,10 @@ function openKpiModal(cardId) {
           {v: fmt(d.totalS), l: 'Sellers', c: S},
           {v: fmt(d.totalB), l: 'Buyers',  c: B},
         ])
-      + (d.pTotal + d.mTotal > 0 ? sec('Category Distribution', matBadges(d.pTotal, d.mTotal)) : '');
+      // Category Distribution reflects the onboarded book, not raw logged-in
+      // pipeline entries (many drafts aren't categorized/verified yet) — same
+      // basis as every other Category Distribution section in this modal set.
+      + (d.pOnb + d.mOnb > 0 ? sec('Category Distribution', matBadges(d.pOnb, d.mOnb)) : '');
 
   } else if (cardId === 'onboarded') {
     title = 'Successfully Onboarded';
