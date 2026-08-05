@@ -2474,9 +2474,11 @@ body.view-gst #vert-tabs-bar{display:none}
 .vn-util-ic{width:22px;height:22px;border-radius:6px;background:rgba(120,120,128,.14);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--txt2);flex-shrink:0}
 .vnode-gst.on .vn-util-ic{background:rgba(255,255,255,.16);color:#fff}
 body.view-gst #vnav .vnode:not(.vnode-gst){opacity:.55}
+/* The left rail is superseded by the mind map's own Verticals lane. */
+#vnav{display:none!important}
 
-/* Canvas: single-column guided journey. Left-align next to the nav rail. */
-body:not(.view-gst) #dash-content{max-width:1200px;margin:0;padding:20px 34px 80px}
+/* Canvas: full width — the mind map carries its own lanes. */
+body:not(.view-gst) #dash-content{max-width:1400px;margin:0 auto;padding:20px 30px 80px}
 .jr-sec{margin-bottom:24px}
 .jr-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:13px}
 .jr-step{font-size:10px;font-weight:700;color:var(--txt3);font-variant-numeric:tabular-nums;letter-spacing:.05em}
@@ -2570,7 +2572,87 @@ body.rec-open{overflow:hidden}
 @media(max-width:640px){.rec-sheet{width:100vw}}
 
 /* ══════════════════════════════════════════════════
-   INTERACTIVE BRANCH NAVIGATOR — multi-level drill-down
+   HORIZONTAL MIND MAP — Vertical → Module → KPI cards
+   Every level shows all its options at once; clicking a card opens
+   the standardized detail modal (the final navigation layer).
+   ══════════════════════════════════════════════════ */
+.mm{position:relative;display:flex;align-items:flex-start;gap:0}
+.mm-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible}
+.mm-lane{position:relative;z-index:1}
+.mm-col{display:flex;flex-direction:column;gap:9px}
+.mm-eye{font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--txt3);padding:0 4px 12px;white-space:nowrap}
+.mm-lane-v{width:222px;flex-shrink:0}
+.mm-lane-m{width:200px;flex-shrink:0}
+.mm-lane-c{flex:1;min-width:0}
+.mm-gap{width:52px;flex-shrink:0}
+/* Level 1 — vertical node */
+.mmv{border:1px solid var(--border);border-radius:12px;background:var(--card);cursor:pointer;transition:border-color .22s var(--ease-out),box-shadow .22s var(--ease-out),background .22s var(--ease-out)}
+.mmv:hover{border-color:rgba(0,0,0,.18)}
+.mmv.muted{cursor:default;background:transparent;border-style:dashed}
+.mmv.muted:hover{border-color:var(--border)}
+.mmv-h{display:flex;align-items:center;gap:10px;padding:12px 13px}
+.mmv-dot{width:8px;height:8px;border-radius:50%;background:var(--txt3);flex-shrink:0}
+.mmv-main{flex:1;min-width:0}
+.mmv-nm{font-size:13px;font-weight:600;letter-spacing:-.1px;color:var(--txt)}
+.mmv-sub{font-size:10.5px;font-weight:500;color:var(--txt3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mmv.on{background:#1A1A1C;border-color:#1A1A1C;box-shadow:0 12px 26px -14px rgba(0,0,0,.5)}
+.mmv.on .mmv-nm{color:#fff}.mmv.on .mmv-sub{color:rgba(255,255,255,.6)}
+.mmv.on .mmv-dot{background:var(--blue);box-shadow:0 0 0 4px rgba(0,93,255,.22)}
+.mmv.muted .mmv-nm{color:var(--txt2)}
+.mm-vsep{height:1px;background:var(--border);margin:6px 4px}
+.mm-util{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:12px;cursor:pointer;color:var(--txt2);font-size:12.5px;font-weight:600;border:1px solid transparent;transition:.2s var(--ease-out)}
+.mm-util:hover{background:var(--hover)}
+.mm-util.on{background:#1A1A1C;color:#fff}
+.mm-util-ic{width:22px;height:22px;border-radius:6px;background:rgba(120,120,128,.13);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.mm-util.on .mm-util-ic{background:rgba(255,255,255,.16);color:#fff}
+/* Level 2 — module node */
+.mmm{border:1px solid var(--border);border-radius:11px;background:var(--card);cursor:pointer;padding:12px 14px;display:flex;align-items:center;gap:10px;transition:border-color .2s var(--ease-out),background .2s var(--ease-out),box-shadow .2s var(--ease-out);opacity:0;transform:translateX(-8px)}
+.mmm.in{opacity:1;transform:none;transition:opacity .45s var(--ease-out),transform .45s var(--ease-out),border-color .2s,background .2s,box-shadow .2s}
+.mmm:hover{border-color:rgba(0,93,255,.4)}
+.mmm-ic{width:26px;height:26px;border-radius:8px;background:var(--accent-soft);color:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mmm-ic svg{width:14px;height:14px}
+.mmm-nm{flex:1;font-size:13px;font-weight:600;letter-spacing:-.1px;color:var(--txt)}
+.mmm-ct{font-size:10.5px;font-weight:600;color:var(--txt3);flex-shrink:0}
+.mmm.on{background:var(--blue);border-color:var(--blue);box-shadow:0 12px 26px -14px rgba(0,93,255,.6)}
+.mmm.on .mmm-nm{color:#fff}.mmm.on .mmm-ct{color:rgba(255,255,255,.75)}
+.mmm.on .mmm-ic{background:rgba(255,255,255,.2);color:#fff}
+/* Level 3 — premium KPI cards */
+.mm-c-hd{display:flex;align-items:baseline;gap:9px;padding:0 2px 12px;min-height:22px}
+.mm-c-ttl{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3)}
+.mm-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.mmc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 17px 15px;cursor:pointer;position:relative;overflow:hidden;opacity:0;transform:translateY(10px) scale(.985);transition:box-shadow .25s var(--ease-out),transform .25s var(--ease-out),border-color .25s var(--ease-out)}
+.mmc.in{opacity:1;transform:none}
+.mmc.in:hover{box-shadow:0 16px 34px -18px rgba(0,0,0,.34);transform:translateY(-3px);border-color:rgba(0,93,255,.3)}
+.mmc.na{cursor:default;background:var(--bg2);border-style:dashed}
+.mmc.na:hover{box-shadow:none;transform:none;border-color:var(--border)}
+.mmc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.mmc-ic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.mmc-ic svg{width:16px;height:16px}
+.mmc-go{font-size:11px;font-weight:600;color:var(--blue);opacity:0;transition:opacity .2s}
+.mmc.in:hover .mmc-go{opacity:1}
+.mmc-v{font-size:29px;font-weight:700;letter-spacing:-1.2px;line-height:1;color:var(--txt)}
+.mmc-v small{font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:0;margin-left:2px}
+.mmc-l{font-size:12.5px;font-weight:600;color:var(--txt);margin-top:9px}
+.mmc-s{font-size:11px;font-weight:500;color:var(--txt3);margin-top:3px}
+.mmc-na{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3)}
+.mmc.t-blue .mmc-ic{background:var(--accent-soft);color:var(--blue)}
+.mmc.t-green .mmc-ic{background:#E3F8F1;color:var(--green-ink)}
+.mmc.t-purple .mmc-ic{background:#F1ECFB;color:#5B3FA8}
+.mmc.t-amber .mmc-ic{background:#FFF3E0;color:#B26A00}
+.mmc.t-red .mmc-ic{background:#FDECEB;color:#C4271E}
+.mmc.t-ink .mmc-ic{background:#EDEDF0;color:var(--txt)}
+@media(prefers-reduced-motion:reduce){.mmm,.mmc{opacity:1!important;transform:none!important}}
+@media(max-width:1040px){
+  .mm{flex-direction:column;gap:0}
+  .mm-svg{display:none}
+  .mm-lane{width:100%!important}
+  .mm-col{flex-direction:row;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .mm-gap{display:none}
+  .mmv,.mmm{min-width:180px}
+}
+
+/* ══════════════════════════════════════════════════
+   INTERACTIVE BRANCH NAVIGATOR — legacy (superseded by mind map)
    ══════════════════════════════════════════════════ */
 .bn-crumbs{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:2px 0 16px}
 .bn-crumb{font-family:inherit;font-size:12px;font-weight:600;color:var(--txt2);background:var(--card);border:1px solid var(--border);border-radius:var(--pill);padding:6px 13px;cursor:pointer;white-space:nowrap;transition:.15s var(--ease-out)}
@@ -2754,14 +2836,24 @@ body.rec-open{overflow:hidden}
     <div class="gp-year-chips" id="gp-year-chips" style="display:none"></div>
   </div>
 
-  <!-- ── VIEW: ONBOARDING — interactive branch navigator ── -->
+  <!-- ── VIEW: ONBOARDING — horizontal mind map (Vertical → Module → Cards) ── -->
   <div id="tab-overview">
-    <!-- Active-path breadcrumb -->
-    <div class="bn-crumbs" id="bn-crumbs"></div>
-    <!-- Drill tree (left) · dashboard destination (right) -->
-    <div class="bn-explorer">
-      <div class="bn-tree" id="bn-tree"></div>
-      <div class="bn-panel" id="bn-panel"></div>
+    <div class="mm" id="mm">
+      <svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg>
+      <div class="mm-lane mm-lane-v">
+        <div class="mm-eye">Business Verticals</div>
+        <div id="mm-verts" class="mm-col"></div>
+      </div>
+      <div class="mm-gap"></div>
+      <div class="mm-lane mm-lane-m">
+        <div class="mm-eye" id="mm-mod-eye">Modules</div>
+        <div id="mm-mods" class="mm-col"></div>
+      </div>
+      <div class="mm-gap"></div>
+      <div class="mm-lane mm-lane-c">
+        <div class="mm-c-hd" id="mm-cards-hd"><span class="mm-c-ttl" id="mm-cards-ttl"></span></div>
+        <div id="mm-cards" class="mm-cards"></div>
+      </div>
     </div>
     <!-- Hidden data sink: the existing section renderers populate these so the
          KPI / GMV / quality snapshots that power the modals stay warm. -->
@@ -4019,61 +4111,267 @@ function _bnPanelTarget(node, hasKids) {
   return hasKids ? null : node;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// HORIZONTAL MIND MAP — the live navigator (Vertical → Module → Cards).
+// Every level reveals all of its options at once; a card is the final
+// navigation layer and opens the standardized detail modal.
+// renderBranchNav() is the entry point kept for existing callers.
+// ═══════════════════════════════════════════════════════════════
+var _mmVert = null, _mmMod = 'overview';
+var MM_IC = {
+  funnel:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M8.6 12.4l2.4 2.4 4.4-5"/></svg>',
+  bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+  users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>',
+  draft:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+  star:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z"/></svg>',
+  rupee:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12M6 8h12M8 4c4 0 6 2 6 5s-2 5-6 5l6 6"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  grid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  gauge:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l4-4M20 12a8 8 0 1 0-16 0"/></svg>',
+};
+
+// Module → card model for the active vertical, wired to live data.
+function mmModules(key) {
+  var vs = (DS && DS.verticals || {})[key] || {};
+  var vb = (DB && DB.verticals || {})[key] || {};
+  var q  = (qualityData && qualityData.success) ? (qualityData.seller || {}) : null;
+  var isOMP = key === 'OMP';
+  var tot = (vs.total || 0) + (vb.total || 0), onb = (vs.completed || 0) + (vb.completed || 0);
+  var txn = (vs.transacted || 0) + (vb.transacted || 0);
+  var ex = (vs.oldVendors || 0) + (vb.oldVendors || 0), nw = (vs.newVendors || 0) + (vb.newVendors || 0);
+  var gmv = vs.totalTxnValue, blend = _bnBlendTAT(vs, vb);
+  var rating = (q && q.rating && q.rating.avg != null) ? q.rating.avg.toFixed(1) + '★' : null;
+  var ratedSub = (q && q.rating) ? fmt(q.rating.rated || 0) + ' of ' + fmt(q.rating.total || 0) + ' rated' : '';
+  var osvDone = (q && q.osv && q.osv.total) ? (q.osv.completed || 0) : null;
+  var osvSub  = (q && q.osv && q.osv.total) ? fmt(q.osv.completed || 0) + ' done · ' + fmt(q.osv.notInitiated || 0) + ' not initiated' : 'Open Marketplace only';
+  var dObj = q && q.docs ? q.docs : null;
+  var docsC = dObj ? (dObj.complete != null ? dObj.complete : (dObj.completed != null ? dObj.completed : null)) : null;
+  var card = function(ic, tone, v, l, s, action, na) { return { ic:ic, tone:tone, v:v, l:l, s:s, action:action, na:!!na }; }
+  var regCard = function(regs, aud) {
+    var r = (regs || []).filter(function(x) { return (x.onboarded || x.total || 0) > 0; });
+    if (!r.length && aud === selectedAud && Array.isArray(vertRows) && vertRows.length)
+      r = _regionsFromRows(vertRows).filter(function(x) { return (x.total || 0) > 0; });
+    var has = r.length > 0;
+    var byN = {}; r.forEach(function(x) { byN[x.region] = x; });
+    var n = byN.North || {}, s = byN.South || {};
+    var sub = has ? (fmt(n.onboarded || n.total || 0) + ' North · ' + fmt(s.onboarded || s.total || 0) + ' South')
+                  : (aud === 'buyer' ? 'awaiting buyer state data' : 'awaiting region data');
+    return card(MM_IC.pin, 't-blue', has ? 'N / S' : '—', 'Regional Split', sub, 'region:' + aud, !has);
+  };
+  return [
+    { k:'overview', n:'Overview', ic:MM_IC.grid, cards:[
+      card(MM_IC.funnel, 't-blue',  fmt(tot), 'Logged In Cases', fmt(vs.total || 0) + ' sellers · ' + fmt(vb.total || 0) + ' buyers', 'total'),
+      card(MM_IC.check,  't-green', fmt(onb), 'Successfully Onboarded', fmt(vs.completed || 0) + ' sellers · ' + fmt(vb.completed || 0) + ' buyers', 'onboarded'),
+      card(MM_IC.bolt,   't-blue',  fmt(txn), 'Transacted Vendors', gmv != null ? fmtINR(gmv) + ' GMV' : 'onboarded vendors transacted', 'transacted'),
+      isOMP ? card(MM_IC.users, 't-purple', fmt(ex + nw), 'Vendor Classification', fmt(ex) + ' existing · ' + fmt(nw) + ' new', 'oldvsnew')
+            : card(MM_IC.users, 't-purple', '—', 'Vendor Classification', 'Open Marketplace only', null, true),
+    ]},
+    { k:'onboarding', n:'Onboarding', ic:MM_IC.funnel, cards:[
+      card(MM_IC.funnel, 't-blue',   fmt(tot), 'Logged In', 'all pipeline entries', 'total'),
+      card(MM_IC.draft,  't-purple', fmt((vs.draft || 0) + (vb.draft || 0)), 'Draft Cases', fmt(vs.draft || 0) + ' sellers · ' + fmt(vb.draft || 0) + ' buyers', 'draft'),
+      card(MM_IC.clock,  't-amber',  fmt((vs.inReview || 0) + (vb.inReview || 0)), 'Under Review', fmt(vs.inReview || 0) + ' sellers · ' + fmt(vb.inReview || 0) + ' buyers', 'review'),
+      card(MM_IC.check,  't-green',  fmt(onb), 'Onboarded', fmt(vs.completed || 0) + ' sellers · ' + fmt(vb.completed || 0) + ' buyers', 'onboarded'),
+      card(MM_IC.x,      't-red',    fmt((vs.rejected || 0) + (vb.rejected || 0)), 'Rejected', fmt(vs.rejected || 0) + ' sellers · ' + fmt(vb.rejected || 0) + ' buyers', 'rejected'),
+    ]},
+    { k:'sellers', n:'Sellers', ic:MM_IC.users, cards:[
+      card(MM_IC.funnel, 't-blue',  fmt(vs.total || 0), 'Logged In', 'seller pipeline', 'total'),
+      card(MM_IC.check,  't-green', fmt(vs.completed || 0), 'Onboarded', fmt(vs.completed || 0) + ' of ' + fmt(vs.total || 0) + ' sellers', 'onboarded'),
+      isOMP ? card(MM_IC.users, 't-purple', fmt((vs.oldVendors || 0) + (vs.newVendors || 0)), 'Existing vs New', fmt(vs.oldVendors || 0) + ' existing · ' + fmt(vs.newVendors || 0) + ' new', 'oldvsnew')
+            : card(MM_IC.users, 't-purple', '—', 'Existing vs New', 'Open Marketplace only', null, true),
+      regCard(vs.regions, 'seller'),
+      card(MM_IC.star, 't-amber', rating || '—', 'Vendor Ratings', rating ? ratedSub : 'Open Marketplace only', 'rating', !rating),
+    ]},
+    { k:'buyers', n:'Buyers', ic:MM_IC.users, cards:[
+      card(MM_IC.funnel, 't-blue',  fmt(vb.total || 0), 'Logged In', 'buyer pipeline', 'total'),
+      card(MM_IC.check,  't-green', fmt(vb.completed || 0), 'Onboarded', fmt(vb.completed || 0) + ' of ' + fmt(vb.total || 0) + ' buyers', 'onboarded'),
+      isOMP ? card(MM_IC.users, 't-purple', fmt((vb.oldVendors || 0) + (vb.newVendors || 0)), 'Existing vs New', fmt(vb.oldVendors || 0) + ' existing · ' + fmt(vb.newVendors || 0) + ' new', 'oldvsnew')
+            : card(MM_IC.users, 't-purple', '—', 'Existing vs New', 'Open Marketplace only', null, true),
+      regCard(vb.regions, 'buyer'),
+    ]},
+    { k:'insights', n:'Insights', ic:MM_IC.gauge, cards:[
+      card(MM_IC.rupee,  't-ink',    gmv != null ? fmtINR(gmv) : '—', 'Total GMV', gmv != null ? 'seller transaction value' : 'no GMV recorded', 'gmv', gmv == null),
+      card(MM_IC.clock,  't-blue',   blend != null ? blend + 'd' : '—', 'Average TAT', (vs.avgTAT != null ? 'Sellers ' + vs.avgTAT + 'd' : '') + (vb.avgTAT != null ? ' · Buyers ' + vb.avgTAT + 'd' : ''), 'tat', blend == null),
+      card(MM_IC.shield, 't-green',  osvDone != null ? fmt(osvDone) : '—', 'OSV Status', osvSub, 'osv', osvDone == null),
+      card(MM_IC.star,   't-amber',  rating || '—', 'Vendor Ratings', rating ? ratedSub : 'Open Marketplace only', 'rating', !rating),
+      card(MM_IC.doc,    't-purple', docsC != null ? fmt(docsC) : '—', 'Documents', docsC != null ? 'complete document sets' : 'Open Marketplace only', 'docs', docsC == null),
+    ]},
+  ];
+}
+
+// Entry point (kept name for existing callers). Animates only on vertical change.
 function renderBranchNav(key) {
   if (currentView === 'gst') return;
-  if (_bnKey !== key) { bnPath = []; _bnKey = key; }
-  _bnTree = buildVertTree(key);
-  _bnRenderCrumbs();
-  _bnRenderTree();
-  var res = _bnFind(bnPath);
-  var node = res.node;
-  var hasKids = node.children && node.children.length;
-  _bnRenderPanel(bnPath.length ? _bnPanelTarget(node, hasKids) : null, res.chain);
+  var vertChanged = _mmVert !== key;
+  if (vertChanged) { _mmVert = key; _mmMod = 'overview'; }
+  renderMMVerts(key);
+  renderMMModules(vertChanged);
+  renderMMCards(vertChanged);
+  requestAnimationFrame(mmDrawConnectors);
 }
 
-function _bnRenderCrumbs() {
-  var el = document.getElementById('bn-crumbs'); if (!el) return;
-  var chain = _bnFind(bnPath).chain;
-  el.innerHTML = chain.map(function(n, i) {
-    var here = i === chain.length - 1;
-    var toPath = chain.slice(1, i + 1).map(function(x) { return x.k; });
-    return '<button class="bn-crumb' + (here ? ' here' : '') + '" onclick="bnGo(' + _bnEnc(toPath) + ')">' + esc(n.label) + '</button>'
-      + (here ? '' : '<span class="bn-crumb-sep">›</span>');
+function renderMMVerts(activeKey) {
+  var el = document.getElementById('mm-verts'); if (!el) return;
+  var cfg = getVertCfg();
+  el.innerHTML = cfg.map(function(c) {
+    var vs = (DS && DS.verticals || {})[c.key] || {}, vb = (DB && DB.verticals || {})[c.key] || {};
+    var tot = (vs.total || 0) + (vb.total || 0), onb = (vs.completed || 0) + (vb.completed || 0);
+    var mapped = tot > 0, on = mapped && c.key === activeKey;
+    var sub = mapped ? (fmt(tot) + ' logged in · ' + fmt(onb) + ' onboarded') : 'feed not mapped yet';
+    return '<div class="mmv' + (mapped ? '' : ' muted') + (on ? ' on' : '') + '" data-v="' + esc(c.key) + '"'
+      + (mapped ? ' role="button" tabindex="0" onclick="selectVertTab(\'' + c.key + '\')" onkeydown="if(event.key===\'Enter\'){selectVertTab(\'' + c.key + '\')}"' : '') + '>'
+      + '<div class="mmv-h"><i class="mmv-dot"></i><div class="mmv-main"><div class="mmv-nm">' + esc(c.name) + '</div>'
+      + '<div class="mmv-sub">' + sub + '</div></div></div></div>';
+  }).join('')
+  + '<div class="mm-vsep"></div>'
+  + '<div class="mm-util" role="button" tabindex="0" onclick="switchView(\'gst\')" onkeydown="if(event.key===\'Enter\'){switchView(\'gst\')}"><span class="mm-util-ic">₹</span>GST Payables</div>';
+}
+
+function renderMMModules(animate) {
+  var el = document.getElementById('mm-mods'); if (!el) return;
+  var mods = mmModules(_mmVert);
+  el.innerHTML = mods.map(function(m) {
+    return '<div class="mmm' + (m.k === _mmMod ? ' on' : '') + '" data-m="' + m.k + '" role="button" tabindex="0"'
+      + ' onclick="mmPickMod(\'' + m.k + '\')" onkeydown="if(event.key===\'Enter\'){mmPickMod(\'' + m.k + '\')}">'
+      + '<span class="mmm-ic">' + m.ic + '</span><span class="mmm-nm">' + m.n + '</span><span class="mmm-ct">' + m.cards.length + '</span></div>';
   }).join('');
-}
-function _bnEnc(path) { return '[' + path.map(function(k) { return '&quot;' + k + '&quot;'; }).join(',') + ']'; }
-
-function _bnRenderTree() {
-  var el = document.getElementById('bn-tree'); if (!el) return;
-  var top = (_bnTree.children || []);
-  el.innerHTML = '<div class="bn-sub root0">' + top.map(function(c) { return _bnNode(c, [c.k]); }).join('') + '</div>';
-}
-function _bnNode(node, path) {
-  var onPath = path.length <= bnPath.length && path.every(function(k, i) { return bnPath[i] === k; });
-  var here = bnPath.length === path.length && onPath;
-  var hasKids = node.children && node.children.length;
-  var top = path.length === 1;
-  var cls = 'bn-node' + (here ? ' here' : (onPath ? ' on-path' : (top ? '' : ' dim')));
-  var right = hasKids ? '<span class="bn-caret">›</span>'
-    : (node.soon ? '<span class="bn-open" style="color:var(--txt3);background:var(--bg2)">soon</span>'
-      : (node.panel === 'gated' ? '<span class="bn-open" style="color:var(--txt3);background:var(--bg2)">i</span>'
-        : '<span class="bn-open">open</span>'));
-  var val = node.val ? '<span class="bn-val">' + esc(node.val) + '</span>' : '';
-  return '<div class="' + cls + '">'
-    + '<div class="bn-row" onclick="bnGo(' + _bnEnc(path) + ')">'
-    +   '<i class="bn-dot"></i><span class="bn-lbl">' + esc(node.label) + '</span>' + val + right
-    + '</div>'
-    + (onPath && hasKids ? '<div class="bn-sub">' + node.children.map(function(c) { return _bnNode(c, path.concat(c.k)); }).join('') + '</div>' : '')
-    + '</div>';
+  _mmReveal([].slice.call(el.querySelectorAll('.mmm')), animate);
 }
 
-function bnGo(path) {
-  bnPath = (path || []).slice();
-  var res = _bnFind(bnPath);
-  var node = res.node;
-  var hasKids = node.children && node.children.length;
-  _bnRenderCrumbs(); _bnRenderTree();
-  _bnRenderPanel(_bnPanelTarget(node, hasKids), res.chain);
+function renderMMCards(animate) {
+  var el = document.getElementById('mm-cards'); if (!el) return;
+  var mods = mmModules(_mmVert);
+  var mod = mods.filter(function(m) { return m.k === _mmMod; })[0] || mods[0];
+  var hd = document.getElementById('mm-cards-ttl');
+  if (hd) hd.textContent = mod.n + ' · ' + mod.cards.length + ' metrics';
+  el.innerHTML = mod.cards.map(function(c) {
+    var body = '<div class="mmc-top"><div class="mmc-ic">' + c.ic + '</div>'
+      + (c.na ? '<span class="mmc-na">soon</span>' : '<span class="mmc-go">Open →</span>') + '</div>'
+      + '<div class="mmc-v tnum">' + esc(c.v) + '</div><div class="mmc-l">' + esc(c.l) + '</div>'
+      + '<div class="mmc-s">' + esc(c.s) + '</div>';
+    return '<div class="mmc ' + c.tone + (c.na ? ' na' : '') + '"'
+      + (c.na ? '' : ' role="button" tabindex="0" onclick="mmCardAction(\'' + c.action + '\')" onkeydown="if(event.key===\'Enter\'){mmCardAction(\'' + c.action + '\')}"')
+      + '>' + body + '</div>';
+  }).join('');
+  _mmReveal([].slice.call(el.querySelectorAll('.mmc')), animate);
+}
+
+function mmPickMod(k) {
+  _mmMod = k;
+  document.querySelectorAll('#mm-mods .mmm').forEach(function(n) { n.classList.toggle('on', n.dataset.m === k); });
+  renderMMCards(true);
+  requestAnimationFrame(mmDrawConnectors);
+}
+
+function _mmReveal(nodes, animate) {
+  if (!nodes.length) return;
+  if (!motionOK() || !animate) { nodes.forEach(function(n) { n.classList.add('in'); }); mmDrawConnectors(); return; }
+  nodes.forEach(function(n) { n.classList.remove('in'); void n.offsetWidth; });
+  nodes.forEach(function(n, i) { setTimeout(function() { n.classList.add('in'); mmDrawConnectors(); }, 80 + i * 70); });
+  setTimeout(mmDrawConnectors, 80 + nodes.length * 70 + 60);
+}
+
+function mmCardAction(action) {
+  if (!action) return;
+  var a = String(action).split(':'), name = a[0], arg = a[1];
+  if (name === 'gmv')     return openGmvCatModal('seller');
+  if (name === 'region')  return openRegionSplitModal(arg || 'seller');
+  if (name === 'tat')     return openTatModal();
+  if (name === 'records') return openRecordsSheet(arg || 'seller');
+  return openKpiModal(name);   // total/onboarded/transacted/oldvsnew/draft/review/rejected/nontxn/osv/rating/docs
+}
+
+// ── connector lines (elbow ├── from active parent to its children) ──
+function _mmBusPath(px, py, kids, gapL, gapR) {
+  if (!kids.length) return '';
+  var busX = (gapL + gapR) / 2;
+  var ys = kids.map(function(k) { return k.cy; }).concat(py);
+  var top = Math.min.apply(null, ys), bot = Math.max.apply(null, ys);
+  var d = 'M ' + px + ' ' + py + ' L ' + busX + ' ' + py + ' M ' + busX + ' ' + top + ' L ' + busX + ' ' + bot + ' ';
+  kids.forEach(function(k) { d += 'M ' + busX + ' ' + k.cy + ' L ' + k.x + ' ' + k.cy + ' '; });
+  return d;
+}
+function mmDrawConnectors() {
+  var mm = document.getElementById('mm'), svg = document.getElementById('mm-svg');
+  if (!mm || !svg) return;
+  var R = mm.getBoundingClientRect();
+  if (!R.width) return;
+  svg.setAttribute('width', R.width); svg.setAttribute('height', R.height);
+  svg.setAttribute('viewBox', '0 0 ' + R.width + ' ' + R.height);
+  var rel = function(el) { var b = el.getBoundingClientRect(); return { l:b.left - R.left, r:b.right - R.left, cy:b.top - R.top + b.height / 2 }; };
+  var d = '';
+  var av = document.querySelector('#mm-verts .mmv.on');
+  var mods = [].slice.call(document.querySelectorAll('#mm-mods .mmm.in'));
+  if (av && mods.length) {
+    var p = rel(av);
+    d += _mmBusPath(p.r, p.cy, mods.map(function(n) { var q = rel(n); return { x:q.l, cy:q.cy }; }), p.r, rel(mods[0]).l);
+  }
+  var am = document.querySelector('#mm-mods .mmm.on');
+  var cards = [].slice.call(document.querySelectorAll('#mm-cards .mmc.in'));
+  if (am && cards.length) {
+    var p2 = rel(am);
+    var minL = Math.min.apply(null, cards.map(function(c) { return rel(c).l; }));
+    var firstCol = cards.filter(function(c) { return Math.abs(rel(c).l - minL) < 4; });
+    d += _mmBusPath(p2.r, p2.cy, firstCol.map(function(n) { var q = rel(n); return { x:q.l, cy:q.cy }; }), p2.r, minL);
+  }
+  svg.innerHTML = d ? '<path d="' + d + '" fill="none" stroke="rgba(0,0,0,.16)" stroke-width="1.5" stroke-linecap="round"/>' : '';
+}
+window.addEventListener('resize', function() { if (currentView !== 'gst') mmDrawConnectors(); });
+
+// Regional Split → compact modal listing regions; each drills into the
+// per-region vendor modal (reuses the KPI-modal shell + scroll lock).
+function openRegionSplitModal(aud) {
+  aud = aud || 'seller';
+  var key = activeVertKey || selectedVert;
+  var el = document.getElementById('km-pn'), modal = document.getElementById('kpi-modal');
+  if (!el || !modal || !key) return;
+  var src = aud === 'buyer' ? (DB && DB.verticals) : (DS && DS.verticals);
+  var vsrc = (src && src[key]) || {};
+  var regs = (vsrc.regions || []).filter(function(r) { return (r.total || 0) > 0; });
+  if (!regs.length && aud === selectedAud && Array.isArray(vertRows) && vertRows.length)
+    regs = _regionsFromRows(vertRows).filter(function(r) { return (r.total || 0) > 0; });
+  var onbSum = regs.reduce(function(s, r) { return s + (r.onboarded || 0); }, 0), useOnb = onbSum > 0;
+  var metric = function(r) { return useOnb ? (r.onboarded || 0) : (r.total || 0); };
+  var sorted = regs.slice().sort(function(a, b) { return metric(b) - metric(a); });
+  var denom = sorted.reduce(function(s, r) { return s + metric(r); }, 0) || 1;
+  var rows = sorted.length ? sorted.map(function(r) {
+    var v = metric(r), p = Math.round(v / denom * 100), col = REGION_COLORS[r.region] || REGION_COLORS.Other;
+    var gmv = (r.txnValue != null && r.txnValue > 0) ? ' · ' + fmtINR(r.txnValue) : '';
+    return '<div class="km-sg-item km-sg-xp" role="button" tabindex="0" style="cursor:pointer"'
+      + ' onclick="openRegionModal(\'' + esc(r.region) + '\')" onkeydown="if(event.key===\'Enter\'){openRegionModal(\'' + esc(r.region) + '\')}">'
+      + '<div class="km-sg-v">' + fmt(v) + '</div>'
+      + '<div class="km-sg-l"><i class="km-dot" style="background:' + col + '"></i>' + esc(r.region) + ' · ' + p + '%' + gmv + '</div></div>';
+  }).join('') : '<div style="padding:26px 18px;text-align:center;color:var(--txt3);font-size:12.5px">No regional data for this segment yet.</div>';
+  el.innerHTML = '<div class="km-head"><div style="display:flex;align-items:center;min-width:0">'
+    + '<div class="km-icon" style="color:var(--blue)">' + MM_IC.pin + '</div>'
+    + '<div class="km-htxt"><div class="km-title">Regional Split</div><div class="km-sub">'
+    + (aud === 'buyer' ? 'Buyers' : 'Sellers') + ' · ' + (useOnb ? 'onboarded by region' : 'pipeline by region') + '</div></div></div>'
+    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button></div>'
+    + '<div class="km-sec"><div class="km-sec-t">Select a region for its vendor list</div>'
+    + '<div class="km-sg" style="grid-template-columns:1fr;gap:8px">' + rows + '</div></div>';
+  _modalOpenClass(modal, 'km-open', _kpiEsc);
+}
+
+// Average TAT → compact modal (Seller / Buyer / Blended). No TAT card
+// existed before; this is the detail layer for the Insights TAT card.
+function openTatModal() {
+  var key = activeVertKey || selectedVert;
+  var el = document.getElementById('km-pn'), modal = document.getElementById('kpi-modal');
+  if (!el || !modal) return;
+  var vs = (DS && DS.verticals || {})[key] || {}, vb = (DB && DB.verticals || {})[key] || {};
+  var blend = _bnBlendTAT(vs, vb);
+  var stat = function(l, v) { return '<div class="km-s"><div class="km-sv">' + (v != null ? v + 'd' : '—') + '</div><div class="km-sl">' + l + '</div></div>'; };
+  el.innerHTML = '<div class="km-head"><div style="display:flex;align-items:center;min-width:0">'
+    + '<div class="km-icon" style="color:var(--blue)">' + MM_IC.clock + '</div>'
+    + '<div class="km-htxt"><div class="km-title">Average TAT</div><div class="km-sub">Days from Level 1 review to onboarded</div></div></div>'
+    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button></div>'
+    + '<div class="km-hero"><div class="km-hero-num">' + (blend != null ? blend + 'd' : '—') + '</div><div class="km-hero-lbl">Blended Average TAT</div></div>'
+    + '<div class="km-srow km-srow-2">' + stat('Sellers', vs.avgTAT) + stat('Buyers', vb.avgTAT) + '</div>';
+  _modalOpenClass(modal, 'km-open', _kpiEsc);
 }
 
 // ── Panel helpers ──
@@ -5253,7 +5551,7 @@ function _patchQualitySects() {
   });
   _patchQualityKpiCards();
   refreshBizRail();      // fill Vendor Rating / OSV in Operational Insights
-  if (typeof renderBranchNav === 'function' && currentView !== 'gst' && _bnKey) renderBranchNav(_bnKey);
+  if (typeof renderBranchNav === 'function' && currentView !== 'gst' && _mmVert) renderBranchNav(_mmVert);
   renderDocsSection();
 }
 
