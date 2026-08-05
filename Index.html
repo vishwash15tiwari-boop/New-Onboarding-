@@ -2621,8 +2621,8 @@ body.rec-open{overflow:hidden}
 .mmn.root .mmn-cta{display:inline-flex;align-items:center;gap:5px;margin-top:14px;font-size:11.5px;font-weight:600;color:#fff;background:var(--blue);border-radius:8px;padding:7px 12px}
 .mmn.root .mmn-ic{background:rgba(255,255,255,.14);color:#fff}
 .mmn.root.on{box-shadow:0 0 0 1.5px rgba(0,93,255,.5),0 18px 36px -18px rgba(0,0,0,.6)}
-/* vertical card — navigation only, compact height */
-.mmn.vert{padding:9px 13px}
+/* vertical + module cards — navigation only, compact height */
+.mmn.vert,.mmn.module{padding:9px 13px}
 .mmn.vert .mmn-dot{width:8px;height:8px;border-radius:50%;background:var(--txt3);flex-shrink:0}
 .mmn.vert.on .mmn-dot{background:var(--blue);box-shadow:0 0 0 4px rgba(0,93,255,.18)}
 .mmn.vert.muted{border-style:dashed;cursor:default;background:transparent}
@@ -4308,7 +4308,8 @@ function mmNodeCard(node, colActiveId) {
     cls = 'mmn vd';
     inner = '<div class="mmn-top"><div class="mmn-ic">' + (node.ic || MM_IC.doc) + '</div><div class="mmn-ttl">' + esc(node.t) + '</div><span class="mmn-arr">→</span></div>';
   } else {
-    cls = 'mmn ' + (node.tone || 't-ink') + (on ? ' on' : '') + (isLeaf ? ' leaf' : '');
+    var modCls = (kind === 'module') ? ' module' : '';
+    cls = 'mmn ' + (node.tone || 't-ink') + modCls + (on ? ' on' : '') + (isLeaf ? ' leaf' : '');
     var arrow = (hasKids || node.action) ? '<span class="mmn-arr">' + (node.action && !hasKids ? '→' : '›') + '</span>' : '';
     inner = '<div class="mmn-top"><div class="mmn-ic">' + (node.ic || MM_IC.grid) + '</div><div class="mmn-ttl">' + esc(node.t) + '</div>' + arrow + '</div>'
       + (node.v ? '<div class="mmn-v tnum">' + esc(node.v) + '</div>' : '')
