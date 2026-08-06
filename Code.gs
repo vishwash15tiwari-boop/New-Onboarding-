@@ -40,6 +40,11 @@ var CONFIG = {
   // to inspect column detection and match rate against the live tab.
   TAT_DETAIL_SHEET: '_mb_detail',
 
+  // Workbook the Metabase tabs are synced into. TAT reads _mb_detail from here by
+  // id rather than from the active spreadsheet, so the source is the same whichever
+  // document the script is opened from. Falls back to the active spreadsheet.
+  META_SHEET_ID: '10RJ1D1GXh-f_7a5M3YMAEt8jDQ7X6jQm2-krTNOBts8',
+
   // External workbook holding Vendor Scores and OSV Status. Columns are addressed
   // by POSITION here (not header name) because that is how they were specified —
   // see VS_COLS. Run debugVendorScoreSheet() to dump the live headers with their
@@ -550,11 +555,25 @@ function _detailDateCol_(headers, rows, exact, fuzzy) {
 // onboarding-stage source. Keyed by id, and by name where that name maps to a
 // single id. Holds the In Review date (preferred start), the Level 1 date
 // (fallback start) and the detail sheet's own completed date.
+// Open the _mb_detail tab from the configured meta workbook, falling back to the
+// active spreadsheet. Returns the Sheet or null.
+function openDetailSheet_() {
+  var name = CONFIG.TAT_DETAIL_SHEET;
+  if (CONFIG.META_SHEET_ID) {
+    try {
+      var s = SpreadsheetApp.openById(CONFIG.META_SHEET_ID).getSheetByName(name);
+      if (s && s.getLastRow() > 1) return s;
+    } catch (e) { Logger.log('meta workbook open failed: ' + e.message); }
+  }
+  try { return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name); } catch (e) { return null; }
+}
+
 function getLevel1Lookup_() {
   if (_level1LookupCache) return _level1LookupCache;
-  var lk = { byId: {}, byName: {}, cols: {}, rows: 0, loaded: false };
+  var lk = { byId: {}, byName: {}, cols: {}, rows: 0,
+             audCounts: { seller: 0, buyer: 0, unknown: 0 }, collisions: 0, loaded: false };
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.TAT_DETAIL_SHEET);
+    var sheet = openDetailSheet_();
     if (sheet && sheet.getLastRow() > 1) {
       var d   = readSheetObj_(sheet);
       var idx = buildIndex(d.headers);
@@ -569,7 +588,40 @@ function getLevel1Lookup_() {
                   completed: endC && endC.header, resubmitted: resC && resC.header,
                   rejected: rejC && rejC.header };
 
-      var nameIds = {};   // name → {id, ambiguous} — a name shared by >1 id can't be matched safely
+      // This tab holds BOTH sellers and buyers, so every key is namespaced by
+      // audience. A seller_id and a buyer_id can be the same number for different
+      // entities; keying on the bare id would hand one audience the other's dates.
+      var sIdC = idx['seller_id'] !== undefined ? idx['seller_id'] : -1;
+      var bIdC = idx['buyer_id']  !== undefined ? idx['buyer_id']  : -1;
+      var audC = -1;
+      ['audience','entity_type','type','vendor_type_group','party_type','user_type'].forEach(function(k) {
+        if (audC < 0 && idx[k] !== undefined) audC = idx[k];
+      });
+      // Row audience: an explicit column wins; otherwise whichever id column is filled.
+      function rowAud_(row) {
+        if (audC >= 0) {
+          var a = String(row[audC] || '').trim().toLowerCase();
+          if (a.indexOf('sell') === 0 || a === 's' || a.indexOf('vendor') === 0) return 'seller';
+          if (a.indexOf('buy')  === 0 || a === 'b' || a.indexOf('customer') === 0) return 'buyer';
+        }
+        var hasS = sIdC >= 0 && String(row[sIdC] || '').trim() !== '';
+        var hasB = bIdC >= 0 && String(row[bIdC] || '').trim() !== '';
+        if (hasS && !hasB) return 'seller';
+        if (hasB && !hasS) return 'buyer';
+        return 'unknown';
+      }
+      // Id for a row, preferring the column matching its audience.
+      function rowId_(row, aud) {
+        if (aud === 'seller' && sIdC >= 0) {
+          var s = String(row[sIdC] || '').replace(/,/g, '').trim(); if (s) return s;
+        }
+        if (aud === 'buyer' && bIdC >= 0) {
+          var b = String(row[bIdC] || '').replace(/,/g, '').trim(); if (b) return b;
+        }
+        return String(firstVal_(row, idx, TAT_COLS.id) || '').replace(/,/g, '').trim();
+      }
+
+      var nameKeys = {};   // "aud|name" → {id, ambiguous}: a name used by >1 id is unsafe
       // Keep the LATEST date seen per vendor: the detail card can emit one row per
       // stage transition, and the most recent pass is the one that led to onboarding.
       function fold_(map, key, field, dt) {
@@ -578,32 +630,44 @@ function getLevel1Lookup_() {
                                             resubmitted: null, rejected: null });
         if (!rec[field] || dt > rec[field]) rec[field] = dt;
       }
+      function foldAll_(map, key, dates) {
+        fold_(map, key, 'review', dates.rev);   fold_(map, key, 'level1', dates.l1);
+        fold_(map, key, 'completed', dates.end); fold_(map, key, 'resubmitted', dates.res);
+        fold_(map, key, 'rejected', dates.rej);
+      }
       d.rows.forEach(function(row) {
-        var rev = revC ? parseDate(row[revC.i]) : null;
-        var l1  = l1C  ? parseDate(row[l1C.i])  : null;
-        var end = endC ? parseDate(row[endC.i]) : null;
-        var res = resC ? parseDate(row[resC.i]) : null;
-        var rej = rejC ? parseDate(row[rejC.i]) : null;
-        if (!rev && !l1 && !end && !res && !rej) return;
-        var id   = String(firstVal_(row, idx, TAT_COLS.id) || '').replace(/,/g, '').trim();
+        var dates = {
+          rev: revC ? parseDate(row[revC.i]) : null,
+          l1:  l1C  ? parseDate(row[l1C.i])  : null,
+          end: endC ? parseDate(row[endC.i]) : null,
+          res: resC ? parseDate(row[resC.i]) : null,
+          rej: rejC ? parseDate(row[rejC.i]) : null
+        };
+        if (!dates.rev && !dates.l1 && !dates.end && !dates.res && !dates.rej) return;
+        var aud  = rowAud_(row);
+        lk.audCounts[aud]++;
+        var id   = rowId_(row, aud);
         var name = String(firstVal_(row, idx, TAT_COLS.name) || '').trim().toLowerCase();
-        if (id) {
-          fold_(lk.byId, id, 'review', rev); fold_(lk.byId, id, 'level1', l1); fold_(lk.byId, id, 'completed', end);
-          fold_(lk.byId, id, 'resubmitted', res); fold_(lk.byId, id, 'rejected', rej);
-        }
+        // Strictly namespaced. A row whose audience IS known is reachable only under
+        // that audience — no shared bucket, because an id appearing for sellers only
+        // would otherwise still answer a buyer lookup and hand over the wrong dates.
+        // Rows whose audience cannot be determined go to 'unknown', which both
+        // audiences may read since there is nothing to distinguish them by.
+        if (id) foldAll_(lk.byId, aud + '|' + id, dates);
         if (name) {
-          fold_(lk.byName, name, 'review', rev); fold_(lk.byName, name, 'level1', l1); fold_(lk.byName, name, 'completed', end);
-          fold_(lk.byName, name, 'resubmitted', res); fold_(lk.byName, name, 'rejected', rej);
-        }
-        if (name && id) {
-          var ni = nameIds[name];
-          if (!ni) nameIds[name] = { id: id, ambiguous: false };
-          else if (ni.id !== id) ni.ambiguous = true;
+          foldAll_(lk.byName, aud + '|' + name, dates);
+          var nk = nameKeys[aud + '|' + name];
+          if (!nk) nameKeys[aud + '|' + name] = { id: id, ambiguous: false };
+          else if (nk.id !== id) nk.ambiguous = true;
         }
       });
-      // Drop names shared by multiple distinct ids — matching them would pull dates
-      // from an unrelated vendor.
-      Object.keys(nameIds).forEach(function(nm) { if (nameIds[nm].ambiguous) delete lk.byName[nm]; });
+      // Count ids present for BOTH audiences — proof the namespacing is earning its
+      // keep, since a bare-id lookup would have merged these.
+      Object.keys(lk.byId).forEach(function(k) {
+        if (k.indexOf('seller|') === 0 && lk.byId['buyer|' + k.slice(7)]) lk.collisions++;
+      });
+      // Names shared by more than one id are unsafe to match on.
+      Object.keys(nameKeys).forEach(function(k) { if (nameKeys[k].ambiguous) delete lk.byName[k]; });
       lk.loaded = Object.keys(lk.byId).length + Object.keys(lk.byName).length > 0;
     }
   } catch (e) { Logger.log('TAT detail lookup build failed: ' + e.message); }
@@ -611,17 +675,33 @@ function getLevel1Lookup_() {
   return lk;
 }
 
-// Full TAT detail record for a vendor: { review, level1, completed } or null.
-function lookupTatDetail_(id, name) {
-  var lk = getLevel1Lookup_();
-  if (id)   { var k = String(id).replace(/,/g, '').trim(); if (lk.byId[k])   return lk.byId[k]; }
-  if (name) { var n = String(name).trim().toLowerCase();   if (lk.byName[n]) return lk.byName[n]; }
+// Full TAT detail record for a vendor, scoped to its audience so a seller and a
+// buyer sharing an id can never resolve to each other. Order: this audience's id,
+// then an id whose audience was indeterminate, then this audience's name.
+function lookupTatDetail_(id, name, audience) {
+  var lk  = getLevel1Lookup_();
+  var aud = audience === 'buyer' ? 'buyer' : audience === 'seller' ? 'seller' : null;
+  if (id) {
+    var k = String(id).replace(/,/g, '').trim();
+    if (k) {
+      if (aud && lk.byId[aud + '|' + k]) return lk.byId[aud + '|' + k];
+      // Only rows whose audience could not be determined are shared between the two.
+      if (lk.byId['unknown|' + k])       return lk.byId['unknown|' + k];
+    }
+  }
+  if (name) {
+    var n = String(name).trim().toLowerCase();
+    if (n) {
+      if (aud && lk.byName[aud + '|' + n]) return lk.byName[aud + '|' + n];
+      if (lk.byName['unknown|' + n])       return lk.byName['unknown|' + n];
+    }
+  }
   return null;
 }
 
 // Latest Level 1 date for a record (Date), matched by id first then name, or null.
-function lookupLevel1_(id, name) {
-  var rec = lookupTatDetail_(id, name);
+function lookupLevel1_(id, name, audience) {
+  var rec = lookupTatDetail_(id, name, audience);
   return rec ? rec.level1 : null;
 }
 
@@ -676,7 +756,7 @@ function debugTAT() {
       var n = 0, sumTat = 0, l1matched = 0, sumBase = 0, nBase = 0;
       var basis = { review: 0, level1: 0, created: 0, none: 0 }, completed = 0;
       rows.forEach(function(r) {
-        if (lookupLevel1_(r.id, r.name)) l1matched++;
+        if (lookupLevel1_(r.id, r.name, aud)) l1matched++;
         if (r.status === 'COMPLETED') { completed++; basis[r.tatBasis || 'none']++; }
         if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) { sumTat += r.onbTAT; n++; }
         if (r.status === 'COMPLETED' && r.createdDate && r.onboardedDate) {
@@ -879,9 +959,10 @@ function debugTATColumns() {
 // ─────────────────────────────────────────────────────────────
 function debugTatDetail() {
   var name = CONFIG.TAT_DETAIL_SHEET;
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+  var sheet = openDetailSheet_();
   Logger.log('════ TAT DETAIL TAB "' + name + '" (Metabase card '
     + (CONFIG.MB_CARDS_DETAIL || 5292) + ') ════');
+  Logger.log('meta workbook: ' + (CONFIG.META_SHEET_ID || '(active spreadsheet)'));
   if (!sheet || sheet.getLastRow() < 2) {
     Logger.log('✗ tab missing or empty — run syncDetail() in Metabase.gs first.');
     return;
@@ -901,6 +982,17 @@ function debugTatDetail() {
   Logger.log('  Completed   : ' + (lk.cols.completed   || '✗ not found — TAT falls back to the feed onboarded date'));
   Logger.log('  vendors keyed by id: ' + Object.keys(lk.byId).length
     + ' · by name: ' + Object.keys(lk.byName).length);
+  Logger.log('  detail rows by audience: seller ' + lk.audCounts.seller
+    + ' · buyer ' + lk.audCounts.buyer + ' · indeterminate ' + lk.audCounts.unknown);
+  if (lk.audCounts.buyer === 0) {
+    Logger.log('  ⚠ no BUYER rows identified in this tab. If buyers are present, their id'
+      + ' column is not named buyer_id and there is no audience column — buyer TAT will'
+      + ' fall back to the feed dates.');
+  }
+  if (lk.collisions) {
+    Logger.log('  ' + lk.collisions + ' id(s) appear for BOTH audiences and were dropped from the'
+      + ' shared bucket; those vendors resolve only via their own audience key.');
+  }
 
   // Every date-like column and the span it would give against the detail's own end.
   Logger.log('\n── every column that parses as a date ──');
@@ -933,7 +1025,7 @@ function debugTatDetail() {
       var done = rows.filter(function(r) { return r.status === 'COMPLETED'; });
       var matched = 0, withRev = 0, withL1 = 0, withTat = 0, sum = 0;
       done.forEach(function(r) {
-        var rec = lookupTatDetail_(r.id, r.name);
+        var rec = lookupTatDetail_(r.id, r.name, aud);
         if (rec) { matched++; if (rec.review) withRev++; if (rec.level1) withL1++; }
         if (r.onbTAT !== null) { withTat++; sum += r.onbTAT; }
       });
@@ -1117,7 +1209,7 @@ function normalizeRows(raw, cfg) {
     // once for the whole feed rather than per record. Mixing starts within a feed is
     // what inflated Metal against Plastic: some records measured from review, others
     // from the earlier Level 1 date.
-    var _det = lookupTatDetail_(recId, recName);
+    var _det = lookupTatDetail_(recId, recName, cfg.audience);
     if (_det) {
       // A rejected case that came back restarts the clock. Time spent waiting for the
       // vendor to correct and resubmit is not review turnaround, so the start moves to
