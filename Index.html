@@ -2566,6 +2566,52 @@ body:not(.view-gst) #vert-ctx-hdr{display:none}
 body.rec-open{overflow:hidden}
 @media(max-width:640px){.rec-sheet{width:100vw}}
 
+/* ── Module Records — full-screen overlay (slide-up "dedicated page") ── */
+#mr-ovl{position:fixed;inset:0;z-index:410;display:flex;flex-direction:column;background:var(--bg);transform:translateY(100%);transition:transform .44s cubic-bezier(.32,1,.28,1);pointer-events:none}
+#mr-ovl.mr-open{transform:translateY(0);pointer-events:auto}
+.mr-hd{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--border);background:var(--card);flex-shrink:0}
+.mr-hd-left{min-width:0;flex:1}
+.mr-breadcrumb{font-size:11px;color:var(--txt3);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mr-title{font-size:15px;font-weight:700;color:var(--txt);letter-spacing:-.25px;margin-top:1px;white-space:nowrap}
+.mr-hd-acts{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.mr-act-btn{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--txt2);background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;white-space:nowrap;transition:.15s;line-height:1}
+.mr-act-btn:hover{border-color:rgba(0,93,255,.4);color:var(--blue)}
+.mr-act-btn.primary{color:#fff;background:var(--blue);border-color:var(--blue)}
+.mr-act-btn.primary:hover{opacity:.88}
+.mr-close-btn{width:28px;height:28px;border-radius:50%;border:none;background:var(--bg2);cursor:pointer;font-size:13px;color:var(--txt2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.15s}
+.mr-close-btn:hover{background:var(--bg3,var(--bg2))}
+.mr-filters{display:flex;align-items:center;gap:7px;padding:9px 20px;border-bottom:1px solid var(--border);background:var(--card);flex-shrink:0;overflow-x:auto}
+.mr-filters .filter-select{font-size:11.5px;padding:4px 8px;height:28px}
+.mr-filters .filter-input{font-size:11.5px;padding:4px 9px;height:28px}
+.mr-search-inp{min-width:160px;max-width:220px;flex-shrink:0}
+.mr-body{flex:1;min-height:0;overflow-y:auto;background:var(--bg)}
+.mr-tbl-wrap{min-width:100%;overflow-x:auto}
+.mr-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.mr-tbl th{position:sticky;top:0;background:var(--card);border-bottom:1.5px solid var(--border);padding:8px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--txt2);white-space:nowrap;cursor:pointer;user-select:none;z-index:1}
+.mr-tbl th:hover{color:var(--txt)}
+.mr-tbl th.sort-asc::after{content:' ↑';color:var(--blue)}
+.mr-tbl th.sort-desc::after{content:' ↓';color:var(--blue)}
+.mr-tbl td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.mr-tbl tbody tr{cursor:pointer;transition:background .1s}
+.mr-tbl tbody tr:hover td{background:var(--bg2)}
+.mr-foot{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:1px solid var(--border);background:var(--card);flex-shrink:0;flex-wrap:wrap}
+.mr-foot-count{font-size:11.5px;color:var(--txt3);flex:1;min-width:120px}
+.mr-pg-row{display:flex;align-items:center;gap:4px}
+.mr-pg-btn{font-size:11.5px;padding:3px 9px;border:1px solid var(--border);border-radius:5px;background:var(--bg2);color:var(--txt);cursor:pointer;font-weight:500;transition:.12s;line-height:1.4}
+.mr-pg-btn:disabled{opacity:.38;cursor:default}
+.mr-pg-btn.pg-active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.mr-pg-btn:not(:disabled):not(.pg-active):hover{background:var(--bg3,var(--bg2))}
+.mr-pg-size{font-size:11.5px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;background:var(--bg2);color:var(--txt);cursor:pointer}
+.mr-col-wrap{position:relative}
+.mr-col-menu{position:absolute;z-index:20;right:0;top:calc(100% + 4px);background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px 0;min-width:170px}
+.mr-col-item{display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:12.5px;color:var(--txt);white-space:nowrap}
+.mr-col-item:hover{background:var(--bg2)}
+.mr-col-item input{accent-color:var(--blue);cursor:pointer}
+.mr-empty{text-align:center;padding:60px 20px;color:var(--txt3);font-size:13px}
+.mr-txn-chip{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:600;background:rgba(22,163,74,.12);color:#15803d;white-space:nowrap}
+.mr-notxn-chip{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:500;background:var(--bg2);color:var(--txt3);white-space:nowrap}
+@media(max-width:640px){.mr-hd{padding:10px 14px}.mr-filters{padding:8px 12px}.mr-foot{padding:8px 12px}}
+
 /* ══════════════════════════════════════════════════
    HORIZONTAL MIND MAP — Vertical → Module → KPI cards
    Every level shows all its options at once; clicking a card opens
@@ -3020,6 +3066,31 @@ body.rec-open{overflow:hidden}
 <div id="gp-modal" role="dialog" aria-modal="true" aria-label="Vendor balance details">
   <div class="gm-bd" onclick="closeGpModal()"></div>
   <div class="km-pn" id="gm-pn" data-modal-scroll style="max-width:620px"></div>
+</div>
+
+<!-- Module Records — full-screen slide-up overlay -->
+<div id="mr-ovl" role="dialog" aria-modal="true" aria-label="Module records">
+  <div class="mr-hd">
+    <div class="mr-hd-left">
+      <div class="mr-breadcrumb" id="mr-breadcrumb"></div>
+      <div class="mr-title" id="mr-title">Records</div>
+    </div>
+    <div class="mr-hd-acts">
+      <div class="mr-col-wrap">
+        <button class="mr-act-btn" id="mr-col-btn" onclick="mrToggleColMenu()">⊞ Columns</button>
+        <div class="mr-col-menu" id="mr-col-menu" style="display:none"></div>
+      </div>
+      <button class="mr-act-btn primary" onclick="mrExportCSV()">↓ Export CSV</button>
+      <button class="mr-close-btn" onclick="closeMr()" aria-label="Close">✕</button>
+    </div>
+  </div>
+  <div class="mr-filters" id="mr-filters"></div>
+  <div class="mr-body">
+    <div class="mr-tbl-wrap">
+      <table class="mr-tbl"><thead id="mr-thead"></thead><tbody id="mr-tbody"></tbody></table>
+    </div>
+  </div>
+  <div class="mr-foot" id="mr-foot"></div>
 </div>
 
 <script>
@@ -3641,6 +3712,42 @@ var qualityLoading = false;
 var VD_MAX_RENDER = 200;   // rows rendered at once in the detail table
 var KB_MAX_PER_COL = 50;   // cards rendered per Kanban column
 var vdView = 'board';      // records view in the detail panel: 'board' | 'table'
+
+// ── Module Records overlay state ──────────────────────────────────────────
+var _mrCtx      = null;   // { module, label, vertLabel, preStatus, forceSeller, cfg }
+var _mrRows     = [];     // snapshot of vertRows at open time
+var _mrF        = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All', ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'' };
+var _mrSort     = { key:'', dir:1 };
+var _mrPg       = { size:25, page:0 };
+var _mrColVis   = {};     // columnKey → true means hidden
+var _mrMenuOpen = false;
+var MR_COLS = [
+  { key:'name',        label:'Business',     always:true },
+  { key:'id',          label:'ID' },
+  { key:'category',    label:'Category' },
+  { key:'vendorType',  label:'Vendor Type' },
+  { key:'status',      label:'Status' },
+  { key:'state',       label:'State' },
+  { key:'gstin',       label:'GSTIN' },
+  { key:'createdDate', label:'Created' },
+  { key:'onbDate',     label:'Onboarded' },
+  { key:'tat',         label:'TAT (d)' },
+  { key:'txn',         label:'Transaction' },
+];
+var MR_MOD_CFG = {
+  onboarded:  { label:'Volume · Onboarded',       preStatus:'COMPLETED' },
+  transacted: { label:'Transactions',             preStatus:'COMPLETED', showTxnF:true, showAgeF:true },
+  total:      { label:'Funnel · All Logged In',   preStatus:null },
+  draft:      { label:'Funnel · Draft',           preStatus:'DRAFT' },
+  review:     { label:'Funnel · Under Review',    preStatus:'IN_REVIEW' },
+  rejected:   { label:'Funnel · Rejected',        preStatus:'REJECTED' },
+  rating:     { label:'Vendor Ratings',           preStatus:'COMPLETED', forceSeller:true },
+  osv:        { label:'OSV Status',               preStatus:'COMPLETED', forceSeller:true },
+  docs:       { label:'Documents',                preStatus:'COMPLETED', forceSeller:true },
+  oldvsnew:   { label:'Existing vs New',          preStatus:'COMPLETED' },
+};
+// ─────────────────────────────────────────────────────────────────────────
+
 var KB_COLS = [            // workflow order, left to right
   { key: 'DRAFT',     cls: 'draft'    },
   { key: 'IN_REVIEW', cls: 'review'   },
@@ -4538,7 +4645,9 @@ function mmCardAction(action) {
   if (name === 'regionmodal') return openRegionModal(arg);
   if (name === 'tat')         return openTatModal();
   if (name === 'records')     return openRecordsSheet(arg || (selectedAud || 'seller'));
-  return openKpiModal(name);   // total/onboarded/transacted/oldvsnew/draft/review/rejected/osv/rating/docs
+  // Module "View Detailed Records" → full-screen records overlay
+  if (MR_MOD_CFG[name])       return openModRecords(name);
+  return openKpiModal(name);
 }
 
 // Split the workspace into nav + side detail whenever any panel is open.
@@ -9111,6 +9220,343 @@ document.addEventListener('keydown', function(e) {
     if (overlay && overlay.style.display !== 'none') closeSpotlight();
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MODULE RECORDS — full-screen paginated records overlay
+// Opens when "View Detailed Records" is clicked in any module panel.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function openModRecords(module) {
+  var cfg = MR_MOD_CFG[module];
+  if (!cfg) { openRecordsSheet(selectedAud || 'seller'); return; }
+  var key = activeVertKey || selectedVert;
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var vertLabel = (vcfg && vcfg.name) || key || '';
+  _mrCtx = { module: module, label: cfg.label, vertLabel: vertLabel, preStatus: cfg.preStatus, forceSeller: !!cfg.forceSeller, cfg: cfg };
+  _mrRows = vertRows.slice();
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All', ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  _mrColVis = { id:true };  // 'id' shown inline in name cell; hide separate column by default
+  if (!cfg.showTxnF) _mrColVis['txn'] = true; // hide transaction column for non-transaction modules
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+}
+
+function closeMr() {
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) ovl.classList.remove('mr-open');
+  unlockBodyScroll();
+  _mrMenuOpen = false;
+  var cm = document.getElementById('mr-col-menu');
+  if (cm) cm.style.display = 'none';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl && ovl.classList.contains('mr-open')) { e.stopPropagation(); closeMr(); }
+});
+
+function _mrVisibleCols() {
+  return MR_COLS.filter(function(c) { return !_mrColVis[c.key]; });
+}
+
+function _mrRenderHeader() {
+  var bc = document.getElementById('mr-breadcrumb');
+  var tt = document.getElementById('mr-title');
+  if (!_mrCtx) return;
+  var audLbl = (_mrCtx.forceSeller || selectedAud !== 'buyer') ? 'Sellers' : 'Buyers';
+  if (bc) bc.textContent = _mrCtx.vertLabel + ' › ' + audLbl;
+  if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(_mrRows.length) + ' source rows)';
+}
+
+function _mrUniq(field) {
+  var seen = {}, out = [];
+  _mrRows.forEach(function(r) { var v = r[field]; if (v && v !== '—' && !seen[v]) { seen[v]=1; out.push(v); } });
+  return out.sort();
+}
+
+function _mrSel(id, label, opts, val, onchg) {
+  var html = '<select class="filter-select" id="' + id + '" title="' + label + '" onchange="' + onchg + '">'
+    + '<option value="All">All ' + label + '</option>'
+    + opts.map(function(v){ return '<option value="' + esc(v) + '"' + (val === v ? ' selected':'') + '>' + esc(v) + '</option>'; }).join('')
+    + '</select>';
+  return html;
+}
+
+function _mrRenderFilters() {
+  var el = document.getElementById('mr-filters');
+  if (!el || !_mrCtx) return;
+  var cfg = _mrCtx.cfg;
+  var noStatus = !!_mrCtx.preStatus;
+
+  var html = '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search name, GSTIN or ID…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
+    + _mrSel('mr-f-cat',   'Categories',  _mrUniq('category'),  _mrF.category,  'mrFChange()')
+    + _mrSel('mr-f-ven',   'Vendor Types', _mrUniq('vendorType'), _mrF.vendor,  'mrFChange()')
+    + (noStatus ? '' : _mrSel('mr-f-sta', 'Statuses', ['DRAFT','IN_REVIEW','COMPLETED','REJECTED'], _mrF.status, 'mrFChange()'))
+    + _mrSel('mr-f-state', 'States',      _mrUniq('state'),     _mrF.state,     'mrFChange()')
+    + _mrSel('mr-f-gst',   'GST',         ['Active','Inactive'], _mrF.gst,      'mrFChange()')
+    + (cfg.showTxnF ? _mrSel('mr-f-txn', 'Transaction', ['Transacted','Non-Transacted'], _mrF.transacted, 'mrFChange()') : '')
+    + (cfg.showAgeF ? _mrSel('mr-f-age', 'Ageing', ['0–30 days','31–60 days','60+ days'], _mrF.ageBucket, 'mrFChange()') : '')
+    + '<input type="date" class="filter-select" id="mr-f-d1" title="From date" value="' + esc(_mrF.dateStart) + '" onchange="mrFChange()" style="font-size:11px">'
+    + '<input type="date" class="filter-select" id="mr-f-d2" title="To date" value="' + esc(_mrF.dateEnd) + '" onchange="mrFChange()" style="font-size:11px">'
+    + '<button class="vd-close" onclick="mrFClear()" style="flex-shrink:0">Clear</button>';
+  el.innerHTML = html;
+}
+
+function _mrPreFilter(r) {
+  if (!_mrCtx) return true;
+  if (_mrCtx.preStatus && r.status !== _mrCtx.preStatus) return false;
+  return true;
+}
+
+function _mrUserFilter(r) {
+  var f = _mrF;
+  if (f.category !== 'All' && r.category !== f.category) return false;
+  if (f.vendor   !== 'All' && r.vendorType !== f.vendor) return false;
+  if (f.status   !== 'All' && r.status !== f.status) return false;
+  if (f.gst === 'Active'   && !r.hasGST) return false;
+  if (f.gst === 'Inactive' &&  r.hasGST) return false;
+  if (f.state !== 'All' && r.state !== f.state) return false;
+  if (f.transacted === 'Transacted'     && !r.hasTransacted) return false;
+  if (f.transacted === 'Non-Transacted' &&  r.hasTransacted) return false;
+  if (f.ageBucket !== 'All') {
+    var ageD = _mrTxnAge(r);
+    if (ageD === null) return false;
+    if (f.ageBucket === '0–30 days'  && ageD > 30) return false;
+    if (f.ageBucket === '31–60 days' && (ageD < 31 || ageD > 60)) return false;
+    if (f.ageBucket === '60+ days'   && ageD <= 60) return false;
+  }
+  if (f.dateStart || f.dateEnd) {
+    var d = parseDMY(r.onbDate || r.createdDate);
+    if (!d) return false;
+    if (f.dateStart && d < new Date(f.dateStart)) return false;
+    if (f.dateEnd   && d > new Date(f.dateEnd))   return false;
+  }
+  var q = (f.search || '').toLowerCase();
+  if (q && (r.name  || '').toLowerCase().indexOf(q) === -1
+        && (r.gstin || '').toLowerCase().indexOf(q) === -1
+        && String(r.id || '').toLowerCase().indexOf(q) === -1) return false;
+  return true;
+}
+
+function _mrTxnAge(r) {
+  var dateStr = r.txnDate && r.txnDate !== '—' ? r.txnDate : r.onbDate;
+  var d = parseDMY(dateStr);
+  if (!d) return null;
+  return Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
+}
+
+function _mrFilteredRows() {
+  return _mrRows.filter(function(r) { return _mrPreFilter(r) && _mrUserFilter(r); });
+}
+
+function _mrSortedRows(rows) {
+  if (!_mrSort.key) return rows;
+  var key = _mrSort.key, dir = _mrSort.dir;
+  return rows.slice().sort(function(a, b) {
+    var va = vdSortVal(a, key), vb = vdSortVal(b, key);
+    if (va < vb) return -dir;
+    if (va > vb) return  dir;
+    return 0;
+  });
+}
+
+function _mrCellHtml(r, key) {
+  switch (key) {
+    case 'name':        return '<strong>' + esc(r.name || '—') + '</strong><div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id || '') + '</div>';
+    case 'id':          return '<span style="font-size:11px;color:var(--txt3)">' + esc(r.id || '—') + '</span>';
+    case 'category':    return esc(r.category || '—');
+    case 'vendorType':  return '<span class="td-dim">' + esc(r.vendorType || '—') + '</span>';
+    case 'status':      return statusChip(r.status);
+    case 'state':       return '<span class="td-dim">' + esc(r.state || '—') + '</span>';
+    case 'gstin':       return r.hasGST ? '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>' : '<span class="gst-bad" style="font-size:10.5px">Missing</span>';
+    case 'createdDate': return '<span class="td-dim td-num">' + esc(r.createdDate || '—') + '</span>';
+    case 'onbDate':     return '<span class="td-dim td-num">' + esc(r.onbDate || '—') + '</span>';
+    case 'tat':         return tatChip(r.tat);
+    case 'txn':
+      if (r.hasTransacted) return '<span class="mr-txn-chip">⚡ ' + (r.txnValue !== null ? fmtINR(r.txnValue) : 'Transacted') + '</span>';
+      if (r.status === 'COMPLETED') return '<span class="mr-notxn-chip">Not yet</span>';
+      return '<span class="td-dim">—</span>';
+    default: return esc(String(r[key] || '—'));
+  }
+}
+
+function _mrRenderTable() {
+  var allFiltered = _mrSortedRows(_mrFilteredRows());
+  var total  = allFiltered.length;
+  var pgSize = _mrPg.size;
+  var pgMax  = Math.max(1, Math.ceil(total / pgSize));
+  _mrPg.page = Math.max(0, Math.min(_mrPg.page, pgMax - 1));
+  var start  = _mrPg.page * pgSize;
+  var end    = Math.min(start + pgSize, total);
+  var page   = allFiltered.slice(start, end);
+  var cols   = _mrVisibleCols();
+
+  // thead
+  var thead = document.getElementById('mr-thead');
+  if (thead) {
+    thead.innerHTML = '<tr>' + cols.map(function(c) {
+      var sortCls = _mrSort.key === c.key ? (' class="' + (_mrSort.dir === 1 ? 'sort-asc' : 'sort-desc') + '"') : '';
+      return '<th' + sortCls + ' onclick="mrSortBy(\'' + c.key + '\')">' + esc(c.label) + '</th>';
+    }).join('') + '</tr>';
+  }
+
+  // tbody
+  var tbody = document.getElementById('mr-tbody');
+  if (tbody) {
+    _rmD = {}; _rmI = 0;
+    if (!page.length) {
+      tbody.innerHTML = '<tr><td colspan="' + cols.length + '" class="mr-empty">No records match the selected filters</td></tr>';
+    } else {
+      tbody.innerHTML = page.map(function(r) {
+        var k = ++_rmI; _rmD[k] = r;
+        return '<tr onclick="mrOpenRec(' + k + ')">'
+          + cols.map(function(c) { return '<td>' + _mrCellHtml(r, c.key) + '</td>'; }).join('')
+          + '</tr>';
+      }).join('');
+    }
+  }
+
+  // footer
+  var foot = document.getElementById('mr-foot');
+  if (foot) {
+    var pgBtns = '<button class="mr-pg-btn" onclick="mrGoPg(' + (_mrPg.page - 1) + ')" ' + (_mrPg.page === 0 ? 'disabled' : '') + '>‹ Prev</button>';
+    var half = 3, lo = Math.max(0, Math.min(_mrPg.page - half, pgMax - 2*half - 1));
+    var hi = Math.min(pgMax, lo + 2*half + 1);
+    if (lo > 0) pgBtns += '<button class="mr-pg-btn" onclick="mrGoPg(0)">1</button><span style="padding:0 3px;color:var(--txt3)">…</span>';
+    for (var pi = lo; pi < hi; pi++) {
+      pgBtns += '<button class="mr-pg-btn' + (pi === _mrPg.page ? ' pg-active' : '') + '" onclick="mrGoPg(' + pi + ')">' + (pi + 1) + '</button>';
+    }
+    if (hi < pgMax) pgBtns += '<span style="padding:0 3px;color:var(--txt3)">…</span><button class="mr-pg-btn" onclick="mrGoPg(' + (pgMax - 1) + ')">' + pgMax + '</button>';
+    pgBtns += '<button class="mr-pg-btn" onclick="mrGoPg(' + (_mrPg.page + 1) + ')" ' + (_mrPg.page >= pgMax - 1 ? 'disabled' : '') + '>Next ›</button>';
+
+    foot.innerHTML = '<div class="mr-foot-count">'
+        + (total ? fmt(start + 1) + '–' + fmt(end) + ' of ' + fmt(total) + ' records' : 'No matching records')
+        + ' (total ' + fmt(_mrRows.length) + ')'
+        + '</div>'
+      + '<div class="mr-pg-row">' + pgBtns + '</div>'
+      + '<select class="mr-pg-size" onchange="mrSetPgSize(this.value)">'
+        + [10,25,50,100].map(function(s){ return '<option value="' + s + '"' + (s === _mrPg.size ? ' selected':'') + '>' + s + '/page</option>'; }).join('')
+      + '</select>';
+  }
+}
+
+function mrOpenRec(k) { openRecModal(k); }
+
+function mrSortBy(key) {
+  if (_mrSort.key === key) _mrSort.dir = -_mrSort.dir;
+  else _mrSort = { key:key, dir:1 };
+  _mrPg.page = 0;
+  _mrRenderTable();
+}
+
+function mrGoPg(p) {
+  _mrPg.page = Math.max(0, p);
+  _mrRenderTable();
+}
+
+function mrSetPgSize(s) {
+  _mrPg.size = parseInt(s, 10) || 25;
+  _mrPg.page = 0;
+  _mrRenderTable();
+}
+
+function mrFChange() {
+  function v(id) { var el = document.getElementById(id); return el ? el.value : 'All'; }
+  _mrF.category  = v('mr-f-cat');
+  _mrF.vendor    = v('mr-f-ven');
+  _mrF.status    = v('mr-f-sta');
+  _mrF.state     = v('mr-f-state');
+  _mrF.gst       = v('mr-f-gst');
+  _mrF.transacted = v('mr-f-txn');
+  _mrF.ageBucket = v('mr-f-age');
+  _mrF.dateStart = v('mr-f-d1');
+  _mrF.dateEnd   = v('mr-f-d2');
+  _mrPg.page = 0;
+  _mrRenderTable();
+}
+
+var _mrSearchTimer;
+function mrSearchDeb() {
+  var el = document.getElementById('mr-search');
+  _mrF.search = el ? el.value : '';
+  clearTimeout(_mrSearchTimer);
+  _mrSearchTimer = setTimeout(function() { _mrPg.page = 0; _mrRenderTable(); }, 280);
+}
+
+function mrFClear() {
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All', ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'' };
+  _mrPg.page = 0;
+  _mrRender();
+}
+
+function mrToggleColMenu() {
+  _mrMenuOpen = !_mrMenuOpen;
+  var el = document.getElementById('mr-col-menu');
+  if (!el) return;
+  el.style.display = _mrMenuOpen ? '' : 'none';
+  if (_mrMenuOpen) _mrRenderColMenu();
+}
+
+function _mrRenderColMenu() {
+  var el = document.getElementById('mr-col-menu');
+  if (!el) return;
+  el.innerHTML = MR_COLS.map(function(c) {
+    var chk = !_mrColVis[c.key];
+    return '<label class="mr-col-item">'
+      + '<input type="checkbox"' + (chk ? ' checked' : '') + (c.always ? ' disabled' : '') + ' onchange="mrToggleCol(\'' + c.key + '\')">'
+      + esc(c.label) + '</label>';
+  }).join('');
+}
+
+function mrToggleCol(key) {
+  _mrColVis[key] = !_mrColVis[key];
+  _mrRenderTable();
+}
+
+function _mrRender() {
+  _mrRenderHeader();
+  _mrRenderFilters();
+  _mrRenderTable();
+}
+
+function mrExportCSV() {
+  var rows = _mrSortedRows(_mrFilteredRows());
+  var cols = _mrVisibleCols();
+  var lines = [cols.map(function(c){ return '"' + c.label + '"'; }).join(',')];
+  rows.forEach(function(r) {
+    lines.push(cols.map(function(c) {
+      var v = '';
+      switch(c.key) {
+        case 'name':        v = r.name || ''; break;
+        case 'id':          v = r.id || ''; break;
+        case 'category':    v = r.category || ''; break;
+        case 'vendorType':  v = r.vendorType || ''; break;
+        case 'status':      v = STATUS_LABELS[r.status] || r.status || ''; break;
+        case 'state':       v = r.state || ''; break;
+        case 'gstin':       v = r.hasGST ? (r.gstin || '') : 'Missing'; break;
+        case 'createdDate': v = r.createdDate || ''; break;
+        case 'onbDate':     v = r.onbDate || ''; break;
+        case 'tat':         v = r.tat != null ? String(r.tat) : ''; break;
+        case 'txn':         v = r.hasTransacted ? (r.txnValue !== null ? String(r.txnValue) : 'Transacted') : (r.status === 'COMPLETED' ? 'Not yet' : ''); break;
+        default:            v = String(r[c.key] || ''); break;
+      }
+      return '"' + v.replace(/"/g, '""') + '"';
+    }).join(','));
+  });
+  var csv = lines.join('\n');
+  try {
+    var blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = (_mrCtx ? _mrCtx.label.replace(/[^a-z0-9]/gi,'_') : 'records') + '_' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(e) { /* fallback: copy to clipboard */ }
+}
 </script>
 </body>
 </html>
