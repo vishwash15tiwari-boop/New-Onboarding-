@@ -3734,10 +3734,13 @@ var MR_COLS = [
   { key:'onbDate',     label:'Onboarded' },
   { key:'tat',         label:'TAT (d)' },
   { key:'txn',         label:'Transaction' },
+  { key:'txnCount',    label:'# Txns' },
+  { key:'txnGmv',      label:'Total GMV' },
+  { key:'txnDate',     label:'Latest Txn' },
 ];
 var MR_MOD_CFG = {
   onboarded:  { label:'Volume · Onboarded',       preStatus:'COMPLETED' },
-  transacted: { label:'Transactions',             preStatus:'COMPLETED', showTxnF:true, showAgeF:true },
+  transacted: { label:'Transacted Sellers',        preStatus:'COMPLETED', isTxnView:true },
   total:      { label:'Funnel · All Logged In',   preStatus:null },
   draft:      { label:'Funnel · Draft',           preStatus:'DRAFT' },
   review:     { label:'Funnel · Under Review',    preStatus:'IN_REVIEW' },
@@ -8038,6 +8041,9 @@ function vdSortVal(r, key) {
     if (r.hasTransacted) return 1 + (r.txnValue || 0);
     return r.status === 'COMPLETED' ? 0 : -1;
   }
+  if (key === 'txnCount') return r.txnCount || 0;
+  if (key === 'txnGmv')   return r.txnValue  || 0;
+  if (key === 'txnDate')  { var dt = parseDMY(r.txnDate && r.txnDate !== '—' ? r.txnDate : null); return dt ? dt.getTime() : 0; }
   if (key === 'gstin') return (r.hasGST ? '1' : '0') + String(r.gstin || '').toLowerCase();
   return String(r[key] || '').toLowerCase();
 }
@@ -9243,8 +9249,15 @@ function openModRecords(module) {
   _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All', ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'' };
   _mrSort = { key:'', dir:1 };
   _mrPg = { size:25, page:0 };
-  _mrColVis = { id:true };  // 'id' shown inline in name cell; hide separate column by default
-  if (!cfg.showTxnF) _mrColVis['txn'] = true; // hide transaction column for non-transaction modules
+  if (cfg.isTxnView) {
+    // Transacted-sellers view: show name, category, vendorType, state, txnCount, txnGmv, txnDate
+    _mrColVis = { id:true, status:true, gstin:true, createdDate:true, tat:true, txn:true };
+  } else {
+    _mrColVis = { id:true };
+    if (!cfg.showTxnF) _mrColVis['txn'] = true;
+    // hide transacted-specific cols in all other modules
+    _mrColVis['txnCount'] = true; _mrColVis['txnGmv'] = true; _mrColVis['txnDate'] = true;
+  }
   var ovl = document.getElementById('mr-ovl');
   if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
   _mrRender();
@@ -9275,7 +9288,14 @@ function _mrRenderHeader() {
   if (!_mrCtx) return;
   var audLbl = (_mrCtx.forceSeller || selectedAud !== 'buyer') ? 'Sellers' : 'Buyers';
   if (bc) bc.textContent = _mrCtx.vertLabel + ' › ' + audLbl;
-  if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(_mrRows.length) + ' source rows)';
+  if (_mrCtx.cfg && _mrCtx.cfg.isTxnView) {
+    var txnRows = _mrRows.filter(function(r) { return r.hasTransacted; });
+    var sumTxns = txnRows.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
+    var sumGmv  = txnRows.reduce(function(s, r) { return s + (r.txnValue  || 0); }, 0);
+    if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(txnRows.length) + ' unique sellers · ' + fmt(sumTxns) + ' txns · ' + fmtINR(sumGmv) + ' GMV)';
+  } else {
+    if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(_mrRows.length) + ' source rows)';
+  }
 }
 
 function _mrUniq(field) {
@@ -9305,7 +9325,6 @@ function _mrRenderFilters() {
     + _mrSel('mr-f-state', 'States',      _mrUniq('state'),     _mrF.state,     'mrFChange()')
     + _mrSel('mr-f-gst',   'GST',         ['Active','Inactive'], _mrF.gst,      'mrFChange()')
     + (cfg.showTxnF ? _mrSel('mr-f-txn', 'Transaction', ['Transacted','Non-Transacted'], _mrF.transacted, 'mrFChange()') : '')
-    + (cfg.showAgeF ? _mrSel('mr-f-age', 'Ageing', ['0–30 days','31–60 days','60+ days'], _mrF.ageBucket, 'mrFChange()') : '')
     + '<input type="date" class="filter-select" id="mr-f-d1" title="From date" value="' + esc(_mrF.dateStart) + '" onchange="mrFChange()" style="font-size:11px">'
     + '<input type="date" class="filter-select" id="mr-f-d2" title="To date" value="' + esc(_mrF.dateEnd) + '" onchange="mrFChange()" style="font-size:11px">'
     + '<button class="vd-close" onclick="mrFClear()" style="flex-shrink:0">Clear</button>';
@@ -9314,6 +9333,7 @@ function _mrRenderFilters() {
 
 function _mrPreFilter(r) {
   if (!_mrCtx) return true;
+  if (_mrCtx.cfg && _mrCtx.cfg.isTxnView && !r.hasTransacted) return false;
   if (_mrCtx.preStatus && r.status !== _mrCtx.preStatus) return false;
   return true;
 }
@@ -9336,7 +9356,9 @@ function _mrUserFilter(r) {
     if (f.ageBucket === '60+ days'   && ageD <= 60) return false;
   }
   if (f.dateStart || f.dateEnd) {
-    var d = parseDMY(r.onbDate || r.createdDate);
+    var isTxnV = _mrCtx && _mrCtx.cfg && _mrCtx.cfg.isTxnView;
+    var dateStr = isTxnV ? (r.txnDate && r.txnDate !== '—' ? r.txnDate : null) : (r.onbDate || r.createdDate);
+    var d = parseDMY(dateStr);
     if (!d) return false;
     if (f.dateStart && d < new Date(f.dateStart)) return false;
     if (f.dateEnd   && d > new Date(f.dateEnd))   return false;
@@ -9386,6 +9408,12 @@ function _mrCellHtml(r, key) {
       if (r.hasTransacted) return '<span class="mr-txn-chip">⚡ ' + (r.txnValue !== null ? fmtINR(r.txnValue) : 'Transacted') + '</span>';
       if (r.status === 'COMPLETED') return '<span class="mr-notxn-chip">Not yet</span>';
       return '<span class="td-dim">—</span>';
+    case 'txnCount':
+      return '<span style="font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt)">' + fmt(r.txnCount || 1) + '</span>';
+    case 'txnGmv':
+      return r.txnValue > 0 ? '<span class="mr-txn-chip">⚡ ' + fmtINR(r.txnValue) + '</span>' : '<span class="td-dim">—</span>';
+    case 'txnDate':
+      return '<span class="td-dim td-num">' + esc(r.txnDate && r.txnDate !== '—' ? r.txnDate : '—') + '</span>';
     default: return esc(String(r[key] || '—'));
   }
 }
@@ -9439,9 +9467,17 @@ function _mrRenderTable() {
     if (hi < pgMax) pgBtns += '<span style="padding:0 3px;color:var(--txt3)">…</span><button class="mr-pg-btn" onclick="mrGoPg(' + (pgMax - 1) + ')">' + pgMax + '</button>';
     pgBtns += '<button class="mr-pg-btn" onclick="mrGoPg(' + (_mrPg.page + 1) + ')" ' + (_mrPg.page >= pgMax - 1 ? 'disabled' : '') + '>Next ›</button>';
 
+    var isTxnV = _mrCtx && _mrCtx.cfg && _mrCtx.cfg.isTxnView;
+    var countLabel = isTxnV ? 'sellers' : 'records';
+    var footExtra = '';
+    if (isTxnV && total) {
+      var sumTxnsF = allFiltered.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
+      var sumGmvF  = allFiltered.reduce(function(s, r) { return s + (r.txnValue  || 0); }, 0);
+      footExtra = ' · ' + fmt(sumTxnsF) + ' txns · ' + fmtINR(sumGmvF) + ' GMV';
+    }
     foot.innerHTML = '<div class="mr-foot-count">'
-        + (total ? fmt(start + 1) + '–' + fmt(end) + ' of ' + fmt(total) + ' records' : 'No matching records')
-        + ' (total ' + fmt(_mrRows.length) + ')'
+        + (total ? fmt(start + 1) + '–' + fmt(end) + ' of ' + fmt(total) + ' ' + countLabel : 'No matching ' + countLabel)
+        + (isTxnV ? '' : ' (total ' + fmt(_mrRows.length) + ')') + footExtra
         + '</div>'
       + '<div class="mr-pg-row">' + pgBtns + '</div>'
       + '<select class="mr-pg-size" onchange="mrSetPgSize(this.value)">'
@@ -9548,6 +9584,9 @@ function mrExportCSV() {
         case 'onbDate':     v = r.onbDate || ''; break;
         case 'tat':         v = r.tat != null ? String(r.tat) : ''; break;
         case 'txn':         v = r.hasTransacted ? (r.txnValue !== null ? String(r.txnValue) : 'Transacted') : (r.status === 'COMPLETED' ? 'Not yet' : ''); break;
+        case 'txnCount':    v = String(r.txnCount || 1); break;
+        case 'txnGmv':      v = r.txnValue != null ? String(r.txnValue) : ''; break;
+        case 'txnDate':     v = r.txnDate && r.txnDate !== '—' ? r.txnDate : ''; break;
         default:            v = String(r[c.key] || ''); break;
       }
       return '"' + v.replace(/"/g, '""') + '"';
