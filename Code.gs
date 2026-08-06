@@ -667,6 +667,22 @@ function normalizeRows(raw, cfg) {
       gv(row, idx, 'txn_date')               ||
       gv(row, idx, 'activation_date')        || ''
     );
+    // Number of transactions for this vendor, taken from the feed's total_orders
+    // column when present. This is authoritative: it is the real order count, unlike
+    // the pre-dedup row tally below which only sees rows this query happened to emit.
+    var ordersRaw = gv(row, idx, 'total_orders');
+    if (ordersRaw === '' || ordersRaw === null || ordersRaw === undefined) {
+      var _oAlias = ['total_order', 'orders_count', 'order_count', 'no_of_orders',
+                     'num_orders', 'total_transactions', 'transaction_count', 'txn_count'];
+      for (var _o = 0; _o < _oAlias.length; _o++) {
+        if (idx[_oAlias[_o]] !== undefined) { ordersRaw = row[idx[_oAlias[_o]]]; break; }
+      }
+    }
+    var _ordN = (ordersRaw !== '' && ordersRaw !== null && ordersRaw !== undefined)
+      ? parseInt(String(ordersRaw).replace(/[,\s]/g, ''), 10)
+      : NaN;
+    var totalOrders = isNaN(_ordN) ? null : _ordN;
+
     // Timestamp when the case entered the IN_REVIEW stage. Used for accurate review-age
     // calculation on Kanban cards ("Xd waiting" counts from here, not from created date).
     var reviewDate = parseDate(
@@ -728,6 +744,7 @@ function normalizeRows(raw, cfg) {
                   || txnDate !== null,
       txnValue:      txnVal,
       txnDate:       txnDate,
+      totalOrders:   totalOrders,
       onbTAT:        tat,
       reviewDate:    reviewDate,
     };
@@ -735,10 +752,16 @@ function normalizeRows(raw, cfg) {
   // Count pre-dedup rows per (id+vertical) as per-vendor transaction count.
   // Metabase emits one row per transaction via joins; this count captures that.
   var txnCounts = {};
+  // total_orders, when the feed carries it, wins over the row tally. Tracked as a max
+  // per key because dedup keeps only one row and the column may be blank on some of them.
+  var orderMax = {};
   normalized.forEach(function(r) {
     if (!r.id) return;
     var key = r.id + '\x00' + r.vertical;
     txnCounts[key] = (txnCounts[key] || 0) + 1;
+    if (r.totalOrders != null) {
+      orderMax[key] = (orderMax[key] == null) ? r.totalOrders : Math.max(orderMax[key], r.totalOrders);
+    }
   });
   // Deduplicate by ID — Metabase can emit the same entity multiple times when joins
   // produce multiple transaction rows. Sort so hasTransacted=true rows come first so
@@ -756,7 +779,8 @@ function normalizeRows(raw, cfg) {
     var key = r.id + '\x00' + r.vertical;
     if (seen[key]) return false;
     seen[key] = true;
-    r.txnCount = txnCounts[key] || 1;
+    // Prefer the feed's total_orders; fall back to the pre-dedup row tally.
+    r.txnCount = (orderMax[key] != null) ? orderMax[key] : (txnCounts[key] || 1);
     return true;
   });
 }

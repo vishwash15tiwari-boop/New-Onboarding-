@@ -3745,7 +3745,7 @@ var MR_MOD_CFG = {
   draft:      { label:'Funnel · Draft',           preStatus:'DRAFT' },
   review:     { label:'Funnel · Under Review',    preStatus:'IN_REVIEW' },
   rejected:   { label:'Funnel · Rejected',        preStatus:'REJECTED' },
-  rating:     { label:'Vendor Ratings',           preStatus:'COMPLETED', forceSeller:true },
+  rating:     null, // no drill-down table for Vendor Ratings
   osv:        { label:'OSV Status',               preStatus:'COMPLETED', forceSeller:true },
   docs:       { label:'Documents',                preStatus:'COMPLETED', forceSeller:true },
   oldvsnew:   null, // no drill-down table for Existing vs New
@@ -4433,7 +4433,6 @@ function _mmVertModules(key) {
     var rRated = q.rating.rated || 0, rTotal = q.rating.total || 0, rAvg = q.rating.avg;
     var rDist = q.rating.dist || [0,0,0,0,0];
     var rUnr  = Math.max(0, rTotal - rRated);
-    var rCovPct = rTotal > 0 ? Math.round(rRated / rTotal * 100) : 0;
     var selVR = (qualityData && qualityData.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
     // Build star-distribution section HTML — cached so repeated tree rebuilds skip the work
     var _rCKey = 'r:' + rRated + ':' + (rAvg != null ? rAvg.toFixed(2) : '') + ':' + rDist.join(',') + ':' + selVR.length;
@@ -5991,7 +5990,6 @@ function openKpiModal(cardId) {
           + srow([
               {v: fmt(rRated),                  l: 'Sellers Rated',       s: 'have a score'},
               {v: fmt(rTotal - rRated),          l: 'Unrated',             s: 'no score yet'},
-              {v: rTotal > 0 ? Math.round(rRated / rTotal * 100) + '%' : '—', l: 'Coverage', s: 'of OMP onboarded'},
             ])
           + (rRated > 0 ? sec('Rating Distribution', starBarsHtml(r.dist || [0,0,0,0,0], rRated, selVR)) : '');
       }
@@ -6364,8 +6362,8 @@ function _renderTxnDetail(wrap, data) {
   var totalTxns = 0, totalGMV = 0;
   // GMV is sourced from sellers only — Seller→Buyer is one transaction;
   // adding buyer-side values would double-count the same transaction.
-  sellers.forEach(function(r) { totalTxns += ((r.total_orders != null ? +r.total_orders : r.txnCount) || 1); totalGMV += (r.txnValue || 0); });
-  buyers.forEach(function(r)  { totalTxns += ((r.total_orders != null ? +r.total_orders : r.txnCount) || 1); /* buyer GMV excluded */ });
+  sellers.forEach(function(r) { totalTxns += (r.txnCount || 1); totalGMV += (r.txnValue || 0); });
+  buyers.forEach(function(r)  { totalTxns += (r.txnCount || 1); /* buyer GMV excluded */ });
 
   var smry = '<div class="km-txn-smry">'
     + '<div class="km-txn-smry-item"><div class="km-txn-smry-val">' + fmt(totalTxns) + '</div><div class="km-txn-smry-lbl">Total Unique Txns</div></div>'
@@ -6396,7 +6394,7 @@ function _renderTxnDetail(wrap, data) {
         + '<td style="font-weight:500;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name || '—') + '</td>'
         + '<td style="font-family:monospace;font-size:10px;color:var(--txt3)">' + esc(r.gstin || '—') + '</td>'
         + '<td>' + catHtml + '</td>'
-        + '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmt((r.total_orders != null ? +r.total_orders : r.txnCount) || 1) + '</td>'
+        + '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmt(r.txnCount || 1) + '</td>'
         + '<td style="text-align:right;font-weight:600;color:var(--st-transacted-tx);font-variant-numeric:tabular-nums">' + (r.txnValue > 0 ? fmtINR(r.txnValue) : '—') + '</td>'
         + '</tr>';
     });
@@ -8169,7 +8167,7 @@ function vdSortVal(r, key) {
     if (r.hasTransacted) return 1 + (r.txnValue || 0);
     return r.status === 'COMPLETED' ? 0 : -1;
   }
-  if (key === 'txnCount') return (r.total_orders != null ? +r.total_orders : r.txnCount) || 0;
+  if (key === 'txnCount') return r.txnCount || 0;
   if (key === 'txnGmv')   return r.txnValue  || 0;
   if (key === 'txnDate')  { var dt = parseDMY(r.txnDate && r.txnDate !== '—' ? r.txnDate : null); return dt ? dt.getTime() : 0; }
   if (key === 'gstin') return (r.hasGST ? '1' : '0') + String(r.gstin || '').toLowerCase();
@@ -9421,7 +9419,7 @@ function _mrRenderHeader() {
   if (bc) bc.textContent = _mrCtx.vertLabel + ' › ' + audLbl;
   if (_mrCtx.cfg && _mrCtx.cfg.isTxnView) {
     var txnRows = _mrRows.filter(function(r) { return r.hasTransacted; });
-    var sumTxns = txnRows.reduce(function(s, r) { return s + ((r.total_orders != null ? +r.total_orders : r.txnCount) || 1); }, 0);
+    var sumTxns = txnRows.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
     var sumGmv  = txnRows.reduce(function(s, r) { return s + (r.txnValue  || 0); }, 0);
     if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(txnRows.length) + ' unique sellers · ' + fmt(sumTxns) + ' txns · ' + fmtINR(sumGmv) + ' GMV)';
   } else {
@@ -9540,7 +9538,7 @@ function _mrCellHtml(r, key) {
       if (r.status === 'COMPLETED') return '<span class="mr-notxn-chip">Not yet</span>';
       return '<span class="td-dim">—</span>';
     case 'txnCount':
-      return '<span style="font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt)">' + fmt((r.total_orders != null ? +r.total_orders : r.txnCount) || 1) + '</span>';
+      return '<span style="font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt)">' + fmt(r.txnCount || 1) + '</span>';
     case 'txnGmv':
       return r.txnValue > 0 ? '<span class="mr-txn-chip">⚡ ' + fmtINR(r.txnValue) + '</span>' : '<span class="td-dim">—</span>';
     case 'txnDate':
@@ -9602,7 +9600,7 @@ function _mrRenderTable() {
     var countLabel = isTxnV ? 'sellers' : 'records';
     var footExtra = '';
     if (isTxnV && total) {
-      var sumTxnsF = allFiltered.reduce(function(s, r) { return s + ((r.total_orders != null ? +r.total_orders : r.txnCount) || 1); }, 0);
+      var sumTxnsF = allFiltered.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
       var sumGmvF  = allFiltered.reduce(function(s, r) { return s + (r.txnValue  || 0); }, 0);
       footExtra = ' · ' + fmt(sumTxnsF) + ' txns · ' + fmtINR(sumGmvF) + ' GMV';
     }
@@ -9715,7 +9713,7 @@ function mrExportCSV() {
         case 'onbDate':     v = r.onbDate || ''; break;
         case 'tat':         v = r.tat != null ? String(r.tat) : ''; break;
         case 'txn':         v = r.hasTransacted ? (r.txnValue !== null ? String(r.txnValue) : 'Transacted') : (r.status === 'COMPLETED' ? 'Not yet' : ''); break;
-        case 'txnCount':    v = String((r.total_orders != null ? +r.total_orders : r.txnCount) || 1); break;
+        case 'txnCount':    v = String(r.txnCount || 1); break;
         case 'txnGmv':      v = r.txnValue != null ? String(r.txnValue) : ''; break;
         case 'txnDate':     v = r.txnDate && r.txnDate !== '—' ? r.txnDate : ''; break;
         default:            v = String(r[c.key] || ''); break;
