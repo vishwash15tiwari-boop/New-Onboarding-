@@ -3748,7 +3748,7 @@ var MR_MOD_CFG = {
   rating:     { label:'Vendor Ratings',           preStatus:'COMPLETED', forceSeller:true },
   osv:        { label:'OSV Status',               preStatus:'COMPLETED', forceSeller:true },
   docs:       { label:'Documents',                preStatus:'COMPLETED', forceSeller:true },
-  oldvsnew:   { label:'Existing vs New',          preStatus:'COMPLETED' },
+  oldvsnew:   null, // no drill-down table for Existing vs New
 };
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -4427,15 +4427,64 @@ function _mmVertModules(key) {
 
   // 5 — Vendor Ratings (OMP quality feed — inline panel)
   if (q && q.rating && q.rating.total) {
-    var unr = Math.max(0, (q.rating.total||0) - (q.rating.rated||0));
-    mods.push({ t:'Vendor Ratings', ic:MM_IC.star, tone:'t-amber', kind:'module', expand:'inline-panel', eye:'Seller ratings',
+    var rRated = q.rating.rated || 0, rTotal = q.rating.total || 0, rAvg = q.rating.avg;
+    var rDist = q.rating.dist || [0,0,0,0,0];
+    var rUnr  = Math.max(0, rTotal - rRated);
+    var rCovPct = rTotal > 0 ? Math.round(rRated / rTotal * 100) : 0;
+    var selVR = (qualityData && qualityData.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
+    // Build star-distribution section HTML
+    var rExtra = '';
+    if (rRated > 0) {
+      var rMaxD = Math.max.apply(null, rDist) || 1;
+      rExtra = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
+        + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">Rating Distribution</div>';
+      for (var starI = 5; starI >= 1; starI--) {
+        var rC   = rDist[starI - 1] || 0;
+        var rBP  = Math.round(rC / rMaxD * 100);
+        var rDP  = rRated > 0 ? Math.round(rC / rRated * 100) : 0;
+        var rCol = starI >= 4 ? '#22C55E' : starI === 3 ? '#F59E0B' : '#EF4444';
+        var rSV  = selVR.filter(function(v){ return Math.round(v.rating) === starI; })
+                        .sort(function(a, b){ return b.rating - a.rating; });
+        var rTid = 'mp-svl-' + starI;
+        if (rSV.length) {
+          rExtra += '<div class="km-star-row km-star-clickable" role="button" tabindex="0"'
+            + ' onclick="_kmStarToggle(\'' + rTid + '\',this)"'
+            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmStarToggle(\'' + rTid + '\',this)}">'
+            + '<span class="km-star-n">' + starI + '★</span>'
+            + '<div class="km-star-track"><div class="km-star-fill" style="width:' + rBP + '%;background:' + rCol + '"></div></div>'
+            + '<span class="km-star-cnt">' + fmt(rC) + '</span>'
+            + '<span class="km-star-pct">' + rDP + '% <span class="km-star-arr">▶</span></span>'
+            + '</div>'
+            + '<div id="' + rTid + '" class="km-star-vlist" style="display:none">'
+            + rSV.slice(0, 60).map(function(v) {
+                return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
+                  + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
+                  + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
+                  + '<span class="km-vrating" style="color:' + rCol + '">' + v.rating.toFixed(1) + '★</span>'
+                  + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '')
+                  + '</div>';
+              }).join('')
+            + '</div>';
+        } else {
+          rExtra += '<div class="km-star-row">'
+            + '<span class="km-star-n">' + starI + '★</span>'
+            + '<div class="km-star-track"><div class="km-star-fill" style="width:' + rBP + '%;background:' + rCol + '"></div></div>'
+            + '<span class="km-star-cnt">' + fmt(rC) + '</span>'
+            + '<span class="km-star-pct">' + rDP + '%</span>'
+            + '</div>';
+        }
+      }
+      rExtra += '</div>';
+    }
+    mods.push({ t:'Vendor Ratings', ic:MM_IC.star, tone:'t-amber', kind:'module', expand:'inline-panel', eye:'Vendor Rating',
       panel:{
-        eye:'Seller ratings', badge:'Sellers only',
-        headline:{ v:(q.rating.avg != null ? q.rating.avg.toFixed(1) : '—'), suffix:'★', raw:true, rawv:(q.rating.avg != null ? q.rating.avg.toFixed(1) + '★' : '—'), label:'Average rating', tone:'warn' },
-        bar:[ { label:'Rated', v:q.rating.rated||0, color:'#16a34a' },
-              { label:'Unrated', v:unr, color:'#8a93a1' } ],
-        tiles:[ { label:'Rated', v:q.rating.rated||0, tone:'good' }, { label:'Unrated', v:unr },
-                { label:'Total sellers', v:q.rating.total||0 } ],
+        eye:'Vendor Rating · Average Seller Rating', badge:'Sellers only',
+        headline:{ v:(rAvg != null ? rAvg.toFixed(1) : '—'), suffix:'★', raw:true, rawv:(rAvg != null ? rAvg.toFixed(1) + '★' : '—'), label:'Average Seller Rating', tone:'warn' },
+        bar:[ { label:'Rated', v:rRated, color:'#16a34a' }, { label:'Unrated', v:rUnr, color:'#8a93a1' } ],
+        tiles:[ { label:'Sellers Rated', v:rRated, sub:'have a score', tone:'good' },
+                { label:'Unrated', v:rUnr, sub:'no score yet' },
+                { label:'Coverage', v:rCovPct + '%', sub:'of OMP onboarded', raw:true } ],
+        extra:  rExtra,
         records:'rating'
       }
     });
@@ -4443,16 +4492,64 @@ function _mmVertModules(key) {
 
   // 6 — OSV Status (OMP quality feed — inline panel)
   if (q && q.osv && q.osv.total) {
-    var osvDone = q.osv.completed||0, osvProg = q.osv.pending||0, osvNot = q.osv.notInitiated||0;
-    mods.push({ t:'OSV Status', ic:MM_IC.shield, tone:'t-green', kind:'module', expand:'inline-panel', eye:'On-site verification',
+    var osvVer   = q.osv.completed    || 0;
+    var osvNI    = q.osv.notInitiated || 0;
+    var osvOTot  = q.osv.total        || 0;
+    var osvPctV  = osvOTot > 0 ? Math.round(osvVer / osvOTot * 100) : 0;
+    var osvVL    = (qualityData && qualityData.vendorOSV) || [];
+    var verVL    = osvVL.filter(function(v){ return v.status === 'verified'; });
+    var niVL     = osvVL.filter(function(v){ return v.status === 'not_initiated'; });
+    var ogid     = 'mp-osvg';
+    var osvBarH  = (osvVer + osvNI > 0)
+      ? '<div class="km-prog">'
+        + (osvVer ? '<div class="km-prog-seg" style="flex:' + osvVer + ';background:var(--st-onboarded)"></div>' : '')
+        + (osvNI  ? '<div class="km-prog-seg" style="flex:' + osvNI  + ';background:#8b5cf6"></div>' : '')
+        + '</div>' : '';
+    var mkOsvTile = function(k, cnt, c, lbl, vds) {
+      var tid = ogid + '-' + k;
+      var inner = '<div class="km-sg-v">' + fmt(cnt) + '</div>'
+        + '<div class="km-sg-l"><i class="km-dot" style="background:' + c + '"></i>' + esc(lbl)
+        + (vds.length ? ' <span class="km-star-arr">▶</span>' : '') + '</div>';
+      if (!vds.length) return '<div class="km-sg-item">' + inner + '</div>';
+      return '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
+        + ' onclick="_kmTileToggle(\'' + tid + '\',\'' + ogid + '\',this)"'
+        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmTileToggle(\'' + tid + '\',\'' + ogid + '\',this)}">'
+        + inner + '</div>';
+    };
+    var mkOsvPanel = function(k, vds) {
+      if (!vds.length) return '';
+      return '<div id="' + ogid + '-' + k + '" class="km-tile-vlist" style="display:none">'
+        + vds.slice(0, 60).map(function(v) {
+            var isV  = v.status === 'verified';
+            var cBg  = isV ? 'rgba(48,209,88,.15)' : 'var(--bg2)';
+            var cClr = isV ? '#248A3D' : 'var(--txt3)';
+            var cLbl = v.consentRaw ? esc(v.consentRaw) : (isV ? 'Yes' : 'No / Blank');
+            return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
+              + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
+              + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
+              + '<span class="km-vbadge" style="background:' + cBg + ';color:' + cClr + '">' + cLbl + '</span>'
+              + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '')
+              + '</div>';
+          }).join('')
+        + '</div>';
+    };
+    var osvExtra = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
+      + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">Consent Status</div>'
+      + osvBarH
+      + '<div class="km-sg" id="' + ogid + '-g" style="grid-template-columns:repeat(2,1fr);margin-top:8px">'
+      + mkOsvTile('v', osvVer, 'var(--st-onboarded)', 'Verified',      verVL)
+      + mkOsvTile('n', osvNI,  '#8b5cf6',              'Not Initiated', niVL)
+      + '</div>'
+      + mkOsvPanel('v', verVL) + mkOsvPanel('n', niVL)
+      + '</div>';
+    mods.push({ t:'OSV Status', ic:MM_IC.shield, tone:'t-green', kind:'module', expand:'inline-panel', eye:'OSV Consent',
       panel:{
-        eye:'On-site verification', badge:'Sellers only',
-        headline:{ v:osvDone, label:'Verification done', tone:'good' },
-        bar:[ { label:'Done', v:osvDone, color:'#16a34a' },
-              { label:'In Progress', v:osvProg, color:'#d97706' },
-              { label:'Not Initiated', v:osvNot, color:'#8a93a1' } ],
-        tiles:[ { label:'Done', v:osvDone, tone:'good' }, { label:'In Progress', v:osvProg, tone:'warn' },
-                { label:'Not Initiated', v:osvNot }, { label:'Total', v:q.osv.total||0 } ],
+        eye:'OSV Consent · Verification Status', badge:'Sellers only',
+        headline:{ v:osvVer, label:'Consent Verified (OSV)', tone:'good' },
+        bar:[],
+        tiles:[ { label:'Verification Rate', v:osvPctV + '%', sub:'of OMP onboarded', raw:true },
+                { label:'Total OMP Onboarded', v:osvOTot, sub:'COMPLETED status' } ],
+        extra:  osvExtra,
         records:'osv'
       }
     });
@@ -4490,8 +4587,7 @@ function _mmVertModules(key) {
         bar:[ { label:'Existing', v:exAll, color:'#8b5cf6' },
               { label:'New', v:nwAll, color:'#005dff' } ],
         tiles:[ { label:'Existing', v:exAll, sub:'Before 1 Apr 2026  ·  ' + _mmSB(vs.oldVendors||0, vb.oldVendors||0) },
-                { label:'New', v:nwAll, sub:'On/After 1 Apr 2026  ·  ' + _mmSB(vs.newVendors||0, vb.newVendors||0) } ],
-        records:'oldvsnew'
+                { label:'New', v:nwAll, sub:'On/After 1 Apr 2026  ·  ' + _mmSB(vs.newVendors||0, vb.newVendors||0) } ]
       }
     });
   }
@@ -5190,6 +5286,11 @@ function mmRenderModPanel() {
         + '<div class="mp-tile-l">' + esc(t.label) + (chainable ? ' <span class="mp-go">↦ map</span>' : '') + '</div>'
         + (t.sub ? '<div class="mp-tile-s">' + esc(t.sub) + '</div>' : '') + '</div>';
     }).join('') + '</div>';
+  }
+
+  // extra section (pre-built HTML for rich breakdown content)
+  if (P.extra) {
+    html += P.extra;
   }
 
   // records CTA
