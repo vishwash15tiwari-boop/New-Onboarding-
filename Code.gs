@@ -39,6 +39,19 @@ var CONFIG = {
   // from this tab's Level 1 date; see getLevel1Lookup_(). Run debugTAT()
   // to inspect column detection and match rate against the live tab.
   TAT_DETAIL_SHEET: '_mb_detail',
+
+  // External workbook holding Vendor Scores and OSV Status. Columns are addressed
+  // by POSITION here (not header name) because that is how they were specified —
+  // see VS_COLS. Run debugVendorScoreSheet() to dump the live headers with their
+  // column letters and confirm the positions still line up after any sheet edit.
+  VENDOR_SCORE_SHEET_ID: '1wRYs0cB5APbbCozTFKW9w-1l5E6aVXPeg4nAF-5hKMM',
+  VENDOR_SCORE_TAB:      '',   // blank → first tab in the workbook
+};
+
+// Fixed column positions in the Vendor Score workbook (0-based indices).
+var VS_COLS = {
+  denominator: 7,    // Column H — Vendor Scores denominator
+  osvStatus:   13,   // Column N — OSV Status
 };
 
 // Candidate column names in the 5292 detail tab (headers are normalized to
@@ -2099,6 +2112,81 @@ function qualityReadSheet_(name) {
     return row.some(function(c) { return c !== '' && c !== null && c !== undefined; });
   });
   return { headers: headers, rows: rows };
+}
+
+// Read a tab from an EXTERNAL workbook by file id. Same shape as
+// qualityReadSheet_ (normalized headers + non-empty rows) but tolerant: any
+// failure (bad id, no access, missing tab) returns an empty result with the
+// reason attached, so a broken external source degrades to the in-workbook
+// fallback instead of throwing the whole quality build.
+function qualityReadExternalSheet_(sheetId, tabName) {
+  if (!sheetId) return { headers: [], rows: [], error: 'no sheet id configured' };
+  try {
+    var ss    = SpreadsheetApp.openById(sheetId);
+    var sheet = tabName ? ss.getSheetByName(tabName) : ss.getSheets()[0];
+    if (!sheet) return { headers: [], rows: [], error: 'tab "' + tabName + '" not found' };
+    if (sheet.getLastRow() < 2) return { headers: [], rows: [], error: 'sheet has no data rows' };
+    var vals    = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
+    var headers = vals[0].map(function(h) {
+      return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    });
+    var rows = vals.slice(1).filter(function(row) {
+      return row.some(function(c) { return c !== '' && c !== null && c !== undefined; });
+    });
+    return { headers: headers, rows: rows, tab: sheet.getName() };
+  } catch (e) {
+    return { headers: [], rows: [], error: e.message };
+  }
+}
+
+// 0-based column index → spreadsheet column letter (7 → "H", 13 → "N").
+function colLetter_(i) {
+  var s = '', n = i + 1;
+  while (n > 0) { var r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Run manually from the Apps Script editor to inspect the Vendor Score
+// workbook: dumps every header with its column letter, flags what sits at the
+// configured positions (H / N), and prints sample values so the mapping can be
+// confirmed or corrected before trusting the numbers.
+// ─────────────────────────────────────────────────────────────
+function debugVendorScoreSheet() {
+  var d = qualityReadExternalSheet_(CONFIG.VENDOR_SCORE_SHEET_ID, CONFIG.VENDOR_SCORE_TAB);
+  Logger.log('Vendor Score workbook: ' + CONFIG.VENDOR_SCORE_SHEET_ID);
+  if (d.error) { Logger.log('✗ could not read: ' + d.error); return; }
+  Logger.log('tab: "' + d.tab + '"   rows: ' + d.rows.length + '   columns: ' + d.headers.length);
+  Logger.log('\n── all columns ──');
+  d.headers.forEach(function(h, i) {
+    Logger.log('  ' + colLetter_(i) + ' (idx ' + i + '): ' + (h || '(blank header)'));
+  });
+
+  [['denominator', VS_COLS.denominator], ['osvStatus', VS_COLS.osvStatus]].forEach(function(p) {
+    var key = p[0], ci = p[1];
+    Logger.log('\n── configured ' + key + ' → column ' + colLetter_(ci) + ' ──');
+    if (ci >= d.headers.length) { Logger.log('  ✗ column out of range — sheet has only ' + d.headers.length + ' columns'); return; }
+    Logger.log('  header: ' + (d.headers[ci] || '(blank)'));
+    var vals = d.rows.slice(0, 8).map(function(r) { return JSON.stringify(r[ci]); });
+    Logger.log('  first 8 values: ' + vals.join(', '));
+    var nums = d.rows.map(function(r) { return parseFloat(r[ci]); }).filter(function(n) { return !isNaN(n); });
+    if (nums.length) {
+      Logger.log('  numeric in ' + nums.length + '/' + d.rows.length + ' rows · min ' + Math.min.apply(null, nums)
+        + ' · max ' + Math.max.apply(null, nums));
+    } else {
+      var distinct = {};
+      d.rows.forEach(function(r) { var v = String(r[ci] || '').trim(); if (v) distinct[v] = (distinct[v] || 0) + 1; });
+      Logger.log('  non-numeric · distinct values: ' + JSON.stringify(distinct).slice(0, 500));
+    }
+  });
+
+  // Which columns could join these rows back to the dashboard's vendors.
+  var idC  = qualityFindCol_(d.headers, ['seller_id','buyer_id','id','vendor_id','vendorid','entity_id']);
+  var gstC = qualityFindCol_(d.headers, ['gstin','gst_number','gst_no','gstin_number','gst']);
+  Logger.log('\n── join keys ──');
+  Logger.log('  id column:    ' + (idC  >= 0 ? colLetter_(idC)  + ' (' + d.headers[idC]  + ')' : '✗ NOT FOUND'));
+  Logger.log('  gstin column: ' + (gstC >= 0 ? colLetter_(gstC) + ' (' + d.headers[gstC] + ')' : '✗ NOT FOUND'));
+  if (idC < 0 && gstC < 0) Logger.log('  ⚠ no join key detected — rows cannot be matched to onboarded vendors.');
 }
 
 // Read the "Doc Completeness" sheet (card 5674) and add per-vendor document
