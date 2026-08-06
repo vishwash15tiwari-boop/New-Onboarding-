@@ -669,7 +669,7 @@ function debugTAT() {
 // lacking review dates still reports a real turnaround instead of a column of "—".
 // The chosen basis travels with the rows so the UI can label what it is showing.
 // ─────────────────────────────────────────────────────────────
-function _assignTat_(rows) {
+function _assignTat_(rows, audience) {
   function inWin(r, d) {
     return !!d && !!r.onboardedDate && d <= r.onboardedDate
         && (!r.createdDate || d >= r.createdDate);
@@ -694,7 +694,13 @@ function _assignTat_(rows) {
   // the feed, so all figures share one basis and categories stay comparable; the mixed
   // per-record fallback is what previously inflated one category against another.
   var basis = null;
-  if (done.length && n.review >= done.length * 0.5)      basis = 'review';
+  if (audience === 'buyer') {
+    // Buyer turnaround is measured from the Created date by instruction — the buyer
+    // journey carries no separate review milestone, so Created → Onboarded is the
+    // whole span. Fixed rather than chosen, so it never drifts with data coverage.
+    basis = n.created > 0 ? 'created' : null;
+  }
+  else if (done.length && n.review >= done.length * 0.5) basis = 'review';
   else if (n.level1  > n.review && n.level1  > 0)        basis = 'level1';
   else if (n.review  > 0)                                basis = 'review';
   else if (n.created > 0)                                basis = 'created';
@@ -892,7 +898,7 @@ function normalizeRows(raw, cfg) {
       _l1:           level1,        // TAT start candidate; stripped after resolution
     };
   }).filter(function(r) { return r.id || r.name; });
-  _assignTat_(normalized);
+  _assignTat_(normalized, cfg.audience);
   // Count pre-dedup rows per (id+vertical) as per-vendor transaction count.
   // Metabase emits one row per transaction via joins; this count captures that.
   var txnCounts = {};

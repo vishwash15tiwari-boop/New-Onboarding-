@@ -4495,6 +4495,16 @@ function _mmVertModules(key) {
     var totS  = _mmTatAvg(rowS), totB = _mmTatAvg(rowB);
     // grandT is not rendered — it supplies the sample size behind the coverage note.
     var grandT = _mmTatAvg(rowS.concat(rowB));
+    // Which start date each audience was measured from. Sellers and buyers can
+    // differ — buyers are always measured from Created — so this is resolved before
+    // the matrix, whose row labels carry it, and reused by the caption below.
+    var _basisName = function(b) {
+      return b === 'review'  ? 'In Review → Onboarded'
+           : b === 'level1'  ? 'Level 1 → Onboarded'
+           : b === 'created' ? 'Created → Onboarded'
+           : null;
+    };
+    var sBasis = vs.tatBasis || null, bBasis = vb.tatBasis || null;
     var tmx = '<div class="mp-mx-corner"></div>'
       + tatCats.map(function(c) {
           return '<div class="mp-mx-hd" title="' + esc(c.cat) + '"><span class="mp-mx-dot" style="background:' + c.color + '"></span>' + esc(_catLabel(c.cat)) + '</div>';
@@ -4502,21 +4512,25 @@ function _mmVertModules(key) {
       + '<div class="mp-mx-hd tot">Overall</div>'
       // No Overall row: the per-category totals it held duplicated the Overall
       // column and the headline strip, so the word appeared three times over.
-      + '<div class="mp-mx-rlbl">Sellers</div>' + rowS.map(function(o){ return tCell(o); }).join('') + tCell(totS, ' tot')
-      + '<div class="mp-mx-rlbl">Buyers</div>'  + rowB.map(function(o){ return tCell(o); }).join('') + tCell(totB, ' tot');
+      + '<div class="mp-mx-rlbl" title="' + esc(_basisName(sBasis) || 'no usable start date') + '">Sellers</div>'
+      + rowS.map(function(o){ return tCell(o); }).join('') + tCell(totS, ' tot')
+      + '<div class="mp-mx-rlbl" title="' + esc(_basisName(bBasis) || 'no usable start date') + '">Buyers</div>'
+      + rowB.map(function(o){ return tCell(o); }).join('') + tCell(totB, ' tot');
     // Coverage: how much of the onboarded base actually carries a review date.
     // Everything else is excluded rather than measured from a different start.
     var tatN = grandT ? grandT.n : 0;
     var covPct = onb > 0 ? Math.round(tatN / onb * 100) : 0;
-    // The server picks one start date per feed and reports which; label what is
-    // actually being measured rather than always claiming "In Review".
-    var tatBasis = vs.tatBasis || vb.tatBasis || null;
-    var basisLine = tatBasis === 'level1'
-      ? 'Measured from Level 1 approval to Onboarded, in days — this feed carries no In Review date'
-      : tatBasis === 'created'
-      ? 'Measured from Created to Onboarded, in days — this feed carries no In Review or Level 1 date, '
-        + 'so this span also covers time spent in draft'
-      : 'Measured from In Review to Onboarded, in days';
+    // Caption names each audience's start date rather than implying one shared metric.
+    var draftCaveat = (sBasis === 'created' || bBasis === 'created')
+      ? ' A Created-based span also covers time spent in draft.' : '';
+    var basisLine;
+    if (sBasis && bBasis && sBasis !== bBasis) {
+      basisLine = 'Sellers: ' + _basisName(sBasis) + ' · Buyers: ' + _basisName(bBasis) + ', in days.' + draftCaveat;
+    } else {
+      var only = sBasis || bBasis;
+      basisLine = (only ? 'Measured from ' + _basisName(only) : 'Measured from In Review to Onboarded')
+        + ', in days.' + draftCaveat;
+    }
     var covNote = tatN === 0
       ? '<div style="font-size:.68rem;color:var(--txt3);margin-top:9px;line-height:1.5">'
         + 'None of the ' + fmt(onb) + ' onboarded records carry a usable start date, so turnaround cannot be '
@@ -4528,18 +4542,25 @@ function _mmVertModules(key) {
         : '');
     // Headline strip — the vertical's own averages, which exist independently of the
     // category split, so a usable number shows even when the matrix is sparse.
-    var _tatPill = function(lbl, v) {
-      return '<div style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center">'
+    var _tatPill = function(lbl, v, ttl) {
+      return '<div style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center"'
+        + (ttl ? ' title="' + esc(ttl) + '"' : '') + '>'
         + '<div style="font-size:1.02rem;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums">'
         + (v != null ? v + '<small style="font-size:.62em;font-weight:600;color:var(--txt3)">d</small>'
                      : '<span style="color:var(--txt3)">—</span>') + '</div>'
         + '<div style="font-size:.6rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3);margin-top:2px">' + esc(lbl) + '</div>'
         + '</div>';
     };
+    // Overall is only meaningful when both audiences share a start date. With buyers
+    // on Created and sellers on In Review, a blend would average two different
+    // measurements into a number describing neither, so it is withheld instead.
+    var mixedBasis = !!(sBasis && bBasis && sBasis !== bBasis);
     var tatStrip = '<div style="display:flex;gap:6px;margin-bottom:10px">'
-      + _tatPill('Overall', _bnBlendTAT(vs, vb))
-      + _tatPill('Sellers', vs.avgTAT != null ? vs.avgTAT : null)
-      + _tatPill('Buyers',  vb.avgTAT != null ? vb.avgTAT : null)
+      + _tatPill('Overall', mixedBasis ? null : _bnBlendTAT(vs, vb),
+          mixedBasis ? 'Not shown: seller and buyer TAT are measured from different start dates, so a combined average would describe neither.'
+                     : 'Seller and buyer average, weighted by onboarded count')
+      + _tatPill('Sellers', vs.avgTAT != null ? vs.avgTAT : null, _basisName(sBasis) || '')
+      + _tatPill('Buyers',  vb.avgTAT != null ? vb.avgTAT : null, _basisName(bBasis) || '')
       + '</div>';
     volTatExtra = '<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">'
       + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:3px">Average TAT · Seller / Buyer × Category</div>'
