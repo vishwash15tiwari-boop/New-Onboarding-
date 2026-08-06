@@ -4493,17 +4493,17 @@ function _mmVertModules(key) {
     var rowS  = tatCats.map(function(c){ return c.s; });
     var rowB  = tatCats.map(function(c){ return c.b; });
     var totS  = _mmTatAvg(rowS), totB = _mmTatAvg(rowB);
-    var colT  = tatCats.map(function(c){ return _mmTatAvg([c.s, c.b]); });
+    // grandT is not rendered — it supplies the sample size behind the coverage note.
     var grandT = _mmTatAvg(rowS.concat(rowB));
     var tmx = '<div class="mp-mx-corner"></div>'
       + tatCats.map(function(c) {
           return '<div class="mp-mx-hd" title="' + esc(c.cat) + '"><span class="mp-mx-dot" style="background:' + c.color + '"></span>' + esc(_catLabel(c.cat)) + '</div>';
         }).join('')
       + '<div class="mp-mx-hd tot">Overall</div>'
+      // No Overall row: the per-category totals it held duplicated the Overall
+      // column and the headline strip, so the word appeared three times over.
       + '<div class="mp-mx-rlbl">Sellers</div>' + rowS.map(function(o){ return tCell(o); }).join('') + tCell(totS, ' tot')
-      + '<div class="mp-mx-rlbl">Buyers</div>'  + rowB.map(function(o){ return tCell(o); }).join('') + tCell(totB, ' tot')
-      + '<div class="mp-mx-rlbl tot">Overall</div>' + colT.map(function(o){ return tCell(o, ' tot'); }).join('')
-      + tCell(grandT, ' tot grand');
+      + '<div class="mp-mx-rlbl">Buyers</div>'  + rowB.map(function(o){ return tCell(o); }).join('') + tCell(totB, ' tot');
     // Coverage: how much of the onboarded base actually carries a review date.
     // Everything else is excluded rather than measured from a different start.
     var tatN = grandT ? grandT.n : 0;
