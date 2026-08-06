@@ -4028,6 +4028,7 @@ function renderVerticals() {
   renderPipelinePair(activeVertKey);
   renderInlineDetail(activeVertKey);
   // …then paint the interactive branch navigator.
+  _mmAnimateReveal = true;
   renderBranchNav(activeVertKey);
 }
 
@@ -4231,6 +4232,8 @@ var mmGeoActive = false;     // inline geo (India map) panel open
 var _geoAnimate = false;     // run the map entrance animation on the next render only
 var mmModActive = false;     // generic inline module panel open (Volume/Txn/Ratings/OSV/Existing)
 var _mmModAnimate = false;   // run mod-panel entrance animation on next render only
+var _mmAnimateReveal = false; // true only on explicit user navigation — skips stagger on data refreshes
+var _mmExtraCache = {};       // keyed cache for expensive panel extra HTML (rating bars, OSV tiles)
 // Geo panel state: which region is expanded, hovered/selected state, cached rows.
 // _geo.cat: optional category filter ('metal'|'plastic'|null) set when chained from Volume/Funnel.
 var _geo = { key:null, region:null, state:null, hover:null, pKey:null, cat:null, rows:{ seller:null, buyer:null }, loading:false };
@@ -4432,8 +4435,10 @@ function _mmVertModules(key) {
     var rUnr  = Math.max(0, rTotal - rRated);
     var rCovPct = rTotal > 0 ? Math.round(rRated / rTotal * 100) : 0;
     var selVR = (qualityData && qualityData.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
-    // Build star-distribution section HTML
+    // Build star-distribution section HTML — cached so repeated tree rebuilds skip the work
+    var _rCKey = 'r:' + rRated + ':' + (rAvg != null ? rAvg.toFixed(2) : '') + ':' + rDist.join(',') + ':' + selVR.length;
     var rExtra = '';
+    if (!_mmExtraCache.hasOwnProperty(_rCKey)) {
     if (rRated > 0) {
       var rMaxD = Math.max.apply(null, rDist) || 1;
       rExtra = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
@@ -4476,6 +4481,8 @@ function _mmVertModules(key) {
       }
       rExtra += '</div>';
     }
+    _mmExtraCache[_rCKey] = rExtra;
+    } else { rExtra = _mmExtraCache[_rCKey]; }
     mods.push({ t:'Vendor Ratings', ic:MM_IC.star, tone:'t-amber', kind:'module', expand:'inline-panel', eye:'Vendor Rating',
       panel:{
         eye:'Vendor Rating · Average Seller Rating', badge:'Sellers only',
@@ -4533,15 +4540,23 @@ function _mmVertModules(key) {
           }).join('')
         + '</div>';
     };
-    var osvExtra = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
-      + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">Consent Status</div>'
-      + osvBarH
-      + '<div class="km-sg" id="' + ogid + '-g" style="grid-template-columns:repeat(2,1fr);margin-top:8px">'
-      + mkOsvTile('v', osvVer, 'var(--st-onboarded)', 'Verified',      verVL)
-      + mkOsvTile('n', osvNI,  '#8b5cf6',              'Not Initiated', niVL)
-      + '</div>'
-      + mkOsvPanel('v', verVL) + mkOsvPanel('n', niVL)
-      + '</div>';
+    // Build OSV extra section — cached so repeated tree rebuilds skip the string work
+    var _oCKey = 'o:' + osvVer + ':' + osvNI + ':' + osvOTot + ':' + verVL.length + ':' + niVL.length;
+    var osvExtra;
+    if (_mmExtraCache.hasOwnProperty(_oCKey)) {
+      osvExtra = _mmExtraCache[_oCKey];
+    } else {
+      osvExtra = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
+        + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">Consent Status</div>'
+        + osvBarH
+        + '<div class="km-sg" id="' + ogid + '-g" style="grid-template-columns:repeat(2,1fr);margin-top:8px">'
+        + mkOsvTile('v', osvVer, 'var(--st-onboarded)', 'Verified',      verVL)
+        + mkOsvTile('n', osvNI,  '#8b5cf6',              'Not Initiated', niVL)
+        + '</div>'
+        + mkOsvPanel('v', verVL) + mkOsvPanel('n', niVL)
+        + '</div>';
+      _mmExtraCache[_oCKey] = osvExtra;
+    }
     mods.push({ t:'OSV Status', ic:MM_IC.shield, tone:'t-green', kind:'module', expand:'inline-panel', eye:'OSV Consent',
       panel:{
         eye:'OSV Consent · Verification Status', badge:'Sellers only',
@@ -4723,12 +4738,17 @@ function mmGoto(i) {
   if (!lastNode || lastNode.expand !== 'inline-funnel') { mmFunnelActive = false; mmFunnelStage = null; }
   if (!lastNode || lastNode.expand !== 'inline-panel') { mmModActive = false; }
   if (!lastNode || !lastNode.geoRegion) { mmGeoActive = false; _geo.region = null; _geo.state = null; if (!lastNode || !lastNode.geoModule) _geo.cat = null; }
+  _mmAnimateReveal = true;
   mmPaint();
 }
 
 function mmReveal() {
   var cols = [].slice.call(document.querySelectorAll('#mm .mmcol'));
-  var animate = motionOK();
+  // Only run the stagger animation when the user explicitly navigated.
+  // Data-refresh re-renders (quality callback, SWR) skip the fade-in so nodes
+  // never go invisible mid-session — eliminating the visible flicker.
+  var animate = motionOK() && _mmAnimateReveal;
+  _mmAnimateReveal = false;
   cols.forEach(function(col, ci) {
     var last = ci === cols.length - 1;
     [].slice.call(col.querySelectorAll('.mmn')).forEach(function(n, i) {
@@ -4737,7 +4757,7 @@ function mmReveal() {
     });
   });
   requestAnimationFrame(mmDraw);
-  setTimeout(mmDraw, 520);
+  if (animate) setTimeout(mmDraw, 520);
 }
 
 function mmCardAction(action) {
@@ -4795,7 +4815,7 @@ function mmClickNode(id) {
       mmGeoActive = true; _geo.state = null; _geo.hover = null; _geoAnimate = true;
       mmGeoOpen(node.geoRegion);
     }
-    mmPaint(); return;
+    _mmAnimateReveal = true; mmPaint(); return;
   }
   if (node.action) return mmCardAction(node.action);
   if (node.muted || node.leaf || (!(node.children && node.children.length) && !node.expand)) return;
@@ -4803,7 +4823,7 @@ function mmClickNode(id) {
     mmPath = ['root', node._id];
     if (node.vkey && node.vkey !== activeVertKey) { selectVertTab(node.vkey); return; }
     _mmCloseInline();
-    mmPaint(); return;
+    _mmAnimateReveal = true; mmPaint(); return;
   }
   if (node.expand === 'inline-funnel') {
     var funOpen = mmFunnelActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
@@ -4815,7 +4835,7 @@ function mmClickNode(id) {
       mmPath = _mmPathIds(node);
       mmFunnelActive = true; mmFunnelStage = null;
     }
-    mmPaint(); return;
+    _mmAnimateReveal = true; mmPaint(); return;
   }
   if (node.expand === 'inline-panel') {
     var modOpen = mmModActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
@@ -4827,11 +4847,11 @@ function mmClickNode(id) {
       mmPath = _mmPathIds(node);
       mmModActive = true; _mmModAnimate = true;
     }
-    mmPaint(); return;
+    _mmAnimateReveal = true; mmPaint(); return;
   }
   _mmCloseInline();
   mmPath = _mmPathIds(node);
-  mmPaint();
+  _mmAnimateReveal = true; mmPaint();
 }
 
 // Chain: from any Volume category segment into Geographic Split, carrying that
@@ -4848,6 +4868,7 @@ function mmChainToGeo(seg) {
   _mmCloseInline();
   _geo.cat = seg ? String(seg).toLowerCase() : null;
   mmPath = _mmPathIds(geoMod);   // show the North/South region cards
+  _mmAnimateReveal = true;
   mmPaint();
   // gently bring the region column into view
   var mm = document.getElementById('mm');
@@ -5470,6 +5491,7 @@ function selectVertTab(key) {
   renderVertKPIs(key);
   renderPipelinePair(key);
   renderInlineDetail(key);
+  _mmAnimateReveal = true;
   renderBranchNav(key);
   loadVertRows(key);
 }
@@ -6415,7 +6437,14 @@ function _patchQualitySects() {
   });
   _patchQualityKpiCards();
   refreshBizRail();      // fill Vendor Rating / OSV in Operational Insights
-  if (typeof renderBranchNav === 'function' && currentView !== 'gst' && _mmVert) renderBranchNav(_mmVert);
+  // Rebuild tree data so panel configs pick up fresh quality numbers,
+  // then re-render only the open mod panel — avoid a full DOM wipe + flicker.
+  if (currentView !== 'gst' && _mmVert) {
+    _mmExtraCache = {};          // quality data changed — invalidate cached extra HTML
+    mmTree = mmBuildTree();
+    mmAssignIds();
+    if (mmModActive) mmRenderModPanel();
+  }
   renderDocsSection();
 }
 
