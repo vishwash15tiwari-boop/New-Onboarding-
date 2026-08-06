@@ -586,8 +586,10 @@ function debugTAT() {
       var cfg  = AUDIENCE_CFG[aud];
       var rows = normalizeRows(readData(aud), cfg);
       var n = 0, sumTat = 0, l1matched = 0, sumBase = 0, nBase = 0;
+      var basis = { review: 0, level1: 0, none: 0 }, completed = 0;
       rows.forEach(function(r) {
         if (lookupLevel1_(r.id, r.name)) l1matched++;
+        if (r.status === 'COMPLETED') { completed++; basis[r.tatBasis || 'none']++; }
         if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) { sumTat += r.onbTAT; n++; }
         if (r.status === 'COMPLETED' && r.createdDate && r.onboardedDate) {
           var b = dateDiffDays(r.createdDate, r.onboardedDate);
@@ -595,8 +597,14 @@ function debugTAT() {
         }
       });
       Logger.log(aud + ': ' + rows.length + ' records · Level 1 matched ' + l1matched
-        + ' · Avg TAT (Level1→Onb) ' + (n ? Math.round(sumTat / n) + 'd over ' + n : '—')
+        + ' · Avg TAT (InReview→Onb) ' + (n ? Math.round(sumTat / n) + 'd over ' + n : '—')
         + ' · baseline (Created→Onb) ' + (nBase ? Math.round(sumBase / nBase) + 'd over ' + nBase : '—'));
+      Logger.log('  TAT basis over ' + completed + ' completed → review: ' + basis.review
+        + ' · level1: ' + basis.level1 + ' · NO START (reports —): ' + basis.none);
+      if (basis.none > 0 && basis.none === completed) {
+        Logger.log('  ⚠ ' + aud + ' has NO usable review-start column — TAT will show "—".'
+          + ' Add the real header to the reviewDate list in normalizeRows().');
+      }
     } catch (e) { Logger.log(aud + ' match check failed: ' + e.message); }
   });
   Logger.log('════ END ════');
@@ -615,31 +623,56 @@ function normalizeRows(raw, cfg) {
     var recName  = String(gv(row, idx, cfg.nameCol) || '').trim();
     // Timestamp when the case entered the IN_REVIEW stage. Also drives review-age
     // on Kanban cards ("Xd waiting" counts from here, not from created date).
+    // The buyer feed names this column differently from the seller feed, so the
+    // list covers both naming families; add any new header here rather than
+    // letting TAT silently fall through to a different start date.
     var reviewDate = parseDate(
-      gv(row, idx, 'in_review_date')      ||
-      gv(row, idx, 'in_review_at')        ||
-      gv(row, idx, 'submitted_date')      ||
-      gv(row, idx, 'submitted_at')        ||
-      gv(row, idx, 'review_date')         ||
-      gv(row, idx, 'review_at')           ||
-      gv(row, idx, 'review_started_date') ||
-      gv(row, idx, 'review_started_at')   ||
-      gv(row, idx, 'level_2_date')        ||
-      gv(row, idx, 'level2_date')         ||
-      gv(row, idx, 'l2_date')            || ''
+      gv(row, idx, 'in_review_date')              ||
+      gv(row, idx, 'in_review_at')                ||
+      gv(row, idx, 'under_review_date')           ||
+      gv(row, idx, 'review_started_date')         ||
+      gv(row, idx, 'review_started_at')           ||
+      gv(row, idx, 'review_initiated_date')       ||
+      gv(row, idx, 'review_date')                 ||
+      gv(row, idx, 'review_at')                   ||
+      gv(row, idx, 'submitted_date')              ||
+      gv(row, idx, 'submitted_at')                ||
+      gv(row, idx, 'submission_date')             ||
+      gv(row, idx, 'application_submitted_date')  ||
+      gv(row, idx, 'kyc_submitted_date')          ||
+      gv(row, idx, 'onboarding_in_review_date')   ||
+      gv(row, idx, 'onboarding_submitted_date')   ||
+      gv(row, idx, 'level_1_date')                ||
+      gv(row, idx, 'level1_date')                 ||
+      gv(row, idx, 'l1_date')                     ||
+      gv(row, idx, 'level_2_date')                ||
+      gv(row, idx, 'level2_date')                 ||
+      gv(row, idx, 'l2_date')                    || ''
     );
 
     // TAT = In Review → Onboarded, for completed records only. Measuring from the
     // moment the case entered review reflects the time verification actually took,
     // excluding however long the vendor sat in draft before submitting.
-    // The start must fall inside [created, onboarded] to be trusted. When no review
-    // date is present the start falls back to the Level 1 date (card 5292), then to
-    // Created, so TAT stays populated for feeds that carry no review timestamp.
+    //
+    // The start must not sit after the onboarded date, nor before created when a
+    // created date exists. When no review timestamp resolves, the Level 1 date from
+    // card 5292 is used as the closest available proxy.
+    //
+    // There is deliberately NO fall back to the Created date. Creation → Onboarded
+    // spans the whole draft period and runs several times longer than real review
+    // time, so using it would report a different metric under the "In Review →
+    // Onboarded" label — which is exactly how buyers (no review column, and absent
+    // from the seller-centric 5292 sheet) ended up showing an inflated TAT. A record
+    // whose review start cannot be established now reports no TAT: it renders as "—"
+    // and is excluded from every average rather than inflating it.
     var level1   = lookupLevel1_(recId, recName);
-    var inWindow = function(d) { return d && created && onboarded && d >= created && d <= onboarded; };
+    var inWindow = function(d) { return !!d && !!onboarded && d <= onboarded && (!created || d >= created); };
     var tatStart = inWindow(reviewDate) ? reviewDate
                  : inWindow(level1)     ? level1
-                 : created;
+                 : null;
+    // Which source the TAT was measured from — surfaced by debugTAT() so a feed
+    // with no usable review column is visible instead of silently mis-measured.
+    var tatBasis = !tatStart ? null : (tatStart === reviewDate ? 'review' : 'level1');
     var tat = (status === 'COMPLETED' && tatStart && onboarded) ? dateDiffDays(tatStart, onboarded) : null;
     if (tat !== null && tat < 0) tat = null;
 
@@ -749,6 +782,7 @@ function normalizeRows(raw, cfg) {
       txnDate:       txnDate,
       totalOrders:   totalOrders,
       onbTAT:        tat,
+      tatBasis:      tatBasis,
       reviewDate:    reviewDate,
     };
   }).filter(function(r) { return r.id || r.name; });
