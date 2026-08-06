@@ -4456,12 +4456,13 @@ function _mmVertModules(key) {
   var tatMapS = _mmCatTatMap(vs && vs.categories);
   var tatMapB = _mmCatTatMap(vb && vb.categories);
   var volTatExtra = '';
-  var tatCats = [];
-  catOnb.forEach(function(x, i) {
-    var a = tatMapS[x.cat], b = tatMapB[x.cat];
-    if ((a && a.n > 0) || (b && b.n > 0)) {
-      tatCats.push({ cat:x.cat, color:MM_CAT_COLORS[i % MM_CAT_COLORS.length], s:a || null, b:b || null });
-    }
+  // Every onboarded category gets a column, including ones with no TAT yet. The
+  // block is rendered whenever the vertical has categories rather than only when
+  // data exists — a section that silently disappears gives no way to tell
+  // "nothing carries a review date" from "the TAT view is gone".
+  var tatCats = catOnb.map(function(x, i) {
+    return { cat:x.cat, color:MM_CAT_COLORS[i % MM_CAT_COLORS.length],
+             s: tatMapS[x.cat] || null, b: tatMapB[x.cat] || null };
   });
   if (tatCats.length) {
     // Each cell carries the sample it was averaged from. A category where only a
@@ -4497,14 +4498,34 @@ function _mmVertModules(key) {
     // Everything else is excluded rather than measured from a different start.
     var tatN = grandT ? grandT.n : 0;
     var covPct = onb > 0 ? Math.round(tatN / onb * 100) : 0;
-    var covNote = onb > 0 && tatN < onb
+    var covNote = tatN === 0
       ? '<div style="font-size:.68rem;color:var(--txt3);margin-top:9px;line-height:1.5">'
-        + 'Based on ' + fmt(tatN) + ' of ' + fmt(onb) + ' onboarded (' + covPct + '%) that carry a review date. '
-        + 'Records without one are excluded so every figure is measured the same way.</div>'
-      : '';
+        + 'None of the ' + fmt(onb) + ' onboarded records carry an In Review date, so turnaround cannot be '
+        + 'measured yet. TAT appears here as soon as the feed supplies that date.</div>'
+      : (onb > 0 && tatN < onb
+        ? '<div style="font-size:.68rem;color:var(--txt3);margin-top:9px;line-height:1.5">'
+          + 'Based on ' + fmt(tatN) + ' of ' + fmt(onb) + ' onboarded (' + covPct + '%) that carry a review date. '
+          + 'Records without one are excluded so every figure is measured the same way.</div>'
+        : '');
+    // Headline strip — the vertical's own averages, which exist independently of the
+    // category split, so a usable number shows even when the matrix is sparse.
+    var _tatPill = function(lbl, v) {
+      return '<div style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center">'
+        + '<div style="font-size:1.02rem;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums">'
+        + (v != null ? v + '<small style="font-size:.62em;font-weight:600;color:var(--txt3)">d</small>'
+                     : '<span style="color:var(--txt3)">—</span>') + '</div>'
+        + '<div style="font-size:.6rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3);margin-top:2px">' + esc(lbl) + '</div>'
+        + '</div>';
+    };
+    var tatStrip = '<div style="display:flex;gap:6px;margin-bottom:10px">'
+      + _tatPill('Overall', _bnBlendTAT(vs, vb))
+      + _tatPill('Sellers', vs.avgTAT != null ? vs.avgTAT : null)
+      + _tatPill('Buyers',  vb.avgTAT != null ? vb.avgTAT : null)
+      + '</div>';
     volTatExtra = '<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">'
       + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:3px">Average TAT · Seller / Buyer × Category</div>'
       + '<div style="font-size:.72rem;color:var(--txt3);margin-bottom:10px">Measured from In Review to Onboarded, in days</div>'
+      + tatStrip
       + '<div class="mp-matrix" style="grid-template-columns:auto repeat(' + (tatCats.length + 1) + ',minmax(0,1fr))">' + tmx + '</div>'
       + covNote
       + '</div>';
