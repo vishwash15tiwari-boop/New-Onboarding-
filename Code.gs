@@ -758,7 +758,7 @@ function debugTAT() {
       rows.forEach(function(r) {
         if (lookupLevel1_(r.id, r.name, aud)) l1matched++;
         if (r.status === 'COMPLETED') { completed++; basis[r.tatBasis || 'none']++; }
-        if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) { sumTat += r.onbTAT; n++; }
+        if (r.onbTAT !== null) { sumTat += r.onbTAT; n++; }
         if (r.status === 'COMPLETED' && r.createdDate && r.onboardedDate) {
           var b = dateDiffDays(r.createdDate, r.onboardedDate);
           if (b !== null && b >= 0 && b <= TAT_MAX_DAYS) { sumBase += b; nBase++; }
@@ -793,9 +793,7 @@ function debugTAT() {
         var c = r.category || 'Others';
         if (!byCat[c]) byCat[c] = { onb: 0, withTat: 0, sum: 0 };
         byCat[c].onb++;
-        if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) {
-          byCat[c].withTat++; byCat[c].sum += r.onbTAT;
-        }
+        if (r.onbTAT !== null) { byCat[c].withTat++; byCat[c].sum += r.onbTAT; }
       });
       Object.keys(byCat).sort().forEach(function(c) {
         var b = byCat[c];
@@ -871,12 +869,17 @@ function _assignTat_(rows, audience) {
   else if (n.review  > 0)                                basis = 'review';
   else if (n.created > 0)                                basis = 'created';
 
+  // Single choke point for what may carry a TAT. Both rules are enforced here so no
+  // consumer can diverge: only ONBOARDED (COMPLETED) vendors are measured, and a span
+  // outside 0..TAT_MAX_DAYS is never stored. Anything else keeps onbTAT null, so
+  // downstream code needs only a null check and the records table, the averages and
+  // the category splits can no longer disagree about which records count.
   rows.forEach(function(r) {
     if (basis && r.status === 'COMPLETED' && endOf(r)) {
       var start = startOf(r, basis);
       if (inWin(r, start)) {
         var t = dateDiffDays(start, endOf(r));
-        if (t !== null && t >= 0) { r.onbTAT = t; r.tatBasis = basis; }
+        if (t !== null && t >= 0 && t <= TAT_MAX_DAYS) { r.onbTAT = t; r.tatBasis = basis; }
       }
     }
     delete r._l1;       // internal candidates — never reach a payload or cache
@@ -1585,7 +1588,7 @@ function vStats(data, vertKey) {
     // onbTAT is the Level1→Onboarded TAT (Level 1 from card 5292; Onboarded/Created
     // from the main card — see normalizeRows), defined only for completed records.
     // TAT_MAX_DAYS clamps outlier noise.
-    if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) tats.push(r.onbTAT);
+    if (r.onbTAT !== null) tats.push(r.onbTAT);   // onboarded-only + range enforced at assignment
 
     if (r.hasTxn)        hasTxnData = true;
     if (r.hasTransacted) { transactedCount++; txnCountSum += (r.txnCount || 1); }
@@ -1617,7 +1620,7 @@ function vStats(data, vertKey) {
     var cs = catMap[c];
     cs.total++;
     // Category TAT uses the same guard as the headline average so the numbers agree.
-    if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) cs.tats.push(r.onbTAT);
+    if (r.onbTAT !== null) cs.tats.push(r.onbTAT);
     if (r.status === 'COMPLETED')  cs.onboarded++;
     if (r.status === 'DRAFT')      cs.draft++;
     if (r.status === 'IN_REVIEW')  cs.inReview++;
@@ -1704,7 +1707,7 @@ function vStats(data, vertKey) {
     });
     var fyWithGST = d.some(function(r) { return r.gstin; })
       ? countFn(d, function(r) { return r.status === 'COMPLETED' && r.hasGST; }) : null;
-    var fyTats = d.filter(function(r) { return r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS; })
+    var fyTats = d.filter(function(r) { return r.onbTAT !== null; })
                   .map(function(r) { return r.onbTAT; });
     return {
       fy:            fk,
