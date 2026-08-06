@@ -2793,6 +2793,13 @@ body.rec-open{overflow:hidden}
 @keyframes mgSlide{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
 .mg-legend-hd,.mg-row{display:grid;grid-template-columns:1fr 64px 64px 64px;align-items:center;gap:4px;padding:8px 12px}
 .mg-legend-hd{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card)}
+/* Two-tier header used when the table is bifurcated by category:
+   State / Total span both rows; Sellers / Buyers band their category columns. */
+.mg-legend-hd.mg-hd-grp{row-gap:3px;padding-bottom:6px}
+.mg-hd-span{grid-row:span 2;align-self:end;padding-bottom:1px}
+.mg-hd-band{text-align:center;font-size:9px;font-weight:700;letter-spacing:.06em;padding-bottom:3px;border-bottom:1px solid var(--border)}
+.mg-hd-cat{text-align:right;font-size:8.5px;font-weight:600;letter-spacing:.02em;color:var(--txt3);text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg-legend-wide{min-width:380px}
 .mg-rows{overflow-y:auto;max-height:380px}
 .mg-row{border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;font:inherit;transition:background .15s;opacity:0;animation:mgRowIn .3s ease forwards}
 @keyframes mgRowIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
@@ -5216,9 +5223,39 @@ function _geoEnsureRows() {
   });
 }
 
+// Categories to bifurcate the regional table by, for the vertical currently on the
+// map. Driven by the server's per-vertical categories[] so each vertical shows its
+// own configured set rather than a hard-coded Metal/Plastic. Ordered by onboarded
+// volume, and capped at 4 with the remainder folded into "Other" so the columns stay
+// readable AND still sum back to the Sellers / Buyers totals.
+var GEO_CAT_MAX = 4;
+function _geoCats() {
+  var k  = _geo.key || activeVertKey || _mmVert;
+  var vs = (DS && DS.verticals || {})[k] || {};
+  var vb = (DB && DB.verticals || {})[k] || {};
+  var vol = {}, order = [];
+  [vs.categories, vb.categories].forEach(function(list) {
+    (list || []).forEach(function(c) {
+      var n = String(c.category || '').trim();
+      if (!n) return;
+      if (!(n in vol)) { vol[n] = 0; order.push(n); }
+      vol[n] += (c.onboarded || 0);
+    });
+  });
+  var cats = order.filter(function(n) { return vol[n] > 0; })
+                  .sort(function(a, b) { return vol[b] - vol[a]; });
+  if (cats.length <= GEO_CAT_MAX) return cats;
+  return cats.slice(0, GEO_CAT_MAX).concat(['Other']);
+}
+
 // Aggregate loaded rows into per-state buckets for the active region (onboarded only).
-function _geoAgg() {
+// Each bucket also carries a per-category seller/buyer split keyed by lower-cased
+// category name, with anything outside the displayed set folded into "other".
+function _geoAgg(cats) {
   var region = _geo.region, filt = _geo.cat, by = {};
+  var known = {};
+  (cats || []).forEach(function(c) { if (c !== 'Other') known[c.toLowerCase()] = 1; });
+  var hasOther = (cats || []).indexOf('Other') >= 0;
   ['seller', 'buyer'].forEach(function(aud) {
     var rows = _geo.rows[aud]; if (!Array.isArray(rows)) return;
     rows.forEach(function(r) {
@@ -5226,11 +5263,20 @@ function _geoAgg() {
       var id = _geoStateId(r.state); if (!id || !IN_STATES[id] || IN_STATES[id].region !== region) return;
       var cat = String(r.category || '').trim().toLowerCase();
       if (filt && cat !== filt) return;   // category filter (chained from Volume/Funnel)
-      var b = by[id] || (by[id] = { id:id, total:0, seller:0, buyer:0 });
+      var b = by[id] || (by[id] = { id:id, total:0, seller:0, buyer:0, cats:{} });
       b.total++; b[aud]++;
+      var ckey = known[cat] ? cat : (hasOther ? 'other' : cat);
+      var cc = b.cats[ckey] || (b.cats[ckey] = { seller:0, buyer:0 });
+      cc[aud]++;
     });
   });
   return by;
+}
+// Seller/buyer count for one state bucket in one category column.
+function _geoCatN(bucket, cat, aud) {
+  if (!bucket || !bucket.cats) return 0;
+  var c = bucket.cats[String(cat).toLowerCase()];
+  return c ? (c[aud] || 0) : 0;
 }
 
 function mmGeoHover(id, on) {
@@ -5251,7 +5297,8 @@ function mmRenderGeo() {
 
   var region = _geo.region;
   var regionColor = region === 'South' ? '#16a34a' : '#005dff';
-  var by = _geoAgg();
+  var geoCats = _geoCats();
+  var by = _geoAgg(geoCats);
   var statesInRegion = Object.keys(IN_STATES).filter(function(id){ return IN_STATES[id].region === region; });
   var withData = statesInRegion.filter(function(id){ return by[id] && by[id].total > 0; })
     .sort(function(a, b){ return by[b].total - by[a].total; });
@@ -5289,20 +5336,53 @@ function mmRenderGeo() {
   } else if (!withData.length) {
     legend = '<div class="mg-loading">No state-level onboarding records for this period.</div>';
   } else {
+    // With categories available the table bifurcates each audience by category;
+    // otherwise it falls back to the plain Total / Sellers / Buyers layout.
+    var nC   = geoCats.length;
+    var grid = nC
+      ? 'grid-template-columns:minmax(0,1fr) 46px repeat(' + (nC * 2) + ',minmax(38px,1fr))'
+      : '';
+    var gStyle = grid ? ' style="' + grid + '"' : '';
+    var rowStyle = function(i) {
+      var anim = motionOK() ? 'animation-delay:' + (i * 45) + 'ms;' : '';
+      return (anim || grid) ? ' style="' + anim + grid + '"' : '';
+    };
     var rows = withData.map(function(id, i) {
       var d = by[id], name = IN_STATES[id].name;
-      return '<button class="mg-row" data-geo="' + id + '"' + (motionOK() ? ' style="animation-delay:' + (i*45) + 'ms"' : '')
+      var cells = '<span class="mg-row-n mg-total">' + fmt(d.total) + '</span>';
+      if (nC) {
+        geoCats.forEach(function(c) { cells += '<span class="mg-row-n mg-seller">' + fmt(_geoCatN(d, c, 'seller')) + '</span>'; });
+        geoCats.forEach(function(c) { cells += '<span class="mg-row-n mg-buyer">'  + fmt(_geoCatN(d, c, 'buyer'))  + '</span>'; });
+      } else {
+        cells += '<span class="mg-row-n mg-seller">' + fmt(d.seller) + '</span>'
+              +  '<span class="mg-row-n mg-buyer">'  + fmt(d.buyer)  + '</span>';
+      }
+      return '<button class="mg-row" data-geo="' + id + '"' + rowStyle(i)
         + ' onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
         + ' onclick="mmGeoSelectState(\'' + id + '\')">'
         + '<span class="mg-row-nm"><span class="mg-swatch" style="background:' + regionColor + '"></span>' + esc(name) + '</span>'
-        + '<span class="mg-row-n mg-total">' + fmt(d.total) + '</span>'
-        + '<span class="mg-row-n mg-seller">' + fmt(d.seller) + '</span>'
-        + '<span class="mg-row-n mg-buyer">' + fmt(d.buyer) + '</span>'
+        + cells
         + '</button>';
     }).join('');
-    legend = '<div class="mg-legend">'
-      + '<div class="mg-legend-hd"><span class="mg-row-nm">State</span>'
-      + '<span class="mg-row-n">Total</span><span class="mg-row-n">Sellers</span><span class="mg-row-n">Buyers</span></div>'
+
+    var head;
+    if (nC) {
+      // Two-tier header: State / Total span both rows, Sellers and Buyers span
+      // their category columns, with the category names underneath.
+      head = '<div class="mg-legend-hd mg-hd-grp"' + gStyle + '>'
+        + '<span class="mg-row-nm mg-hd-span">State</span>'
+        + '<span class="mg-row-n mg-hd-span">Total</span>'
+        + '<span class="mg-hd-band mg-seller" style="grid-column:span ' + nC + '">Sellers</span>'
+        + '<span class="mg-hd-band mg-buyer"  style="grid-column:span ' + nC + '">Buyers</span>'
+        + geoCats.map(function(c){ return '<span class="mg-hd-cat">' + esc(c) + '</span>'; }).join('')
+        + geoCats.map(function(c){ return '<span class="mg-hd-cat">' + esc(c) + '</span>'; }).join('')
+        + '</div>';
+    } else {
+      head = '<div class="mg-legend-hd"><span class="mg-row-nm">State</span>'
+        + '<span class="mg-row-n">Total</span><span class="mg-row-n">Sellers</span><span class="mg-row-n">Buyers</span></div>';
+    }
+    legend = '<div class="mg-legend' + (nC ? ' mg-legend-wide' : '') + '">'
+      + head
       + '<div class="mg-rows">' + rows + '</div></div>';
   }
 
@@ -5311,11 +5391,18 @@ function mmRenderGeo() {
   if (_geo.state && by[_geo.state]) {
     var d = by[_geo.state], nm = IN_STATES[_geo.state].name;
     var cell = function(v, l, c) { return '<div class="mg-dt-cell"><div class="mg-dt-v"' + (c ? ' style="color:' + c + '"' : '') + '>' + fmt(v) + '</div><div class="mg-dt-l">' + l + '</div></div>'; };
+    // Per-category cells mirror the table's bifurcation for the selected state.
+    var catCells = '';
+    if (geoCats.length) {
+      geoCats.forEach(function(c) { catCells += cell(_geoCatN(d, c, 'seller'), 'S · ' + esc(c), '#1DC797'); });
+      geoCats.forEach(function(c) { catCells += cell(_geoCatN(d, c, 'buyer'),  'B · ' + esc(c), '#005DFF'); });
+    }
     detail = '<div class="mg-detail" id="mg-detail" role="region" aria-label="' + esc(nm) + ' detail">'
       + '<div class="mg-detail-hd"><span class="mg-swatch" style="background:' + regionColor + '"></span>' + esc(nm) + ' · State Detail</div>'
       + '<div class="mg-dt-grid">'
       + cell(d.total, _geo.cat ? 'Onboarded · ' + (_geo.cat.charAt(0).toUpperCase() + _geo.cat.slice(1)) : 'Onboarded', regionColor)
       + cell(d.seller, 'Sellers') + cell(d.buyer, 'Buyers')
+      + catCells
       + '</div>'
       + '<button class="mf-detail-vd" onclick="openRecordsSheet(selectedAud || \'seller\')">' + MM_IC.doc + ' View Detailed Records →</button>'
       + '</div>';
