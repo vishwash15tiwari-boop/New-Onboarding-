@@ -642,6 +642,48 @@ function debugTAT() {
   Logger.log('════ END ════');
 }
 
+// ─────────────────────────────────────────────────────────────
+// TAT assignment — ONE start date for the whole feed.
+//
+// TAT is meant to measure In Review → Onboarded. Where a feed carries no review
+// timestamp at all, the only remaining signal is the Level 1 date from card 5292.
+// Choosing between them PER RECORD is what previously inflated one category
+// against another: some records measured the short review span, their neighbours
+// the much longer level1 span, and the two were averaged together.
+//
+// So the basis is decided once, for the entire feed, by whichever start resolves
+// for more completed records — and then applied uniformly. Every figure in a feed
+// is therefore measured the same way and categories stay comparable, while a feed
+// lacking review dates still reports a real turnaround instead of a column of "—".
+// The chosen basis travels with the rows so the UI can label what it is showing.
+// ─────────────────────────────────────────────────────────────
+function _assignTat_(rows) {
+  function inWin(r, d) {
+    return !!d && !!r.onboardedDate && d <= r.onboardedDate
+        && (!r.createdDate || d >= r.createdDate);
+  }
+  var done = rows.filter(function(r) { return r.status === 'COMPLETED' && r.onboardedDate; });
+  var nRev = 0, nL1 = 0;
+  done.forEach(function(r) {
+    if (inWin(r, r.reviewDate)) nRev++;
+    if (inWin(r, r._l1))        nL1++;
+  });
+  // Prefer review — it is the metric actually asked for — and fall back to Level 1
+  // only when it resolves for strictly more records (i.e. review is absent or thin).
+  var basis = (nRev === 0 && nL1 === 0) ? null : (nL1 > nRev ? 'level1' : 'review');
+  rows.forEach(function(r) {
+    if (basis && r.status === 'COMPLETED' && r.onboardedDate) {
+      var start = basis === 'review' ? r.reviewDate : r._l1;
+      if (inWin(r, start)) {
+        var t = dateDiffDays(start, r.onboardedDate);
+        if (t !== null && t >= 0) { r.onbTAT = t; r.tatBasis = basis; }
+      }
+    }
+    delete r._l1;   // internal candidate — never reaches a payload or cache
+  });
+  return basis;
+}
+
 // Map each sheet row to the common record shape the dashboard renders from.
 function normalizeRows(raw, cfg) {
   var idx = buildIndex(raw.headers);
@@ -697,19 +739,12 @@ function normalizeRows(raw, cfg) {
     // from the seller-centric 5292 sheet) ended up showing an inflated TAT. A record
     // whose review start cannot be established now reports no TAT: it renders as "—"
     // and is excluded from every average rather than inflating it.
-    // The start is the review timestamp and nothing else. There is deliberately no
-    // per-record fallback to the Level 1 date: it applies unevenly across records, so
-    // one category ends up averaging review→onboarded spans while another averages
-    // the longer level1→onboarded spans, making the two incomparable — which is how
-    // Metal came out inflated against Plastic. Level 1 is also lower-confidence, since
-    // lookupLevel1_ falls back to matching by vendor NAME and takes the latest date.
-    // A record with no usable review timestamp reports no TAT, so every figure shown
-    // is measured the same way.
-    var inWindow = function(d) { return !!d && !!onboarded && d <= onboarded && (!created || d >= created); };
-    var tatStart = inWindow(reviewDate) ? reviewDate : null;
-    var tatBasis = tatStart ? 'review' : null;
-    var tat = (status === 'COMPLETED' && tatStart && onboarded) ? dateDiffDays(tatStart, onboarded) : null;
-    if (tat !== null && tat < 0) tat = null;
+    // TAT itself is assigned after this map, in _assignTat_ — the start date is chosen
+    // once for the whole feed rather than per record. Mixing starts within a feed is
+    // what inflated Metal against Plastic: some records measured from review, others
+    // from the earlier Level 1 date. Candidates are carried on the row and resolved
+    // uniformly below.
+    var level1 = lookupLevel1_(recId, recName);
 
     var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
@@ -816,11 +851,13 @@ function normalizeRows(raw, cfg) {
       txnValue:      txnVal,
       txnDate:       txnDate,
       totalOrders:   totalOrders,
-      onbTAT:        tat,
-      tatBasis:      tatBasis,
+      onbTAT:        null,          // assigned uniformly by _assignTat_ below
+      tatBasis:      null,
       reviewDate:    reviewDate,
+      _l1:           level1,        // TAT start candidate; stripped after resolution
     };
   }).filter(function(r) { return r.id || r.name; });
+  _assignTat_(normalized);
   // Count pre-dedup rows per (id+vertical) as per-vendor transaction count.
   // Metabase emits one row per transaction via joins; this count captures that.
   var txnCounts = {};
@@ -1206,6 +1243,12 @@ function vStats(data, vertKey) {
     completionPct: pct(completed, total),
     completedThisWeek: completedThisWeek,
     avgTAT: tats.length ? Math.round(avg(tats)) : null,
+    // Which start date every TAT in this vertical was measured from ('review' |
+    // 'level1' | null) so the UI can label the figure honestly.
+    tatBasis: (function() {
+      for (var _i = 0; _i < data.length; _i++) { if (data[_i].tatBasis) return data[_i].tatBasis; }
+      return null;
+    }()),
     transacted: transacted,
     pctTransacted: transacted === null ? null : pct(transacted, completed),
     totalTxnCount: hasTxnData ? txnCountSum : null,

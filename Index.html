@@ -4319,6 +4319,16 @@ function _mmCatRows(vs, vb, field) {
     .filter(function(x){ return (x.s + x.b) > 0; })
     .sort(function(a, b){ return (b.s + b.b) - (a.s + a.b); });
 }
+// Short display labels for long category names. Category values come from the
+// feed, and a name like "Institutional Business" truncates to nothing useful in a
+// narrow matrix column. Only the visible label is shortened — filtering, grouping
+// and export all continue to use the real category value, and the full name stays
+// available via each header's title attribute.
+var CAT_SHORT = { 'institutional business': 'IB' };
+function _catLabel(name) {
+  return CAT_SHORT[String(name || '').trim().toLowerCase()] || name;
+}
+
 // ── Vendor score bands ──────────────────────────────────────────────────
 // Scores come from the Vendor Score workbook out of 10, and are shown in five
 // bands: 0-2 · 2-4 · 4-6 · 6-8 · 8-10. Band i covers [i*2, i*2+2), so a score
@@ -4444,7 +4454,7 @@ function _mmVertModules(key) {
     : [ { label:'Sellers', v:vs.completed||0, color:'#6366f1' }, { label:'Buyers', v:vb.completed||0, color:'#0ea5e9' } ];
   var volMatrix = catOnb.length ? {
     colColors: catOnb.map(function(x, i){ return MM_CAT_COLORS[i % MM_CAT_COLORS.length]; }),
-    cols: catOnb.map(function(x){ return { label:x.cat, seg:_mmGeoSeg(x.cat) }; }),
+    cols: catOnb.map(function(x){ return { label:_catLabel(x.cat), full:x.cat, seg:_mmGeoSeg(x.cat) }; }),
     rows: [ { label:'Sellers', vals: catOnb.map(function(x){ return x.s; }) },
             { label:'Buyers',  vals: catOnb.map(function(x){ return x.b; }) } ],
     chain:true
@@ -4487,7 +4497,7 @@ function _mmVertModules(key) {
     var grandT = _mmTatAvg(rowS.concat(rowB));
     var tmx = '<div class="mp-mx-corner"></div>'
       + tatCats.map(function(c) {
-          return '<div class="mp-mx-hd"><span class="mp-mx-dot" style="background:' + c.color + '"></span>' + esc(c.cat) + '</div>';
+          return '<div class="mp-mx-hd" title="' + esc(c.cat) + '"><span class="mp-mx-dot" style="background:' + c.color + '"></span>' + esc(_catLabel(c.cat)) + '</div>';
         }).join('')
       + '<div class="mp-mx-hd tot">Overall</div>'
       + '<div class="mp-mx-rlbl">Sellers</div>' + rowS.map(function(o){ return tCell(o); }).join('') + tCell(totS, ' tot')
@@ -4498,10 +4508,16 @@ function _mmVertModules(key) {
     // Everything else is excluded rather than measured from a different start.
     var tatN = grandT ? grandT.n : 0;
     var covPct = onb > 0 ? Math.round(tatN / onb * 100) : 0;
+    // The server picks one start date per feed and reports which; label what is
+    // actually being measured rather than always claiming "In Review".
+    var tatBasis = vs.tatBasis || vb.tatBasis || null;
+    var basisLine = tatBasis === 'level1'
+      ? 'Measured from Level 1 approval to Onboarded, in days — this feed carries no In Review date'
+      : 'Measured from In Review to Onboarded, in days';
     var covNote = tatN === 0
       ? '<div style="font-size:.68rem;color:var(--txt3);margin-top:9px;line-height:1.5">'
-        + 'None of the ' + fmt(onb) + ' onboarded records carry an In Review date, so turnaround cannot be '
-        + 'measured yet. TAT appears here as soon as the feed supplies that date.</div>'
+        + 'None of the ' + fmt(onb) + ' onboarded records carry a usable start date, so turnaround cannot be '
+        + 'measured yet. TAT appears here as soon as the feed supplies an In Review or Level 1 date.</div>'
       : (onb > 0 && tatN < onb
         ? '<div style="font-size:.68rem;color:var(--txt3);margin-top:9px;line-height:1.5">'
           + 'Based on ' + fmt(tatN) + ' of ' + fmt(onb) + ' onboarded (' + covPct + '%) that carry a review date. '
@@ -4524,7 +4540,7 @@ function _mmVertModules(key) {
       + '</div>';
     volTatExtra = '<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">'
       + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:3px">Average TAT · Seller / Buyer × Category</div>'
-      + '<div style="font-size:.72rem;color:var(--txt3);margin-bottom:10px">Measured from In Review to Onboarded, in days</div>'
+      + '<div style="font-size:.72rem;color:var(--txt3);margin-bottom:10px">' + esc(basisLine) + '</div>'
       + tatStrip
       + '<div class="mp-matrix" style="grid-template-columns:auto repeat(' + (tatCats.length + 1) + ',minmax(0,1fr))">' + tmx + '</div>'
       + covNote
@@ -5107,7 +5123,7 @@ function _mfMatrix(catRows, sTot, bTot) {
   if (cols) {
     cols.forEach(function(c, i) {
       head += '<div class="mf-mx-hd" title="' + esc(c.cat) + '"><span class="mf-cat-dot" style="background:'
-        + MM_CAT_COLORS[i % MM_CAT_COLORS.length] + '"></span><span>' + esc(c.cat) + '</span></div>';
+        + MM_CAT_COLORS[i % MM_CAT_COLORS.length] + '"></span><span>' + esc(_catLabel(c.cat)) + '</span></div>';
       sRow += _mfCell(fmt(c.s), false);
       bRow += _mfCell(fmt(c.b), false);
     });
@@ -5409,8 +5425,8 @@ function mmRenderGeo() {
         + '<span class="mg-row-n mg-hd-span">Total</span>'
         + '<span class="mg-hd-band mg-seller" style="grid-column:span ' + nC + '">Sellers</span>'
         + '<span class="mg-hd-band mg-buyer"  style="grid-column:span ' + nC + '">Buyers</span>'
-        + geoCats.map(function(c){ return '<span class="mg-hd-cat">' + esc(c) + '</span>'; }).join('')
-        + geoCats.map(function(c){ return '<span class="mg-hd-cat">' + esc(c) + '</span>'; }).join('')
+        + geoCats.map(function(c){ return '<span class="mg-hd-cat" title="' + esc(c) + '">' + esc(_catLabel(c)) + '</span>'; }).join('')
+        + geoCats.map(function(c){ return '<span class="mg-hd-cat" title="' + esc(c) + '">' + esc(_catLabel(c)) + '</span>'; }).join('')
         + '</div>';
     } else {
       head = '<div class="mg-legend-hd"><span class="mg-row-nm">State</span>'
@@ -5527,7 +5543,7 @@ function mmRenderModPanel() {
     var colTot = M.cols.map(function(c, ci){ return M.rows.reduce(function(s, r){ return s + (+r.vals[ci] || 0); }, 0); });
     var grand = colTot.reduce(function(s, v){ return s + v; }, 0);
     var mx = '<div class="mp-mx-corner"></div>'
-      + M.cols.map(function(c, ci){ return '<div class="mp-mx-hd"><span class="mp-mx-dot" style="background:' + M.colColors[ci] + '"></span>' + esc(c.label) + '</div>'; }).join('')
+      + M.cols.map(function(c, ci){ return '<div class="mp-mx-hd" title="' + esc(c.full || c.label) + '"><span class="mp-mx-dot" style="background:' + M.colColors[ci] + '"></span>' + esc(c.label) + '</div>'; }).join('')
       + '<div class="mp-mx-hd tot">Total</div>';
     mx += M.rows.map(function(r) {
       var rt = r.vals.reduce(function(s, v){ return s + (+v || 0); }, 0);
