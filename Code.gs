@@ -669,10 +669,18 @@ function debugTAT() {
 // lacking review dates still reports a real turnaround instead of a column of "—".
 // The chosen basis travels with the rows so the UI can label what it is showing.
 // ─────────────────────────────────────────────────────────────
+// Calendar-day number, ignoring time-of-day. Sheets hands back Date objects with a
+// live time component for datetime cells, so comparing them raw rejected valid
+// records: a case reviewed at 14:30 and onboarded the same day (stored at midnight)
+// failed "review <= onboarded" despite being a legitimate 0-day TAT. dateDiffDays
+// already works in calendar days — the window guard now agrees with it.
+function _dayNum_(d) {
+  return d ? Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000 : null;
+}
 function _assignTat_(rows, audience) {
   function inWin(r, d) {
-    return !!d && !!r.onboardedDate && d <= r.onboardedDate
-        && (!r.createdDate || d >= r.createdDate);
+    var dn = _dayNum_(d), on = _dayNum_(r.onboardedDate), cn = _dayNum_(r.createdDate);
+    return dn !== null && on !== null && dn <= on && (cn === null || dn >= cn);
   }
   function startOf(r, basis) {
     return basis === 'review' ? r.reviewDate
@@ -716,6 +724,72 @@ function _assignTat_(rows, audience) {
     delete r._l1;   // internal candidate — never reaches a payload or cache
   });
   return basis;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Run from the Apps Script editor. For each audience this lists EVERY column that
+// parses as a date on onboarded records, how many it covers, and the TAT it would
+// produce if used as the start. That turns "which column is the In Review date?"
+// from a guess into a decision: pick the column whose name matches the milestone
+// and whose median TAT is plausible, then add it to the reviewDate candidates.
+// ─────────────────────────────────────────────────────────────
+function debugTATColumns() {
+  ['seller', 'buyer'].forEach(function(aud) {
+    Logger.log('\n════════ ' + aud.toUpperCase() + ' ════════');
+    var raw, cfg = AUDIENCE_CFG[aud];
+    try { raw = readData(aud); } catch (e) { Logger.log('  ✗ readData failed: ' + e.message); return; }
+    var idx = buildIndex(raw.headers);
+    var onbCol = cfg.onbCol, stCol = 'onboarding_status';
+    if (idx[onbCol] === undefined) { Logger.log('  ✗ onboarded column "' + onbCol + '" not present'); return; }
+
+    // Onboarded rows only — TAT is defined for completed records.
+    var done = raw.rows.filter(function(r) {
+      return normStatus(gv(r, idx, stCol)) === 'COMPLETED' && parseDate(r[idx[onbCol]]);
+    });
+    Logger.log('  onboarded rows: ' + done.length + '   (end date column: "' + onbCol + '")');
+    if (!done.length) return;
+
+    Logger.log('  ── every column that parses as a date, as a candidate START ──');
+    var results = [];
+    raw.headers.forEach(function(h, ci) {
+      if (!h || ci === idx[onbCol]) return;
+      var tats = [], parsed = 0;
+      done.forEach(function(r) {
+        var d = parseDate(r[ci]); if (!d) return;
+        parsed++;
+        var end = parseDate(r[idx[onbCol]]);
+        var t = dateDiffDays(d, end);
+        if (t !== null && t >= 0 && t <= TAT_MAX_DAYS) tats.push(t);
+      });
+      if (!parsed) return;
+      tats.sort(function(a, b) { return a - b; });
+      var med = tats.length ? tats[Math.floor(tats.length / 2)] : null;
+      var mean = tats.length ? Math.round(tats.reduce(function(a, b) { return a + b; }, 0) / tats.length) : null;
+      results.push({ h: h, col: colLetter_(ci), parsed: parsed, usable: tats.length,
+                     med: med, mean: mean, min: tats[0], max: tats[tats.length - 1] });
+    });
+    results.sort(function(a, b) { return b.usable - a.usable; });
+    results.forEach(function(r) {
+      Logger.log('   ' + r.col.padEnd(4) + (r.h + '                              ').slice(0, 30)
+        + ' parses ' + String(r.parsed).padStart(5) + '/' + done.length
+        + ' · usable ' + String(r.usable).padStart(5)
+        + ' · median ' + (r.med != null ? String(r.med) + 'd' : '—')
+        + ' · mean ' + (r.mean != null ? String(r.mean) + 'd' : '—')
+        + ' · range ' + (r.usable ? r.min + '–' + r.max + 'd' : '—'));
+    });
+    Logger.log('  ── what the dashboard currently uses ──');
+    var rows = normalizeRows(raw, cfg);
+    var used = {}, nT = 0, sT = 0;
+    rows.forEach(function(r) {
+      if (r.status !== 'COMPLETED') return;
+      used[r.tatBasis || 'none'] = (used[r.tatBasis || 'none'] || 0) + 1;
+      if (r.onbTAT !== null) { nT++; sT += r.onbTAT; }
+    });
+    Logger.log('   basis split: ' + JSON.stringify(used)
+      + '   ·   avg TAT ' + (nT ? Math.round(sT / nT) + 'd over ' + nT : '—'));
+  });
+  Logger.log('\nPick the column matching your In Review milestone and add its header to the'
+    + ' reviewDate candidates in normalizeRows(). Buyers are pinned to Created by design.');
 }
 
 // Map each sheet row to the common record shape the dashboard renders from.
