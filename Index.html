@@ -2748,8 +2748,14 @@ body.rec-open{overflow:hidden}
 .mf-mx-corner{} /* top-left empty cell */
 .mf-mx-hd{font-size:.68rem;font-weight:600;color:var(--txt3);text-align:center;padding:0 2px 4px;display:flex;align-items:center;justify-content:center;gap:3px}
 .mf-mx-lbl{font-size:.7rem;color:var(--txt2);padding:3px 6px 3px 0;display:flex;align-items:center;gap:4px;white-space:nowrap}
-.mf-mx-cell{text-align:center;font-size:.82rem;font-weight:700;color:var(--txt);padding:3px 4px;background:var(--bg);border-radius:4px;font-variant-numeric:tabular-nums}
+.mf-mx-cell{text-align:center;font-size:.82rem;font-weight:700;color:var(--txt);padding:3px 4px;background:var(--bg);border-radius:4px;font-variant-numeric:tabular-nums;min-width:0}
 .mf-mx-cell.na{color:var(--txt3);font-weight:400}
+/* Every category is shown, so headers must survive narrow columns … */
+.mf-mx-hd{min-width:0}
+.mf-mx-hd > span:not(.mf-cat-dot){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* … and the Total column is set apart so each row visibly reconciles. */
+.mf-mx-hd.tot{color:var(--txt2);font-weight:700}
+.mf-mx-cell.tot{background:var(--card);border:1px dashed var(--border);font-weight:800}
 /* colored dots used by matrix headers and labels */
 .mf-cat-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .mf-cat-dot.seller{background:#8b5cf6}.mf-cat-dot.buyer{background:#06b6d4}
@@ -5064,21 +5070,29 @@ function mmSelectFunnelStage(k) {
 function _mfCell(v, na) {
   return '<div class="mf-mx-cell' + (na ? ' na' : '') + '">' + (na ? '—' : esc(v)) + '</div>';
 }
-// Stage breakdown grid: rows = Sellers / Buyers, columns = the vertical's own
-// categories (data-driven, widest `maxCols` first). When the stage has no
+// Stage breakdown grid: rows = Sellers / Buyers, columns = EVERY category the
+// vertical has, in volume order, followed by a Total column. Showing all of them
+// is the point — capping the columns silently dropped whatever sat outside the
+// top few, so the cells no longer added up to the stage headline. The Total
+// column comes from the stage's own audience totals, so any gap between it and
+// the category cells is visible rather than hidden. When the stage has no
 // per-category feed, a single "Count" column carries the plain audience split.
-function _mfMatrix(catRows, sTot, bTot, maxCols) {
-  var cols = (catRows && catRows.length) ? catRows.slice(0, maxCols || 2) : null;
-  var n = cols ? cols.length : 1;
+function _mfMatrix(catRows, sTot, bTot) {
+  var cols = (catRows && catRows.length) ? catRows : null;
+  var n = cols ? cols.length + 1 : 1;
   var head = '<div class="mf-mx-corner"></div>';
   var sRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot seller"></span>Sellers</div>';
   var bRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot buyer"></span>Buyers</div>';
   if (cols) {
     cols.forEach(function(c, i) {
-      head += '<div class="mf-mx-hd"><span class="mf-cat-dot" style="background:' + MM_CAT_COLORS[i % MM_CAT_COLORS.length] + '"></span>' + esc(c.cat) + '</div>';
+      head += '<div class="mf-mx-hd" title="' + esc(c.cat) + '"><span class="mf-cat-dot" style="background:'
+        + MM_CAT_COLORS[i % MM_CAT_COLORS.length] + '"></span><span>' + esc(c.cat) + '</span></div>';
       sRow += _mfCell(fmt(c.s), false);
       bRow += _mfCell(fmt(c.b), false);
     });
+    head += '<div class="mf-mx-hd tot">Total</div>';
+    sRow += '<div class="mf-mx-cell tot">' + fmt(sTot || 0) + '</div>';
+    bRow += '<div class="mf-mx-cell tot">' + fmt(bTot || 0) + '</div>';
   } else {
     head += '<div class="mf-mx-hd">Count</div>';
     sRow += _mfCell(fmt(sTot || 0), false);
@@ -5107,7 +5121,7 @@ function mmRenderFunnel() {
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){mmSelectFunnelStage(\'' + s.key + '\')}">'
       + '<div class="mf-head"><div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
       + '<div class="mf-label">' + esc(s.label) + '</div></div>'
-      + _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0, 2)
+      + _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0)
       + '</div>';
     if (i < MF_STAGES.length - 1) {
       var nextSel = mmFunnelStage === MF_STAGES[i + 1].key;
@@ -5125,7 +5139,7 @@ function mmRenderFunnel() {
       var dCatRows = stageObj.catField ? _mmCatRowsFixed(vs, vb, stageObj.catField) : null;
       html += '<div class="mf-detail" id="mf-detail" role="region" aria-label="' + esc(stageObj.label) + ' details">'
         + '<div class="mf-detail-hd">' + esc(stageObj.label) + ' · Stage Breakdown</div>'
-        + _mfMatrix(dCatRows, vs[stageObj.field]||0, vb[stageObj.field]||0, 8)
+        + _mfMatrix(dCatRows, vs[stageObj.field]||0, vb[stageObj.field]||0)
         + '<button class="mf-detail-vd" onclick="mmCardAction(\'' + stageObj.vdAction + '\')">'
         + MM_IC.doc + ' View Detailed Records →</button>'
         + '</div>';
