@@ -839,14 +839,25 @@ function debugTAT() {
 function _dayNum_(d) {
   return d ? Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000 : null;
 }
+// Last TAT resolution per audience — basis, per-candidate coverage and the reason
+// tally. Populated by _assignTat_ and read by the diagnostics.
+var _lastTatStats = {};
 function _assignTat_(rows, audience) {
   // Measured against _tatEnd (the detail tab's completion date where available),
   // not onboardedDate, which may be a drifting last-touched timestamp.
   // Buyer column H is the end when present, ahead of every other candidate.
   function endOf(r)  { return r._be || r._tatEnd || r.onboardedDate; }
-  function inWin(r, d) {
-    var dn = _dayNum_(d), on = _dayNum_(endOf(r)), cn = _dayNum_(r.createdDate);
-    return dn !== null && on !== null && dn <= on && (cn === null || dn >= cn);
+  // A start is usable if it lands on or before the end. For inferred starts we also
+  // require it to fall on or after the created date, as a sanity check against a
+  // stray column. That check is NOT applied to the explicitly specified buyer
+  // columns: G/H were given as the source, and requiring G >= onboarding_created_date
+  // silently rejected most buyers whose G sits earlier in the journey.
+  function inWin(r, d, basis) {
+    var dn = _dayNum_(d), on = _dayNum_(endOf(r));
+    if (dn === null || on === null || dn > on) return false;
+    if (basis === 'fixed') return true;
+    var cn = _dayNum_(r.createdDate);
+    return cn === null || dn >= cn;
   }
   // The 'fixed' basis is the buyer feed's columns G→H, addressed by position.
   function startOf(r, basis) {
@@ -858,10 +869,10 @@ function _assignTat_(rows, audience) {
   var done = rows.filter(function(r) { return r.status === 'COMPLETED' && endOf(r); });
   var n = { review: 0, level1: 0, created: 0, fixed: 0 };
   done.forEach(function(r) {
-    if (inWin(r, r.reviewDate))   n.review++;
-    if (inWin(r, r._l1))          n.level1++;
-    if (inWin(r, r.createdDate))  n.created++;
-    if (inWin(r, r._bs))          n.fixed++;
+    if (inWin(r, r.reviewDate,  'review'))  n.review++;
+    if (inWin(r, r._l1,         'level1'))  n.level1++;
+    if (inWin(r, r.createdDate, 'created')) n.created++;
+    if (inWin(r, r._bs,         'fixed'))   n.fixed++;
   });
 
   // In Review → Onboarded is the metric asked for, so review wins whenever it covers
@@ -886,17 +897,28 @@ function _assignTat_(rows, audience) {
   // outside 0..TAT_MAX_DAYS is never stored. Anything else keeps onbTAT null, so
   // downstream code needs only a null check and the records table, the averages and
   // the category splits can no longer disagree about which records count.
+  // Tally every reason an onboarded record ends up without a TAT, so a shortfall
+  // like "19 of 78 buyers" can be attributed instead of guessed at.
+  var tally = { onboarded: 0, ok: 0, noStart: 0, noEnd: 0, startAfterEnd: 0, tooLong: 0, noBasis: 0 };
   rows.forEach(function(r) {
-    if (basis && r.status === 'COMPLETED' && endOf(r)) {
-      var start = startOf(r, basis);
-      if (inWin(r, start)) {
-        var t = dateDiffDays(start, endOf(r));
-        if (t !== null && t >= 0 && t <= TAT_MAX_DAYS) { r.onbTAT = t; r.tatBasis = basis; }
+    if (r.status === 'COMPLETED') {
+      tally.onboarded++;
+      var end = endOf(r), start = basis ? startOf(r, basis) : null;
+      if (!basis)                        tally.noBasis++;
+      else if (!end)                     tally.noEnd++;
+      else if (!start)                   tally.noStart++;
+      else if (!inWin(r, start, basis))  tally.startAfterEnd++;
+      else {
+        var t = dateDiffDays(start, end);
+        if (t === null || t < 0)         tally.startAfterEnd++;
+        else if (t > TAT_MAX_DAYS)       tally.tooLong++;
+        else { r.onbTAT = t; r.tatBasis = basis; tally.ok++; }
       }
     }
     delete r._l1;       // internal candidates — never reach a payload or cache
     delete r._tatEnd; delete r._bs; delete r._be;
   });
+  _lastTatStats[audience || 'seller'] = { basis: basis, coverage: n, tally: tally };
   return basis;
 }
 
@@ -1194,12 +1216,29 @@ function debugBuyerTatCols() {
   }
   var rows = normalizeRows(raw, cfg);
   var withTat = rows.filter(function(r) { return r.onbTAT !== null; });
-  var basisSeen = {};
-  withTat.forEach(function(r) { basisSeen[r.tatBasis] = (basisSeen[r.tatBasis] || 0) + 1; });
-  Logger.log('  dashboard result: TAT on ' + withTat.length + ' buyers · basis '
-    + JSON.stringify(basisSeen)
+  Logger.log('  dashboard result: TAT on ' + withTat.length + ' buyers'
     + ' · avg ' + (withTat.length
         ? Math.round(withTat.reduce(function(s, r) { return s + r.onbTAT; }, 0) / withTat.length) + 'd' : '—'));
+
+  // Attribute every onboarded buyer that did NOT get a TAT.
+  var st = _lastTatStats['buyer'];
+  if (st) {
+    var t = st.tally;
+    Logger.log('\n── why records are excluded ──');
+    Logger.log('  basis chosen        : ' + (st.basis || 'none'));
+    Logger.log('  candidate coverage  : G/H ' + st.coverage.fixed + ' · created ' + st.coverage.created
+      + ' · review ' + st.coverage.review + ' · level1 ' + st.coverage.level1);
+    Logger.log('  onboarded buyers    : ' + t.onboarded);
+    Logger.log('    got a TAT         : ' + t.ok);
+    Logger.log('    no start date     : ' + t.noStart   + (t.noStart ? '   <- column G empty on these rows' : ''));
+    Logger.log('    no end date       : ' + t.noEnd     + (t.noEnd ? '   <- column H and every fallback empty' : ''));
+    Logger.log('    start after end   : ' + t.startAfterEnd + (t.startAfterEnd ? '   <- G later than H; columns may be reversed' : ''));
+    Logger.log('    span > ' + TAT_MAX_DAYS + 'd     : ' + t.tooLong);
+    Logger.log('    no basis at all   : ' + t.noBasis);
+    if (t.ok < t.onboarded) {
+      Logger.log('  → ' + (t.onboarded - t.ok) + ' onboarded buyers have no TAT for the reasons above.');
+    }
+  }
 }
 
 // Map each sheet row to the common record shape the dashboard renders from.
