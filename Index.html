@@ -2998,7 +2998,7 @@ body.rec-open{overflow:hidden}
         <div class="mm" id="mm"><svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg></div>
       </div>
       <aside class="mmdetail" id="mm-detail">
-        <div id="mm-funnel" class="mf" role="region" aria-label="Onboarding Funnel"></div>
+        <div id="mm-funnel" class="mf" role="region" aria-label="Onboarding Breakup"></div>
         <div id="mm-geo" class="mg" role="region" aria-label="Geographic Split"></div>
         <div id="mm-modpanel" class="mp" role="region" aria-label="Module dashboard"></div>
       </aside>
@@ -3741,10 +3741,10 @@ var MR_COLS = [
 var MR_MOD_CFG = {
   onboarded:  { label:'Volume · Onboarded',       preStatus:'COMPLETED' },
   transacted: { label:'Transacted Sellers',        preStatus:'COMPLETED', isTxnView:true },
-  total:      { label:'Funnel · All Logged In',   preStatus:null },
-  draft:      { label:'Funnel · Draft',           preStatus:'DRAFT' },
-  review:     { label:'Funnel · Under Review',    preStatus:'IN_REVIEW' },
-  rejected:   { label:'Funnel · Rejected',        preStatus:'REJECTED' },
+  total:      { label:'Breakup · All Logged In',  preStatus:null },
+  draft:      { label:'Breakup · Draft',          preStatus:'DRAFT' },
+  review:     { label:'Breakup · Under Review',   preStatus:'IN_REVIEW' },
+  rejected:   { label:'Breakup · Rejected',       preStatus:'REJECTED' },
   rating:     null, // no drill-down table for Vendor Ratings
   osv:        { label:'OSV Status',               preStatus:'COMPLETED', forceSeller:true },
   docs:       { label:'Documents',                preStatus:'COMPLETED', forceSeller:true },
@@ -4289,6 +4289,21 @@ function _mmCatRows(vs, vb, field) {
     .filter(function(x){ return (x.s + x.b) > 0; })
     .sort(function(a, b){ return (b.s + b.b) - (a.s + a.b); });
 }
+// category → { v:avgTAT|null, n:records carrying a TAT } for one audience.
+// n is kept so the roll-ups can weight by volume instead of averaging averages.
+function _mmCatTatMap(list) {
+  var m = {};
+  (list || []).forEach(function(c) {
+    m[c.category || 'Other'] = { v: (c.avgTAT != null ? c.avgTAT : null), n: c.tatCount || 0 };
+  });
+  return m;
+}
+// Volume-weighted mean of {v,n} entries — null when nothing carries a TAT.
+function _mmTatAvg(entries) {
+  var sum = 0, n = 0;
+  entries.forEach(function(o) { if (o && o.n > 0 && o.v != null) { sum += o.v * o.n; n += o.n; } });
+  return n > 0 ? { v: Math.round(sum / n), n: n } : null;
+}
 function _mmCatGmvRows(vs, vb) {
   var m = {}, order = [];
   function add(list, side) {
@@ -4338,7 +4353,7 @@ function _mmVertModules(key) {
   var mods = [];
 
   // 1 — Funnel (expands inline as a horizontal stage dashboard)
-  mods.push({ t:'Funnel', ic:MM_IC.funnel, tone:'t-blue', kind:'module', expand:'inline-funnel', eye:'Funnel · stages', children:[
+  mods.push({ t:'Breakup', ic:MM_IC.funnel, tone:'t-blue', kind:'module', expand:'inline-funnel', eye:'Breakup · stages', children:[
     f('Logged In Cases', _mmC(vs,vb,'total'), MM_IC.funnel, 't-blue',
       [ _d('Sellers', fmt(vs.total||0), MM_IC.users), _d('Buyers', fmt(vb.total||0), MM_IC.users) ]
         .concat(_catDetails(catTot)).concat([ _vd('total') ])),
@@ -4365,6 +4380,47 @@ function _mmVertModules(key) {
             { label:'Buyers',  vals: catOnb.map(function(x){ return x.b; }) } ],
     chain:true
   } : null;
+  // Average TAT (In Review → Onboarded) as a Sellers/Buyers × Category matrix that
+  // mirrors the volume matrix above it. Roll-ups are volume-weighted by the number of
+  // completed records carrying a TAT, so the Overall figures reconcile with the
+  // headline average instead of being an average of averages.
+  var tatMapS = _mmCatTatMap(vs && vs.categories);
+  var tatMapB = _mmCatTatMap(vb && vb.categories);
+  var volTatExtra = '';
+  var tatCats = [];
+  catOnb.forEach(function(x, i) {
+    var a = tatMapS[x.cat], b = tatMapB[x.cat];
+    if ((a && a.n > 0) || (b && b.n > 0)) {
+      tatCats.push({ cat:x.cat, color:MM_CAT_COLORS[i % MM_CAT_COLORS.length], s:a || null, b:b || null });
+    }
+  });
+  if (tatCats.length) {
+    var tCell = function(o, cls) {
+      var txt = (o && o.n > 0 && o.v != null)
+        ? o.v + '<small style="font-size:.62em;font-weight:600;color:var(--txt3);letter-spacing:0">d</small>'
+        : '<span style="color:var(--txt3);font-weight:600">—</span>';
+      return '<div class="mp-mx-cell' + (cls || '') + '"><span class="mp-mx-n">' + txt + '</span></div>';
+    };
+    var rowS  = tatCats.map(function(c){ return c.s; });
+    var rowB  = tatCats.map(function(c){ return c.b; });
+    var totS  = _mmTatAvg(rowS), totB = _mmTatAvg(rowB);
+    var colT  = tatCats.map(function(c){ return _mmTatAvg([c.s, c.b]); });
+    var grandT = _mmTatAvg(rowS.concat(rowB));
+    var tmx = '<div class="mp-mx-corner"></div>'
+      + tatCats.map(function(c) {
+          return '<div class="mp-mx-hd"><span class="mp-mx-dot" style="background:' + c.color + '"></span>' + esc(c.cat) + '</div>';
+        }).join('')
+      + '<div class="mp-mx-hd tot">Overall</div>'
+      + '<div class="mp-mx-rlbl">Sellers</div>' + rowS.map(function(o){ return tCell(o); }).join('') + tCell(totS, ' tot')
+      + '<div class="mp-mx-rlbl">Buyers</div>'  + rowB.map(function(o){ return tCell(o); }).join('') + tCell(totB, ' tot')
+      + '<div class="mp-mx-rlbl tot">Overall</div>' + colT.map(function(o){ return tCell(o, ' tot'); }).join('')
+      + tCell(grandT, ' tot grand');
+    volTatExtra = '<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">'
+      + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:3px">Average TAT · Seller / Buyer × Category</div>'
+      + '<div style="font-size:.72rem;color:var(--txt3);margin-bottom:10px">Measured from In Review to Onboarded, in days</div>'
+      + '<div class="mp-matrix" style="grid-template-columns:auto repeat(' + (tatCats.length + 1) + ',minmax(0,1fr))">' + tmx + '</div>'
+      + '</div>';
+  }
   mods.push({ t:'Volume', ic:MM_IC.grid, tone:'t-ink', kind:'module', expand:'inline-panel',
     eye: hasCat ? 'Onboarded by category · seller / buyer' : 'Onboarded composition',
     panel:{
@@ -4373,6 +4429,7 @@ function _mmVertModules(key) {
       bar: volBar,
       matrix: volMatrix,
       tiles: volMatrix ? null : [ { label:'Sellers', v:vs.completed||0 }, { label:'Buyers', v:vb.completed||0 } ],
+      extra: volTatExtra,
       chain:true, records:'onboarded'
     }
   });
@@ -4496,17 +4553,23 @@ function _mmVertModules(key) {
 
   // 6 — OSV Status (OMP quality feed — inline panel)
   if (q && q.osv && q.osv.total) {
+    // Three-way consent split: Done (accepted) · In Progress (pending/mid-verification)
+    // · Not Initiated (never started). The server classifies each vendor; showing all
+    // three means the tiles reconcile to the onboarded total.
     var osvVer   = q.osv.completed    || 0;
+    var osvIP    = q.osv.pending      || 0;
     var osvNI    = q.osv.notInitiated || 0;
     var osvOTot  = q.osv.total        || 0;
     var osvPctV  = osvOTot > 0 ? Math.round(osvVer / osvOTot * 100) : 0;
     var osvVL    = (qualityData && qualityData.vendorOSV) || [];
     var verVL    = osvVL.filter(function(v){ return v.status === 'verified'; });
+    var ipVL     = osvVL.filter(function(v){ return v.status === 'in_progress'; });
     var niVL     = osvVL.filter(function(v){ return v.status === 'not_initiated'; });
     var ogid     = 'mp-osvg';
-    var osvBarH  = (osvVer + osvNI > 0)
+    var osvBarH  = (osvVer + osvIP + osvNI > 0)
       ? '<div class="km-prog">'
         + (osvVer ? '<div class="km-prog-seg" style="flex:' + osvVer + ';background:var(--st-onboarded)"></div>' : '')
+        + (osvIP  ? '<div class="km-prog-seg" style="flex:' + osvIP  + ';background:#F59E0B"></div>' : '')
         + (osvNI  ? '<div class="km-prog-seg" style="flex:' + osvNI  + ';background:#8b5cf6"></div>' : '')
         + '</div>' : '';
     var mkOsvTile = function(k, cnt, c, lbl, vds) {
@@ -4525,9 +4588,10 @@ function _mmVertModules(key) {
       return '<div id="' + ogid + '-' + k + '" class="km-tile-vlist" style="display:none">'
         + vds.slice(0, 60).map(function(v) {
             var isV  = v.status === 'verified';
-            var cBg  = isV ? 'rgba(48,209,88,.15)' : 'var(--bg2)';
-            var cClr = isV ? '#248A3D' : 'var(--txt3)';
-            var cLbl = v.consentRaw ? esc(v.consentRaw) : (isV ? 'Yes' : 'No / Blank');
+            var isIP = v.status === 'in_progress';
+            var cBg  = isV ? 'rgba(48,209,88,.15)' : isIP ? 'rgba(245,158,11,.15)' : 'var(--bg2)';
+            var cClr = isV ? '#248A3D'             : isIP ? '#B45309'              : 'var(--txt3)';
+            var cLbl = v.consentRaw ? esc(v.consentRaw) : (isV ? 'Yes' : isIP ? 'Pending' : 'No / Blank');
             return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
               + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
               + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
@@ -4538,7 +4602,8 @@ function _mmVertModules(key) {
         + '</div>';
     };
     // Build OSV extra section — cached so repeated tree rebuilds skip the string work
-    var _oCKey = 'o:' + osvVer + ':' + osvNI + ':' + osvOTot + ':' + verVL.length + ':' + niVL.length;
+    var _oCKey = 'o:' + osvVer + ':' + osvIP + ':' + osvNI + ':' + osvOTot
+               + ':' + verVL.length + ':' + ipVL.length + ':' + niVL.length;
     var osvExtra;
     if (_mmExtraCache.hasOwnProperty(_oCKey)) {
       osvExtra = _mmExtraCache[_oCKey];
@@ -4546,21 +4611,22 @@ function _mmVertModules(key) {
       osvExtra = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
         + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">Consent Status</div>'
         + osvBarH
-        + '<div class="km-sg" id="' + ogid + '-g" style="grid-template-columns:repeat(2,1fr);margin-top:8px">'
-        + mkOsvTile('v', osvVer, 'var(--st-onboarded)', 'Verified',      verVL)
+        + '<div class="km-sg" id="' + ogid + '-g" style="grid-template-columns:repeat(3,1fr);margin-top:8px">'
+        + mkOsvTile('v', osvVer, 'var(--st-onboarded)', 'Done',          verVL)
+        + mkOsvTile('p', osvIP,  '#F59E0B',              'In Progress',   ipVL)
         + mkOsvTile('n', osvNI,  '#8b5cf6',              'Not Initiated', niVL)
         + '</div>'
-        + mkOsvPanel('v', verVL) + mkOsvPanel('n', niVL)
+        + mkOsvPanel('v', verVL) + mkOsvPanel('p', ipVL) + mkOsvPanel('n', niVL)
         + '</div>';
       _mmExtraCache[_oCKey] = osvExtra;
     }
     mods.push({ t:'OSV Status', ic:MM_IC.shield, tone:'t-green', kind:'module', expand:'inline-panel', eye:'OSV Consent',
       panel:{
         eye:'OSV Consent · Verification Status', badge:'Sellers only',
-        headline:{ v:osvVer, label:'Consent Verified (OSV)', tone:'good' },
+        headline:{ v:osvVer, label:'OSV Completed', tone:'good' },
         bar:[],
         tiles:[ { label:'Verification Rate', v:osvPctV + '%', sub:'of OMP onboarded', raw:true },
-                { label:'Total OMP Onboarded', v:osvOTot, sub:'COMPLETED status' } ],
+                { label:'Total Onboarded Sellers (OMP)', v:osvOTot, sub:'COMPLETED status' } ],
         extra:  osvExtra,
         records:'osv'
       }
@@ -5707,7 +5773,7 @@ function openKpiModal(cardId) {
   function expandTileGrid(specs) {
     var gid = 'etg' + Math.random().toString(36).slice(2, 8);
     // Fill the row: N tiles → N equal columns (capped at 4) instead of always 4,
-    // so a 2-tile grid (e.g. OSV Verified / Not Initiated) stretches full-width.
+    // so a small grid (e.g. OSV Done / In Progress / Not Initiated) stretches full-width.
     var cols = Math.max(1, Math.min(specs.length, 4));
     var h = '<div class="km-sg" id="' + gid + '-g" style="grid-template-columns:repeat(' + cols + ',1fr)">'
       + specs.map(function(sp, si) {
@@ -5737,9 +5803,10 @@ function openKpiModal(cardId) {
       h += shown.map(function(v) {
         if (sp.mode === 'osv') {
           var isV  = v.status === 'verified';
-          var cBg  = isV ? 'rgba(48,209,88,.15)' : 'var(--bg2)';
-          var cClr = isV ? '#248A3D' : 'var(--txt3)';
-          var cLbl = v.consentRaw ? esc(v.consentRaw) : (isV ? 'Yes' : 'No / Blank');
+          var isIP = v.status === 'in_progress';
+          var cBg  = isV ? 'rgba(48,209,88,.15)' : isIP ? 'rgba(245,158,11,.15)' : 'var(--bg2)';
+          var cClr = isV ? '#248A3D'             : isIP ? '#B45309'              : 'var(--txt3)';
+          var cLbl = v.consentRaw ? esc(v.consentRaw) : (isV ? 'Yes' : isIP ? 'Pending' : 'No / Blank');
           return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
             + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
             + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
@@ -6005,20 +6072,22 @@ function openKpiModal(cardId) {
         var oT   = o.total || 0;
         var oPct = oT > 0 ? Math.round((o.completed || 0) / oT * 100) : 0;
         content =
-          hero(fmt(o.completed || 0), 'Consent Verified (OSV)')
+          hero(fmt(o.completed || 0), 'OSV Completed')
           + srow([
-              {v: oPct + '%', l: 'Verification Rate',   s: 'of OMP onboarded'},
-              {v: fmt(oT),    l: 'Total OMP Onboarded', s: 'COMPLETED status'},
+              {v: oPct + '%', l: 'Verification Rate',              s: 'of OMP onboarded'},
+              {v: fmt(oT),    l: 'Total Onboarded Sellers (OMP)',  s: 'COMPLETED status'},
             ])
           + sec('Consent Status',
               progBar([
                 {w: o.completed    || 0, color: 'var(--st-onboarded)'},
+                {w: o.pending      || 0, color: '#F59E0B'},
                 {w: o.notInitiated || 0, color: 'var(--st-draft)'},
               ])
               + (function() {
                   var vl = qd.vendorOSV || [];
                   return expandTileGrid([
-                    {v: fmt(o.completed    || 0), l: 'Verified',      c: 'var(--st-onboarded)', vendors: vl.filter(function(v){return v.status==='verified';}),      mode:'osv'},
+                    {v: fmt(o.completed    || 0), l: 'Done',          c: 'var(--st-onboarded)', vendors: vl.filter(function(v){return v.status==='verified';}),      mode:'osv'},
+                    {v: fmt(o.pending      || 0), l: 'In Progress',   c: '#F59E0B',             vendors: vl.filter(function(v){return v.status==='in_progress';}),   mode:'osv'},
                     {v: fmt(o.notInitiated || 0), l: 'Not Initiated', c: 'var(--st-draft)',     vendors: vl.filter(function(v){return v.status==='not_initiated';}), mode:'osv'},
                   ]);
                 })()
@@ -6833,7 +6902,8 @@ function buildQualitySect(qd, aud) {
     var o  = q.osv, oT = o.total || 1;
     var osvPct = Math.round((o.completed || 0) / oT * 100);
     var or_ = [
-      { col: 'var(--st-onboarded)', v: o.completed,   lbl: 'Verified'      },
+      { col: 'var(--st-onboarded)', v: o.completed,    lbl: 'Done'          },
+      { col: '#F59E0B',             v: o.pending,      lbl: 'In Progress'   },
       { col: 'var(--st-draft)',     v: o.notInitiated, lbl: 'Not Initiated' },
     ];
     html += '<div class="cc-qsect-row cc-qsect-mt">'

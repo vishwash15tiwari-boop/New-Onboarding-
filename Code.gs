@@ -613,14 +613,33 @@ function normalizeRows(raw, cfg) {
     var onboarded = cfg.onbCol ? parseDate(gv(row, idx, cfg.onbCol)) : null;
     var recId    = String(gv(row, idx, cfg.idCol)   || '').replace(/,/g, '').trim();
     var recName  = String(gv(row, idx, cfg.nameCol) || '').trim();
-    // TAT = start → Onboarded, for completed records only. Start is the record's
-    // latest Level 1 date from card 5292 (moves the start later → lower TAT); when
-    // no Level 1 date matches, or it falls outside [created, onboarded], start is
-    // the Created date. End (onboarded) and the fallback start (created) are the
-    // trusted main-card dates, so TAT is never higher than the legacy span.
+    // Timestamp when the case entered the IN_REVIEW stage. Also drives review-age
+    // on Kanban cards ("Xd waiting" counts from here, not from created date).
+    var reviewDate = parseDate(
+      gv(row, idx, 'in_review_date')      ||
+      gv(row, idx, 'in_review_at')        ||
+      gv(row, idx, 'submitted_date')      ||
+      gv(row, idx, 'submitted_at')        ||
+      gv(row, idx, 'review_date')         ||
+      gv(row, idx, 'review_at')           ||
+      gv(row, idx, 'review_started_date') ||
+      gv(row, idx, 'review_started_at')   ||
+      gv(row, idx, 'level_2_date')        ||
+      gv(row, idx, 'level2_date')         ||
+      gv(row, idx, 'l2_date')            || ''
+    );
+
+    // TAT = In Review → Onboarded, for completed records only. Measuring from the
+    // moment the case entered review reflects the time verification actually took,
+    // excluding however long the vendor sat in draft before submitting.
+    // The start must fall inside [created, onboarded] to be trusted. When no review
+    // date is present the start falls back to the Level 1 date (card 5292), then to
+    // Created, so TAT stays populated for feeds that carry no review timestamp.
     var level1   = lookupLevel1_(recId, recName);
-    var tatStart = (level1 && created && onboarded && level1 >= created && level1 <= onboarded)
-      ? level1 : created;
+    var inWindow = function(d) { return d && created && onboarded && d >= created && d <= onboarded; };
+    var tatStart = inWindow(reviewDate) ? reviewDate
+                 : inWindow(level1)     ? level1
+                 : created;
     var tat = (status === 'COMPLETED' && tatStart && onboarded) ? dateDiffDays(tatStart, onboarded) : null;
     if (tat !== null && tat < 0) tat = null;
 
@@ -682,22 +701,6 @@ function normalizeRows(raw, cfg) {
       ? parseInt(String(ordersRaw).replace(/[,\s]/g, ''), 10)
       : NaN;
     var totalOrders = isNaN(_ordN) ? null : _ordN;
-
-    // Timestamp when the case entered the IN_REVIEW stage. Used for accurate review-age
-    // calculation on Kanban cards ("Xd waiting" counts from here, not from created date).
-    var reviewDate = parseDate(
-      gv(row, idx, 'in_review_date')      ||
-      gv(row, idx, 'in_review_at')        ||
-      gv(row, idx, 'submitted_date')      ||
-      gv(row, idx, 'submitted_at')        ||
-      gv(row, idx, 'review_date')         ||
-      gv(row, idx, 'review_at')           ||
-      gv(row, idx, 'review_started_date') ||
-      gv(row, idx, 'review_started_at')   ||
-      gv(row, idx, 'level_2_date')        ||
-      gv(row, idx, 'level2_date')         ||
-      gv(row, idx, 'l2_date')            || ''
-    );
 
     // Transacted = explicit positive status OR a positive transaction value:
     // GMV only exists once a transaction has happened, so GMV > 0 is itself
@@ -1015,9 +1018,12 @@ function vStats(data, vertKey) {
       transacted: 0, hasTxn: false,
       txnValue: 0, hasTxnVal: false,
       vendorTypes: {},
+      tats: [],
     };
     var cs = catMap[c];
     cs.total++;
+    // Category TAT uses the same guard as the headline average so the numbers agree.
+    if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) cs.tats.push(r.onbTAT);
     if (r.status === 'COMPLETED')  cs.onboarded++;
     if (r.status === 'DRAFT')      cs.draft++;
     if (r.status === 'IN_REVIEW')  cs.inReview++;
@@ -1047,6 +1053,10 @@ function vStats(data, vertKey) {
       transacted: cat.transacted, hasTxn: cat.hasTxn,
       txnValue: cat.hasTxnVal ? cat.txnValue : null,
       vendorTypes: vtArr,
+      // Average In Review → Onboarded TAT for this category (null when no completed
+      // record in the category carries a usable TAT).
+      avgTAT:   cat.tats.length ? Math.round(avg(cat.tats)) : null,
+      tatCount: cat.tats.length,
     };
   }).sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });
 
