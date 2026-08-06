@@ -57,7 +57,13 @@ var VS_COLS = {
 // Candidate column names in the 5292 detail tab (headers are normalized to
 // lower_snake_case by readSheetObj_). First populated match wins per record.
 var TAT_COLS = {
-  // TAT start = latest Level 1 date.
+  // TAT start, preferred: the moment the case entered review, per card 5292.
+  inReview:  ['in_review_date','in_review_at','in_review','under_review_date','under_review_at',
+              'review_started_date','review_started_at','review_initiated_date','review_initiated_at',
+              'review_date','review_at','submitted_date','submitted_at','submission_date',
+              'onboarding_in_review_date','onboarding_submitted_date','sent_for_review_date',
+              'sent_for_review_at','moved_to_review_date'],
+  // TAT start, fallback: latest Level 1 date.
   level1:    ['latest_level_1','latest_level_1_date','level_1_date','level_1_at','level_1_on',
               'level_1','level1_date','level1','l1_date','l1','level_1_approval_date',
               'level_1_review_date','level_1_updated_date','level_1_completed_date'],
@@ -507,47 +513,100 @@ function firstVal_(row, idx, keys) {
   return '';
 }
 
+// Locate a date column in the detail sheet: the named candidates first, then a
+// scan for any header matching `fuzzy` whose values actually parse as dates.
+// Returns { i, header } or null. The scan exists because the detail card's column
+// names vary, and a missed column silently costs every record its TAT.
+function _detailDateCol_(headers, rows, exact, fuzzy) {
+  var idx = buildIndex(headers);
+  for (var e = 0; e < exact.length; e++) {
+    if (idx[exact[e]] !== undefined) return { i: idx[exact[e]], header: exact[e] };
+  }
+  var best = null;
+  for (var c = 0; c < headers.length; c++) {
+    var h = headers[c];
+    if (!h || !fuzzy.test(h)) continue;
+    if (/_by$|user|name|status|remark|comment|reason|count|id$/.test(h)) continue;
+    var hits = 0, seen = 0;
+    for (var r = 0; r < rows.length && seen < 200; r++) {
+      var v = rows[r][c];
+      if (v === '' || v === null || v === undefined) continue;
+      seen++;
+      if (parseDate(v)) hits++;
+    }
+    if (hits > 0 && (!best || hits > best.hits)) best = { i: c, header: h, hits: hits };
+  }
+  return best;
+}
+
+// Per-vendor TAT dates read from the card 5292 detail tab — the dedicated
+// onboarding-stage source. Keyed by id, and by name where that name maps to a
+// single id. Holds the In Review date (preferred start), the Level 1 date
+// (fallback start) and the detail sheet's own completed date.
 function getLevel1Lookup_() {
   if (_level1LookupCache) return _level1LookupCache;
-  var lk = { byId: {}, byName: {}, loaded: false };
+  var lk = { byId: {}, byName: {}, cols: {}, rows: 0, loaded: false };
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.TAT_DETAIL_SHEET);
     if (sheet && sheet.getLastRow() > 1) {
       var d   = readSheetObj_(sheet);
       var idx = buildIndex(d.headers);
+      lk.rows = d.rows.length;
+
+      var revC = _detailDateCol_(d.headers, d.rows, TAT_COLS.inReview,  /review|submit/);
+      var l1C  = _detailDateCol_(d.headers, d.rows, TAT_COLS.level1,    /level_?1|(^|_)l1(_|$)/);
+      var endC = _detailDateCol_(d.headers, d.rows, TAT_COLS.completed, /complete|onboard/);
+      lk.cols = { review: revC && revC.header, level1: l1C && l1C.header, completed: endC && endC.header };
+
       var nameIds = {};   // name → {id, ambiguous} — a name shared by >1 id can't be matched safely
-      function foldLatest_(map, key, dt) {
-        if (!map[key] || dt > map[key]) map[key] = dt;   // keep the LATEST Level 1 date
+      // Keep the LATEST date seen per vendor: the detail card can emit one row per
+      // stage transition, and the most recent pass is the one that led to onboarding.
+      function fold_(map, key, field, dt) {
+        if (!dt) return;
+        var rec = map[key] || (map[key] = { review: null, level1: null, completed: null });
+        if (!rec[field] || dt > rec[field]) rec[field] = dt;
       }
       d.rows.forEach(function(row) {
-        var l1 = parseDate(firstVal_(row, idx, TAT_COLS.level1));
-        if (!l1) return;
+        var rev = revC ? parseDate(row[revC.i]) : null;
+        var l1  = l1C  ? parseDate(row[l1C.i])  : null;
+        var end = endC ? parseDate(row[endC.i]) : null;
+        if (!rev && !l1 && !end) return;
         var id   = String(firstVal_(row, idx, TAT_COLS.id) || '').replace(/,/g, '').trim();
         var name = String(firstVal_(row, idx, TAT_COLS.name) || '').trim().toLowerCase();
-        if (id)   foldLatest_(lk.byId, id, l1);
-        if (name) foldLatest_(lk.byName, name, l1);
+        if (id) {
+          fold_(lk.byId, id, 'review', rev); fold_(lk.byId, id, 'level1', l1); fold_(lk.byId, id, 'completed', end);
+        }
+        if (name) {
+          fold_(lk.byName, name, 'review', rev); fold_(lk.byName, name, 'level1', l1); fold_(lk.byName, name, 'completed', end);
+        }
         if (name && id) {
           var ni = nameIds[name];
           if (!ni) nameIds[name] = { id: id, ambiguous: false };
           else if (ni.id !== id) ni.ambiguous = true;
         }
       });
-      // Drop names shared by multiple distinct ids — matching them would pull a
-      // Level 1 date from an unrelated vendor.
+      // Drop names shared by multiple distinct ids — matching them would pull dates
+      // from an unrelated vendor.
       Object.keys(nameIds).forEach(function(nm) { if (nameIds[nm].ambiguous) delete lk.byName[nm]; });
       lk.loaded = Object.keys(lk.byId).length + Object.keys(lk.byName).length > 0;
     }
-  } catch (e) { Logger.log('Level 1 lookup build failed: ' + e.message); }
+  } catch (e) { Logger.log('TAT detail lookup build failed: ' + e.message); }
   _level1LookupCache = lk;
   return lk;
 }
 
-// Latest Level 1 date for a record (Date), matched by id first then name, or null.
-function lookupLevel1_(id, name) {
+// Full TAT detail record for a vendor: { review, level1, completed } or null.
+function lookupTatDetail_(id, name) {
   var lk = getLevel1Lookup_();
   if (id)   { var k = String(id).replace(/,/g, '').trim(); if (lk.byId[k])   return lk.byId[k]; }
   if (name) { var n = String(name).trim().toLowerCase();   if (lk.byName[n]) return lk.byName[n]; }
   return null;
+}
+
+// Latest Level 1 date for a record (Date), matched by id first then name, or null.
+function lookupLevel1_(id, name) {
+  var rec = lookupTatDetail_(id, name);
+  return rec ? rec.level1 : null;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -792,6 +851,79 @@ function debugTATColumns() {
     + ' reviewDate candidates in normalizeRows(). Buyers are pinned to Created by design.');
 }
 
+// ─────────────────────────────────────────────────────────────
+// Run from the Apps Script editor. Scans the card 5292 detail tab that TAT is now
+// sourced from: which columns were auto-detected as In Review / Level 1 / Completed,
+// every other column that parses as a date (with the TAT it would produce), and how
+// many live seller / buyer records actually match a detail row.
+// ─────────────────────────────────────────────────────────────
+function debugTatDetail() {
+  var name = CONFIG.TAT_DETAIL_SHEET;
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+  Logger.log('════ TAT DETAIL TAB "' + name + '" (Metabase card '
+    + (CONFIG.MB_CARDS_DETAIL || 5292) + ') ════');
+  if (!sheet || sheet.getLastRow() < 2) {
+    Logger.log('✗ tab missing or empty — run syncDetail() in Metabase.gs first.');
+    return;
+  }
+  var d = readSheetObj_(sheet);
+  Logger.log('rows: ' + d.rows.length + '   columns: ' + d.headers.length);
+  Logger.log('\n── all headers ──');
+  d.headers.forEach(function(h, i) { Logger.log('  ' + colLetter_(i) + '  ' + (h || '(blank)')); });
+
+  _level1LookupCache = null;                       // force a fresh scan
+  var lk = getLevel1Lookup_();
+  Logger.log('\n── auto-detected TAT columns ──');
+  Logger.log('  In Review : ' + (lk.cols.review    || '✗ NOT FOUND'));
+  Logger.log('  Level 1   : ' + (lk.cols.level1    || '✗ not found'));
+  Logger.log('  Completed : ' + (lk.cols.completed || '✗ not found'));
+  Logger.log('  vendors keyed by id: ' + Object.keys(lk.byId).length
+    + ' · by name: ' + Object.keys(lk.byName).length);
+
+  // Every date-like column and the span it would give against the detail's own end.
+  Logger.log('\n── every column that parses as a date ──');
+  var endI = lk.cols.completed ? buildIndex(d.headers)[lk.cols.completed] : -1;
+  d.headers.forEach(function(h, ci) {
+    if (!h) return;
+    var parsed = 0, tats = [];
+    d.rows.forEach(function(r) {
+      var dt = parseDate(r[ci]); if (!dt) return;
+      parsed++;
+      if (endI >= 0) {
+        var e = parseDate(r[endI]);
+        var t = e ? dateDiffDays(dt, e) : null;
+        if (t !== null && t >= 0 && t <= TAT_MAX_DAYS) tats.push(t);
+      }
+    });
+    if (!parsed) return;
+    tats.sort(function(a, b) { return a - b; });
+    Logger.log('  ' + colLetter_(ci).padEnd(4) + (h + '                              ').slice(0, 30)
+      + ' dates ' + String(parsed).padStart(5) + '/' + d.rows.length
+      + (tats.length ? '  · median span ' + tats[Math.floor(tats.length / 2)] + 'd'
+                       + ' · range ' + tats[0] + '–' + tats[tats.length - 1] + 'd' : ''));
+  });
+
+  // How much of the live data actually joins to this tab.
+  Logger.log('\n── match rate against live records ──');
+  ['seller', 'buyer'].forEach(function(aud) {
+    try {
+      var rows = normalizeRows(readData(aud), AUDIENCE_CFG[aud]);
+      var done = rows.filter(function(r) { return r.status === 'COMPLETED'; });
+      var matched = 0, withRev = 0, withL1 = 0, withTat = 0, sum = 0;
+      done.forEach(function(r) {
+        var rec = lookupTatDetail_(r.id, r.name);
+        if (rec) { matched++; if (rec.review) withRev++; if (rec.level1) withL1++; }
+        if (r.onbTAT !== null) { withTat++; sum += r.onbTAT; }
+      });
+      Logger.log('  ' + aud + ': ' + done.length + ' onboarded · matched a detail row ' + matched
+        + ' · of those In Review ' + withRev + ', Level 1 ' + withL1
+        + '  →  TAT on ' + withTat + ' records, avg ' + (withTat ? Math.round(sum / withTat) + 'd' : '—'));
+    } catch (e) { Logger.log('  ' + aud + ': ' + e.message); }
+  });
+  Logger.log('\nIf "In Review" reads NOT FOUND, no column in this tab both mentions'
+    + ' review/submit and parses as a date — add the real header to TAT_COLS.inReview.');
+}
+
 // Map each sheet row to the common record shape the dashboard renders from.
 function normalizeRows(raw, cfg) {
   var idx = buildIndex(raw.headers);
@@ -854,12 +986,17 @@ function normalizeRows(raw, cfg) {
       }
     }
 
+    // TAT dates come from the card 5292 detail tab (_mb_detail), the dedicated
+    // onboarding-stage source, matched by id then name. Its In Review date is the
+    // preferred start; its Level 1 date is the fallback. The main card's own review
+    // column, detected above, is used only when the detail tab has no match.
     // TAT itself is assigned after this map, in _assignTat_ — the start date is chosen
     // once for the whole feed rather than per record. Mixing starts within a feed is
     // what inflated Metal against Plastic: some records measured from review, others
-    // from the earlier Level 1 date. Candidates are carried on the row and resolved
-    // uniformly below.
-    var level1 = lookupLevel1_(recId, recName);
+    // from the earlier Level 1 date.
+    var _det = lookupTatDetail_(recId, recName);
+    if (_det && _det.review) reviewDate = _det.review;
+    var level1 = _det ? _det.level1 : null;
 
     var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
