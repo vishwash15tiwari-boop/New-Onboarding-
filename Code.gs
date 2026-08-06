@@ -67,6 +67,13 @@ var TAT_COLS = {
   level1:    ['latest_level_1','latest_level_1_date','level_1_date','level_1_at','level_1_on',
               'level_1','level1_date','level1','l1_date','l1','level_1_approval_date',
               'level_1_review_date','level_1_updated_date','level_1_completed_date'],
+  // A case that was rejected and sent back restarts the clock: time spent waiting
+  // for the vendor to correct and resubmit is not review turnaround.
+  resubmitted: ['resubmitted_date','resubmitted_at','resubmission_date','resubmission_at',
+                'reapplied_date','reapplied_at','resubmit_date','last_resubmitted_date',
+                're_review_date','sent_back_resubmitted_date'],
+  rejected:    ['rejected_date','rejected_at','rejection_date','rejection_at',
+                'declined_date','declined_at','sent_back_date','returned_date'],
   // Fallback start when no Level 1 date exists.
   created:   ['onboarding_created_date','created_date','created_at','created_on',
               'onboarding_created_at','registration_date','signup_date'],
@@ -553,31 +560,40 @@ function getLevel1Lookup_() {
       var idx = buildIndex(d.headers);
       lk.rows = d.rows.length;
 
-      var revC = _detailDateCol_(d.headers, d.rows, TAT_COLS.inReview,  /review|submit/);
-      var l1C  = _detailDateCol_(d.headers, d.rows, TAT_COLS.level1,    /level_?1|(^|_)l1(_|$)/);
-      var endC = _detailDateCol_(d.headers, d.rows, TAT_COLS.completed, /complete|onboard/);
-      lk.cols = { review: revC && revC.header, level1: l1C && l1C.header, completed: endC && endC.header };
+      var revC = _detailDateCol_(d.headers, d.rows, TAT_COLS.inReview,    /review|submit/);
+      var l1C  = _detailDateCol_(d.headers, d.rows, TAT_COLS.level1,      /level_?1|(^|_)l1(_|$)/);
+      var endC = _detailDateCol_(d.headers, d.rows, TAT_COLS.completed,   /complete|onboard/);
+      var resC = _detailDateCol_(d.headers, d.rows, TAT_COLS.resubmitted, /resubmit|resubmiss|reappl|re_review/);
+      var rejC = _detailDateCol_(d.headers, d.rows, TAT_COLS.rejected,    /reject|declin|sent_back|returned/);
+      lk.cols = { review: revC && revC.header, level1: l1C && l1C.header,
+                  completed: endC && endC.header, resubmitted: resC && resC.header,
+                  rejected: rejC && rejC.header };
 
       var nameIds = {};   // name → {id, ambiguous} — a name shared by >1 id can't be matched safely
       // Keep the LATEST date seen per vendor: the detail card can emit one row per
       // stage transition, and the most recent pass is the one that led to onboarding.
       function fold_(map, key, field, dt) {
         if (!dt) return;
-        var rec = map[key] || (map[key] = { review: null, level1: null, completed: null });
+        var rec = map[key] || (map[key] = { review: null, level1: null, completed: null,
+                                            resubmitted: null, rejected: null });
         if (!rec[field] || dt > rec[field]) rec[field] = dt;
       }
       d.rows.forEach(function(row) {
         var rev = revC ? parseDate(row[revC.i]) : null;
         var l1  = l1C  ? parseDate(row[l1C.i])  : null;
         var end = endC ? parseDate(row[endC.i]) : null;
-        if (!rev && !l1 && !end) return;
+        var res = resC ? parseDate(row[resC.i]) : null;
+        var rej = rejC ? parseDate(row[rejC.i]) : null;
+        if (!rev && !l1 && !end && !res && !rej) return;
         var id   = String(firstVal_(row, idx, TAT_COLS.id) || '').replace(/,/g, '').trim();
         var name = String(firstVal_(row, idx, TAT_COLS.name) || '').trim().toLowerCase();
         if (id) {
           fold_(lk.byId, id, 'review', rev); fold_(lk.byId, id, 'level1', l1); fold_(lk.byId, id, 'completed', end);
+          fold_(lk.byId, id, 'resubmitted', res); fold_(lk.byId, id, 'rejected', rej);
         }
         if (name) {
           fold_(lk.byName, name, 'review', rev); fold_(lk.byName, name, 'level1', l1); fold_(lk.byName, name, 'completed', end);
+          fold_(lk.byName, name, 'resubmitted', res); fold_(lk.byName, name, 'rejected', rej);
         }
         if (name && id) {
           var ni = nameIds[name];
@@ -737,8 +753,11 @@ function _dayNum_(d) {
   return d ? Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000 : null;
 }
 function _assignTat_(rows, audience) {
+  // Measured against _tatEnd (the detail tab's completion date where available),
+  // not onboardedDate, which may be a drifting last-touched timestamp.
+  function endOf(r)  { return r._tatEnd || r.onboardedDate; }
   function inWin(r, d) {
-    var dn = _dayNum_(d), on = _dayNum_(r.onboardedDate), cn = _dayNum_(r.createdDate);
+    var dn = _dayNum_(d), on = _dayNum_(endOf(r)), cn = _dayNum_(r.createdDate);
     return dn !== null && on !== null && dn <= on && (cn === null || dn >= cn);
   }
   function startOf(r, basis) {
@@ -746,7 +765,7 @@ function _assignTat_(rows, audience) {
          : basis === 'level1' ? r._l1
          : r.createdDate;
   }
-  var done = rows.filter(function(r) { return r.status === 'COMPLETED' && r.onboardedDate; });
+  var done = rows.filter(function(r) { return r.status === 'COMPLETED' && endOf(r); });
   var n = { review: 0, level1: 0, created: 0 };
   done.forEach(function(r) {
     if (inWin(r, r.reviewDate))   n.review++;
@@ -773,14 +792,15 @@ function _assignTat_(rows, audience) {
   else if (n.created > 0)                                basis = 'created';
 
   rows.forEach(function(r) {
-    if (basis && r.status === 'COMPLETED' && r.onboardedDate) {
+    if (basis && r.status === 'COMPLETED' && endOf(r)) {
       var start = startOf(r, basis);
       if (inWin(r, start)) {
-        var t = dateDiffDays(start, r.onboardedDate);
+        var t = dateDiffDays(start, endOf(r));
         if (t !== null && t >= 0) { r.onbTAT = t; r.tatBasis = basis; }
       }
     }
-    delete r._l1;   // internal candidate — never reaches a payload or cache
+    delete r._l1;       // internal candidates — never reach a payload or cache
+    delete r._tatEnd;
   });
   return basis;
 }
@@ -874,9 +894,11 @@ function debugTatDetail() {
   _level1LookupCache = null;                       // force a fresh scan
   var lk = getLevel1Lookup_();
   Logger.log('\n── auto-detected TAT columns ──');
-  Logger.log('  In Review : ' + (lk.cols.review    || '✗ NOT FOUND'));
-  Logger.log('  Level 1   : ' + (lk.cols.level1    || '✗ not found'));
-  Logger.log('  Completed : ' + (lk.cols.completed || '✗ not found'));
+  Logger.log('  In Review   : ' + (lk.cols.review      || '✗ NOT FOUND'));
+  Logger.log('  Level 1     : ' + (lk.cols.level1      || '✗ not found'));
+  Logger.log('  Resubmitted : ' + (lk.cols.resubmitted || '✗ not found — rejected cases will use the latest post-rejection review date'));
+  Logger.log('  Rejected    : ' + (lk.cols.rejected    || '✗ not found — cannot tell a stale pre-rejection review from a valid one'));
+  Logger.log('  Completed   : ' + (lk.cols.completed   || '✗ not found — TAT falls back to the feed onboarded date'));
   Logger.log('  vendors keyed by id: ' + Object.keys(lk.byId).length
     + ' · by name: ' + Object.keys(lk.byName).length);
 
@@ -995,8 +1017,25 @@ function normalizeRows(raw, cfg) {
     // what inflated Metal against Plastic: some records measured from review, others
     // from the earlier Level 1 date.
     var _det = lookupTatDetail_(recId, recName);
-    if (_det && _det.review) reviewDate = _det.review;
+    if (_det) {
+      // A rejected case that came back restarts the clock. Time spent waiting for the
+      // vendor to correct and resubmit is not review turnaround, so the start moves to
+      // the resubmission. Where there is no explicit resubmission column, a review date
+      // recorded AFTER the rejection is itself the re-review and is used; a review date
+      // that predates the rejection is stale and is discarded rather than measured from.
+      var _rev = _det.review, _rej = _det.rejected, _res = _det.resubmitted;
+      if (_res && (!_rev || _res > _rev)) _rev = _res;
+      if (_rej && _rev && _rev < _rej)    _rev = null;
+      if (_rev) reviewDate = _rev;
+    }
     var level1 = _det ? _det.level1 : null;
+    // TAT end. The detail tab's completion date is authoritative when present and is
+    // kept SEPARATE from onboardedDate, which drives onboarded counts, aging and date
+    // filters and must not shift. This matters most for buyers: their card has no
+    // onboarded_date, so onboardedDate falls back to onboarding_updated_date — a
+    // last-touched timestamp that drifts forward every time a record is edited and
+    // inflated buyer turnaround well beyond the real span.
+    var tatEnd = (_det && _det.completed) ? _det.completed : onboarded;
 
     var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
@@ -1107,6 +1146,7 @@ function normalizeRows(raw, cfg) {
       tatBasis:      null,
       reviewDate:    reviewDate,
       _l1:           level1,        // TAT start candidate; stripped after resolution
+      _tatEnd:       tatEnd,        // TAT end; separate from onboardedDate, stripped too
     };
   }).filter(function(r) { return r.id || r.name; });
   _assignTat_(normalized, cfg.audience);
