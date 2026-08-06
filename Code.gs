@@ -1729,7 +1729,9 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  var CACHE_KEY = 'quality_data_v9';   // v9: buyer docs sourced from _mb_buyers
+  // v10: rating + OSV now sourced from the Vendor Score workbook; scores are
+  // out of 10 (was 1-5), so cached v9 payloads must not be reused.
+  var CACHE_KEY = 'quality_data_v10';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -1773,87 +1775,60 @@ function getQualityData() {
   }
   function tgts_(aud) { return aud === 'combined' ? ['combined'] : [aud, 'combined']; }
 
-  // ── Single pass: read "Vendor Rating" sheet for all three metrics
-  // Col AE (index 30) = seller_rating (float, 1-5)
-  // Col AF (index 31) = osv_consent   (CONSENT_ACCEPTED / CONSENT_PENDING / etc.)
-  // Cols 32-42        = per-document 0/1 flags (11 documents)
+  var vendorRatings = [];
+  var vendorOSV     = [];
+  var vendorDocs    = [];
+
+  // ══ Vendor Score workbook — Vendor Scores (col H) + OSV Status (col N) ══
+  // Scores are out of 10 and bucketed into fifths for the distribution:
+  // 0-2 · 2-4 · 4-6 · 6-8 · 8-10, so bucket = floor(score / 2) clamped to 0..4
+  // (a score landing exactly on a boundary belongs to the higher band, e.g. 4 → 4-6,
+  // and a perfect 10 folds back into the top band).
+  // Rows join to onboarded vendors by GSTIN first, then by id — same keys the rest
+  // of the quality build uses. Vendors absent from this workbook stay unrated.
   try {
-    var vrd = qualityReadSheet_('Vendor Rating');
-    if (vrd.rows.length) {
-      var vrh = vrd.headers;
+    var vsd = qualityReadExternalSheet_(CONFIG.VENDOR_SCORE_SHEET_ID, CONFIG.VENDOR_SCORE_TAB);
+    if (vsd.error) {
+      Logger.log('Vendor Score workbook unreadable (' + vsd.error + ') — rating/OSV will be empty.');
+    } else if (vsd.rows.length) {
+      var vsh   = vsd.headers;
+      var vsGst = qualityFindCol_(vsh, ['gstin','gst_number','gst_no','gstin_number','gst']);
+      var vsId  = qualityFindCol_(vsh, ['seller_id','buyer_id','id','vendor_id','vendorid','entity_id']);
+      var vsNm  = qualityFindCol_(vsh, ['seller_name','name','vendor_name','business_name','company_name']);
 
-      var vidC  = qualityFindCol_(vrh, ['seller_id','id','vendor_id','vendorid']);
-      var vauC  = qualityFindCol_(vrh, ['audience','type','aud','seller_buyer']);
-      var nameC = qualityFindCol_(vrh, ['seller_name','name','vendor_name','business_name','company_name']);
-      if (nameC < 0) nameC = 1;
+      vsd.rows.forEach(function(row) {
+        var gst = vsGst >= 0 ? String(row[vsGst] || '').trim() : '';
+        var vid = vsId  >= 0 ? String(row[vsId]  || '').trim() : '';
+        var omp = (gst && ompGstinMap[gst]) || (vid && ompMap[vid]) || null;
+        if (!omp) return;   // not an OMP-onboarded vendor — out of scope
+        var aud = omp.aud === 'buyer' ? 'buyer' : 'seller';
 
-      // GSTIN column for rating GSTIN-match lookup
-      var vrGstC = qualityFindCol_(vrh, ['gstin','gst_number','gst_no','gstin_number','gst']);
-
-      // Rating: seller_rating is col AE; positional fallback index 30
-      var rC = qualityFindCol_(vrh, ['seller_rating','rating','vendor_rating','average_rating','avg_rating','score','overall_rating','stars']);
-      if (rC < 0) rC = 30;
-
-      // OSV: osv_consent is col AF; positional fallback index 31
-      var oC = qualityFindCol_(vrh, ['osv_consent','osv_status','osv','site_visit_status','field_verification_status','verification_status']);
-      if (oC < 0) oC = 31;
-
-      // Doc columns: individual document flags (the fixed 11 sit at cols 32-42;
-      // PWM is detected by name via docColIndex_ aliases).
-      var docIdx = DOC_NAMES.map(function(n) { return docColIndex_(vrh, n); });
-      // Positional fallback for the fixed 11 only when none were found by name;
-      // never overwrites name-detected extras like PWM.
-      if (docIdx.slice(0, DOC_FIXED_COUNT).every(function(i) { return i < 0; })) {
-        for (var _pf = 0; _pf < DOC_FIXED_COUNT; _pf++) docIdx[_pf] = 32 + _pf;
-      }
-      // Buyer id column — the Vendor Rating sheet keys sellers via seller_id and
-      // (when present) buyers via buyer_id. Detect it so buyer rows are labelled
-      // 'buyer' rather than falling through to 'seller'/'combined'.
-      var vBuyC = qualityFindCol_(vrh, ['buyer_id','buyerid']);
-
-      var vendorRatings = [];
-      var vendorOSV     = [];
-      var vendorDocs    = [];
-
-      vrd.rows.forEach(function(row) {
-        var rowAud = resolveAud_(row, vrh, vidC, vauC);
-        var ts = tgts_(rowAud);
-
-        // — Rating (OMP-onboarded only, matched by GSTIN) —
-        var vrGstin   = vrGstC >= 0 ? String(row[vrGstC] || '').trim() : '';
-        var ompRInfo  = vrGstin ? ompGstinMap[vrGstin] : null;
-        if (ompRInfo) {
-          var rv   = parseFloat(row[rC]);
-          var rAud = ompRInfo.aud;
-          ['seller' === rAud ? 'seller' : 'buyer', 'combined'].forEach(function(t) {
-            if (!isNaN(rv) && rv > 0 && rv <= 5) {
-              acc[t].r.ws    += rv;
-              acc[t].r.rated += 1;
-              acc[t].r.dist[Math.min(4, Math.max(0, Math.round(rv) - 1))] += 1;
-            }
+        // — Vendor Score (column H, out of 10) —
+        // A blank cell is unrated (NaN) and simply doesn't count. A literal 0 is a
+        // real score and is kept, so it lands in the 0-2 band rather than vanishing.
+        var sv = parseFloat(row[VS_COLS.denominator]);
+        if (!isNaN(sv) && sv >= 0 && sv <= 10) {
+          var band = Math.min(4, Math.max(0, Math.floor(sv / 2)));
+          [aud, 'combined'].forEach(function(t) {
+            acc[t].r.ws    += sv;
+            acc[t].r.rated += 1;
+            acc[t].r.dist[band] += 1;
           });
-          if (!isNaN(rv) && rv > 0 && rv <= 5) {
-            vendorRatings.push({
-              id:               ompRInfo.id   || String(row[vidC] || '').trim().slice(0, 30),
-              name:             ompRInfo.name || String(row[nameC] || '').trim().slice(0, 60),
-              gstin:            vrGstin.slice(0, 20),
-              rating:           Math.round(rv * 10) / 10,
-              onboardingStatus: ompRInfo.onboardingStatus,
-              category:         ompRInfo.category,
-              aud:              rAud
-            });
-          }
+          vendorRatings.push({
+            id:               omp.id   || vid.slice(0, 30),
+            name:             omp.name || (vsNm >= 0 ? String(row[vsNm] || '').trim().slice(0, 60) : ''),
+            gstin:            (omp.gstin || gst).slice(0, 20),
+            rating:           Math.round(sv * 10) / 10,
+            onboardingStatus: omp.onboardingStatus,
+            category:         omp.category,
+            aud:              aud
+          });
         }
 
-        // — OSV consent (OMP-onboarded sellers only; three-way: verified /
-        //   in-progress / not-initiated). The source column carries accepted,
-        //   pending and not-yet-started states — classify each so "In Progress"
-        //   reflects vendors mid-verification instead of folding them into
-        //   not-initiated. A blank cell means verification never started. —
-        var vid_ = String(row[vidC] || '').trim();
-        var ompInfo = ompMap[vid_];
-        if (ompInfo) {
-          var osRaw = String(row[oC] || '').trim();
+        // — OSV Status (column N; three-way: verified / in-progress / not-initiated) —
+        // Sellers only, matching how OSV is scoped everywhere else in the dashboard.
+        if (aud === 'seller') {
+          var osRaw = String(row[VS_COLS.osvStatus] || '').trim();
           var osUp  = osRaw.toUpperCase().replace(/\s+/g, '_');
           var osvStatus =
             (osUp === 'CONSENT_ACCEPTED' || osUp === 'YES' || osUp === 'Y' || osUp === 'TRUE'
@@ -1872,16 +1847,58 @@ function getQualityData() {
             acc['combined'].o.pending += 1;
           }
           vendorOSV.push({
-            id:               vid_.slice(0, 30),
-            name:             ompInfo.name || String(row[nameC] || '').trim().slice(0, 60),
-            gstin:            ompInfo.gstin,
+            id:               (omp.id || vid).slice(0, 30),
+            name:             omp.name || (vsNm >= 0 ? String(row[vsNm] || '').trim().slice(0, 60) : ''),
+            gstin:            omp.gstin || gst.slice(0, 20),
             consentRaw:       osRaw.slice(0, 30),
             status:           osvStatus,
-            onboardingStatus: ompInfo.onboardingStatus,
-            category:         ompInfo.category,
+            onboardingStatus: omp.onboardingStatus,
+            category:         omp.category,
             aud:              'seller'
           });
         }
+      });
+    }
+  } catch (e) { Logger.log('getQualityData vendor-score sheet: ' + e.message); }
+
+  // ── "Vendor Rating" sheet — document completeness only. Rating and OSV now
+  //    come from the Vendor Score workbook above.
+  // Cols 32-42 = per-document 0/1 flags (11 documents)
+  try {
+    var vrd = qualityReadSheet_('Vendor Rating');
+    if (vrd.rows.length) {
+      var vrh = vrd.headers;
+
+      var vidC  = qualityFindCol_(vrh, ['seller_id','id','vendor_id','vendorid']);
+      var vauC  = qualityFindCol_(vrh, ['audience','type','aud','seller_buyer']);
+      var nameC = qualityFindCol_(vrh, ['seller_name','name','vendor_name','business_name','company_name']);
+      if (nameC < 0) nameC = 1;
+
+      // GSTIN column, used to enrich document rows with OMP entity info
+      var vrGstC = qualityFindCol_(vrh, ['gstin','gst_number','gst_no','gstin_number','gst']);
+
+      // Doc columns: individual document flags (the fixed 11 sit at cols 32-42;
+      // PWM is detected by name via docColIndex_ aliases).
+      var docIdx = DOC_NAMES.map(function(n) { return docColIndex_(vrh, n); });
+      // Positional fallback for the fixed 11 only when none were found by name;
+      // never overwrites name-detected extras like PWM.
+      if (docIdx.slice(0, DOC_FIXED_COUNT).every(function(i) { return i < 0; })) {
+        for (var _pf = 0; _pf < DOC_FIXED_COUNT; _pf++) docIdx[_pf] = 32 + _pf;
+      }
+      // Buyer id column — the Vendor Rating sheet keys sellers via seller_id and
+      // (when present) buyers via buyer_id. Detect it so buyer rows are labelled
+      // 'buyer' rather than falling through to 'seller'/'combined'.
+      var vBuyC = qualityFindCol_(vrh, ['buyer_id','buyerid']);
+
+      vendorDocs = [];
+
+      vrd.rows.forEach(function(row) {
+        var rowAud = resolveAud_(row, vrh, vidC, vauC);
+        var ts = tgts_(rowAud);
+
+        // Rating and OSV are no longer read here — both now come from the Vendor
+        // Score workbook (see the dedicated pass above). This sheet supplies
+        // document completeness only.
 
         // — Doc completeness: per-document submission list + counts —
         // docList carries every document so the Document Management module can

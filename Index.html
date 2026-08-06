@@ -4289,6 +4289,15 @@ function _mmCatRows(vs, vb, field) {
     .filter(function(x){ return (x.s + x.b) > 0; })
     .sort(function(a, b){ return (b.s + b.b) - (a.s + a.b); });
 }
+// ── Vendor score bands ──────────────────────────────────────────────────
+// Scores come from the Vendor Score workbook out of 10, and are shown in five
+// bands: 0-2 · 2-4 · 4-6 · 6-8 · 8-10. Band i covers [i*2, i*2+2), so a score
+// landing on a boundary belongs to the higher band and a perfect 10 folds back
+// into the top band. These mirror the server's bucketing in getQualityData().
+function _vsBand(score)      { return Math.min(4, Math.max(0, Math.floor(score / 2))); }
+function _vsBandLabel(i)     { return (i * 2) + '–' + (i * 2 + 2); }
+function _vsBandColor(i)     { return i >= 3 ? '#22C55E' : i === 2 ? '#F59E0B' : '#EF4444'; }
+
 // category → { v:avgTAT|null, n:records carrying a TAT } for one audience.
 // n is kept so the roll-ups can weight by volume instead of averaging averages.
 function _mmCatTatMap(list) {
@@ -4498,20 +4507,20 @@ function _mmVertModules(key) {
     if (rRated > 0) {
       var rMaxD = Math.max.apply(null, rDist) || 1;
       rExtra = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
-        + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">Rating Distribution</div>';
-      for (var starI = 5; starI >= 1; starI--) {
-        var rC   = rDist[starI - 1] || 0;
+        + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">Score Distribution · out of 10</div>';
+      for (var bandI = 4; bandI >= 0; bandI--) {
+        var rC   = rDist[bandI] || 0;
         var rBP  = Math.round(rC / rMaxD * 100);
         var rDP  = rRated > 0 ? Math.round(rC / rRated * 100) : 0;
-        var rCol = starI >= 4 ? '#22C55E' : starI === 3 ? '#F59E0B' : '#EF4444';
-        var rSV  = selVR.filter(function(v){ return Math.round(v.rating) === starI; })
+        var rCol = _vsBandColor(bandI);
+        var rSV  = selVR.filter(function(v){ return _vsBand(v.rating) === bandI; })
                         .sort(function(a, b){ return b.rating - a.rating; });
-        var rTid = 'mp-svl-' + starI;
+        var rTid = 'mp-svl-' + bandI;
         if (rSV.length) {
           rExtra += '<div class="km-star-row km-star-clickable" role="button" tabindex="0"'
             + ' onclick="_kmStarToggle(\'' + rTid + '\',this)"'
             + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmStarToggle(\'' + rTid + '\',this)}">'
-            + '<span class="km-star-n">' + starI + '★</span>'
+            + '<span class="km-star-n">' + _vsBandLabel(bandI) + '</span>'
             + '<div class="km-star-track"><div class="km-star-fill" style="width:' + rBP + '%;background:' + rCol + '"></div></div>'
             + '<span class="km-star-cnt">' + fmt(rC) + '</span>'
             + '<span class="km-star-pct">' + rDP + '% <span class="km-star-arr">▶</span></span>'
@@ -4521,14 +4530,14 @@ function _mmVertModules(key) {
                 return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
                   + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
                   + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
-                  + '<span class="km-vrating" style="color:' + rCol + '">' + v.rating.toFixed(1) + '★</span>'
+                  + '<span class="km-vrating" style="color:' + rCol + '">' + v.rating.toFixed(1) + '</span>'
                   + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '')
                   + '</div>';
               }).join('')
             + '</div>';
         } else {
           rExtra += '<div class="km-star-row">'
-            + '<span class="km-star-n">' + starI + '★</span>'
+            + '<span class="km-star-n">' + _vsBandLabel(bandI) + '</span>'
             + '<div class="km-star-track"><div class="km-star-fill" style="width:' + rBP + '%;background:' + rCol + '"></div></div>'
             + '<span class="km-star-cnt">' + fmt(rC) + '</span>'
             + '<span class="km-star-pct">' + rDP + '%</span>'
@@ -4541,8 +4550,8 @@ function _mmVertModules(key) {
     } else { rExtra = _mmExtraCache[_rCKey]; }
     mods.push({ t:'Vendor Ratings', ic:MM_IC.star, tone:'t-amber', kind:'module', expand:'inline-panel', eye:'Vendor Rating',
       panel:{
-        eye:'Vendor Rating · Average Seller Rating', badge:'Sellers only',
-        headline:{ v:(rAvg != null ? rAvg.toFixed(1) : '—'), suffix:'★', raw:true, rawv:(rAvg != null ? rAvg.toFixed(1) + '★' : '—'), label:'Average Seller Rating', tone:'warn' },
+        eye:'Vendor Score · Average Seller Score', badge:'Sellers only',
+        headline:{ v:(rAvg != null ? rAvg.toFixed(1) : '—'), raw:true, rawv:(rAvg != null ? rAvg.toFixed(1) + ' / 10' : '—'), label:'Average Seller Score (out of 10)', tone:'warn' },
         bar:[ { label:'Rated', v:rRated, color:'#16a34a' }, { label:'Unrated', v:rUnr, color:'#8a93a1' } ],
         tiles:[ { label:'Sellers Rated', v:rRated, sub:'have a score', tone:'good' },
                 { label:'Unrated', v:rUnr, sub:'no score yet' } ],
@@ -5982,25 +5991,25 @@ function openKpiModal(cardId) {
     var qd = qualityData || { success: false };
     var S2 = '#1DC797', B2 = '#005DFF';
 
-    // Reusable star-distribution builder
+    // Reusable score-distribution builder — five bands across a 0-10 score.
     var starBarsHtml = function(dist, rated, vendors) {
       vendors = vendors || [];
       var maxD   = Math.max.apply(null, dist) || 1;
       var ratedD = rated || 1;
       var h = '';
-      for (var si = 5; si >= 1; si--) {
-        var rc   = dist[si - 1] || 0;
+      for (var si = 4; si >= 0; si--) {
+        var rc   = dist[si] || 0;
         var bpct = Math.round(rc / maxD * 100);
         var dpct = Math.round(rc / ratedD * 100);
-        var bcol = si >= 4 ? '#22C55E' : si === 3 ? '#F59E0B' : '#EF4444';
-        var sv   = vendors.filter(function(v) { return Math.round(v.rating) === si; })
+        var bcol = _vsBandColor(si);
+        var sv   = vendors.filter(function(v) { return _vsBand(v.rating) === si; })
                           .sort(function(a, b) { return b.rating - a.rating; });
         var tid  = 'km-svl-' + si;
         if (sv.length > 0) {
           h += '<div class="km-star-row km-star-clickable" role="button" tabindex="0"'
             + ' onclick="_kmStarToggle(\'' + tid + '\',this)"'
             + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmStarToggle(\'' + tid + '\',this)}">'
-            + '<span class="km-star-n">' + si + '★</span>'
+            + '<span class="km-star-n">' + _vsBandLabel(si) + '</span>'
             + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
             + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
             + '<span class="km-star-pct">' + dpct + '% <span class="km-star-arr">▶</span></span>'
@@ -6010,14 +6019,14 @@ function openKpiModal(cardId) {
                 return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
                   + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
                   + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
-                  + '<span class="km-vrating" style="color:' + bcol + '">' + v.rating.toFixed(1) + '★</span>'
+                  + '<span class="km-vrating" style="color:' + bcol + '">' + v.rating.toFixed(1) + '</span>'
                   + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.category) + '</span>' : '')
                   + '</div>';
               }).join('')
             + '</div>';
         } else {
           h += '<div class="km-star-row">'
-            + '<span class="km-star-n">' + si + '★</span>'
+            + '<span class="km-star-n">' + _vsBandLabel(si) + '</span>'
             + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
             + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
             + '<span class="km-star-pct">' + dpct + '%</span>'
@@ -6053,12 +6062,12 @@ function openKpiModal(cardId) {
         var rTotal = r.total || 0;
         var selVR  = (qd.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
         content =
-          hero(avg + (r.avg != null ? '★' : ''), 'Average Seller Rating')
+          hero(avg + (r.avg != null ? ' / 10' : ''), 'Average Seller Score (out of 10)')
           + srow([
               {v: fmt(rRated),                  l: 'Sellers Rated',       s: 'have a score'},
               {v: fmt(rTotal - rRated),          l: 'Unrated',             s: 'no score yet'},
             ])
-          + (rRated > 0 ? sec('Rating Distribution', starBarsHtml(r.dist || [0,0,0,0,0], rRated, selVR)) : '');
+          + (rRated > 0 ? sec('Score Distribution · out of 10', starBarsHtml(r.dist || [0,0,0,0,0], rRated, selVR)) : '');
       }
 
     } else if (cardId === 'osv') {
@@ -6522,7 +6531,7 @@ function _patchQualityKpiCards() {
   var rEl = document.getElementById('qkpi-rating');
   if (rEl) {
     var r    = qc.rating || {};
-    var avg  = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
+    var avg  = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
     var rOmp = r.total || 0;
     var rsb  = fmt(r.rated || 0) + (rOmp > 0 ? ' of ' + fmt(rOmp) + ' OMP' : '') + ' rated';
     var rv   = rEl.querySelector('.vkpi-val'); if (rv) rv.textContent = avg;
@@ -6865,7 +6874,7 @@ function buildQualitySect(qd, aud) {
 
   // ── Vendor Rating ──────────────────────────────────────────
   // Header: avg score  |  N rated / N total
-  // Rows: [★N] [bar] [count] [pct%]  — one per star level
+  // Rows: [band] [bar] [count] [pct%]  — one per score band (0-2 … 8-10)
   if (q.rating && q.rating.total > 0) {
     var r    = q.rating;
     var avg  = r.avg != null ? r.avg.toFixed(1) : '—';
@@ -6875,13 +6884,13 @@ function buildQualitySect(qd, aud) {
       ? fmt(r.rated) + ' of ' + fmt(r.total) + ' rated'
       : fmt(r.rated) + ' rated';
     var bars = '';
-    for (var i = 5; i >= 1; i--) {
-      var rc   = r.dist[i - 1] || 0;
+    for (var i = 4; i >= 0; i--) {
+      var rc   = r.dist[i] || 0;
       var bpct = Math.round(rc / maxD * 100);
       var dpct = Math.round(rc / rRated * 100);
-      var bcol = i >= 4 ? '#22C55E' : i === 3 ? '#F59E0B' : '#EF4444';
+      var bcol = _vsBandColor(i);
       bars += '<div class="cc-qsect-sbar">'
-        + '<span class="cc-qsect-sbar-n">' + i + '</span>'
+        + '<span class="cc-qsect-sbar-n">' + _vsBandLabel(i) + '</span>'
         + '<div class="cc-qsect-sbar-t"><div class="cc-qsect-sbar-f" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
         + '<span class="cc-qsect-sbar-c">' + (rc > 999 ? Math.round(rc / 1000) + 'k' : rc) + '</span>'
         + '<span class="cc-qsect-sbar-p">' + dpct + '%</span>'
@@ -6973,7 +6982,7 @@ function _buildSellerQualStrip(qc) {
       + '</div>';
   }
   var r = qc.rating || {}, o = qc.osv || {};
-  var rAvg = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
+  var rAvg = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
   var rSub = fmt(r.rated || 0) + (r.total > 0 ? ' of ' + fmt(r.total) + ' OMP' : '') + ' rated';
   var oPct = o.total > 0 ? Math.round((o.completed || 0) / o.total * 100) + '%' : '—';
   var oSub = fmt(o.completed || 0) + (o.total > 0 ? ' of ' + fmt(o.total) + ' OMP' : '') + ' OSV Consent given';
@@ -7086,7 +7095,7 @@ function renderBizRail(cfg, vs) {
     if (r && r.avg != null) {
       var rPct = Math.min(100, r.avg / 5 * 100);
       opCards.push(opCard('rating', 'Vendor Rating',
-        '<div class="op-big">' + r.avg.toFixed(1) + '<span class="op-star">★</span></div>'
+        '<div class="op-big">' + r.avg.toFixed(1) + '<small> / 10</small></div>'
         + '<div class="op-sub">' + fmt(r.rated || 0) + (r.total > 0 ? ' of ' + fmt(r.total) + ' OMP' : '') + ' rated</div>'
         + '<div class="op-bar"><i style="width:' + rPct.toFixed(0) + '%"></i></div>', true));
     } else {
@@ -7418,7 +7427,7 @@ function _buildRailQual(qc, vname) {
   var ratingVal, ratingSub, osvVal, osvSub;
   if (qc) {
     var r = qc.rating || {}, o = qc.osv || {};
-    ratingVal = r.avg != null ? r.avg.toFixed(1) + '★' : '—';
+    ratingVal = r.avg != null ? r.avg.toFixed(1) + ' / 10' : '—';
     ratingSub = fmt(r.rated || 0) + (r.total > 0 ? ' of ' + fmt(r.total) + ' OMP' : '') + ' rated';
     osvVal    = o.total > 0 ? Math.round((o.completed || 0) / o.total * 100) + '%' : '—';
     osvSub    = fmt(o.completed || 0) + (o.total > 0 ? ' of ' + fmt(o.total) + ' OMP' : '') + ' consent given';
