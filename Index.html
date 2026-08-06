@@ -4404,11 +4404,20 @@ function _mmVertModules(key) {
     }
   });
   if (tatCats.length) {
+    // Each cell carries the sample it was averaged from. A category where only a
+    // handful of records have a review date would otherwise show a confident-looking
+    // number built on almost nothing, which reads as simply wrong.
     var tCell = function(o, cls) {
-      var txt = (o && o.n > 0 && o.v != null)
+      var has = !!(o && o.n > 0 && o.v != null);
+      var txt = has
         ? o.v + '<small style="font-size:.62em;font-weight:600;color:var(--txt3);letter-spacing:0">d</small>'
         : '<span style="color:var(--txt3);font-weight:600">—</span>';
-      return '<div class="mp-mx-cell' + (cls || '') + '"><span class="mp-mx-n">' + txt + '</span></div>';
+      var sub = has
+        ? '<div style="font-size:.6rem;color:var(--txt3);margin-top:2px;font-weight:600">n=' + fmt(o.n) + '</div>'
+        : '';
+      var ttl = has ? ' title="Averaged over ' + fmt(o.n) + ' onboarded record' + (o.n === 1 ? '' : 's') + ' with a review date"'
+                    : ' title="No onboarded record here carries a review date"';
+      return '<div class="mp-mx-cell' + (cls || '') + '"' + ttl + '><span class="mp-mx-n">' + txt + '</span>' + sub + '</div>';
     };
     var rowS  = tatCats.map(function(c){ return c.s; });
     var rowB  = tatCats.map(function(c){ return c.b; });
@@ -4424,10 +4433,20 @@ function _mmVertModules(key) {
       + '<div class="mp-mx-rlbl">Buyers</div>'  + rowB.map(function(o){ return tCell(o); }).join('') + tCell(totB, ' tot')
       + '<div class="mp-mx-rlbl tot">Overall</div>' + colT.map(function(o){ return tCell(o, ' tot'); }).join('')
       + tCell(grandT, ' tot grand');
+    // Coverage: how much of the onboarded base actually carries a review date.
+    // Everything else is excluded rather than measured from a different start.
+    var tatN = grandT ? grandT.n : 0;
+    var covPct = onb > 0 ? Math.round(tatN / onb * 100) : 0;
+    var covNote = onb > 0 && tatN < onb
+      ? '<div style="font-size:.68rem;color:var(--txt3);margin-top:9px;line-height:1.5">'
+        + 'Based on ' + fmt(tatN) + ' of ' + fmt(onb) + ' onboarded (' + covPct + '%) that carry a review date. '
+        + 'Records without one are excluded so every figure is measured the same way.</div>'
+      : '';
     volTatExtra = '<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">'
       + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:3px">Average TAT · Seller / Buyer × Category</div>'
       + '<div style="font-size:.72rem;color:var(--txt3);margin-bottom:10px">Measured from In Review to Onboarded, in days</div>'
       + '<div class="mp-matrix" style="grid-template-columns:auto repeat(' + (tatCats.length + 1) + ',minmax(0,1fr))">' + tmx + '</div>'
+      + covNote
       + '</div>';
   }
   mods.push({ t:'Volume', ic:MM_IC.grid, tone:'t-ink', kind:'module', expand:'inline-panel',

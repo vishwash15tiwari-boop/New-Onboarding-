@@ -613,11 +613,30 @@ function debugTAT() {
         + ' · Avg TAT (InReview→Onb) ' + (n ? Math.round(sumTat / n) + 'd over ' + n : '—')
         + ' · baseline (Created→Onb) ' + (nBase ? Math.round(sumBase / nBase) + 'd over ' + nBase : '—'));
       Logger.log('  TAT basis over ' + completed + ' completed → review: ' + basis.review
-        + ' · level1: ' + basis.level1 + ' · NO START (reports —): ' + basis.none);
+        + ' · NO START (reports —): ' + basis.none);
       if (basis.none > 0 && basis.none === completed) {
         Logger.log('  ⚠ ' + aud + ' has NO usable review-start column — TAT will show "—".'
           + ' Add the real header to the reviewDate list in normalizeRows().');
       }
+      // Per-category coverage — a category whose average looks wrong is usually one
+      // where only a few onboarded records carry a review date.
+      var byCat = {};
+      rows.forEach(function(r) {
+        if (r.status !== 'COMPLETED') return;
+        var c = r.category || 'Others';
+        if (!byCat[c]) byCat[c] = { onb: 0, withTat: 0, sum: 0 };
+        byCat[c].onb++;
+        if (r.onbTAT !== null && r.onbTAT >= 0 && r.onbTAT <= TAT_MAX_DAYS) {
+          byCat[c].withTat++; byCat[c].sum += r.onbTAT;
+        }
+      });
+      Object.keys(byCat).sort().forEach(function(c) {
+        var b = byCat[c];
+        var pct = b.onb ? Math.round(b.withTat / b.onb * 100) : 0;
+        Logger.log('    ' + c + ': ' + b.withTat + '/' + b.onb + ' onboarded have a TAT (' + pct + '%)'
+          + ' · avg ' + (b.withTat ? Math.round(b.sum / b.withTat) + 'd' : '—')
+          + (b.withTat > 0 && pct < 40 ? '   ⚠ thin sample — average is unreliable' : ''));
+      });
     } catch (e) { Logger.log(aud + ' match check failed: ' + e.message); }
   });
   Logger.log('════ END ════');
@@ -678,14 +697,17 @@ function normalizeRows(raw, cfg) {
     // from the seller-centric 5292 sheet) ended up showing an inflated TAT. A record
     // whose review start cannot be established now reports no TAT: it renders as "—"
     // and is excluded from every average rather than inflating it.
-    var level1   = lookupLevel1_(recId, recName);
+    // The start is the review timestamp and nothing else. There is deliberately no
+    // per-record fallback to the Level 1 date: it applies unevenly across records, so
+    // one category ends up averaging review→onboarded spans while another averages
+    // the longer level1→onboarded spans, making the two incomparable — which is how
+    // Metal came out inflated against Plastic. Level 1 is also lower-confidence, since
+    // lookupLevel1_ falls back to matching by vendor NAME and takes the latest date.
+    // A record with no usable review timestamp reports no TAT, so every figure shown
+    // is measured the same way.
     var inWindow = function(d) { return !!d && !!onboarded && d <= onboarded && (!created || d >= created); };
-    var tatStart = inWindow(reviewDate) ? reviewDate
-                 : inWindow(level1)     ? level1
-                 : null;
-    // Which source the TAT was measured from — surfaced by debugTAT() so a feed
-    // with no usable review column is visible instead of silently mis-measured.
-    var tatBasis = !tatStart ? null : (tatStart === reviewDate ? 'review' : 'level1');
+    var tatStart = inWindow(reviewDate) ? reviewDate : null;
+    var tatBasis = tatStart ? 'review' : null;
     var tat = (status === 'COMPLETED' && tatStart && onboarded) ? dateDiffDays(tatStart, onboarded) : null;
     if (tat !== null && tat < 0) tat = null;
 
