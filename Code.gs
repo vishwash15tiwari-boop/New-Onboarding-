@@ -1817,6 +1817,15 @@ function getQualityData() {
       var vsGst = qualityFindCol_(vsh, ['gstin','gst_number','gst_no','gstin_number','gst']);
       var vsId  = qualityFindCol_(vsh, ['seller_id','buyer_id','id','vendor_id','vendorid','entity_id']);
       var vsNm  = qualityFindCol_(vsh, ['seller_name','name','vendor_name','business_name','company_name']);
+      // Optional enrichment for the OSV records table. Absent columns simply leave
+      // the corresponding cell blank rather than blocking the row.
+      var vsCat = qualityFindCol_(vsh, ['business_category','category','vertical_category','cat','material','material_type']);
+      var vsBv  = qualityFindCol_(vsh, ['business_vertical','vertical','biz_vertical']);
+      var vsAsg = qualityFindCol_(vsh, ['assigned_user','assigned_to','assignee','owner','sales_poc','poc',
+                                        'account_manager','relationship_manager','rm','kam','executive','agent']);
+      var vsUpd = qualityFindCol_(vsh, ['last_updated','last_updated_date','last_updated_at','updated_at',
+                                        'updated_date','modified_at','last_modified','last_modified_date',
+                                        'osv_date','osv_updated_date','consent_date','status_date']);
 
       vsd.rows.forEach(function(row) {
         var gst = vsGst >= 0 ? String(row[vsGst] || '').trim() : '';
@@ -1875,7 +1884,16 @@ function getQualityData() {
             consentRaw:       osRaw.slice(0, 30),
             status:           osvStatus,
             onboardingStatus: omp.onboardingStatus,
-            category:         omp.category,
+            // Prefer the onboarding record's category/vertical (authoritative); fall
+            // back to the score sheet's own columns when the join carries neither.
+            category:         omp.category || (vsCat >= 0 ? String(row[vsCat] || '').trim().slice(0, 60) : ''),
+            vertical:         omp.bizVertical || (vsBv >= 0 ? String(row[vsBv] || '').trim().slice(0, 40) : ''),
+            assignedTo:       vsAsg >= 0 ? String(row[vsAsg] || '').trim().slice(0, 60) : '',
+            updatedDate:      (function() {
+                                if (vsUpd < 0) return '';
+                                var _d = parseDate(row[vsUpd]);
+                                return _d ? fmtDate(_d) : '';   // '' not '—', so exports stay clean
+                              }()),
             aud:              'seller'
           });
         }
@@ -2088,6 +2106,9 @@ function buildOmpOnboardedMap_() {
       name:             nmC  >= 0 ? String(row[nmC]  || '').trim().slice(0, 60) : '',
       gstin:            gstC >= 0 ? String(row[gstC] || '').trim().slice(0, 20) : '',
       category:         catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
+      // Raw business vertical, kept for the OSV records table. Always an Open
+      // Marketplace value here — the filter above admits nothing else.
+      bizVertical:      bvC  >= 0 ? String(row[bvC]  || '').trim().slice(0, 40) : '',
       onboardingStatus: st
     };
   });

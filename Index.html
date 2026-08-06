@@ -3738,6 +3738,23 @@ var MR_COLS = [
   { key:'txnGmv',      label:'Total GMV' },
   { key:'txnDate',     label:'Latest Txn' },
 ];
+// OSV records view — a different dataset from MR_COLS. These rows come from the
+// quality feed (qualityData.vendorOSV), one per OMP-onboarded seller, rather than
+// from the vertical's onboarding rows, because OSV status lives only in that feed.
+var MR_OSV_COLS = [
+  { key:'name',        label:'Vendor Name',       always:true },
+  { key:'id',          label:'Vendor ID' },
+  { key:'gstin',       label:'GSTIN' },
+  { key:'category',    label:'Category' },
+  { key:'vertical',    label:'Business Vertical' },
+  { key:'osvStatus',   label:'OSV Status' },
+  { key:'assignedTo',  label:'Assigned User' },
+  { key:'updatedDate', label:'Last Updated' },
+];
+// status key → display label, used by the table, filters and export alike
+var OSV_LABELS = { verified:'Done', in_progress:'In Progress', not_initiated:'Not Initiated' };
+var OSV_ORDER  = ['verified', 'in_progress', 'not_initiated'];
+
 var MR_MOD_CFG = {
   onboarded:  { label:'Volume · Onboarded',       preStatus:'COMPLETED' },
   transacted: { label:'Transacted Sellers',        preStatus:'COMPLETED', isTxnView:true },
@@ -4600,33 +4617,25 @@ function _mmVertModules(key) {
         + (osvIP  ? '<div class="km-prog-seg" style="flex:' + osvIP  + ';background:#F59E0B"></div>' : '')
         + (osvNI  ? '<div class="km-prog-seg" style="flex:' + osvNI  + ';background:#8b5cf6"></div>' : '')
         + '</div>' : '';
-    var mkOsvTile = function(k, cnt, c, lbl, vds) {
-      var tid = ogid + '-' + k;
-      var inner = '<div class="km-sg-v">' + fmt(cnt) + '</div>'
-        + '<div class="km-sg-l"><i class="km-dot" style="background:' + c + '"></i>' + esc(lbl)
-        + (vds.length ? ' <span class="km-star-arr">▶</span>' : '') + '</div>';
-      if (!vds.length) return '<div class="km-sg-item">' + inner + '</div>';
+    // Each tile opens the OSV records table pre-filtered to its own status, rather
+    // than expanding an inline list — the table carries the full record detail
+    // (vertical, assigned user, last updated) with search, sort and export.
+    var mkOsvTile = function(statusKey, cnt, c, lbl) {
+      var dead = !cnt;
+      if (dead) {
+        return '<div class="km-sg-item">'
+          + '<div class="km-sg-v">' + fmt(cnt) + '</div>'
+          + '<div class="km-sg-l"><i class="km-dot" style="background:' + c + '"></i>' + esc(lbl) + '</div>'
+          + '</div>';
+      }
+      var call = "openOsvRecords('" + statusKey + "')";
       return '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
-        + ' onclick="_kmTileToggle(\'' + tid + '\',\'' + ogid + '\',this)"'
-        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmTileToggle(\'' + tid + '\',\'' + ogid + '\',this)}">'
-        + inner + '</div>';
-    };
-    var mkOsvPanel = function(k, vds) {
-      if (!vds.length) return '';
-      return '<div id="' + ogid + '-' + k + '" class="km-tile-vlist" style="display:none">'
-        + vds.slice(0, 60).map(function(v) {
-            var isV  = v.status === 'verified';
-            var isIP = v.status === 'in_progress';
-            var cBg  = isV ? 'rgba(48,209,88,.15)' : isIP ? 'rgba(245,158,11,.15)' : 'var(--bg2)';
-            var cClr = isV ? '#248A3D'             : isIP ? '#B45309'              : 'var(--txt3)';
-            var cLbl = v.consentRaw ? esc(v.consentRaw) : (isV ? 'Yes' : isIP ? 'Pending' : 'No / Blank');
-            return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
-              + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
-              + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
-              + '<span class="km-vbadge" style="background:' + cBg + ';color:' + cClr + '">' + cLbl + '</span>'
-              + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '')
-              + '</div>';
-          }).join('')
+        + ' title="View the ' + esc(cnt + ' ' + lbl) + ' vendor records"'
+        + ' onclick="' + call + '"'
+        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + call + '}">'
+        + '<div class="km-sg-v">' + fmt(cnt) + '</div>'
+        + '<div class="km-sg-l"><i class="km-dot" style="background:' + c + '"></i>' + esc(lbl)
+        + ' <span class="km-star-arr" style="transform:none">→</span></div>'
         + '</div>';
     };
     // Build OSV extra section — cached so repeated tree rebuilds skip the string work
@@ -4640,11 +4649,11 @@ function _mmVertModules(key) {
         + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">Consent Status</div>'
         + osvBarH
         + '<div class="km-sg" id="' + ogid + '-g" style="grid-template-columns:repeat(3,1fr);margin-top:8px">'
-        + mkOsvTile('v', osvVer, 'var(--st-onboarded)', 'Done',          verVL)
-        + mkOsvTile('p', osvIP,  '#F59E0B',              'In Progress',   ipVL)
-        + mkOsvTile('n', osvNI,  '#8b5cf6',              'Not Initiated', niVL)
+        + mkOsvTile('verified',      osvVer, 'var(--st-onboarded)', 'Done')
+        + mkOsvTile('in_progress',   osvIP,  '#F59E0B',             'In Progress')
+        + mkOsvTile('not_initiated', osvNI,  '#8b5cf6',             'Not Initiated')
         + '</div>'
-        + mkOsvPanel('v', verVL) + mkOsvPanel('p', ipVL) + mkOsvPanel('n', niVL)
+        + '<div style="font-size:.68rem;color:var(--txt3);margin-top:9px">Select a status to open its vendor records.</div>'
         + '</div>';
       _mmExtraCache[_oCKey] = osvExtra;
     }
@@ -9462,7 +9471,41 @@ document.addEventListener('keydown', function(e) {
 // Opens when "View Detailed Records" is clicked in any module panel.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// OSV records — a record-level table of every OMP-onboarded seller and its OSV
+// state, sourced from the quality feed rather than the vertical's onboarding rows.
+// `status` optionally pre-filters to one bucket ('verified' | 'in_progress' |
+// 'not_initiated'), which is what the Done / In Progress / Not Initiated tiles pass.
+function openOsvRecords(status) {
+  var rows = (qualityData && qualityData.vendorOSV) || [];
+  var key = activeVertKey || selectedVert;
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var label = status && OSV_LABELS[status]
+    ? 'OSV Status · ' + OSV_LABELS[status]
+    : 'OSV Status · All Vendors';
+  _mrCtx = {
+    module: 'osv', label: label, vertLabel: (vcfg && vcfg.name) || key || '',
+    preStatus: null, forceSeller: true, osv: true, cfg: { label: label }
+  };
+  _mrRows = rows.slice();
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus: (status && OSV_LABELS[status]) ? status : 'All',
+           vertical:'All', assigned:'All' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  // Hide Assigned User / GSTIN when the feed carries nothing for them, so the
+  // table never shows a column of dashes.
+  _mrColVis = {};
+  if (!rows.some(function(r) { return r.assignedTo; })) _mrColVis['assignedTo'] = true;
+  if (!rows.some(function(r) { return r.updatedDate; })) _mrColVis['updatedDate'] = true;
+  if (!rows.some(function(r) { return r.gstin; }))      _mrColVis['gstin'] = true;
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+}
+
 function openModRecords(module) {
+  if (module === 'osv') return openOsvRecords(null);
   var cfg = MR_MOD_CFG[module];
   if (!cfg) { openRecordsSheet(selectedAud || 'seller'); return; }
   var key = activeVertKey || selectedVert;
@@ -9473,10 +9516,7 @@ function openModRecords(module) {
   _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All', ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'' };
   _mrSort = { key:'', dir:1 };
   _mrPg = { size:25, page:0 };
-  if (module === 'osv') {
-    // OSV view: name + category only
-    _mrColVis = { id:true, vendorType:true, status:true, state:true, gstin:true, createdDate:true, onbDate:true, tat:true, txn:true, txnCount:true, txnGmv:true, txnDate:true };
-  } else if (cfg.isTxnView) {
+  if (cfg.isTxnView) {
     // Transacted-sellers view: show name, category, vendorType, state, txnCount, txnGmv, txnDate
     _mrColVis = { id:true, status:true, gstin:true, createdDate:true, tat:true, txn:true };
   } else {
@@ -9505,8 +9545,18 @@ document.addEventListener('keydown', function(e) {
   if (ovl && ovl.classList.contains('mr-open')) { e.stopPropagation(); closeMr(); }
 });
 
+// Coloured pill for an OSV state, matching the tile colours in the panel.
+function _osvChip(status) {
+  var c = status === 'verified'    ? { bg:'rgba(48,209,88,.15)',  fg:'#248A3D' }
+        : status === 'in_progress' ? { bg:'rgba(245,158,11,.15)', fg:'#B45309' }
+        :                            { bg:'var(--bg2)',           fg:'var(--txt3)' };
+  return '<span class="km-vbadge" style="background:' + c.bg + ';color:' + c.fg + ';font-weight:600">'
+    + esc(OSV_LABELS[status] || status || '—') + '</span>';
+}
+
+function _mrColSet() { return (_mrCtx && _mrCtx.osv) ? MR_OSV_COLS : MR_COLS; }
 function _mrVisibleCols() {
-  return MR_COLS.filter(function(c) { return !_mrColVis[c.key]; });
+  return _mrColSet().filter(function(c) { return !_mrColVis[c.key]; });
 }
 
 function _mrRenderHeader() {
@@ -9545,6 +9595,25 @@ function _mrRenderFilters() {
   var cfg = _mrCtx.cfg;
   var noStatus = !!_mrCtx.preStatus;
 
+  // OSV dataset has its own filter set — the onboarding filters (vendor type,
+  // state, GST, transaction) don't exist on these rows.
+  if (_mrCtx.osv) {
+    var osvOpts = OSV_ORDER.filter(function(k) {
+      return _mrRows.some(function(r) { return r.status === k; });
+    }).map(function(k) { return OSV_LABELS[k]; });
+    el.innerHTML =
+        '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search vendor, ID or GSTIN…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
+      + _mrSel('mr-f-osv',  'OSV Statuses',  osvOpts,               (OSV_LABELS[_mrF.osvStatus] || 'All'), 'mrFChange()')
+      + _mrSel('mr-f-cat',  'Categories',    _mrUniq('category'),   _mrF.category, 'mrFChange()')
+      + _mrSel('mr-f-vert', 'Verticals',     _mrUniq('vertical'),   _mrF.vertical, 'mrFChange()')
+      + (_mrRows.some(function(r){ return r.assignedTo; })
+          ? _mrSel('mr-f-asg', 'Users', _mrUniq('assignedTo'), _mrF.assigned, 'mrFChange()') : '')
+      + '<input type="date" class="filter-select" id="mr-f-d1" title="Last updated from" value="' + esc(_mrF.dateStart) + '" onchange="mrFChange()" style="font-size:11px">'
+      + '<input type="date" class="filter-select" id="mr-f-d2" title="Last updated to" value="' + esc(_mrF.dateEnd) + '" onchange="mrFChange()" style="font-size:11px">'
+      + '<button class="vd-close" onclick="mrFClear()" style="flex-shrink:0">Clear</button>';
+    return;
+  }
+
   var html = '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search name, GSTIN or ID…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
     + _mrSel('mr-f-cat',   'Categories',  _mrUniq('category'),  _mrF.category,  'mrFChange()')
     + _mrSel('mr-f-ven',   'Vendor Types', _mrUniq('vendorType'), _mrF.vendor,  'mrFChange()')
@@ -9567,6 +9636,24 @@ function _mrPreFilter(r) {
 
 function _mrUserFilter(r) {
   var f = _mrF;
+  if (_mrCtx && _mrCtx.osv) {
+    if (f.osvStatus !== 'All' && r.status !== f.osvStatus) return false;
+    if (f.category  !== 'All' && r.category !== f.category) return false;
+    if (f.vertical  !== 'All' && r.vertical !== f.vertical) return false;
+    if (f.assigned  !== 'All' && r.assignedTo !== f.assigned) return false;
+    if (f.dateStart || f.dateEnd) {
+      var od = parseDMY(r.updatedDate);
+      if (!od) return false;                       // undated rows drop out of a date range
+      if (f.dateStart && od < new Date(f.dateStart)) return false;
+      if (f.dateEnd   && od > new Date(f.dateEnd))   return false;
+    }
+    var oq = (f.search || '').toLowerCase();
+    if (oq && (r.name       || '').toLowerCase().indexOf(oq) === -1
+           && (r.gstin      || '').toLowerCase().indexOf(oq) === -1
+           && (r.assignedTo || '').toLowerCase().indexOf(oq) === -1
+           && String(r.id   || '').toLowerCase().indexOf(oq) === -1) return false;
+    return true;
+  }
   if (f.category !== 'All' && r.category !== f.category) return false;
   if (f.vendor   !== 'All' && r.vendorType !== f.vendor) return false;
   if (f.status   !== 'All' && r.status !== f.status) return false;
@@ -9608,11 +9695,21 @@ function _mrFilteredRows() {
   return _mrRows.filter(function(r) { return _mrPreFilter(r) && _mrUserFilter(r); });
 }
 
+// Sort value for an OSV row. Status sorts by workflow order (Done → In Progress →
+// Not Initiated) rather than alphabetically, and dates sort chronologically.
+function _osvSortVal(r, key) {
+  if (key === 'osvStatus')  { var i = OSV_ORDER.indexOf(r.status); return i < 0 ? 99 : i; }
+  if (key === 'updatedDate'){ var d = parseDMY(r.updatedDate); return d ? d.getTime() : 0; }
+  return String(r[key] == null ? '' : r[key]).toLowerCase();
+}
+
 function _mrSortedRows(rows) {
   if (!_mrSort.key) return rows;
   var key = _mrSort.key, dir = _mrSort.dir;
+  var isOsv = !!(_mrCtx && _mrCtx.osv);
   return rows.slice().sort(function(a, b) {
-    var va = vdSortVal(a, key), vb = vdSortVal(b, key);
+    var va = isOsv ? _osvSortVal(a, key) : vdSortVal(a, key);
+    var vb = isOsv ? _osvSortVal(b, key) : vdSortVal(b, key);
     if (va < vb) return -dir;
     if (va > vb) return  dir;
     return 0;
@@ -9620,6 +9717,19 @@ function _mrSortedRows(rows) {
 }
 
 function _mrCellHtml(r, key) {
+  if (_mrCtx && _mrCtx.osv) {
+    switch (key) {
+      case 'name':      return '<strong>' + esc(r.name || 'Unknown') + '</strong>';
+      case 'id':        return '<span style="font-size:11px;color:var(--txt3)">' + esc(r.id || '—') + '</span>';
+      case 'gstin':     return r.gstin ? '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>' : '<span class="td-dim">—</span>';
+      case 'category':  return esc(r.category || '—');
+      case 'vertical':  return '<span class="td-dim">' + esc(r.vertical || '—') + '</span>';
+      case 'osvStatus': return _osvChip(r.status);
+      case 'assignedTo':return r.assignedTo ? esc(r.assignedTo) : '<span class="td-dim">—</span>';
+      case 'updatedDate':return '<span class="td-dim td-num">' + esc(r.updatedDate || '—') + '</span>';
+      default:          return esc(String(r[key] || '—'));
+    }
+  }
   switch (key) {
     case 'name':        return '<strong>' + esc(r.name || '—') + '</strong><div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id || '') + '</div>';
     case 'id':          return '<span style="font-size:11px;color:var(--txt3)">' + esc(r.id || '—') + '</span>';
@@ -9672,9 +9782,12 @@ function _mrRenderTable() {
     if (!page.length) {
       tbody.innerHTML = '<tr><td colspan="' + cols.length + '" class="mr-empty">No records match the selected filters</td></tr>';
     } else {
+      // OSV rows come from the quality feed and carry none of the onboarding
+      // fields openRecModal expects, so they are not click-through.
+      var clickable = !(_mrCtx && _mrCtx.osv);
       tbody.innerHTML = page.map(function(r) {
         var k = ++_rmI; _rmD[k] = r;
-        return '<tr onclick="mrOpenRec(' + k + ')">'
+        return '<tr' + (clickable ? ' onclick="mrOpenRec(' + k + ')"' : ' style="cursor:default"') + '>'
           + cols.map(function(c) { return '<td>' + _mrCellHtml(r, c.key) + '</td>'; }).join('')
           + '</tr>';
       }).join('');
@@ -9695,12 +9808,19 @@ function _mrRenderTable() {
     pgBtns += '<button class="mr-pg-btn" onclick="mrGoPg(' + (_mrPg.page + 1) + ')" ' + (_mrPg.page >= pgMax - 1 ? 'disabled' : '') + '>Next ›</button>';
 
     var isTxnV = _mrCtx && _mrCtx.cfg && _mrCtx.cfg.isTxnView;
-    var countLabel = isTxnV ? 'sellers' : 'records';
+    var isOsvV = !!(_mrCtx && _mrCtx.osv);
+    var countLabel = isTxnV ? 'sellers' : isOsvV ? 'vendors' : 'records';
     var footExtra = '';
     if (isTxnV && total) {
       var sumTxnsF = allFiltered.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
       var sumGmvF  = allFiltered.reduce(function(s, r) { return s + (r.txnValue  || 0); }, 0);
       footExtra = ' · ' + fmt(sumTxnsF) + ' txns · ' + fmtINR(sumGmvF) + ' GMV';
+    }
+    if (isOsvV && total) {
+      // Status mix of what is currently filtered, so the split is always visible.
+      footExtra = ' · ' + OSV_ORDER.map(function(k) {
+        return fmt(allFiltered.filter(function(r){ return r.status === k; }).length) + ' ' + OSV_LABELS[k];
+      }).join(' · ');
     }
     foot.innerHTML = '<div class="mr-foot-count">'
         + (total ? fmt(start + 1) + '–' + fmt(end) + ' of ' + fmt(total) + ' ' + countLabel : 'No matching ' + countLabel)
@@ -9735,6 +9855,21 @@ function mrSetPgSize(s) {
 
 function mrFChange() {
   function v(id) { var el = document.getElementById(id); return el ? el.value : 'All'; }
+  if (_mrCtx && _mrCtx.osv) {
+    // The OSV select carries display labels; map back to the stored status key.
+    var lbl = v('mr-f-osv');
+    var key = 'All';
+    for (var i = 0; i < OSV_ORDER.length; i++) { if (OSV_LABELS[OSV_ORDER[i]] === lbl) { key = OSV_ORDER[i]; break; } }
+    _mrF.osvStatus = key;
+    _mrF.category  = v('mr-f-cat');
+    _mrF.vertical  = v('mr-f-vert');
+    _mrF.assigned  = v('mr-f-asg');
+    _mrF.dateStart = v('mr-f-d1');
+    _mrF.dateEnd   = v('mr-f-d2');
+    _mrPg.page = 0;
+    _mrRenderTable();
+    return;
+  }
   _mrF.category  = v('mr-f-cat');
   _mrF.vendor    = v('mr-f-ven');
   _mrF.status    = v('mr-f-sta');
@@ -9757,7 +9892,9 @@ function mrSearchDeb() {
 }
 
 function mrFClear() {
-  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All', ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'' };
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
   _mrPg.page = 0;
   _mrRender();
 }
@@ -9773,7 +9910,7 @@ function mrToggleColMenu() {
 function _mrRenderColMenu() {
   var el = document.getElementById('mr-col-menu');
   if (!el) return;
-  el.innerHTML = MR_COLS.map(function(c) {
+  el.innerHTML = _mrColSet().map(function(c) {
     var chk = !_mrColVis[c.key];
     return '<label class="mr-col-item">'
       + '<input type="checkbox"' + (chk ? ' checked' : '') + (c.always ? ' disabled' : '') + ' onchange="mrToggleCol(\'' + c.key + '\')">'
@@ -9796,9 +9933,15 @@ function mrExportCSV() {
   var rows = _mrSortedRows(_mrFilteredRows());
   var cols = _mrVisibleCols();
   var lines = [cols.map(function(c){ return '"' + c.label + '"'; }).join(',')];
+  var isOsvX = !!(_mrCtx && _mrCtx.osv);
   rows.forEach(function(r) {
     lines.push(cols.map(function(c) {
       var v = '';
+      if (isOsvX) {
+        v = c.key === 'osvStatus' ? (OSV_LABELS[r.status] || r.status || '')
+                                  : String(r[c.key] == null ? '' : r[c.key]);
+        return '"' + v.replace(/"/g, '""') + '"';
+      }
       switch(c.key) {
         case 'name':        v = r.name || ''; break;
         case 'id':          v = r.id || ''; break;
