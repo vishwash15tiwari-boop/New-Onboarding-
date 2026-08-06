@@ -946,9 +946,110 @@ function debugTatDetail() {
     + ' review/submit and parses as a date — add the real header to TAT_COLS.inReview.');
 }
 
+// Index of a genuine completion/approval timestamp in a feed, or -1.
+// Deliberately refuses "updated"/"modified"/"last_" columns: the buyer card has no
+// onboarded_date and falls back to onboarding_updated_date, which moves whenever a
+// record is touched and stretched buyer turnaround well past the real span.
+// Shared by normalizeRows and the diagnostics so both agree on the column in use.
+function tatEndColIndex_(raw) {
+  var idx = buildIndex(raw.headers);
+  var exact = ['onboarded_date','onboarding_completed_date','onboarding_completion_date',
+               'completed_date','completion_date','onboarded_at','completed_at',
+               'onboarding_approved_date','approved_date','approval_date','approved_at',
+               'activation_date','activated_date','go_live_date','kyc_approved_date'];
+  for (var e = 0; e < exact.length; e++) {
+    if (idx[exact[e]] !== undefined) return idx[exact[e]];
+  }
+  var best = -1, bestHits = 0;
+  for (var c = 0; c < raw.headers.length; c++) {
+    var h = raw.headers[c];
+    if (!h) continue;
+    if (!/onboard|complet|approv|activat|go_live/.test(h)) continue;
+    if (/updated|modified|last_|create|draft|review|reject|status|_by$|user|name|count|id$/.test(h)) continue;
+    var hits = 0, seen = 0;
+    for (var r = 0; r < raw.rows.length && seen < 200; r++) {
+      var v = raw.rows[r][c];
+      if (v === '' || v === null || v === undefined) continue;
+      seen++;
+      if (parseDate(v)) hits++;
+    }
+    if (hits > bestHits) { best = c; bestHits = hits; }
+  }
+  return best;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Run from the Apps Script editor when a TAT figure looks wrong for one audience.
+// Prints, per audience, the start and end columns actually in use and then a grid
+// of every plausible start against every plausible end with the median span each
+// pair produces — so the correct pair can be read off directly rather than guessed.
+// ─────────────────────────────────────────────────────────────
+function debugTatPairs() {
+  ['seller', 'buyer'].forEach(function(aud) {
+    var cfg = AUDIENCE_CFG[aud], raw;
+    Logger.log('\n════════ ' + aud.toUpperCase() + ' ════════');
+    try { raw = readData(aud); } catch (e) { Logger.log('  ✗ ' + e.message); return; }
+    var idx = buildIndex(raw.headers);
+    var endC = tatEndColIndex_(raw);
+    Logger.log('  counts use cfg.onbCol = "' + cfg.onbCol + '"');
+    Logger.log('  TAT end column in use  = '
+      + (endC >= 0 ? '"' + raw.headers[endC] + '" (' + colLetter_(endC) + ')'
+                   : 'none found → falls back to "' + cfg.onbCol + '"'));
+
+    var done = raw.rows.filter(function(r) {
+      return normStatus(gv(r, idx, 'onboarding_status')) === 'COMPLETED';
+    });
+    Logger.log('  onboarded rows: ' + done.length);
+    if (!done.length) return;
+
+    // Any column that parses as a date on a useful share of onboarded rows.
+    var cand = [];
+    raw.headers.forEach(function(h, ci) {
+      if (!h) return;
+      var hits = 0;
+      done.forEach(function(r) { if (parseDate(r[ci])) hits++; });
+      if (hits >= done.length * 0.3) cand.push({ h: h, i: ci, hits: hits });
+    });
+    Logger.log('\n  median span, START (row) -> END (column), in days:');
+    Logger.log('    ' + '.'.repeat(28) + cand.map(function(c) {
+      return (c.h.slice(0, 12) + '            ').slice(0, 13);
+    }).join(''));
+    cand.forEach(function(s) {
+      var line = '    ' + (s.h + ' '.repeat(28)).slice(0, 28);
+      cand.forEach(function(e) {
+        if (s.i === e.i) { line += '           . '; return; }
+        var sp = [];
+        done.forEach(function(r) {
+          var a = parseDate(r[s.i]), b = parseDate(r[e.i]);
+          if (!a || !b) return;
+          var t = dateDiffDays(a, b);
+          if (t !== null && t >= 0 && t <= TAT_MAX_DAYS) sp.push(t);
+        });
+        sp.sort(function(x, y) { return x - y; });
+        line += sp.length
+          ? ((sp[Math.floor(sp.length / 2)] + 'd(' + sp.length + ')') + '            ').slice(0, 13)
+          : '           - ';
+      });
+      Logger.log(line);
+    });
+    Logger.log('  (a cell is the median days from the row column to the column column,'
+      + ' with the number of records in brackets)');
+  });
+}
+
 // Map each sheet row to the common record shape the dashboard renders from.
 function normalizeRows(raw, cfg) {
   var idx = buildIndex(raw.headers);
+
+  // A dedicated TAT end column, resolved once for the feed. cfg.onbCol is the
+  // onboarded date used for counts, but for buyers that is onboarding_updated_date —
+  // a last-touched timestamp that moves whenever a record is edited, stretching the
+  // measured span far beyond the real one. Here we look specifically for a genuine
+  // completion/approval timestamp and explicitly refuse "updated"/"modified" columns.
+  // The detail tab is preferred over this when it has a matching row; this covers
+  // buyers, who are largely absent from the seller-centric detail card.
+  var _tatEndC = tatEndColIndex_(raw);
+
   var normalized = raw.rows.map(function(row) {
     var status   = normStatus(gv(row, idx, 'onboarding_status'));
     var category = normCategory(gv(row, idx, 'business_category'));
@@ -1035,7 +1136,10 @@ function normalizeRows(raw, cfg) {
     // onboarded_date, so onboardedDate falls back to onboarding_updated_date — a
     // last-touched timestamp that drifts forward every time a record is edited and
     // inflated buyer turnaround well beyond the real span.
-    var tatEnd = (_det && _det.completed) ? _det.completed : onboarded;
+    var _feedEnd = _tatEndC >= 0 ? parseDate(row[_tatEndC]) : null;
+    var tatEnd = (_det && _det.completed) ? _det.completed
+               : _feedEnd ? _feedEnd
+               : onboarded;
 
     var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
