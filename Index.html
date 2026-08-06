@@ -2849,10 +2849,10 @@ body.rec-open{overflow:hidden}
 .mp-mx-cell.tot .mp-mx-n{font-weight:800}
 .mp-mx-cell.tot.grand{border-style:solid;border-color:rgba(0,93,255,.3);background:var(--accent-soft)}
 .mp-mx-cell.tot.grand .mp-mx-n{color:var(--blue)}
-.mp-mx-cell.tot.ch{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
-.mp-mx-cell.tot.ch:hover{border-style:solid;border-color:var(--blue);box-shadow:0 5px 16px -8px rgba(0,93,255,.45);transform:translateY(-1px)}
+.mp-mx-cell.ch{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.mp-mx-cell.ch:hover,.mp-mx-cell.ch:focus-visible{border-style:solid;border-color:var(--blue);box-shadow:0 5px 16px -8px rgba(0,93,255,.45);transform:translateY(-1px);outline:none}
 .mp-mx-go{position:relative;font-size:9px;font-weight:700;color:var(--blue);margin-left:4px;opacity:0;transition:opacity .15s}
-.mp-mx-cell.tot.ch:hover .mp-mx-go{opacity:1}
+.mp-mx-cell.ch:hover .mp-mx-go,.mp-mx-cell.ch:focus-visible .mp-mx-go{opacity:1}
 .mp-headline{margin-bottom:16px}
 .mp-h-v{font-size:2.6rem;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .mp-h-l{font-size:.78rem;color:var(--txt2);margin-top:5px}
@@ -3770,6 +3770,16 @@ var MR_OSV_COLS = [
   { key:'assignedTo',  label:'Assigned User' },
   { key:'updatedDate', label:'Last Updated' },
 ];
+// TAT drill-down — the vendors behind a cell in the Average TAT matrix.
+var MR_TAT_COLS = [
+  { key:'name',       label:'Name', always:true },
+  { key:'vendorType', label:'Type' },
+  { key:'category',   label:'Category' },
+  { key:'tat',        label:'TAT (days)' },
+];
+// Detail rows per audience for the TAT drill-down, cached per vertical + period.
+var _tatRows = { key:null, pKey:null, seller:null, buyer:null, loading:{} };
+
 // status key → display label, used by the table, filters and export alike
 var OSV_LABELS = { verified:'Done', in_progress:'In Progress', not_initiated:'Not Initiated' };
 var OSV_ORDER  = ['verified', 'in_progress', 'not_initiated'];
@@ -4484,7 +4494,9 @@ function _mmVertModules(key) {
     // Each cell carries the sample it was averaged from. A category where only a
     // handful of records have a review date would otherwise show a confident-looking
     // number built on almost nothing, which reads as simply wrong.
-    var tCell = function(o, cls) {
+    // Every populated cell drills into the vendors behind it: `aud` is the row and
+    // `cat` the column, or null on the Overall column which spans all categories.
+    var tCell = function(o, cls, aud, cat) {
       var has = !!(o && o.n > 0 && o.v != null);
       var txt = has
         ? o.v + '<small style="font-size:.62em;font-weight:600;color:var(--txt3);letter-spacing:0">d</small>'
@@ -4492,9 +4504,18 @@ function _mmVertModules(key) {
       var sub = has
         ? '<div style="font-size:.6rem;color:var(--txt3);margin-top:2px;font-weight:600">n=' + fmt(o.n) + '</div>'
         : '';
-      var ttl = has ? ' title="Averaged over ' + fmt(o.n) + ' onboarded record' + (o.n === 1 ? '' : 's') + ' with a review date"'
-                    : ' title="No onboarded record here carries a review date"';
-      return '<div class="mp-mx-cell' + (cls || '') + '"' + ttl + '><span class="mp-mx-n">' + txt + '</span>' + sub + '</div>';
+      if (!has || !aud) {
+        return '<div class="mp-mx-cell' + (cls || '') + '"'
+          + ' title="No onboarded record here carries a usable start date">'
+          + '<span class="mp-mx-n">' + txt + '</span>' + sub + '</div>';
+      }
+      var call = "openTatRecords('" + aud + "'," + (cat ? "'" + esc(String(cat).replace(/'/g, "\\'")) + "'" : 'null') + ")";
+      return '<div class="mp-mx-cell ch' + (cls || '') + '" role="button" tabindex="0"'
+        + ' title="View the ' + fmt(o.n) + ' ' + (aud === 'buyer' ? 'buyer' : 'seller')
+        + (o.n === 1 ? '' : 's') + ' behind this average"'
+        + ' onclick="' + call + '"'
+        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + call + '}">'
+        + '<span class="mp-mx-n">' + txt + '</span>' + sub + '<span class="mp-mx-go">↦</span></div>';
     };
     var rowS  = tatCats.map(function(c){ return c.s; });
     var rowB  = tatCats.map(function(c){ return c.b; });
@@ -4519,9 +4540,11 @@ function _mmVertModules(key) {
       // No Overall row: the per-category totals it held duplicated the Overall
       // column and the headline strip, so the word appeared three times over.
       + '<div class="mp-mx-rlbl" title="' + esc(_basisName(sBasis) || 'no usable start date') + '">Sellers</div>'
-      + rowS.map(function(o){ return tCell(o); }).join('') + tCell(totS, ' tot')
+      + rowS.map(function(o, ci){ return tCell(o, '', 'seller', tatCats[ci].cat); }).join('')
+      + tCell(totS, ' tot', 'seller', null)
       + '<div class="mp-mx-rlbl" title="' + esc(_basisName(bBasis) || 'no usable start date') + '">Buyers</div>'
-      + rowB.map(function(o){ return tCell(o); }).join('') + tCell(totB, ' tot');
+      + rowB.map(function(o, ci){ return tCell(o, '', 'buyer', tatCats[ci].cat); }).join('')
+      + tCell(totB, ' tot', 'buyer', null);
     // Coverage: how much of the onboarded base actually carries a review date.
     // Everything else is excluded rather than measured from a different start.
     var tatN = grandT ? grandT.n : 0;
@@ -9704,6 +9727,63 @@ function openOsvRecords(status) {
   _mrRender();
 }
 
+// TAT records — the vendors behind one cell of the Average TAT matrix.
+// `aud` is 'seller' or 'buyer'; `cat` narrows to one category, or null for Overall.
+// Rows come from the vertical's detail feed for that audience, which may not be the
+// audience currently on screen, so they are fetched on demand and cached.
+function openTatRecords(aud, cat) {
+  aud = (aud === 'buyer') ? 'buyer' : 'seller';
+  var key  = activeVertKey || selectedVert;
+  var pKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  if (_tatRows.key !== key || _tatRows.pKey !== pKey) {
+    _tatRows = { key:key, pKey:pKey, seller:null, buyer:null, loading:{} };
+  }
+  // Reuse the rows already loaded for the on-screen audience rather than refetching.
+  if (_tatRows[aud] == null && selectedVert === key && selectedAud === aud
+      && Array.isArray(vertRows) && vertRows.length) {
+    _tatRows[aud] = vertRows.slice();
+  }
+
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  _mrCtx = {
+    module: 'tat', tat: true, tatAud: aud, tatCat: cat || null,
+    label: 'Average TAT · ' + (aud === 'buyer' ? 'Buyers' : 'Sellers') + (cat ? ' · ' + cat : ''),
+    vertLabel: (vcfg && vcfg.name) || key || '',
+    preStatus: 'COMPLETED', forceSeller: false, cfg: { label: 'Average TAT' }
+  };
+  _mrRows = _tatRows[aud] || [];
+  _mrF = { search:'', category: cat || 'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
+  _mrSort = { key:'tat', dir:-1 };   // slowest first — the useful end of a TAT list
+  _mrPg = { size:25, page:0 };
+  _mrColVis = {};
+
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+
+  if (_tatRows[aud] == null && !_tatRows.loading[aud]) {
+    _tatRows.loading[aud] = true;
+    var f = { audience: aud, period: currentPeriod };
+    if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _tatRows.loading[aud] = false;
+        try { var d = JSON.parse(res); _tatRows[aud] = (d && d.success && Array.isArray(d.rows)) ? d.rows : []; }
+        catch (e) { _tatRows[aud] = []; }
+        // Only repaint if this drill-down is still the one on screen.
+        if (_mrCtx && _mrCtx.tat && _mrCtx.tatAud === aud) { _mrRows = _tatRows[aud]; _mrRender(); }
+      })
+      .withFailureHandler(function() {
+        _tatRows.loading[aud] = false;
+        _tatRows[aud] = [];
+        if (_mrCtx && _mrCtx.tat && _mrCtx.tatAud === aud) { _mrRows = []; _mrRender(); }
+      })
+      .getVerticalRows(key, JSON.stringify(f));
+  }
+}
+
 function openModRecords(module) {
   if (module === 'osv') return openOsvRecords(null);
   var cfg = MR_MOD_CFG[module];
@@ -9754,7 +9834,10 @@ function _osvChip(status) {
     + esc(OSV_LABELS[status] || status || '—') + '</span>';
 }
 
-function _mrColSet() { return (_mrCtx && _mrCtx.osv) ? MR_OSV_COLS : MR_COLS; }
+function _mrColSet() {
+  if (_mrCtx && _mrCtx.tat) return MR_TAT_COLS;
+  return (_mrCtx && _mrCtx.osv) ? MR_OSV_COLS : MR_COLS;
+}
 function _mrVisibleCols() {
   return _mrColSet().filter(function(c) { return !_mrColVis[c.key]; });
 }
@@ -9795,6 +9878,16 @@ function _mrRenderFilters() {
   var cfg = _mrCtx.cfg;
   var noStatus = !!_mrCtx.preStatus;
 
+  // TAT drill-down: the audience and category are fixed by the cell that was
+  // clicked, so only the filters that still vary are offered.
+  if (_mrCtx.tat) {
+    el.innerHTML =
+        '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search name or type…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
+      + (_mrCtx.tatCat ? '' : _mrSel('mr-f-cat', 'Categories', _mrUniq('category'), _mrF.category, 'mrFChange()'))
+      + _mrSel('mr-f-ven', 'Types', _mrUniq('vendorType'), _mrF.vendor, 'mrFChange()')
+      + '<button class="vd-close" onclick="mrFClear()" style="flex-shrink:0">Clear</button>';
+    return;
+  }
   // OSV dataset has its own filter set — the onboarding filters (vendor type,
   // state, GST, transaction) don't exist on these rows.
   if (_mrCtx.osv) {
@@ -9829,6 +9922,14 @@ function _mrRenderFilters() {
 
 function _mrPreFilter(r) {
   if (!_mrCtx) return true;
+  if (_mrCtx.tat) {
+    // Only onboarded vendors that actually carry a TAT — the same set the matrix
+    // averaged, so the row count matches the n= on the cell that was clicked.
+    if (r.status !== 'COMPLETED') return false;
+    if (r.tat === null || r.tat === undefined || r.tat === '—' || isNaN(parseInt(r.tat, 10))) return false;
+    if (_mrCtx.tatCat && r.category !== _mrCtx.tatCat) return false;
+    return true;
+  }
   if (_mrCtx.cfg && _mrCtx.cfg.isTxnView && !r.hasTransacted) return false;
   if (_mrCtx.preStatus && r.status !== _mrCtx.preStatus) return false;
   return true;
@@ -9836,6 +9937,15 @@ function _mrPreFilter(r) {
 
 function _mrUserFilter(r) {
   var f = _mrF;
+  if (_mrCtx && _mrCtx.tat) {
+    if (f.category !== 'All' && r.category   !== f.category) return false;
+    if (f.vendor   !== 'All' && r.vendorType !== f.vendor)   return false;
+    var tq = (f.search || '').toLowerCase();
+    if (tq && (r.name || '').toLowerCase().indexOf(tq) === -1
+           && (r.vendorType || '').toLowerCase().indexOf(tq) === -1
+           && String(r.id || '').toLowerCase().indexOf(tq) === -1) return false;
+    return true;
+  }
   if (_mrCtx && _mrCtx.osv) {
     if (f.osvStatus !== 'All' && r.status !== f.osvStatus) return false;
     if (f.category  !== 'All' && r.category !== f.category) return false;
@@ -9917,6 +10027,16 @@ function _mrSortedRows(rows) {
 }
 
 function _mrCellHtml(r, key) {
+  if (_mrCtx && _mrCtx.tat) {
+    switch (key) {
+      case 'name':       return '<strong>' + esc(r.name || '—') + '</strong>'
+                              + (r.id ? '<div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id) + '</div>' : '');
+      case 'vendorType': return '<span class="td-dim">' + esc(r.vendorType || '—') + '</span>';
+      case 'category':   return esc(r.category || '—');
+      case 'tat':        return tatChip(r.tat);
+      default:           return esc(String(r[key] || '—'));
+    }
+  }
   if (_mrCtx && _mrCtx.osv) {
     switch (key) {
       case 'name':      return '<strong>' + esc(r.name || 'Unknown') + '</strong>';
@@ -9980,7 +10100,9 @@ function _mrRenderTable() {
   if (tbody) {
     _rmD = {}; _rmI = 0;
     if (!page.length) {
-      tbody.innerHTML = '<tr><td colspan="' + cols.length + '" class="mr-empty">No records match the selected filters</td></tr>';
+      var waiting = _mrCtx && _mrCtx.tat && _tatRows.loading[_mrCtx.tatAud];
+      tbody.innerHTML = '<tr><td colspan="' + cols.length + '" class="mr-empty">'
+        + (waiting ? 'Loading records…' : 'No records match the selected filters') + '</td></tr>';
     } else {
       // OSV rows come from the quality feed and carry none of the onboarding
       // fields openRecModal expects, so they are not click-through.
@@ -10009,12 +10131,22 @@ function _mrRenderTable() {
 
     var isTxnV = _mrCtx && _mrCtx.cfg && _mrCtx.cfg.isTxnView;
     var isOsvV = !!(_mrCtx && _mrCtx.osv);
-    var countLabel = isTxnV ? 'sellers' : isOsvV ? 'vendors' : 'records';
+    var isTatV = !!(_mrCtx && _mrCtx.tat);
+    var countLabel = isTxnV ? 'sellers' : isOsvV ? 'vendors'
+                   : isTatV ? (_mrCtx.tatAud === 'buyer' ? 'buyers' : 'sellers') : 'records';
     var footExtra = '';
     if (isTxnV && total) {
       var sumTxnsF = allFiltered.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
       var sumGmvF  = allFiltered.reduce(function(s, r) { return s + (r.txnValue  || 0); }, 0);
       footExtra = ' · ' + fmt(sumTxnsF) + ' txns · ' + fmtINR(sumGmvF) + ' GMV';
+    }
+    if (isTatV && total) {
+      var tv = allFiltered.map(function(r) { return parseInt(r.tat, 10); })
+                          .filter(function(x) { return !isNaN(x); });
+      if (tv.length) {
+        footExtra = ' · avg ' + Math.round(tv.reduce(function(a, b) { return a + b; }, 0) / tv.length) + 'd'
+                  + ' · median ' + tv.slice().sort(function(a, b) { return a - b; })[Math.floor(tv.length / 2)] + 'd';
+      }
     }
     if (isOsvV && total) {
       // Status mix of what is currently filtered, so the split is always visible.
@@ -10055,6 +10187,13 @@ function mrSetPgSize(s) {
 
 function mrFChange() {
   function v(id) { var el = document.getElementById(id); return el ? el.value : 'All'; }
+  if (_mrCtx && _mrCtx.tat) {
+    if (!_mrCtx.tatCat) _mrF.category = v('mr-f-cat');
+    _mrF.vendor = v('mr-f-ven');
+    _mrPg.page = 0;
+    _mrRenderTable();
+    return;
+  }
   if (_mrCtx && _mrCtx.osv) {
     // The OSV select carries display labels; map back to the stored status key.
     var lbl = v('mr-f-osv');
@@ -10134,9 +10273,15 @@ function mrExportCSV() {
   var cols = _mrVisibleCols();
   var lines = [cols.map(function(c){ return '"' + c.label + '"'; }).join(',')];
   var isOsvX = !!(_mrCtx && _mrCtx.osv);
+  var isTatX = !!(_mrCtx && _mrCtx.tat);
   rows.forEach(function(r) {
     lines.push(cols.map(function(c) {
       var v = '';
+      if (isTatX) {
+        v = c.key === 'tat' ? (r.tat === '—' || r.tat == null ? '' : String(r.tat))
+                            : String(r[c.key] == null ? '' : r[c.key]);
+        return '"' + v.replace(/"/g, '""') + '"';
+      }
       if (isOsvX) {
         v = c.key === 'osvStatus' ? (OSV_LABELS[r.status] || r.status || '')
                                   : String(r[c.key] == null ? '' : r[c.key]);
