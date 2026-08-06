@@ -4330,6 +4330,33 @@ function _mmTatAvg(entries) {
   entries.forEach(function(o) { if (o && o.n > 0 && o.v != null) { sum += o.v * o.n; n += o.n; } });
   return n > 0 ? { v: Math.round(sum / n), n: n } : null;
 }
+// Category rows for a funnel stage. Unlike _mmCatRows, this keeps every category
+// the vertical has — including ones sitting at zero for this particular stage — so
+// each stage card shows the same columns in the same order and a category can be
+// traced straight down the funnel. Order is by the category's overall volume, which
+// is stage-independent and therefore stable across every card.
+function _mmCatRowsFixed(vs, vb, field) {
+  var m = {}, order = [];
+  function seed(list) {
+    (list || []).forEach(function(c) {
+      var k = c.category || 'Other';
+      if (!m[k]) { m[k] = { cat:k, s:0, b:0, _rank:0 }; order.push(k); }
+      m[k]._rank += (c.total || 0);
+    });
+  }
+  function fill(list, side) {
+    (list || []).forEach(function(c) {
+      var k = c.category || 'Other';
+      if (m[k]) m[k][side] = c[field] || 0;
+    });
+  }
+  seed(vs && vs.categories); seed(vb && vb.categories);
+  fill(vs && vs.categories, 's'); fill(vb && vb.categories, 'b');
+  return order.map(function(k) { return m[k]; })
+              .filter(function(x) { return x._rank > 0; })
+              .sort(function(a, b) { return b._rank - a._rank; });
+}
+
 function _mmCatGmvRows(vs, vb) {
   var m = {}, order = [];
   function add(list, side) {
@@ -4384,14 +4411,17 @@ function _mmVertModules(key) {
       [ _d('Sellers', fmt(vs.total||0), MM_IC.users), _d('Buyers', fmt(vb.total||0), MM_IC.users) ]
         .concat(_catDetails(catTot)).concat([ _vd('total') ])),
     f('Draft Cases', _mmC(vs,vb,'draft'), MM_IC.draft, 't-purple',
-      [ _d('Sellers', fmt(vs.draft||0), MM_IC.users), _d('Buyers', fmt(vb.draft||0), MM_IC.users), _vd('draft') ]),
+      [ _d('Sellers', fmt(vs.draft||0), MM_IC.users), _d('Buyers', fmt(vb.draft||0), MM_IC.users) ]
+        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'draft'))).concat([ _vd('draft') ])),
     f('Cases Under Review', _mmC(vs,vb,'inReview'), MM_IC.clock, 't-amber',
-      [ _d('Sellers', fmt(vs.inReview||0), MM_IC.users), _d('Buyers', fmt(vb.inReview||0), MM_IC.users), _vd('review') ]),
+      [ _d('Sellers', fmt(vs.inReview||0), MM_IC.users), _d('Buyers', fmt(vb.inReview||0), MM_IC.users) ]
+        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'inReview'))).concat([ _vd('review') ])),
     f('Successfully Onboarded', onb, MM_IC.check, 't-green',
       [ _d('Sellers', fmt(vs.completed||0), MM_IC.users), _d('Buyers', fmt(vb.completed||0), MM_IC.users) ]
         .concat(_catDetails(catOnb)).concat([ _vd('onboarded') ])),
     f('Rejected Cases', _mmC(vs,vb,'rejected'), MM_IC.x, 't-red',
-      [ _d('Sellers', fmt(vs.rejected||0), MM_IC.users), _d('Buyers', fmt(vb.rejected||0), MM_IC.users), _vd('rejected') ]),
+      [ _d('Sellers', fmt(vs.rejected||0), MM_IC.users), _d('Buyers', fmt(vb.rejected||0), MM_IC.users) ]
+        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'rejected'))).concat([ _vd('rejected') ])),
   ]});
 
   // 2 — Volume (onboarded composition — Type × Category cross-tab, chains into Geography).
@@ -5009,12 +5039,14 @@ var IN_STATES = {"AN":{"name":"Andaman & Nicobar Island","region":"South","d":"M
 // Onboarded → onboarded) — a `catField` naming which category metric to split.
 // Draft / Under Review / Rejected have no per-category feed, so they fall back
 // to a plain Sellers vs Buyers split. No category is ever hardcoded.
+// catField is the per-category key on the server's categories[] that corresponds to
+// this stage, so every card can show the Metal / Plastic split rather than a bare count.
 var MF_STAGES = [
   { key:'total',     label:'Logged In',             color:'blue',   field:'total',     vdAction:'total',     catField:'total'     },
-  { key:'draft',     label:'Draft',                 color:'purple', field:'draft',     vdAction:'draft',     catField:null        },
-  { key:'review',    label:'Under Review',           color:'amber',  field:'inReview',  vdAction:'review',    catField:null        },
+  { key:'draft',     label:'Draft',                 color:'purple', field:'draft',     vdAction:'draft',     catField:'draft'     },
+  { key:'review',    label:'Under Review',           color:'amber',  field:'inReview',  vdAction:'review',    catField:'inReview'  },
   { key:'onboarded', label:'Successfully Onboarded', color:'green',  field:'completed', vdAction:'onboarded', catField:'onboarded' },
-  { key:'rejected',  label:'Rejected',              color:'red',    field:'rejected',  vdAction:'rejected',  catField:null        },
+  { key:'rejected',  label:'Rejected',              color:'red',    field:'rejected',  vdAction:'rejected',  catField:'rejected'  },
 ];
 
 function mmSelectFunnelStage(k) {
@@ -5061,7 +5093,7 @@ function mmRenderFunnel() {
   var html = '<div class="mf-flow">';
   MF_STAGES.forEach(function(s, i) {
     var total   = (vs[s.field]||0) + (vb[s.field]||0);
-    var catRows = s.catField ? _mmCatRows(vs, vb, s.catField) : null;
+    var catRows = s.catField ? _mmCatRowsFixed(vs, vb, s.catField) : null;
     var sel     = mmFunnelStage === s.key;
     html += '<div class="mf-card' + (sel ? ' sel' : '') + '" role="button" tabindex="0"'
       + ' onclick="mmSelectFunnelStage(\'' + s.key + '\')"'
@@ -5083,7 +5115,7 @@ function mmRenderFunnel() {
     var stageObj = null;
     for (var si = 0; si < MF_STAGES.length; si++) { if (MF_STAGES[si].key === mmFunnelStage) { stageObj = MF_STAGES[si]; break; } }
     if (stageObj) {
-      var dCatRows = stageObj.catField ? _mmCatRows(vs, vb, stageObj.catField) : null;
+      var dCatRows = stageObj.catField ? _mmCatRowsFixed(vs, vb, stageObj.catField) : null;
       html += '<div class="mf-detail" id="mf-detail" role="region" aria-label="' + esc(stageObj.label) + ' details">'
         + '<div class="mf-detail-hd">' + esc(stageObj.label) + ' · Stage Breakdown</div>'
         + _mfMatrix(dCatRows, vs[stageObj.field]||0, vb[stageObj.field]||0, 8)
