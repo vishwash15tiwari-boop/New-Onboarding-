@@ -4513,6 +4513,9 @@ function _mmVertModules(key) {
     var tatBasis = vs.tatBasis || vb.tatBasis || null;
     var basisLine = tatBasis === 'level1'
       ? 'Measured from Level 1 approval to Onboarded, in days — this feed carries no In Review date'
+      : tatBasis === 'created'
+      ? 'Measured from Created to Onboarded, in days — this feed carries no In Review or Level 1 date, '
+        + 'so this span also covers time spent in draft'
       : 'Measured from In Review to Onboarded, in days';
     var covNote = tatN === 0
       ? '<div style="font-size:.68rem;color:var(--txt3);margin-top:9px;line-height:1.5">'

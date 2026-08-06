@@ -599,7 +599,7 @@ function debugTAT() {
       var cfg  = AUDIENCE_CFG[aud];
       var rows = normalizeRows(readData(aud), cfg);
       var n = 0, sumTat = 0, l1matched = 0, sumBase = 0, nBase = 0;
-      var basis = { review: 0, level1: 0, none: 0 }, completed = 0;
+      var basis = { review: 0, level1: 0, created: 0, none: 0 }, completed = 0;
       rows.forEach(function(r) {
         if (lookupLevel1_(r.id, r.name)) l1matched++;
         if (r.status === 'COMPLETED') { completed++; basis[r.tatBasis || 'none']++; }
@@ -613,11 +613,23 @@ function debugTAT() {
         + ' · Avg TAT (InReview→Onb) ' + (n ? Math.round(sumTat / n) + 'd over ' + n : '—')
         + ' · baseline (Created→Onb) ' + (nBase ? Math.round(sumBase / nBase) + 'd over ' + nBase : '—'));
       Logger.log('  TAT basis over ' + completed + ' completed → review: ' + basis.review
+        + ' · level1: ' + basis.level1 + ' · created: ' + basis.created
         + ' · NO START (reports —): ' + basis.none);
-      if (basis.none > 0 && basis.none === completed) {
-        Logger.log('  ⚠ ' + aud + ' has NO usable review-start column — TAT will show "—".'
-          + ' Add the real header to the reviewDate list in normalizeRows().');
+      if (basis.review === 0 && (basis.level1 > 0 || basis.created > 0)) {
+        Logger.log('  ⚠ ' + aud + ' resolved NO In Review date — TAT is measured from '
+          + (basis.level1 > 0 ? 'Level 1' : 'Created') + ' instead and the panel says so.'
+          + ' Check the header list below for the real in-review column and add it to'
+          + ' the reviewDate candidates in normalizeRows().');
       }
+      // Which columns even look like a review timestamp, to make the gap actionable.
+      try {
+        var _rawH = readData(aud).headers || [];
+        var _cand = _rawH.filter(function(h) {
+          return /review|submit|level_?1|_l1|in_review/.test(String(h).toLowerCase());
+        });
+        Logger.log('  headers mentioning review/submit/level1: '
+          + (_cand.length ? _cand.join(', ') : '(none — the feed has no such column)'));
+      } catch (e) {}
       // Per-category coverage — a category whose average looks wrong is usually one
       // where only a few onboarded records carry a review date.
       var byCat = {};
@@ -662,18 +674,34 @@ function _assignTat_(rows) {
     return !!d && !!r.onboardedDate && d <= r.onboardedDate
         && (!r.createdDate || d >= r.createdDate);
   }
+  function startOf(r, basis) {
+    return basis === 'review' ? r.reviewDate
+         : basis === 'level1' ? r._l1
+         : r.createdDate;
+  }
   var done = rows.filter(function(r) { return r.status === 'COMPLETED' && r.onboardedDate; });
-  var nRev = 0, nL1 = 0;
+  var n = { review: 0, level1: 0, created: 0 };
   done.forEach(function(r) {
-    if (inWin(r, r.reviewDate)) nRev++;
-    if (inWin(r, r._l1))        nL1++;
+    if (inWin(r, r.reviewDate))   n.review++;
+    if (inWin(r, r._l1))          n.level1++;
+    if (inWin(r, r.createdDate))  n.created++;
   });
-  // Prefer review — it is the metric actually asked for — and fall back to Level 1
-  // only when it resolves for strictly more records (i.e. review is absent or thin).
-  var basis = (nRev === 0 && nL1 === 0) ? null : (nL1 > nRev ? 'level1' : 'review');
+
+  // In Review → Onboarded is the metric asked for, so review wins whenever it covers
+  // a real share of the feed. Below that it would describe too few records to stand
+  // as the vertical's turnaround, and the next-best start with wider coverage is used
+  // instead — Level 1, then Created. Whatever is chosen is applied to EVERY record in
+  // the feed, so all figures share one basis and categories stay comparable; the mixed
+  // per-record fallback is what previously inflated one category against another.
+  var basis = null;
+  if (done.length && n.review >= done.length * 0.5)      basis = 'review';
+  else if (n.level1  > n.review && n.level1  > 0)        basis = 'level1';
+  else if (n.review  > 0)                                basis = 'review';
+  else if (n.created > 0)                                basis = 'created';
+
   rows.forEach(function(r) {
     if (basis && r.status === 'COMPLETED' && r.onboardedDate) {
-      var start = basis === 'review' ? r.reviewDate : r._l1;
+      var start = startOf(r, basis);
       if (inWin(r, start)) {
         var t = dateDiffDays(start, r.onboardedDate);
         if (t !== null && t >= 0) { r.onbTAT = t; r.tatBasis = basis; }
@@ -724,21 +752,28 @@ function normalizeRows(raw, cfg) {
       gv(row, idx, 'l2_date')                    || ''
     );
 
-    // TAT = In Review → Onboarded, for completed records only. Measuring from the
-    // moment the case entered review reflects the time verification actually took,
-    // excluding however long the vendor sat in draft before submitting.
-    //
-    // The start must not sit after the onboarded date, nor before created when a
-    // created date exists. When no review timestamp resolves, the Level 1 date from
-    // card 5292 is used as the closest available proxy.
-    //
-    // There is deliberately NO fall back to the Created date. Creation → Onboarded
-    // spans the whole draft period and runs several times longer than real review
-    // time, so using it would report a different metric under the "In Review →
-    // Onboarded" label — which is exactly how buyers (no review column, and absent
-    // from the seller-centric 5292 sheet) ended up showing an inflated TAT. A record
-    // whose review start cannot be established now reports no TAT: it renders as "—"
-    // and is excluded from every average rather than inflating it.
+    // If none of the exact header names above matched, scan every column for one
+    // that looks like a review/submission timestamp and actually parses as a date.
+    // The exact list can never cover every feed's naming, and a missed column meant
+    // TAT silently reported nothing at all.
+    if (!reviewDate) {
+      var _hk = Object.keys(idx);
+      for (var _r = 0; _r < _hk.length; _r++) {
+        var _h = _hk[_r];
+        var looksReview = _h.indexOf('review') !== -1 || _h.indexOf('submit') !== -1
+                       || _h.indexOf('level_1') !== -1 || _h.indexOf('level1') !== -1
+                       || _h.indexOf('l1_') === 0    || _h.indexOf('_l1') !== -1;
+        if (!looksReview) continue;
+        // Skip columns that name a person or carry a status rather than a timestamp.
+        if (_h.indexOf('_by') !== -1 || _h.indexOf('user') !== -1 || _h.indexOf('name') !== -1
+            || _h.indexOf('status') !== -1 || _h.indexOf('remark') !== -1
+            || _h.indexOf('comment') !== -1 || _h.indexOf('reason') !== -1
+            || _h.indexOf('count') !== -1) continue;
+        var _rd = parseDate(row[idx[_h]]);
+        if (_rd) { reviewDate = _rd; break; }
+      }
+    }
+
     // TAT itself is assigned after this map, in _assignTat_ — the start date is chosen
     // once for the whole feed rather than per record. Mixing starts within a feed is
     // what inflated Metal against Plastic: some records measured from review, others
