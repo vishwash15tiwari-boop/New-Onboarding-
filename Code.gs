@@ -59,6 +59,15 @@ var VS_COLS = {
   osvStatus:   13,   // Column N — OSV Status
 };
 
+// Buyer TAT is read positionally from the buyer feed (_mb_buyers): column G is the
+// start and column H the end, as specified. Addressed by position rather than header
+// name because that is how they were given. Run debugBuyerTatCols() to confirm what
+// actually sits at those positions and the span they produce.
+var BUYER_TAT_COLS = {
+  start: 6,   // Column G
+  end:   7,   // Column H
+};
+
 // Candidate column names in the 5292 detail tab (headers are normalized to
 // lower_snake_case by readSheetObj_). First populated match wins per record.
 var TAT_COLS = {
@@ -833,22 +842,26 @@ function _dayNum_(d) {
 function _assignTat_(rows, audience) {
   // Measured against _tatEnd (the detail tab's completion date where available),
   // not onboardedDate, which may be a drifting last-touched timestamp.
-  function endOf(r)  { return r._tatEnd || r.onboardedDate; }
+  // Buyer column H is the end when present, ahead of every other candidate.
+  function endOf(r)  { return r._be || r._tatEnd || r.onboardedDate; }
   function inWin(r, d) {
     var dn = _dayNum_(d), on = _dayNum_(endOf(r)), cn = _dayNum_(r.createdDate);
     return dn !== null && on !== null && dn <= on && (cn === null || dn >= cn);
   }
+  // The 'fixed' basis is the buyer feed's columns G→H, addressed by position.
   function startOf(r, basis) {
-    return basis === 'review' ? r.reviewDate
+    return basis === 'fixed'  ? r._bs
+         : basis === 'review' ? r.reviewDate
          : basis === 'level1' ? r._l1
          : r.createdDate;
   }
   var done = rows.filter(function(r) { return r.status === 'COMPLETED' && endOf(r); });
-  var n = { review: 0, level1: 0, created: 0 };
+  var n = { review: 0, level1: 0, created: 0, fixed: 0 };
   done.forEach(function(r) {
     if (inWin(r, r.reviewDate))   n.review++;
     if (inWin(r, r._l1))          n.level1++;
     if (inWin(r, r.createdDate))  n.created++;
+    if (inWin(r, r._bs))          n.fixed++;
   });
 
   // In Review → Onboarded is the metric asked for, so review wins whenever it covers
@@ -859,10 +872,9 @@ function _assignTat_(rows, audience) {
   // per-record fallback is what previously inflated one category against another.
   var basis = null;
   if (audience === 'buyer') {
-    // Buyer turnaround is measured from the Created date by instruction — the buyer
-    // journey carries no separate review milestone, so Created → Onboarded is the
-    // whole span. Fixed rather than chosen, so it never drifts with data coverage.
-    basis = n.created > 0 ? 'created' : null;
+    // Buyers are measured from the buyer feed's own columns G → H. Created → Onboarded
+    // remains only as a fallback for feeds where those positions hold no usable dates.
+    basis = n.fixed > 0 ? 'fixed' : (n.created > 0 ? 'created' : null);
   }
   else if (done.length && n.review >= done.length * 0.5) basis = 'review';
   else if (n.level1  > n.review && n.level1  > 0)        basis = 'level1';
@@ -883,7 +895,7 @@ function _assignTat_(rows, audience) {
       }
     }
     delete r._l1;       // internal candidates — never reach a payload or cache
-    delete r._tatEnd;
+    delete r._tatEnd; delete r._bs; delete r._be;
   });
   return basis;
 }
@@ -1132,6 +1144,64 @@ function debugTatPairs() {
   });
 }
 
+// ─────────────────────────────────────────────────────────────
+// Run from the Apps Script editor to confirm the buyer TAT columns. Prints the
+// headers and sample values sitting at the configured positions, the span they
+// produce over onboarded buyers, and a warning if the two look reversed.
+// ─────────────────────────────────────────────────────────────
+function debugBuyerTatCols() {
+  var cfg = AUDIENCE_CFG.buyer, raw;
+  try { raw = readData('buyer'); } catch (e) { Logger.log('✗ readData failed: ' + e.message); return; }
+  var idx = buildIndex(raw.headers);
+  var sI = BUYER_TAT_COLS.start, eI = BUYER_TAT_COLS.end;
+  Logger.log('════ BUYER TAT COLUMNS ════');
+  Logger.log('source: ' + raw.source + '   rows: ' + raw.rows.length + '   columns: ' + raw.headers.length);
+  if (raw.headers.length <= eI) {
+    Logger.log('✗ feed has only ' + raw.headers.length + ' columns — G/H are out of range.');
+    return;
+  }
+  Logger.log('  start  col ' + colLetter_(sI) + ' = "' + (raw.headers[sI] || '(blank header)') + '"');
+  Logger.log('  end    col ' + colLetter_(eI) + ' = "' + (raw.headers[eI] || '(blank header)') + '"');
+
+  var done = raw.rows.filter(function(r) {
+    return normStatus(gv(r, idx, 'onboarding_status')) === 'COMPLETED';
+  });
+  Logger.log('  onboarded buyers: ' + done.length);
+  Logger.log('  first 5 value pairs (G → H):');
+  done.slice(0, 5).forEach(function(r) {
+    Logger.log('    ' + JSON.stringify(r[sI]) + '   →   ' + JSON.stringify(r[eI]));
+  });
+
+  var spans = [], neg = 0, parsedBoth = 0;
+  done.forEach(function(r) {
+    var a = parseDate(r[sI]), b = parseDate(r[eI]);
+    if (!a || !b) return;
+    parsedBoth++;
+    var t = dateDiffDays(a, b);
+    if (t === null) return;
+    if (t < 0) neg++;
+    else if (t <= TAT_MAX_DAYS) spans.push(t);
+  });
+  spans.sort(function(x, y) { return x - y; });
+  Logger.log('  both parse as dates on ' + parsedBoth + '/' + done.length + ' onboarded buyers');
+  Logger.log('  usable spans: ' + spans.length
+    + (spans.length ? '  · median ' + spans[Math.floor(spans.length / 2)] + 'd'
+        + ' · mean ' + Math.round(spans.reduce(function(a, b) { return a + b; }, 0) / spans.length) + 'd'
+        + ' · range ' + spans[0] + '–' + spans[spans.length - 1] + 'd' : ''));
+  if (neg > spans.length && neg > 0) {
+    Logger.log('  ⚠ ' + neg + ' spans are NEGATIVE against ' + spans.length + ' positive —'
+      + ' column G may be the END and column H the START. Swap BUYER_TAT_COLS if so.');
+  }
+  var rows = normalizeRows(raw, cfg);
+  var withTat = rows.filter(function(r) { return r.onbTAT !== null; });
+  var basisSeen = {};
+  withTat.forEach(function(r) { basisSeen[r.tatBasis] = (basisSeen[r.tatBasis] || 0) + 1; });
+  Logger.log('  dashboard result: TAT on ' + withTat.length + ' buyers · basis '
+    + JSON.stringify(basisSeen)
+    + ' · avg ' + (withTat.length
+        ? Math.round(withTat.reduce(function(s, r) { return s + r.onbTAT; }, 0) / withTat.length) + 'd' : '—'));
+}
+
 // Map each sheet row to the common record shape the dashboard renders from.
 function normalizeRows(raw, cfg) {
   var idx = buildIndex(raw.headers);
@@ -1235,6 +1305,13 @@ function normalizeRows(raw, cfg) {
     var tatEnd = (_det && _det.completed) ? _det.completed
                : _feedEnd ? _feedEnd
                : onboarded;
+    // Buyers: TAT comes from the buyer feed's own columns G and H, by position.
+    // These take precedence over everything above for this audience.
+    var _bs = null, _be = null;
+    if (cfg.audience === 'buyer') {
+      _bs = parseDate(row[BUYER_TAT_COLS.start]);
+      _be = parseDate(row[BUYER_TAT_COLS.end]);
+    }
 
     var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
@@ -1346,6 +1423,8 @@ function normalizeRows(raw, cfg) {
       reviewDate:    reviewDate,
       _l1:           level1,        // TAT start candidate; stripped after resolution
       _tatEnd:       tatEnd,        // TAT end; separate from onboardedDate, stripped too
+      _bs:           _bs,           // buyer col G start / col H end, positional
+      _be:           _be,
     };
   }).filter(function(r) { return r.id || r.name; });
   _assignTat_(normalized, cfg.audience);
