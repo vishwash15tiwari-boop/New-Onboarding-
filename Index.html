@@ -5041,8 +5041,16 @@ function renderBranchNav(key) {
     var want = 'root/' + _mmVert;
     if (mmPath[1] !== want) mmPath = mmFindById(want) ? ['root', want] : [];
   }
-  // Drop any ids that no longer resolve after the rebuild.
-  if (!mmPath.every(function(id){ return mmFindById(id); })) mmPath = [];
+  // Keep the deepest prefix that still resolves, rather than dropping to the root.
+  // The tree is rebuilt from live data on every refresh, and modules appear or
+  // disappear with the selected period — Transactions vanishes when the period has
+  // no transactions, for instance. Wiping the whole path on any missing id ejected
+  // the user from their vertical back to Central Onboarding on a simple filter
+  // change. Now only the part that no longer exists is trimmed, so the vertical and
+  // its breadcrumb survive even when the module below it does not.
+  var _keep = 0;
+  while (_keep < mmPath.length && mmFindById(mmPath[_keep])) _keep++;
+  if (_keep < mmPath.length) mmPath = mmPath.slice(0, _keep);
   // Validate inline-panel state after rebuild
   var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
   if (mmFunnelActive && (!lastNode || lastNode.expand !== 'inline-funnel')) mmFunnelActive = false;
@@ -8255,6 +8263,7 @@ function loadVertRows(key) {
         if (!swrDone) vertRowsError = 'Could not read the server response: ' + e.message;
       }
       renderVertDetail();   // always re-render — never leave the panel stuck on the spinner
+      _mrRefreshFromVertRows();   // keep an open drill-down in step with the new rows
       // Silently warm the cache for the next vertical tab (2 s delay avoids contention)
       setTimeout(function() { _prefetchNextVert(key); }, 2000);
     })
@@ -9952,6 +9961,19 @@ function openModRecords(module) {
   }
   var ovl = document.getElementById('mr-ovl');
   if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+}
+
+// A records drill-down open while vertRows reloads (period or audience change)
+// would keep showing the previous period's rows. Re-snapshot and repaint the views
+// that are backed by vertRows; the OSV and TAT views own their own datasets and are
+// left alone. The overlay stays open throughout — only its data changes.
+function _mrRefreshFromVertRows() {
+  var ovl = document.getElementById('mr-ovl');
+  if (!ovl || !ovl.classList.contains('mr-open') || !_mrCtx) return;
+  if (_mrCtx.osv || _mrCtx.tat) return;
+  _mrRows = Array.isArray(vertRows) ? vertRows.slice() : [];
+  _mrPg.page = 0;          // the row set changed; page 2 of the old set is meaningless
   _mrRender();
 }
 
