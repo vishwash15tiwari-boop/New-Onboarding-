@@ -2639,7 +2639,9 @@ body.view-gst #mm-crumbs{display:none}
 .mmcrumb-sep{color:var(--txt3);font-size:12px}
 .mm{position:relative;display:flex;align-items:flex-start;gap:0;padding:2px 0 18px;overflow-x:auto;overflow-y:hidden}
 .mm-svg{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:visible}
-.mmcol{position:relative;z-index:1;display:flex;flex-direction:column;gap:7px;flex-shrink:0;width:158px;align-self:flex-start}
+/* Columns centre against the tallest one, so a short column (Central, Verticals)
+   sits level with the middle of the module list rather than pinned to the top. */
+.mmcol{position:relative;z-index:1;display:flex;flex-direction:column;gap:7px;flex-shrink:0;width:158px;align-self:center}
 .mmcol.wide{width:170px}
 .mmcolgap{width:26px;flex-shrink:0}
 .mmcoleye{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);padding:0 2px 4px;white-space:nowrap;min-height:12px}
@@ -3804,6 +3806,10 @@ var MR_OSV_COLS = [
   { key:'assignedTo',  label:'Assigned User' },
   { key:'updatedDate', label:'Last Updated' },
 ];
+// Average TAT block inside Onboarded (Details) — hidden for now. Set to true to
+// restore it; the builder and its drill-down are left intact behind this flag.
+var SHOW_VOLUME_TAT = false;
+
 // TAT drill-down — the vendors behind a cell in the Average TAT matrix.
 var MR_TAT_COLS = [
   { key:'name',       label:'Name', always:true },
@@ -4513,6 +4519,7 @@ function _mmVertModules(key) {
   // mirrors the volume matrix above it. Roll-ups are volume-weighted by the number of
   // completed records carrying a TAT, so the Overall figures reconcile with the
   // headline average instead of being an average of averages.
+  // Hidden for now — flip SHOW_VOLUME_TAT back to true to restore it unchanged.
   var tatMapS = _mmCatTatMap(vs && vs.categories);
   var tatMapB = _mmCatTatMap(vb && vb.categories);
   var volTatExtra = '';
@@ -4524,7 +4531,7 @@ function _mmVertModules(key) {
     return { cat:x.cat, color:MM_CAT_COLORS[i % MM_CAT_COLORS.length],
              s: tatMapS[x.cat] || null, b: tatMapB[x.cat] || null };
   });
-  if (tatCats.length) {
+  if (SHOW_VOLUME_TAT && tatCats.length) {
     // Each cell carries the sample it was averaged from. A category where only a
     // handful of records have a review date would otherwise show a confident-looking
     // number built on almost nothing, which reads as simply wrong.
