@@ -198,18 +198,6 @@ select,input{font-family:inherit}
 .header-spacer{flex:1}
 .header-meta{display:flex;align-items:center;gap:10px}
 .last-updated{font-size:11px;color:var(--txt3);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.1px}
-/* Spotlight search trigger — ⌘K pill */
-#btn-spotlight{
-  display:flex;align-items:center;gap:7px;
-  padding:7px 14px;border-radius:var(--pill);
-  border:none;
-  background:var(--seg-track);
-  color:var(--txt2);font-size:12px;font-weight:500;
-  transition:background .18s,box-shadow .18s;
-  min-width:170px;
-}
-#btn-spotlight:hover{background:rgba(120,120,128,.18)}
-#btn-spotlight kbd{font-family:inherit;font-size:10px;font-weight:600;color:var(--txt2);background:var(--card);border:none;box-shadow:0 1px 2px rgba(0,0,0,.08);border-radius:5px;padding:2px 6px;margin-left:auto;letter-spacing:.05em}
 #btn-refresh{
   padding:8px 18px;
   border-radius:var(--pill);
@@ -2993,12 +2981,8 @@ body.view-gst #mm-crumbs{display:none}
     <div class="logo-text">ONBOARDING</div>
   </div>
   <div class="header-spacer"></div>
-  <!-- Spotlight search trigger -->
-  <button id="btn-spotlight" onclick="openSpotlight()" title="Search (Ctrl+K)">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.55"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    Quick search…
-    <kbd>⌘K</kbd>
-  </button>
+  <!-- Quick search trigger removed. The ⌘K / Ctrl+K shortcut still opens the
+       palette; see the keydown handler if that should go too. -->
   <div class="header-meta">
     <span class="status-dot"></span>
     <span class="last-updated" id="last-updated">Loading…</span>
