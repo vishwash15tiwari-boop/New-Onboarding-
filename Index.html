@@ -5526,7 +5526,8 @@ function mmRenderGeo() {
       + cell(d.seller, 'Sellers') + cell(d.buyer, 'Buyers')
       + catCells
       + '</div>'
-      + '<button class="mf-detail-vd" onclick="openRecordsSheet(selectedAud || \'seller\')">' + MM_IC.doc + ' View Detailed Records →</button>'
+      // No records CTA here: the state detail already carries the seller/buyer and
+      // per-category split, and the sheet it opened was not region-scoped.
       + '</div>';
   }
 
