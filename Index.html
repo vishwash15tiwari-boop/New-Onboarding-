@@ -270,7 +270,9 @@ select,input{font-family:inherit}
 
 /* ===== Main — flex-row shell ===== */
 #main{display:flex;flex-direction:row;align-items:flex-start;background:transparent;min-height:calc(100vh - 56px)}
-#dash-content{flex:1;min-width:0;padding:10px 28px 48px;max-width:1500px;margin:0 auto}
+/* Base gutter — applies to the GST view; the branch views are governed by the
+   body:not(.view-gst) rule further down, which outranks this. */
+#dash-content{flex:1;min-width:0;padding:12px 36px 64px;max-width:1340px;margin:0 auto}
 
 /* ===== Section Titles — Apple large title style ===== */
 .section-title{
@@ -1285,6 +1287,11 @@ body.view-gst #main{background:transparent}
   padding:14px 0 4px;margin:0 0 14px;
   border-bottom:none;background:none;border-radius:0;
 }
+/* The page's only .section-title is the period toolbar. Outside GST the heading
+   inside it (#view-title) is hidden — see the rule below — so that 14px top
+   padding was reserving space above nothing and pushed the filter bar down.
+   Trimmed here only; GST keeps the original spacing because its title is shown. */
+body:not(.view-gst) .section-title{padding:2px 0;margin:0 0 8px}
 .section-title::before{display:none}
 .section-title .badge{display:none}
 #view-title{
@@ -2473,7 +2480,9 @@ body.view-gst #vnav .vnode:not(.vnode-gst){opacity:.55}
 #vnav{display:none!important}
 
 /* Canvas: full width — the mind map carries its own lanes. */
-body:not(.view-gst) #dash-content{max-width:1400px;margin:0 auto;padding:20px 30px 80px}
+/* This rule outranks the base #dash-content declaration, so the real page gutter
+   lives here. Top padding trimmed to lift the filter bar toward the header. */
+body:not(.view-gst) #dash-content{max-width:1500px;margin:0 auto;padding:12px 30px 56px}
 .jr-sec{margin-bottom:24px}
 .jr-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:13px}
 .jr-step{font-size:10px;font-weight:700;color:var(--txt3);font-variant-numeric:tabular-nums;letter-spacing:.05em}
