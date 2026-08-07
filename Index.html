@@ -2643,6 +2643,7 @@ body.view-gst #mm-crumbs{display:none}
    sits level with the middle of the module list rather than pinned to the top. */
 .mmcol{position:relative;z-index:1;display:flex;flex-direction:column;gap:7px;flex-shrink:0;width:158px;align-self:center}
 .mmcol.wide{width:170px}
+.mmcol.rootcol{width:194px}
 .mmcolgap{width:26px;flex-shrink:0}
 .mmcoleye{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);padding:0 2px 4px;white-space:nowrap;min-height:12px}
 .mmn{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;cursor:pointer;position:relative;opacity:0;transform:translateY(8px) scale(.985);
@@ -2670,8 +2671,30 @@ body.view-gst #mm-crumbs{display:none}
 .mmn.t-amber .mmn-ic{background:#FFF3E0;color:#B26A00}
 .mmn.t-red .mmn-ic{background:#FDECEB;color:#C4271E}
 .mmn.t-ink .mmn-ic{background:#EDEDF0;color:var(--txt)}
-/* root card */
-.mmn.root .mmn-root-lbl{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--txt);line-height:1.35}
+/* ── Root card: the entry point into the branch, styled as a premium nav card ──
+   The whole card is the click target (role=button + onclick in mmNodeCard); the
+   CTA is affordance only. Hover lifts, warms the border and nudges the arrow so
+   the interaction reads clearly. */
+.mmn.root{padding:15px 15px 12px;border-radius:14px;
+  box-shadow:0 1px 2px rgba(16,24,40,.05),0 8px 20px -14px rgba(16,24,40,.28)}
+.mmn.root .mmn-root-lbl{font-size:11.5px;font-weight:800;letter-spacing:.085em;
+  text-transform:uppercase;color:var(--txt);line-height:1.42}
+.mmn.root .mmn-root-cta{display:flex;align-items:center;justify-content:flex-end;gap:4px;
+  margin-top:12px;padding-top:9px;border-top:1px solid var(--border);
+  font-size:9.5px;font-weight:700;letter-spacing:.02em;color:var(--blue);opacity:.72;
+  white-space:nowrap;transition:opacity .18s var(--ease-out)}
+.mmn.root .mmn-root-arr{display:inline-block;font-size:11px;line-height:1;
+  transition:transform .18s var(--ease-out)}
+.mmn.root.in:hover{border-color:rgba(0,93,255,.42);
+  box-shadow:0 2px 4px rgba(16,24,40,.05),0 14px 28px -14px rgba(0,93,255,.42);
+  transform:translateY(-2px)}
+.mmn.root.in:hover .mmn-root-cta{opacity:1}
+.mmn.root.in:hover .mmn-root-arr{transform:translateX(3px)}
+.mmn.root.on .mmn-root-cta{opacity:1}
+@media(prefers-reduced-motion:reduce){
+  .mmn.root.in:hover{transform:none}
+  .mmn.root .mmn-root-arr{transition:none}
+}
 /* vertical + module cards — navigation only, compact */
 .mmn.vert,.mmn.module{padding:7px 10px}
 /* clean status dot on vert cards */
@@ -4914,7 +4937,8 @@ function _mmPathIds(node) { var p = [], c = node; while (c) { p.unshift(c._id); 
 
 function mmBuildColumns() {
   var chain = mmPath.map(mmFindById).filter(Boolean);
-  var cols = [{ cards:[mmTree], active: chain.length ? mmTree._id : null, eye:'Central', wide:true }];
+  // rootcol gets extra width so the title and its call-to-action sit comfortably.
+  var cols = [{ cards:[mmTree], active: chain.length ? mmTree._id : null, eye:'Central', wide:true, rootcol:true }];
   for (var k = 0; k < chain.length; k++) {
     var parent = chain[k];
     if (!parent.children || !parent.children.length) break;
@@ -4932,7 +4956,11 @@ function mmNodeCard(node, colActiveId) {
   var cls, inner;
   if (kind === 'root') {
     cls = 'mmn root' + (on ? ' on' : '');
-    inner = '<div class="mmn-root-lbl">Central Onboarding<br>Dashboard</div>';
+    // Title plus a muted call-to-action. The whole card already carries the click
+    // handler below, so the CTA is affordance only — it is not separately clickable.
+    inner = '<div class="mmn-root-lbl">Central Onboarding<br>Dashboard</div>'
+      + '<div class="mmn-root-cta" aria-hidden="true">Click for Details'
+      + '<span class="mmn-root-arr">→</span></div>';
   } else if (kind === 'vert') {
     cls = 'mmn vert' + (node.muted ? ' muted' : '') + (on ? ' on' : '');
     // Clean navigation card: small status dot + name + chevron. No metric graphic.
@@ -4987,7 +5015,7 @@ function mmRender() {
   var cols = mmBuildColumns();
   var html = '<svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg>';
   cols.forEach(function(col, ci) {
-    html += '<div class="mmcol' + (col.wide ? ' wide' : '') + '"><div class="mmcoleye">' + esc(col.eye || '') + '</div>'
+    html += '<div class="mmcol' + (col.wide ? ' wide' : '') + (col.rootcol ? ' rootcol' : '') + '"><div class="mmcoleye">' + esc(col.eye || '') + '</div>'
       + col.cards.map(function(n){ return mmNodeCard(n, col.active); }).join('') + '</div>';
     if (ci < cols.length - 1) html += '<div class="mmcolgap"></div>';
   });
