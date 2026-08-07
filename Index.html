@@ -4711,9 +4711,12 @@ function _mmVertModules(key) {
       else { tTiles.push({ label:'Metal', v:sMtxn }, { label:'Plastic', v:sPtxn }); }
     }
     if (ag) {
-      tTiles.push({ label:'0–30 days', v:ag.a, tone:'good' },
-                  { label:'31–60 days', v:ag.c, tone:'warn' },
-                  { label:'60+ days', v:ag.d, tone:'crit' });
+      // Leading with "Ageing" groups the three tiles at a glance; the sub-line names
+      // the population, since these count onboarded sellers that have NOT transacted,
+      // bucketed by days since onboarding (see _mmAging).
+      tTiles.push({ label:'Ageing · 0–30 days',  v:ag.a, tone:'good', sub:'Non-transacted' },
+                  { label:'Ageing · 31–60 days', v:ag.c, tone:'warn', sub:'Non-transacted' },
+                  { label:'Ageing · 60+ days',   v:ag.d, tone:'crit', sub:'Non-transacted' });
     }
     if (gmv != null) {
       // Seller-side throughout, so the category tiles sum to the total tile.
