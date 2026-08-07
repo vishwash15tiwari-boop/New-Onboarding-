@@ -2729,21 +2729,18 @@ body.view-gst #mm-crumbs{display:none}
 /* inside the side canvas the panels are simply shown/hidden — the canvas slide is the reveal */
 .mmdetail #mm-funnel,.mmdetail #mm-geo,.mmdetail #mm-modpanel{max-height:none;opacity:1;overflow:visible;margin:0}
 .mmdetail #mm-funnel:not(.mf-open),.mmdetail #mm-geo:not(.mg-open),.mmdetail #mm-modpanel:not(.mp-open){display:none}
-/* Funnel → vertical stack in the side canvas */
-/* Vertical stacked stage cards — all equal width, compact */
+/* Funnel → vertical stack in the side canvas.
+   Now that the breakdown lives in the drill-down, each card is a single row:
+   metric + label on the left, the "View records" affordance on the right. */
 .mmdetail .mf-flow{flex-direction:column;overflow:visible;gap:0;padding:2px;align-items:stretch}
-.mmdetail .mf-card{width:100%;max-width:none;min-width:0;padding:8px 14px;border-width:1px}
-.mmdetail .mf-card.sel{border-width:1.5px}
-.mmdetail .mf-card.sel::after{display:none}
-.mmdetail .mf-v{font-size:1.5rem;margin-bottom:1px}
-.mmdetail .mf-label{font-size:.68rem;margin-bottom:0}
-.mmdetail .mf-matrix{border-top:1px solid var(--border);padding-top:6px;margin-top:6px;gap:2px 4px}
-.mmdetail .mf-mx-hd{font-size:.6rem;padding-bottom:2px}
-.mmdetail .mf-mx-lbl{font-size:.64rem;padding:2px 6px 2px 0}
-.mmdetail .mf-mx-cell{font-size:.78rem;padding:3px 4px}
+.mmdetail .mf-card{width:100%;max-width:none;min-width:0;padding:9px 14px;border-width:1px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mmdetail .mf-head{display:flex;align-items:baseline;gap:9px;min-width:0}
+.mmdetail .mf-v{font-size:1.45rem;margin-bottom:0}
+.mmdetail .mf-label{font-size:.72rem;margin-bottom:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mmdetail .mf-cta{margin-top:0;flex-shrink:0}
 .mmdetail .mf-sep{width:100%;height:11px}
 .mmdetail .mf-sep svg{width:20px;height:20px;transform:rotate(90deg)}
-.mmdetail .mf-detail{margin-top:14px;padding-top:14px}
 /* Geo → map above legend, stacked */
 .mmdetail .mg-grid{flex-direction:column;gap:14px}
 .mmdetail .mg-map{flex:none;width:100%;max-width:none}
@@ -2782,39 +2779,26 @@ body.view-gst #mm-crumbs{display:none}
 .mf-card{flex:1;min-width:148px;max-width:210px;background:var(--card);border:2px solid var(--border);border-radius:var(--r);padding:20px 16px 16px;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .18s;position:relative;opacity:0;transform:translateY(14px);will-change:transform,opacity}
 .mf-card.mf-in{opacity:1;transform:none;transition:opacity .35s ease,transform .35s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s}
 .mf-card:hover{box-shadow:0 4px 18px -4px rgba(0,0,0,.12);transform:translateY(-1px)}
-.mf-card.sel{border-color:var(--blue);box-shadow:0 0 0 1.5px rgba(0,93,255,.3),0 6px 22px -6px rgba(0,93,255,.2)}
-.mf-card.sel::after{content:'';position:absolute;bottom:-13px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:10px solid var(--blue);pointer-events:none}
 .mf-v{font-size:2.4rem;font-weight:800;line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
 .mf-v.blue{color:#005dff}.mf-v.purple{color:#8b5cf6}.mf-v.amber{color:#d97706}.mf-v.green{color:#16a34a}.mf-v.red{color:#dc2626}
 .mf-label{font-size:.75rem;color:var(--txt2);margin-bottom:8px;line-height:1.3}
+/* Summary card affordance — the whole card opens its records. */
+.mf-cta{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:8px;
+  font-size:9.5px;font-weight:700;letter-spacing:.02em;color:var(--blue);opacity:.7;
+  white-space:nowrap;transition:opacity .18s var(--ease-out)}
+.mf-cta-arr{display:inline-block;transition:transform .18s var(--ease-out)}
+.mf-card:hover .mf-cta{opacity:1}
+.mf-card:hover .mf-cta-arr{transform:translateX(3px)}
+@media(prefers-reduced-motion:reduce){.mf-cta-arr{transition:none}}
 /* 2×2 breakdown matrix (Type × Category) */
-.mf-matrix{display:grid;grid-template-columns:auto 1fr 1fr;gap:2px 4px;border-top:1px solid var(--border);padding-top:10px;margin-top:4px;align-items:center}
-.mf-mx-corner{} /* top-left empty cell */
-.mf-mx-hd{font-size:.68rem;font-weight:600;color:var(--txt3);text-align:center;padding:0 2px 4px;display:flex;align-items:center;justify-content:center;gap:3px}
-.mf-mx-lbl{font-size:.7rem;color:var(--txt2);padding:3px 6px 3px 0;display:flex;align-items:center;gap:4px;white-space:nowrap}
-.mf-mx-cell{text-align:center;font-size:.82rem;font-weight:700;color:var(--txt);padding:3px 4px;background:var(--bg);border-radius:4px;font-variant-numeric:tabular-nums;min-width:0}
-.mf-mx-cell.na{color:var(--txt3);font-weight:400}
-/* Every category is shown, so headers must survive narrow columns … */
-.mf-mx-hd{min-width:0}
-.mf-mx-hd > span:not(.mf-cat-dot){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* … and the Total column is set apart so each row visibly reconciles. */
-.mf-mx-hd.tot{color:var(--txt2);font-weight:700}
-.mf-mx-cell.tot{background:var(--card);border:1px dashed var(--border);font-weight:800}
 /* colored dots used by matrix headers and labels */
-.mf-cat-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.mf-cat-dot.seller{background:#8b5cf6}.mf-cat-dot.buyer{background:#06b6d4}
 /* detail strip */
-.mf-detail .mf-matrix{margin-top:12px;margin-bottom:18px}
-.mf-detail .mf-mx-cell{font-size:.9rem;padding:5px 6px}
 /* arrow connectors between stage cards */
 .mf-sep{display:flex;align-items:center;justify-content:center;width:44px;flex-shrink:0}
 .mf-sep svg{width:44px;height:44px;overflow:visible}
 .mf-sep-path{stroke:var(--border);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:80;stroke-dashoffset:0;transition:stroke .25s}
 .mf-sep.lit .mf-sep-path{stroke:var(--blue)}
-/* detail strip */
-.mf-detail{border-top:1px solid var(--border);margin-top:20px;padding-top:20px;animation:mfDetailIn .32s cubic-bezier(.4,0,.2,1) both}
 @keyframes mfDetailIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.mf-detail-hd{font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:14px}
 
 .mf-detail-vd{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;background:var(--blue);color:#fff;border:none;border-radius:999px;font-size:.8rem;font-weight:600;cursor:pointer;transition:opacity .15s,transform .15s;white-space:nowrap}
 .mf-detail-vd svg{width:15px;height:15px;flex-shrink:0}
@@ -3817,6 +3801,90 @@ var MR_OSV_COLS = [
 // restore it; the builder and its drill-down are left intact behind this flag.
 var SHOW_VOLUME_TAT = false;
 
+// Stage (KPI) drill-down — the records behind one Breakup card. Stage counts are
+// sellers PLUS buyers, so this view merges both audiences and names the side in a
+// User Type column; a single-audience view could never match the number on the card.
+var MR_STAGE_COLS = [
+  { key:'name',     label:'Name', always:true },
+  { key:'vertical', label:'Business Vertical' },
+  { key:'userType', label:'User Type' },
+  { key:'category', label:'Category' },
+  { key:'gstin',    label:'GSTIN' },
+  { key:'status',   label:'Current Status' },
+];
+// Detail rows per audience, cached per vertical + period. Shared by the stage and
+// TAT drill-downs so switching between them does not refetch.
+var _audRows = { key:null, pKey:null, seller:null, buyer:null, loading:{} };
+
+// Ensure rows for one audience are cached, then call back. Seeds from vertRows when
+// that already holds the audience asked for, so the common case costs no round trip.
+function _ensureAudRows(key, aud, cb) {
+  var pKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+  if (_audRows.key !== key || _audRows.pKey !== pKey) {
+    _audRows = { key:key, pKey:pKey, seller:null, buyer:null, loading:{} };
+  }
+  if (_audRows[aud] == null && selectedVert === key && selectedAud === aud
+      && Array.isArray(vertRows) && vertRows.length) {
+    _audRows[aud] = vertRows.slice();
+  }
+  if (_audRows[aud] != null) { cb(_audRows[aud]); return; }
+  if (_audRows.loading[aud]) return;              // a request is already in flight
+  _audRows.loading[aud] = true;
+  var f = { audience: aud, period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      _audRows.loading[aud] = false;
+      try { var d = JSON.parse(res); _audRows[aud] = (d && d.success && Array.isArray(d.rows)) ? d.rows : []; }
+      catch (e) { _audRows[aud] = []; }
+      cb(_audRows[aud]);
+    })
+    .withFailureHandler(function() { _audRows.loading[aud] = false; _audRows[aud] = []; cb([]); })
+    .getVerticalRows(key, JSON.stringify(f));
+}
+
+// Records behind one Breakup stage card, across both audiences.
+function openStageRecords(stageKey) {
+  var stage = null;
+  for (var i = 0; i < MF_STAGES.length; i++) { if (MF_STAGES[i].key === stageKey) { stage = MF_STAGES[i]; break; } }
+  if (!stage) return;
+  var cfg  = MR_MOD_CFG[stage.vdAction] || {};
+  var key  = activeVertKey || selectedVert;
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var vertName = (vcfg && vcfg.name) || key || '';
+
+  _mrCtx = {
+    module: 'stage', stage: true, stageKey: stageKey, vertName: vertName,
+    label: stage.label, vertLabel: vertName,
+    preStatus: cfg.preStatus || null, forceSeller: false,
+    cfg: { label: stage.label }
+  };
+  _mrRows = [];
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All', userType:'All' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  _mrColVis = {};
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+
+  // Merge both audiences as they arrive, tagging each row with its side.
+  ['seller', 'buyer'].forEach(function(aud) {
+    _ensureAudRows(key, aud, function(rows) {
+      if (!_mrCtx || !_mrCtx.stage || _mrCtx.stageKey !== stageKey) return;   // moved on
+      var tagged = (rows || []).map(function(r) {
+        var c = {}; for (var k in r) if (r.hasOwnProperty(k)) c[k] = r[k];
+        c._aud = aud;
+        return c;
+      });
+      _mrRows = _mrRows.filter(function(r) { return r._aud !== aud; }).concat(tagged);
+      _mrRender();
+    });
+  });
+}
+
 // Ageing drill-down — the sellers behind one ageing card. Business Vertical is
 // rendered from context rather than per row: getVerticalRows already scopes the
 // feed to a single vertical, so every row in this view shares it.
@@ -4330,7 +4398,6 @@ var mmTree = null;        // root node — rebuilt each render from live data
 var mmPath = [];          // node IDs from 'root' down = the expanded chain
 var _mmById = {};         // id → node for the current tree
 var mmFunnelActive = false;  // inline funnel panel open
-var mmFunnelStage  = null;   // selected stage key
 var mmGeoActive = false;     // inline geo (India map) panel open
 var _geoAnimate = false;     // run the map entrance animation on the next render only
 var mmModActive = false;     // generic inline module panel open (Volume/Txn/Ratings/OSV/Existing)
@@ -5074,7 +5141,7 @@ function mmGoto(i) {
   var chain = mmPath.length ? mmPath.slice() : ['root'];
   mmPath = i <= 0 ? ['root'] : chain.slice(0, i + 1);
   var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
-  if (!lastNode || lastNode.expand !== 'inline-funnel') { mmFunnelActive = false; mmFunnelStage = null; }
+  if (!lastNode || lastNode.expand !== 'inline-funnel') { mmFunnelActive = false; }
   if (!lastNode || lastNode.expand !== 'inline-panel') { mmModActive = false; }
   if (!lastNode || !lastNode.geoRegion) { mmGeoActive = false; _geo.region = null; _geo.state = null; if (!lastNode || !lastNode.geoModule) _geo.cat = null; }
   _mmAnimateReveal = true;
@@ -5135,7 +5202,7 @@ function _mmSyncDetail() {
 function mmPaint() { mmRender(); mmRenderFunnel(); mmRenderGeo(); mmRenderModPanel(); _mmSyncDetail(); }
 
 function _mmCloseInline() {
-  mmFunnelActive = false; mmFunnelStage = null;
+  mmFunnelActive = false;
   mmGeoActive = false; _geo.region = null; _geo.state = null; _geo.hover = null; _geo.cat = null;
   mmModActive = false;
 }
@@ -5149,7 +5216,7 @@ function mmClickNode(id) {
       mmGeoActive = false; _geo.region = null; _geo.state = null;
       mmPath = mmPath.slice(0, -1);
     } else {
-      mmFunnelActive = false; mmFunnelStage = null; mmModActive = false;
+      mmFunnelActive = false; mmModActive = false;
       mmPath = _mmPathIds(node);
       mmGeoActive = true; _geo.state = null; _geo.hover = null; _geoAnimate = true;
       mmGeoOpen(node.geoRegion);
@@ -5168,17 +5235,17 @@ function mmClickNode(id) {
     var funOpen = mmFunnelActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
     mmGeoActive = false; _geo.region = null; _geo.state = null; mmModActive = false;
     if (funOpen) {
-      mmFunnelActive = false; mmFunnelStage = null;
+      mmFunnelActive = false;
       mmPath = mmPath.slice(0, -1);
     } else {
       mmPath = _mmPathIds(node);
-      mmFunnelActive = true; mmFunnelStage = null;
+      mmFunnelActive = true;
     }
     _mmAnimateReveal = true; mmPaint(); return;
   }
   if (node.expand === 'inline-panel') {
     var modOpen = mmModActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
-    mmFunnelActive = false; mmFunnelStage = null; mmGeoActive = false; _geo.region = null; _geo.state = null;
+    mmFunnelActive = false; mmGeoActive = false; _geo.region = null; _geo.state = null;
     if (modOpen) {
       mmModActive = false;
       mmPath = mmPath.slice(0, -1);
@@ -5258,45 +5325,10 @@ var MF_STAGES = [
   { key:'rejected',  label:'Rejected',              color:'red',    field:'rejected',  vdAction:'rejected',  catField:'rejected'  },
 ];
 
-function mmSelectFunnelStage(k) {
-  mmFunnelStage = (mmFunnelStage === k) ? null : k;
-  mmRenderFunnel();
-}
+// mmSelectFunnelStage removed: stage cards now open their records directly.
 
-function _mfCell(v, na) {
-  return '<div class="mf-mx-cell' + (na ? ' na' : '') + '">' + (na ? '—' : esc(v)) + '</div>';
-}
-// Stage breakdown grid: rows = Sellers / Buyers, columns = EVERY category the
-// vertical has, in volume order, followed by a Total column. Showing all of them
-// is the point — capping the columns silently dropped whatever sat outside the
-// top few, so the cells no longer added up to the stage headline. The Total
-// column comes from the stage's own audience totals, so any gap between it and
-// the category cells is visible rather than hidden. When the stage has no
-// per-category feed, a single "Count" column carries the plain audience split.
-function _mfMatrix(catRows, sTot, bTot) {
-  var cols = (catRows && catRows.length) ? catRows : null;
-  var n = cols ? cols.length + 1 : 1;
-  var head = '<div class="mf-mx-corner"></div>';
-  var sRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot seller"></span>Sellers</div>';
-  var bRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot buyer"></span>Buyers</div>';
-  if (cols) {
-    cols.forEach(function(c, i) {
-      head += '<div class="mf-mx-hd" title="' + esc(c.cat) + '"><span class="mf-cat-dot" style="background:'
-        + MM_CAT_COLORS[i % MM_CAT_COLORS.length] + '"></span><span>' + esc(_catLabel(c.cat)) + '</span></div>';
-      sRow += _mfCell(fmt(c.s), false);
-      bRow += _mfCell(fmt(c.b), false);
-    });
-    head += '<div class="mf-mx-hd tot">Total</div>';
-    sRow += '<div class="mf-mx-cell tot">' + fmt(sTot || 0) + '</div>';
-    bRow += '<div class="mf-mx-cell tot">' + fmt(bTot || 0) + '</div>';
-  } else {
-    head += '<div class="mf-mx-hd">Count</div>';
-    sRow += _mfCell(fmt(sTot || 0), false);
-    bRow += _mfCell(fmt(bTot || 0), false);
-  }
-  return '<div class="mf-matrix" style="grid-template-columns:auto repeat(' + n + ',1fr)">'
-    + head + sRow + bRow + '</div>';
-}
+// _mfCell / _mfMatrix removed: the per-card breakdown grid is now the
+// drill-down table that openStageRecords() opens.
 
 function mmRenderFunnel() {
   var panel = document.getElementById('mm-funnel');
@@ -5307,40 +5339,26 @@ function mmRenderFunnel() {
   var vs = (DS && DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
 
+  // Summary only: the metric and its label. The category / audience breakdown that
+  // used to sit inside each card now lives in the drill-down the card opens, so the
+  // funnel stays scannable and the detail is one click away.
   var html = '<div class="mf-flow">';
   MF_STAGES.forEach(function(s, i) {
-    var total   = (vs[s.field]||0) + (vb[s.field]||0);
-    var catRows = s.catField ? _mmCatRowsFixed(vs, vb, s.catField) : null;
-    var sel     = mmFunnelStage === s.key;
-    html += '<div class="mf-card' + (sel ? ' sel' : '') + '" role="button" tabindex="0"'
-      + ' onclick="mmSelectFunnelStage(\'' + s.key + '\')"'
-      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){mmSelectFunnelStage(\'' + s.key + '\')}">'
+    var total = (vs[s.field]||0) + (vb[s.field]||0);
+    html += '<div class="mf-card" role="button" tabindex="0"'
+      + ' title="View the ' + esc(s.label) + ' records"'
+      + ' onclick="openStageRecords(\'' + s.key + '\')"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openStageRecords(\'' + s.key + '\')}">'
       + '<div class="mf-head"><div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
       + '<div class="mf-label">' + esc(s.label) + '</div></div>'
-      + _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0)
+      + '<div class="mf-cta">View records <span class="mf-cta-arr">→</span></div>'
       + '</div>';
     if (i < MF_STAGES.length - 1) {
-      var nextSel = mmFunnelStage === MF_STAGES[i + 1].key;
-      var lit = sel || nextSel;
-      html += '<div class="mf-sep' + (lit ? ' lit' : '') + '">'
+      html += '<div class="mf-sep">'
         + '<svg viewBox="0 0 44 44" aria-hidden="true"><path class="mf-sep-path" d="M2 22 L38 22 M28 13 L38 22 L28 31"/></svg></div>';
     }
   });
   html += '</div>';
-
-  if (mmFunnelStage) {
-    var stageObj = null;
-    for (var si = 0; si < MF_STAGES.length; si++) { if (MF_STAGES[si].key === mmFunnelStage) { stageObj = MF_STAGES[si]; break; } }
-    if (stageObj) {
-      var dCatRows = stageObj.catField ? _mmCatRowsFixed(vs, vb, stageObj.catField) : null;
-      html += '<div class="mf-detail" id="mf-detail" role="region" aria-label="' + esc(stageObj.label) + ' details">'
-        + '<div class="mf-detail-hd">' + esc(stageObj.label) + ' · Stage Breakdown</div>'
-        + _mfMatrix(dCatRows, vs[stageObj.field]||0, vb[stageObj.field]||0)
-        + '<button class="mf-detail-vd" onclick="mmCardAction(\'' + stageObj.vdAction + '\')">'
-        + MM_IC.doc + ' View Detailed Records →</button>'
-        + '</div>';
-    }
-  }
 
   panel.innerHTML = html;
   panel.className = 'mf mf-open';
@@ -5351,7 +5369,7 @@ function mmRenderFunnel() {
     if (!anim) { c.classList.add('mf-in'); return; }
     setTimeout(function(){ c.classList.add('mf-in'); }, 60 + i * 90);
   });
-  if (anim && !mmFunnelStage) {
+  if (anim) {
     var paths = [].slice.call(panel.querySelectorAll('.mf-sep-path'));
     paths.forEach(function(p, i) {
       p.style.transition = 'none';
@@ -9986,6 +10004,7 @@ function _osvChip(status) {
 }
 
 function _mrColSet() {
+  if (_mrCtx && _mrCtx.stage) return MR_STAGE_COLS;
   if (_mrCtx && _mrCtx.aging) return MR_AGING_COLS;
   if (_mrCtx && _mrCtx.tat) return MR_TAT_COLS;
   return (_mrCtx && _mrCtx.osv) ? MR_OSV_COLS : MR_COLS;
@@ -9998,7 +10017,9 @@ function _mrRenderHeader() {
   var bc = document.getElementById('mr-breadcrumb');
   var tt = document.getElementById('mr-title');
   if (!_mrCtx) return;
-  var audLbl = (_mrCtx.forceSeller || selectedAud !== 'buyer') ? 'Sellers' : 'Buyers';
+  // Stage drill-downs merge both audiences, so naming one of them would be wrong.
+  var audLbl = _mrCtx.stage ? 'Breakup'
+             : (_mrCtx.forceSeller || selectedAud !== 'buyer') ? 'Sellers' : 'Buyers';
   if (bc) bc.textContent = _mrCtx.vertLabel + ' › ' + audLbl;
   if (_mrCtx.cfg && _mrCtx.cfg.isTxnView) {
     var txnRows = _mrRows.filter(function(r) { return r.hasTransacted; });
@@ -10010,6 +10031,10 @@ function _mrRenderHeader() {
     // "source rows" here would contradict the number on the card that was clicked.
     var inBucket = _mrRows.filter(_mrPreFilter).length;
     if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(inBucket) + ' seller' + (inBucket === 1 ? '' : 's') + ')';
+  } else if (_mrCtx.stage) {
+    // Same reason as ageing: the card's status gate, not the whole feed.
+    var inStage = _mrRows.filter(_mrPreFilter).length;
+    if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(inStage) + ' record' + (inStage === 1 ? '' : 's') + ')';
   } else {
     if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(_mrRows.length) + ' source rows)';
   }
@@ -10035,8 +10060,18 @@ function _mrRenderFilters() {
   var cfg = _mrCtx.cfg;
   var noStatus = !!_mrCtx.preStatus;
 
-  // TAT drill-down: the audience and category are fixed by the cell that was
-  // clicked, so only the filters that still vary are offered.
+  // Stage (KPI card) drill-down: the card fixes the status, so that filter is
+  // offered only for the all-status "Logged In" card.
+  if (_mrCtx.stage) {
+    el.innerHTML =
+        '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search name, ID or GSTIN…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
+      + _mrSel('mr-f-cat',  'Categories', _mrUniq('category'), _mrF.category, 'mrFChange()')
+      + _mrSel('mr-f-user', 'User Types', ['Seller','Buyer'],  _mrF.userType, 'mrFChange()')
+      + (_mrCtx.preStatus ? ''
+          : _mrSel('mr-f-sta', 'Statuses', ['DRAFT','IN_REVIEW','COMPLETED','REJECTED'], _mrF.status, 'mrFChange()'))
+      + '<button class="vd-close" onclick="mrFClear()" style="flex-shrink:0">Clear</button>';
+    return;
+  }
   if (_mrCtx.aging) {
     el.innerHTML =
         '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search seller, ID or GSTIN…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
@@ -10086,6 +10121,11 @@ function _mrRenderFilters() {
 
 function _mrPreFilter(r) {
   if (!_mrCtx) return true;
+  if (_mrCtx.stage) {
+    // Stage cards count every record at that status across both audiences, so the
+    // only gate here is the status the stage represents ("Logged In" has none).
+    return !_mrCtx.preStatus || r.status === _mrCtx.preStatus;
+  }
   if (_mrCtx.aging) {
     // Same predicate the card counted with, so the two can never diverge.
     return _mmAgingBucket(r) === _mrCtx.agingBucket;
@@ -10105,6 +10145,16 @@ function _mrPreFilter(r) {
 
 function _mrUserFilter(r) {
   var f = _mrF;
+  if (_mrCtx && _mrCtx.stage) {
+    if (f.category !== 'All' && r.category !== f.category) return false;
+    if (f.userType !== 'All' && (r._aud === 'buyer' ? 'Buyer' : 'Seller') !== f.userType) return false;
+    if (f.status   !== 'All' && r.status !== f.status) return false;
+    var sq = (f.search || '').toLowerCase();
+    if (sq && (r.name  || '').toLowerCase().indexOf(sq) === -1
+           && (r.gstin || '').toLowerCase().indexOf(sq) === -1
+           && String(r.id || '').toLowerCase().indexOf(sq) === -1) return false;
+    return true;
+  }
   if (_mrCtx && _mrCtx.aging) {
     if (f.category !== 'All' && r.category !== f.category) return false;
     var aq = (f.search || '').toLowerCase();
@@ -10193,9 +10243,10 @@ function _mrSortedRows(rows) {
   if (!_mrSort.key) return rows;
   var key = _mrSort.key, dir = _mrSort.dir;
   var isOsv = !!(_mrCtx && _mrCtx.osv);
-  var isSimple = !!(_mrCtx && (_mrCtx.aging || _mrCtx.tat));
+  var isSimple = !!(_mrCtx && (_mrCtx.aging || _mrCtx.tat || _mrCtx.stage));
   function simpleVal(r, k) {
     if (k === 'vertical') return String(_mrCtx.vertName || '').toLowerCase();
+    if (k === 'userType') return r._aud === 'buyer' ? 'buyer' : 'seller';
     return String(r[k] == null ? '' : r[k]).toLowerCase();
   }
   return rows.slice().sort(function(a, b) {
@@ -10208,6 +10259,20 @@ function _mrSortedRows(rows) {
 }
 
 function _mrCellHtml(r, key) {
+  if (_mrCtx && _mrCtx.stage) {
+    switch (key) {
+      case 'name':     return '<strong>' + esc(r.name || '—') + '</strong>'
+                            + (r.id ? '<div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id) + '</div>' : '');
+      case 'vertical': return '<span class="td-dim">' + esc(_mrCtx.vertName || '—') + '</span>';
+      case 'userType': return '<span class="km-vbadge" style="background:' + (r._aud === 'buyer' ? 'rgba(0,122,255,.10);color:#024C8A' : 'rgba(139,92,246,.12);color:#5B3FA8') + ';font-weight:600">'
+                            + (r._aud === 'buyer' ? 'Buyer' : 'Seller') + '</span>';
+      case 'category': return esc(r.category || '—');
+      case 'gstin':    return r.gstin ? '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>'
+                                      : '<span class="td-dim">—</span>';
+      case 'status':   return statusChip(r.status);
+      default:         return esc(String(r[key] || '—'));
+    }
+  }
   if (_mrCtx && _mrCtx.aging) {
     switch (key) {
       case 'name':     return '<strong>' + esc(r.name || '—') + '</strong>'
@@ -10300,7 +10365,7 @@ function _mrRenderTable() {
     } else {
       // OSV rows come from the quality feed and carry none of the onboarding
       // fields openRecModal expects, so they are not click-through.
-      var clickable = !(_mrCtx && (_mrCtx.osv || _mrCtx.aging || _mrCtx.tat));
+      var clickable = !(_mrCtx && (_mrCtx.osv || _mrCtx.aging || _mrCtx.tat || _mrCtx.stage));
       tbody.innerHTML = page.map(function(r) {
         var k = ++_rmI; _rmD[k] = r;
         return '<tr' + (clickable ? ' onclick="mrOpenRec(' + k + ')"' : ' style="cursor:default"') + '>'
@@ -10327,7 +10392,8 @@ function _mrRenderTable() {
     var isOsvV = !!(_mrCtx && _mrCtx.osv);
     var isTatV = !!(_mrCtx && _mrCtx.tat);
     var isAgeV = !!(_mrCtx && _mrCtx.aging);
-    var countLabel = isTxnV ? 'sellers' : isOsvV ? 'vendors' : isAgeV ? 'sellers'
+    var isStgV = !!(_mrCtx && _mrCtx.stage);
+    var countLabel = isTxnV ? 'sellers' : isOsvV ? 'vendors' : isAgeV ? 'sellers' : isStgV ? 'records'
                    : isTatV ? (_mrCtx.tatAud === 'buyer' ? 'buyers' : 'sellers') : 'records';
     var footExtra = '';
     if (isTxnV && total) {
@@ -10382,6 +10448,12 @@ function mrSetPgSize(s) {
 
 function mrFChange() {
   function v(id) { var el = document.getElementById(id); return el ? el.value : 'All'; }
+  if (_mrCtx && _mrCtx.stage) {
+    _mrF.category = v('mr-f-cat');
+    _mrF.userType = v('mr-f-user');
+    if (!_mrCtx.preStatus) _mrF.status = v('mr-f-sta');
+    _mrPg.page = 0; _mrRenderTable(); return;
+  }
   if (_mrCtx && _mrCtx.aging) {
     _mrF.category = v('mr-f-cat');
     _mrPg.page = 0; _mrRenderTable(); return;
@@ -10474,6 +10546,7 @@ function mrExportCSV() {
   var isOsvX = !!(_mrCtx && _mrCtx.osv);
   var isTatX = !!(_mrCtx && _mrCtx.tat);
   var isAgeX = !!(_mrCtx && _mrCtx.aging);
+  var isStgX = !!(_mrCtx && _mrCtx.stage);
   rows.forEach(function(r) {
     lines.push(cols.map(function(c) {
       var v = '';
@@ -10490,6 +10563,13 @@ function mrExportCSV() {
       if (isAgeX) {
         v = c.key === 'vertical' ? String(_mrCtx.vertName || '')
                                  : String(r[c.key] == null ? '' : r[c.key]);
+        return '"' + v.replace(/"/g, '""') + '"';
+      }
+      if (isStgX) {
+        v = c.key === 'vertical' ? String(_mrCtx.vertName || '')
+          : c.key === 'userType' ? (r._aud === 'buyer' ? 'Buyer' : 'Seller')
+          : c.key === 'status'   ? (STATUS_LABELS[r.status] || r.status || '')
+          : String(r[c.key] == null ? '' : r[c.key]);
         return '"' + v.replace(/"/g, '""') + '"';
       }
       switch(c.key) {
