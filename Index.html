@@ -3833,6 +3833,16 @@ var MR_OSV_COLS = [
 // restore it; the builder and its drill-down are left intact behind this flag.
 var SHOW_VOLUME_TAT = false;
 
+// Ageing drill-down — the sellers behind one ageing card. Business Vertical is
+// rendered from context rather than per row: getVerticalRows already scopes the
+// feed to a single vertical, so every row in this view shares it.
+var MR_AGING_COLS = [
+  { key:'name',     label:'Seller Name', always:true },
+  { key:'vertical', label:'Business Vertical' },
+  { key:'category', label:'Category' },
+  { key:'gstin',    label:'GSTIN' },
+];
+
 // TAT drill-down — the vendors behind a cell in the Average TAT matrix.
 var MR_TAT_COLS = [
   { key:'name',       label:'Name', always:true },
@@ -4358,16 +4368,26 @@ function _mmParseDate(s) {
 }
 // Non-transacted onboarded rows bucketed by days-since-onboarding — only
 // computable for the active vertical whose rows are loaded; else null.
+// Ageing bucket for one row: 'a' (0–30), 'c' (31–60), 'd' (60+), or null when the
+// row is out of scope — not onboarded, already transacted, or undated.
+// SINGLE source of truth: both the tile counts and the drill-down filter call this,
+// so the number on a card and the rows behind it cannot disagree.
+function _mmAgingBucket(r, now) {
+  if (String(r.status || '').toUpperCase() !== 'COMPLETED') return null;
+  if (r.txnValue != null && r.txnValue > 0) return null;   // transacted → excluded
+  var dt = _mmParseDate(r.onbDate); if (!dt) return null;
+  var days = Math.floor(((now || new Date()) - dt) / 86400000); if (days < 0) days = 0;
+  return days <= 30 ? 'a' : days <= 60 ? 'c' : 'd';
+}
+var AGING_LABELS = { a:'0–30 days', c:'31–60 days', d:'60+ days' };
+
 function _mmAging(key) {
   if (key !== activeVertKey || !Array.isArray(vertRows) || !vertRows.length) return null;
   var now = new Date(), b = { a:0, c:0, d:0 }, any = false;
   vertRows.forEach(function(r) {
-    if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
-    if (r.txnValue != null && r.txnValue > 0) return;   // transacted → excluded
-    var dt = _mmParseDate(r.onbDate); if (!dt) return;
-    var days = Math.floor((now - dt) / 86400000); if (days < 0) days = 0;
-    any = true;
-    if (days <= 30) b.a++; else if (days <= 60) b.c++; else b.d++;
+    var k = _mmAgingBucket(r, now);
+    if (!k) return;
+    any = true; b[k]++;
   });
   return any ? b : null;
 }
@@ -4714,9 +4734,14 @@ function _mmVertModules(key) {
       // Leading with "Ageing" groups the three tiles at a glance; the sub-line names
       // the population, since these count onboarded sellers that have NOT transacted,
       // bucketed by days since onboarding (see _mmAging).
-      tTiles.push({ label:'Ageing · 0–30 days',  v:ag.a, tone:'good', sub:'Non-transacted' },
-                  { label:'Ageing · 31–60 days', v:ag.c, tone:'warn', sub:'Non-transacted' },
-                  { label:'Ageing · 60+ days',   v:ag.d, tone:'crit', sub:'Non-transacted' });
+      // Each card opens the sellers in its own bucket; the drill-down filters with
+      // the same _mmAgingBucket predicate, so the row count matches the number here.
+      tTiles.push({ label:'Ageing · 0–30 days',  v:ag.a, tone:'good', sub:'Non-transacted',
+                    click:"openAgingRecords('a')", tip:'View the 0–30 day sellers' },
+                  { label:'Ageing · 31–60 days', v:ag.c, tone:'warn', sub:'Non-transacted',
+                    click:"openAgingRecords('c')", tip:'View the 31–60 day sellers' },
+                  { label:'Ageing · 60+ days',   v:ag.d, tone:'crit', sub:'Non-transacted',
+                    click:"openAgingRecords('d')", tip:'View the 60+ day sellers' });
     }
     if (gmv != null) {
       // Seller-side throughout, so the category tiles sum to the total tile.
@@ -5712,10 +5737,14 @@ function mmRenderModPanel() {
     html += '<div class="mp-tiles">' + P.tiles.map(function(t) {
       var tc = toneColor[t.tone] || 'var(--txt)';
       var chainable = node.panel.chain && t.seg;
+      // A tile is actionable either by chaining into the map (seg) or by carrying an
+      // explicit click handler (t.click), e.g. the ageing tiles opening their sellers.
+      var act = t.click ? t.click : (chainable ? "mmChainToGeo('" + t.seg + "')" : null);
       var val = t.raw ? '<span>' + esc(t.v) + '</span>' : '<span data-count="' + (+t.v || 0) + '">0</span>';
-      return '<div class="mp-tile' + (chainable ? ' ch' : '') + '"'
-        + (chainable ? ' role="button" tabindex="0" onclick="mmChainToGeo(\'' + t.seg + '\')"'
-            + ' onkeydown="if(event.key===\'Enter\'){mmChainToGeo(\'' + t.seg + '\')}"' : '')
+      return '<div class="mp-tile' + (act ? ' ch' : '') + '"'
+        + (act ? ' role="button" tabindex="0" title="' + esc(t.tip || 'View records') + '"'
+            + ' onclick="' + act + '"'
+            + ' onkeydown="if(event.key===\'Enter\'){' + act + '}"' : '')
         + '><div class="mp-tile-v" style="color:' + tc + '">' + val + '</div>'
         + '<div class="mp-tile-l">' + esc(t.label) + (chainable ? ' <span class="mp-go">↦ map</span>' : '') + '</div>'
         + (t.sub ? '<div class="mp-tile-s">' + esc(t.sub) + '</div>' : '') + '</div>';
@@ -9874,6 +9903,32 @@ function openTatRecords(aud, cat) {
   }
 }
 
+// Sellers in one ageing bucket. Rows come from vertRows — the same array the tile
+// counts were computed from — and are filtered with the same _mmAgingBucket
+// predicate, so the row count always equals the number on the card.
+function openAgingRecords(bucket) {
+  if (!AGING_LABELS[bucket]) return;
+  var key  = activeVertKey || selectedVert;
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var vertName = (vcfg && vcfg.name) || key || '';
+  _mrCtx = {
+    module: 'aging', aging: true, agingBucket: bucket, vertName: vertName,
+    label: 'Ageing · ' + AGING_LABELS[bucket] + ' · Non-transacted',
+    vertLabel: vertName, preStatus: 'COMPLETED', forceSeller: true,
+    cfg: { label: 'Ageing · ' + AGING_LABELS[bucket] }
+  };
+  _mrRows = Array.isArray(vertRows) ? vertRows.slice() : [];
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  _mrColVis = {};
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+}
+
 function openModRecords(module) {
   if (module === 'osv') return openOsvRecords(null);
   var cfg = MR_MOD_CFG[module];
@@ -9925,6 +9980,7 @@ function _osvChip(status) {
 }
 
 function _mrColSet() {
+  if (_mrCtx && _mrCtx.aging) return MR_AGING_COLS;
   if (_mrCtx && _mrCtx.tat) return MR_TAT_COLS;
   return (_mrCtx && _mrCtx.osv) ? MR_OSV_COLS : MR_COLS;
 }
@@ -9943,6 +9999,11 @@ function _mrRenderHeader() {
     var sumTxns = txnRows.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
     var sumGmv  = txnRows.reduce(function(s, r) { return s + (r.txnValue  || 0); }, 0);
     if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(txnRows.length) + ' unique sellers · ' + fmt(sumTxns) + ' txns · ' + fmtINR(sumGmv) + ' GMV)';
+  } else if (_mrCtx.aging) {
+    // Count the bucket, not the feed: _mrRows holds every row for the vertical, so
+    // "source rows" here would contradict the number on the card that was clicked.
+    var inBucket = _mrRows.filter(_mrPreFilter).length;
+    if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(inBucket) + ' seller' + (inBucket === 1 ? '' : 's') + ')';
   } else {
     if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(_mrRows.length) + ' source rows)';
   }
@@ -9970,6 +10031,13 @@ function _mrRenderFilters() {
 
   // TAT drill-down: the audience and category are fixed by the cell that was
   // clicked, so only the filters that still vary are offered.
+  if (_mrCtx.aging) {
+    el.innerHTML =
+        '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search seller, ID or GSTIN…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
+      + _mrSel('mr-f-cat', 'Categories', _mrUniq('category'), _mrF.category, 'mrFChange()')
+      + '<button class="vd-close" onclick="mrFClear()" style="flex-shrink:0">Clear</button>';
+    return;
+  }
   if (_mrCtx.tat) {
     el.innerHTML =
         '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search name or type…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
@@ -10012,6 +10080,10 @@ function _mrRenderFilters() {
 
 function _mrPreFilter(r) {
   if (!_mrCtx) return true;
+  if (_mrCtx.aging) {
+    // Same predicate the card counted with, so the two can never diverge.
+    return _mmAgingBucket(r) === _mrCtx.agingBucket;
+  }
   if (_mrCtx.tat) {
     // Only onboarded vendors that actually carry a TAT — the same set the matrix
     // averaged, so the row count matches the n= on the cell that was clicked.
@@ -10027,6 +10099,14 @@ function _mrPreFilter(r) {
 
 function _mrUserFilter(r) {
   var f = _mrF;
+  if (_mrCtx && _mrCtx.aging) {
+    if (f.category !== 'All' && r.category !== f.category) return false;
+    var aq = (f.search || '').toLowerCase();
+    if (aq && (r.name  || '').toLowerCase().indexOf(aq) === -1
+           && (r.gstin || '').toLowerCase().indexOf(aq) === -1
+           && String(r.id || '').toLowerCase().indexOf(aq) === -1) return false;
+    return true;
+  }
   if (_mrCtx && _mrCtx.tat) {
     if (f.category !== 'All' && r.category   !== f.category) return false;
     if (f.vendor   !== 'All' && r.vendorType !== f.vendor)   return false;
@@ -10107,9 +10187,14 @@ function _mrSortedRows(rows) {
   if (!_mrSort.key) return rows;
   var key = _mrSort.key, dir = _mrSort.dir;
   var isOsv = !!(_mrCtx && _mrCtx.osv);
+  var isSimple = !!(_mrCtx && (_mrCtx.aging || _mrCtx.tat));
+  function simpleVal(r, k) {
+    if (k === 'vertical') return String(_mrCtx.vertName || '').toLowerCase();
+    return String(r[k] == null ? '' : r[k]).toLowerCase();
+  }
   return rows.slice().sort(function(a, b) {
-    var va = isOsv ? _osvSortVal(a, key) : vdSortVal(a, key);
-    var vb = isOsv ? _osvSortVal(b, key) : vdSortVal(b, key);
+    var va = isOsv ? _osvSortVal(a, key) : (isSimple && key !== 'tat') ? simpleVal(a, key) : vdSortVal(a, key);
+    var vb = isOsv ? _osvSortVal(b, key) : (isSimple && key !== 'tat') ? simpleVal(b, key) : vdSortVal(b, key);
     if (va < vb) return -dir;
     if (va > vb) return  dir;
     return 0;
@@ -10117,6 +10202,19 @@ function _mrSortedRows(rows) {
 }
 
 function _mrCellHtml(r, key) {
+  if (_mrCtx && _mrCtx.aging) {
+    switch (key) {
+      case 'name':     return '<strong>' + esc(r.name || '—') + '</strong>'
+                            + (r.id ? '<div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id) + '</div>' : '');
+      // Constant across the view — the feed is already scoped to one vertical.
+      case 'vertical': return '<span class="td-dim">' + esc(_mrCtx.vertName || '—') + '</span>';
+      case 'category': return esc(r.category || '—');
+      case 'gstin':    return r.gstin
+                            ? '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>'
+                            : '<span class="td-dim">—</span>';
+      default:         return esc(String(r[key] || '—'));
+    }
+  }
   if (_mrCtx && _mrCtx.tat) {
     switch (key) {
       case 'name':       return '<strong>' + esc(r.name || '—') + '</strong>'
@@ -10196,7 +10294,7 @@ function _mrRenderTable() {
     } else {
       // OSV rows come from the quality feed and carry none of the onboarding
       // fields openRecModal expects, so they are not click-through.
-      var clickable = !(_mrCtx && _mrCtx.osv);
+      var clickable = !(_mrCtx && (_mrCtx.osv || _mrCtx.aging || _mrCtx.tat));
       tbody.innerHTML = page.map(function(r) {
         var k = ++_rmI; _rmD[k] = r;
         return '<tr' + (clickable ? ' onclick="mrOpenRec(' + k + ')"' : ' style="cursor:default"') + '>'
@@ -10222,7 +10320,8 @@ function _mrRenderTable() {
     var isTxnV = _mrCtx && _mrCtx.cfg && _mrCtx.cfg.isTxnView;
     var isOsvV = !!(_mrCtx && _mrCtx.osv);
     var isTatV = !!(_mrCtx && _mrCtx.tat);
-    var countLabel = isTxnV ? 'sellers' : isOsvV ? 'vendors'
+    var isAgeV = !!(_mrCtx && _mrCtx.aging);
+    var countLabel = isTxnV ? 'sellers' : isOsvV ? 'vendors' : isAgeV ? 'sellers'
                    : isTatV ? (_mrCtx.tatAud === 'buyer' ? 'buyers' : 'sellers') : 'records';
     var footExtra = '';
     if (isTxnV && total) {
@@ -10277,6 +10376,10 @@ function mrSetPgSize(s) {
 
 function mrFChange() {
   function v(id) { var el = document.getElementById(id); return el ? el.value : 'All'; }
+  if (_mrCtx && _mrCtx.aging) {
+    _mrF.category = v('mr-f-cat');
+    _mrPg.page = 0; _mrRenderTable(); return;
+  }
   if (_mrCtx && _mrCtx.tat) {
     if (!_mrCtx.tatCat) _mrF.category = v('mr-f-cat');
     _mrF.vendor = v('mr-f-ven');
@@ -10364,6 +10467,7 @@ function mrExportCSV() {
   var lines = [cols.map(function(c){ return '"' + c.label + '"'; }).join(',')];
   var isOsvX = !!(_mrCtx && _mrCtx.osv);
   var isTatX = !!(_mrCtx && _mrCtx.tat);
+  var isAgeX = !!(_mrCtx && _mrCtx.aging);
   rows.forEach(function(r) {
     lines.push(cols.map(function(c) {
       var v = '';
@@ -10375,6 +10479,11 @@ function mrExportCSV() {
       if (isOsvX) {
         v = c.key === 'osvStatus' ? (OSV_LABELS[r.status] || r.status || '')
                                   : String(r[c.key] == null ? '' : r[c.key]);
+        return '"' + v.replace(/"/g, '""') + '"';
+      }
+      if (isAgeX) {
+        v = c.key === 'vertical' ? String(_mrCtx.vertName || '')
+                                 : String(r[c.key] == null ? '' : r[c.key]);
         return '"' + v.replace(/"/g, '""') + '"';
       }
       switch(c.key) {
