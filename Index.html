@@ -2628,7 +2628,11 @@ body.rec-open{overflow:hidden}
    ══════════════════════════════════════════════════ */
 /* ── Card-based horizontal mind map: every node is a card; accumulating
       columns; connectors carry only relationships. ── */
-.mmcrumbs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:0 2px 10px}
+/* Breadcrumbs sit inline in the period toolbar, so no bottom padding — it would
+   push them off the chips' centre line. min-width:0 lets them wrap rather than
+   force the row wider than the grid on narrow screens. */
+.mmcrumbs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:0;min-width:0}
+body.view-gst #mm-crumbs{display:none}
 .mmcrumb{font-family:inherit;font-size:12px;font-weight:600;color:var(--txt2);background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 12px;cursor:pointer;white-space:nowrap;transition:.18s var(--ease-out)}
 .mmcrumb:hover{border-color:rgba(0,93,255,.35);color:var(--blue)}
 .mmcrumb.here{background:var(--blue);border-color:var(--blue);color:#fff;cursor:default}
@@ -3007,6 +3011,10 @@ body.rec-open{overflow:hidden}
   <div class="section-title reveal" style="flex-wrap:wrap">
     <span id="view-title">Business Verticals</span>
     <div id="vert-ctx-hdr" class="vert-ctx-hdr"></div>
+    <!-- Branch breadcrumbs share this row with the period controls. Rendered by
+         mmRenderCrumbs() into the same id as before, so navigation is unchanged;
+         hidden in the GST view, which has no branch path. -->
+    <div class="mmcrumbs" id="mm-crumbs"></div>
     <span style="flex:1"></span>
 
     <!-- Onboarding period controls -->
@@ -3032,7 +3040,6 @@ body.rec-open{overflow:hidden}
 
   <!-- ── VIEW: ONBOARDING — card-based mind map (Root → Vertical → Module → KPI → Detail → Modal) ── -->
   <div id="tab-overview">
-    <div class="mmcrumbs" id="mm-crumbs"></div>
     <div class="mmworkspace" id="mm-workspace">
       <div class="mmnav" id="mm-nav">
         <div class="mm" id="mm"><svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg></div>
