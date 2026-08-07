@@ -2729,16 +2729,16 @@ body.view-gst #mm-crumbs{display:none}
 /* inside the side canvas the panels are simply shown/hidden — the canvas slide is the reveal */
 .mmdetail #mm-funnel,.mmdetail #mm-geo,.mmdetail #mm-modpanel{max-height:none;opacity:1;overflow:visible;margin:0}
 .mmdetail #mm-funnel:not(.mf-open),.mmdetail #mm-geo:not(.mg-open),.mmdetail #mm-modpanel:not(.mp-open){display:none}
-/* Funnel → vertical stack in the side canvas.
-   Now that the breakdown lives in the drill-down, each card is a single row:
-   metric + label on the left, the "View records" affordance on the right. */
+/* Funnel → vertical stack in the side canvas */
+/* Vertical stacked stage cards — all equal width, compact */
 .mmdetail .mf-flow{flex-direction:column;overflow:visible;gap:0;padding:2px;align-items:stretch}
-.mmdetail .mf-card{width:100%;max-width:none;min-width:0;padding:9px 14px;border-width:1px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px}
-.mmdetail .mf-head{display:flex;align-items:baseline;gap:9px;min-width:0}
-.mmdetail .mf-v{font-size:1.45rem;margin-bottom:0}
-.mmdetail .mf-label{font-size:.72rem;margin-bottom:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mmdetail .mf-cta{margin-top:0;flex-shrink:0}
+.mmdetail .mf-card{width:100%;max-width:none;min-width:0;padding:8px 14px;border-width:1px}
+.mmdetail .mf-v{font-size:1.5rem;margin-bottom:1px}
+.mmdetail .mf-label{font-size:.68rem;margin-bottom:0}
+.mmdetail .mf-matrix{border-top:1px solid var(--border);padding-top:6px;margin-top:6px;gap:2px 4px}
+.mmdetail .mf-mx-hd{font-size:.6rem;padding-bottom:2px}
+.mmdetail .mf-mx-lbl{font-size:.64rem;padding:2px 6px 2px 0}
+.mmdetail .mf-mx-cell{font-size:.78rem;padding:3px 4px}
 .mmdetail .mf-sep{width:100%;height:11px}
 .mmdetail .mf-sep svg{width:20px;height:20px;transform:rotate(90deg)}
 /* Geo → map above legend, stacked */
@@ -2782,14 +2782,30 @@ body.view-gst #mm-crumbs{display:none}
 .mf-v{font-size:2.4rem;font-weight:800;line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
 .mf-v.blue{color:#005dff}.mf-v.purple{color:#8b5cf6}.mf-v.amber{color:#d97706}.mf-v.green{color:#16a34a}.mf-v.red{color:#dc2626}
 .mf-label{font-size:.75rem;color:var(--txt2);margin-bottom:8px;line-height:1.3}
-/* Summary card affordance — the whole card opens its records. */
-.mf-cta{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:8px;
-  font-size:9.5px;font-weight:700;letter-spacing:.02em;color:var(--blue);opacity:.7;
-  white-space:nowrap;transition:opacity .18s var(--ease-out)}
-.mf-cta-arr{display:inline-block;transition:transform .18s var(--ease-out)}
-.mf-card:hover .mf-cta{opacity:1}
-.mf-card:hover .mf-cta-arr{transform:translateX(3px)}
-@media(prefers-reduced-motion:reduce){.mf-cta-arr{transition:none}}
+/* 2×2 breakdown matrix (Type × Category) */
+.mf-matrix{display:grid;grid-template-columns:auto 1fr 1fr;gap:2px 4px;border-top:1px solid var(--border);padding-top:10px;margin-top:4px;align-items:center}
+.mf-mx-corner{} /* top-left empty cell */
+.mf-mx-hd{font-size:.68rem;font-weight:600;color:var(--txt3);text-align:center;padding:0 2px 4px;display:flex;align-items:center;justify-content:center;gap:3px}
+.mf-mx-lbl{font-size:.7rem;color:var(--txt2);padding:3px 6px 3px 0;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.mf-mx-cell{text-align:center;font-size:.82rem;font-weight:700;color:var(--txt);padding:3px 4px;background:var(--bg);border-radius:4px;font-variant-numeric:tabular-nums;min-width:0}
+.mf-mx-cell.na{color:var(--txt3);font-weight:400}
+/* Every category is shown, so headers must survive narrow columns … */
+.mf-mx-hd{min-width:0}
+.mf-mx-hd > span:not(.mf-cat-dot){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* … and the Total column is set apart so each row visibly reconciles. */
+.mf-mx-hd.tot{color:var(--txt2);font-weight:700}
+.mf-mx-cell.tot{background:var(--card);border:1px dashed var(--border);font-weight:800}
+/* colored dots used by matrix headers and labels */
+.mf-cat-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.mf-cat-dot.seller{background:#8b5cf6}.mf-cat-dot.buyer{background:#06b6d4}
+/* Whole-card affordance. Absolutely positioned so the summary layout above it
+   is untouched — the arrow only fades in on hover / keyboard focus. */
+.mf-open-ic{position:absolute;top:7px;right:9px;font-size:13px;line-height:1;font-weight:700;
+  color:var(--blue);opacity:0;transform:translateX(-3px);pointer-events:none;
+  transition:opacity .18s var(--ease-out),transform .18s var(--ease-out)}
+.mf-card:hover .mf-open-ic,.mf-card:focus-visible .mf-open-ic{opacity:.85;transform:none}
+.mf-card:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.mf-open-ic{transition:opacity .18s var(--ease-out)}}
 /* 2×2 breakdown matrix (Type × Category) */
 /* colored dots used by matrix headers and labels */
 /* detail strip */
@@ -5327,8 +5343,40 @@ var MF_STAGES = [
 
 // mmSelectFunnelStage removed: stage cards now open their records directly.
 
-// _mfCell / _mfMatrix removed: the per-card breakdown grid is now the
-// drill-down table that openStageRecords() opens.
+function _mfCell(v, na) {
+  return '<div class="mf-mx-cell' + (na ? ' na' : '') + '">' + (na ? '—' : esc(v)) + '</div>';
+}
+// Stage breakdown grid: rows = Sellers / Buyers, columns = EVERY category the
+// vertical has, in volume order, followed by a Total column. Showing all of them
+// is the point — capping the columns silently dropped whatever sat outside the
+// top few, so the cells no longer added up to the stage headline. The Total
+// column comes from the stage's own audience totals, so any gap between it and
+// the category cells is visible rather than hidden. When the stage has no
+// per-category feed, a single "Count" column carries the plain audience split.
+function _mfMatrix(catRows, sTot, bTot) {
+  var cols = (catRows && catRows.length) ? catRows : null;
+  var n = cols ? cols.length + 1 : 1;
+  var head = '<div class="mf-mx-corner"></div>';
+  var sRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot seller"></span>Sellers</div>';
+  var bRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot buyer"></span>Buyers</div>';
+  if (cols) {
+    cols.forEach(function(c, i) {
+      head += '<div class="mf-mx-hd" title="' + esc(c.cat) + '"><span class="mf-cat-dot" style="background:'
+        + MM_CAT_COLORS[i % MM_CAT_COLORS.length] + '"></span><span>' + esc(_catLabel(c.cat)) + '</span></div>';
+      sRow += _mfCell(fmt(c.s), false);
+      bRow += _mfCell(fmt(c.b), false);
+    });
+    head += '<div class="mf-mx-hd tot">Total</div>';
+    sRow += '<div class="mf-mx-cell tot">' + fmt(sTot || 0) + '</div>';
+    bRow += '<div class="mf-mx-cell tot">' + fmt(bTot || 0) + '</div>';
+  } else {
+    head += '<div class="mf-mx-hd">Count</div>';
+    sRow += _mfCell(fmt(sTot || 0), false);
+    bRow += _mfCell(fmt(bTot || 0), false);
+  }
+  return '<div class="mf-matrix" style="grid-template-columns:auto repeat(' + n + ',1fr)">'
+    + head + sRow + bRow + '</div>';
+}
 
 function mmRenderFunnel() {
   var panel = document.getElementById('mm-funnel');
@@ -5339,19 +5387,23 @@ function mmRenderFunnel() {
   var vs = (DS && DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
 
-  // Summary only: the metric and its label. The category / audience breakdown that
-  // used to sit inside each card now lives in the drill-down the card opens, so the
-  // funnel stays scannable and the detail is one click away.
+  // The card keeps its at-a-glance summary — headline metric, label and the
+  // audience × category matrix — and the whole thing is a button that opens
+  // that stage's own records. The corner arrow is the only added chrome and it
+  // is positioned out of flow, so the summary layout is unchanged.
   var html = '<div class="mf-flow">';
   MF_STAGES.forEach(function(s, i) {
-    var total = (vs[s.field]||0) + (vb[s.field]||0);
+    var total   = (vs[s.field]||0) + (vb[s.field]||0);
+    var catRows = s.catField ? _mmCatRowsFixed(vs, vb, s.catField) : null;
     html += '<div class="mf-card" role="button" tabindex="0"'
+      + ' aria-label="' + esc(s.label) + ': ' + fmt(total) + '. View records"'
       + ' title="View the ' + esc(s.label) + ' records"'
       + ' onclick="openStageRecords(\'' + s.key + '\')"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openStageRecords(\'' + s.key + '\')}">'
+      + '<span class="mf-open-ic" aria-hidden="true">→</span>'
       + '<div class="mf-head"><div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
       + '<div class="mf-label">' + esc(s.label) + '</div></div>'
-      + '<div class="mf-cta">View records <span class="mf-cta-arr">→</span></div>'
+      + _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0)
       + '</div>';
     if (i < MF_STAGES.length - 1) {
       html += '<div class="mf-sep">'
