@@ -4459,18 +4459,33 @@ function _mmCatRowsFixed(vs, vb, field) {
               .sort(function(a, b) { return b._rank - a._rank; });
 }
 
-function _mmCatGmvRows(vs, vb) {
-  var m = {}, order = [];
-  function add(list, side) {
-    (list || []).forEach(function(c) {
-      if (c.txnValue == null || c.txnValue <= 0) return;
-      var k = c.category || 'Other';
-      if (!m[k]) { m[k] = { cat:k, s:0, b:0 }; order.push(k); }
-      m[k][side] = c.txnValue;
-    });
+// Per-category GMV. SELLER SIDE ONLY, by business rule: a seller→buyer sale is one
+// transaction carrying one value, so adding the buyer side counts it twice. The
+// headline total (vs.totalTxnValue) is seller-only for the same reason, and both
+// come from the same server aggregation over the same rows — so the categories sum
+// to the total exactly. The buyer argument is deliberately not accepted: taking it
+// is what let the two diverge, with the categories summing to double the total.
+function _mmCatGmvRows(vs) {
+  return (vs && vs.categories || [])
+    .filter(function(c) { return c.txnValue != null && c.txnValue > 0; })
+    .map(function(c) { return { cat: c.category || 'Other', v: c.txnValue }; })
+    .sort(function(a, b) { return b.v - a.v; });
+}
+
+// Guard the invariant the dashboard is built on: Σ(category GMV) must equal the
+// headline GMV. Anything beyond a rounding tolerance means the two were derived
+// from different sets, so it is surfaced rather than displayed silently.
+function _gmvReconcile(total, catRows, ctx) {
+  if (total == null || !catRows || !catRows.length) return true;
+  var sum = catRows.reduce(function(s, c) { return s + (c.v || 0); }, 0);
+  var tol = Math.max(1, Math.abs(total) * 0.005);   // 0.5%, absorbs server rounding
+  if (Math.abs(sum - total) <= tol) return true;
+  if (window.console && console.warn) {
+    console.warn('[GMV] category total does not reconcile' + (ctx ? ' (' + ctx + ')' : '')
+      + ' — Σcategories=' + sum + ' vs total=' + total
+      + '. Both must come from the same seller-side aggregation.');
   }
-  add(vs && vs.categories, 's'); add(vb && vb.categories, 'b');
-  return order.map(function(k){ return m[k]; }).sort(function(a, b){ return (b.s + b.b) - (a.s + a.b); });
+  return false;
 }
 function _mmRegRows(vs, vb) {
   var m = {}, order = [];
@@ -4500,7 +4515,7 @@ function _mmVertModules(key) {
   var catTot  = _mmCatRows(vs, vb, 'total');
   var catOnb  = _mmCatRows(vs, vb, 'onboarded');
   var catTxn  = _mmCatRows(vs, vb, 'transacted');
-  var catGmv  = _mmCatGmvRows(vs, vb);
+  var catGmv  = _mmCatGmvRows(vs);
   var regRows = _mmRegRows(vs, vb);
   var hasCat  = catOnb.length > 0 || catTot.length > 0;
   function _catDetails(rows) { return rows.map(function(x){ return _d(x.cat, _mmSB(x.s, x.b)); }); }
@@ -4701,8 +4716,10 @@ function _mmVertModules(key) {
                   { label:'60+ days', v:ag.d, tone:'crit' });
     }
     if (gmv != null) {
+      // Seller-side throughout, so the category tiles sum to the total tile.
+      _gmvReconcile(gmv, catGmv, 'Transactions panel · ' + key);
       tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true });
-      catGmv.forEach(function(x){ tTiles.push({ label:'GMV · ' + x.cat, v:fmtINR((x.s||0) + (x.b||0)), raw:true }); });
+      catGmv.forEach(function(x){ tTiles.push({ label:'GMV · ' + x.cat, v:fmtINR(x.v), raw:true }); });
     }
     mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transaction activity',
       panel:{
