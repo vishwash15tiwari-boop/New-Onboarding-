@@ -2667,21 +2667,15 @@ body.view-gst #mm-crumbs{display:none}
   box-shadow:0 1px 2px rgba(16,24,40,.05),0 8px 20px -14px rgba(16,24,40,.28)}
 .mmn.root .mmn-root-lbl{font-size:13.5px;font-weight:800;letter-spacing:.085em;
   text-transform:uppercase;color:var(--txt);line-height:1.45}
-.mmn.root .mmn-root-cta{display:flex;align-items:center;justify-content:flex-end;gap:4px;
-  margin-top:16px;padding-top:12px;border-top:1px solid var(--border);
-  font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--blue);opacity:.72;
-  white-space:nowrap;transition:opacity .18s var(--ease-out)}
-.mmn.root .mmn-root-arr{display:inline-block;font-size:12.5px;line-height:1;
-  transition:transform .18s var(--ease-out)}
+/* Static divider spacer replacing the former CTA. Border-box height 26px + a
+   16px top margin reproduce the exact vertical space the "Click for Details"
+   block occupied, so the card size and its underline accent are unchanged. */
+.mmn.root .mmn-root-foot{margin-top:16px;height:26px;border-top:1px solid var(--border);box-sizing:border-box}
 .mmn.root.in:hover{border-color:rgba(0,93,255,.42);
   box-shadow:0 2px 4px rgba(16,24,40,.05),0 14px 28px -14px rgba(0,93,255,.42);
   transform:translateY(-2px)}
-.mmn.root.in:hover .mmn-root-cta{opacity:1}
-.mmn.root.in:hover .mmn-root-arr{transform:translateX(3px)}
-.mmn.root.on .mmn-root-cta{opacity:1}
 @media(prefers-reduced-motion:reduce){
   .mmn.root.in:hover{transform:none}
-  .mmn.root .mmn-root-arr{transition:none}
 }
 /* Vertical + module cards — navigation only. A uniform min-height keeps every
    card in a column the same size whether or not its title wraps ("Onboarded
@@ -4423,7 +4417,9 @@ var MM_IC = {
 };
 
 var mmTree = null;        // root node — rebuilt each render from live data
-var mmPath = [];          // node IDs from 'root' down = the expanded chain
+var mmPath = ['root'];    // node IDs from 'root' down = the expanded chain.
+                          // Seeded with 'root' so the Business Verticals column is
+                          // the default landing view — no click needed to reveal it.
 var _mmById = {};         // id → node for the current tree
 var mmFunnelActive = false;  // inline funnel panel open
 var mmGeoActive = false;     // inline geo (India map) panel open
@@ -5080,11 +5076,11 @@ function mmNodeCard(node, colActiveId) {
   var cls, inner;
   if (kind === 'root') {
     cls = 'mmn root' + (on ? ' on' : '');
-    // Title plus a muted call-to-action. The whole card already carries the click
-    // handler below, so the CTA is affordance only — it is not separately clickable.
+    // Static title card. The "Click for Details" call-to-action is gone now that
+    // the Business Verticals column is shown by default; a plain divider keeps the
+    // card's exact height and its underline accent.
     inner = '<div class="mmn-root-lbl">Central Onboarding<br>Dashboard</div>'
-      + '<div class="mmn-root-cta" aria-hidden="true">Click for Details'
-      + '<span class="mmn-root-arr">→</span></div>';
+      + '<div class="mmn-root-foot" aria-hidden="true"></div>';
   } else if (kind === 'vert') {
     cls = 'mmn vert' + (node.muted ? ' muted' : '') + (on ? ' on' : '');
     // Clean navigation card: small status dot + name + chevron. No metric graphic.
