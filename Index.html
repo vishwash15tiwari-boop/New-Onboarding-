@@ -2817,8 +2817,15 @@ body.view-gst #mm-crumbs{display:none}
 /* arrow connectors between stage cards */
 .mf-sep{display:flex;align-items:center;justify-content:center;width:44px;flex-shrink:0}
 .mf-sep svg{width:44px;height:44px;overflow:visible}
-.mf-sep-path{stroke:var(--border);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:80;stroke-dashoffset:0;transition:stroke .25s}
+/* Connector arrow — same geometry as before (start 2, tip 38, head corners
+   13/31), but the shaft is a bolder high-contrast blue and the head is a solid
+   filled triangle instead of a thin open chevron. That reads instantly and
+   states the direction clearly without taking any more room. SVG keeps it crisp
+   at every resolution; geometricPrecision smooths the diagonal head edges. */
+.mf-sep-path{stroke:var(--blue);stroke-width:3;fill:none;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:80;stroke-dashoffset:0;transition:stroke .25s;shape-rendering:geometricPrecision}
+.mf-sep-head{fill:var(--blue);stroke:none;shape-rendering:geometricPrecision}
 .mf-sep.lit .mf-sep-path{stroke:var(--blue)}
+.mf-sep.lit .mf-sep-head{fill:var(--blue)}
 @keyframes mfDetailIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
 .mf-detail-vd{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;background:var(--blue);color:#fff;border:none;border-radius:999px;font-size:.8rem;font-weight:600;cursor:pointer;transition:opacity .15s,transform .15s;white-space:nowrap}
@@ -5412,7 +5419,9 @@ function mmRenderFunnel() {
       + '</div>';
     if (i < MF_STAGES.length - 1) {
       html += '<div class="mf-sep">'
-        + '<svg viewBox="0 0 44 44" aria-hidden="true"><path class="mf-sep-path" d="M2 22 L38 22 M28 13 L38 22 L28 31"/></svg></div>';
+        + '<svg viewBox="0 0 44 44" aria-hidden="true">'
+        + '<path class="mf-sep-path" d="M2 22 L28 22"/>'
+        + '<path class="mf-sep-head" d="M28 13 L38 22 L28 31 Z"/></svg></div>';
     }
   });
   html += '</div>';
