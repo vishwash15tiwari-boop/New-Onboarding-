@@ -182,9 +182,9 @@ var TAT_MAX_DAYS = 365;
 // The eight business verticals, in display order. Rows are mapped into these by
 // mapToVertical() + date-based migration in normalizeRows.
 var VERTICALS = [
-  { key: 'OMP',           name: 'Open Marketplace', code: 'OMP', sub: '' },
-  { key: 'EPR',           name: 'EPR',              code: 'EPR', sub: '' },
-  { key: 'Marketplace',   name: 'Marketplace',      code: 'MKT', sub: '' },
+  { key: 'OMP',           name: 'Marketplace',         code: 'OMP', sub: '' },
+  { key: 'EPR',           name: 'EPR',                 code: 'EPR', sub: '' },
+  { key: 'Marketplace',   name: 'Managed Marketplace', code: 'MKT', sub: '' },
   { key: 'InfraBusiness', name: 'Infra Business',   code: 'INF', sub: '' },
   { key: 'AFR',           name: 'AFR',              code: 'AFR', sub: '' },
   { key: 'Recommerce',    name: 'Re-Commerce',      code: 'REC', sub: '' },

@@ -3726,9 +3726,9 @@ function renderOverview() {
 // `verticalConfig` from the backend; when present it drives the cards instead,
 // so Buyers can define an entirely different set of verticals.
 var VERT_CFG = [
-  { key:'OMP',           name:'Open Marketplace', sub:'', code:'OMP' },
-  { key:'EPR',           name:'EPR',              sub:'', code:'EPR' },
-  { key:'Marketplace',   name:'Marketplace',      sub:'', code:'MKT' },
+  { key:'OMP',           name:'Marketplace',         sub:'', code:'OMP' },
+  { key:'EPR',           name:'EPR',                 sub:'', code:'EPR' },
+  { key:'Marketplace',   name:'Managed Marketplace', sub:'', code:'MKT' },
   { key:'InfraBusiness', name:'Infra Business',   sub:'', code:'INF' },
   { key:'AFR',           name:'AFR',              sub:'', code:'AFR' },
   { key:'Recommerce',    name:'Re-Commerce',      sub:'', code:'REC' },
@@ -6438,7 +6438,7 @@ function openKpiModal(cardId) {
 
   } else if (cardId === 'oldvsnew') {
     title = 'Vendor Classification';
-    subtitle = 'Existing vs. new vendors onboarded through Open Marketplace';
+    subtitle = 'Existing vs. new vendors onboarded through Marketplace';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
     var totalOnb  = (d.newS + d.oldS) + (d.newB + d.oldB);
     var totalNew  = d.newS + d.newB;
@@ -6518,7 +6518,7 @@ function openKpiModal(cardId) {
 
     if (cardId === 'rating') {
       title    = 'Vendor Rating';
-      subtitle = 'Average Seller Rating — Onboarded Open Marketplace sellers only';
+      subtitle = 'Average Seller Rating — Onboarded Marketplace sellers only';
       iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
       if (!qd.success) {
         content = noDataMsg;
@@ -6539,7 +6539,7 @@ function openKpiModal(cardId) {
 
     } else if (cardId === 'osv') {
       title    = 'OSV Consent';
-      subtitle = 'Based on OSV Consent field — Onboarded Open Marketplace sellers only';
+      subtitle = 'Based on OSV Consent field — Onboarded Marketplace sellers only';
       iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="#005DFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
       if (!qd.success) {
         content = noDataMsg;
@@ -7125,7 +7125,7 @@ function renderDocsSection() {
     '<div class="docs-hd">'
     +   '<div class="docs-hd-ic">' + icon + '</div>'
     +   '<div><div class="docs-hd-tt">Document Management</div>'
-    +     '<div class="docs-hd-sb">Uploaded documents &amp; completeness for every Open Marketplace vendor</div></div>'
+    +     '<div class="docs-hd-sb">Uploaded documents &amp; completeness for every Marketplace vendor</div></div>'
     +   '<div class="docs-tools">'
     +     '<div class="docs-seg" id="docs-seg">'
     +       '<button data-aud="seller"' + (_docAud === 'seller' ? ' class="on"' : '') + ' onclick="setDocAud(\'seller\')">Sellers</button>'
