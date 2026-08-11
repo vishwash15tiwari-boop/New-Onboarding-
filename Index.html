@@ -4708,14 +4708,15 @@ function renderOverview() {
 // `verticalConfig` from the backend; when present it drives the cards instead,
 // so Buyers can define an entirely different set of verticals.
 var VERT_CFG = [
-  { key:'OMP',           name:'Open Marketplace', sub:'', code:'OMP' },
-  { key:'EPR',           name:'EPR',              sub:'', code:'EPR' },
-  { key:'Marketplace',   name:'Marketplace',      sub:'', code:'MKT' },
-  { key:'InfraBusiness', name:'Infra Business',   sub:'', code:'INF' },
-  { key:'AFR',           name:'AFR',              sub:'', code:'AFR' },
-  { key:'Recommerce',    name:'Re-Commerce',      sub:'', code:'REC' },
-  { key:'DRS',           name:'DRS',              sub:'', code:'DRS' },
-  { key:'Others',        name:'Others',           sub:'', code:'OTH' },
+  { key:'OMP',                name:'Open Marketplace',    sub:'', code:'OMP' },
+  { key:'EPR',                name:'EPR',                 sub:'', code:'EPR' },
+  { key:'Marketplace',        name:'Marketplace',         sub:'', code:'MKT' },
+  { key:'InfraBusiness',      name:'Infra Business',      sub:'', code:'INF' },
+  { key:'AFR',                name:'AFR',                 sub:'', code:'AFR' },
+  { key:'Recommerce',         name:'Re-Commerce',         sub:'', code:'REC' },
+  { key:'DRS',                name:'DRS',                 sub:'', code:'DRS' },
+  { key:'ManagedMarketplace', name:'Managed Marketplace', sub:'', code:'MGM' },
+  { key:'Others',             name:'Others',              sub:'', code:'OTH' },
 ];
 
 // Active vertical layout: backend-supplied config for this audience, else default.
@@ -4728,14 +4729,15 @@ function getVertCfg() {
 // Soft pastel identity per vertical — each hue derived from the Recykal
 // palette, desaturated so column one reads as a calm rainbow, not a shout.
 var VERT_COLORS = {
-  OMP:           { c: '#4F7BE6', ink: '#2C56B8' },   // soft Bright Blue
-  EPR:           { c: '#9B7BDC', ink: '#6A4FB0' },   // soft Medium Purple
-  Marketplace:   { c: '#7C8AE6', ink: '#4A55B5' },   // soft periwinkle/indigo
-  InfraBusiness: { c: '#5DBBDE', ink: '#2E86AD' },   // soft cyan
-  AFR:           { c: '#48C39E', ink: '#0E8A63' },   // soft brand green
-  Recommerce:    { c: '#4FC7BE', ink: '#1B8A82' },   // soft mint
-  DRS:           { c: '#C7A97A', ink: '#8A6C3E' },   // soft sand
-  Others:        { c: '#98A0B0', ink: '#5B6475' },   // soft grey
+  OMP:                { c: '#4F7BE6', ink: '#2C56B8' },   // soft Bright Blue
+  EPR:                { c: '#9B7BDC', ink: '#6A4FB0' },   // soft Medium Purple
+  Marketplace:        { c: '#7C8AE6', ink: '#4A55B5' },   // soft periwinkle/indigo
+  InfraBusiness:      { c: '#5DBBDE', ink: '#2E86AD' },   // soft cyan
+  AFR:                { c: '#48C39E', ink: '#0E8A63' },   // soft brand green
+  Recommerce:         { c: '#4FC7BE', ink: '#1B8A82' },   // soft mint
+  DRS:                { c: '#C7A97A', ink: '#8A6C3E' },   // soft sand
+  ManagedMarketplace: { c: '#E6A84F', ink: '#B07A20' },   // soft amber
+  Others:             { c: '#98A0B0', ink: '#5B6475' },   // soft grey
 };
 function hexRGBA(hex, a) {
   var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
