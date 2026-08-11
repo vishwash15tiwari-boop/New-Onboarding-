@@ -179,17 +179,18 @@ var AUDIENCE_CFG = {
 // and excluded from the Avg TAT so a few outliers don't skew it.
 var TAT_MAX_DAYS = 365;
 
-// The eight business verticals, in display order. Rows are mapped into these by
+// The nine business verticals, in display order. Rows are mapped into these by
 // mapToVertical() + date-based migration in normalizeRows.
 var VERTICALS = [
-  { key: 'OMP',           name: 'Marketplace',         code: 'OMP', sub: '' },
-  { key: 'EPR',           name: 'EPR',                 code: 'EPR', sub: '' },
-  { key: 'Marketplace',   name: 'Managed Marketplace', code: 'MKT', sub: '' },
-  { key: 'InfraBusiness', name: 'Infra Business',   code: 'INF', sub: '' },
-  { key: 'AFR',           name: 'AFR',              code: 'AFR', sub: '' },
-  { key: 'Recommerce',    name: 'Re-Commerce',      code: 'REC', sub: '' },
-  { key: 'DRS',           name: 'DRS',              code: 'DRS', sub: '' },
-  { key: 'Others',        name: 'Others',           code: 'OTH', sub: '' },
+  { key: 'OMP',                name: 'Marketplace',         code: 'OMP', sub: '' },
+  { key: 'EPR',                name: 'EPR',                 code: 'EPR', sub: '' },
+  { key: 'Marketplace',        name: 'Managed Marketplace', code: 'MKT', sub: '' },
+  { key: 'InfraBusiness',      name: 'Infra Business',      code: 'INF', sub: '' },
+  { key: 'AFR',                name: 'AFR',                 code: 'AFR', sub: '' },
+  { key: 'Recommerce',         name: 'Re-Commerce',         code: 'REC', sub: '' },
+  { key: 'DRS',                name: 'DRS',                 code: 'DRS', sub: '' },
+  { key: 'ManagedMarketplace', name: 'Managed Marketplace', code: 'MGM', sub: '' },
+  { key: 'Others',             name: 'Others',              code: 'OTH', sub: '' },
 ];
 
 // Categories (from the Marketplace business_vertical) that roll into Infra Business.
@@ -248,7 +249,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v35_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v36_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -280,7 +281,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v16_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v17_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -297,21 +298,21 @@ function getDashboardData(filtersJson) {
 
 // Returns seller + buyer dashboard data in one call so the frontend can
 // render both pipelines side-by-side without two round trips.
-// Fast path: compose from individual dash_v35_ cache entries when both are warm
+// Fast path: compose from individual dash_v36_ cache entries when both are warm
 // (they are pre-warmed by syncAllOnboarding for every period). Only falls through
 // to the slow double-read when both individual caches are cold.
 function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v35_cmb_' + periodKey;
+    var cacheKey  = 'dash_v36_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v35_seller_' + periodKey;
-    var bIndKey = 'dash_v35_buyer_'  + periodKey;
+    var sIndKey = 'dash_v36_seller_' + periodKey;
+    var bIndKey = 'dash_v36_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -370,7 +371,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v16_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v17_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -418,7 +419,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v16_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v17_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
@@ -1492,7 +1493,7 @@ function normalizeRows(raw, cfg) {
   // (e.g. a seller in both OMP and Marketplace keeps both rows for Existing vs New).
   // Intra-vertical duplicates (same id, same vertical — Metabase join artifacts) are still removed.
   var seen = {};
-  return normalized.filter(function(r) {
+  var deduped = normalized.filter(function(r) {
     if (!r.id) return true;
     var key = r.id + '\x00' + r.vertical;
     if (seen[key]) return false;
@@ -1501,6 +1502,29 @@ function normalizeRows(raw, cfg) {
     r.txnCount = (orderMax[key] != null) ? orderMax[key] : (txnCounts[key] || 1);
     return true;
   });
+
+  // Managed Marketplace = all Others rows that are NOT Transport or Support cases.
+  // Others = restricted to cases whose onboarding_created_date is after 31 March 2026.
+  var OTHERS_CUTOFF = new Date(2026, 3, 1); // April 1 2026
+  var result = [];
+  deduped.forEach(function(r) {
+    if (r.vertical !== 'Others') { result.push(r); return; }
+    var cat = (r.category    || '').toLowerCase();
+    var bv  = (r.bizVertical || '').toLowerCase();
+    var isExcluded = cat.indexOf('transport') !== -1 || bv.indexOf('transport') !== -1
+                  || cat.indexOf('support')   !== -1 || bv.indexOf('support')   !== -1;
+    if (!isExcluded) {
+      var mmRow = {};
+      for (var k in r) mmRow[k] = r[k];
+      mmRow.vertical = 'ManagedMarketplace';
+      result.push(mmRow);
+    }
+    // Keep the original Others row only if created after 31 March 2026.
+    if (!r.createdDate || r.createdDate >= OTHERS_CUTOFF) {
+      result.push(r);
+    }
+  });
+  return result;
 }
 
 // ─────────────────────────────────────────────────────────────
