@@ -3288,7 +3288,7 @@ function _modalCloseClass(modal, cls, escFn) {
 
 // localStorage key prefix — bump the version suffix when the data shape changes
 // so stale entries from an old schema are silently ignored.
-var STORE_PFX = 'ebt_v12_';   // bumped: newVendors/oldVendors now null (not 0) for non-OMP verticals
+var STORE_PFX = 'ebt_v13_';   // bumped: Managed Marketplace consolidated into single vertical
 
 // Stale-while-revalidate: if we have a previous response in localStorage, paint
 // it immediately so the user sees real data with zero wait, then fetch fresh data
@@ -3737,8 +3737,14 @@ var VERT_CFG = [
 ];
 
 // Active vertical layout: backend-supplied config for this audience, else default.
+// Dedup by key so stale cached configs with duplicate entries never surface.
 function getVertCfg() {
-  return (D && D.verticalConfig && D.verticalConfig.length) ? D.verticalConfig : VERT_CFG;
+  var raw = (D && D.verticalConfig && D.verticalConfig.length) ? D.verticalConfig : VERT_CFG;
+  var seen = {}, out = [];
+  for (var i = 0; i < raw.length; i++) {
+    if (!seen[raw[i].key]) { seen[raw[i].key] = true; out.push(raw[i]); }
+  }
+  return out;
 }
 
 // ── Signature colour per vertical — the eight Recykal primary-palette hues.

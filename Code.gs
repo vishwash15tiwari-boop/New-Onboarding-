@@ -226,7 +226,9 @@ function mapToVertical(businessVertical, category, audience) {
     if (cat === 're-commerce' || cat === 'recommerce' || cat === 're commerce') return 'Recommerce';
     if (isEwaste(cat)) return 'Recommerce';
     if (INFRA_CATS[cat]) return 'InfraBusiness';
-    return 'Others';
+    // Non-infra Marketplace categories (Paper, M3, M4, Tyre Oil, etc.) belong
+    // directly in Managed Marketplace — no indirection through Others.
+    return 'Marketplace';
   }
   return 'Others';
 }
