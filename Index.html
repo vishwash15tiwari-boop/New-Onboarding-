@@ -2850,7 +2850,7 @@ body.view-gst #mm-crumbs{display:none}
 .mg-catchip:hover{background:rgba(0,93,255,.14)}
 .mg-catx{opacity:.6;font-size:9px}
 .mg-grid{display:flex;gap:22px;align-items:stretch;flex-wrap:wrap}
-.mg-map{flex:0 0 320px;max-width:340px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;align-items:center;justify-content:center}
+.mg-map{flex:0 0 320px;max-width:340px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
 .mg-svg{width:100%;height:auto;max-height:420px;display:block}
 .mg-state{transition:fill-opacity .25s ease,stroke-width .15s}
 .mg-state.active{stroke-linejoin:round}
@@ -2888,18 +2888,23 @@ body.view-gst #mm-crumbs{display:none}
 .mg-dt-cell{flex:1;min-width:92px;background:var(--bg);border:1px solid var(--border);border-radius:calc(var(--r) - 2px);padding:12px 14px}
 .mg-dt-v{font-size:1.35rem;font-weight:800;line-height:1;margin-bottom:3px;font-variant-numeric:tabular-nums}
 .mg-dt-l{font-size:.72rem;color:var(--txt2)}
-/* ── State detail panel (hover / click) ── */
-.mg-detail-wrap{margin-top:16px}
-.mg-detail-prompt{padding:22px 16px;text-align:center;color:var(--txt3);font-size:12.5px;line-height:1.6;background:var(--card);border:1px solid var(--border);border-radius:var(--r);animation:mfDetailIn .25s cubic-bezier(.4,0,.2,1) both}
-.mg-detail-body{display:flex;gap:12px;flex-wrap:wrap}
-.mg-detail-section{flex:1;min-width:150px;background:var(--card);border:1px solid var(--border);border-radius:calc(var(--r) - 2px);overflow:hidden;animation:mfDetailIn .25s cubic-bezier(.4,0,.2,1) both}
-.mg-section-hd{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
-.mg-detail-tbl{width:100%;border-collapse:collapse}
-.mg-detail-tbl tr:not(:last-child) td{border-bottom:1px solid var(--border)}
-.mg-detail-tbl td{padding:7px 12px;font-size:12.5px}
-.mg-detail-tbl td:first-child{color:var(--txt);font-weight:500}
-.mg-detail-tbl td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt);width:50px}
-.mg-detail-tbl .mg-dt-none{padding:10px 12px;color:var(--txt3);font-size:12px;text-align:center}
+/* ── State detail overlay — positioned inside the map's bottom-right white space ── */
+.mg-state-detail{position:absolute;right:10px;bottom:10px;width:42%;max-height:54%;background:rgba(255,255,255,.95);border:1px solid rgba(0,0,0,.09);border-radius:10px;overflow:hidden;overflow-y:auto;box-shadow:0 2px 16px rgba(0,0,0,.08);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none;font-family:inherit}
+@media(prefers-color-scheme:dark){.mg-state-detail{background:rgba(22,24,32,.95);border-color:rgba(255,255,255,.1)}}
+:root[data-theme="dark"] .mg-state-detail{background:rgba(22,24,32,.95);border-color:rgba(255,255,255,.1)}
+.mgsd-prompt{padding:14px 10px;text-align:center;color:var(--txt3);font-size:9.5px;line-height:1.6}
+.mgsd-hd{padding:7px 10px 5px;display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:var(--txt);border-bottom:1px solid rgba(0,0,0,.07);background:rgba(0,0,0,.018);min-width:0}
+:root[data-theme="dark"] .mgsd-hd{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+.mgsd-total{margin-left:auto;font-size:9px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt3);white-space:nowrap;flex-shrink:0}
+.mgsd-section:not(:first-child){border-top:1px solid rgba(0,0,0,.06)}
+:root[data-theme="dark"] .mgsd-section:not(:first-child){border-color:rgba(255,255,255,.07)}
+.mgsd-sec-hd{font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px 2px}
+.mgsd-tbl{width:100%;border-collapse:collapse}
+.mgsd-tbl tr:not(:last-child) td{border-bottom:1px solid rgba(0,0,0,.04)}
+:root[data-theme="dark"] .mgsd-tbl tr:not(:last-child) td{border-color:rgba(255,255,255,.05)}
+.mgsd-tbl td{padding:2.5px 10px;font-size:9.5px}
+.mgsd-tbl td:first-child{color:var(--txt);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72px}
+.mgsd-tbl td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;width:24px;color:var(--txt)}
 @media(max-width:720px){.mg-map{flex:1 1 100%;max-width:none}.mg-legend,.mg-loading{min-width:0}}
 
 /* ── Generic inline module panel (Volume / Transactions / Ratings / OSV / Existing) ── */
@@ -5612,17 +5617,15 @@ function _geoCatN(bucket, cat, aud) {
   return c ? (c[aud] || 0) : 0;
 }
 
-// Build the rich Sellers/Buyers category-breakdown table for a state.
-// Calls _geoAgg([]) so every category gets its own row (no folding into "Other").
+// Build the compact Sellers/Buyers table rendered inside the map's white space.
+// Uses _geoAgg([]) so all categories are shown unfolded (no cap/folding into "Other").
 function _mmGeoDetailHtml(id, by, regionColor) {
   if (!id || !by || !by[id]) {
-    return '<div class="mg-detail-prompt">'
-      + (id ? 'No onboarded records for this state in the selected period.'
-            : 'Hover or click a state to see its seller &amp; buyer breakdown by category.')
+    return '<div class="mgsd-prompt">'
+      + (id ? 'No records<br>for this state.' : 'Hover or click<br>a state to explore.')
       + '</div>';
   }
   var d = by[id], nm = IN_STATES[id].name;
-  // Sort categories by combined volume descending.
   var catKeys = Object.keys(d.cats || {}).sort(function(a, b) {
     return ((d.cats[b].seller || 0) + (d.cats[b].buyer || 0))
          - ((d.cats[a].seller || 0) + (d.cats[a].buyer || 0));
@@ -5632,35 +5635,29 @@ function _mmGeoDetailHtml(id, by, regionColor) {
   }
   function section(aud, label, color) {
     var total = d[aud] || 0;
+    if (!total) return '';
     var rows = catKeys.filter(function(c) { return (d.cats[c] && d.cats[c][aud] || 0) > 0; });
-    var trs = rows.length
-      ? rows.map(function(c) {
-          return '<tr><td>' + esc(dispCat(c)) + '</td><td>' + fmt(d.cats[c][aud]) + '</td></tr>';
-        }).join('')
-      : '<tr><td colspan="2" class="mg-dt-none">—</td></tr>';
-    return '<div class="mg-detail-section">'
-      + '<div class="mg-section-hd" style="color:' + color + '">'
-      + '<span class="mg-swatch" style="background:' + color + '"></span>'
-      + esc(label) + ' &nbsp;·&nbsp; ' + fmt(total) + '</div>'
-      + '<table class="mg-detail-tbl"><tbody>' + trs + '</tbody></table>'
+    var trs = rows.map(function(c) {
+      return '<tr><td>' + esc(dispCat(c)) + '</td><td>' + fmt(d.cats[c][aud]) + '</td></tr>';
+    }).join('');
+    return '<div class="mgsd-section">'
+      + '<div class="mgsd-sec-hd" style="color:' + color + '">' + esc(label) + ' · ' + fmt(total) + '</div>'
+      + '<table class="mgsd-tbl"><tbody>' + trs + '</tbody></table>'
       + '</div>';
   }
-  return '<div class="mg-detail" id="mg-detail" role="region" aria-label="' + esc(nm) + ' detail">'
-    + '<div class="mg-detail-hd">'
-    + '<span class="mg-swatch" style="background:' + regionColor + '"></span>'
-    + esc(nm) + ' · State Detail'
-    + '<span style="margin-left:auto;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;opacity:.55">'
-    + fmt(d.total) + ' total</span></div>'
-    + '<div class="mg-detail-body">'
+  // Truncate long state names so the header stays on one line.
+  var shortNm = nm.length > 14 ? nm.slice(0, 13) + '…' : nm;
+  return '<div class="mgsd-hd">'
+    + '<span class="mg-swatch" style="background:' + regionColor + ';flex-shrink:0"></span>'
+    + esc(shortNm)
+    + '<span class="mgsd-total">' + fmt(d.total) + '</span></div>'
     + section('seller', 'Sellers', '#1DC797')
-    + section('buyer',  'Buyers',  '#005DFF')
-    + '</div></div>';
+    + section('buyer',  'Buyers',  '#005DFF');
 }
 
-// Update only the detail panel — used by hover (avoids full re-render) and by mmRenderGeo.
+// Update only the in-map overlay — used by hover (no full re-render) and by mmRenderGeo.
 function _mmGeoUpdateDetail(id) {
-  var wrap = document.getElementById('mg-detail-wrap'); if (!wrap) return;
-  // Use _geoAgg([]) so all categories are shown unfolded, not capped at GEO_CAT_MAX.
+  var wrap = document.getElementById('mg-state-detail'); if (!wrap) return;
   var by = _geoAgg([]);
   var regionColor = _geo.region === 'South' ? '#16a34a' : '#005dff';
   wrap.innerHTML = _mmGeoDetailHtml(id, by, regionColor);
@@ -5716,7 +5713,9 @@ function mmRenderGeo() {
       + (d ? ' · ' + fmt(d.total) : '') + '</title></path>';
   }).join('');
   var mapPanel = '<div class="mg-map"><svg viewBox="0 0 1000 1100" class="mg-svg" aria-label="India map, '
-    + esc(region) + ' region">' + paths + '</svg></div>';
+    + esc(region) + ' region">' + paths + '</svg>'
+    + '<div id="mg-state-detail" class="mg-state-detail" aria-live="polite" aria-label="State detail"></div>'
+    + '</div>';
 
   // ---- LEGEND (right) ----
   var legend;
@@ -5781,11 +5780,10 @@ function mmRenderGeo() {
       + esc(_geo.cat.charAt(0).toUpperCase() + _geo.cat.slice(1)) + ' only <span class="mg-catx">✕</span></button>'
     : '';
   panel.innerHTML = '<div class="mg-eye"><span>' + esc(region) + ' Region · onboarded distribution</span>' + catChip + '</div>'
-    + '<div class="mg-grid">' + mapPanel + legend + '</div>'
-    + '<div id="mg-detail-wrap" class="mg-detail-wrap"></div>';
+    + '<div class="mg-grid">' + mapPanel + legend + '</div>';
   panel.className = 'mg mg-open';
 
-  // Populate the state detail panel for the current hover / locked selection.
+  // Populate the in-map state detail overlay for the current hover / locked selection.
   _mmGeoUpdateDetail(_geo.hover || _geo.state || null);
 
   // sequential fade-in of highlighted states — only on first open / region switch
