@@ -2756,9 +2756,8 @@ body.view-gst #mm-crumbs{display:none}
 .mmdetail .mf-sep svg{width:20px;height:20px;transform:rotate(90deg)}
 /* Geo → map above legend, stacked */
 .mmdetail .mg-grid{flex-direction:column;gap:14px}
-.mmdetail .mg-map,.mmdetail .mg-right-col{flex:none;width:100%;max-width:none}
-.mmdetail .mg-right-col{flex-direction:row;flex-wrap:wrap}
-.mmdetail .mg-state-detail{flex:0 0 240px;max-height:300px}
+.mmdetail .mg-map{flex:none;width:100%;max-width:none}
+.mmdetail .mg-map-svg-wrap{flex:0 0 58%}
 .mmdetail .mg-svg{max-height:360px}
 .mmdetail .mg-legend,.mmdetail .mg-loading{min-width:0;width:100%}
 .mmdetail .mg-rows{max-height:230px}
@@ -2852,8 +2851,8 @@ body.view-gst #mm-crumbs{display:none}
 .mg-catchip:hover{background:rgba(0,93,255,.14)}
 .mg-catx{opacity:.6;font-size:9px}
 .mg-grid{display:flex;gap:22px;align-items:stretch;flex-wrap:wrap}
-.mg-map{flex:1 1 0;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;align-items:center;justify-content:center;position:relative}
-.mg-right-col{flex:0 0 240px;min-width:200px;display:flex;flex-direction:column;gap:8px}
+.mg-map{flex:1 1 0;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:row;align-items:stretch;position:relative}
+.mg-map-svg-wrap{flex:0 0 66%;min-width:0;padding:14px;display:flex;align-items:center;justify-content:center}
 .mg-svg{width:100%;height:auto;max-height:420px;display:block}
 .mg-state{transition:fill-opacity .25s ease,stroke-width .15s}
 .mg-state.active{stroke-linejoin:round}
@@ -2892,7 +2891,7 @@ body.view-gst #mm-crumbs{display:none}
 .mg-dt-v{font-size:1.35rem;font-weight:800;line-height:1;margin-bottom:3px;font-variant-numeric:tabular-nums}
 .mg-dt-l{font-size:.72rem;color:var(--txt2)}
 /* ── State detail overlay — positioned inside the map's bottom-right white space ── */
-.mg-state-detail{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;overflow-y:auto;font-family:inherit;flex-shrink:0;max-height:260px}
+.mg-state-detail{flex:0 0 34%;min-width:0;border-left:1px solid var(--border);overflow:hidden;overflow-y:auto;font-family:inherit}
 .mgsd-prompt{padding:24px 14px;text-align:center;color:var(--txt3);font-size:11px;line-height:1.7}
 .mgsd-hd{padding:8px 12px 6px;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--txt);border-bottom:1px solid var(--border);background:var(--sidebar);min-width:0}
 .mgsd-total{margin-left:auto;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt3);white-space:nowrap;flex-shrink:0}
@@ -2901,9 +2900,9 @@ body.view-gst #mm-crumbs{display:none}
 .mgsd-tbl{width:100%;border-collapse:collapse}
 .mgsd-tbl tr:not(:last-child) td{border-bottom:1px solid var(--border)}
 .mgsd-tbl td{padding:4px 12px;font-size:10.5px}
-.mgsd-tbl td:first-child{color:var(--txt);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.mgsd-tbl td:first-child{color:var(--txt);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px}
 .mgsd-tbl td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;width:32px;color:var(--txt)}
-@media(max-width:720px){.mg-grid{flex-direction:column}.mg-map,.mg-right-col{flex:none;width:100%}.mg-legend,.mg-loading{min-width:0}}
+@media(max-width:720px){.mg-map{flex-direction:column}.mg-map-svg-wrap{flex:none;width:100%}.mg-state-detail{flex:none;width:100%;border-left:none;border-top:1px solid var(--border)}.mg-legend,.mg-loading{min-width:0}}
 
 /* ── Generic inline module panel (Volume / Transactions / Ratings / OSV / Existing) ── */
 #mm-modpanel{overflow:hidden;max-height:0;opacity:0;transition:max-height .5s cubic-bezier(.4,0,.2,1),opacity .3s ease;margin:0}
@@ -5732,8 +5731,11 @@ function mmRenderGeo() {
       + '" stroke="' + stroke + '" stroke-width="' + sw + '"' + handlers + '><title>' + esc(st.name)
       + (d ? ' · ' + fmt(d.total) : '') + '</title></path>';
   }).join('');
-  var mapPanel = '<div class="mg-map"><svg viewBox="0 0 1000 1100" class="mg-svg" aria-label="India map, '
-    + (allRegions ? 'all regions' : esc(region) + ' region') + '">' + paths + '</svg></div>';
+  var mapPanel = '<div class="mg-map">'
+    + '<div class="mg-map-svg-wrap"><svg viewBox="0 0 1000 1100" class="mg-svg" aria-label="India map, '
+    + (allRegions ? 'all regions' : esc(region) + ' region') + '">' + paths + '</svg></div>'
+    + '<div id="mg-state-detail" class="mg-state-detail" aria-live="polite" aria-label="State detail"></div>'
+    + '</div>';
 
   // ---- LEGEND (right) ----
   var legend;
@@ -5798,9 +5800,7 @@ function mmRenderGeo() {
       + esc(_geo.cat.charAt(0).toUpperCase() + _geo.cat.slice(1)) + ' only <span class="mg-catx">✕</span></button>'
     : '';
   panel.innerHTML = '<div class="mg-eye"><span>' + (allRegions ? 'All India' : esc(region) + ' Region') + ' · onboarded distribution</span>' + catChip + '</div>'
-    + '<div class="mg-grid">' + mapPanel
-    + '<div class="mg-right-col"><div id="mg-state-detail" class="mg-state-detail" aria-live="polite" aria-label="State detail"></div>'
-    + legend + '</div></div>';
+    + '<div class="mg-grid">' + mapPanel + legend + '</div>';
   panel.className = 'mg mg-open';
 
   // Populate the in-map state detail overlay for the current hover / locked selection.
