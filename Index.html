@@ -2888,6 +2888,18 @@ body.view-gst #mm-crumbs{display:none}
 .mg-dt-cell{flex:1;min-width:92px;background:var(--bg);border:1px solid var(--border);border-radius:calc(var(--r) - 2px);padding:12px 14px}
 .mg-dt-v{font-size:1.35rem;font-weight:800;line-height:1;margin-bottom:3px;font-variant-numeric:tabular-nums}
 .mg-dt-l{font-size:.72rem;color:var(--txt2)}
+/* ── State detail panel (hover / click) ── */
+.mg-detail-wrap{margin-top:16px}
+.mg-detail-prompt{padding:22px 16px;text-align:center;color:var(--txt3);font-size:12.5px;line-height:1.6;background:var(--card);border:1px solid var(--border);border-radius:var(--r);animation:mfDetailIn .25s cubic-bezier(.4,0,.2,1) both}
+.mg-detail-body{display:flex;gap:12px;flex-wrap:wrap}
+.mg-detail-section{flex:1;min-width:150px;background:var(--card);border:1px solid var(--border);border-radius:calc(var(--r) - 2px);overflow:hidden;animation:mfDetailIn .25s cubic-bezier(.4,0,.2,1) both}
+.mg-section-hd{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.mg-detail-tbl{width:100%;border-collapse:collapse}
+.mg-detail-tbl tr:not(:last-child) td{border-bottom:1px solid var(--border)}
+.mg-detail-tbl td{padding:7px 12px;font-size:12.5px}
+.mg-detail-tbl td:first-child{color:var(--txt);font-weight:500}
+.mg-detail-tbl td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt);width:50px}
+.mg-detail-tbl .mg-dt-none{padding:10px 12px;color:var(--txt3);font-size:12px;text-align:center}
 @media(max-width:720px){.mg-map{flex:1 1 100%;max-width:none}.mg-legend,.mg-loading{min-width:0}}
 
 /* ── Generic inline module panel (Volume / Transactions / Ratings / OSV / Existing) ── */
@@ -5600,12 +5612,68 @@ function _geoCatN(bucket, cat, aud) {
   return c ? (c[aud] || 0) : 0;
 }
 
+// Build the rich Sellers/Buyers category-breakdown table for a state.
+// Calls _geoAgg([]) so every category gets its own row (no folding into "Other").
+function _mmGeoDetailHtml(id, by, regionColor) {
+  if (!id || !by || !by[id]) {
+    return '<div class="mg-detail-prompt">'
+      + (id ? 'No onboarded records for this state in the selected period.'
+            : 'Hover or click a state to see its seller &amp; buyer breakdown by category.')
+      + '</div>';
+  }
+  var d = by[id], nm = IN_STATES[id].name;
+  // Sort categories by combined volume descending.
+  var catKeys = Object.keys(d.cats || {}).sort(function(a, b) {
+    return ((d.cats[b].seller || 0) + (d.cats[b].buyer || 0))
+         - ((d.cats[a].seller || 0) + (d.cats[a].buyer || 0));
+  });
+  function dispCat(c) {
+    return CAT_SHORT[c] || (c.charAt(0).toUpperCase() + c.slice(1));
+  }
+  function section(aud, label, color) {
+    var total = d[aud] || 0;
+    var rows = catKeys.filter(function(c) { return (d.cats[c] && d.cats[c][aud] || 0) > 0; });
+    var trs = rows.length
+      ? rows.map(function(c) {
+          return '<tr><td>' + esc(dispCat(c)) + '</td><td>' + fmt(d.cats[c][aud]) + '</td></tr>';
+        }).join('')
+      : '<tr><td colspan="2" class="mg-dt-none">—</td></tr>';
+    return '<div class="mg-detail-section">'
+      + '<div class="mg-section-hd" style="color:' + color + '">'
+      + '<span class="mg-swatch" style="background:' + color + '"></span>'
+      + esc(label) + ' &nbsp;·&nbsp; ' + fmt(total) + '</div>'
+      + '<table class="mg-detail-tbl"><tbody>' + trs + '</tbody></table>'
+      + '</div>';
+  }
+  return '<div class="mg-detail" id="mg-detail" role="region" aria-label="' + esc(nm) + ' detail">'
+    + '<div class="mg-detail-hd">'
+    + '<span class="mg-swatch" style="background:' + regionColor + '"></span>'
+    + esc(nm) + ' · State Detail'
+    + '<span style="margin-left:auto;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;opacity:.55">'
+    + fmt(d.total) + ' total</span></div>'
+    + '<div class="mg-detail-body">'
+    + section('seller', 'Sellers', '#1DC797')
+    + section('buyer',  'Buyers',  '#005DFF')
+    + '</div></div>';
+}
+
+// Update only the detail panel — used by hover (avoids full re-render) and by mmRenderGeo.
+function _mmGeoUpdateDetail(id) {
+  var wrap = document.getElementById('mg-detail-wrap'); if (!wrap) return;
+  // Use _geoAgg([]) so all categories are shown unfolded, not capped at GEO_CAT_MAX.
+  var by = _geoAgg([]);
+  var regionColor = _geo.region === 'South' ? '#16a34a' : '#005dff';
+  wrap.innerHTML = _mmGeoDetailHtml(id, by, regionColor);
+}
+
 function mmGeoHover(id, on) {
   _geo.hover = on ? id : null;
   var panel = document.getElementById('mm-geo'); if (!panel) return;
   [].slice.call(panel.querySelectorAll('[data-geo="' + id + '"]')).forEach(function(el) {
     el.classList.toggle('hl', on);
   });
+  // Preview the hovered state's detail; on mouse-out revert to the locked selection.
+  _mmGeoUpdateDetail(on ? id : (_geo.state || null));
 }
 function mmGeoSelectState(id) {
   _geo.state = (_geo.state === id) ? null : id;
@@ -5707,37 +5775,18 @@ function mmRenderGeo() {
       + '<div class="mg-rows">' + rows + '</div></div>';
   }
 
-  // ---- STATE DETAIL (below, optional) ----
-  var detail = '';
-  if (_geo.state && by[_geo.state]) {
-    var d = by[_geo.state], nm = IN_STATES[_geo.state].name;
-    var cell = function(v, l, c) { return '<div class="mg-dt-cell"><div class="mg-dt-v"' + (c ? ' style="color:' + c + '"' : '') + '>' + fmt(v) + '</div><div class="mg-dt-l">' + l + '</div></div>'; };
-    // Per-category cells mirror the table's bifurcation for the selected state.
-    var catCells = '';
-    if (geoCats.length) {
-      geoCats.forEach(function(c) { catCells += cell(_geoCatN(d, c, 'seller'), 'S · ' + esc(c), '#1DC797'); });
-      geoCats.forEach(function(c) { catCells += cell(_geoCatN(d, c, 'buyer'),  'B · ' + esc(c), '#005DFF'); });
-    }
-    detail = '<div class="mg-detail" id="mg-detail" role="region" aria-label="' + esc(nm) + ' detail">'
-      + '<div class="mg-detail-hd"><span class="mg-swatch" style="background:' + regionColor + '"></span>' + esc(nm) + ' · State Detail</div>'
-      + '<div class="mg-dt-grid">'
-      + cell(d.total, _geo.cat ? 'Onboarded · ' + (_geo.cat.charAt(0).toUpperCase() + _geo.cat.slice(1)) : 'Onboarded', regionColor)
-      + cell(d.seller, 'Sellers') + cell(d.buyer, 'Buyers')
-      + catCells
-      + '</div>'
-      // No records CTA here: the state detail already carries the seller/buyer and
-      // per-category split, and the sheet it opened was not region-scoped.
-      + '</div>';
-  }
-
   var catChip = _geo.cat
     ? '<button class="mg-catchip" onclick="_geoClearCat()" title="Clear filter">'
       + '<span class="mg-swatch" style="background:#6366f1"></span>'
       + esc(_geo.cat.charAt(0).toUpperCase() + _geo.cat.slice(1)) + ' only <span class="mg-catx">✕</span></button>'
     : '';
   panel.innerHTML = '<div class="mg-eye"><span>' + esc(region) + ' Region · onboarded distribution</span>' + catChip + '</div>'
-    + '<div class="mg-grid">' + mapPanel + legend + '</div>' + detail;
+    + '<div class="mg-grid">' + mapPanel + legend + '</div>'
+    + '<div id="mg-detail-wrap" class="mg-detail-wrap"></div>';
   panel.className = 'mg mg-open';
+
+  // Populate the state detail panel for the current hover / locked selection.
+  _mmGeoUpdateDetail(_geo.hover || _geo.state || null);
 
   // sequential fade-in of highlighted states — only on first open / region switch
   if (_geoAnimate && motionOK() && !loading) {
