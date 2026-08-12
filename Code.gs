@@ -179,18 +179,17 @@ var AUDIENCE_CFG = {
 // and excluded from the Avg TAT so a few outliers don't skew it.
 var TAT_MAX_DAYS = 365;
 
-// The nine business verticals, in display order. Rows are mapped into these by
+// The eight business verticals, in display order. Rows are mapped into these by
 // mapToVertical() + date-based migration in normalizeRows.
 var VERTICALS = [
-  { key: 'OMP',                name: 'Marketplace',         code: 'OMP', sub: '' },
-  { key: 'EPR',                name: 'EPR',                 code: 'EPR', sub: '' },
-  { key: 'Marketplace',        name: 'Managed Marketplace', code: 'MKT', sub: '' },
-  { key: 'InfraBusiness',      name: 'Infra Business',      code: 'INF', sub: '' },
-  { key: 'AFR',                name: 'AFR',                 code: 'AFR', sub: '' },
-  { key: 'Recommerce',         name: 'Re-Commerce',         code: 'REC', sub: '' },
-  { key: 'DRS',                name: 'DRS',                 code: 'DRS', sub: '' },
-  { key: 'ManagedMarketplace', name: 'Managed Marketplace', code: 'MGM', sub: '' },
-  { key: 'Others',             name: 'Others',              code: 'OTH', sub: '' },
+  { key: 'OMP',           name: 'Marketplace',         code: 'OMP', sub: '' },
+  { key: 'EPR',           name: 'EPR',                 code: 'EPR', sub: '' },
+  { key: 'Marketplace',   name: 'Managed Marketplace', code: 'MKT', sub: '' },
+  { key: 'InfraBusiness', name: 'Infra Business',      code: 'INF', sub: '' },
+  { key: 'AFR',           name: 'AFR',                 code: 'AFR', sub: '' },
+  { key: 'Recommerce',    name: 'Re-Commerce',         code: 'REC', sub: '' },
+  { key: 'DRS',           name: 'DRS',                 code: 'DRS', sub: '' },
+  { key: 'Others',        name: 'Others',              code: 'OTH', sub: '' },
 ];
 
 // Categories (from the Marketplace business_vertical) that roll into Infra Business.
@@ -1516,7 +1515,7 @@ function normalizeRows(raw, cfg) {
     if (!isExcluded) {
       var mmRow = {};
       for (var k in r) mmRow[k] = r[k];
-      mmRow.vertical = 'ManagedMarketplace';
+      mmRow.vertical = 'Marketplace';
       result.push(mmRow);
     }
     // Keep the original Others row only if created after 31 March 2026.
