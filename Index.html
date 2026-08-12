@@ -5280,6 +5280,20 @@ function _mmCloseInline() {
 
 function mmClickNode(id) {
   var node = mmFindById(id); if (!node) return;
+  // Geographic Split module → immediately open full India map (all regions).
+  if (node.geoModule) {
+    var allOpen = mmGeoActive && _geo.region === 'All' && mmPath.length && mmPath[mmPath.length - 1] === node._id;
+    if (allOpen) {
+      mmGeoActive = false; _geo.region = null; _geo.state = null;
+      mmPath = mmPath.slice(0, -1);
+    } else {
+      mmFunnelActive = false; mmModActive = false;
+      mmPath = _mmPathIds(node);
+      mmGeoActive = true; _geo.state = null; _geo.hover = null; _geoAnimate = true;
+      mmGeoOpen('All');
+    }
+    _mmAnimateReveal = true; mmPaint(); return;
+  }
   // Region card → toggle the inline India map panel.
   if (node.geoRegion) {
     var geoOpen = mmGeoActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
@@ -5598,7 +5612,8 @@ function _geoAgg(cats) {
     var rows = _geo.rows[aud]; if (!Array.isArray(rows)) return;
     rows.forEach(function(r) {
       if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
-      var id = _geoStateId(r.state); if (!id || !IN_STATES[id] || IN_STATES[id].region !== region) return;
+      var id = _geoStateId(r.state); if (!id || !IN_STATES[id]) return;
+      if (region !== 'All' && IN_STATES[id].region !== region) return;
       var cat = String(r.category || '').trim().toLowerCase();
       if (filt && cat !== filt) return;   // category filter (chained from Volume/Funnel)
       var b = by[id] || (by[id] = { id:id, total:0, seller:0, buyer:0, cats:{} });
@@ -5659,7 +5674,9 @@ function _mmGeoDetailHtml(id, by, regionColor) {
 function _mmGeoUpdateDetail(id) {
   var wrap = document.getElementById('mg-state-detail'); if (!wrap) return;
   var by = _geoAgg([]);
-  var regionColor = _geo.region === 'South' ? '#16a34a' : '#005dff';
+  var regionColor = _geo.region === 'All'
+    ? (id && IN_STATES[id] ? (IN_STATES[id].region === 'South' ? '#16a34a' : '#005dff') : '#005dff')
+    : (_geo.region === 'South' ? '#16a34a' : '#005dff');
   wrap.innerHTML = _mmGeoDetailHtml(id, by, regionColor);
 }
 
@@ -5682,10 +5699,13 @@ function mmRenderGeo() {
   if (!mmGeoActive || !_geo.region) { panel.className = 'mg'; panel.innerHTML = ''; return; }
 
   var region = _geo.region;
+  var allRegions = region === 'All';
   var regionColor = region === 'South' ? '#16a34a' : '#005dff';
   var geoCats = _geoCats();
   var by = _geoAgg(geoCats);
-  var statesInRegion = Object.keys(IN_STATES).filter(function(id){ return IN_STATES[id].region === region; });
+  var statesInRegion = allRegions
+    ? Object.keys(IN_STATES)
+    : Object.keys(IN_STATES).filter(function(id){ return IN_STATES[id].region === region; });
   var withData = statesInRegion.filter(function(id){ return by[id] && by[id].total > 0; })
     .sort(function(a, b){ return by[b].total - by[a].total; });
   var maxT = withData.reduce(function(m, id){ return Math.max(m, by[id].total); }, 0) || 1;
@@ -5693,14 +5713,16 @@ function mmRenderGeo() {
 
   // ---- MAP (left) ----
   var paths = Object.keys(IN_STATES).map(function(id) {
-    var st = IN_STATES[id], inRegion = st.region === region, d = by[id];
+    var st = IN_STATES[id], d = by[id];
+    var inRegion = allRegions || st.region === region;
+    var stColor = allRegions ? (st.region === 'South' ? '#16a34a' : '#005dff') : regionColor;
     var cls = 'mg-state';
     var fill, stroke = 'var(--border)', sw = '0.8', op = '1';
     if (!inRegion) { fill = 'var(--mg-base)'; op = '0.5'; }
     else {
       // 3 discrete tint steps by onboarded count — subtle, not a heatmap gradient.
       var lvl = d && d.total > 0 ? (d.total >= maxT * 0.66 ? 0.9 : d.total >= maxT * 0.33 ? 0.62 : 0.36) : 0.14;
-      fill = regionColor; op = String(lvl); stroke = regionColor; sw = '1';
+      fill = stColor; op = String(lvl); stroke = stColor; sw = '1';
       cls += ' active';
       if (_geo.state === id) cls += ' sel';
     }
@@ -5713,7 +5735,7 @@ function mmRenderGeo() {
       + (d ? ' · ' + fmt(d.total) : '') + '</title></path>';
   }).join('');
   var mapPanel = '<div class="mg-map"><svg viewBox="0 0 1000 1100" class="mg-svg" aria-label="India map, '
-    + esc(region) + ' region">' + paths + '</svg>'
+    + (allRegions ? 'all regions' : esc(region) + ' region') + '">' + paths + '</svg>'
     + '<div id="mg-state-detail" class="mg-state-detail" aria-live="polite" aria-label="State detail"></div>'
     + '</div>';
 
@@ -5748,7 +5770,7 @@ function mmRenderGeo() {
       return '<button class="mg-row" data-geo="' + id + '"' + rowStyle(i)
         + ' onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
         + ' onclick="mmGeoSelectState(\'' + id + '\')">'
-        + '<span class="mg-row-nm"><span class="mg-swatch" style="background:' + regionColor + '"></span>' + esc(name) + '</span>'
+        + '<span class="mg-row-nm"><span class="mg-swatch" style="background:' + (allRegions ? (IN_STATES[id].region === 'South' ? '#16a34a' : '#005dff') : regionColor) + '"></span>' + esc(name) + '</span>'
         + cells
         + '</button>';
     }).join('');
@@ -5779,7 +5801,7 @@ function mmRenderGeo() {
       + '<span class="mg-swatch" style="background:#6366f1"></span>'
       + esc(_geo.cat.charAt(0).toUpperCase() + _geo.cat.slice(1)) + ' only <span class="mg-catx">✕</span></button>'
     : '';
-  panel.innerHTML = '<div class="mg-eye"><span>' + esc(region) + ' Region · onboarded distribution</span>' + catChip + '</div>'
+  panel.innerHTML = '<div class="mg-eye"><span>' + (allRegions ? 'All India' : esc(region) + ' Region') + ' · onboarded distribution</span>' + catChip + '</div>'
     + '<div class="mg-grid">' + mapPanel + legend + '</div>';
   panel.className = 'mg mg-open';
 
