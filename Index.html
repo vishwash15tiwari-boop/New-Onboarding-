@@ -2891,7 +2891,17 @@ body.view-gst #mm-crumbs{display:none}
 .mg-dt-v{font-size:1.35rem;font-weight:800;line-height:1;margin-bottom:3px;font-variant-numeric:tabular-nums}
 .mg-dt-l{font-size:.72rem;color:var(--txt2)}
 /* ── State detail overlay — positioned inside the map's bottom-right white space ── */
-.mg-state-detail{flex:0 0 34%;min-width:0;border-left:1px solid var(--border);overflow:hidden;overflow-y:auto;font-family:inherit}
+.mg-state-detail{flex:0 0 34%;min-width:0;border-left:1px solid var(--border);overflow:hidden;font-family:inherit;display:flex;flex-direction:column}
+.mgsd-half{flex:0 0 50%;min-height:0;overflow:hidden;overflow-y:auto}
+.mgsd-half+.mgsd-half{border-top:1px solid var(--border)}
+.mgsd-fix-hd{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);padding:6px 12px 4px;background:var(--sidebar);position:sticky;top:0;border-bottom:1px solid var(--border)}
+.mgsd-rgn-tbl{width:100%;border-collapse:collapse}
+.mgsd-rgn-tbl thead th{padding:3px 8px;text-align:right;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3)}
+.mgsd-rgn-tbl thead th:first-child{text-align:left}
+.mgsd-aud td{font-size:11px;font-weight:700;color:var(--txt);padding:4px 8px 2px}
+.mgsd-cat td{font-size:9.5px;color:var(--txt2);padding:1px 8px 1px 16px}
+.mgsd-rgn-tbl td{font-variant-numeric:tabular-nums}
+.mgsd-rgn-tbl td:not(:first-child){text-align:right}
 .mgsd-prompt{padding:24px 14px;text-align:center;color:var(--txt3);font-size:11px;line-height:1.7}
 .mgsd-hd{padding:8px 12px 6px;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--txt);border-bottom:1px solid var(--border);background:var(--sidebar);min-width:0}
 .mgsd-total{margin-left:auto;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt3);white-space:nowrap;flex-shrink:0}
@@ -5672,12 +5682,65 @@ function _mmGeoDetailHtml(id, by, regionColor) {
 
 // Update only the in-map overlay — used by hover (no full re-render) and by mmRenderGeo.
 function _mmGeoUpdateDetail(id) {
-  var wrap = document.getElementById('mg-state-detail'); if (!wrap) return;
+  var wrap = document.getElementById('mg-state-hover'); if (!wrap) return;
   var by = _geoAgg([]);
   var regionColor = _geo.region === 'All'
     ? (id && IN_STATES[id] ? (IN_STATES[id].region === 'South' ? '#16a34a' : '#005dff') : '#005dff')
     : (_geo.region === 'South' ? '#16a34a' : '#005dff');
   wrap.innerHTML = _mmGeoDetailHtml(id, by, regionColor);
+}
+
+function _mmGeoFixedHtml() {
+  var by = _geoAgg([], 'All');
+  var rgn = {
+    North: { seller: 0, buyer: 0, cats: {} },
+    South: { seller: 0, buyer: 0, cats: {} }
+  };
+  Object.keys(by).forEach(function(id) {
+    var st = IN_STATES[id]; if (!st) return;
+    var rn = st.region, d = by[id]; if (!d) return;
+    rgn[rn].seller += d.seller || 0;
+    rgn[rn].buyer  += d.buyer  || 0;
+    Object.keys(d.cats || {}).forEach(function(cat) {
+      if (!rgn[rn].cats[cat]) rgn[rn].cats[cat] = { seller: 0, buyer: 0 };
+      rgn[rn].cats[cat].seller += (d.cats[cat] && d.cats[cat].seller) || 0;
+      rgn[rn].cats[cat].buyer  += (d.cats[cat] && d.cats[cat].buyer)  || 0;
+    });
+  });
+  var allCats = {};
+  ['North', 'South'].forEach(function(r) {
+    Object.keys(rgn[r].cats).forEach(function(c) {
+      allCats[c] = (allCats[c] || 0) + (rgn[r].cats[c].seller || 0) + (rgn[r].cats[c].buyer || 0);
+    });
+  });
+  var catKeys = Object.keys(allCats).sort(function(a, b) { return allCats[b] - allCats[a]; });
+  function dispCat(c) { return CAT_SHORT[c] || (c.charAt(0).toUpperCase() + c.slice(1)); }
+  function audRows(aud, color, label) {
+    var n = rgn.North[aud] || 0, s = rgn.South[aud] || 0;
+    if (!n && !s) return '';
+    var catTrs = catKeys.filter(function(c) {
+      return ((rgn.North.cats[c] && rgn.North.cats[c][aud]) || 0) + ((rgn.South.cats[c] && rgn.South.cats[c][aud]) || 0) > 0;
+    }).map(function(c) {
+      var nc = (rgn.North.cats[c] && rgn.North.cats[c][aud]) || 0;
+      var sc = (rgn.South.cats[c] && rgn.South.cats[c][aud]) || 0;
+      return '<tr class="mgsd-cat"><td>· ' + esc(dispCat(c)) + '</td>'
+        + '<td>' + fmt(nc) + '</td><td>' + fmt(sc) + '</td></tr>';
+    }).join('');
+    return '<tr class="mgsd-aud"><td style="color:' + color + '">' + esc(label) + '</td>'
+      + '<td>' + fmt(n) + '</td><td>' + fmt(s) + '</td></tr>' + catTrs;
+  }
+  var hasData = rgn.North.seller || rgn.North.buyer || rgn.South.seller || rgn.South.buyer;
+  if (!hasData) {
+    return '<div class="mgsd-fix-hd">Regional Overview</div>'
+      + '<div class="mgsd-prompt" style="font-size:10px;padding:14px">No regional data.</div>';
+  }
+  return '<div class="mgsd-fix-hd">Regional Overview</div>'
+    + '<table class="mgsd-rgn-tbl"><thead><tr>'
+    + '<th></th><th>North</th><th>South</th>'
+    + '</tr></thead><tbody>'
+    + audRows('seller', '#1DC797', 'Sellers')
+    + audRows('buyer',  '#005DFF', 'Buyers')
+    + '</tbody></table>';
 }
 
 function mmGeoHover(id, on) {
@@ -5737,7 +5800,10 @@ function mmRenderGeo() {
   var mapPanel = '<div class="mg-map">'
     + '<div class="mg-map-svg-wrap"><svg viewBox="0 0 1000 1100" class="mg-svg" aria-label="India map, '
     + (allRegions ? 'all regions' : esc(region) + ' region') + '">' + paths + '</svg></div>'
-    + '<div id="mg-state-detail" class="mg-state-detail" aria-live="polite" aria-label="State detail"></div>'
+    + '<div id="mg-state-detail" class="mg-state-detail" aria-label="State detail">'
+    + '<div id="mg-state-hover" class="mgsd-half" aria-live="polite"></div>'
+    + '<div id="mg-state-fixed" class="mgsd-half"></div>'
+    + '</div>'
     + '</div>';
 
   // ---- LEGEND (right) ----
@@ -5808,6 +5874,8 @@ function mmRenderGeo() {
 
   // Populate the in-map state detail overlay for the current hover / locked selection.
   _mmGeoUpdateDetail(_geo.hover || _geo.state || null);
+  var _fixedEl = document.getElementById('mg-state-fixed');
+  if (_fixedEl) _fixedEl.innerHTML = _mmGeoFixedHtml();
 
   // sequential fade-in of highlighted states — only on first open / region switch
   if (_geoAnimate && motionOK() && !loading) {
