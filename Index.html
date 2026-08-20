@@ -4843,8 +4843,15 @@ function _mmVertModules(key) {
     var ag = _mmAging(key);   // seller + buyer ageing (buyer rows included when loaded)
     var tTiles = [];
     if (sTxn != null || bTxn != null) {
-      if (catTxn.length) catTxn.forEach(function(x){ tTiles.push({ label:x.cat, v:x.s + x.b }); });
-      else { tTiles.push({ label:'Metal', v:sMtxn + bMtxn }, { label:'Plastic', v:sPtxn + bPtxn }); }
+      window._mmTxnAud = {
+        key: key,
+        seller: { total: sTxn || 0, metal: sMtxn, plastic: sPtxn, cats: catTxn },
+        buyer:  { total: bTxn || 0, metal: bMtxn, plastic: bPtxn, cats: catTxn }
+      };
+      tTiles.push(
+        { label:'Sellers', v:sTxn || 0, click:"openTxnAudModal('seller')", tip:'View seller transaction breakdown' },
+        { label:'Buyers',  v:bTxn || 0, click:"openTxnAudModal('buyer')",  tip:'View buyer transaction breakdown' }
+      );
     }
     if (ag) {
       tTiles.push({ label:'Ageing · 0–30 days',  v:ag.a, tone:'good', sub:'Non-transacted',
@@ -10085,6 +10092,52 @@ function openOsvRecords(status) {
   var ovl = document.getElementById('mr-ovl');
   if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
   _mrRender();
+}
+
+// Transacted Sellers or Buyers breakdown — opens the KPI modal showing total
+// count and Metal/Plastic (or data-driven category) split for one audience.
+function openTxnAudModal(aud) {
+  var d = window._mmTxnAud; if (!d) return;
+  var ad = d[aud]; if (!ad) return;
+  var el = document.getElementById('km-pn');
+  var modal = document.getElementById('kpi-modal');
+  if (!el || !modal) return;
+  var isS   = aud === 'seller';
+  var label = isS ? 'Sellers' : 'Buyers';
+  var color = isS ? '#1DC797' : '#005DFF';
+  var icon  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
+  function srow(items) {
+    var cols = Math.min(items.length, 3);
+    return '<div class="km-srow km-srow-' + cols + '">'
+      + items.map(function(it) {
+          return '<div class="km-s"><div class="km-sv"' + (it.c ? ' style="color:' + it.c + '"' : '') + '>' + it.v + '</div><div class="km-sl">' + esc(it.l) + '</div></div>';
+        }).join('') + '</div>';
+  }
+  function sec(title, inner) {
+    return '<div class="km-sec"><div class="km-sec-t">' + esc(title) + '</div>' + inner + '</div>';
+  }
+  var catItems = [];
+  if (ad.cats && ad.cats.length) {
+    ad.cats.forEach(function(x) {
+      var n = isS ? (x.s || 0) : (x.b || 0);
+      if (n > 0) catItems.push({ l: x.cat, v: fmt(n), c: color });
+    });
+  } else {
+    if (ad.metal)   catItems.push({ l:'Metal',   v:fmt(ad.metal),   c:color });
+    if (ad.plastic) catItems.push({ l:'Plastic', v:fmt(ad.plastic), c:color });
+  }
+  var catSection = catItems.length ? sec('Category Breakdown', srow(catItems)) : '';
+  el.innerHTML =
+    '<div class="km-head"><div style="display:flex;align-items:center;min-width:0">'
+    + '<div class="km-icon">' + icon + '</div>'
+    + '<div class="km-htxt"><div class="km-title">Transacted ' + esc(label) + '</div>'
+    + '<div class="km-sub">' + esc(label) + ' who have made at least one transaction</div>'
+    + '</div></div>'
+    + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button></div>'
+    + '<div class="km-hero"><div class="km-hero-num" style="color:' + color + '">' + fmt(ad.total) + '</div>'
+    + '<div class="km-hero-lbl">Transacted ' + esc(label) + '</div></div>'
+    + catSection;
+  _modalOpenClass(modal, 'km-open', _kpiEsc);
 }
 
 // TAT records — the vendors behind one cell of the Average TAT matrix.
