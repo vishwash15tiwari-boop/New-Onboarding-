@@ -4826,12 +4826,7 @@ function _mmVertModules(key) {
   }
   if (regs.length) {
     mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module', geoModule:true,
-      eye:'Onboarded by region · seller / buyer',
-      children: regs.map(function(r) {
-        var tone = r.region === 'North' ? 't-blue' : r.region === 'South' ? 't-green' : 't-ink';
-        return { t:r.region, v:fmt(r.s + r.b), s:_mmSB(r.s, r.b), ic:MM_IC.pin, tone:tone, kind:'kpi',
-                 geoRegion:r.region };
-      }) });
+      eye:'Onboarded by region · seller / buyer' });
   }
 
   // 4 — Transactions (Sellers + Buyers combined; GMV remains seller-side only).
@@ -5117,7 +5112,7 @@ function mmBuildColumns() {
 function mmNodeCard(node, colActiveId) {
   var kind = node.kind, on = node._id === colActiveId;
   var hasKids = node.children && node.children.length;
-  var isLeaf = node.leaf || kind === 'vd' || (!hasKids && !node.action && !node.geoRegion && !node.expand);
+  var isLeaf = node.leaf || kind === 'vd' || (!hasKids && !node.action && !node.geoRegion && !node.expand && !node.geoModule);
   var cls, inner;
   if (kind === 'root') {
     cls = 'mmn root' + (on ? ' on' : '');
@@ -5149,7 +5144,7 @@ function mmNodeCard(node, colActiveId) {
   } else {
     var modCls = (kind === 'module') ? ' module' : '';
     cls = 'mmn ' + (node.tone || 't-ink') + modCls + (on ? ' on' : '') + (isLeaf ? ' leaf' : '');
-    var arrow = (hasKids || node.action || node.geoRegion || node.expand) ? '<span class="mmn-arr">' + ((node.action || node.geoRegion) && !hasKids && !node.expand ? '→' : '›') + '</span>' : '';
+    var arrow = (hasKids || node.action || node.geoRegion || node.expand || node.geoModule) ? '<span class="mmn-arr">' + ((node.action || node.geoRegion) && !hasKids && !node.expand ? '→' : '›') + '</span>' : '';
     inner = '<div class="mmn-top"><div class="mmn-ic">' + (node.ic || MM_IC.grid) + '</div><div class="mmn-ttl">' + esc(node.t) + '</div>' + arrow + '</div>'
       + (node.v ? '<div class="mmn-v tnum">' + esc(node.v) + '</div>' : '')
       + (node.s ? '<div class="mmn-s">' + esc(node.s) + '</div>' : '');
@@ -5186,7 +5181,7 @@ function renderBranchNav(key) {
   // Validate inline-panel state after rebuild
   var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
   if (mmFunnelActive && (!lastNode || lastNode.expand !== 'inline-funnel')) mmFunnelActive = false;
-  if (mmGeoActive && (!lastNode || !lastNode.geoRegion)) { mmGeoActive = false; _geo.region = null; _geo.state = null; }
+  if (mmGeoActive && (!lastNode || (!lastNode.geoRegion && !lastNode.geoModule))) { mmGeoActive = false; _geo.region = null; _geo.state = null; }
   if (mmModActive && (!lastNode || lastNode.expand !== 'inline-panel')) mmModActive = false;
   mmRender();
   mmRenderFunnel();
@@ -5224,7 +5219,7 @@ function mmGoto(i) {
   var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
   if (!lastNode || lastNode.expand !== 'inline-funnel') { mmFunnelActive = false; }
   if (!lastNode || lastNode.expand !== 'inline-panel') { mmModActive = false; }
-  if (!lastNode || !lastNode.geoRegion) { mmGeoActive = false; _geo.region = null; _geo.state = null; if (!lastNode || !lastNode.geoModule) _geo.cat = null; }
+  if (!lastNode || (!lastNode.geoRegion && !lastNode.geoModule)) { mmGeoActive = false; _geo.region = null; _geo.state = null; _geo.cat = null; }
   _mmAnimateReveal = true;
   mmPaint();
 }
