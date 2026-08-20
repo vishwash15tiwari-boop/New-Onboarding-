@@ -2738,16 +2738,17 @@ body.view-gst #mm-crumbs{display:none}
 @media(prefers-reduced-motion:reduce){.mmn{opacity:1!important;transform:none!important}}
 
 /* ── Workspace split: navigation (left) + detail canvas (right, parallel) ── */
-.mmworkspace{display:flex;align-items:flex-start;gap:0}
-/* Nav shrinks to its own content so it never opens a horizontal void beside the
-   panel; the panel then grows into every pixel the nav does not use. */
+.mmworkspace{display:flex;align-items:flex-start;justify-content:center;gap:0}
+/* Nav shrinks to its own content; centred by default so the dashboard card
+   reads as the visual anchor of the screen. */
 .mmnav{flex:0 1 auto;min-width:0}
-.mmdetail{flex:0 0 0px;opacity:0;overflow:hidden;align-self:stretch;
+/* Detail panel always has order:-1 so it is visually to the LEFT of the nav.
+   In the default state it is 0-width and invisible, so the centering of the
+   nav is unaffected; when a vertical is selected it grows into the left half. */
+.mmdetail{order:-1;flex:0 0 0px;opacity:0;overflow:hidden;align-self:stretch;
   transition:flex-basis .45s cubic-bezier(.4,0,.2,1),opacity .35s ease}
-.mmworkspace.has-panel{gap:22px}
-/* On surplus width the nav stays at content size and the panel grows; when space
-   is tight (below ~1130px, before the 900px stack) the nav may yield so the page
-   never overflows horizontally. */
+.mmworkspace.has-panel{gap:22px;justify-content:flex-start}
+/* When the panel is open the nav sits to the right of the expanding detail. */
 .mmworkspace.has-panel .mmnav{flex:0 1 auto}
 .mmworkspace.has-panel .mmdetail{flex:1 1 auto;flex-basis:clamp(520px,54%,900px);opacity:1;
   position:sticky;top:12px;max-height:calc(100vh - 26px);overflow-y:auto;overflow-x:hidden;
@@ -5308,13 +5309,34 @@ function mmCardAction(action) {
 }
 
 // Split the workspace into nav + side detail whenever any panel is open.
+// Uses a FLIP (First-Last-Invert-Play) animation to slide the nav smoothly
+// between its centred default position and its right-side active position.
 function _mmSyncDetail() {
-  var ws = document.getElementById('mm-workspace');
+  var ws  = document.getElementById('mm-workspace');
+  var nav = document.getElementById('mm-nav');
   if (!ws) return;
   var open = !!(mmFunnelActive || mmGeoActive || mmModActive);
-  ws.classList.toggle('has-panel', open);
-  // With a panel docked, the nav narrows; once it settles, keep the active
-  // (deepest) column in view rather than clipping it at the edge.
+  var flipDx = 0;
+  if (nav && motionOK()) {
+    // First: measure nav before layout change
+    var before = nav.getBoundingClientRect().left;
+    ws.classList.toggle('has-panel', open);
+    // Last: measure nav after layout change
+    var after = nav.getBoundingClientRect().left;
+    flipDx = Math.round(before - after);
+  } else {
+    ws.classList.toggle('has-panel', open);
+  }
+  // Invert + Play: snap nav back to old position then animate to new one
+  if (flipDx && nav) {
+    nav.style.transition = 'none';
+    nav.style.transform  = 'translateX(' + flipDx + 'px)';
+    nav.offsetHeight; // force reflow so the snap is visible before animate
+    nav.style.transition = 'transform .42s cubic-bezier(.4,0,.2,1)';
+    nav.style.transform  = '';
+    setTimeout(function() { if (nav) { nav.style.transition = ''; nav.style.transform = ''; } }, 450);
+  }
+  // With a panel docked, keep the active (deepest) column in view.
   if (open) {
     setTimeout(function(){
       var mm = document.getElementById('mm');
