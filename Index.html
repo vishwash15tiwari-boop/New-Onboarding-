@@ -2912,6 +2912,10 @@ body.view-gst #mm-crumbs{display:none}
 .mgsd-tbl td{padding:4px 12px;font-size:10.5px}
 .mgsd-tbl td:first-child{color:var(--txt);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px}
 .mgsd-tbl td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;width:32px;color:var(--txt)}
+.mgsd-clk{cursor:pointer;transition:background .12s,color .12s;border-radius:3px}
+.mgsd-clk:hover{background:rgba(0,93,255,.07)}
+.mgsd-sec-hd.mgsd-clk:hover{background:rgba(0,93,255,.07)}
+.mgsd-tbl tr.mgsd-clk:hover td{background:rgba(0,93,255,.07)}
 @media(max-width:720px){.mg-map{flex-direction:column}.mg-map-svg-wrap{flex:none;width:100%}.mg-state-detail{flex:none;width:100%;border-left:none;border-top:1px solid var(--border)}.mg-legend,.mg-loading{min-width:0}}
 
 /* ── Generic inline module panel (Volume / Transactions / Ratings / OSV / Existing) ── */
@@ -5666,11 +5670,17 @@ function _mmGeoDetailHtml(id, by, regionColor) {
     var total = d[aud] || 0;
     if (!total) return '';
     var rows = catKeys.filter(function(c) { return (d.cats[c] && d.cats[c][aud] || 0) > 0; });
+    var hAct = "openGeoStateRecords('" + id + "','" + aud + "',null)";
     var trs = rows.map(function(c) {
-      return '<tr><td>' + esc(dispCat(c)) + '</td><td>' + fmt(d.cats[c][aud]) + '</td></tr>';
+      var cAct = "openGeoStateRecords('" + id + "','" + aud + "','" + c.replace(/'/g, "\\'") + "')";
+      return '<tr class="mgsd-clk" role="button" tabindex="0"'
+        + ' onclick="' + cAct + '" onkeydown="if(event.key===\'Enter\'){' + cAct + '}">'
+        + '<td>' + esc(dispCat(c)) + '</td><td>' + fmt(d.cats[c][aud]) + '</td></tr>';
     }).join('');
     return '<div class="mgsd-section">'
-      + '<div class="mgsd-sec-hd" style="color:' + color + '">' + esc(label) + ' · ' + fmt(total) + '</div>'
+      + '<div class="mgsd-sec-hd mgsd-clk" style="color:' + color + '" role="button" tabindex="0"'
+      + ' onclick="' + hAct + '" onkeydown="if(event.key===\'Enter\'){' + hAct + '}">'
+      + esc(label) + ' · ' + fmt(total) + '</div>'
       + '<table class="mgsd-tbl"><tbody>' + trs + '</tbody></table>'
       + '</div>';
   }
@@ -6966,6 +6976,15 @@ function _ovnEnsureAud(aud) {
   function _ovnAfter(a) {
     if (window._lastKpiCardId === 'oldvsnew' || window._lastKpiCardId === 'transacted') openKpiModal(window._lastKpiCardId);
     if (a === 'buyer' && mmModActive) { _mmModAnimate = false; mmPaint(); }
+    if (a === 'buyer' && _mrCtx && _mrCtx.geoState && _mrCtx.geoAud === 'buyer') {
+      var sid = _mrCtx.stateId, gc = _mrCtx.geoCat;
+      _mrRows = (_ovnRows.buyer || []).filter(function(r) {
+        if (_geoStateId(r.state) !== sid) return false;
+        if (gc && (r.category || '').toLowerCase() !== gc.toLowerCase()) return false;
+        return true;
+      });
+      _mrRender();
+    }
   }
   try {
     var sv = JSON.parse(localStorage.getItem(lsVKey) || 'null');
@@ -10096,6 +10115,44 @@ function openOsvRecords(status) {
   _mrRender();
 }
 
+// State-level geo drill-down — opens the records overlay filtered to one state,
+// one audience (seller/buyer), and optionally one category.
+function openGeoStateRecords(stateId, aud, cat) {
+  if (!stateId || !IN_STATES[stateId]) return;
+  var key = activeVertKey || selectedVert;
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var vertName = (vcfg && vcfg.name) || key || '';
+  var stateName = IN_STATES[stateId].name;
+  var catLabel = cat ? (CAT_SHORT[cat] || (cat.charAt(0).toUpperCase() + cat.slice(1))) : null;
+  var audLabel = aud === 'buyer' ? 'Buyers' : 'Sellers';
+  var label = stateName + ' · ' + audLabel + (catLabel ? ' · ' + catLabel : '');
+  function _filterRows(src) {
+    if (!Array.isArray(src)) return [];
+    return src.filter(function(r) {
+      if (_geoStateId(r.state) !== stateId) return false;
+      if (cat && (r.category || '').toLowerCase() !== cat.toLowerCase()) return false;
+      return true;
+    });
+  }
+  var srcRows = aud === 'buyer' ? (_ovnRows && _ovnRows.buyer) : vertRows;
+  _mrCtx = {
+    module: 'geo', geoState: true, stateId: stateId, geoAud: aud, geoCat: cat || null,
+    label: label, vertLabel: vertName, preStatus: null, forceSeller: aud !== 'buyer',
+    cfg: { label: label }
+  };
+  _mrRows = _filterRows(srcRows);
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  _mrColVis = {};
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+  if (aud === 'buyer' && (!_ovnRows || !_ovnRows.buyer)) _ovnEnsureAud('buyer');
+}
+
 // Transacted Sellers or Buyers breakdown — opens the KPI modal showing total
 // count and Metal/Plastic (or data-driven category) split for one audience.
 function openTxnAudModal(aud) {
@@ -10357,6 +10414,12 @@ function _mrRenderFilters() {
       + '<button class="vd-close" onclick="mrFClear()" style="flex-shrink:0">Clear</button>';
     return;
   }
+  if (_mrCtx.geoState) {
+    el.innerHTML =
+        '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search name, ID or GSTIN…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
+      + '<button class="vd-close" onclick="mrFClear()" style="flex-shrink:0">Clear</button>';
+    return;
+  }
   if (_mrCtx.aging) {
     el.innerHTML =
         '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search seller, ID or GSTIN…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
@@ -10423,6 +10486,7 @@ function _mrPreFilter(r) {
     if (_mrCtx.tatCat && r.category !== _mrCtx.tatCat) return false;
     return true;
   }
+  if (_mrCtx.geoState) return true;
   if (_mrCtx.cfg && _mrCtx.cfg.isTxnView && !r.hasTransacted) return false;
   if (_mrCtx.preStatus && r.status !== _mrCtx.preStatus) return false;
   return true;
@@ -10455,6 +10519,13 @@ function _mrUserFilter(r) {
     if (tq && (r.name || '').toLowerCase().indexOf(tq) === -1
            && (r.vendorType || '').toLowerCase().indexOf(tq) === -1
            && String(r.id || '').toLowerCase().indexOf(tq) === -1) return false;
+    return true;
+  }
+  if (_mrCtx && _mrCtx.geoState) {
+    var gq = (f.search || '').toLowerCase();
+    if (gq && (r.name  || '').toLowerCase().indexOf(gq) === -1
+           && (r.gstin || '').toLowerCase().indexOf(gq) === -1
+           && String(r.id || '').toLowerCase().indexOf(gq) === -1) return false;
     return true;
   }
   if (_mrCtx && _mrCtx.osv) {
