@@ -4843,11 +4843,13 @@ function _mmVertModules(key) {
     var ag = _mmAging(key);   // seller + buyer ageing (buyer rows included when loaded)
     var tTiles = [];
     if (sTxn != null || bTxn != null) {
-      window._mmTxnAud = {
-        key: key,
-        seller: { total: sTxn || 0, metal: sMtxn, plastic: sPtxn, cats: catTxn },
-        buyer:  { total: bTxn || 0, metal: bMtxn, plastic: bPtxn, cats: catTxn }
-      };
+      if (key === activeVertKey) {
+        window._mmTxnAud = {
+          key: key,
+          seller: { total: sTxn || 0, metal: sMtxn, plastic: sPtxn, cats: catTxn },
+          buyer:  { total: bTxn || 0, metal: bMtxn, plastic: bPtxn, cats: catTxn }
+        };
+      }
       tTiles.push(
         { label:'Sellers', v:sTxn || 0, click:"openTxnAudModal('seller')", tip:'View seller transaction breakdown' },
         { label:'Buyers',  v:bTxn || 0, click:"openTxnAudModal('buyer')",  tip:'View buyer transaction breakdown' }
