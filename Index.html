@@ -4489,13 +4489,14 @@ function _mmAgingBucket(r, now) {
 var AGING_LABELS = { a:'0–30 days', c:'31–60 days', d:'60+ days' };
 
 function _mmAging(key) {
-  if (key !== activeVertKey || !Array.isArray(vertRows) || !vertRows.length) return null;
+  if (key !== activeVertKey) return null;
   var now = new Date(), b = { a:0, c:0, d:0 }, any = false;
-  vertRows.forEach(function(r) {
-    var k = _mmAgingBucket(r, now);
-    if (!k) return;
-    any = true; b[k]++;
-  });
+  function _processAgeRows(rows) {
+    if (!Array.isArray(rows)) return;
+    rows.forEach(function(r) { var k = _mmAgingBucket(r, now); if (!k) return; any = true; b[k]++; });
+  }
+  _processAgeRows(vertRows);                              // seller rows (always loaded)
+  _processAgeRows(_ovnRows && _ovnRows.buyer || null);   // buyer rows when available
   return any ? b : null;
 }
 
@@ -4823,26 +4824,24 @@ function _mmVertModules(key) {
       }) });
   }
 
-  // 4 — Transactions (SELLERS ONLY — sellers transact with buyers, so buyer
-  //     figures don't apply here). All numbers are seller-side.
+  // 4 — Transactions (Sellers + Buyers combined; GMV remains seller-side only).
   var sTxn = (vs.transacted != null) ? vs.transacted : null;
-  if (sTxn != null || gmv != null) {
-    var sOnb = vs.completed || 0;
-    var sNonTxn = sTxn != null ? Math.max(0, sOnb - sTxn) : null;
+  var bTxn = (vb.transacted != null) ? vb.transacted : null;
+  if (sTxn != null || bTxn != null || gmv != null) {
+    var sOnb = vs.completed || 0, bOnb = vb.completed || 0;
+    var combinedTxn    = (sTxn || 0) + (bTxn || 0);
+    var combinedNonTxn = Math.max(0, (sOnb + bOnb) - combinedTxn);
     var sMtxn = vs.metalTransacted || 0, sPtxn = vs.plasticTransacted || 0;
-    var ag = _mmAging(key);   // ageing is computed from the loaded (seller) rows
+    var bMtxn = vb.metalTransacted || 0, bPtxn = vb.plasticTransacted || 0;
+    // Trigger background load of buyer rows so ageing includes both audiences.
+    if (key === activeVertKey) _ovnEnsureAud('buyer');
+    var ag = _mmAging(key);   // seller + buyer ageing (buyer rows included when loaded)
     var tTiles = [];
-    if (sTxn != null) {
-      // Sellers only — sellers transact with buyers, so buyer figures don't apply.
-      if (catTxn.length) catTxn.forEach(function(x){ tTiles.push({ label:x.cat, v:x.s }); });
-      else { tTiles.push({ label:'Metal', v:sMtxn }, { label:'Plastic', v:sPtxn }); }
+    if (sTxn != null || bTxn != null) {
+      if (catTxn.length) catTxn.forEach(function(x){ tTiles.push({ label:x.cat, v:x.s + x.b }); });
+      else { tTiles.push({ label:'Metal', v:sMtxn + bMtxn }, { label:'Plastic', v:sPtxn + bPtxn }); }
     }
     if (ag) {
-      // Leading with "Ageing" groups the three tiles at a glance; the sub-line names
-      // the population, since these count onboarded sellers that have NOT transacted,
-      // bucketed by days since onboarding (see _mmAging).
-      // Each card opens the sellers in its own bucket; the drill-down filters with
-      // the same _mmAgingBucket predicate, so the row count matches the number here.
       tTiles.push({ label:'Ageing · 0–30 days',  v:ag.a, tone:'good', sub:'Non-transacted',
                     click:"openAgingRecords('a')", tip:'View the 0–30 day sellers' },
                   { label:'Ageing · 31–60 days', v:ag.c, tone:'warn', sub:'Non-transacted',
@@ -4851,17 +4850,21 @@ function _mmVertModules(key) {
                     click:"openAgingRecords('d')", tip:'View the 60+ day sellers' });
     }
     if (gmv != null) {
-      // Seller-side throughout, so the category tiles sum to the total tile.
+      // GMV is seller-side only — buyer-side transaction value is excluded by design.
       _gmvReconcile(gmv, catGmv, 'Transactions panel · ' + key);
       tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true });
       catGmv.forEach(function(x){ tTiles.push({ label:'GMV · ' + x.cat, v:fmtINR(x.v), raw:true }); });
     }
     mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transaction activity',
       panel:{
-        eye:'Transaction activity', badge:'Sellers only',
-        headline: sTxn != null ? { v:sTxn, label:'Transacted Sellers (Unique)', tone:'accent' } : { v:gmv, label:'Total GMV', raw:true, rawv:fmtINR(gmv), tone:'ink' },
-        bar: (sTxn != null) ? [ { label:'Transacted', v:sTxn, color:'#16a34a' },
-                                { label:'Non-Transacted', v:sNonTxn, color:'#d97706' } ] : null,
+        eye:'Transaction activity', badge:'Sellers & Buyers',
+        headline: (sTxn != null || bTxn != null)
+          ? { v:combinedTxn, label:'Transacted (Unique · Sellers & Buyers)', tone:'accent' }
+          : { v:gmv, label:'Total GMV', raw:true, rawv:fmtINR(gmv), tone:'ink' },
+        bar: (sTxn != null || bTxn != null)
+          ? [ { label:'Transacted', v:combinedTxn, color:'#16a34a' },
+              { label:'Non-Transacted', v:combinedNonTxn, color:'#d97706' } ]
+          : null,
         tiles: tTiles, records:'transacted'
       }
     });
@@ -6888,11 +6891,15 @@ function _ovnEnsureAud(aud) {
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
   var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
   var lsVKey = STORE_PFX + 'vr_' + aud + '_' + key;
+  function _ovnAfter(a) {
+    if (window._lastKpiCardId === 'oldvsnew' || window._lastKpiCardId === 'transacted') openKpiModal(window._lastKpiCardId);
+    if (a === 'buyer' && mmModActive) { _mmModAnimate = false; mmPaint(); }
+  }
   try {
     var sv = JSON.parse(localStorage.getItem(lsVKey) || 'null');
     if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
       _ovnRows[aud] = sv.rows;
-      if (window._lastKpiCardId === 'oldvsnew' || window._lastKpiCardId === 'transacted') openKpiModal(window._lastKpiCardId);
+      _ovnAfter(aud);
       return;
     }
   } catch (e) {}
@@ -6903,11 +6910,11 @@ function _ovnEnsureAud(aud) {
         _ovnRows[aud] = data.success ? (data.rows || []) : [];
         try { localStorage.setItem(lsVKey, JSON.stringify({ pKey: myPKey, rows: _ovnRows[aud] })); } catch (e) {}
       } catch (e) { _ovnRows[aud] = []; }
-      if (window._lastKpiCardId === 'oldvsnew' || window._lastKpiCardId === 'transacted') openKpiModal(window._lastKpiCardId);
+      _ovnAfter(aud);
     })
     .withFailureHandler(function() {
       _ovnRows[aud] = [];
-      if (window._lastKpiCardId === 'oldvsnew' || window._lastKpiCardId === 'transacted') openKpiModal(window._lastKpiCardId);
+      _ovnAfter(aud);
     })
     .getVerticalRows(key, JSON.stringify(f));
 }
