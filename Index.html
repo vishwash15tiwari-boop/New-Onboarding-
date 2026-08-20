@@ -761,6 +761,21 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .km-sec{padding:14px 18px;border-bottom:1px solid var(--border)}
 .km-sec:last-child{border-bottom:none}
 .km-sec-t{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px}
+/* Transacted records table inside the kpi-modal */
+.km-txn-sec{border-top:1px solid var(--border)}
+.km-txn-sec-t{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);padding:12px 18px 0}
+.km-txn-wrap{max-height:260px;overflow-y:auto;overscroll-behavior:contain}
+.km-txn-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.km-txn-tbl thead th{position:sticky;top:0;z-index:1;background:var(--sidebar);padding:7px 10px 6px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--txt3);white-space:nowrap;border-bottom:1px solid var(--border)}
+.km-txn-tbl thead th:last-child{text-align:right}
+.km-txn-tbl tbody tr{border-bottom:1px solid var(--border)}
+.km-txn-tbl tbody tr:last-child{border-bottom:none}
+.km-txn-tbl tbody td{padding:8px 10px;vertical-align:middle;color:var(--txt)}
+.km-txn-tbl tbody td:first-child{font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.km-txn-tbl tbody td:nth-child(2){color:var(--txt2);font-size:10px;white-space:nowrap}
+.km-txn-tbl tbody td:nth-child(3){color:var(--txt2);font-size:9.5px;font-family:monospace;white-space:nowrap}
+.km-txn-tbl tbody td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--txt)}
+.km-txn-empty{padding:20px;text-align:center;font-size:11px;color:var(--txt3)}
 /* Mini status bar */
 .km-sbar{display:flex;height:4px;border-radius:2px;overflow:hidden;gap:2px;margin-bottom:10px}
 /* Status grid — 4 tiles */
@@ -2892,30 +2907,33 @@ body.view-gst #mm-crumbs{display:none}
 .mg-dt-l{font-size:.72rem;color:var(--txt2)}
 /* ── State detail overlay — positioned inside the map's bottom-right white space ── */
 .mg-state-detail{flex:0 0 34%;min-width:0;border-left:1px solid var(--border);overflow:hidden;font-family:inherit;display:flex;flex-direction:column}
-.mgsd-half{flex:0 0 50%;min-height:0;overflow:hidden;overflow-y:auto}
+.mgsd-half{min-height:0;overflow:hidden;overflow-y:auto}
+#mg-state-hover{flex:0 0 auto;max-height:60%;overflow-y:auto}
+#mg-state-fixed{flex:1 1 0;display:flex;flex-direction:column;overflow:hidden}
 .mgsd-half+.mgsd-half{border-top:1px solid var(--border)}
-.mgsd-fix-hd{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);padding:6px 12px 4px;background:var(--sidebar);position:sticky;top:0;border-bottom:1px solid var(--border)}
+.mgsd-fix-hd{flex:0 0 auto;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);padding:7px 12px 5px;background:var(--sidebar);position:sticky;top:0;border-bottom:1px solid var(--border)}
+.mgsd-rgn-wrap{flex:1 1 0;overflow-y:auto}
 .mgsd-rgn-tbl{width:100%;border-collapse:collapse;table-layout:fixed}
 .mgsd-col-v{width:46px}
 .mgsd-rgn-tbl thead tr{border-bottom:1px solid var(--border)}
-.mgsd-rgn-tbl thead th{padding:5px 8px 4px;text-align:right;font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);white-space:nowrap}
+.mgsd-rgn-tbl thead th{padding:6px 8px 5px;text-align:right;font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);white-space:nowrap}
 .mgsd-rgn-tbl thead th:first-child{text-align:left;padding-left:12px}
-.mgsd-aud td{font-size:11px;font-weight:700;color:var(--txt);padding:5px 8px 3px;line-height:1.2}
+.mgsd-aud td{font-size:11px;font-weight:700;color:var(--txt);padding:7px 8px 5px;line-height:1.2}
 .mgsd-aud td:first-child{padding-left:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mgsd-aud.mgsd-sep td{border-top:1px solid var(--border)}
-.mgsd-cat td{font-size:9.5px;font-weight:400;color:var(--txt2);padding:2px 8px;line-height:1.3}
+.mgsd-cat td{font-size:9.5px;font-weight:400;color:var(--txt2);padding:3px 8px;line-height:1.3}
 .mgsd-cat td:first-child{padding-left:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mgsd-cat:last-child td{padding-bottom:5px}
+.mgsd-cat:last-child td{padding-bottom:8px}
 .mgsd-rgn-tbl td{font-variant-numeric:tabular-nums}
 .mgsd-rgn-tbl td:not(:first-child){text-align:right;font-weight:600;color:var(--txt)}
-.mgsd-prompt{padding:24px 14px;text-align:center;color:var(--txt3);font-size:11px;line-height:1.7}
-.mgsd-hd{padding:8px 12px 6px;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--txt);border-bottom:1px solid var(--border);background:var(--sidebar);min-width:0}
+.mgsd-prompt{padding:20px 14px;text-align:center;color:var(--txt3);font-size:11px;line-height:1.7}
+.mgsd-hd{padding:9px 12px 7px;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--txt);border-bottom:1px solid var(--border);background:var(--sidebar);min-width:0}
 .mgsd-total{margin-left:auto;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt3);white-space:nowrap;flex-shrink:0}
 .mgsd-section:not(:first-child){border-top:1px solid var(--border)}
-.mgsd-sec-hd{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px 3px}
+.mgsd-sec-hd{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:6px 12px 4px}
 .mgsd-tbl{width:100%;border-collapse:collapse}
 .mgsd-tbl tr:not(:last-child) td{border-bottom:1px solid var(--border)}
-.mgsd-tbl td{padding:4px 12px;font-size:10.5px}
+.mgsd-tbl td{padding:5px 12px;font-size:10.5px}
 .mgsd-tbl td:first-child{color:var(--txt);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px}
 .mgsd-tbl td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;width:32px;color:var(--txt)}
 .mgsd-clk{cursor:pointer;transition:background .12s,color .12s;border-radius:3px}
@@ -2971,6 +2989,11 @@ body.view-gst #mm-crumbs{display:none}
 .mp-go{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);opacity:0;transition:opacity .15s}
 .mp-tile.ch:hover .mp-go{opacity:1}
 .mp-tile-s{font-size:.72rem;color:var(--txt3);margin-top:4px}
+.mp-tile-cats{display:flex;flex-wrap:wrap;align-items:center;gap:3px 5px;margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
+.mp-tile-cat{display:inline-flex;align-items:baseline;gap:3px;white-space:nowrap}
+.mp-tile-cat-v{font-size:.8rem;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+.mp-tile-cat-l{font-size:.63rem;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em}
+.mp-tile-cat-sep{font-size:.7rem;color:var(--border);margin:0 1px;user-select:none}
 .mp-vd{margin-top:20px}
 @media(max-width:520px){.mp-body{padding:16px}.mp-h-v{font-size:2.1rem}}
 
@@ -4863,9 +4886,15 @@ function _mmVertModules(key) {
           buyer:  { total: bTxn || 0, metal: bMtxn, plastic: bPtxn, cats: catTxn }
         };
       }
+      var sBd = (catTxn && catTxn.length)
+        ? catTxn.filter(function(x){return (x.s||0)>0;}).map(function(x){return {l:CAT_SHORT[x.cat.toLowerCase()]||x.cat,v:x.s};})
+        : [{l:'Plastic',v:sPtxn},{l:'Metal',v:sMtxn}].filter(function(x){return x.v>0;});
+      var bBd = (catTxn && catTxn.length)
+        ? catTxn.filter(function(x){return (x.b||0)>0;}).map(function(x){return {l:CAT_SHORT[x.cat.toLowerCase()]||x.cat,v:x.b};})
+        : [{l:'Plastic',v:bPtxn},{l:'Metal',v:bMtxn}].filter(function(x){return x.v>0;});
       tTiles.push(
-        { label:'Sellers', v:sTxn || 0, click:"openTxnAudModal('seller')", tip:'View seller transaction breakdown' },
-        { label:'Buyers',  v:bTxn || 0, click:"openTxnAudModal('buyer')",  tip:'View buyer transaction breakdown' }
+        { label:'Sellers', v:sTxn || 0, click:"openTxnAudModal('seller')", tip:'View seller transaction breakdown', breakdown:sBd },
+        { label:'Buyers',  v:bTxn || 0, click:"openTxnAudModal('buyer')",  tip:'View buyer transaction breakdown', breakdown:bBd }
       );
     }
     if (ag) {
@@ -5761,10 +5790,10 @@ function _mmGeoFixedHtml() {
   var sellerHtml = audRows('seller', '#1DC797', 'Sellers', false);
   var buyerHtml  = audRows('buyer',  '#005DFF', 'Buyers',  !!sellerHtml);
   return '<div class="mgsd-fix-hd">Regional Overview</div>'
-    + '<table class="mgsd-rgn-tbl">'
+    + '<div class="mgsd-rgn-wrap"><table class="mgsd-rgn-tbl">'
     + '<colgroup><col><col class="mgsd-col-v"><col class="mgsd-col-v"></colgroup>'
     + '<thead><tr><th></th><th>North</th><th>South</th></tr></thead>'
-    + '<tbody>' + sellerHtml + buyerHtml + '</tbody></table>';
+    + '<tbody>' + sellerHtml + buyerHtml + '</tbody></table></div>';
 }
 
 function mmGeoHover(id, on) {
@@ -6012,7 +6041,15 @@ function mmRenderModPanel() {
             + ' onkeydown="if(event.key===\'Enter\'){' + act + '}"' : '')
         + '><div class="mp-tile-v" style="color:' + tc + '">' + val + '</div>'
         + '<div class="mp-tile-l">' + esc(t.label) + (chainable ? ' <span class="mp-go">↦ map</span>' : '') + '</div>'
-        + (t.sub ? '<div class="mp-tile-s">' + esc(t.sub) + '</div>' : '') + '</div>';
+        + (t.sub ? '<div class="mp-tile-s">' + esc(t.sub) + '</div>' : '')
+        + (t.breakdown && t.breakdown.length
+            ? '<div class="mp-tile-cats">'
+              + t.breakdown.map(function(c, i) {
+                  return (i > 0 ? '<span class="mp-tile-cat-sep">·</span>' : '')
+                    + '<span class="mp-tile-cat"><span class="mp-tile-cat-v">' + fmt(c.v) + '</span>'
+                    + '<span class="mp-tile-cat-l">' + esc(c.l) + '</span></span>';
+                }).join('') + '</div>'
+            : '') + '</div>';
     }).join('') + '</div>';
   }
 
@@ -6807,6 +6844,7 @@ function openKpiModal(cardId) {
 function closeKpiModal() {
   var modal = document.getElementById('kpi-modal');
   _modalCloseClass(modal, 'km-open', _kpiEsc);
+  if (window._txnAudModalCtx) window._txnAudModalCtx.open = false;
 }
 
 function _gmvCatRender(aud, cats) {
@@ -6998,6 +7036,9 @@ function _ovnEnsureAud(aud) {
     if (a === 'buyer' && _mrCtx && _mrCtx.audRec && _mrCtx.geoAud === 'buyer') {
       _mrRows = (_ovnRows.buyer || []).filter(function(r) { return r.status === 'COMPLETED'; });
       _mrRender();
+    }
+    if (a === 'buyer' && window._txnAudModalCtx && window._txnAudModalCtx.aud === 'buyer' && window._txnAudModalCtx.open) {
+      openTxnAudModal('buyer');
     }
   }
   try {
@@ -10233,6 +10274,36 @@ function openTxnAudModal(aud) {
     if (ad.plastic) catItems.push({ l:'Plastic', v:fmt(ad.plastic), c:color });
   }
   var catSection = catItems.length ? sec('Category Breakdown', srow(catItems)) : '';
+
+  /* Records table */
+  window._txnAudModalCtx = { aud: aud, open: true };
+  var srcRows = isS ? (vertRows || []) : ((_ovnRows && _ovnRows.buyer) || null);
+  var needsLoad = !isS && srcRows === null;
+  var txnRows = srcRows ? srcRows.filter(function(r) { return r.hasTransacted; }) : [];
+  function buildTxnTable(rows) {
+    if (!rows.length) return '<div class="km-txn-empty">No records found.</div>';
+    var sorted = rows.slice().sort(function(a, b) { return (b.txnValue || 0) - (a.txnValue || 0); });
+    var trs = sorted.map(function(r) {
+      var gmv = (r.txnValue != null && r.txnValue > 0) ? fmtINR(r.txnValue) : '—';
+      return '<tr>'
+        + '<td title="' + esc(r.name || '') + '">' + esc(r.name || '—') + '</td>'
+        + '<td>' + esc(r.vendorType || r.category || '—') + '</td>'
+        + '<td>' + esc(r.gstin || '—') + '</td>'
+        + '<td style="color:' + color + '">' + esc(gmv) + '</td>'
+        + '</tr>';
+    }).join('');
+    return '<table class="km-txn-tbl">'
+      + '<thead><tr><th>Name</th><th>Type</th><th>GSTIN</th><th>Txn Value</th></tr></thead>'
+      + '<tbody>' + trs + '</tbody></table>';
+  }
+  var recInner = needsLoad
+    ? '<div class="km-txn-empty">Loading records…</div>'
+    : buildTxnTable(txnRows);
+  var recSection = '<div class="km-txn-sec">'
+    + '<div class="km-txn-sec-t">Records</div>'
+    + '<div class="km-txn-wrap">' + recInner + '</div>'
+    + '</div>';
+
   el.innerHTML =
     '<div class="km-head"><div style="display:flex;align-items:center;min-width:0">'
     + '<div class="km-icon">' + icon + '</div>'
@@ -10242,8 +10313,10 @@ function openTxnAudModal(aud) {
     + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button></div>'
     + '<div class="km-hero"><div class="km-hero-num" style="color:' + color + '">' + fmt(ad.total) + '</div>'
     + '<div class="km-hero-lbl">Transacted ' + esc(label) + '</div></div>'
-    + catSection;
+    + catSection
+    + recSection;
   _modalOpenClass(modal, 'km-open', _kpiEsc);
+  if (needsLoad) _ovnEnsureAud('buyer');
 }
 
 // TAT records — the vendors behind one cell of the Average TAT matrix.
