@@ -2895,13 +2895,19 @@ body.view-gst #mm-crumbs{display:none}
 .mgsd-half{flex:0 0 50%;min-height:0;overflow:hidden;overflow-y:auto}
 .mgsd-half+.mgsd-half{border-top:1px solid var(--border)}
 .mgsd-fix-hd{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);padding:6px 12px 4px;background:var(--sidebar);position:sticky;top:0;border-bottom:1px solid var(--border)}
-.mgsd-rgn-tbl{width:100%;border-collapse:collapse}
-.mgsd-rgn-tbl thead th{padding:3px 8px;text-align:right;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3)}
-.mgsd-rgn-tbl thead th:first-child{text-align:left}
-.mgsd-aud td{font-size:11px;font-weight:700;color:var(--txt);padding:4px 8px 2px}
-.mgsd-cat td{font-size:9.5px;color:var(--txt2);padding:1px 8px 1px 16px}
+.mgsd-rgn-tbl{width:100%;border-collapse:collapse;table-layout:fixed}
+.mgsd-col-v{width:46px}
+.mgsd-rgn-tbl thead tr{border-bottom:1px solid var(--border)}
+.mgsd-rgn-tbl thead th{padding:5px 8px 4px;text-align:right;font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);white-space:nowrap}
+.mgsd-rgn-tbl thead th:first-child{text-align:left;padding-left:12px}
+.mgsd-aud td{font-size:11px;font-weight:700;color:var(--txt);padding:5px 8px 3px;line-height:1.2}
+.mgsd-aud td:first-child{padding-left:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mgsd-aud.mgsd-sep td{border-top:1px solid var(--border)}
+.mgsd-cat td{font-size:9.5px;font-weight:400;color:var(--txt2);padding:2px 8px;line-height:1.3}
+.mgsd-cat td:first-child{padding-left:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mgsd-cat:last-child td{padding-bottom:5px}
 .mgsd-rgn-tbl td{font-variant-numeric:tabular-nums}
-.mgsd-rgn-tbl td:not(:first-child){text-align:right}
+.mgsd-rgn-tbl td:not(:first-child){text-align:right;font-weight:600;color:var(--txt)}
 .mgsd-prompt{padding:24px 14px;text-align:center;color:var(--txt3);font-size:11px;line-height:1.7}
 .mgsd-hd{padding:8px 12px 6px;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--txt);border-bottom:1px solid var(--border);background:var(--sidebar);min-width:0}
 .mgsd-total{margin-left:auto;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt3);white-space:nowrap;flex-shrink:0}
@@ -5729,7 +5735,7 @@ function _mmGeoFixedHtml() {
   });
   var catKeys = Object.keys(allCats).sort(function(a, b) { return allCats[b] - allCats[a]; });
   function dispCat(c) { return CAT_SHORT[c] || (c.charAt(0).toUpperCase() + c.slice(1)); }
-  function audRows(aud, color, label) {
+  function audRows(aud, color, label, sep) {
     var n = rgn.North[aud] || 0, s = rgn.South[aud] || 0;
     if (!n && !s) return '';
     var catTrs = catKeys.filter(function(c) {
@@ -5740,7 +5746,8 @@ function _mmGeoFixedHtml() {
       return '<tr class="mgsd-cat"><td>· ' + esc(dispCat(c)) + '</td>'
         + '<td>' + fmt(nc) + '</td><td>' + fmt(sc) + '</td></tr>';
     }).join('');
-    return '<tr class="mgsd-aud"><td style="color:' + color + '">' + esc(label) + '</td>'
+    return '<tr class="mgsd-aud' + (sep ? ' mgsd-sep' : '') + '">'
+      + '<td style="color:' + color + '">' + esc(label) + '</td>'
       + '<td>' + fmt(n) + '</td><td>' + fmt(s) + '</td></tr>' + catTrs;
   }
   var hasData = rgn.North.seller || rgn.North.buyer || rgn.South.seller || rgn.South.buyer;
@@ -5748,13 +5755,13 @@ function _mmGeoFixedHtml() {
     return '<div class="mgsd-fix-hd">Regional Overview</div>'
       + '<div class="mgsd-prompt" style="font-size:10px;padding:14px">No regional data.</div>';
   }
+  var sellerHtml = audRows('seller', '#1DC797', 'Sellers', false);
+  var buyerHtml  = audRows('buyer',  '#005DFF', 'Buyers',  !!sellerHtml);
   return '<div class="mgsd-fix-hd">Regional Overview</div>'
-    + '<table class="mgsd-rgn-tbl"><thead><tr>'
-    + '<th></th><th>North</th><th>South</th>'
-    + '</tr></thead><tbody>'
-    + audRows('seller', '#1DC797', 'Sellers')
-    + audRows('buyer',  '#005DFF', 'Buyers')
-    + '</tbody></table>';
+    + '<table class="mgsd-rgn-tbl">'
+    + '<colgroup><col><col class="mgsd-col-v"><col class="mgsd-col-v"></colgroup>'
+    + '<thead><tr><th></th><th>North</th><th>South</th></tr></thead>'
+    + '<tbody>' + sellerHtml + buyerHtml + '</tbody></table>';
 }
 
 function mmGeoHover(id, on) {
