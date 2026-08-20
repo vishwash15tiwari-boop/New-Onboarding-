@@ -5491,8 +5491,10 @@ var MF_STAGES = [
 
 // mmSelectFunnelStage removed: stage cards now open their records directly.
 
-function _mfCell(v, na) {
-  return '<div class="mf-mx-cell' + (na ? ' na' : '') + '">' + (na ? '—' : esc(v)) + '</div>';
+function _mfCell(v, na, color) {
+  return '<div class="mf-mx-cell' + (na ? ' na' : '') + '"'
+    + (color && !na ? ' style="color:' + color + '"' : '') + '>'
+    + (na ? '—' : esc(v)) + '</div>';
 }
 // Stage breakdown grid: rows = Sellers / Buyers, columns = EVERY category the
 // vertical has, in volume order, followed by a Total column. Showing all of them
@@ -5511,8 +5513,8 @@ function _mfMatrix(catRows, sTot, bTot) {
     cols.forEach(function(c, i) {
       head += '<div class="mf-mx-hd" title="' + esc(c.cat) + '"><span class="mf-cat-dot" style="background:'
         + MM_CAT_COLORS[i % MM_CAT_COLORS.length] + '"></span><span>' + esc(_catLabel(c.cat)) + '</span></div>';
-      sRow += _mfCell(fmt(c.s), false);
-      bRow += _mfCell(fmt(c.b), false);
+      sRow += _mfCell(fmt(c.s), false, MM_CAT_COLORS[i % MM_CAT_COLORS.length]);
+      bRow += _mfCell(fmt(c.b), false, MM_CAT_COLORS[i % MM_CAT_COLORS.length]);
     });
     head += '<div class="mf-mx-hd tot">Total</div>';
     sRow += '<div class="mf-mx-cell tot">' + fmt(sTot || 0) + '</div>';
