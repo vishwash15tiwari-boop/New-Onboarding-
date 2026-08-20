@@ -2742,22 +2742,18 @@ body.view-gst #mm-crumbs{display:none}
 /* Nav shrinks to its own content; centred by default so the dashboard card
    reads as the visual anchor of the screen. */
 .mmnav{flex:0 1 auto;min-width:0}
-/* Detail panel always has order:-1 so it is visually to the LEFT of the nav.
-   In the default state it is 0-width and invisible, so the centering of the
-   nav is unaffected; when a vertical is selected it grows into the left half. */
-.mmdetail{order:-1;flex:0 0 0px;opacity:0;overflow:hidden;align-self:stretch;
+/* Detail panel sits to the RIGHT of the nav (DOM order: mmnav first, mmdetail second).
+   In the default state it is 0-width and invisible so nav centring is unaffected. */
+.mmdetail{flex:0 0 0px;opacity:0;overflow:hidden;align-self:stretch;
   transition:flex-basis .45s cubic-bezier(.4,0,.2,1),opacity .35s ease}
 .mmworkspace.has-panel{gap:22px;justify-content:flex-start}
-/* When the panel is open the nav sits to the right of the expanding detail. */
-.mmworkspace.has-panel .mmnav{flex:0 1 auto}
+/* When a panel is open the nav fills the left and the detail anchors the right. */
+.mmworkspace.has-panel .mmnav{flex:1 1 auto}
 .mmworkspace.has-panel .mmdetail{flex:1 1 auto;flex-basis:clamp(520px,54%,900px);opacity:1;
   position:sticky;top:12px;max-height:calc(100vh - 26px);overflow-y:auto;overflow-x:hidden;
   scrollbar-width:thin}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar{width:8px}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
-/* Breakup (funnel) opens as a dedicated right-side panel; nav fills the remaining left space */
-.mmworkspace.has-panel.panel-right .mmdetail{order:1;flex:0 0 clamp(360px,40%,500px);flex-basis:clamp(360px,40%,500px)}
-.mmworkspace.has-panel.panel-right .mmnav{flex:1 1 auto}
 /* inside the side canvas the panels are simply shown/hidden — the canvas slide is the reveal */
 .mmdetail #mm-funnel,.mmdetail #mm-geo,.mmdetail #mm-modpanel{max-height:none;opacity:1;overflow:visible;margin:0}
 .mmdetail #mm-funnel:not(.mf-open),.mmdetail #mm-geo:not(.mg-open),.mmdetail #mm-modpanel:not(.mp-open){display:none}
@@ -5314,26 +5310,22 @@ function mmCardAction(action) {
 
 // Split the workspace into nav + side detail whenever any panel is open.
 // Uses a FLIP (First-Last-Invert-Play) animation to slide the nav smoothly
-// between its centred default position and its right-side active position.
+// between its centred default position and its left-side active position.
 function _mmSyncDetail() {
   var ws  = document.getElementById('mm-workspace');
   var nav = document.getElementById('mm-nav');
   if (!ws) return;
   var open = !!(mmFunnelActive || mmGeoActive || mmModActive);
-  // Funnel/Breakup docks to the RIGHT; geo and module panels dock to the LEFT.
-  var isRight = open && !!mmFunnelActive;
   var flipDx = 0;
   if (nav && motionOK()) {
     // First: measure nav before layout change
     var before = nav.getBoundingClientRect().left;
     ws.classList.toggle('has-panel', open);
-    ws.classList.toggle('panel-right', isRight);
     // Last: measure nav after layout change
     var after = nav.getBoundingClientRect().left;
     flipDx = Math.round(before - after);
   } else {
     ws.classList.toggle('has-panel', open);
-    ws.classList.toggle('panel-right', isRight);
   }
   // Invert + Play: snap nav back to old position then animate to new one
   if (flipDx && nav) {
