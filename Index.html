@@ -2902,6 +2902,10 @@ body.view-gst #mm-crumbs{display:none}
 .mgsd-tbl td{padding:4px 12px;font-size:10.5px}
 .mgsd-tbl td:first-child{color:var(--txt);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px}
 .mgsd-tbl td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;width:32px;color:var(--txt)}
+.mgsd-reg-sep{border-top:1.5px dashed var(--border);margin:4px 0}
+.mgsd-reg-hd{padding:5px 12px 2px;display:flex;align-items:center;gap:5px;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.mgsd-reg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.mgsd-reg-aud{font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 12px 1px;opacity:.8}
 @media(max-width:720px){.mg-map{flex-direction:column}.mg-map-svg-wrap{flex:none;width:100%}.mg-state-detail{flex:none;width:100%;border-left:none;border-top:1px solid var(--border)}.mg-legend,.mg-loading{min-width:0}}
 
 /* ── Generic inline module panel (Volume / Transactions / Ratings / OSV / Existing) ── */
@@ -4500,6 +4504,24 @@ function _mmAging(key) {
   return any ? b : null;
 }
 
+// Aggregate all-states `by` bucket (from _geoAgg([],'All')) into per-region totals.
+function _buildRegSummary(by) {
+  var out = {};
+  Object.keys(by).forEach(function(id) {
+    var reg = IN_STATES[id] && IN_STATES[id].region; if (!reg) return;
+    if (!out[reg]) out[reg] = { seller:0, buyer:0, cats:{} };
+    var d = by[id];
+    out[reg].seller += d.seller || 0;
+    out[reg].buyer  += d.buyer  || 0;
+    Object.keys(d.cats || {}).forEach(function(c) {
+      if (!out[reg].cats[c]) out[reg].cats[c] = { seller:0, buyer:0 };
+      out[reg].cats[c].seller += d.cats[c].seller || 0;
+      out[reg].cats[c].buyer  += d.cats[c].buyer  || 0;
+    });
+  });
+  return out;
+}
+
 // ── node factory helpers ──
 function _d(t, v, ic) { return { t:t, v:v, ic:ic || MM_IC.grid, kind:'detail', tone:'t-ink', leaf:true }; }
 function _vd(action) { return { t:'View Details', ic:MM_IC.doc, kind:'vd', action:action || 'records' }; }
@@ -5603,8 +5625,8 @@ function _geoCats() {
 // Aggregate loaded rows into per-state buckets for the active region (onboarded only).
 // Each bucket also carries a per-category seller/buyer split keyed by lower-cased
 // category name, with anything outside the displayed set folded into "other".
-function _geoAgg(cats) {
-  var region = _geo.region, filt = _geo.cat, by = {};
+function _geoAgg(cats, regionOverride) {
+  var region = (regionOverride !== undefined) ? regionOverride : _geo.region, filt = _geo.cat, by = {};
   var known = {};
   (cats || []).forEach(function(c) { if (c !== 'Other') known[c.toLowerCase()] = 1; });
   var hasOther = (cats || []).indexOf('Other') >= 0;
@@ -5634,7 +5656,7 @@ function _geoCatN(bucket, cat, aud) {
 
 // Build the compact Sellers/Buyers table rendered inside the map's white space.
 // Uses _geoAgg([]) so all categories are shown unfolded (no cap/folding into "Other").
-function _mmGeoDetailHtml(id, by, regionColor) {
+function _mmGeoDetailHtml(id, by, regionColor, regSummary) {
   if (!id || !by || !by[id]) {
     return '<div class="mgsd-prompt">'
       + (id ? 'No records<br>for this state.' : 'Hover or click<br>a state to explore.')
@@ -5662,22 +5684,56 @@ function _mmGeoDetailHtml(id, by, regionColor) {
   }
   // Truncate long state names so the header stays on one line.
   var shortNm = nm.length > 14 ? nm.slice(0, 13) + '…' : nm;
-  return '<div class="mgsd-hd">'
+  var stateHtml = '<div class="mgsd-hd">'
     + '<span class="mg-swatch" style="background:' + regionColor + ';flex-shrink:0"></span>'
     + esc(shortNm)
     + '<span class="mgsd-total">' + fmt(d.total) + '</span></div>'
     + section('seller', 'Sellers', '#1DC797')
     + section('buyer',  'Buyers',  '#005DFF');
+
+  // Regional context — North then South, using the same section style.
+  var regHtml = '';
+  var regOrder = ['North', 'South'];
+  var regColors = { North:'#005dff', South:'#16a34a' };
+  if (regSummary && (regSummary.North || regSummary.South)) {
+    regHtml = '<div class="mgsd-reg-sep"></div>';
+    regOrder.forEach(function(reg) {
+      var rd = regSummary[reg]; if (!rd) return;
+      var regTotal = (rd.seller || 0) + (rd.buyer || 0); if (!regTotal) return;
+      var rc = regColors[reg];
+      var cks = Object.keys(rd.cats || {}).sort(function(a, b) {
+        return ((rd.cats[b].seller||0)+(rd.cats[b].buyer||0)) - ((rd.cats[a].seller||0)+(rd.cats[a].buyer||0));
+      });
+      regHtml += '<div class="mgsd-section">'
+        + '<div class="mgsd-reg-hd" style="color:' + rc + '">'
+        + '<span class="mgsd-reg-dot" style="background:' + rc + '"></span>'
+        + esc(reg) + '<span class="mgsd-total">' + fmt(regTotal) + '</span></div>';
+      ['seller','buyer'].forEach(function(aud) {
+        var aCnt = rd[aud] || 0; if (!aCnt) return;
+        var aColor = aud === 'seller' ? '#1DC797' : '#005DFF';
+        var aLabel = aud === 'seller' ? 'Sellers' : 'Buyers';
+        var trs = cks.filter(function(c){ return (rd.cats[c][aud]||0) > 0; }).map(function(c) {
+          return '<tr><td> ' + esc(dispCat(c)) + '</td><td>' + fmt(rd.cats[c][aud]) + '</td></tr>';
+        }).join('');
+        regHtml += '<div class="mgsd-reg-aud" style="color:' + aColor + '">' + esc(aLabel) + ' · ' + fmt(aCnt) + '</div>'
+          + (trs ? '<table class="mgsd-tbl"><tbody>' + trs + '</tbody></table>' : '');
+      });
+      regHtml += '</div>';
+    });
+  }
+  return stateHtml + regHtml;
 }
 
 // Update only the in-map overlay — used by hover (no full re-render) and by mmRenderGeo.
 function _mmGeoUpdateDetail(id) {
   var wrap = document.getElementById('mg-state-detail'); if (!wrap) return;
   var by = _geoAgg([]);
+  var byAll = _geoAgg([], 'All');
+  var regSummary = _buildRegSummary(byAll);
   var regionColor = _geo.region === 'All'
     ? (id && IN_STATES[id] ? (IN_STATES[id].region === 'South' ? '#16a34a' : '#005dff') : '#005dff')
     : (_geo.region === 'South' ? '#16a34a' : '#005dff');
-  wrap.innerHTML = _mmGeoDetailHtml(id, by, regionColor);
+  wrap.innerHTML = _mmGeoDetailHtml(id, by, regionColor, regSummary);
 }
 
 function mmGeoHover(id, on) {
