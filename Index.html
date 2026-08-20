@@ -2755,6 +2755,9 @@ body.view-gst #mm-crumbs{display:none}
   scrollbar-width:thin}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar{width:8px}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
+/* Breakup (funnel) opens as a dedicated right-side panel; nav fills the remaining left space */
+.mmworkspace.has-panel.panel-right .mmdetail{order:1;flex:0 0 clamp(360px,40%,500px);flex-basis:clamp(360px,40%,500px)}
+.mmworkspace.has-panel.panel-right .mmnav{flex:1 1 auto}
 /* inside the side canvas the panels are simply shown/hidden — the canvas slide is the reveal */
 .mmdetail #mm-funnel,.mmdetail #mm-geo,.mmdetail #mm-modpanel{max-height:none;opacity:1;overflow:visible;margin:0}
 .mmdetail #mm-funnel:not(.mf-open),.mmdetail #mm-geo:not(.mg-open),.mmdetail #mm-modpanel:not(.mp-open){display:none}
@@ -5317,16 +5320,20 @@ function _mmSyncDetail() {
   var nav = document.getElementById('mm-nav');
   if (!ws) return;
   var open = !!(mmFunnelActive || mmGeoActive || mmModActive);
+  // Funnel/Breakup docks to the RIGHT; geo and module panels dock to the LEFT.
+  var isRight = open && !!mmFunnelActive;
   var flipDx = 0;
   if (nav && motionOK()) {
     // First: measure nav before layout change
     var before = nav.getBoundingClientRect().left;
     ws.classList.toggle('has-panel', open);
+    ws.classList.toggle('panel-right', isRight);
     // Last: measure nav after layout change
     var after = nav.getBoundingClientRect().left;
     flipDx = Math.round(before - after);
   } else {
     ws.classList.toggle('has-panel', open);
+    ws.classList.toggle('panel-right', isRight);
   }
   // Invert + Play: snap nav back to old position then animate to new one
   if (flipDx && nav) {
