@@ -2913,8 +2913,12 @@ body.view-gst #mm-crumbs{display:none}
 #mg-state-fixed{display:flex;flex-direction:column;overflow:hidden}
 .mgsd-half+.mgsd-half{border-top:1px solid var(--border)}
 .mgsd-fix-hd{flex:0 0 auto;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);padding:7px 12px 5px;background:var(--sidebar);position:sticky;top:0;border-bottom:1px solid var(--border)}
-.mgsd-rgn-wrap{flex:1 1 0;overflow-y:auto}
+.mgsd-rgn-wrap{flex:1 1 0;overflow-y:auto;overflow-x:auto}
 .mgsd-rgn-tbl{width:100%;border-collapse:collapse;table-layout:fixed}
+/* Category overview: size columns to their (small) numbers so 2–5 category
+   columns stay balanced and the label keeps the room it needs. */
+.mgsd-cat-tbl{table-layout:auto}
+.mgsd-cat-tbl thead th:not(:first-child),.mgsd-cat-tbl td:not(:first-child){min-width:40px}
 .mgsd-col-v{width:22%}
 .mgsd-rgn-tbl thead tr{border-bottom:1px solid var(--border)}
 .mgsd-rgn-tbl thead th{padding:6px 12px 5px;text-align:right;font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);white-space:nowrap}
@@ -4862,8 +4866,26 @@ function _mmVertModules(key) {
       .map(function(r){ return { region:r.region, s:r.total||0, b:0 }; });
   }
   if (regs.length) {
-    mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module', geoModule:true,
-      eye:'Onboarded by region · seller / buyer' });
+    // Geographic Split is now business-vertical specific: clicking it reveals the
+    // vertical's own onboarding categories (Metal / Plastic / …), and picking one
+    // opens the India map scoped to that category. Categories are data-driven from
+    // catOnb so every vertical shows only its applicable set — nothing hard-coded.
+    var geoCatCards = catOnb.filter(function(x){ return (x.s + x.b) > 0; })
+      .map(function(x){
+        return { t:_catLabel(x.cat), geoCat:_mmGeoSeg(x.cat), kind:'module', tone:'t-blue', ic:MM_IC.pin,
+                 v:fmt(x.s + x.b), s:_mmSB(x.s, x.b) };
+      });
+    if (geoCatCards.length) {
+      // "All Categories" keeps the combined overview map one click away.
+      geoCatCards.unshift({ t:'All Categories', geoCat:'__all__', kind:'module', tone:'t-blue', ic:MM_IC.pin,
+                            v:fmt(onb), s:'Sellers & Buyers · every category' });
+      mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module',
+        eye:'Choose a category', children:geoCatCards });
+    } else {
+      // Fallback for a vertical with no category breakdown — open the map directly.
+      mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module', geoModule:true,
+        eye:'Onboarded distribution' });
+    }
   }
 
   // 4 — Transactions (Sellers + Buyers combined; GMV remains seller-side only).
@@ -5165,7 +5187,7 @@ function mmBuildColumns() {
 function mmNodeCard(node, colActiveId) {
   var kind = node.kind, on = node._id === colActiveId;
   var hasKids = node.children && node.children.length;
-  var isLeaf = node.leaf || kind === 'vd' || (!hasKids && !node.action && !node.geoRegion && !node.expand && !node.geoModule);
+  var isLeaf = node.leaf || kind === 'vd' || (!hasKids && !node.action && !node.geoRegion && !node.geoCat && !node.expand && !node.geoModule);
   var cls, inner;
   if (kind === 'root') {
     cls = 'mmn root' + (on ? ' on' : '');
@@ -5197,13 +5219,13 @@ function mmNodeCard(node, colActiveId) {
   } else {
     var modCls = (kind === 'module') ? ' module' : '';
     cls = 'mmn ' + (node.tone || 't-ink') + modCls + (on ? ' on' : '') + (isLeaf ? ' leaf' : '');
-    var arrow = (hasKids || node.action || node.geoRegion || node.expand || node.geoModule) ? '<span class="mmn-arr">' + ((node.action || node.geoRegion) && !hasKids && !node.expand ? '→' : '›') + '</span>' : '';
+    var arrow = (hasKids || node.action || node.geoRegion || node.geoCat || node.expand || node.geoModule) ? '<span class="mmn-arr">' + ((node.action || node.geoRegion || node.geoCat) && !hasKids && !node.expand ? '→' : '›') + '</span>' : '';
     inner = '<div class="mmn-top"><div class="mmn-ic">' + (node.ic || MM_IC.grid) + '</div><div class="mmn-ttl">' + esc(node.t) + '</div>' + arrow + '</div>'
       + (node.v ? '<div class="mmn-v tnum">' + esc(node.v) + '</div>' : '')
       + (node.s ? '<div class="mmn-s">' + esc(node.s) + '</div>' : '');
   }
   var dim = (colActiveId && !on) ? ' dim' : '';
-  var clickable = !(node.muted || (isLeaf && !node.action && !node.geoRegion && !node.expand));
+  var clickable = !(node.muted || (isLeaf && !node.action && !node.geoRegion && !node.geoCat && !node.expand));
   return '<div class="' + cls + dim + '" data-id="' + esc(node._id) + '"'
     + (clickable ? ' role="button" tabindex="0" onclick="mmClickNode(\'' + esc(node._id) + '\')" onkeydown="if(event.key===\'Enter\'){mmClickNode(\'' + esc(node._id) + '\')}"' : '')
     + '>' + inner + '</div>';
@@ -5234,7 +5256,7 @@ function renderBranchNav(key) {
   // Validate inline-panel state after rebuild
   var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
   if (mmFunnelActive && (!lastNode || lastNode.expand !== 'inline-funnel')) mmFunnelActive = false;
-  if (mmGeoActive && (!lastNode || (!lastNode.geoRegion && !lastNode.geoModule))) { mmGeoActive = false; _geo.region = null; _geo.state = null; }
+  if (mmGeoActive && (!lastNode || (!lastNode.geoRegion && !lastNode.geoModule && !lastNode.geoCat))) { mmGeoActive = false; _geo.region = null; _geo.state = null; }
   if (mmModActive && (!lastNode || lastNode.expand !== 'inline-panel')) mmModActive = false;
   mmRender();
   mmRenderFunnel();
@@ -5272,7 +5294,7 @@ function mmGoto(i) {
   var lastNode = mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
   if (!lastNode || lastNode.expand !== 'inline-funnel') { mmFunnelActive = false; }
   if (!lastNode || lastNode.expand !== 'inline-panel') { mmModActive = false; }
-  if (!lastNode || (!lastNode.geoRegion && !lastNode.geoModule)) { mmGeoActive = false; _geo.region = null; _geo.state = null; _geo.cat = null; }
+  if (!lastNode || (!lastNode.geoRegion && !lastNode.geoModule && !lastNode.geoCat)) { mmGeoActive = false; _geo.region = null; _geo.state = null; _geo.cat = null; }
   _mmAnimateReveal = true;
   mmPaint();
 }
@@ -5387,6 +5409,22 @@ function mmClickNode(id) {
     }
     _mmAnimateReveal = true; mmPaint(); return;
   }
+  // Category card → open the India map scoped to that category (uniform blue map,
+  // the category drives which data the legend / detail / overview show).
+  if (node.geoCat) {
+    var catOpen = mmGeoActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
+    if (catOpen) {
+      mmGeoActive = false; _geo.region = null; _geo.state = null; _geo.cat = null;
+      mmPath = mmPath.slice(0, -1);
+    } else {
+      mmFunnelActive = false; mmModActive = false;
+      mmPath = _mmPathIds(node);
+      _geo.cat = (node.geoCat === '__all__') ? null : node.geoCat;
+      mmGeoActive = true; _geo.state = null; _geo.hover = null; _geoAnimate = true;
+      mmGeoOpen('All');
+    }
+    _mmAnimateReveal = true; mmPaint(); return;
+  }
   if (node.action) return mmCardAction(node.action);
   if (node.muted || node.leaf || (!(node.children && node.children.length) && !node.expand)) return;
   if (node.kind === 'vert') {
@@ -5424,8 +5462,9 @@ function mmClickNode(id) {
   _mmAnimateReveal = true; mmPaint();
 }
 
-// Chain: from any Volume category segment into Geographic Split, carrying that
-// category as a filter so the map + legend stay scoped to it (seller / buyer).
+// Chain: from any Volume category segment into Geographic Split, landing on that
+// category's card so the map opens scoped to it (uniform blue map, category-driven
+// data). Falls back to the category chooser / direct map when no card matches.
 function mmChainToGeo(seg) {
   var vertId = null;
   for (var i = 0; i < mmPath.length; i++) {
@@ -5433,14 +5472,29 @@ function mmChainToGeo(seg) {
   }
   if (!vertId) return;
   var vert = mmFindById(vertId);
-  var geoMod = (vert.children || []).filter(function(c){ return c.geoModule; })[0];
+  var geoMod = (vert.children || []).filter(function(c){
+    return c.geoModule || (c.children && c.children.length && c.children[0].geoCat != null);
+  })[0];
   if (!geoMod) return;
+  var catLc = seg ? String(seg).toLowerCase() : null;
+  // Prefer the matching category card; otherwise land on the module (chooser).
+  var target = geoMod, matched = false;
+  if (geoMod.children && geoMod.children.length) {
+    var m = geoMod.children.filter(function(k){ return k.geoCat === catLc; })[0];
+    if (m) { target = m; matched = true; }
+  }
   _mmCloseInline();
-  _geo.cat = seg ? String(seg).toLowerCase() : null;
-  mmPath = _mmPathIds(geoMod);   // show the North/South region cards
+  mmFunnelActive = false; mmModActive = false;
+  mmPath = _mmPathIds(target);
+  if (matched || geoMod.geoModule) {
+    // Open the map straight away, scoped to the chained category.
+    _geo.cat = catLc;
+    mmGeoActive = true; _geo.state = null; _geo.hover = null; _geoAnimate = true;
+    mmGeoOpen('All');
+  }
   _mmAnimateReveal = true;
   mmPaint();
-  // gently bring the region column into view
+  // gently bring the newly opened column into view
   var mm = document.getElementById('mm');
   if (mm && mm.scrollTo) mm.scrollTo({ left: mm.scrollWidth, behavior: motionOK() ? 'smooth' : 'auto' });
 }
@@ -5715,7 +5769,7 @@ function _geoCatN(bucket, cat, aud) {
 
 // Build the compact Sellers/Buyers table rendered inside the map's white space.
 // Uses _geoAgg([]) so all categories are shown unfolded (no cap/folding into "Other").
-function _mmGeoDetailHtml(id, by, regionColor) {
+function _mmGeoDetailHtml(id, by, swatchColor) {
   if (!id || !by || !by[id]) {
     return '<div class="mgsd-prompt">'
       + (id ? 'No records<br>for this state.' : 'Hover or click<br>a state to explore.')
@@ -5750,7 +5804,7 @@ function _mmGeoDetailHtml(id, by, regionColor) {
   // Truncate long state names so the header stays on one line.
   var shortNm = nm.length > 14 ? nm.slice(0, 13) + '…' : nm;
   return '<div class="mgsd-hd">'
-    + '<span class="mg-swatch" style="background:' + regionColor + ';flex-shrink:0"></span>'
+    + '<span class="mg-swatch" style="background:' + swatchColor + ';flex-shrink:0"></span>'
     + esc(shortNm)
     + '<span class="mgsd-total">' + fmt(d.total) + '</span></div>'
     + section('seller', 'Sellers', '#1DC797')
@@ -5761,64 +5815,57 @@ function _mmGeoDetailHtml(id, by, regionColor) {
 function _mmGeoUpdateDetail(id) {
   var wrap = document.getElementById('mg-state-hover'); if (!wrap) return;
   var by = _geoAgg([]);
-  var regionColor = _geo.region === 'All'
-    ? (id && IN_STATES[id] ? (IN_STATES[id].region === 'South' ? '#16a34a' : '#005dff') : '#005dff')
-    : (_geo.region === 'South' ? '#16a34a' : '#005dff');
-  wrap.innerHTML = _mmGeoDetailHtml(id, by, regionColor);
+  // Uniform blue — the map no longer colours states by region.
+  wrap.innerHTML = _mmGeoDetailHtml(id, by, '#005dff');
 }
 
+// Category-wise Sellers / Buyers overview (replaces the old North / South split).
+// Region-agnostic and independent of the selected map category — it always shows
+// the vertical's full category breakdown as columns, so Sellers and Buyers read
+// across Metal / Plastic / … directly. Categories come from _geoCats() so each
+// vertical shows its own applicable set.
 function _mmGeoFixedHtml() {
-  var by = _geoAgg([], 'All');
-  var rgn = {
-    North: { seller: 0, buyer: 0, cats: {} },
-    South: { seller: 0, buyer: 0, cats: {} }
-  };
-  Object.keys(by).forEach(function(id) {
-    var st = IN_STATES[id]; if (!st) return;
-    var rn = st.region, d = by[id]; if (!d) return;
-    rgn[rn].seller += d.seller || 0;
-    rgn[rn].buyer  += d.buyer  || 0;
-    Object.keys(d.cats || {}).forEach(function(cat) {
-      if (!rgn[rn].cats[cat]) rgn[rn].cats[cat] = { seller: 0, buyer: 0 };
-      rgn[rn].cats[cat].seller += (d.cats[cat] && d.cats[cat].seller) || 0;
-      rgn[rn].cats[cat].buyer  += (d.cats[cat] && d.cats[cat].buyer)  || 0;
+  var cats = _geoCats();
+  if (!cats.length) {
+    return '<div class="mgsd-fix-hd">Category Overview</div>'
+      + '<div class="mgsd-prompt" style="font-size:10px;padding:14px">No category data.</div>';
+  }
+  var known = {}, hasOther = cats.indexOf('Other') >= 0;
+  cats.forEach(function(c) { if (c !== 'Other') known[c.toLowerCase()] = 1; });
+  var tally = {}, tot = { seller: 0, buyer: 0 };
+  cats.forEach(function(c) { tally[c.toLowerCase()] = { seller: 0, buyer: 0 }; });
+  ['seller', 'buyer'].forEach(function(aud) {
+    var rows = _geo.rows[aud]; if (!Array.isArray(rows)) return;
+    rows.forEach(function(r) {
+      if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
+      var id = _geoStateId(r.state); if (!id || !IN_STATES[id]) return;
+      var cat = String(r.category || '').trim().toLowerCase();
+      var key = known[cat] ? cat : (hasOther ? 'other' : cat);
+      if (!tally[key]) tally[key] = { seller: 0, buyer: 0 };
+      tally[key][aud]++; tot[aud]++;
     });
   });
-  var allCats = {};
-  ['North', 'South'].forEach(function(r) {
-    Object.keys(rgn[r].cats).forEach(function(c) {
-      allCats[c] = (allCats[c] || 0) + (rgn[r].cats[c].seller || 0) + (rgn[r].cats[c].buyer || 0);
-    });
-  });
-  var catKeys = Object.keys(allCats).sort(function(a, b) { return allCats[b] - allCats[a]; });
+  if (!tot.seller && !tot.buyer) {
+    return '<div class="mgsd-fix-hd">Category Overview</div>'
+      + '<div class="mgsd-prompt" style="font-size:10px;padding:14px">No category data.</div>';
+  }
   function dispCat(c) { return CAT_SHORT[c] || (c.charAt(0).toUpperCase() + c.slice(1)); }
-  function audRows(aud, color, label, sep) {
-    var n = rgn.North[aud] || 0, s = rgn.South[aud] || 0;
-    if (!n && !s) return '';
-    var catTrs = catKeys.filter(function(c) {
-      return ((rgn.North.cats[c] && rgn.North.cats[c][aud]) || 0) + ((rgn.South.cats[c] && rgn.South.cats[c][aud]) || 0) > 0;
-    }).map(function(c) {
-      var nc = (rgn.North.cats[c] && rgn.North.cats[c][aud]) || 0;
-      var sc = (rgn.South.cats[c] && rgn.South.cats[c][aud]) || 0;
-      return '<tr class="mgsd-cat"><td>· ' + esc(dispCat(c)) + '</td>'
-        + '<td>' + fmt(nc) + '</td><td>' + fmt(sc) + '</td></tr>';
-    }).join('');
+  var colKeys = cats.map(function(c) { return c.toLowerCase(); });
+  var cols = '<col>' + colKeys.map(function() { return '<col>'; }).join('');
+  var head = '<thead><tr><th></th>'
+    + cats.map(function(c) { return '<th title="' + esc(c) + '">' + esc(dispCat(c.toLowerCase())) + '</th>'; }).join('')
+    + '</tr></thead>';
+  function audRow(aud, color, label, sep) {
     return '<tr class="mgsd-aud' + (sep ? ' mgsd-sep' : '') + '">'
       + '<td style="color:' + color + '">' + esc(label) + '</td>'
-      + '<td>' + fmt(n) + '</td><td>' + fmt(s) + '</td></tr>' + catTrs;
+      + colKeys.map(function(k) { return '<td>' + fmt((tally[k] && tally[k][aud]) || 0) + '</td>'; }).join('')
+      + '</tr>';
   }
-  var hasData = rgn.North.seller || rgn.North.buyer || rgn.South.seller || rgn.South.buyer;
-  if (!hasData) {
-    return '<div class="mgsd-fix-hd">Regional Overview</div>'
-      + '<div class="mgsd-prompt" style="font-size:10px;padding:14px">No regional data.</div>';
-  }
-  var sellerHtml = audRows('seller', '#1DC797', 'Sellers', false);
-  var buyerHtml  = audRows('buyer',  '#005DFF', 'Buyers',  !!sellerHtml);
-  return '<div class="mgsd-fix-hd">Regional Overview</div>'
-    + '<div class="mgsd-rgn-wrap"><table class="mgsd-rgn-tbl">'
-    + '<colgroup><col><col class="mgsd-col-v"><col class="mgsd-col-v"></colgroup>'
-    + '<thead><tr><th></th><th>North</th><th>South</th></tr></thead>'
-    + '<tbody>' + sellerHtml + buyerHtml + '</tbody></table></div>';
+  return '<div class="mgsd-fix-hd">Category Overview · Sellers / Buyers</div>'
+    + '<div class="mgsd-rgn-wrap"><table class="mgsd-rgn-tbl mgsd-cat-tbl">'
+    + '<colgroup>' + cols + '</colgroup>' + head
+    + '<tbody>' + audRow('seller', '#1DC797', 'Sellers', false) + audRow('buyer', '#005DFF', 'Buyers', true) + '</tbody>'
+    + '</table></div>';
 }
 
 function mmGeoHover(id, on) {
@@ -5839,45 +5886,40 @@ function mmRenderGeo() {
   var panel = document.getElementById('mm-geo'); if (!panel) return;
   if (!mmGeoActive || !_geo.region) { panel.className = 'mg'; panel.innerHTML = ''; return; }
 
-  var region = _geo.region;
-  var allRegions = region === 'All';
-  var regionColor = region === 'South' ? '#16a34a' : '#005dff';
-  var geoCats = _geoCats();
+  // The map is no longer region-coded. Every state is drawn in one uniform brand
+  // blue; the selected category (not colour) decides which data the legend, state
+  // detail and overview show. GEO_BLUE is the single hue used across the whole map.
+  var GEO_BLUE = '#005dff';
+  // A specific category selection shows a plain Total/Sellers/Buyers legend; the
+  // "All categories" view keeps the per-category breakdown.
+  var geoCats = _geo.cat ? [] : _geoCats();
   var by = _geoAgg(geoCats);
-  var statesInRegion = allRegions
-    ? Object.keys(IN_STATES)
-    : Object.keys(IN_STATES).filter(function(id){ return IN_STATES[id].region === region; });
-  var withData = statesInRegion.filter(function(id){ return by[id] && by[id].total > 0; })
+  var withData = Object.keys(IN_STATES).filter(function(id){ return by[id] && by[id].total > 0; })
     .sort(function(a, b){ return by[b].total - by[a].total; });
-  var maxT = withData.reduce(function(m, id){ return Math.max(m, by[id].total); }, 0) || 1;
   var loading = _geo.loading && !withData.length;
 
   // ---- MAP (left) ----
   var paths = Object.keys(IN_STATES).map(function(id) {
     var st = IN_STATES[id], d = by[id];
-    var inRegion = allRegions || st.region === region;
-    var stColor = allRegions ? (st.region === 'South' ? '#16a34a' : '#005dff') : regionColor;
+    var hasData = d && d.total > 0;
     var cls = 'mg-state';
-    var fill, stroke = 'var(--border)', sw = '0.8', op = '1';
-    if (!inRegion) { fill = 'var(--mg-base)'; op = '0.5'; }
-    else {
-      // 3 discrete tint steps by onboarded count — subtle, not a heatmap gradient.
-      var lvl = d && d.total > 0 ? (d.total >= maxT * 0.66 ? 0.9 : d.total >= maxT * 0.33 ? 0.62 : 0.36) : 0.14;
-      fill = stColor; op = String(lvl); stroke = stColor; sw = '1';
-      cls += ' active';
+    // Uniform blue for the whole map: states carrying data are solid, the rest sit
+    // as a faint wash of the same hue — no green, no per-region colour, no heatmap.
+    var fill = GEO_BLUE, stroke, sw, op;
+    if (hasData) {
+      op = '0.85'; stroke = GEO_BLUE; sw = '1'; cls += ' active';
       if (_geo.state === id) cls += ' sel';
+    } else {
+      op = '0.12'; stroke = 'var(--border)'; sw = '0.8';
     }
-    var handlers = inRegion
-      ? ' data-geo="' + id + '" onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
-        + (d ? ' onclick="mmGeoSelectState(\'' + id + '\')" style="cursor:pointer"' : '')
-      : '';
+    var handlers = ' data-geo="' + id + '" onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
+      + (hasData ? ' onclick="mmGeoSelectState(\'' + id + '\')" style="cursor:pointer"' : '');
     return '<path class="' + cls + '" d="' + st.d + '" fill="' + fill + '" fill-opacity="' + op
       + '" stroke="' + stroke + '" stroke-width="' + sw + '"' + handlers + '><title>' + esc(st.name)
       + (d ? ' · ' + fmt(d.total) : '') + '</title></path>';
   }).join('');
   var mapPanel = '<div class="mg-map">'
-    + '<div class="mg-map-svg-wrap"><svg viewBox="0 0 1000 1100" class="mg-svg" aria-label="India map, '
-    + (allRegions ? 'all regions' : esc(region) + ' region') + '">' + paths + '</svg></div>'
+    + '<div class="mg-map-svg-wrap"><svg viewBox="0 0 1000 1100" class="mg-svg" aria-label="India map, all regions">' + paths + '</svg></div>'
     + '<div id="mg-state-detail" class="mg-state-detail" aria-label="State detail">'
     + '<div id="mg-state-hover" class="mgsd-half" aria-live="polite"></div>'
     + '<div id="mg-state-fixed" class="mgsd-half"></div>'
@@ -5915,7 +5957,7 @@ function mmRenderGeo() {
       return '<button class="mg-row" data-geo="' + id + '"' + rowStyle(i)
         + ' onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
         + ' onclick="mmGeoSelectState(\'' + id + '\')">'
-        + '<span class="mg-row-nm"><span class="mg-swatch" style="background:' + (allRegions ? (IN_STATES[id].region === 'South' ? '#16a34a' : '#005dff') : regionColor) + '"></span>' + esc(name) + '</span>'
+        + '<span class="mg-row-nm"><span class="mg-swatch" style="background:' + GEO_BLUE + '"></span>' + esc(name) + '</span>'
         + cells
         + '</button>';
     }).join('');
@@ -5941,12 +5983,12 @@ function mmRenderGeo() {
       + '<div class="mg-rows">' + rows + '</div></div>';
   }
 
-  var catChip = _geo.cat
-    ? '<button class="mg-catchip" onclick="_geoClearCat()" title="Clear filter">'
-      + '<span class="mg-swatch" style="background:#6366f1"></span>'
-      + esc(_geo.cat.charAt(0).toUpperCase() + _geo.cat.slice(1)) + ' only <span class="mg-catx">✕</span></button>'
-    : '';
-  panel.innerHTML = '<div class="mg-eye"><span>' + (allRegions ? 'All India' : esc(region) + ' Region') + ' · onboarded distribution</span>' + catChip + '</div>'
+  // The active category is a first-class navigation step (breadcrumb + selected
+  // card), so the header simply names it — no separate clear-filter chip needed.
+  var selCat = _geo.cat
+    ? (CAT_SHORT[_geo.cat] || (_geo.cat.charAt(0).toUpperCase() + _geo.cat.slice(1)))
+    : 'All categories';
+  panel.innerHTML = '<div class="mg-eye"><span>All India · ' + esc(selCat) + ' · onboarded distribution</span></div>'
     + '<div class="mg-grid">' + mapPanel + legend + '</div>';
   panel.className = 'mg mg-open';
 
