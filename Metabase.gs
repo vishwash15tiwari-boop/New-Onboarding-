@@ -189,8 +189,14 @@ function writeMBSheetVisible_(data, sheetName) {
   }
   var usedRows = sheet.getLastRow();
   var usedCols = Math.max(sheet.getLastColumn(), payload[0].length);
-  if (usedRows > 0) sheet.getRange(1, 1, usedRows, usedCols).clearContent();
+  // Write the new data FIRST (overwrites in place), THEN clear only the leftover
+  // trailing rows. The old order (clearContent → setValues) left the sheet EMPTY if
+  // setValues failed/timed out mid-write — which is the "_mb_* is empty, sellers
+  // vanish" failure. Write-then-trim keeps the previous good data on any write failure.
   sheet.getRange(1, 1, payload.length, payload[0].length).setValues(payload);
+  if (usedRows > payload.length) {
+    sheet.getRange(payload.length + 1, 1, usedRows - payload.length, usedCols).clearContent();
+  }
   PropertiesService.getScriptProperties()
     .setProperty('MB_SYNC_' + sheetName, new Date().toISOString());
 }
@@ -210,13 +216,16 @@ function writeMBSheet_(data, sheetName) {
     Logger.log('  Created hidden sheet "' + sheetName + '".');
   }
 
-  // Clear existing content (preserve formatting)
+  // Write header + data FIRST (overwrites in place), THEN clear only the leftover
+  // trailing rows. The old order (clearContent → setValues) left the sheet EMPTY when
+  // setValues failed/timed out mid-write — the "_mb_sellers is empty, sellers vanish
+  // from the dashboard" failure. Write-then-trim keeps the last good data on failure.
   var usedRows = sheet.getLastRow();
   var usedCols = Math.max(sheet.getLastColumn(), payload[0].length);
-  if (usedRows > 0) sheet.getRange(1, 1, usedRows, usedCols).clearContent();
-
-  // Write header + data
   sheet.getRange(1, 1, payload.length, payload[0].length).setValues(payload);
+  if (usedRows > payload.length) {
+    sheet.getRange(payload.length + 1, 1, usedRows - payload.length, usedCols).clearContent();
+  }
 
   // Record sync timestamp in Script Properties (not in the sheet — avoids
   // polluting the data range that Code.gs reads).
