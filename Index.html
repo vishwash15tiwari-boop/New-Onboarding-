@@ -35,6 +35,7 @@
   --bg2:     #F5F5F7;   /* Apple's exact page-wash grey */
   --card:    #FFFFFF;
   --card2:   #F9F9FB;
+  --sidebar: #F9F9FB;   /* subtle tint for sticky table / section headers */
   --hover:   rgba(0,0,0,.035);
   --header-bg: rgba(255,255,255,.78);   /* frosted glass — Apple nav bar */
 
@@ -55,6 +56,7 @@
   --blue2:     #024C8A;
   --purple:    #8460D4;   /* Medium Purple */
   --duke:      #8460D4;
+  --green-ink: #049769;   /* Duke Green — readable green for text/icons on light-green tints */
   --accent-soft: rgba(0,93,255,.08);
 
   /* ── Status ink (TAT / deltas) ── */
@@ -5968,12 +5970,12 @@ function mmRenderGeo() {
     var fill = fillColor, stroke, sw, op;
     if (cnt > 0) {
       // Soft, data-driven concentration: a light fill whose opacity scales gently with
-      // count, so even a busy map stays easy on the eyes rather than one solid block.
-      op = (0.24 + 0.50 * (cnt / maxN)).toFixed(3);   // ~0.24 (quiet) → 0.74 (busiest)
+      // count, kept in a muted range so even a busy map stays easy on the eyes.
+      op = (0.22 + 0.44 * (cnt / maxN)).toFixed(3);   // ~0.22 (quiet) → 0.66 (busiest)
       sw = '1'; cls += ' active';
       // Thin card-coloured strokes read as clean gaps between adjacent states; the
-      // selected state gets a crisp hue outline instead so it stands out.
-      if (_geo.state === id) { stroke = fillColor; cls += ' sel'; }
+      // selected state gets a crisp accent outline instead so it stands out.
+      if (_geo.state === id) { stroke = audColor; cls += ' sel'; }
       else stroke = 'var(--card)';
     } else {
       fill = 'var(--mg-base)'; op = '1'; stroke = 'var(--card)'; sw = '1';   // no data → light grey tile
