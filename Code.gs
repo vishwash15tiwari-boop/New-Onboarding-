@@ -1279,10 +1279,15 @@ function normalizeRows(raw, cfg) {
   var _tatEndC = tatEndColIndex_(raw);
 
   var normalized = raw.rows.map(function(row) {
-    var status   = normStatus(gv(row, idx, 'onboarding_status'));
+    // Status + created date resolved tolerantly: the buyer card uses onboarding_status
+    // / onboarding_created_date, but the seller card (5712) uses the generic status /
+    // created_date. Without this the seller feed's stage + date fields read empty, so
+    // every seller lands in the wrong stage (or is dropped) — the "sellers = 0" bug.
+    // NB: current_status (CHURNED/active) is deliberately NOT a status candidate.
+    var status   = normStatus(firstVal_(row, idx, ['onboarding_status', 'status', 'onboard_status']));
     var category = normCategory(gv(row, idx, 'business_category'));
     var bizVert  = gv(row, idx, 'business_vertical');
-    var created  = parseDate(gv(row, idx, 'onboarding_created_date'));
+    var created  = parseDate(firstVal_(row, idx, ['onboarding_created_date', 'created_date', 'created', 'created_at']));
     var onboarded = cfg.onbCol ? parseDate(gv(row, idx, cfg.onbCol)) : null;
     // id / name are what a row is KEPT by (normalized rows with neither are dropped),
     // so resolve them tolerantly: the audience's configured column first, then common
