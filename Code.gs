@@ -1284,8 +1284,13 @@ function normalizeRows(raw, cfg) {
     var bizVert  = gv(row, idx, 'business_vertical');
     var created  = parseDate(gv(row, idx, 'onboarding_created_date'));
     var onboarded = cfg.onbCol ? parseDate(gv(row, idx, cfg.onbCol)) : null;
-    var recId    = String(gv(row, idx, cfg.idCol)   || '').replace(/,/g, '').trim();
-    var recName  = String(gv(row, idx, cfg.nameCol) || '').trim();
+    // id / name are what a row is KEPT by (normalized rows with neither are dropped),
+    // so resolve them tolerantly: the audience's configured column first, then common
+    // fallbacks. A single card-schema rename (e.g. seller_id → id, seller_name →
+    // business_name) would otherwise silently drop EVERY row for that audience —
+    // exactly the "seller data all zero" failure — while the other audience loads fine.
+    var recId    = String(firstVal_(row, idx, [cfg.idCol,   'id', 'vendor_id', 'entity_id', 'seller_id', 'buyer_id']) || '').replace(/,/g, '').trim();
+    var recName  = String(firstVal_(row, idx, [cfg.nameCol, 'name', 'business_name', 'vendor_name', 'company_name', 'seller_name', 'buyer_name']) || '').trim();
     // Timestamp when the case entered the IN_REVIEW stage. Also drives review-age
     // on Kanban cards ("Xd waiting" counts from here, not from created date).
     // The buyer feed names this column differently from the seller feed, so the

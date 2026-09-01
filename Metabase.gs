@@ -119,7 +119,11 @@ function clearMBToken_() {
 // Returns the same shape as Code.gs readSheet() so normalizeRows()
 // works on it directly.  Headers are lowercased + underscored to
 // match the existing column-name convention.
-// Retries once on 401 (token expired mid-cycle).
+// Retries: 401 → refresh the session token and retry; a transient failure (network
+// error / timeout / 429 / 5xx) → short backoff and retry, up to 3 attempts. A large
+// card (e.g. Sellers) occasionally times out or 5xx's; without a retry its sheet is
+// left EMPTY until the next 5-min sync, which is exactly the "seller data disappears"
+// symptom. No artificial short deadline — let a big query finish.
 // ════════════════════════════════════════════════════════════════
 function fetchMBCard_(cardId) {
   var token = getMBToken_();
@@ -131,22 +135,26 @@ function fetchMBCard_(cardId) {
       contentType:        'application/json',
       payload:            JSON.stringify({}),
       muteHttpExceptions: true,
-      deadline:           20,   // seconds — fail fast rather than hanging the caller
     });
   }
 
-  var res = doFetch_(token);
+  var res = null, code = 0, lastErr = '';
+  for (var attempt = 1; attempt <= 3; attempt++) {
+    try { res = doFetch_(token); code = res.getResponseCode(); }
+    catch (e) { lastErr = e.message; code = 0; res = null; }   // network/timeout throws
 
-  if (res.getResponseCode() === 401) {
-    // Token expired mid-cycle — refresh once and retry
-    clearMBToken_();
-    token = getMBToken_();
-    res   = doFetch_(token);
+    if (code === 200) break;
+    if (code === 401) { clearMBToken_(); token = getMBToken_(); continue; }  // refresh + retry now
+    if (attempt < 3 && (code === 0 || code === 429 || code >= 500)) {
+      Utilities.sleep(1500 * attempt);   // transient — back off, then retry
+      continue;
+    }
+    break;   // non-retryable (other 4xx) or attempts exhausted
   }
 
-  if (res.getResponseCode() !== 200) {
-    throw new Error('Card ' + cardId + ' fetch failed (' + res.getResponseCode() + '): ' +
-      res.getContentText().slice(0, 300));
+  if (code !== 200) {
+    throw new Error('Card ' + cardId + ' fetch failed (' + (code || 'network: ' + lastErr) + ')' +
+      (res ? ': ' + res.getContentText().slice(0, 300) : ''));
   }
 
   var csv = Utilities.parseCsv(res.getContentText());
@@ -234,34 +242,38 @@ function bustDashboardCache_() {
 
   var vertKeys = ['OMP', 'EPR', 'Marketplace', 'InfraBusiness', 'AFR', 'Recommerce', 'DRS', 'Others'];
 
+  // Version ranges must COVER the current keys used in Code.gs (dash_v36 / vrows_v17)
+  // plus a forward margin — the previous list only cleared v30-v32 / v14-v16, so the
+  // live keys were never invalidated and every sync left up-to-5-min-old data in cache
+  // (the root of "data not updating / not syncing"). Ranges auto-cover a version bump.
+  var dashPfx = [], vrowsPfx = [], cmbPfx = [];
+  for (var dv = 30; dv <= 42; dv++) { dashPfx.push('dash_v' + dv + '_'); cmbPfx.push('dash_v' + dv + '_cmb_'); }
+  for (var rv = 14; rv <= 22; rv++) { vrowsPfx.push('vrows_v' + rv + '_'); }
+
   ['seller', 'buyer'].forEach(function(aud) {
     periods.forEach(function(p) {
       var pk = JSON.stringify([p, '', '']);
-      // Clear all known historical versions so no stale entry survives a sync.
-      ['dash_v30_','dash_v31_','dash_v32_'].forEach(function(pfx) {
-        keys.push(pfx + aud + '_' + pk);
-      });
-      ['vrows_v14_','vrows_v15_','vrows_v16_'].forEach(function(pfx) {
-        vertKeys.forEach(function(vk) {
-          keys.push(pfx + aud + '_' + vk + '_' + pk);
-        });
+      dashPfx.forEach(function(pfx) { keys.push(pfx + aud + '_' + pk); });
+      vrowsPfx.forEach(function(pfx) {
+        vertKeys.forEach(function(vk) { keys.push(pfx + aud + '_' + vk + '_' + pk); });
       });
     });
   });
 
-  // Combined dashboard cache (getCombinedDashboard) — all historical versions
+  // Combined dashboard cache (getCombinedDashboard) — same version range.
   periods.forEach(function(p) {
     var pk = JSON.stringify([p, '', '']);
-    ['dash_v30_cmb_','dash_v31_cmb_','dash_v32_cmb_'].forEach(function(pfx) {
-      keys.push(pfx + pk);
-    });
+    cmbPfx.forEach(function(pfx) { keys.push(pfx + pk); });
   });
 
-  // Quality metrics cache — all historical versions (must include the CURRENT key
-  // in getQualityData, else a Vendor Score / rating change is not reflected until the
-  // 300s TTL lapses).
-  ['quality_data_v2','quality_data_v8','quality_data_v9','quality_data_v10','quality_data_v11','quality_data_v12','quality_data_v13'].forEach(function(k) { keys.push(k); });
-  keys.forEach(function(k) { try { cache.remove(k); } catch (e) {} });
+  // Quality metrics cache — range covering the current key (quality_data_v13) + margin.
+  for (var qv = 2; qv <= 20; qv++) keys.push('quality_data_v' + qv);
+
+  // Batch the removals (chunked removeAll) — this list is ~2k keys and per-key remove()
+  // would be one RPC each, slow enough to matter inside the 5-min sync run.
+  for (var ci = 0; ci < keys.length; ci += 200) {
+    try { cache.removeAll(keys.slice(ci, ci + 200)); } catch (e) {}
+  }
   Logger.log('  Cache busted (' + keys.length + ' keys).');
 }
 
