@@ -3500,6 +3500,10 @@ function loadData(silent) {
     _dashLoading = false;
     if (_isFirstLoad) { _isFirstLoad = false; hideLoading(); showError(msg, true); }
     else if (!silent) showError(msg, false);
+    // Silent (auto-refresh / open-revalidation) failure: never keep presenting the
+    // last data as "Live". Flag it visibly as not-current while the timer keeps
+    // retrying — but keep the last good values on screen rather than blanking them.
+    else markRefreshStale(msg);
     if (btn) btn.classList.remove('spinning');
     scheduleNextRefresh();
   }
@@ -3795,6 +3799,23 @@ function renderLastUpdated() {
     el.title = 'Source: ' + (D.dataSource || 'sheet');
     if (dot) { dot.style.background = '#AEAEB2'; }
   }
+}
+
+// A silent live-data refresh failed. Per the data-integrity requirement, the UI must
+// not keep presenting the last-known figures as current — so flag them visibly as
+// "not live" (amber) with the last-success time, while keeping the values on screen
+// and letting the auto-refresh timer retry. renderLastUpdated() restores the normal
+// Live/green state on the next successful load, so this self-heals.
+function markRefreshStale(msg) {
+  var el  = document.getElementById('last-updated');
+  var dot = document.querySelector('.status-dot');
+  if (dot) dot.style.background = '#FF9F0A';   // amber — shown but not confirmed current
+  if (!el) return;
+  var t = (D && D.lastUpdated) ? new Date(D.lastUpdated).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '';
+  el.innerHTML = '<span style="color:#B26A00;font-weight:600">&#9888; Not live</span>' + (t ? ' · from ' + t : '');
+  var mins = Math.round(AUTO_REFRESH_SEC / 60);
+  el.title = (msg || 'Live data refresh failed') + '. Showing the last data received'
+    + (t ? ' (' + t + ')' : '') + '. Retrying automatically every ' + mins + ' min.';
 }
 
 // ═══════════════════════════════════════════════════════════════
