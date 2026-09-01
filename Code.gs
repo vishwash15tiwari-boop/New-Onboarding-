@@ -2504,17 +2504,37 @@ function getQualityData() {
                                         'updated_date','modified_at','last_modified','last_modified_date',
                                         'osv_date','osv_updated_date','consent_date','status_date']);
 
+      // The join keys (gstin / id) are resolved by header NAME, but the score and OSV
+      // were read by fixed POSITION (col H / col N). If the Vendor Score sheet's columns
+      // get reordered, that positional read silently lands on the wrong cell — the join
+      // still matches the vendor, but the "score" parses as NaN, so EVERY vendor counts
+      // as unrated and the module shows 0 rated / N unrated (exactly this failure).
+      // Resolve both by header name first and fall back to the configured position only
+      // when no recognisable header is present, so a column reorder can't zero it out.
+      var vsScore = qualityFindCol_(vsh, ['vendor_score','vendor_scores','vendorscore','overall_score',
+        'average_score','avg_score','final_score','score_out_of_10','vendor_rating_score','quality_score','seller_score','score']);
+      if (vsScore < 0) vsScore = VS_COLS.denominator;
+      var vsOsv = qualityFindCol_(vsh, ['osv_status','osv','on_site_verification','onsite_verification',
+        'osv_state','osv_consent_status','consent_status','verification_status','osv_verification_status']);
+      if (vsOsv < 0) vsOsv = VS_COLS.osvStatus;
+
+      // GSTIN is a case-insensitive identifier; normalise (upper-case, strip spaces &
+      // punctuation) on both sides so a formatting drift in the sheet can't break the join.
+      var _nrmG = function(g) { return String(g || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); };
+      var ompGstinNorm = {};
+      Object.keys(ompGstinMap).forEach(function(g) { ompGstinNorm[_nrmG(g)] = ompGstinMap[g]; });
+
       vsd.rows.forEach(function(row) {
         var gst = vsGst >= 0 ? String(row[vsGst] || '').trim() : '';
         var vid = vsId  >= 0 ? String(row[vsId]  || '').trim() : '';
-        var omp = (gst && ompGstinMap[gst]) || (vid && ompMap[vid]) || null;
+        var omp = (gst && (ompGstinMap[gst] || ompGstinNorm[_nrmG(gst)])) || (vid && ompMap[vid]) || null;
         if (!omp) return;   // not an OMP-onboarded vendor — out of scope
         var aud = omp.aud === 'buyer' ? 'buyer' : 'seller';
 
-        // — Vendor Score (column H, out of 10) —
+        // — Vendor Score (out of 10; column resolved above) —
         // A blank cell is unrated (NaN) and simply doesn't count. A literal 0 is a
         // real score and is kept, so it lands in the 0-2 band rather than vanishing.
-        var sv = parseFloat(row[VS_COLS.denominator]);
+        var sv = parseFloat(row[vsScore]);
         if (!isNaN(sv) && sv >= 0 && sv <= 10) {
           var band = Math.min(4, Math.max(0, Math.floor(sv / 2)));
           [aud, 'combined'].forEach(function(t) {
@@ -2536,7 +2556,7 @@ function getQualityData() {
         // — OSV Status (column N; three-way: verified / in-progress / not-initiated) —
         // Sellers only, matching how OSV is scoped everywhere else in the dashboard.
         if (aud === 'seller') {
-          var osRaw = String(row[VS_COLS.osvStatus] || '').trim();
+          var osRaw = String(row[vsOsv] || '').trim();
           var osUp  = osRaw.toUpperCase().replace(/\s+/g, '_');
           var osvStatus =
             (osUp === 'CONSENT_ACCEPTED' || osUp === 'YES' || osUp === 'Y' || osUp === 'TRUE'
