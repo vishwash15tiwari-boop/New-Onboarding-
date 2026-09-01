@@ -45,11 +45,11 @@ var CONFIG = {
   // document the script is opened from. Falls back to the active spreadsheet.
   META_SHEET_ID: '10RJ1D1GXh-f_7a5M3YMAEt8jDQ7X6jQm2-krTNOBts8',
 
-  // External workbook holding Vendor Scores and OSV Status. Columns are addressed
-  // by POSITION here (not header name) because that is how they were specified —
-  // see VS_COLS. Run debugVendorScoreSheet() to dump the live headers with their
-  // column letters and confirm the positions still line up after any sheet edit.
-  VENDOR_SCORE_SHEET_ID: '1wRYs0cB5APbbCozTFKW9w-1l5E6aVXPeg4nAF-5hKMM',
+  // External workbook holding Vendor Rating + OSV Status. Score / OSV columns are now
+  // resolved by HEADER NAME in getQualityData (positional VS_COLS kept only as a last
+  // fallback). Run debugVendorScoreSheet() to dump the live headers and confirm the
+  // rating / OSV / GSTIN columns are detected.
+  VENDOR_SCORE_SHEET_ID: '1UMtuarqR9wFI74VM4JWC3GXSF9C9YpkkySeFJgq8rQc',   // "NBFC TRACKER"
   VENDOR_SCORE_TAB:      '',   // blank → first tab in the workbook
 };
 
@@ -2428,10 +2428,10 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  // v11: Vendor Score / OSV columns resolved by header name (was fixed position),
-  // so a reordered sheet no longer zeroes the ratings — bumped so no stale v10
-  // (all-unrated) payload is reused after this fix deploys.
-  var CACHE_KEY = 'quality_data_v11';
+  // v12: Vendor Rating / OSV now sourced from the "NBFC TRACKER" workbook, joined by
+  // Seller_GSTIN and read by header name — bumped so no stale v10/v11 payload (old
+  // source / all-unrated) is reused after this change deploys.
+  var CACHE_KEY = 'quality_data_v12';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -2492,7 +2492,7 @@ function getQualityData() {
       Logger.log('Vendor Score workbook unreadable (' + vsd.error + ') — rating/OSV will be empty.');
     } else if (vsd.rows.length) {
       var vsh   = vsd.headers;
-      var vsGst = qualityFindCol_(vsh, ['gstin','gst_number','gst_no','gstin_number','gst']);
+      var vsGst = qualityFindCol_(vsh, ['seller_gstin','buyer_gstin','gstin','gst_number','gst_no','gstin_number','gst']);
       var vsId  = qualityFindCol_(vsh, ['seller_id','buyer_id','id','vendor_id','vendorid','entity_id']);
       var vsNm  = qualityFindCol_(vsh, ['seller_name','name','vendor_name','business_name','company_name']);
       // Optional enrichment for the OSV records table. Absent columns simply leave
@@ -2512,7 +2512,7 @@ function getQualityData() {
       // as unrated and the module shows 0 rated / N unrated (exactly this failure).
       // Resolve both by header name first and fall back to the configured position only
       // when no recognisable header is present, so a column reorder can't zero it out.
-      var vsScore = qualityFindCol_(vsh, ['vendor_score','vendor_scores','vendorscore','overall_score',
+      var vsScore = qualityFindCol_(vsh, ['finoscale_rating','finoscale_score','finoscale','vendor_score','vendor_scores','vendorscore','overall_score',
         'average_score','avg_score','final_score','score_out_of_10','vendor_rating_score','quality_score','seller_score','score']);
       if (vsScore < 0) vsScore = VS_COLS.denominator;
       var vsOsv = qualityFindCol_(vsh, ['osv_status','osv','on_site_verification','onsite_verification',
@@ -2940,7 +2940,7 @@ function debugVendorScoreSheet() {
 
   // Which columns could join these rows back to the dashboard's vendors.
   var idC  = qualityFindCol_(d.headers, ['seller_id','buyer_id','id','vendor_id','vendorid','entity_id']);
-  var gstC = qualityFindCol_(d.headers, ['gstin','gst_number','gst_no','gstin_number','gst']);
+  var gstC = qualityFindCol_(d.headers, ['seller_gstin','buyer_gstin','gstin','gst_number','gst_no','gstin_number','gst']);
   Logger.log('\n── join keys ──');
   Logger.log('  id column:    ' + (idC  >= 0 ? colLetter_(idC)  + ' (' + d.headers[idC]  + ')' : '✗ NOT FOUND'));
   Logger.log('  gstin column: ' + (gstC >= 0 ? colLetter_(gstC) + ' (' + d.headers[gstC] + ')' : '✗ NOT FOUND'));
