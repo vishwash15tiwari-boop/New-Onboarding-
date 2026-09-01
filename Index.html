@@ -2879,9 +2879,8 @@ body.view-gst #mm-crumbs{display:none}
 .mf-detail-vd:hover{opacity:.88;transform:translateY(-1px)}
 
 /* ── Shared detail popup shell (.mfp): a small floating card appended to <body>,
-   used by the funnel stage cards (their detailed records, .mfp-rec) and the
-   Quality KPI rows (contextual breakdown). One open/close/placement/animation
-   everywhere so every popup reads as the same interaction. */
+   used by the Quality KPI rows (contextual breakdown). One open/close/placement/
+   animation everywhere so every popup reads as the same interaction. */
 .mfp{position:fixed;z-index:1000;width:264px;max-width:calc(100vw - 16px);
   background:var(--card);border:1px solid var(--border);border-radius:12px;
   box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px -8px rgba(0,0,0,.22);
@@ -2911,18 +2910,11 @@ body.view-gst #mm-crumbs{display:none}
 .mfp-act:hover{background:var(--accent-soft);border-color:rgba(0,93,255,.3);color:var(--blue)}
 .mfp-act:active{transform:scale(.98)}
 .mfp-act svg{flex-shrink:0}
-/* Records variant — a touch wider, with an internal scroll list of live records. */
-.mfp.mfp-rec{width:340px}
-.mfrec-body{margin-top:10px;max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:1px;
-  border-top:1px solid var(--border);padding-top:7px;margin-right:-4px;padding-right:4px;overscroll-behavior:contain}
-.mfrec-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 6px;border-radius:7px}
-.mfrec-row:hover{background:var(--bg2)}
-.mfrec-main{min-width:0}
-.mfrec-name{font-size:12px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mfrec-meta{font-size:10px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
-.mfrec-chip{flex-shrink:0;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;letter-spacing:.01em}
-.mfrec-load,.mfrec-empty,.mfrec-more{font-size:10.5px;color:var(--txt3);text-align:center;padding:9px 4px}
-.mfrec-more{border-top:1px dashed var(--border);margin-top:2px}
+/* Geographic state popup — reuses the .mgsd-* detail block edge-to-edge, so it
+   drops the shell padding and floats the close button over the header. */
+.mfp.mfp-geo{padding:0;width:264px;overflow:hidden}
+.mfp-geo .mgsd-hd{padding-right:34px}
+.mfp-x-abs{position:absolute;top:6px;right:7px;z-index:3}
 @media(prefers-reduced-motion:reduce){.mfp,.mfp.open{transform:none}.mfp{transition:opacity .12s linear}.mfp-act:active{transform:none}}
 
 /* ── Inline Geographic Split — India map ── */
@@ -4002,6 +3994,14 @@ var MR_OSV_COLS = [
   { key:'osvStatus',   label:'OSV Status' },
   { key:'assignedTo',  label:'Assigned User' },
   { key:'updatedDate', label:'Last Updated' },
+];
+// Vendor Rating records view — a score band's vendors opened in the full overlay
+// (like OSV). Rows come from qualityData.vendorRatings (sellers only).
+var MR_RATING_COLS = [
+  { key:'name',     label:'Vendor Name', always:true },
+  { key:'gstin',    label:'GSTIN' },
+  { key:'rating',   label:'Score (/10)' },
+  { key:'category', label:'Category' },
 ];
 // Average TAT block inside Onboarded (Details) — hidden for now. Set to true to
 // restore it; the builder and its drill-down are left intact behind this flag.
@@ -5085,11 +5085,11 @@ function _mmVertModules(key) {
                         .sort(function(a, b){ return b.rating - a.rating; });
         var rTid = 'mp-svl-' + bandI;
         if (rSV.length) {
-          // Clicking the band opens its vendors in a popup (_mmRatingBandPop),
-          // rather than expanding an inline list.
+          // Clicking the band opens its vendors in the full records overlay
+          // (openRatingRecords), like the funnel cards and OSV.
           rExtra += '<div class="km-star-row km-star-clickable" role="button" tabindex="0"'
-            + ' onclick="_mmRatingBandPop(this,' + bandI + ')"'
-            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_mmRatingBandPop(this,' + bandI + ')}">'
+            + ' onclick="openRatingRecords(' + bandI + ')"'
+            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openRatingRecords(' + bandI + ')}">'
             + '<span class="km-star-n">' + _vsBandLabel(bandI) + '</span>'
             + '<div class="km-star-track"><div class="km-star-fill" style="width:' + rBP + '%;background:' + rCol + '"></div></div>'
             + '<span class="km-star-cnt">' + fmt(rC) + '</span>'
@@ -6226,9 +6226,26 @@ function mmGeoHover(id, on) {
   // Preview the hovered state's detail; on mouse-out revert to the locked selection.
   _mmGeoUpdateDetail(on ? id : (_geo.state || null));
 }
-function mmGeoSelectState(id) {
-  _geo.state = (_geo.state === id) ? null : id;
+// Clicking a state highlights it on the map and opens its Sellers/Buyers detail
+// in a popup anchored at the click point. The popup reuses _mmGeoDetailHtml, so
+// its per-category rows still drill into the full records overlay.
+function mmGeoStateClick(id, evt) {
+  if (!id || !IN_STATES[id]) return;
+  _geo.state = id;
   mmRenderGeo();
+  var anchor = (evt && typeof evt.clientX === 'number' && evt.clientX)
+    ? { getBoundingClientRect: function() { var x = evt.clientX, y = evt.clientY; return { left:x, right:x, top:y, bottom:y, width:0, height:0 }; } }
+    : document.getElementById('mm-geo');
+  mmGeoStatePopup(id, anchor);
+}
+function mmGeoStatePopup(id, anchor) {
+  if (!id || !IN_STATES[id]) return;
+  var by = _geoAgg([]);
+  if (!by || !by[id]) return;   // nothing onboarded here — no popup
+  var swatch = (_geo.aud === 'buyer') ? '#1dc797' : '#005dff';
+  var html = '<button class="mfp-x mfp-x-abs" data-pop-close aria-label="Close">' + _mfXsvg() + '</button>'
+    + _mmGeoDetailHtml(id, by, swatch);
+  _popShow(anchor, { html: html, cls: 'mfp-geo' });
 }
 
 function mmRenderGeo() {
@@ -6276,7 +6293,7 @@ function mmRenderGeo() {
     }
     var canClick = d && d.total > 0;   // any records → clickable for the detail panel
     var handlers = ' data-geo="' + id + '" onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
-      + (canClick ? ' onclick="mmGeoSelectState(\'' + id + '\')" style="cursor:pointer"' : '');
+      + (canClick ? ' onclick="mmGeoStateClick(\'' + id + '\',event)" style="cursor:pointer"' : '');
     return '<path class="' + cls + '" d="' + st.d + '" fill="' + fill + '" fill-opacity="' + op
       + '" stroke="' + stroke + '" stroke-width="' + sw + '"' + handlers + '><title>' + esc(st.name)
       + (cnt ? ' · ' + fmt(cnt) + ' ' + audLabel.toLowerCase() : '') + '</title></path>';
@@ -6315,7 +6332,7 @@ function mmRenderGeo() {
       }
       return '<button class="mg-row" data-geo="' + id + '"' + rowStyle(i)
         + ' onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
-        + ' onclick="mmGeoSelectState(\'' + id + '\')">'
+        + ' onclick="mmGeoStateClick(\'' + id + '\',event)">'
         + '<span class="mg-row-nm"><span class="mg-swatch" style="background:' + fillColor + '"></span>' + esc(name) + '</span>'
         + cells
         + '</button>';
@@ -7106,12 +7123,12 @@ function openKpiModal(cardId) {
                           .sort(function(a, b) { return b.rating - a.rating; });
         var tid  = 'km-svl-' + si;
         if (sv.length > 0) {
-          // Clicking the band opens its vendors in a popup (_mmRatingBandPop),
-          // consistent with the inline Vendor Ratings panel — the popup sits
-          // above the modal (z-index) so it is fully visible.
+          // Clicking the band opens its vendors in the full records overlay
+          // (openRatingRecords), consistent with the inline Vendor Ratings panel;
+          // openRatingRecords closes this KPI modal first so the overlay is on top.
           h += '<div class="km-star-row km-star-clickable" role="button" tabindex="0"'
-            + ' onclick="_mmRatingBandPop(this,' + si + ')"'
-            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_mmRatingBandPop(this,' + si + ')}">'
+            + ' onclick="openRatingRecords(' + si + ')"'
+            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openRatingRecords(' + si + ')}">'
             + '<span class="km-star-n">' + _vsBandLabel(si) + '</span>'
             + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
             + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
@@ -7486,33 +7503,6 @@ function _ovnEnsureAud(aud) {
     .getVerticalRows(key, JSON.stringify(f));
 }
 
-// Vendor Ratings score band → popup listing that band's vendors (name · GSTIN ·
-// score · category), reusing the shared records-popup shell. Opens next to the
-// clicked band row instead of expanding inline.
-function _mmRatingBandPop(anchor, bandI) {
-  var col = _vsBandColor(bandI);
-  var vendors = ((typeof qualityData !== 'undefined' && qualityData && qualityData.vendorRatings) || [])
-    .filter(function(v) { return v.aud !== 'buyer' && _vsBand(v.rating) === bandI; })
-    .sort(function(a, b) { return b.rating - a.rating; });
-  var CAP = 200, shown = vendors.slice(0, CAP);
-  var list = shown.map(function(v) {
-    return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
-      + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
-      + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
-      + '<span class="km-vrating" style="color:' + col + '">' + Number(v.rating || 0).toFixed(1) + '</span>'
-      + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '')
-      + '</div>';
-  }).join('');
-  var body = vendors.length
-    ? list + (vendors.length > CAP ? '<div class="mfrec-more">Showing ' + CAP + ' of ' + fmt(vendors.length) + '.</div>' : '')
-    : '<div class="mfrec-empty">No rated vendors in this band.</div>';
-  var html =
-      '<div class="mfp-hd"><div class="mfp-ttl">Rating ' + _vsBandLabel(bandI) + '</div>'
-    + '<button class="mfp-x" data-pop-close aria-label="Close">' + _mfXsvg() + '</button></div>'
-    + '<div class="mfp-eye">Vendor Rating · <span style="color:' + col + ';font-weight:800">' + fmt(vendors.length) + '</span> vendor' + (vendors.length === 1 ? '' : 's') + '</div>'
-    + '<div class="mfrec-body">' + body + '</div>';
-  _popShow(anchor, { html: html, cls: 'mfp-rec' });
-}
 function _kmTileToggle(panelId, groupId, tile) {
   var panel = document.getElementById(panelId);
   if (!panel) return;
@@ -10625,10 +10615,43 @@ function openOsvRecords(status) {
   _mrRender();
 }
 
+// Vendor Rating score band → the band's vendors in the full records overlay
+// ("new page"), consistent with the funnel cards and OSV. bandI is the 0-4 band
+// index (null = all rated). Closes the KPI modal first when invoked from it, so
+// the overlay isn't left behind the modal.
+function openRatingRecords(bandI) {
+  if (typeof closeKpiModal === 'function') closeKpiModal();
+  var all = ((typeof qualityData !== 'undefined' && qualityData && qualityData.vendorRatings) || [])
+    .filter(function(v) { return v.aud !== 'buyer'; });
+  var band = (bandI === null || bandI === undefined || bandI === '') ? null : parseInt(bandI, 10);
+  var rows = (band == null ? all : all.filter(function(v) { return _vsBand(v.rating) === band; }))
+    .slice().sort(function(a, b) { return b.rating - a.rating; });
+  var key = activeVertKey || selectedVert;
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var label = 'Vendor Rating' + (band == null ? ' · All Rated' : ' · ' + _vsBandLabel(band));
+  _mrCtx = {
+    module: 'rating', rating: true, band: band,
+    label: label, vertLabel: (vcfg && vcfg.name) || key || '',
+    preStatus: null, forceSeller: true, cfg: { label: label }
+  };
+  _mrRows = rows;
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  _mrColVis = {};
+  if (!rows.some(function(r) { return r.gstin; })) _mrColVis['gstin'] = true;
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+}
+
 // State-level geo drill-down — opens the records overlay filtered to one state,
 // one audience (seller/buyer), and optionally one category.
 function openGeoStateRecords(stateId, aud, cat) {
   if (!stateId || !IN_STATES[stateId]) return;
+  if (typeof _mfPopClose === 'function') _mfPopClose(true);   // drilling from the state popup closes it
   var key = activeVertKey || selectedVert;
   var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
   var vertName = (vcfg && vcfg.name) || key || '';
@@ -10924,6 +10947,7 @@ function _mrColSet() {
   if (_mrCtx && _mrCtx.stage) return _mrCtx.stageKey === 'draft' ? MR_DRAFT_COLS : MR_STAGE_COLS;
   if (_mrCtx && _mrCtx.aging) return MR_AGING_COLS;
   if (_mrCtx && _mrCtx.tat) return MR_TAT_COLS;
+  if (_mrCtx && _mrCtx.rating) return MR_RATING_COLS;
   return (_mrCtx && _mrCtx.osv) ? MR_OSV_COLS : MR_COLS;
 }
 function _mrVisibleCols() {
@@ -10952,6 +10976,8 @@ function _mrRenderHeader() {
     // Same reason as ageing: the card's status gate, not the whole feed.
     var inStage = _mrRows.filter(_mrPreFilter).length;
     if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(inStage) + ' record' + (inStage === 1 ? '' : 's') + ')';
+  } else if (_mrCtx.rating) {
+    if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(_mrRows.length) + ' vendor' + (_mrRows.length === 1 ? '' : 's') + ')';
   } else {
     if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(_mrRows.length) + ' source rows)';
   }
@@ -11010,6 +11036,15 @@ function _mrRenderFilters() {
       + '<button class="vd-close" onclick="mrFClear()" style="flex-shrink:0">Clear</button>';
     return;
   }
+  // Rating dataset carries only name / GSTIN / score / category — offer just the
+  // relevant filters.
+  if (_mrCtx.rating) {
+    el.innerHTML =
+        '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search vendor or GSTIN…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
+      + _mrSel('mr-f-cat', 'Categories', _mrUniq('category'), _mrF.category, 'mrFChange()')
+      + '<button class="vd-close" onclick="mrFClear()" style="flex-shrink:0">Clear</button>';
+    return;
+  }
   // OSV dataset has its own filter set — the onboarding filters (vendor type,
   // state, GST, transaction) don't exist on these rows.
   if (_mrCtx.osv) {
@@ -11062,6 +11097,7 @@ function _mrPreFilter(r) {
     return true;
   }
   if (_mrCtx.geoState || _mrCtx.audRec) return true;
+  if (_mrCtx.rating) return true;   // _mrRows is already the band's vendors
   if (_mrCtx.cfg && _mrCtx.cfg.isTxnView && !r.hasTransacted) return false;
   if (_mrCtx.preStatus && r.status !== _mrCtx.preStatus) return false;
   return true;
@@ -11069,6 +11105,13 @@ function _mrPreFilter(r) {
 
 function _mrUserFilter(r) {
   var f = _mrF;
+  if (_mrCtx && _mrCtx.rating) {
+    if (f.category !== 'All' && r.category !== f.category) return false;
+    var rq = (f.search || '').toLowerCase();
+    if (rq && (r.name  || '').toLowerCase().indexOf(rq) === -1
+           && (r.gstin || '').toLowerCase().indexOf(rq) === -1) return false;
+    return true;
+  }
   if (_mrCtx && _mrCtx.stage) {
     if (f.category !== 'All' && r.category !== f.category) return false;
     if (f.userType !== 'All' && (r._aud === 'buyer' ? 'Buyer' : 'Seller') !== f.userType) return false;
@@ -11174,15 +11217,17 @@ function _mrSortedRows(rows) {
   if (!_mrSort.key) return rows;
   var key = _mrSort.key, dir = _mrSort.dir;
   var isOsv = !!(_mrCtx && _mrCtx.osv);
+  var isRating = !!(_mrCtx && _mrCtx.rating);
   var isSimple = !!(_mrCtx && (_mrCtx.aging || _mrCtx.tat || _mrCtx.stage));
   function simpleVal(r, k) {
     if (k === 'vertical') return String(_mrCtx.vertName || '').toLowerCase();
     if (k === 'userType') return r._aud === 'buyer' ? 'buyer' : 'seller';
     return String(r[k] == null ? '' : r[k]).toLowerCase();
   }
+  function ratingVal(r, k) { return k === 'rating' ? Number(r.rating || 0) : String(r[k] == null ? '' : r[k]).toLowerCase(); }
   return rows.slice().sort(function(a, b) {
-    var va = isOsv ? _osvSortVal(a, key) : (isSimple && key !== 'tat') ? simpleVal(a, key) : vdSortVal(a, key);
-    var vb = isOsv ? _osvSortVal(b, key) : (isSimple && key !== 'tat') ? simpleVal(b, key) : vdSortVal(b, key);
+    var va = isRating ? ratingVal(a, key) : isOsv ? _osvSortVal(a, key) : (isSimple && key !== 'tat') ? simpleVal(a, key) : vdSortVal(a, key);
+    var vb = isRating ? ratingVal(b, key) : isOsv ? _osvSortVal(b, key) : (isSimple && key !== 'tat') ? simpleVal(b, key) : vdSortVal(b, key);
     if (va < vb) return -dir;
     if (va > vb) return  dir;
     return 0;
@@ -11226,6 +11271,15 @@ function _mrCellHtml(r, key) {
       case 'category':   return esc(r.category || '—');
       case 'tat':        return tatChip(r.tat);
       default:           return esc(String(r[key] || '—'));
+    }
+  }
+  if (_mrCtx && _mrCtx.rating) {
+    switch (key) {
+      case 'name':     return '<strong>' + esc(r.name || 'Unknown') + '</strong>';
+      case 'gstin':    return r.gstin ? '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>' : '<span class="td-dim">—</span>';
+      case 'rating':   return '<span class="km-vrating" style="color:' + _vsBandColor(_vsBand(r.rating)) + '">' + Number(r.rating || 0).toFixed(1) + '</span>';
+      case 'category': return r.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A">' + esc(r.category) + '</span>' : '<span class="td-dim">—</span>';
+      default:         return esc(String(r[key] || '—'));
     }
   }
   if (_mrCtx && _mrCtx.osv) {
@@ -11297,7 +11351,7 @@ function _mrRenderTable() {
     } else {
       // OSV rows come from the quality feed and carry none of the onboarding
       // fields openRecModal expects, so they are not click-through.
-      var clickable = !(_mrCtx && (_mrCtx.osv || _mrCtx.aging || _mrCtx.tat || _mrCtx.stage));
+      var clickable = !(_mrCtx && (_mrCtx.osv || _mrCtx.aging || _mrCtx.tat || _mrCtx.stage || _mrCtx.rating));
       tbody.innerHTML = page.map(function(r) {
         var k = ++_rmI; _rmD[k] = r;
         return '<tr' + (clickable ? ' onclick="mrOpenRec(' + k + ')"' : ' style="cursor:default"') + '>'
@@ -11390,6 +11444,10 @@ function mrFChange() {
     _mrF.category = v('mr-f-cat');
     _mrPg.page = 0; _mrRenderTable(); return;
   }
+  if (_mrCtx && _mrCtx.rating) {
+    _mrF.category = v('mr-f-cat');
+    _mrPg.page = 0; _mrRenderTable(); return;
+  }
   if (_mrCtx && _mrCtx.tat) {
     if (!_mrCtx.tatCat) _mrF.category = v('mr-f-cat');
     _mrF.vendor = v('mr-f-ven');
@@ -11479,9 +11537,15 @@ function mrExportCSV() {
   var isTatX = !!(_mrCtx && _mrCtx.tat);
   var isAgeX = !!(_mrCtx && _mrCtx.aging);
   var isStgX = !!(_mrCtx && _mrCtx.stage);
+  var isRatX = !!(_mrCtx && _mrCtx.rating);
   rows.forEach(function(r) {
     lines.push(cols.map(function(c) {
       var v = '';
+      if (isRatX) {
+        v = c.key === 'rating' ? (r.rating != null ? Number(r.rating).toFixed(1) : '')
+                               : String(r[c.key] == null ? '' : r[c.key]);
+        return '"' + v.replace(/"/g, '""') + '"';
+      }
       if (isTatX) {
         v = c.key === 'tat' ? (r.tat === '—' || r.tat == null ? '' : String(r.tat))
                             : String(r[c.key] == null ? '' : r[c.key]);
