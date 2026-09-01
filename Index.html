@@ -2114,6 +2114,18 @@ body.view-gst #vert-tabs-bar{display:none}
 /* Star bar pct column */
 .cc-qsect-sbar-p{font-size:9px;color:var(--txt3);min-width:28px;text-align:right}
 
+/* Clickable KPI rows — open a contextual popup (see _qsPopContent). The whole
+   row is the target; a faint chevron appears on hover as the affordance, and a
+   subtle wash + rounded corners lift it off the card without adding chrome. */
+.cc-qsect-clk{cursor:pointer;border-radius:6px;transition:background .13s var(--ease-out)}
+.cc-qsect-clk.cc-qsect-sbar,.cc-qsect-clk.cc-qsect-drow{margin-left:-5px;margin-right:-5px;padding-left:5px;padding-right:5px}
+.cc-qsect-clk.cc-qsect-row{margin-left:-5px;margin-right:-5px;padding:2px 5px;border-radius:7px}
+.cc-qsect-clk:hover{background:var(--accent-soft)}
+.cc-qsect-clk:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.cc-qsect-arw{flex-shrink:0;font-size:12px;line-height:1;color:var(--txt3);opacity:0;transform:translateX(-2px);transition:opacity .13s var(--ease-out),transform .13s var(--ease-out);margin-left:1px}
+.cc-qsect-clk:hover .cc-qsect-arw,.cc-qsect-clk:focus-visible .cc-qsect-arw{opacity:.75;transform:none}
+@media(prefers-reduced-motion:reduce){.cc-qsect-arw{transition:opacity .12s linear;transform:none}}
+
 /* ══════════════════════════════════════════════════
    INLINE DETAIL SECTION — polished header
    ══════════════════════════════════════════════════ */
@@ -2867,6 +2879,49 @@ body.view-gst #mm-crumbs{display:none}
 .mf-detail-vd{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;background:var(--blue);color:#fff;border:none;border-radius:999px;font-size:.8rem;font-weight:600;cursor:pointer;transition:opacity .15s,transform .15s;white-space:nowrap}
 .mf-detail-vd svg{width:15px;height:15px;flex-shrink:0}
 .mf-detail-vd:hover{opacity:.88;transform:translateY(-1px)}
+
+/* ── Contextual detail popup — clicking any part of a funnel stage matrix
+   (headline, category column, Sellers/Buyers row, a single cell or a Total)
+   opens a small popup near that element with its live breakdown. Trigger
+   elements wear .mf-pop-t and get a subtle inset ring on hover so the whole
+   card reads as scannable rather than one big button. */
+.mf-pop-t{cursor:pointer;border-radius:6px;transition:box-shadow .13s var(--ease-out),background .13s var(--ease-out)}
+.mf-pop-t:hover{box-shadow:inset 0 0 0 1.5px rgba(0,93,255,.32)}
+.mf-mx-lbl.mf-pop-t:hover,.mf-mx-hd.mf-pop-t:hover{background:var(--accent-soft)}
+.mf-head.mf-pop-t{padding:2px 5px;margin:-2px -5px 2px;border-radius:9px}
+.mf-pop-t:focus-visible{outline:2px solid var(--blue);outline-offset:1px;box-shadow:none}
+.mf-pop-t:active{transform:scale(.985)}
+
+.mfp{position:fixed;z-index:650;width:264px;max-width:calc(100vw - 16px);
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px -8px rgba(0,0,0,.22);
+  padding:13px 14px 12px;font-family:inherit;color:var(--txt);
+  opacity:0;transform:translateY(4px) scale(.985);transform-origin:top center;
+  transition:opacity .15s var(--ease-out),transform .15s cubic-bezier(.34,1.4,.64,1)}
+.mfp.open{opacity:1;transform:none}
+.mfp-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.mfp-ttl{font-size:12.5px;font-weight:700;letter-spacing:-.01em;color:var(--txt);line-height:1.25;padding-top:1px}
+.mfp-x{flex-shrink:0;width:22px;height:22px;border:0;background:transparent;color:var(--txt3);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;margin:-3px -4px 0 0}
+.mfp-x:hover{background:var(--bg2);color:var(--txt)}
+.mfp-eye{font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-top:2px}
+.mfp-big{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1;margin:9px 0 3px;font-variant-numeric:tabular-nums}
+.mfp-sub{font-size:11px;color:var(--txt2);font-weight:500;line-height:1.35}
+.mfp-cap{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);margin:12px 0 -3px}
+.mfp-rows{margin:11px 0 1px;display:flex;flex-direction:column;gap:7px}
+.mfp-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px}
+.mfp-row-l{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txt2);font-weight:500;white-space:nowrap}
+.mfp-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.mfp-bar{height:5px;border-radius:3px;background:var(--bg2);overflow:hidden;min-width:24px}
+.mfp-bar>i{display:block;height:100%;border-radius:3px}
+.mfp-row-v{font-size:11.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mfp-stat{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:9px;border-top:1px solid var(--border);font-size:11px}
+.mfp-stat-l{color:var(--txt2);font-weight:500}
+.mfp-stat-v{font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+.mfp-act{margin-top:12px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border:1px solid var(--border);background:var(--bg);color:var(--txt2);border-radius:8px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;transition:background .13s,border-color .13s,color .13s,transform .1s}
+.mfp-act:hover{background:var(--accent-soft);border-color:rgba(0,93,255,.3);color:var(--blue)}
+.mfp-act:active{transform:scale(.98)}
+.mfp-act svg{flex-shrink:0}
+@media(prefers-reduced-motion:reduce){.mfp,.mfp.open{transform:none}.mfp{transition:opacity .12s linear}.mf-pop-t:active,.mfp-act:active{transform:none}}
 
 /* ── Inline Geographic Split — India map ── */
 :root{--mg-base:#e9ecf2}
@@ -3993,7 +4048,10 @@ function _ensureAudRows(key, aud, cb) {
 }
 
 // Records behind one Breakup stage card, across both audiences.
-function openStageRecords(stageKey) {
+// preCat / preAud let the contextual popup drill straight into a category and/or
+// audience (e.g. Plastic · Sellers) when the user opens the full record list from
+// it. Both are optional — with neither, the whole stage opens as before.
+function openStageRecords(stageKey, preCat, preAud) {
   var stage = null;
   for (var i = 0; i < MF_STAGES.length; i++) { if (MF_STAGES[i].key === stageKey) { stage = MF_STAGES[i]; break; } }
   if (!stage) return;
@@ -4009,9 +4067,10 @@ function openStageRecords(stageKey) {
     cfg: { label: stage.label }
   };
   _mrRows = [];
-  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+  _mrF = { search:'', category:(preCat || 'All'), vendor:'All', status:'All', gst:'All', state:'All',
            ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
-           osvStatus:'All', vertical:'All', assigned:'All', userType:'All' };
+           osvStatus:'All', vertical:'All', assigned:'All',
+           userType:(preAud ? (preAud === 'seller' ? 'Seller' : 'Buyer') : 'All') };
   _mrSort = { key:'', dir:1 };
   _mrPg = { size:25, page:0 };
   _mrColVis = {};
@@ -5595,11 +5654,16 @@ var MF_STAGES = [
 
 // mmSelectFunnelStage removed: stage cards now open their records directly.
 
-function _mfCell(v, na, color) {
-  return '<div class="mf-mx-cell' + (na ? ' na' : '') + '"'
-    + (color && !na ? ' style="color:' + color + '"' : '') + '>'
-    + (na ? '—' : esc(v)) + '</div>';
+// Attribute string that tags a matrix element as a popup trigger. kind is one of
+// grand | col | row | cell; cat/aud narrow it. The delegated handler on #mm-funnel
+// reads these back (plus the card's data-stage) to build the contextual popup.
+function _mfPopAttr(kind, cat, aud) {
+  return ' data-pop="' + kind + '"'
+    + (cat != null ? ' data-cat="' + esc(cat) + '"' : '')
+    + (aud ? ' data-aud="' + aud + '"' : '')
+    + ' role="button" tabindex="0"';
 }
+
 // Stage breakdown grid: rows = Sellers / Buyers, columns = EVERY category the
 // vertical has, in volume order, followed by a Total column. Showing all of them
 // is the point — capping the columns silently dropped whatever sat outside the
@@ -5610,52 +5674,357 @@ function _mfCell(v, na, color) {
 function _mfMatrix(catRows, sTot, bTot) {
   var cols = (catRows && catRows.length) ? catRows : null;
   var n = cols ? cols.length + 1 : 1;
+  // Every label / header / cell / total is its own popup trigger (see _mfPopAttr).
   var head = '<div class="mf-mx-corner"></div>';
-  var sRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot seller"></span>Sellers</div>';
-  var bRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot buyer"></span>Buyers</div>';
+  var sRow = '<div class="mf-mx-lbl mf-pop-t"' + _mfPopAttr('row', null, 'seller') + '><span class="mf-cat-dot seller"></span>Sellers</div>';
+  var bRow = '<div class="mf-mx-lbl mf-pop-t"' + _mfPopAttr('row', null, 'buyer') + '><span class="mf-cat-dot buyer"></span>Buyers</div>';
   if (cols) {
     cols.forEach(function(c, i) {
-      head += '<div class="mf-mx-hd" title="' + esc(c.cat) + '"><span class="mf-cat-dot" style="background:'
-        + MM_CAT_COLORS[i % MM_CAT_COLORS.length] + '"></span><span>' + esc(_catLabel(c.cat)) + '</span></div>';
-      sRow += _mfCell(fmt(c.s), false, MM_CAT_COLORS[i % MM_CAT_COLORS.length]);
-      bRow += _mfCell(fmt(c.b), false, MM_CAT_COLORS[i % MM_CAT_COLORS.length]);
+      var col = MM_CAT_COLORS[i % MM_CAT_COLORS.length];
+      head += '<div class="mf-mx-hd mf-pop-t" title="' + esc(c.cat) + '"' + _mfPopAttr('col', c.cat, null)
+        + '><span class="mf-cat-dot" style="background:' + col + '"></span><span>' + esc(_catLabel(c.cat)) + '</span></div>';
+      sRow += '<div class="mf-mx-cell mf-pop-t" style="color:' + col + '"' + _mfPopAttr('cell', c.cat, 'seller') + '>' + fmt(c.s) + '</div>';
+      bRow += '<div class="mf-mx-cell mf-pop-t" style="color:' + col + '"' + _mfPopAttr('cell', c.cat, 'buyer') + '>' + fmt(c.b) + '</div>';
     });
-    head += '<div class="mf-mx-hd tot">Total</div>';
-    sRow += '<div class="mf-mx-cell tot">' + fmt(sTot || 0) + '</div>';
-    bRow += '<div class="mf-mx-cell tot">' + fmt(bTot || 0) + '</div>';
+    head += '<div class="mf-mx-hd tot mf-pop-t"' + _mfPopAttr('grand', null, null) + '>Total</div>';
+    sRow += '<div class="mf-mx-cell tot mf-pop-t"' + _mfPopAttr('row', null, 'seller') + '>' + fmt(sTot || 0) + '</div>';
+    bRow += '<div class="mf-mx-cell tot mf-pop-t"' + _mfPopAttr('row', null, 'buyer') + '>' + fmt(bTot || 0) + '</div>';
   } else {
     head += '<div class="mf-mx-hd">Count</div>';
-    sRow += _mfCell(fmt(sTot || 0), false);
-    bRow += _mfCell(fmt(bTot || 0), false);
+    sRow += '<div class="mf-mx-cell mf-pop-t"' + _mfPopAttr('row', null, 'seller') + '>' + fmt(sTot || 0) + '</div>';
+    bRow += '<div class="mf-mx-cell mf-pop-t"' + _mfPopAttr('row', null, 'buyer') + '>' + fmt(bTot || 0) + '</div>';
   }
   return '<div class="mf-matrix" style="grid-template-columns:auto repeat(' + n + ',1fr)">'
     + head + sRow + bRow + '</div>';
 }
 
+// ── Contextual detail popup for the funnel stage matrix ─────────────────────
+// One floating card, appended to <body> so it escapes the funnel's overflow
+// clipping, positioned next to whatever element was clicked. Content is built
+// live from DS/DB every open, so it always reflects the current data.
+var _mfPop = null;
+function _mfPopCloseEvt() { _mfPopClose(); }
+function _mfPopOutside(e) {
+  if (!_mfPop) return;
+  if (_mfPop.contains(e.target)) return;
+  if (e.target.closest && e.target.closest('.mf-pop-t,.cc-qsect-clk')) return;  // another trigger — let it switch
+  _mfPopClose();
+}
+function _mfPopKey(e) { if (e.key === 'Escape' || e.key === 'Esc') _mfPopClose(); }
+function _mfPopClose(immediate) {
+  document.removeEventListener('mousedown', _mfPopOutside, true);
+  document.removeEventListener('keydown', _mfPopKey, true);
+  window.removeEventListener('resize', _mfPopCloseEvt);
+  window.removeEventListener('scroll', _mfPopCloseEvt, true);
+  var p = _mfPop; _mfPop = null;
+  if (!p) return;
+  if (immediate || !motionOK()) { if (p.parentNode) p.parentNode.removeChild(p); return; }
+  p.classList.remove('open');
+  setTimeout(function() { if (p && p.parentNode) p.parentNode.removeChild(p); }, 170);
+}
+function _mfPopPlace(pop, anchor) {
+  var r = anchor.getBoundingClientRect();
+  var pw = pop.offsetWidth, ph = pop.offsetHeight, gap = 8, m = 8;
+  var left = r.left + r.width / 2 - pw / 2;
+  if (left + pw > window.innerWidth - m) left = window.innerWidth - pw - m;
+  if (left < m) left = m;
+  var top = r.bottom + gap;
+  if (top + ph > window.innerHeight - m) {
+    var above = r.top - gap - ph;
+    top = (above >= m) ? above : Math.max(m, window.innerHeight - ph - m);
+  }
+  pop.style.left = Math.round(left) + 'px';
+  pop.style.top = Math.round(top) + 'px';
+}
+function _mfXsvg()   { return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'; }
+function _mfArrSvg() { return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'; }
+function _mfStat(lbl, val) {
+  return '<div class="mfp-stat"><span class="mfp-stat-l">' + esc(lbl) + '</span><span class="mfp-stat-v">' + val + '</span></div>';
+}
+function _mfBars(items, mx) {
+  if (!items || !items.length) return '';
+  var h = '<div class="mfp-rows">';
+  items.forEach(function(it) {
+    var w = mx > 0 ? Math.max(6, Math.round(it.v / mx * 100)) : 0;
+    h += '<div class="mfp-row"><span class="mfp-row-l"><i class="mfp-dot" style="background:' + it.dot + '"></i>' + esc(it.lbl) + '</span>'
+      + '<span class="mfp-bar"><i style="width:' + w + '%;background:' + it.dot + '"></i></span>'
+      + '<span class="mfp-row-v">' + fmt(it.v) + '</span></div>';
+  });
+  return h + '</div>';
+}
+// Build the popup HTML + a view() closure for the given click context.
+function _mfPopContent(stageKey, kind, cat, aud) {
+  var stage = null;
+  for (var i = 0; i < MF_STAGES.length; i++) { if (MF_STAGES[i].key === stageKey) { stage = MF_STAGES[i]; break; } }
+  if (!stage) return null;
+  var key = activeVertKey || _mmVert;
+  var vs = (DS && DS.verticals || {})[key] || {};
+  var vb = (DB && DB.verticals || {})[key] || {};
+  var vcfg = (typeof getVertCfg === 'function') ? getVertCfg().filter(function(c) { return c.key === key; })[0] : null;
+  var vertName = (vcfg && vcfg.name) || key || '';
+  var field = stage.field;
+  var sTot = vs[field] || 0, bTot = vb[field] || 0, grand = sTot + bTot;
+  var catRows = _mmCatRowsFixed(vs, vb, stage.catField || field);
+  var onbRows = _mmCatRowsFixed(vs, vb, 'completed');
+  var isLogged = (stageKey === 'total');   // conversion-to-onboarded only means something for the pipeline entry stage
+
+  var SC = { blue: '#005dff', purple: '#8b5cf6', amber: '#d97706', green: '#16a34a', red: '#dc2626' };
+  var stColor = SC[stage.color] || 'var(--txt)';
+  var AUD = { seller: { lbl: 'Sellers', dot: '#8b5cf6' }, buyer: { lbl: 'Buyers', dot: '#06b6d4' } };
+  function pct(a, b) { return b > 0 ? Math.round(a / b * 100) : 0; }
+  function catAt(rows, name) { for (var j = 0; j < rows.length; j++) { if (rows[j].cat === name) return rows[j]; } return { cat: name, s: 0, b: 0 }; }
+  function onbFor(name, side) { var r = catAt(onbRows, name); return side === 'seller' ? r.s : (side === 'buyer' ? r.b : (r.s + r.b)); }
+
+  var title = '', big = 0, sub = '', body = '', viewCat = null, viewAud = null;
+
+  if (kind === 'cell') {
+    var rw = catAt(catRows, cat);
+    big = aud === 'seller' ? rw.s : rw.b;
+    var audTot = aud === 'seller' ? sTot : bTot;
+    title = esc(_catLabel(cat)) + ' · ' + AUD[aud].lbl;
+    sub = pct(big, audTot) + '% of ' + AUD[aud].lbl + ' · ' + pct(big, grand) + '% of all';
+    viewCat = cat; viewAud = aud;
+    if (isLogged && big > 0) { var oc = onbFor(cat, aud); body += _mfStat('Onboarded', fmt(oc) + ' · ' + pct(oc, big) + '%'); }
+  } else if (kind === 'col') {
+    var rc = catAt(catRows, cat);
+    big = rc.s + rc.b;
+    title = esc(_catLabel(cat));
+    sub = fmt(rc.s) + ' Sellers · ' + fmt(rc.b) + ' Buyers';
+    viewCat = cat;
+    body += _mfBars([{ lbl: 'Sellers', dot: AUD.seller.dot, v: rc.s }, { lbl: 'Buyers', dot: AUD.buyer.dot, v: rc.b }], Math.max(rc.s, rc.b));
+    if (isLogged && big > 0) { var ok = onbFor(cat, null); body += _mfStat('Onboarded', fmt(ok) + ' · ' + pct(ok, big) + '%'); }
+  } else if (kind === 'row') {
+    big = aud === 'seller' ? sTot : bTot;
+    title = AUD[aud].lbl;
+    sub = pct(big, grand) + '% of all ' + stage.label;
+    viewAud = aud;
+    var itemsR = catRows.map(function(c, ix) { return { lbl: _catLabel(c.cat), dot: MM_CAT_COLORS[ix % MM_CAT_COLORS.length], v: (aud === 'seller' ? c.s : c.b) }; })
+                        .filter(function(x) { return x.v > 0; });
+    body += _mfBars(itemsR, itemsR.reduce(function(mx, x) { return Math.max(mx, x.v); }, 0));
+    if (isLogged && big > 0) { var orr = aud === 'seller' ? (vs.completed || 0) : (vb.completed || 0); body += _mfStat('Onboarded', fmt(orr) + ' · ' + pct(orr, big) + '%'); }
+  } else {   // grand — whole stage
+    big = grand;
+    title = 'All ' + esc(stage.label);
+    sub = fmt(sTot) + ' Sellers · ' + fmt(bTot) + ' Buyers';
+    var itemsG = catRows.map(function(c, ix) { return { lbl: _catLabel(c.cat), dot: MM_CAT_COLORS[ix % MM_CAT_COLORS.length], v: (c.s + c.b) }; })
+                        .filter(function(x) { return x.v > 0; });
+    body += _mfBars(itemsG, itemsG.reduce(function(mx, x) { return Math.max(mx, x.v); }, 0));
+    if (isLogged && grand > 0) { var og = (vs.completed || 0) + (vb.completed || 0); body += _mfStat('Onboarded', fmt(og) + ' · ' + pct(og, grand) + '%'); }
+  }
+
+  var html =
+      '<div class="mfp-hd"><div class="mfp-ttl">' + title + '</div>'
+    + '<button class="mfp-x" data-pop-close aria-label="Close">' + _mfXsvg() + '</button></div>'
+    + '<div class="mfp-eye">' + esc(stage.label) + ' · ' + esc(vertName) + '</div>'
+    + '<div class="mfp-big" style="color:' + stColor + '">' + fmt(big) + '</div>'
+    + '<div class="mfp-sub">' + sub + '</div>'
+    + body
+    + '<button class="mfp-act" data-pop-view>View ' + fmt(big) + ' record' + (big === 1 ? '' : 's') + _mfArrSvg() + '</button>';
+
+  var vc = viewCat, va = viewAud;
+  return { html: html, empty: (big <= 0), view: function() { openStageRecords(stageKey, vc, va); } };
+}
+// Generic popup shell shared by every section (funnel matrix, quality rows, …).
+// `built` is { html, view? } from a section-specific content builder. This keeps
+// the open/close/placement/animation identical everywhere — one interaction.
+function _popShow(anchor, built) {
+  _mfPopClose(true);
+  if (!built) return;
+  var pop = document.createElement('div');
+  pop.className = 'mfp';
+  pop.setAttribute('role', 'dialog');
+  pop.innerHTML = built.html;
+  document.body.appendChild(pop);
+  _mfPop = pop;
+  pop.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (e.target.closest && e.target.closest('[data-pop-close]')) { _mfPopClose(); return; }
+    if (e.target.closest && e.target.closest('[data-pop-view]'))  { _mfPopClose(true); if (built.view) built.view(); return; }
+  });
+  _mfPopPlace(pop, anchor);
+  if (motionOK()) { requestAnimationFrame(function() { if (_mfPop === pop) pop.classList.add('open'); }); }
+  else { pop.classList.add('open'); }
+  // Defer wiring the dismiss listeners so the click that opened us doesn't close us.
+  setTimeout(function() {
+    if (_mfPop !== pop) return;
+    document.addEventListener('mousedown', _mfPopOutside, true);
+    document.addEventListener('keydown', _mfPopKey, true);
+    window.addEventListener('resize', _mfPopCloseEvt);
+    window.addEventListener('scroll', _mfPopCloseEvt, true);
+  }, 0);
+}
+function _mfPopOpen(anchor, stageKey, kind, cat, aud) {
+  _popShow(anchor, _mfPopContent(stageKey, kind, cat, aud));
+}
+// One delegated pair of listeners on the funnel panel drives every trigger.
+function _mfBindPop() {
+  if (window._mfPopBound) return;
+  var panel = document.getElementById('mm-funnel');
+  if (!panel) return;
+  window._mfPopBound = true;
+  function fire(e, isKey) {
+    var t = e.target.closest ? e.target.closest('.mf-pop-t') : null;
+    if (!t) return;
+    var card = t.closest('.mf-card'); if (!card) return;
+    e.stopPropagation();
+    if (isKey) e.preventDefault();
+    _mfPopOpen(t, card.getAttribute('data-stage'), t.getAttribute('data-pop'), t.getAttribute('data-cat'), t.getAttribute('data-aud'));
+  }
+  panel.addEventListener('click', function(e) { fire(e, false); });
+  panel.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') fire(e, true);
+  });
+}
+
+// ── Quality section popups — same shell as the funnel, for the in-card Vendor
+// Rating / OSV / Doc Completeness KPI rows. Every score band and status row is a
+// trigger; the popup shows that slice's live count/share plus the full
+// distribution, and its action opens the matching deep-dive KPI modal. ──────
+var _QS_META = {
+  rating: { eye: 'Vendor Rating',    view: 'rating', act: 'View rating breakdown' },
+  osv:    { eye: 'OSV Consent',      view: 'osv',    act: 'View OSV breakdown' },
+  doc:    { eye: 'Doc Completeness', view: 'docs',   act: 'View documents' }
+};
+// status key → {col,label} for OSV and Doc rows, mirroring buildQualitySect.
+var _QS_OSV = {
+  completed:    { col: 'var(--st-onboarded)', lbl: 'Done' },
+  pending:      { col: '#F59E0B',             lbl: 'In Progress' },
+  notInitiated: { col: 'var(--st-draft)',     lbl: 'Not Initiated' }
+};
+var _QS_DOC = {
+  complete:   { col: 'var(--st-onboarded)', lbl: 'Complete' },
+  partial:    { col: 'var(--st-review)',    lbl: 'Partial' },
+  incomplete: { col: 'var(--st-draft)',     lbl: 'Incomplete' },
+  missing:    { col: 'var(--st-rejected)',  lbl: 'Missing' }
+};
+function _qsPct(a, b) { return b > 0 ? Math.round(a / b * 100) : 0; }
+function _qsPopContent(kind, aud, sel) {
+  if (!qualityData || !qualityData.success) return null;
+  var q = qualityData[aud] || qualityData.combined || {};
+  var AUDL = aud === 'buyer' ? 'Buyers' : 'Sellers';
+  // Which metric group this row belongs to (drives the eye label + deep-dive).
+  var metaKey = (kind === 'rband' || kind === 'rsum') ? 'rating'
+              : (kind === 'osv'   || kind === 'osvsum') ? 'osv'
+              : 'doc';
+  var meta = _QS_META[metaKey];
+  var title = '', bigStr = '', sub = '', body = '', stColor = 'var(--txt)';
+
+  // Distribution bars for a given metric — reused by summary + slice popups.
+  function ratingBars() {
+    var dist = (q.rating && q.rating.dist) || [];
+    var items = [];
+    for (var i = 4; i >= 0; i--) items.push({ lbl: _vsBandLabel(i), dot: _vsBandColor(i), v: dist[i] || 0 });
+    var mx = items.reduce(function(m, x) { return Math.max(m, x.v); }, 0);
+    return _mfBars(items, mx);
+  }
+  function statusBars(map, o, total) {
+    var items = [];
+    for (var k in map) { if (map.hasOwnProperty(k)) items.push({ lbl: map[k].lbl, dot: map[k].col, v: o[k] || 0 }); }
+    items = items.filter(function(x) { return x.v > 0; });
+    var mx = items.reduce(function(m, x) { return Math.max(m, x.v); }, 0);
+    return _mfBars(items, mx);
+  }
+
+  if (kind === 'rband') {
+    var bi = parseInt(sel, 10);
+    var r = q.rating || {}, dist = r.dist || [], rated = r.rated || r.total || 0;
+    var rc = dist[bi] || 0;
+    title = 'Rating ' + _vsBandLabel(bi);
+    bigStr = fmt(rc);
+    stColor = _vsBandColor(bi);
+    sub = _qsPct(rc, rated) + '% of rated ' + AUDL + (r.avg != null ? ' · avg ' + r.avg.toFixed(1) : '');
+    body = '<div class="mfp-cap">Score distribution</div>' + ratingBars();
+  } else if (kind === 'rsum') {
+    var r2 = q.rating || {}, rated2 = r2.rated || r2.total || 0;
+    title = 'Vendor Rating';
+    bigStr = (r2.avg != null ? r2.avg.toFixed(1) : '—');
+    stColor = '#E48800';
+    sub = 'avg · ' + fmt(rated2) + (r2.total > rated2 ? ' of ' + fmt(r2.total) : '') + ' rated ' + AUDL;
+    body = '<div class="mfp-cap">Score distribution</div>' + ratingBars();
+  } else if (kind === 'osv' || kind === 'osvsum') {
+    var o = q.osv || {}, oT = o.total || 0;
+    if (kind === 'osv') {
+      var od = _QS_OSV[sel] || { col: 'var(--txt)', lbl: sel };
+      title = 'OSV · ' + od.lbl;
+      bigStr = fmt(o[sel] || 0);
+      stColor = od.col;
+      sub = _qsPct(o[sel] || 0, oT) + '% of ' + fmt(oT) + ' ' + AUDL;
+    } else {
+      title = 'OSV Consent';
+      bigStr = fmt(o.completed || 0);
+      stColor = '#248A3D';
+      sub = _qsPct(o.completed || 0, oT) + '% done · ' + fmt(oT) + ' ' + AUDL;
+    }
+    body = '<div class="mfp-cap">By status</div>' + statusBars(_QS_OSV, o, oT);
+  } else {   // doc / docsum
+    var dd = q.docs || {}, dT = dd.total || 0;
+    if (kind === 'doc') {
+      var dm = _QS_DOC[sel] || { col: 'var(--txt)', lbl: sel };
+      title = 'Docs · ' + dm.lbl;
+      bigStr = fmt(dd[sel] || 0);
+      stColor = dm.col;
+      sub = _qsPct(dd[sel] || 0, dT) + '% of ' + fmt(dT) + ' ' + AUDL;
+    } else {
+      title = 'Doc Completeness';
+      bigStr = _qsPct(dd.complete || 0, dT) + '%';
+      stColor = '#248A3D';
+      sub = fmt(dd.complete || 0) + ' complete · ' + fmt(dT) + ' ' + AUDL;
+    }
+    body = '<div class="mfp-cap">By status</div>' + statusBars(_QS_DOC, dd, dT);
+  }
+
+  var html =
+      '<div class="mfp-hd"><div class="mfp-ttl">' + esc(title) + '</div>'
+    + '<button class="mfp-x" data-pop-close aria-label="Close">' + _mfXsvg() + '</button></div>'
+    + '<div class="mfp-eye">' + esc(meta.eye) + ' · ' + esc(AUDL) + '</div>'
+    + '<div class="mfp-big" style="color:' + stColor + '">' + bigStr + '</div>'
+    + '<div class="mfp-sub">' + sub + '</div>'
+    + body
+    + '<button class="mfp-act" data-pop-view>' + esc(meta.act) + _mfArrSvg() + '</button>';
+
+  return { html: html, view: function() { if (typeof openKpiModal === 'function') openKpiModal(meta.view); } };
+}
+// One delegated pair of listeners (document-level, survives qsect re-renders).
+function _qsBindPop() {
+  if (window._qsPopBound) return;
+  window._qsPopBound = true;
+  function fire(e, isKey) {
+    var t = e.target.closest ? e.target.closest('.cc-qsect-clk') : null;
+    if (!t) return;
+    if (isKey) e.preventDefault();
+    _popShow(t, _qsPopContent(t.getAttribute('data-pop'), t.getAttribute('data-aud'), t.getAttribute('data-sel')));
+  }
+  document.addEventListener('click', function(e) { fire(e, false); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') fire(e, true);
+  });
+}
+
 function mmRenderFunnel() {
   var panel = document.getElementById('mm-funnel');
   if (!panel) return;
-  if (!mmFunnelActive) { panel.className = 'mf'; panel.innerHTML = ''; return; }
+  if (!mmFunnelActive) { _mfPopClose(true); panel.className = 'mf'; panel.innerHTML = ''; return; }
+  _mfPopClose(true);
 
   var key = activeVertKey || _mmVert;
   var vs = (DS && DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
 
-  // The card keeps its at-a-glance summary — headline metric, label and the
-  // audience × category matrix — and the whole thing is a button that opens
-  // that stage's own records. The corner arrow is the only added chrome and it
-  // is positioned out of flow, so the summary layout is unchanged.
+  // Each card keeps its at-a-glance summary — headline metric, label and the
+  // audience × category matrix. Rather than the whole card being one button,
+  // every part of it (headline, a category column, a Sellers/Buyers row, a
+  // single cell, a Total) is an individual popup trigger that opens a compact
+  // contextual detail card next to it (see _mfPopOpen / _mfBindPop). The corner
+  // arrow stays as a subtle affordance on the headline.
   var html = '<div class="mf-flow">';
   MF_STAGES.forEach(function(s, i) {
     var total   = (vs[s.field]||0) + (vb[s.field]||0);
     var catRows = s.catField ? _mmCatRowsFixed(vs, vb, s.catField) : null;
-    html += '<div class="mf-card" role="button" tabindex="0"'
-      + ' aria-label="' + esc(s.label) + ': ' + fmt(total) + '. View records"'
-      + ' title="View the ' + esc(s.label) + ' records"'
-      + ' onclick="openStageRecords(\'' + s.key + '\')"'
-      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openStageRecords(\'' + s.key + '\')}">'
+    html += '<div class="mf-card" data-stage="' + s.key + '">'
       + '<span class="mf-open-ic" aria-hidden="true">→</span>'
-      + '<div class="mf-head"><div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
+      + '<div class="mf-head mf-pop-t"' + _mfPopAttr('grand', null, null)
+      +   ' aria-label="' + esc(s.label) + ': ' + fmt(total) + '. View details">'
+      + '<div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
       + '<div class="mf-label">' + esc(s.label) + '</div></div>'
       + _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0)
       + '</div>';
@@ -5669,6 +6038,7 @@ function mmRenderFunnel() {
 
   panel.innerHTML = html;
   panel.className = 'mf mf-open';
+  _mfBindPop();
 
   var cards = [].slice.call(panel.querySelectorAll('.mf-card'));
   var anim = motionOK();
@@ -7336,6 +7706,7 @@ function _patchQualitySects() {
     if (!el) return;
     el.innerHTML = buildQualitySect(qualityData, aud);
   });
+  _qsBindPop();   // idempotent — arms the KPI-row popups once quality HTML exists
   _patchQualityKpiCards();
   refreshBizRail();      // fill Vendor Rating / OSV in Operational Insights
   // Rebuild tree data so panel configs pick up fresh quality numbers,
@@ -7698,6 +8069,13 @@ function buildQualitySect(qd, aud) {
   }
   var q = qd[aud] || qd.combined || {};
   var html = hd;
+  // Marks a KPI row as a popup trigger (see _qsBindPop / _qsPopContent). Each
+  // row opens a compact contextual popup with that slice's live detail.
+  function _clkAttr(kind, sel) {
+    return ' role="button" tabindex="0" data-pop="' + kind + '" data-aud="' + aud + '"'
+      + (sel != null ? ' data-sel="' + sel + '"' : '');
+  }
+  var _arw = '<span class="cc-qsect-arw" aria-hidden="true">›</span>';
 
   // ── Vendor Rating ──────────────────────────────────────────
   // Header: avg score  |  N rated / N total
@@ -7716,17 +8094,19 @@ function buildQualitySect(qd, aud) {
       var bpct = Math.round(rc / maxD * 100);
       var dpct = Math.round(rc / rRated * 100);
       var bcol = _vsBandColor(i);
-      bars += '<div class="cc-qsect-sbar">'
+      bars += '<div class="cc-qsect-sbar cc-qsect-clk"' + _clkAttr('rband', i) + '>'
         + '<span class="cc-qsect-sbar-n">' + _vsBandLabel(i) + '</span>'
         + '<div class="cc-qsect-sbar-t"><div class="cc-qsect-sbar-f" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
         + '<span class="cc-qsect-sbar-c">' + (rc > 999 ? Math.round(rc / 1000) + 'k' : rc) + '</span>'
         + '<span class="cc-qsect-sbar-p">' + dpct + '%</span>'
+        + _arw
         + '</div>';
     }
-    html += '<div class="cc-qsect-row">'
+    html += '<div class="cc-qsect-row cc-qsect-clk"' + _clkAttr('rsum') + '>'
       + '<span class="cc-qsect-ic">★</span>'
       + '<span class="cc-qsect-lb">Vendor Rating</span>'
       + '<span class="cc-qsect-vl">' + avg + '&thinsp;<span class="cc-qsect-sub">avg · ' + rSub + '</span></span>'
+      + _arw
       + '</div>'
       + '<div class="cc-qsect-bars">' + bars + '</div>';
   }
@@ -7738,23 +8118,25 @@ function buildQualitySect(qd, aud) {
     var o  = q.osv, oT = o.total || 1;
     var osvPct = Math.round((o.completed || 0) / oT * 100);
     var or_ = [
-      { col: 'var(--st-onboarded)', v: o.completed,    lbl: 'Done'          },
-      { col: '#F59E0B',             v: o.pending,      lbl: 'In Progress'   },
-      { col: 'var(--st-draft)',     v: o.notInitiated, lbl: 'Not Initiated' },
+      { key: 'completed',    col: 'var(--st-onboarded)', v: o.completed,    lbl: 'Done'          },
+      { key: 'pending',      col: '#F59E0B',             v: o.pending,      lbl: 'In Progress'   },
+      { key: 'notInitiated', col: 'var(--st-draft)',     v: o.notInitiated, lbl: 'Not Initiated' },
     ];
-    html += '<div class="cc-qsect-row cc-qsect-mt">'
+    html += '<div class="cc-qsect-row cc-qsect-mt cc-qsect-clk"' + _clkAttr('osvsum') + '>'
       + '<span class="cc-qsect-ic">◎</span>'
       + '<span class="cc-qsect-lb">OSV Consent</span>'
       + '<span class="cc-qsect-vl">' + fmt(o.completed) + '&thinsp;<span class="cc-qsect-sub">' + osvPct + '% of OMP</span></span>'
+      + _arw
       + '</div>'
       + or_.map(function(x) {
           if (!x.v) return '';
           var p = Math.round(x.v / oT * 100);
-          return '<div class="cc-qsect-drow">'
+          return '<div class="cc-qsect-drow cc-qsect-clk"' + _clkAttr('osv', x.key) + '>'
             + '<span class="cc-qsect-dot" style="background:' + x.col + '"></span>'
             + '<span class="cc-qsect-dlb">' + x.lbl + '</span>'
             + '<span class="cc-qsect-dn">' + fmt(x.v) + '</span>'
             + '<span class="cc-qsect-dp">' + p + '%</span>'
+            + _arw
             + '</div>';
         }).join('');
   }
@@ -7766,15 +8148,16 @@ function buildQualitySect(qd, aud) {
   if (q.docs && q.docs.total > 0) {
     var d  = q.docs, dT = d.total || 1;
     var dr = [
-      { col: 'var(--st-onboarded)', v: d.complete,   lbl: 'Complete'   },
-      { col: 'var(--st-review)',    v: d.partial,     lbl: 'Partial'    },
-      { col: 'var(--st-draft)',     v: d.incomplete,  lbl: 'Incomplete' },
-      { col: 'var(--st-rejected)',  v: d.missing,     lbl: 'Missing'    },
+      { key: 'complete',   col: 'var(--st-onboarded)', v: d.complete,   lbl: 'Complete'   },
+      { key: 'partial',    col: 'var(--st-review)',    v: d.partial,     lbl: 'Partial'    },
+      { key: 'incomplete', col: 'var(--st-draft)',     v: d.incomplete,  lbl: 'Incomplete' },
+      { key: 'missing',    col: 'var(--st-rejected)',  v: d.missing,     lbl: 'Missing'    },
     ];
-    html += '<div class="cc-qsect-row cc-qsect-mt">'
+    html += '<div class="cc-qsect-row cc-qsect-mt cc-qsect-clk"' + _clkAttr('docsum') + '>'
       + '<span class="cc-qsect-ic">◻</span>'
       + '<span class="cc-qsect-lb">Doc Completeness</span>'
       + '<span class="cc-qsect-vl">' + Math.round(d.complete / dT * 100) + '<span class="cc-qsect-sub">% complete</span></span>'
+      + _arw
       + '</div>'
       + '<div class="cc-qsect-prog">'
       + dr.filter(function(s){ return s.v > 0; }).map(function(s) {
@@ -7784,11 +8167,12 @@ function buildQualitySect(qd, aud) {
       + dr.map(function(x) {
           if (!x.v) return '';
           var p = Math.round(x.v / dT * 100);
-          return '<div class="cc-qsect-drow">'
+          return '<div class="cc-qsect-drow cc-qsect-clk"' + _clkAttr('doc', x.key) + '>'
             + '<span class="cc-qsect-dot" style="background:' + x.col + '"></span>'
             + '<span class="cc-qsect-dlb">' + x.lbl + '</span>'
             + '<span class="cc-qsect-dn">' + fmt(x.v) + '</span>'
             + '<span class="cc-qsect-dp">' + p + '%</span>'
+            + _arw
             + '</div>';
         }).join('');
   }
