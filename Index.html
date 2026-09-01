@@ -2726,6 +2726,17 @@ body.view-gst #mm-crumbs{display:none}
 .mmn.module.t-purple{border-left-color:#8b5cf6}
 .mmn.module.t-red{border-left-color:#dc2626}
 .mmn.module.t-ink{border-left-color:var(--border)}
+/* Compact category cards under "Choose a category" — same info + hierarchy as the
+   other cards but tighter height/padding/number so the column doesn't feel oversized. */
+.mmcol.compact{gap:8px}
+.mmn.geocat{min-height:0;padding:9px 11px}
+.mmn.geocat .mmn-ic{width:23px;height:23px;border-radius:7px}
+.mmn.geocat .mmn-ic svg{width:13px;height:13px}
+.mmn.geocat .mmn-top{gap:6px}
+.mmn.geocat .mmn-ttl{font-size:12.5px;line-height:1.2}
+.mmn.geocat .mmn-arr{font-size:12.5px}
+.mmn.geocat .mmn-v{font-size:18px;letter-spacing:-.5px;margin-top:5px}
+.mmn.geocat .mmn-s{font-size:10px;margin-top:3px}
 .mmn.vert.muted{border-style:dashed;cursor:default;background:transparent}
 .mmn.vert.muted .mmn-ttl{color:var(--txt2)}
 .mmn.vert.muted.in:hover{box-shadow:none;transform:none;border-color:var(--border)}
@@ -2866,6 +2877,19 @@ body.view-gst #mm-crumbs{display:none}
 .mg-catchip{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);background:var(--accent-soft);border:1px solid rgba(0,93,255,.25);border-radius:999px;padding:4px 10px;cursor:pointer;transition:background .15s}
 .mg-catchip:hover{background:rgba(0,93,255,.14)}
 .mg-catx{opacity:.6;font-size:9px}
+/* Seller / Buyer segmented toggle — Sellers=blue, Buyers=green */
+.mg-audtoggle{margin-left:auto;display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:var(--card)}
+.mg-audbtn{font-family:inherit;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:none;padding:5px 13px;border:0;background:transparent;color:var(--txt2);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:background .15s,color .15s}
+.mg-audbtn+.mg-audbtn{border-left:1px solid var(--border)}
+.mg-auddot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mg-audbtn.seller .mg-auddot{background:#005dff}
+.mg-audbtn.buyer .mg-auddot{background:#1dc797}
+.mg-audbtn.seller.on{background:#005dff;color:#fff}
+.mg-audbtn.buyer.on{background:#1dc797;color:#fff}
+.mg-audbtn.on .mg-auddot{background:#fff}
+.mg-audbtn:not(.on):hover{background:var(--accent-soft)}
+.mgsd-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.mgsd-aud.mgsd-aud-on td{background:var(--accent-soft)}
 .mg-grid{display:flex;gap:22px;align-items:stretch;flex-wrap:wrap}
 .mg-map{flex:1 1 0;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:row;align-items:stretch;position:relative}
 .mg-map-svg-wrap{flex:0 0 66%;min-width:0;padding:14px;display:flex;align-items:center;justify-content:center}
@@ -4510,7 +4534,7 @@ var _mmAnimateReveal = false; // true only on explicit user navigation — skips
 var _mmExtraCache = {};       // keyed cache for expensive panel extra HTML (rating bars, OSV tiles)
 // Geo panel state: which region is expanded, hovered/selected state, cached rows.
 // _geo.cat: optional category filter ('metal'|'plastic'|null) set when chained from Volume/Funnel.
-var _geo = { key:null, region:null, state:null, hover:null, pKey:null, cat:null, rows:{ seller:null, buyer:null }, loading:false };
+var _geo = { key:null, region:null, state:null, hover:null, pKey:null, cat:null, aud:'seller', rows:{ seller:null, buyer:null }, loading:false };
 
 function _mmC(vs, vb, f) { return (vs && vs[f] || 0) + (vb && vb[f] || 0); }
 function _mmParseDate(s) {
@@ -4876,9 +4900,8 @@ function _mmVertModules(key) {
                  v:fmt(x.s + x.b), s:_mmSB(x.s, x.b) };
       });
     if (geoCatCards.length) {
-      // "All Categories" keeps the combined overview map one click away.
-      geoCatCards.unshift({ t:'All Categories', geoCat:'__all__', kind:'module', tone:'t-blue', ic:MM_IC.pin,
-                            v:fmt(onb), s:'Sellers & Buyers · every category' });
+      // Category-wise breakdown only — one independent card per category (Metal /
+      // Plastic / …). No aggregate "All Categories" card by design.
       mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module',
         eye:'Choose a category', children:geoCatCards });
     } else {
@@ -5178,8 +5201,12 @@ function mmBuildColumns() {
     var parent = chain[k];
     if (!parent.children || !parent.children.length) break;
     if (parent.expand) break; // inline-funnel / inline-panel → children shown in a panel, not a column
+    // The Geographic Split category column is rendered compact (smaller cards,
+    // tighter gap) to match the card density used elsewhere in the dashboard.
+    var isGeoCatCol = !!(parent.children[0] && parent.children[0].geoCat != null);
     cols.push({ cards:parent.children, active: chain[k+1] ? chain[k+1]._id : null, eye:parent.eye || '',
-                wide: parent.kind === 'module' || parent.kind === 'kpi' || parent.kind === 'root' });
+                wide: !isGeoCatCol && (parent.kind === 'module' || parent.kind === 'kpi' || parent.kind === 'root'),
+                compact: isGeoCatCol });
   }
   return cols;
 }
@@ -5218,7 +5245,7 @@ function mmNodeCard(node, colActiveId) {
     inner = '<div class="mmn-top"><div class="mmn-ic">' + (node.ic || MM_IC.doc) + '</div><div class="mmn-ttl">' + esc(node.t) + '</div><span class="mmn-arr">→</span></div>';
   } else {
     var modCls = (kind === 'module') ? ' module' : '';
-    cls = 'mmn ' + (node.tone || 't-ink') + modCls + (on ? ' on' : '') + (isLeaf ? ' leaf' : '');
+    cls = 'mmn ' + (node.tone || 't-ink') + modCls + (node.geoCat ? ' geocat' : '') + (on ? ' on' : '') + (isLeaf ? ' leaf' : '');
     var arrow = (hasKids || node.action || node.geoRegion || node.geoCat || node.expand || node.geoModule) ? '<span class="mmn-arr">' + ((node.action || node.geoRegion || node.geoCat) && !hasKids && !node.expand ? '→' : '›') + '</span>' : '';
     inner = '<div class="mmn-top"><div class="mmn-ic">' + (node.ic || MM_IC.grid) + '</div><div class="mmn-ttl">' + esc(node.t) + '</div>' + arrow + '</div>'
       + (node.v ? '<div class="mmn-v tnum">' + esc(node.v) + '</div>' : '')
@@ -5270,7 +5297,7 @@ function mmRender() {
   var cols = mmBuildColumns();
   var html = '<svg class="mm-svg" id="mm-svg" aria-hidden="true"></svg>';
   cols.forEach(function(col, ci) {
-    html += '<div class="mmcol' + (col.wide ? ' wide' : '') + (col.rootcol ? ' rootcol' : '') + '"><div class="mmcoleye">' + esc(col.eye || '') + '</div>'
+    html += '<div class="mmcol' + (col.wide ? ' wide' : '') + (col.rootcol ? ' rootcol' : '') + (col.compact ? ' compact' : '') + '"><div class="mmcoleye">' + esc(col.eye || '') + '</div>'
       + col.cards.map(function(n){ return mmNodeCard(n, col.active); }).join('') + '</div>';
     if (ci < cols.length - 1) html += '<div class="mmcolgap"></div>';
   });
@@ -5807,16 +5834,18 @@ function _mmGeoDetailHtml(id, by, swatchColor) {
     + '<span class="mg-swatch" style="background:' + swatchColor + ';flex-shrink:0"></span>'
     + esc(shortNm)
     + '<span class="mgsd-total">' + fmt(d.total) + '</span></div>'
-    + section('seller', 'Sellers', '#1DC797')
-    + section('buyer',  'Buyers',  '#005DFF');
+    // Sellers=blue, Buyers=green (matches the map toggle); active audience shown first.
+    + ((_geo.aud === 'buyer')
+        ? (section('buyer',  'Buyers',  '#1DC797') + section('seller', 'Sellers', '#005DFF'))
+        : (section('seller', 'Sellers', '#005DFF') + section('buyer',  'Buyers',  '#1DC797')));
 }
 
 // Update only the in-map overlay — used by hover (no full re-render) and by mmRenderGeo.
 function _mmGeoUpdateDetail(id) {
   var wrap = document.getElementById('mg-state-hover'); if (!wrap) return;
   var by = _geoAgg([]);
-  // Uniform blue — the map no longer colours states by region.
-  wrap.innerHTML = _mmGeoDetailHtml(id, by, '#005dff');
+  // Swatch follows the active audience: Sellers=blue, Buyers=green.
+  wrap.innerHTML = _mmGeoDetailHtml(id, by, (_geo.aud === 'buyer') ? '#1dc797' : '#005dff');
 }
 
 // Category-wise Sellers / Buyers overview (replaces the old North / South split).
@@ -5855,16 +5884,19 @@ function _mmGeoFixedHtml() {
   var head = '<thead><tr><th></th>'
     + cats.map(function(c) { return '<th title="' + esc(c) + '">' + esc(dispCat(c.toLowerCase())) + '</th>'; }).join('')
     + '</tr></thead>';
-  function audRow(aud, color, label, sep) {
-    return '<tr class="mgsd-aud' + (sep ? ' mgsd-sep' : '') + '">'
-      + '<td style="color:' + color + '">' + esc(label) + '</td>'
-      + colKeys.map(function(k) { return '<td>' + fmt((tally[k] && tally[k][aud]) || 0) + '</td>'; }).join('')
+  // Sellers=blue, Buyers=green (matches the map toggle); a colour dot ties each row to
+  // its map hue, and the audience currently shown on the map is highlighted.
+  var selAud = (_geo.aud === 'buyer') ? 'buyer' : 'seller';
+  function audRow(a, color, label, sep) {
+    return '<tr class="mgsd-aud' + (sep ? ' mgsd-sep' : '') + (a === selAud ? ' mgsd-aud-on' : '') + '">'
+      + '<td style="color:' + color + '"><span class="mgsd-dot" style="background:' + color + '"></span>' + esc(label) + '</td>'
+      + colKeys.map(function(k) { return '<td>' + fmt((tally[k] && tally[k][a]) || 0) + '</td>'; }).join('')
       + '</tr>';
   }
   return '<div class="mgsd-fix-hd">Category Overview · Sellers / Buyers</div>'
     + '<div class="mgsd-rgn-wrap"><table class="mgsd-rgn-tbl mgsd-cat-tbl">'
     + '<colgroup>' + cols + '</colgroup>' + head
-    + '<tbody>' + audRow('seller', '#1DC797', 'Sellers', false) + audRow('buyer', '#005DFF', 'Buyers', true) + '</tbody>'
+    + '<tbody>' + audRow('seller', '#005DFF', 'Sellers', false) + audRow('buyer', '#1DC797', 'Buyers', true) + '</tbody>'
     + '</table></div>';
 }
 
@@ -5886,109 +5918,115 @@ function mmRenderGeo() {
   var panel = document.getElementById('mm-geo'); if (!panel) return;
   if (!mmGeoActive || !_geo.region) { panel.className = 'mg'; panel.innerHTML = ''; return; }
 
-  // The map is no longer region-coded. Every state is drawn in one uniform brand
-  // blue; the selected category (not colour) decides which data the legend, state
-  // detail and overview show. GEO_BLUE is the single hue used across the whole map.
-  var GEO_BLUE = '#005dff';
-  // A specific category selection shows a plain Total/Sellers/Buyers legend; the
-  // "All categories" view keeps the per-category breakdown.
+  // Audience-driven colour: Sellers = blue, Buyers = green. The toggle decides which
+  // dataset the map paints; both audiences are already loaded (see _geoEnsureRows) so
+  // switching is instant with no reload. The category filter (_geo.cat) still scopes
+  // WHICH records are counted; the audience picks seller vs buyer.
+  var GEO_SELLER = '#005dff', GEO_BUYER = '#1dc797';
+  var aud = (_geo.aud === 'buyer') ? 'buyer' : 'seller';
+  var audColor = (aud === 'buyer') ? GEO_BUYER : GEO_SELLER;
+  var audLabel = (aud === 'buyer') ? 'Buyers' : 'Sellers';
+  // Soft, light fill tint for the map + legend swatch — light blue for Sellers, light
+  // green for Buyers. Kept separate from the vivid accent so the toggle/dots stay bold.
+  var fillColor = (aud === 'buyer') ? '#3ccfa5' : '#4f8ff7';
+
+  // A specific category shows a single-count legend; "All categories" bifurcates by category.
   var geoCats = _geo.cat ? [] : _geoCats();
   var by = _geoAgg(geoCats);
-  var withData = Object.keys(IN_STATES).filter(function(id){ return by[id] && by[id].total > 0; })
-    .sort(function(a, b){ return by[b].total - by[a].total; });
+  var audN = function(id) { return (by[id] && by[id][aud]) || 0; };
+  var withData = Object.keys(IN_STATES).filter(function(id){ return audN(id) > 0; })
+    .sort(function(a, b){ return audN(b) - audN(a); });
+  var maxN = withData.reduce(function(m, id){ return Math.max(m, audN(id)); }, 0) || 1;
   var loading = _geo.loading && !withData.length;
 
-  // ---- MAP (left) ----
+  // ---- MAP (left) — data-driven concentration: fill-opacity scales with the selected
+  // audience's count per state, all in that single audience hue (no region colouring). ----
   var paths = Object.keys(IN_STATES).map(function(id) {
-    var st = IN_STATES[id], d = by[id];
-    var hasData = d && d.total > 0;
+    var st = IN_STATES[id], d = by[id], cnt = audN(id);
     var cls = 'mg-state';
-    // Uniform blue for the whole map: states carrying data are solid, the rest sit
-    // as a faint wash of the same hue — no green, no per-region colour, no heatmap.
-    var fill = GEO_BLUE, stroke, sw, op;
-    if (hasData) {
-      op = '0.85'; stroke = GEO_BLUE; sw = '1'; cls += ' active';
-      if (_geo.state === id) cls += ' sel';
+    var fill = fillColor, stroke, sw, op;
+    if (cnt > 0) {
+      // Soft, data-driven concentration: a light fill whose opacity scales gently with
+      // count, so even a busy map stays easy on the eyes rather than one solid block.
+      op = (0.24 + 0.50 * (cnt / maxN)).toFixed(3);   // ~0.24 (quiet) → 0.74 (busiest)
+      sw = '1'; cls += ' active';
+      // Thin card-coloured strokes read as clean gaps between adjacent states; the
+      // selected state gets a crisp hue outline instead so it stands out.
+      if (_geo.state === id) { stroke = fillColor; cls += ' sel'; }
+      else stroke = 'var(--card)';
     } else {
-      op = '0.12'; stroke = 'var(--border)'; sw = '0.8';
+      fill = 'var(--mg-base)'; op = '1'; stroke = 'var(--card)'; sw = '1';   // no data → light grey tile
     }
+    var canClick = d && d.total > 0;   // any records → clickable for the detail panel
     var handlers = ' data-geo="' + id + '" onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
-      + (hasData ? ' onclick="mmGeoSelectState(\'' + id + '\')" style="cursor:pointer"' : '');
+      + (canClick ? ' onclick="mmGeoSelectState(\'' + id + '\')" style="cursor:pointer"' : '');
     return '<path class="' + cls + '" d="' + st.d + '" fill="' + fill + '" fill-opacity="' + op
       + '" stroke="' + stroke + '" stroke-width="' + sw + '"' + handlers + '><title>' + esc(st.name)
-      + (d ? ' · ' + fmt(d.total) : '') + '</title></path>';
+      + (cnt ? ' · ' + fmt(cnt) + ' ' + audLabel.toLowerCase() : '') + '</title></path>';
   }).join('');
   var mapPanel = '<div class="mg-map">'
-    + '<div class="mg-map-svg-wrap"><svg viewBox="0 0 1000 1100" class="mg-svg" aria-label="India map, all regions">' + paths + '</svg></div>'
+    + '<div class="mg-map-svg-wrap"><svg viewBox="0 0 1000 1100" class="mg-svg" aria-label="India map, ' + audLabel + ' distribution">' + paths + '</svg></div>'
     + '<div id="mg-state-detail" class="mg-state-detail" aria-label="State detail">'
     + '<div id="mg-state-hover" class="mgsd-half" aria-live="polite"></div>'
     + '<div id="mg-state-fixed" class="mgsd-half"></div>'
     + '</div>'
     + '</div>';
 
-  // ---- LEGEND (right) ----
+  // ---- LEGEND (right) — the selected audience's per-state distribution ----
   var legend;
   if (loading) {
     legend = '<div class="mg-loading">Loading state distribution…</div>';
   } else if (!withData.length) {
-    legend = '<div class="mg-loading">No state-level onboarding records for this period.</div>';
+    legend = '<div class="mg-loading">No ' + audLabel.toLowerCase() + ' mapped for this selection.</div>';
   } else {
-    // With categories available the table bifurcates each audience by category;
-    // otherwise it falls back to the plain Total / Sellers / Buyers layout.
     var nC   = geoCats.length;
     var grid = nC
-      ? 'grid-template-columns:minmax(0,1fr) 46px repeat(' + (nC * 2) + ',minmax(38px,1fr))'
-      : '';
-    var gStyle = grid ? ' style="' + grid + '"' : '';
+      ? 'grid-template-columns:minmax(0,1fr) repeat(' + nC + ',minmax(40px,1fr)) 56px'
+      : 'grid-template-columns:1fr 80px';
+    var gStyle = ' style="' + grid + '"';
     var rowStyle = function(i) {
       var anim = motionOK() ? 'animation-delay:' + (i * 45) + 'ms;' : '';
-      return (anim || grid) ? ' style="' + anim + grid + '"' : '';
+      return ' style="' + anim + grid + '"';
     };
     var rows = withData.map(function(id, i) {
-      var d = by[id], name = IN_STATES[id].name;
-      var cells = '<span class="mg-row-n mg-total">' + fmt(d.total) + '</span>';
+      var d = by[id], name = IN_STATES[id].name, cells;
       if (nC) {
-        geoCats.forEach(function(c) { cells += '<span class="mg-row-n mg-seller">' + fmt(_geoCatN(d, c, 'seller')) + '</span>'; });
-        geoCats.forEach(function(c) { cells += '<span class="mg-row-n mg-buyer">'  + fmt(_geoCatN(d, c, 'buyer'))  + '</span>'; });
+        cells = geoCats.map(function(c){ return '<span class="mg-row-n">' + fmt(_geoCatN(d, c, aud)) + '</span>'; }).join('')
+              + '<span class="mg-row-n mg-total">' + fmt(audN(id)) + '</span>';
       } else {
-        cells += '<span class="mg-row-n mg-seller">' + fmt(d.seller) + '</span>'
-              +  '<span class="mg-row-n mg-buyer">'  + fmt(d.buyer)  + '</span>';
+        cells = '<span class="mg-row-n mg-total">' + fmt(audN(id)) + '</span>';
       }
       return '<button class="mg-row" data-geo="' + id + '"' + rowStyle(i)
         + ' onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
         + ' onclick="mmGeoSelectState(\'' + id + '\')">'
-        + '<span class="mg-row-nm"><span class="mg-swatch" style="background:' + GEO_BLUE + '"></span>' + esc(name) + '</span>'
+        + '<span class="mg-row-nm"><span class="mg-swatch" style="background:' + fillColor + '"></span>' + esc(name) + '</span>'
         + cells
         + '</button>';
     }).join('');
 
     var head;
     if (nC) {
-      // Two-tier header: State / Total span both rows, Sellers and Buyers span
-      // their category columns, with the category names underneath.
-      head = '<div class="mg-legend-hd mg-hd-grp"' + gStyle + '>'
-        + '<span class="mg-row-nm mg-hd-span">State</span>'
-        + '<span class="mg-row-n mg-hd-span">Total</span>'
-        + '<span class="mg-hd-band mg-seller" style="grid-column:span ' + nC + '">Sellers</span>'
-        + '<span class="mg-hd-band mg-buyer"  style="grid-column:span ' + nC + '">Buyers</span>'
-        + geoCats.map(function(c){ return '<span class="mg-hd-cat" title="' + esc(c) + '">' + esc(_catLabel(c)) + '</span>'; }).join('')
-        + geoCats.map(function(c){ return '<span class="mg-hd-cat" title="' + esc(c) + '">' + esc(_catLabel(c)) + '</span>'; }).join('')
-        + '</div>';
+      head = '<div class="mg-legend-hd"' + gStyle + '><span class="mg-row-nm">State</span>'
+        + geoCats.map(function(c){ return '<span class="mg-row-n mg-hd-cat" title="' + esc(c) + '">' + esc(_catLabel(c)) + '</span>'; }).join('')
+        + '<span class="mg-row-n">Total</span></div>';
     } else {
-      head = '<div class="mg-legend-hd"><span class="mg-row-nm">State</span>'
-        + '<span class="mg-row-n">Total</span><span class="mg-row-n">Sellers</span><span class="mg-row-n">Buyers</span></div>';
+      head = '<div class="mg-legend-hd"' + gStyle + '><span class="mg-row-nm">State</span>'
+        + '<span class="mg-row-n">' + audLabel + '</span></div>';
     }
     legend = '<div class="mg-legend' + (nC ? ' mg-legend-wide' : '') + '">'
       + head
       + '<div class="mg-rows">' + rows + '</div></div>';
   }
 
-  // The active category is a first-class navigation step (breadcrumb + selected
-  // card), so the header simply names it — no separate clear-filter chip needed.
+  // Header: category (a first-class nav step) + the Seller / Buyer toggle.
   var selCat = _geo.cat
     ? (CAT_SHORT[_geo.cat] || (_geo.cat.charAt(0).toUpperCase() + _geo.cat.slice(1)))
     : 'All categories';
-  panel.innerHTML = '<div class="mg-eye"><span>All India · ' + esc(selCat) + ' · onboarded distribution</span></div>'
+  var audToggle = '<span class="mg-audtoggle" role="tablist" aria-label="Seller / Buyer view">'
+    + '<button type="button" role="tab" aria-selected="' + (aud === 'seller') + '" class="mg-audbtn seller' + (aud === 'seller' ? ' on' : '') + '" onclick="mmGeoSetAud(\'seller\')"><span class="mg-auddot"></span>Sellers</button>'
+    + '<button type="button" role="tab" aria-selected="' + (aud === 'buyer') + '" class="mg-audbtn buyer' + (aud === 'buyer' ? ' on' : '') + '" onclick="mmGeoSetAud(\'buyer\')"><span class="mg-auddot"></span>Buyers</button>'
+    + '</span>';
+  panel.innerHTML = '<div class="mg-eye"><span>All India · ' + esc(selCat) + ' · ' + (aud === 'buyer' ? 'buyer' : 'seller') + ' distribution</span>' + audToggle + '</div>'
     + '<div class="mg-grid">' + mapPanel + legend + '</div>';
   panel.className = 'mg mg-open';
 
@@ -6008,6 +6046,12 @@ function mmRenderGeo() {
   _geoAnimate = false;
 }
 function _geoClearCat() { _geo.cat = null; _geoAnimate = true; mmRenderGeo(); }
+// Seller / Buyer map toggle — instant repaint; both datasets are already loaded.
+function mmGeoSetAud(a) {
+  var next = (a === 'buyer') ? 'buyer' : 'seller';
+  if (_geo.aud === next) return;
+  _geo.aud = next; _geoAnimate = true; mmRenderGeo();
+}
 
 // ── Count-up: animate [data-count] figures from 0 → target within a container ──
 function _mmCountUp(container) {
