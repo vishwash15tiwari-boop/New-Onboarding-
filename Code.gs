@@ -197,6 +197,19 @@ var VERTICALS = [
 var INFRA_CATS = { 'metal': 1, 'plastic': 1, 'institutional business': 1, 'reverse': 1, 'rewerse': 1 };
 function isEwaste(cat) { return cat === 'e-waste' || cat === 'ewaste' || cat === 'e waste'; }
 
+// Transport & Support cases are never a Seller/Buyer onboarding category — they are
+// logistics/service records that belong in Others, not under Managed Marketplace
+// (or any material vertical). Detected by substring on EITHER the business_category
+// or the business_vertical, so spellings like "Transporter", "Transport Partner",
+// "Support", "Customer Support" all match. This one predicate is the single source
+// of truth used by both mapToVertical() and the normalizeRows() reclassification, so
+// the routing can never diverge between the two. Pass already-lowercased strings.
+function isTransportOrSupport_(cat, bv) {
+  cat = cat || ''; bv = bv || '';
+  return cat.indexOf('transport') !== -1 || bv.indexOf('transport') !== -1
+      || cat.indexOf('support')   !== -1 || bv.indexOf('support')   !== -1;
+}
+
 // Marketplace infra rows (Metal/Plastic/Institutional/Reverse) split at FY 26-27:
 //   created < April 1 2026  → 'Marketplace' card (historical)
 //   created >= April 1 2026 → 'InfraBusiness' card (current)
@@ -227,6 +240,14 @@ function mapToVertical(businessVertical, category, audience) {
     if (cat === 're-commerce' || cat === 'recommerce' || cat === 're commerce') return 'Recommerce';
     if (isEwaste(cat)) return 'Recommerce';
     if (INFRA_CATS[cat]) return 'InfraBusiness';
+    // Transport & Support are logistics/service cases, not a Managed Marketplace
+    // onboarding category — route them to Others so they never inflate Managed
+    // Marketplace's Metal/Plastic/etc. breakdown or its Seller/Buyer counts. This
+    // mirrors the Others-vertical exclusion in normalizeRows (isTransportOrSupport_),
+    // catching the case that slipped through: a 'marketplace' business_vertical whose
+    // business_category is a transporter/support type. Substring match tolerates
+    // source spellings ("Transporter", "Transport Partner", "Support", …).
+    if (isTransportOrSupport_(cat, bv)) return 'Others';
     // Non-infra Marketplace categories (Paper, M3, M4, Tyre Oil, etc.) belong
     // directly in Managed Marketplace — no indirection through Others.
     return 'Marketplace';
@@ -1505,23 +1526,28 @@ function normalizeRows(raw, cfg) {
     return true;
   });
 
-  // Managed Marketplace = all Others rows that are NOT Transport or Support cases.
-  // Others = restricted to cases whose onboarding_created_date is after 31 March 2026.
+  // Managed Marketplace surfaces the miscellaneous Others rows that are NOT Transport
+  // or Support cases (those are logistics/service records that stay in Others only).
+  // The generic Others catch-all is date-limited to recent cases (created after
+  // 31 March 2026) so it doesn't fill with historical noise — but Transport & Support
+  // are a deliberate, tracked category, so they are kept in full and never date-
+  // dropped, guaranteeing no transporter/support record goes missing.
   var OTHERS_CUTOFF = new Date(2026, 3, 1); // April 1 2026
   var result = [];
   deduped.forEach(function(r) {
     if (r.vertical !== 'Others') { result.push(r); return; }
-    var cat = (r.category    || '').toLowerCase();
-    var bv  = (r.bizVertical || '').toLowerCase();
-    var isExcluded = cat.indexOf('transport') !== -1 || bv.indexOf('transport') !== -1
-                  || cat.indexOf('support')   !== -1 || bv.indexOf('support')   !== -1;
-    if (!isExcluded) {
-      var mmRow = {};
-      for (var k in r) mmRow[k] = r[k];
-      mmRow.vertical = 'Marketplace';
-      result.push(mmRow);
+    var isTS = isTransportOrSupport_((r.category || '').toLowerCase(), (r.bizVertical || '').toLowerCase());
+    if (isTS) {
+      // Transport / Support: keep every record in Others, unconditionally.
+      result.push(r);
+      return;
     }
-    // Keep the original Others row only if created after 31 March 2026.
+    // Non-transport Others rows also surface under Managed Marketplace…
+    var mmRow = {};
+    for (var k in r) mmRow[k] = r[k];
+    mmRow.vertical = 'Marketplace';
+    result.push(mmRow);
+    // …and remain in the Others catch-all only when recent enough.
     if (!r.createdDate || r.createdDate >= OTHERS_CUTOFF) {
       result.push(r);
     }
