@@ -703,8 +703,6 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .km-star-clickable{cursor:pointer;border-radius:4px;padding:1px 2px;margin:-1px -2px}
 .km-star-clickable:hover{background:var(--bg2)}
 .km-star-arr{font-size:8px;margin-left:2px;display:inline-block;transition:transform .2s}
-.km-star-open .km-star-arr{transform:rotate(90deg)}
-.km-star-vlist{padding:4px 0 8px 34px;margin-bottom:2px}
 .km-vrow{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:11.5px;border-bottom:1px solid var(--border)}
 .km-vrow:last-child{border-bottom:none}
 .km-vid{font-size:9.5px;font-weight:600;color:var(--txt3);background:var(--bg2);border-radius:4px;padding:1px 5px;flex-shrink:0;font-variant-numeric:tabular-nums;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2884,7 +2882,7 @@ body.view-gst #mm-crumbs{display:none}
    used by the funnel stage cards (their detailed records, .mfp-rec) and the
    Quality KPI rows (contextual breakdown). One open/close/placement/animation
    everywhere so every popup reads as the same interaction. */
-.mfp{position:fixed;z-index:650;width:264px;max-width:calc(100vw - 16px);
+.mfp{position:fixed;z-index:1000;width:264px;max-width:calc(100vw - 16px);
   background:var(--card);border:1px solid var(--border);border-radius:12px;
   box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px -8px rgba(0,0,0,.22);
   padding:13px 14px 12px;font-family:inherit;color:var(--txt);
@@ -5082,23 +5080,15 @@ function _mmVertModules(key) {
                         .sort(function(a, b){ return b.rating - a.rating; });
         var rTid = 'mp-svl-' + bandI;
         if (rSV.length) {
+          // Clicking the band opens its vendors in a popup (_mmRatingBandPop),
+          // rather than expanding an inline list.
           rExtra += '<div class="km-star-row km-star-clickable" role="button" tabindex="0"'
-            + ' onclick="_kmStarToggle(\'' + rTid + '\',this)"'
-            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmStarToggle(\'' + rTid + '\',this)}">'
+            + ' onclick="_mmRatingBandPop(this,' + bandI + ')"'
+            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_mmRatingBandPop(this,' + bandI + ')}">'
             + '<span class="km-star-n">' + _vsBandLabel(bandI) + '</span>'
             + '<div class="km-star-track"><div class="km-star-fill" style="width:' + rBP + '%;background:' + rCol + '"></div></div>'
             + '<span class="km-star-cnt">' + fmt(rC) + '</span>'
             + '<span class="km-star-pct">' + rDP + '% <span class="km-star-arr">▶</span></span>'
-            + '</div>'
-            + '<div id="' + rTid + '" class="km-star-vlist" style="display:none">'
-            + rSV.slice(0, 60).map(function(v) {
-                return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
-                  + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
-                  + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
-                  + '<span class="km-vrating" style="color:' + rCol + '">' + v.rating.toFixed(1) + '</span>'
-                  + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '')
-                  + '</div>';
-              }).join('')
             + '</div>';
         } else {
           rExtra += '<div class="km-star-row">'
@@ -5657,7 +5647,8 @@ var MF_STAGES = [
 ];
 
 // mmSelectFunnelStage removed: the whole stage card is one click target that
-// opens that stage's detailed records popup (see _mfCardRecords / _mfBindCards).
+// opens that stage's full detailed record list in the records overlay
+// (openStageRecords, wired in _mfBindCards).
 
 // Stage breakdown grid: rows = Sellers / Buyers, columns = EVERY category the
 // vertical has, in volume order, followed by a Total column. Showing all of them
@@ -5704,7 +5695,7 @@ function _mfPopCloseEvt() { _mfPopClose(); }
 function _mfPopOutside(e) {
   if (!_mfPop) return;
   if (_mfPop.contains(e.target)) return;
-  if (e.target.closest && e.target.closest('.mf-card,.cc-qsect-clk')) return;  // another trigger — let it switch
+  if (e.target.closest && e.target.closest('.cc-qsect-clk')) return;  // another trigger — let it switch
   _mfPopClose();
 }
 function _mfPopKey(e) { if (e.key === 'Escape' || e.key === 'Esc') _mfPopClose(); }
@@ -5777,81 +5768,10 @@ function _popShow(anchor, built) {
   return pop;
 }
 
-// ── Funnel stage card → detailed records popup ──────────────────────────────
-// The WHOLE card is the click target. Clicking anywhere on a stage card opens a
-// compact, scrollable popup listing that stage's actual live records (the same
-// rows the full overlay shows), loaded via getVerticalRows and filtered to the
-// stage's status. Nothing inside the card is separately clickable.
-var _MF_STAGE_STATUS = { total: null, draft: 'DRAFT', review: 'IN_REVIEW', onboarded: 'COMPLETED', rejected: 'REJECTED' };
-var _mfRecSeq = 0;   // guards async fills against a popup that was closed/replaced
-
-function _mfCardRecords(anchor, stageKey) {
-  var stage = null;
-  for (var i = 0; i < MF_STAGES.length; i++) { if (MF_STAGES[i].key === stageKey) { stage = MF_STAGES[i]; break; } }
-  if (!stage) return;
-  var key = activeVertKey || _mmVert;
-  var vs = (DS && DS.verticals || {})[key] || {};
-  var vb = (DB && DB.verticals || {})[key] || {};
-  var vcfg = (typeof getVertCfg === 'function') ? getVertCfg().filter(function(c) { return c.key === key; })[0] : null;
-  var vertName = (vcfg && vcfg.name) || key || '';
-  var wantStatus = _MF_STAGE_STATUS[stageKey];   // null = all statuses (Logged In)
-  var total = (vs[stage.field] || 0) + (vb[stage.field] || 0);
-  var SC = { blue: '#005dff', purple: '#8b5cf6', amber: '#d97706', green: '#16a34a', red: '#dc2626' };
-  var stColor = SC[stage.color] || 'var(--txt)';
-
-  var html =
-      '<div class="mfp-hd"><div class="mfp-ttl">' + esc(stage.label) + '</div>'
-    + '<button class="mfp-x" data-pop-close aria-label="Close">' + _mfXsvg() + '</button></div>'
-    + '<div class="mfp-eye">' + esc(vertName) + ' · <span style="color:' + stColor + ';font-weight:800">' + fmt(total) + '</span> record' + (total === 1 ? '' : 's') + '</div>'
-    + '<div class="mfrec-body" id="mfrec-body"><div class="mfrec-load">Loading records…</div></div>'
-    + '<button class="mfp-act" data-pop-view>Open full list' + _mfArrSvg() + '</button>';
-
-  var pop = _popShow(anchor, { html: html, cls: 'mfp-rec', view: function() { openStageRecords(stageKey); } });
-  if (!pop) return;
-
-  var seq = ++_mfRecSeq;
-  var acc = { seller: null, buyer: null };
-  ['seller', 'buyer'].forEach(function(aud) {
-    _ensureAudRows(key, aud, function(rows) {
-      if (seq !== _mfRecSeq || _mfPop !== pop) return;   // popup closed or replaced
-      acc[aud] = (rows || []).filter(function(r) { return !wantStatus || r.status === wantStatus; })
-                             .map(function(r) { var c = {}; for (var k in r) c[k] = r[k]; c._aud = aud; return c; });
-      _mfRecFill(pop, acc, total, stageKey);
-    });
-  });
-}
-
-// Repaint the records body from whatever audiences have arrived so far.
-function _mfRecFill(pop, acc, total, stageKey) {
-  var body = pop.querySelector('.mfrec-body');
-  if (!body) return;
-  var loading = acc.seller === null || acc.buyer === null;
-  var rows = (acc.seller || []).concat(acc.buyer || []);
-  // Onboarded first, then by name — a stable, scannable order.
-  rows.sort(function(a, b) {
-    return ((b.status === 'COMPLETED') - (a.status === 'COMPLETED'))
-        || String(a.name || '').localeCompare(String(b.name || ''));
-  });
-  var CAP = 200;
-  var shown = rows.slice(0, CAP);
-  var ST = { COMPLETED: { l: 'Onboarded', c: 'var(--st-onboarded-tx)', b: 'var(--st-onboarded-bg)' },
-             DRAFT:     { l: 'Draft',     c: 'var(--st-draft-tx)',     b: 'var(--st-draft-bg)' },
-             IN_REVIEW: { l: 'In Review', c: 'var(--st-review-tx)',    b: 'var(--st-review-bg)' },
-             REJECTED:  { l: 'Rejected',  c: 'var(--st-rejected-tx)',  b: 'var(--st-rejected-bg)' } };
-  var h = shown.map(function(r) {
-    var st = ST[r.status] || { l: r.status || '—', c: 'var(--txt3)', b: 'var(--bg2)' };
-    var meta = [r.category, (r._aud === 'buyer' ? 'Buyer' : 'Seller'), r.state].filter(Boolean).join(' · ');
-    return '<div class="mfrec-row"><div class="mfrec-main"><div class="mfrec-name">' + esc(r.name || r.id || '—') + '</div>'
-      + '<div class="mfrec-meta">' + esc(meta) + '</div></div>'
-      + '<span class="mfrec-chip" style="color:' + st.c + ';background:' + st.b + '">' + esc(st.l) + '</span></div>';
-  }).join('');
-  if (!loading && !rows.length) h = '<div class="mfrec-empty">No records for this status.</div>';
-  if (loading) h += '<div class="mfrec-load">Loading' + (rows.length ? ' more' : '') + '…</div>';
-  else if (rows.length > CAP) h += '<div class="mfrec-more">Showing ' + CAP + ' of ' + fmt(rows.length) + ' — open the full list for all.</div>';
-  body.innerHTML = h;
-}
-
-// One delegated pair of listeners on the funnel panel — the card is the target.
+// ── Funnel stage card → full detailed records ──────────────────────────────
+// The WHOLE card is the click target. Clicking anywhere on a stage card opens
+// that stage's full detailed record list in the records overlay ("new page"),
+// via openStageRecords. Nothing inside the card is separately clickable.
 function _mfBindCards() {
   if (window._mfCardsBound) return;
   var panel = document.getElementById('mm-funnel');
@@ -5862,13 +5782,7 @@ function _mfBindCards() {
     if (!card || !panel.contains(card)) return;
     e.stopPropagation();
     if (isKey) e.preventDefault();
-    // Anchor the popup at the click point (for keyboard, fall back to the card).
-    var ax = (typeof e.clientX === 'number' && e.clientX) ? e.clientX : null;
-    var ay = (typeof e.clientY === 'number' && e.clientY) ? e.clientY : null;
-    var anchor = (ax != null && ay != null && !isKey)
-      ? { getBoundingClientRect: function() { return { left: ax, right: ax, top: ay, bottom: ay, width: 0, height: 0 }; } }
-      : card;
-    _mfCardRecords(anchor, card.getAttribute('data-stage'));
+    openStageRecords(card.getAttribute('data-stage'));
   }
   panel.addEventListener('click', function(e) { fire(e, false); });
   panel.addEventListener('keydown', function(e) {
@@ -6011,10 +5925,10 @@ function mmRenderFunnel() {
   var vb = (DB && DB.verticals || {})[key] || {};
 
   // The WHOLE card is one click target — clicking anywhere on it opens that
-  // stage's detailed records popup (_mfCardRecords). The headline metric, label
-  // and audience × category matrix inside are purely informational; nothing in
-  // them is separately clickable. The corner arrow is the affordance that the
-  // card is clickable.
+  // stage's full detailed record list in the records overlay (openStageRecords).
+  // The headline metric, label and audience × category matrix inside are purely
+  // informational; nothing in them is separately clickable. The corner arrow is
+  // the affordance that the card is clickable.
   var html = '<div class="mf-flow">';
   MF_STAGES.forEach(function(s, i) {
     var total   = (vs[s.field]||0) + (vb[s.field]||0);
@@ -7181,23 +7095,16 @@ function openKpiModal(cardId) {
                           .sort(function(a, b) { return b.rating - a.rating; });
         var tid  = 'km-svl-' + si;
         if (sv.length > 0) {
+          // Clicking the band opens its vendors in a popup (_mmRatingBandPop),
+          // consistent with the inline Vendor Ratings panel — the popup sits
+          // above the modal (z-index) so it is fully visible.
           h += '<div class="km-star-row km-star-clickable" role="button" tabindex="0"'
-            + ' onclick="_kmStarToggle(\'' + tid + '\',this)"'
-            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_kmStarToggle(\'' + tid + '\',this)}">'
+            + ' onclick="_mmRatingBandPop(this,' + si + ')"'
+            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();_mmRatingBandPop(this,' + si + ')}">'
             + '<span class="km-star-n">' + _vsBandLabel(si) + '</span>'
             + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bpct + '%;background:' + bcol + '"></div></div>'
             + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
             + '<span class="km-star-pct">' + dpct + '% <span class="km-star-arr">▶</span></span>'
-            + '</div>'
-            + '<div id="' + tid + '" class="km-star-vlist" style="display:none">'
-            + sv.map(function(v) {
-                return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
-                  + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
-                  + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
-                  + '<span class="km-vrating" style="color:' + bcol + '">' + v.rating.toFixed(1) + '</span>'
-                  + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.category) + '</span>' : '')
-                  + '</div>';
-              }).join('')
             + '</div>';
         } else {
           h += '<div class="km-star-row">'
@@ -7568,12 +7475,32 @@ function _ovnEnsureAud(aud) {
     .getVerticalRows(key, JSON.stringify(f));
 }
 
-function _kmStarToggle(id, row) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  var open = el.style.display !== 'none';
-  el.style.display = open ? 'none' : '';
-  if (row) row.classList.toggle('km-star-open', !open);
+// Vendor Ratings score band → popup listing that band's vendors (name · GSTIN ·
+// score · category), reusing the shared records-popup shell. Opens next to the
+// clicked band row instead of expanding inline.
+function _mmRatingBandPop(anchor, bandI) {
+  var col = _vsBandColor(bandI);
+  var vendors = ((typeof qualityData !== 'undefined' && qualityData && qualityData.vendorRatings) || [])
+    .filter(function(v) { return v.aud !== 'buyer' && _vsBand(v.rating) === bandI; })
+    .sort(function(a, b) { return b.rating - a.rating; });
+  var CAP = 200, shown = vendors.slice(0, CAP);
+  var list = shown.map(function(v) {
+    return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
+      + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
+      + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
+      + '<span class="km-vrating" style="color:' + col + '">' + Number(v.rating || 0).toFixed(1) + '</span>'
+      + (v.category ? '<span class="km-vbadge" style="background:rgba(0,122,255,.10);color:#024C8A">' + esc(v.category) + '</span>' : '')
+      + '</div>';
+  }).join('');
+  var body = vendors.length
+    ? list + (vendors.length > CAP ? '<div class="mfrec-more">Showing ' + CAP + ' of ' + fmt(vendors.length) + '.</div>' : '')
+    : '<div class="mfrec-empty">No rated vendors in this band.</div>';
+  var html =
+      '<div class="mfp-hd"><div class="mfp-ttl">Rating ' + _vsBandLabel(bandI) + '</div>'
+    + '<button class="mfp-x" data-pop-close aria-label="Close">' + _mfXsvg() + '</button></div>'
+    + '<div class="mfp-eye">Vendor Rating · <span style="color:' + col + ';font-weight:800">' + fmt(vendors.length) + '</span> vendor' + (vendors.length === 1 ? '' : 's') + '</div>'
+    + '<div class="mfrec-body">' + body + '</div>';
+  _popShow(anchor, { html: html, cls: 'mfp-rec' });
 }
 function _kmTileToggle(panelId, groupId, tile) {
   var panel = document.getElementById(panelId);
