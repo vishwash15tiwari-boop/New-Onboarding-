@@ -60,11 +60,18 @@ var MB_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
 // MB_PASSWORD line → save.  Credentials are never hard-coded.
 // ════════════════════════════════════════════════════════════════
 function setupMetabaseCredentials() {
-  PropertiesService.getScriptProperties().setProperties({
-    'MB_EMAIL':    'vishwash.tiwari@recykal.com',
-    'MB_PASSWORD': '',   // ← paste password here, run once, then blank this
-  });
-  Logger.log('✅ Credentials saved to Script Properties.');
+  // Metabase: https://meta.recykal.com  (host is set in MB_HOST above)
+  // User:     vishwash.tiwari@recykal.com
+  // Paste the password on the line below, run this ONCE, then blank it again. It is
+  // stored in Script Properties (never hard-coded). A BLANK value is ignored, so
+  // re-running this later — e.g. to reconfirm the email — never wipes a saved password.
+  var MB_PASSWORD = '';   // ← paste password here, run once, then blank this
+  var props = { 'MB_EMAIL': 'vishwash.tiwari@recykal.com' };
+  if (MB_PASSWORD) props['MB_PASSWORD'] = MB_PASSWORD;
+  PropertiesService.getScriptProperties().setProperties(props);
+  Logger.log(MB_PASSWORD
+    ? '✅ Email + password saved to Script Properties.'
+    : '✅ Email saved. Now paste the password on the MB_PASSWORD line, run once, then blank it.');
 }
 
 
@@ -253,7 +260,7 @@ function bustDashboardCache_() {
   // Quality metrics cache — all historical versions (must include the CURRENT key
   // in getQualityData, else a Vendor Score / rating change is not reflected until the
   // 300s TTL lapses).
-  ['quality_data_v2','quality_data_v8','quality_data_v9','quality_data_v10','quality_data_v11','quality_data_v12'].forEach(function(k) { keys.push(k); });
+  ['quality_data_v2','quality_data_v8','quality_data_v9','quality_data_v10','quality_data_v11','quality_data_v12','quality_data_v13'].forEach(function(k) { keys.push(k); });
   keys.forEach(function(k) { try { cache.remove(k); } catch (e) {} });
   Logger.log('  Cache busted (' + keys.length + ' keys).');
 }
