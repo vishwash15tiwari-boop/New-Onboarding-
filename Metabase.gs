@@ -250,8 +250,10 @@ function bustDashboardCache_() {
     });
   });
 
-  // Quality metrics cache — all historical versions
-  ['quality_data_v2','quality_data_v8','quality_data_v9'].forEach(function(k) { keys.push(k); });
+  // Quality metrics cache — all historical versions (must include the CURRENT key
+  // in getQualityData, else a Vendor Score / rating change is not reflected until the
+  // 300s TTL lapses).
+  ['quality_data_v2','quality_data_v8','quality_data_v9','quality_data_v10','quality_data_v11'].forEach(function(k) { keys.push(k); });
   keys.forEach(function(k) { try { cache.remove(k); } catch (e) {} });
   Logger.log('  Cache busted (' + keys.length + ' keys).');
 }

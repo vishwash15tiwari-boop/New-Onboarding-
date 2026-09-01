@@ -2428,9 +2428,10 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  // v10: rating + OSV now sourced from the Vendor Score workbook; scores are
-  // out of 10 (was 1-5), so cached v9 payloads must not be reused.
-  var CACHE_KEY = 'quality_data_v10';
+  // v11: Vendor Score / OSV columns resolved by header name (was fixed position),
+  // so a reordered sheet no longer zeroes the ratings — bumped so no stale v10
+  // (all-unrated) payload is reused after this fix deploys.
+  var CACHE_KEY = 'quality_data_v11';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
