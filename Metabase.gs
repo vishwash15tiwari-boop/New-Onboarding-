@@ -275,7 +275,7 @@ function bustDashboardCache_() {
     cmbPfx.forEach(function(pfx) { keys.push(pfx + pk); });
   });
 
-  // Quality metrics cache — range covering the current key (quality_data_v13) + margin.
+  // Quality metrics cache — range covering the current key (quality_data_v14) + margin.
   for (var qv = 2; qv <= 20; qv++) keys.push('quality_data_v' + qv);
 
   // Batch the removals (chunked removeAll) — this list is ~2k keys and per-key remove()

@@ -2472,10 +2472,12 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
-  // v13: Vendor Rating / OSV sourced from "Open Marketplace Vendor Scores" — the 0-10
-  // rating is the "Denominator" column, OSV is "OSV Status", joined by GST No. Bumped
-  // so no stale v10/v11/v12 payload (old source / all-unrated) is reused after deploy.
-  var CACHE_KEY = 'quality_data_v13';
+  // v14: Vendor Rating / OSV sourced from "Open Marketplace Vendor Scores" — the 0-10
+  // rating is the "Denominator" column, OSV is "OSV Status". Joined to onboarded OMP
+  // vendors primarily by NORMALISED NAME (OMP sellers carry no GSTIN in the feed and use
+  // a different id space than the score sheet), which is what makes the numbers appear.
+  // Bumped so no stale v10-v13 payload (old source / all-unrated) survives the deploy.
+  var CACHE_KEY = 'quality_data_v14';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -2496,6 +2498,17 @@ function getQualityData() {
   var ompGstinMap = {};
   Object.keys(ompGstinBuyers).forEach(function(g)  { ompGstinMap[g] = ompGstinBuyers[g]; });
   Object.keys(ompGstinSellers).forEach(function(g) { ompGstinMap[g] = ompGstinSellers[g]; });
+
+  // OMP-onboarded maps keyed by NORMALISED NAME. The seller feed carries NO gstin for
+  // Open Marketplace sellers (gstin_number is blank for every one of them), so the GSTIN
+  // join above matches zero OMP sellers and the whole rating reads 0/unrated. Name is
+  // the only key both the Vendor Score sheet and the onboarding feed share for these
+  // vendors (~93% match on live data), so it is the primary rating join for sellers.
+  var ompNameSellers = buildOmpNameMap_('_mb_sellers', 'seller');
+  var ompNameBuyers  = buildOmpNameMap_('_mb_buyers',  'buyer');
+  var ompNameMap = {};
+  Object.keys(ompNameBuyers).forEach(function(n)  { ompNameMap[n] = ompNameBuyers[n]; });
+  Object.keys(ompNameSellers).forEach(function(n) { ompNameMap[n] = ompNameSellers[n]; });
 
   function mkR()  { return { ws: 0, rated: 0, total: 0, dist: [0,0,0,0,0] }; }
   function mkO()  { return { completed: 0, pending: 0, failed: 0, notInitiated: 0, total: 0 }; }
@@ -2554,15 +2567,15 @@ function getQualityData() {
       // get reordered, that positional read silently lands on the wrong cell — the join
       // still matches the vendor, but the "score" parses as NaN, so EVERY vendor counts
       // as unrated and the module shows 0 rated / N unrated (exactly this failure).
-      // Resolve both by header name first and fall back to the configured position only
-      // when no recognisable header is present, so a column reorder can't zero it out.
-      // "Denominator" is this sheet's 0-10 rating (= the 0-100 "Score" / 10) and is what
-      // the module shows ("out of 10"), so it leads. NB: a bare "score" candidate is
-      // deliberately NOT used — it would grab the 0-100 "Score" column, which the 0-10
-      // guard below then rejects, zeroing every rating.
-      var vsScore = qualityFindCol_(vsh, ['denominator','vendor_score','vendor_scores','overall_score',
-        'average_score','final_score','score_out_of_10','vendor_rating_score']);
-      if (vsScore < 0) vsScore = VS_COLS.denominator;
+      // This sheet carries the rating in TWO columns: "Score" (0-100) and "Denominator"
+      // (the 0-10 form, = Score / 10). On the live data "Denominator" is populated for
+      // only 1 of ~210 rows while "Score" is filled for 206 — so we must read Score and
+      // normalise it to out-of-10, using Denominator only when a row actually has it.
+      // vsScore = the 0-100 Score column; vsDenom = the 0-10 Denominator column.
+      var vsScore = qualityFindCol_(vsh, ['score','vendor_score','vendor_scores','overall_score',
+        'average_score','final_score','rating_score']);
+      var vsDenom = qualityFindCol_(vsh, ['denominator','score_out_of_10','rating_out_of_10','vendor_rating_score']);
+      if (vsScore < 0 && vsDenom < 0) { vsScore = -1; vsDenom = VS_COLS.denominator; }
       var vsOsv = qualityFindCol_(vsh, ['osv_status','osv','on_site_verification','onsite_verification',
         'osv_state','osv_consent_status','consent_status','verification_status','osv_verification_status']);
       if (vsOsv < 0) vsOsv = VS_COLS.osvStatus;
@@ -2576,14 +2589,25 @@ function getQualityData() {
       vsd.rows.forEach(function(row) {
         var gst = vsGst >= 0 ? String(row[vsGst] || '').trim() : '';
         var vid = vsId  >= 0 ? String(row[vsId]  || '').trim() : '';
-        var omp = (gst && (ompGstinMap[gst] || ompGstinNorm[_nrmG(gst)])) || (vid && ompMap[vid]) || null;
+        var nm  = vsNm  >= 0 ? String(row[vsNm]  || '').trim() : '';
+        // Join order: GSTIN → vendor id → NORMALISED NAME. OMP sellers have no GSTIN in
+        // the feed, so name is the join that actually lands for them.
+        var omp = (gst && (ompGstinMap[gst] || ompGstinNorm[_nrmG(gst)]))
+               || (vid && ompMap[vid])
+               || (nm  && ompNameMap[_qNormName_(nm)])
+               || null;
         if (!omp) return;   // not an OMP-onboarded vendor — out of scope
         var aud = omp.aud === 'buyer' ? 'buyer' : 'seller';
 
-        // — Vendor Score (out of 10; column resolved above) —
-        // A blank cell is unrated (NaN) and simply doesn't count. A literal 0 is a
-        // real score and is kept, so it lands in the 0-2 band rather than vanishing.
-        var sv = parseFloat(row[vsScore]);
+        // — Vendor Score (normalised to out of 10) —
+        // Prefer the 0-10 "Denominator" when the row actually has it; otherwise take the
+        // 0-100 "Score" and divide by 10 (Denominator = Score/10). A blank cell is unrated
+        // (NaN) and doesn't count; a literal 0 is a real score and lands in the 0-2 band.
+        var rawDenom = vsDenom >= 0 ? parseFloat(row[vsDenom]) : NaN;
+        var rawScore = vsScore >= 0 ? parseFloat(row[vsScore]) : NaN;
+        var sv = !isNaN(rawDenom) ? rawDenom
+               : !isNaN(rawScore) ? rawScore / 10
+               : NaN;
         if (!isNaN(sv) && sv >= 0 && sv <= 10) {
           var band = Math.min(4, Math.max(0, Math.floor(sv / 2)));
           [aud, 'combined'].forEach(function(t) {
@@ -2766,10 +2790,13 @@ function getQualityData() {
     appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds);
   } catch (e) { Logger.log('getQualityData doc-completeness: ' + e.message); }
 
-  // Rating denominator = OMP-onboarded count per audience (GSTIN-matched)
-  acc['seller'].r.total   = Object.keys(ompGstinSellers).length;
-  acc['buyer'].r.total    = Object.keys(ompGstinBuyers).length;
-  acc['combined'].r.total = Object.keys(ompGstinSellers).length + Object.keys(ompGstinBuyers).length;
+  // Rating denominator = OMP-onboarded (COMPLETED) count per audience. Uses the NAME map,
+  // not the GSTIN map: OMP sellers carry no GSTIN in the feed, so ompGstinSellers is empty
+  // and the old denominator was 0 (→ everything read "unrated"). The name map is the count
+  // of vendors actually eligible to be rated.
+  acc['seller'].r.total   = Object.keys(ompNameSellers).length;
+  acc['buyer'].r.total    = Object.keys(ompNameBuyers).length;
+  acc['combined'].r.total = Object.keys(ompNameSellers).length + Object.keys(ompNameBuyers).length;
 
   // OSV denominator = OMP-onboarded count. Not-initiated is whatever remains
   // after the verified (completed) and in-progress (pending) vendors, so the
@@ -2898,6 +2925,57 @@ function buildOmpGstinMap_(sheetName, aud) {
   return map;
 }
 
+// Normalise a business name to a stable join key: upper-case, drop the common
+// legal-suffix words, then strip everything that is not A-Z/0-9. This is the ONLY
+// key that reliably joins the Vendor Score sheet to OMP-onboarded sellers, because
+// OMP sellers carry no GSTIN in the feed and the two sheets use different id spaces
+// (Vendor Ref "OMP_0001" vs feed id "71750"). Kept identical on both sides of the join.
+function _qNormName_(s) {
+  return String(s || '').toUpperCase()
+    .replace(/PRIVATE|LIMITED|LTD|LLP/g, '')
+    .replace(/[^A-Z0-9]/g, '');
+}
+
+// Same shape as buildOmpGstinMap_ but keyed by _qNormName_(name). Used as the primary
+// rating/OSV join for OMP sellers and as the rating denominator (count of onboarded,
+// COMPLETED Open-Marketplace vendors actually eligible to be scored).
+function buildOmpNameMap_(sheetName, aud) {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet || sheet.getLastRow() < 2) return {};
+  var maxCol  = Math.min(sheet.getLastColumn(), 60);
+  var vals    = sheet.getRange(1, 1, sheet.getLastRow(), maxCol).getValues();
+  var headers = vals[0].map(function(h) {
+    return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  });
+  function fc(cands) { return qualityFindCol_(headers, cands); }
+  var idC  = fc(['seller_id','buyer_id','id','vendor_id','vendorid']);
+  var nmC  = fc(['seller_name','buyer_name','business_name','name','vendor_name','company_name']);
+  var gstC = fc(['gstin','gst_number','gst_no','gstin_number','gst']);
+  var catC = fc(['business_category','category','vertical_category','cat']);
+  var bvC  = fc(['business_vertical','vertical','biz_vertical']);
+  var stC  = fc(['onboarding_status','status','onboard_status']);
+  if (nmC < 0) return {};
+  var map = {};
+  vals.slice(1).forEach(function(row) {
+    var nm  = String(row[nmC] || '').trim(); if (!nm) return;
+    var key = _qNormName_(nm);                if (!key) return;
+    var bv = bvC >= 0 ? String(row[bvC] || '').trim().toLowerCase() : '';
+    var st = stC >= 0 ? String(row[stC] || '').trim().toUpperCase()  : '';
+    if (bv.indexOf('open marketplace') < 0 && bv.indexOf('open_marketplace') < 0 && bv !== 'omp') return;
+    if (st !== 'COMPLETED') return;
+    map[key] = {
+      id:               idC  >= 0 ? String(row[idC]  || '').trim().slice(0, 30) : '',
+      name:             nm.slice(0, 60),
+      gstin:            gstC >= 0 ? String(row[gstC] || '').trim().slice(0, 20) : '',
+      category:         catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
+      onboardingStatus: st,
+      aud:              aud
+    };
+  });
+  return map;
+}
+
 function qualityFindCol_(headers, candidates) {
   for (var i = 0; i < candidates.length; i++) {
     var idx = headers.indexOf(candidates[i]);
@@ -2986,13 +3064,43 @@ function debugVendorScoreSheet() {
     }
   });
 
+  // The 0-100 "Score" column is what actually carries the rating (Denominator is
+  // usually blank), so surface its coverage explicitly.
+  var scoreC = qualityFindCol_(d.headers, ['score','vendor_score','vendor_scores','overall_score','average_score','final_score','rating_score']);
+  Logger.log('\n── score column (0-100, ÷10 for the out-of-10 UI) ──');
+  if (scoreC >= 0) {
+    var snums = d.rows.map(function(r) { return parseFloat(r[scoreC]); }).filter(function(n) { return !isNaN(n); });
+    Logger.log('  ' + colLetter_(scoreC) + ' (' + d.headers[scoreC] + ') · numeric in ' + snums.length + '/' + d.rows.length + ' rows'
+      + (snums.length ? ' · min ' + Math.min.apply(null, snums) + ' · max ' + Math.max.apply(null, snums) : ''));
+  } else { Logger.log('  ✗ no Score column found'); }
+
   // Which columns could join these rows back to the dashboard's vendors.
   var idC  = qualityFindCol_(d.headers, ['seller_id','buyer_id','id','vendor_id','vendorid','entity_id']);
   var gstC = qualityFindCol_(d.headers, ['gstin','gst_number','gst_no','gstin_number','gst']);
+  var nmC  = qualityFindCol_(d.headers, ['seller_name','name','vendor_name','business_name','company_name']);
   Logger.log('\n── join keys ──');
   Logger.log('  id column:    ' + (idC  >= 0 ? colLetter_(idC)  + ' (' + d.headers[idC]  + ')' : '✗ NOT FOUND'));
   Logger.log('  gstin column: ' + (gstC >= 0 ? colLetter_(gstC) + ' (' + d.headers[gstC] + ')' : '✗ NOT FOUND'));
-  if (idC < 0 && gstC < 0) Logger.log('  ⚠ no join key detected — rows cannot be matched to onboarded vendors.');
+  Logger.log('  name column:  ' + (nmC  >= 0 ? colLetter_(nmC)  + ' (' + d.headers[nmC]  + ')' : '✗ NOT FOUND'));
+
+  // Actual match rate against onboarded OMP sellers — the number that decides whether
+  // the dashboard shows ratings. NAME is the join that lands (OMP sellers have no GSTIN).
+  var ompNameMap = buildOmpNameMap_('_mb_sellers', 'seller');
+  var nOnboarded = Object.keys(ompNameMap).length;
+  if (nmC >= 0 && nOnboarded > 0) {
+    var hit = 0;
+    d.rows.forEach(function(r) {
+      var k = _qNormName_(r[nmC]);
+      if (k && ompNameMap[k]) hit++;
+    });
+    Logger.log('\n── name join → onboarded OMP sellers ──');
+    Logger.log('  onboarded (COMPLETED) OMP sellers: ' + nOnboarded);
+    Logger.log('  vendor-score rows matched by name: ' + hit + '  ('
+      + (d.rows.length ? Math.round(hit / d.rows.length * 100) : 0) + '% of ' + d.rows.length + ' rows)');
+    if (hit === 0) Logger.log('  ⚠ zero name matches — check that _mb_sellers is populated and names align.');
+  } else if (idC < 0 && gstC < 0 && nmC < 0) {
+    Logger.log('  ⚠ no join key detected — rows cannot be matched to onboarded vendors.');
+  }
 }
 
 // Read the "Doc Completeness" sheet (card 5674) and add per-vendor document
