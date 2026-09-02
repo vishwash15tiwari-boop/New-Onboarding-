@@ -1397,10 +1397,13 @@ function normalizeRows(raw, cfg) {
     var txn = String(txnRaw).toUpperCase().replace(/\s+/g, ' ').trim();
 
     // Transaction value — exact matches first, then fuzzy scan for any column whose
-    // name contains 'gmv' or '(transaction|txn|order)_(value|amount)'.
+    // name contains 'gmv' or '(transaction|txn|order)_(value|amount)'. NB: the Seller
+    // card exposes GMV as "lifetimevalue" (no transaction/gmv token), so it is listed
+    // explicitly here — otherwise sellers always read as non-transacted (0 GMV).
     var txnValRaw = (function() {
       var exact = ['transaction_value', 'txn_value', 'total_transaction_value',
-                   'gmv', 'transaction_amount', 'first_transaction_value', 'order_value'];
+                   'gmv', 'transaction_amount', 'first_transaction_value', 'order_value',
+                   'lifetimevalue', 'lifetime_value', 'ltv'];
       for (var _i = 0; _i < exact.length; _i++) {
         if (idx[exact[_i]] !== undefined) return row[idx[exact[_i]]];
       }
@@ -1427,7 +1430,11 @@ function normalizeRows(raw, cfg) {
       gv(row, idx, 'transaction_date')       ||
       gv(row, idx, 'first_txn_date')         ||
       gv(row, idx, 'txn_date')               ||
-      gv(row, idx, 'activation_date')        || ''
+      gv(row, idx, 'activation_date')        ||
+      // Seller card: first transaction is recorded as the first shipment date.
+      gv(row, idx, 'firstshipmentdate')      ||
+      gv(row, idx, 'first_shipment_date')    ||
+      gv(row, idx, 'shipment_date')          || ''
     );
     // Number of transactions for this vendor, taken from the feed's total_orders
     // column when present. This is authoritative: it is the real order count, unlike
