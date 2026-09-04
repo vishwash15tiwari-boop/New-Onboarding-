@@ -4053,6 +4053,15 @@ var MR_STAGE_COLS = [
 // field in the feed, so the reason is the stage's defining condition).
 var MR_DRAFT_REASON = 'Incomplete Documents';
 var MR_DRAFT_COLS = MR_STAGE_COLS.concat([{ key:'reason', label:'Reason' }]);
+// Successfully Onboarded drill-down: the base stage columns plus the TAT window, so the
+// Average TAT on the card can be read and audited per record — TAT Start (In Review /
+// re-submission after the last rejection for sellers, application creation for buyers) →
+// Onboarded → TAT in days. Rows with no measurable TAT show "—" in all three.
+var MR_ONB_COLS = MR_STAGE_COLS.concat([
+  { key:'tatStart', label:'TAT Start' },
+  { key:'onbDate',  label:'Onboarded' },
+  { key:'tat',      label:'TAT (d)' },
+]);
 // Detail rows per audience, cached per vertical + period. Shared by the stage and
 // TAT drill-downs so switching between them does not refetch.
 var _audRows = { key:null, pKey:null, seller:null, buyer:null, loading:{} };
@@ -11022,7 +11031,9 @@ function _osvChip(status) {
 }
 
 function _mrColSet() {
-  if (_mrCtx && _mrCtx.stage) return _mrCtx.stageKey === 'draft' ? MR_DRAFT_COLS : MR_STAGE_COLS;
+  if (_mrCtx && _mrCtx.stage) return _mrCtx.stageKey === 'draft'     ? MR_DRAFT_COLS
+                                   : _mrCtx.stageKey === 'onboarded' ? MR_ONB_COLS
+                                   : MR_STAGE_COLS;
   if (_mrCtx && _mrCtx.aging) return MR_AGING_COLS;
   if (_mrCtx && _mrCtx.tat) return MR_TAT_COLS;
   if (_mrCtx && _mrCtx.rating) return MR_RATING_COLS;
@@ -11325,6 +11336,10 @@ function _mrCellHtml(r, key) {
                                       : '<span class="td-dim">—</span>';
       case 'status':   return statusChip(r.status);
       case 'reason':   return '<span class="km-vbadge" style="background:rgba(245,158,11,.12);color:#B45309;font-weight:600">' + esc(MR_DRAFT_REASON) + '</span>';
+      // Onboarded-stage TAT window (MR_ONB_COLS): styled to match the main records table.
+      case 'tatStart': return '<span class="td-dim td-num">' + esc(r.tatStart || '—') + '</span>';
+      case 'onbDate':  return '<span class="td-dim td-num">' + esc(r.onbDate || '—') + '</span>';
+      case 'tat':      return tatChip(r.tat);
       default:         return esc(String(r[key] || '—'));
     }
   }

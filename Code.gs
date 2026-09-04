@@ -999,9 +999,12 @@ function _assignTat_(rows, audience) {
   // per-record fallback is what previously inflated one category against another.
   var basis = null;
   if (audience === 'buyer') {
-    // Buyers are measured from the buyer feed's own columns G → H. Created → Onboarded
-    // remains only as a fallback for feeds where those positions hold no usable dates.
-    basis = n.fixed > 0 ? 'fixed' : (n.created > 0 ? 'created' : null);
+    // Buyers are measured ONLY created → final approval (the 'fixed' basis, _bs → _be). The
+    // 'created' fallback is deliberately gone: buyers have no onboarded_date, so it measured
+    // to onboarding_updated_date — a last-touched timestamp that drifts forward on any later
+    // edit and inflated the figure to tens of days. A buyer with no approval timestamp is left
+    // out of the average rather than measured to a drifting date.
+    basis = n.fixed > 0 ? 'fixed' : null;
   }
   else if (done.length && n.review >= done.length * 0.5) basis = 'review';
   else if (n.level1  > n.review && n.level1  > 0)        basis = 'level1';
@@ -1028,7 +1031,9 @@ function _assignTat_(rows, audience) {
         var t = dateDiffDays(start, end);
         if (t === null || t < 0)         tally.startAfterEnd++;
         else if (t > TAT_MAX_DAYS)       tally.tooLong++;
-        else { r.onbTAT = t; r.tatBasis = basis; tally.ok++; }
+        // Keep the exact start/end the TAT was measured between, so the records table can
+        // show In Review → Onboarded → TAT per row and the figure is auditable, not opaque.
+        else { r.onbTAT = t; r.tatBasis = basis; r.tatStartDate = start; r.tatEndDate = end; tally.ok++; }
       }
     }
     delete r._l1;       // internal candidates — never reach a payload or cache
@@ -2073,6 +2078,10 @@ function vertRow(r) {
     status: r.status, gstin: r.gstin, hasGST: r.hasGST, state: r.state,
     createdDate: fmtDate(r.createdDate), onbDate: fmtDate(r.onboardedDate),
     reviewDate:  fmtDate(r.reviewDate),
+    // The exact window the TAT was measured across (— when the record carries no TAT), so
+    // the records table can show Start → Onboarded → TAT and the number is auditable.
+    tatStart: (r.onbTAT === null ? '—' : fmtDate(r.tatStartDate)),
+    tatEnd:   (r.onbTAT === null ? '—' : fmtDate(r.tatEndDate)),
     tat: (r.onbTAT === null ? '—' : r.onbTAT),
     hasTxn:       r.hasTxn,
     hasTransacted: r.hasTransacted,
