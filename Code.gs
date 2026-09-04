@@ -789,6 +789,47 @@ function lookupLevel1_(id, name, audience) {
   return rec ? rec.level1 : null;
 }
 
+// Effective TAT start computed DIRECTLY from a main-feed row. The seller feed
+// (_mb_sellers) carries the full multi-level workflow — review_submission_date +
+// level1..level4 as review entries, and levelN_rejectedM (two per level) as rejections —
+// so turnaround is measured from the very row the dashboard counts, with no _mb_detail
+// join to drop or mismatch vendors. Same rule as getLevel1Lookup_.computeEffStart_: no
+// rejection → the initial In Review (earliest review entry); with rejection(s) → the
+// earliest review entry AFTER the most recent rejection (the re-submission that began the
+// final cycle, excluding every earlier rejected cycle); rejected with no post-rejection
+// review entry → flagged for exclusion. hasCols is false for a feed without these columns
+// (e.g. _mb_buyers), signalling the caller to fall back. Returns {start,exclude,hasCols}.
+function tatEffStartFromRow_(row, idx) {
+  var revNames = ['review_submission_date', 'level1', 'level2', 'level3', 'level4'];
+  var rejNames = ['level1_rejected1', 'level1_rejected2', 'level2_rejected1', 'level2_rejected2',
+                  'level3_rejected1', 'level3_rejected2', 'level4_rejected1', 'level4_rejected2'];
+  var hasCols = false, i, dt, rejMax = null, revs = [];
+  for (i = 0; i < rejNames.length; i++) {
+    if (idx[rejNames[i]] === undefined) continue;
+    hasCols = true;
+    dt = parseDate(row[idx[rejNames[i]]]);
+    if (dt && (!rejMax || dt > rejMax)) rejMax = dt;
+  }
+  for (i = 0; i < revNames.length; i++) {
+    if (idx[revNames[i]] === undefined) continue;
+    hasCols = true;
+    dt = parseDate(row[idx[revNames[i]]]);
+    if (dt) revs.push(dt);
+  }
+  if (!hasCols)     return { start: null, exclude: false, hasCols: false };
+  if (!revs.length) return { start: null, exclude: false, hasCols: true };
+  var pick = null;
+  if (!rejMax) {
+    pick = revs[0];
+    for (i = 1; i < revs.length; i++) if (revs[i] < pick) pick = revs[i];   // earliest = initial In Review
+    return { start: pick, exclude: false, hasCols: true };
+  }
+  for (i = 0; i < revs.length; i++) {                                        // earliest AFTER last rejection
+    if (revs[i] > rejMax && (!pick || revs[i] < pick)) pick = revs[i];
+  }
+  return pick ? { start: pick, exclude: false, hasCols: true } : { start: null, exclude: true, hasCols: true };
+}
+
 // ─────────────────────────────────────────────────────────────
 // TAT DIAGNOSTIC — run manually from the Apps Script editor to verify the
 // 5292 tab is wired correctly. Logs the actual headers, which candidate
@@ -1409,28 +1450,37 @@ function normalizeRows(raw, cfg) {
     // once for the whole feed rather than per record. Mixing starts within a feed is
     // what inflated Metal against Plastic: some records measured from review, others
     // from the earlier Level 1 date.
-    var _det = lookupTatDetail_(recId, recName, cfg.audience);
-    if (_det) {
+    // Effective TAT start. _mb_sellers carries the full multi-level workflow, so measure
+    // straight from THIS row — the same row the dashboard counts — so the TAT population
+    // equals the onboarded population exactly (no _mb_detail join to drop or mismatch a
+    // vendor). The _mb_detail join is kept only as a fallback for a feed that lacks the
+    // workflow columns.
+    var _eff = tatEffStartFromRow_(row, idx);
+    var _det = _eff.hasCols ? null : lookupTatDetail_(recId, recName, cfg.audience);
+    if (_eff.hasCols) {
+      if (_eff.start)        reviewDate = _eff.start;
+      else if (_eff.exclude) reviewDate = null;   // rejected, no post-rejection review entry → exclude
+      // else: no workflow dates on this row → keep the naive reviewDate detected above
+    } else if (_det) {
       // effReview is the effective start reconstructed from the vendor's FULL event
       // history in getLevel1Lookup_ (In Review, or the re-submission after the most
       // recent rejection across any number of cycles). Prefer it whenever present.
       if (_det.effReview) {
         reviewDate = _det.effReview;
       } else if (_det.effExclude) {
-        // Rejected, but no review-entry recorded after the last rejection — the final
-        // cycle cannot be timed, so drop the review start rather than measure a stale one.
         reviewDate = null;
       } else {
-        // Legacy reconciliation, used only when the history-based start is unavailable
-        // (e.g. a source without the level columns). A rejected case that came back
-        // restarts the clock; a review date predating the rejection is stale.
+        // Legacy reconciliation. A rejected case that came back restarts the clock; a
+        // review date predating the rejection is stale.
         var _rev = _det.review, _rej = _det.rejected, _res = _det.resubmitted;
         if (_res && (!_rev || _res > _rev)) _rev = _res;
         if (_rej && _rev && _rev < _rej)    _rev = null;
         if (_rev) reviewDate = _rev;
       }
     }
-    var level1 = _det ? _det.level1 : null;
+    // Level 1 date for the 'level1' fallback basis — from the row when present, else the join.
+    var level1 = (idx['level1'] !== undefined) ? parseDate(row[idx['level1']])
+               : (_det ? _det.level1 : null);
     // TAT end. The detail tab's completion date is authoritative when present and is
     // kept SEPARATE from onboardedDate, which drives onboarded counts, aging and date
     // filters and must not shift. This matters most for buyers: their card has no
@@ -1441,12 +1491,17 @@ function normalizeRows(raw, cfg) {
     var tatEnd = (_det && _det.completed) ? _det.completed
                : _feedEnd ? _feedEnd
                : onboarded;
-    // Buyers: TAT comes from the buyer feed's own columns G and H, by position.
-    // These take precedence over everything above for this audience.
+    // Buyers: the buyer feed (_mb_buyers) carries no In Review or rejection timestamps, so
+    // turnaround is created → FINAL APPROVAL (level2_approved_at, else level1_approved_at) —
+    // the authoritative onboarding completion. onboarding_updated_date is deliberately NOT
+    // used as the end: it is a last-touched timestamp that drifts forward on any later edit
+    // and inflated OMP buyer TAT from ~1.4 to ~29 days. A completed buyer with no approval
+    // timestamp cannot be timed and is excluded (start left null) rather than measured from
+    // a drifting date. These take precedence over everything above for this audience.
     var _bs = null, _be = null;
     if (cfg.audience === 'buyer') {
-      _bs = parseDate(row[BUYER_TAT_COLS.start]);
-      _be = parseDate(row[BUYER_TAT_COLS.end]);
+      _be = parseDate(gv(row, idx, 'level2_approved_at') || gv(row, idx, 'level1_approved_at') || '');
+      _bs = _be ? parseDate(gv(row, idx, 'onboarding_created_date') || row[BUYER_TAT_COLS.start]) : null;
     }
 
     var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
@@ -1566,8 +1621,8 @@ function normalizeRows(raw, cfg) {
       reviewDate:    reviewDate,
       _l1:           level1,        // TAT start candidate; stripped after resolution
       _tatEnd:       tatEnd,        // TAT end; separate from onboardedDate, stripped too
-      _bs:           _bs,           // buyer col G start / col H end, positional
-      _be:           _be,
+      _bs:           _bs,           // buyer TAT start (onboarding_created_date), null when unmeasurable
+      _be:           _be,           // buyer TAT end (final approval: level2/level1_approved_at)
     };
   }).filter(function(r) { return r.id || r.name; });
   _assignTat_(normalized, cfg.audience);
