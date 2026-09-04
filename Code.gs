@@ -617,9 +617,59 @@ function getLevel1Lookup_() {
       var endC = _detailDateCol_(d.headers, d.rows, TAT_COLS.completed,   /complete|onboard/);
       var resC = _detailDateCol_(d.headers, d.rows, TAT_COLS.resubmitted, /resubmit|resubmiss|reappl|re_review/);
       var rejC = _detailDateCol_(d.headers, d.rows, TAT_COLS.rejected,    /reject|declin|sent_back|returned/);
+
+      // Full event-history columns for the spec-correct effective start. This card is a
+      // MULTI-LEVEL workflow: review_submission_date + level1..levelN are the points a
+      // case (re-)enters review, and levelN_rejectedM (up to two per level) are the
+      // rejections. A single rejC/resC pair cannot represent it, so we collect ALL of
+      // each: rejAll = every rejection column, revAll = every review-entry column (the
+      // submission + each level, never a rejection column).
+      var rejAll = [], revAll = [];
+      d.headers.forEach(function(h, i) {
+        var hl = String(h || '').toLowerCase();
+        if (/reject|declin|sent_back|returned/.test(hl)) { rejAll.push(i); return; }
+        if (/review|submit/.test(hl) || /^level_?\d+$/.test(hl)) revAll.push(i);
+      });
       lk.cols = { review: revC && revC.header, level1: l1C && l1C.header,
                   completed: endC && endC.header, resubmitted: resC && resC.header,
-                  rejected: rejC && rejC.header };
+                  rejected: rejC && rejC.header,
+                  rejAllCount: rejAll.length, revAllCount: revAll.length };
+
+      // Effective TAT start from a vendor's full event row. No rejection → the initial
+      // In Review (earliest review-entry). With rejection(s) → the earliest review-entry
+      // AFTER the most recent rejection, i.e. the re-submission that began the final,
+      // successful cycle; every earlier rejected cycle is thereby excluded. If a case was
+      // rejected but no review-entry is recorded after its last rejection, its final cycle
+      // cannot be timed, so it is flagged for exclusion rather than measured from a stale
+      // date (spec: cases missing a valid TAT start are excluded, never back-filled).
+      function computeEffStart_(row) {
+        var rejMax = null, i;
+        for (i = 0; i < rejAll.length; i++) {
+          var dr = parseDate(row[rejAll[i]]);
+          if (dr && (!rejMax || dr > rejMax)) rejMax = dr;
+        }
+        var revs = [];
+        for (i = 0; i < revAll.length; i++) {
+          var dv = parseDate(row[revAll[i]]);
+          if (dv) revs.push(dv);
+        }
+        if (!revs.length) return { start: null, exclude: false };
+        var pick = null;
+        if (!rejMax) {
+          pick = revs[0];
+          for (i = 1; i < revs.length; i++) if (revs[i] < pick) pick = revs[i];   // earliest = initial In Review
+          return { start: pick, exclude: false };
+        }
+        for (i = 0; i < revs.length; i++) {                                        // earliest AFTER last rejection
+          if (revs[i] > rejMax && (!pick || revs[i] < pick)) pick = revs[i];
+        }
+        return pick ? { start: pick, exclude: false } : { start: null, exclude: true };
+      }
+      function setEff_(map, key, eff) {
+        var rec = map[key]; if (!rec) return;
+        if (eff.start) { if (!rec.effReview || eff.start > rec.effReview) rec.effReview = eff.start; rec.effExclude = false; }
+        else if (eff.exclude && !rec.effReview && rec.effExclude !== false) rec.effExclude = true;
+      }
 
       // This tab holds BOTH sellers and buyers, so every key is namespaced by
       // audience. A seller_id and a buyer_id can be the same number for different
@@ -681,14 +731,15 @@ function getLevel1Lookup_() {
         lk.audCounts[aud]++;
         var id   = rowId_(row, aud);
         var name = String(firstVal_(row, idx, TAT_COLS.name) || '').trim().toLowerCase();
+        var eff  = computeEffStart_(row);   // spec-correct start from this vendor's full history
         // Strictly namespaced. A row whose audience IS known is reachable only under
         // that audience — no shared bucket, because an id appearing for sellers only
         // would otherwise still answer a buyer lookup and hand over the wrong dates.
         // Rows whose audience cannot be determined go to 'unknown', which both
         // audiences may read since there is nothing to distinguish them by.
-        if (id) foldAll_(lk.byId, aud + '|' + id, dates);
+        if (id) { foldAll_(lk.byId, aud + '|' + id, dates); setEff_(lk.byId, aud + '|' + id, eff); }
         if (name) {
-          foldAll_(lk.byName, aud + '|' + name, dates);
+          foldAll_(lk.byName, aud + '|' + name, dates); setEff_(lk.byName, aud + '|' + name, eff);
           var nk = nameKeys[aud + '|' + name];
           if (!nk) nameKeys[aud + '|' + name] = { id: id, ambiguous: false };
           else if (nk.id !== id) nk.ambiguous = true;
@@ -1041,6 +1092,9 @@ function debugTatDetail() {
   Logger.log('  Resubmitted : ' + (lk.cols.resubmitted || '✗ not found — rejected cases will use the latest post-rejection review date'));
   Logger.log('  Rejected    : ' + (lk.cols.rejected    || '✗ not found — cannot tell a stale pre-rejection review from a valid one'));
   Logger.log('  Completed   : ' + (lk.cols.completed   || '✗ not found — TAT falls back to the feed onboarded date'));
+  Logger.log('  Event-history start: ' + (lk.cols.revAllCount || 0) + ' review-entry column(s), '
+    + (lk.cols.rejAllCount || 0) + ' rejection column(s) → effective start = earliest review-entry after the most recent rejection'
+    + ((lk.cols.revAllCount && lk.cols.rejAllCount) ? '' : ' (multi-level history not detected — falling back to the single review/rejection pair)'));
   Logger.log('  vendors keyed by id: ' + Object.keys(lk.byId).length
     + ' · by name: ' + Object.keys(lk.byName).length);
   Logger.log('  detail rows by audience: seller ' + lk.audCounts.seller
@@ -1357,15 +1411,24 @@ function normalizeRows(raw, cfg) {
     // from the earlier Level 1 date.
     var _det = lookupTatDetail_(recId, recName, cfg.audience);
     if (_det) {
-      // A rejected case that came back restarts the clock. Time spent waiting for the
-      // vendor to correct and resubmit is not review turnaround, so the start moves to
-      // the resubmission. Where there is no explicit resubmission column, a review date
-      // recorded AFTER the rejection is itself the re-review and is used; a review date
-      // that predates the rejection is stale and is discarded rather than measured from.
-      var _rev = _det.review, _rej = _det.rejected, _res = _det.resubmitted;
-      if (_res && (!_rev || _res > _rev)) _rev = _res;
-      if (_rej && _rev && _rev < _rej)    _rev = null;
-      if (_rev) reviewDate = _rev;
+      // effReview is the effective start reconstructed from the vendor's FULL event
+      // history in getLevel1Lookup_ (In Review, or the re-submission after the most
+      // recent rejection across any number of cycles). Prefer it whenever present.
+      if (_det.effReview) {
+        reviewDate = _det.effReview;
+      } else if (_det.effExclude) {
+        // Rejected, but no review-entry recorded after the last rejection — the final
+        // cycle cannot be timed, so drop the review start rather than measure a stale one.
+        reviewDate = null;
+      } else {
+        // Legacy reconciliation, used only when the history-based start is unavailable
+        // (e.g. a source without the level columns). A rejected case that came back
+        // restarts the clock; a review date predating the rejection is stale.
+        var _rev = _det.review, _rej = _det.rejected, _res = _det.resubmitted;
+        if (_res && (!_rev || _res > _rev)) _rev = _res;
+        if (_rej && _rev && _rev < _rej)    _rev = null;
+        if (_rev) reviewDate = _rev;
+      }
     }
     var level1 = _det ? _det.level1 : null;
     // TAT end. The detail tab's completion date is authoritative when present and is
@@ -1921,6 +1984,11 @@ function vStats(data, vertKey) {
     completionPct: pct(completed, total),
     completedThisWeek: completedThisWeek,
     avgTAT: tats.length ? Math.round(avg(tats)) : null,
+    // Sample size behind avgTAT — the count of onboarded records in this vertical that
+    // carry a valid In Review→Onboarded TAT. Exposed so the card can weight the combined
+    // seller+buyer average precisely (by TAT-bearing count, not raw onboarded count) and
+    // show an honest "n=" behind the figure.
+    tatCount: tats.length,
     // Which start date every TAT in this vertical was measured from ('review' |
     // 'level1' | null) so the UI can label the figure honestly.
     tatBasis: (function() {

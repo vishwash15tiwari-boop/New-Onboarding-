@@ -2859,6 +2859,36 @@ body.view-gst #mm-crumbs{display:none}
 .mf-card:hover .mf-open-ic,.mf-card:focus-visible .mf-open-ic{opacity:.85;transform:none}
 .mf-card:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.mf-open-ic{transition:opacity .18s var(--ease-out)}}
+/* ── Average TAT panel — Successfully Onboarded card only ──
+   Inherits the card's tokens (typography, radius, spacing, border colour). In the wide
+   docked (detail) layout it sits to the RIGHT of the head+matrix, set off by a subtle
+   1px divider; when the card is narrow (inline funnel row / mobile) it stacks below with
+   a top divider instead. Never a separate card. */
+.mf-card.mf-has-tat .mf-body{min-width:0}
+.mf-tat{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
+  display:flex;flex-direction:column;gap:2px;min-width:0}
+.mf-tat-lbl{font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--txt3);display:flex;align-items:center;gap:5px;line-height:1.2}
+.mf-tat-i{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;
+  border-radius:50%;border:1px solid var(--txt3);font-size:8px;font-weight:700;font-style:italic;
+  line-height:1;color:var(--txt3);cursor:help;font-family:Georgia,'Times New Roman',serif;flex-shrink:0}
+.mf-tat-v{font-size:1.3rem;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums;
+  letter-spacing:-.3px;line-height:1.15;white-space:nowrap}
+.mf-tat-na{color:var(--txt3);font-weight:600}
+.mf-tat-n{font-size:.6rem;font-weight:600;color:var(--txt3);line-height:1.2}
+/* Wide docked layout: head+matrix on the left, TAT on the right past a vertical divider. */
+.mmdetail .mf-card.mf-has-tat{display:flex;flex-direction:row;align-items:stretch;gap:16px}
+.mmdetail .mf-card.mf-has-tat .mf-body{flex:1 1 auto;min-width:0}
+.mmdetail .mf-card.mf-has-tat .mf-tat{margin-top:0;padding-top:0;border-top:none;
+  border-left:1px solid var(--border);padding-left:16px;justify-content:center;
+  flex:0 0 auto;min-width:104px;max-width:150px}
+/* Small screens revert the docked funnel to a scrolling row of narrow cards, so the TAT
+   goes back under the matrix rather than clinging to a cramped right edge. */
+@media(max-width:900px){
+  .mmdetail .mf-card.mf-has-tat{flex-direction:column;gap:0;align-items:stretch}
+  .mmdetail .mf-card.mf-has-tat .mf-tat{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
+    border-left:none;padding-left:0;min-width:0;max-width:none;justify-content:flex-start}
+}
 /* 2×2 breakdown matrix (Type × Category) */
 /* colored dots used by matrix headers and labels */
 /* detail strip */
@@ -4584,6 +4614,29 @@ function _bnBlendTAT(vs, vb) {
   return w > 0 ? Math.round((sT * sN + bT * bN) / w) : Math.round((sT + bT) / 2);
 }
 
+// Combined seller+buyer average TAT for the Successfully Onboarded card, weighted by
+// tatCount — the number of onboarded records that actually carry a valid In Review →
+// Onboarded turnaround — rather than raw completed count, so a side with sparse TAT
+// coverage doesn't skew the blend. Returns { v: days, n: sample } or null when neither
+// side has a measurable TAT. Days are whole (Code.gs measures TAT in whole days).
+function _mfBlendTATc(vs, vb) {
+  var sT = vs.avgTAT, bT = vb.avgTAT;
+  var sN = vs.tatCount || 0, bN = vb.tatCount || 0;
+  if ((sT == null || sN === 0) && (bT == null || bN === 0)) return null;
+  if (sT == null || sN === 0) return { v: bT, n: bN };
+  if (bT == null || bN === 0) return { v: sT, n: sN };
+  var w = sN + bN;
+  return { v: Math.round((sT * sN + bT * bN) / w), n: w };
+}
+// Format a whole-day TAT for display, honouring the dashboard's day-level convention
+// (Code.gs floors TAT to whole days, so hours/minutes are not carried and are not
+// fabricated here). 0 shows as "<1 Day" rather than a bare "0 Days".
+function _mfTatFmt(days) {
+  if (days == null) return null;
+  if (days <= 0)    return '<1 Day';
+  return fmt(days) + (days === 1 ? ' Day' : ' Days');
+}
+
 // ═══════════════════════════════════════════════════════════════
 // HORIZONTAL MIND MAP — the live navigator (Vertical → Module → Cards).
 // Every level reveals all of its options at once; a card is the final
@@ -5944,13 +5997,38 @@ function mmRenderFunnel() {
   MF_STAGES.forEach(function(s, i) {
     var total   = (vs[s.field]||0) + (vb[s.field]||0);
     var catRows = s.catField ? _mmCatRowsFixed(vs, vb, s.catField) : null;
-    html += '<div class="mf-card" data-stage="' + s.key + '" role="button" tabindex="0"'
-      + ' aria-label="' + esc(s.label) + ': ' + fmt(total) + '. Open detailed records">'
-      + '<span class="mf-open-ic" aria-hidden="true">→</span>'
-      + '<div class="mf-head">'
+    var headMatrix = '<div class="mf-head">'
       + '<div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
       + '<div class="mf-label">' + esc(s.label) + '</div></div>'
-      + _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0)
+      + _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0);
+    // Average TAT rides on the Successfully Onboarded card only. It reflects the SAME
+    // filtered vs/vb the card's counts use, so it always agrees with the population
+    // shown. TAT itself is the rejection-aware In Review→Onboarded span computed in
+    // Code.gs (resubmission after the latest rejection is the start); here we just blend
+    // seller+buyer, weighted by how many carry a valid TAT, and format in whole days.
+    var isOnb = (s.key === 'onboarded');
+    var tatBlock = '';
+    if (isOnb) {
+      var tat  = _mfBlendTATc(vs, vb);
+      var tStr = tat ? _mfTatFmt(tat.v) : null;
+      var tN   = tat ? tat.n : 0;
+      var tip  = 'Average TAT: average time taken to successfully onboard cases, measured '
+        + 'from the latest applicable In Review / re-submission timestamp after the most '
+        + 'recent rejection through the successful onboarding completion timestamp. '
+        + 'Previous rejected cycles are excluded — this is not a case-age figure.'
+        + (tN ? ' Based on ' + fmt(tN) + ' onboarded case' + (tN === 1 ? '' : 's')
+                + ' with a valid start date.'
+              : ' No onboarded case in this view carries a usable start date yet.');
+      tatBlock = '<div class="mf-tat" title="' + esc(tip) + '">'
+        + '<div class="mf-tat-lbl">Average TAT<span class="mf-tat-i" aria-hidden="true">i</span></div>'
+        + '<div class="mf-tat-v">' + (tStr != null ? esc(tStr) : '<span class="mf-tat-na">—</span>') + '</div>'
+        + '<div class="mf-tat-n">' + (tN ? 'n=' + fmt(tN) : 'Not yet measurable') + '</div>'
+        + '</div>';
+    }
+    html += '<div class="mf-card' + (isOnb ? ' mf-has-tat' : '') + '" data-stage="' + s.key + '" role="button" tabindex="0"'
+      + ' aria-label="' + esc(s.label) + ': ' + fmt(total) + '. Open detailed records">'
+      + '<span class="mf-open-ic" aria-hidden="true">→</span>'
+      + (isOnb ? '<div class="mf-body">' + headMatrix + '</div>' + tatBlock : headMatrix)
       + '</div>';
     if (i < MF_STAGES.length - 1) {
       html += '<div class="mf-sep">'
