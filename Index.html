@@ -2860,35 +2860,25 @@ body.view-gst #mm-crumbs{display:none}
 .mf-card:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.mf-open-ic{transition:opacity .18s var(--ease-out)}}
 /* ── Average TAT panel — Successfully Onboarded card only ──
-   Inherits the card's tokens (typography, radius, spacing, border colour). In the wide
-   docked (detail) layout it sits to the RIGHT of the head+matrix, set off by a subtle
-   1px divider; when the card is narrow (inline funnel row / mobile) it stacks below with
-   a top divider instead. Never a separate card. */
+   Sits below the count matrix, set off by a subtle top divider, and mirrors that matrix:
+   a Sellers/Buyers × (categories + Overall) grid of turnaround days, columns aligned with
+   the counts above. Inherits the card's tokens; never a separate card. */
 .mf-card.mf-has-tat .mf-body{min-width:0}
-.mf-tat{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
-  display:flex;flex-direction:column;gap:2px;min-width:0}
+.mf-tat{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
 .mf-tat-lbl{font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--txt3);display:flex;align-items:center;gap:5px;line-height:1.2}
+  color:var(--txt3);display:flex;align-items:center;gap:5px;line-height:1.2;margin-bottom:7px}
 .mf-tat-i{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;
   border-radius:50%;border:1px solid var(--txt3);font-size:8px;font-weight:700;font-style:italic;
   line-height:1;color:var(--txt3);cursor:help;font-family:Georgia,'Times New Roman',serif;flex-shrink:0}
-.mf-tat-v{font-size:1.3rem;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums;
-  letter-spacing:-.3px;line-height:1.15;white-space:nowrap}
+/* Combined figure, pushed to the right of the label — the headline the matrix breaks down. */
+.mf-tat-ov{margin-left:auto;font-size:.82rem;font-weight:800;color:var(--txt);
+  letter-spacing:-.2px;text-transform:none;font-variant-numeric:tabular-nums;white-space:nowrap}
 .mf-tat-na{color:var(--txt3);font-weight:600}
-.mf-tat-n{font-size:.6rem;font-weight:600;color:var(--txt3);line-height:1.2}
-/* Wide docked layout: head+matrix on the left, TAT on the right past a vertical divider. */
-.mmdetail .mf-card.mf-has-tat{display:flex;flex-direction:row;align-items:stretch;gap:16px}
-.mmdetail .mf-card.mf-has-tat .mf-body{flex:1 1 auto;min-width:0}
-.mmdetail .mf-card.mf-has-tat .mf-tat{margin-top:0;padding-top:0;border-top:none;
-  border-left:1px solid var(--border);padding-left:16px;justify-content:center;
-  flex:0 0 auto;min-width:104px;max-width:150px}
-/* Small screens revert the docked funnel to a scrolling row of narrow cards, so the TAT
-   goes back under the matrix rather than clinging to a cramped right edge. */
-@media(max-width:900px){
-  .mmdetail .mf-card.mf-has-tat{flex-direction:column;gap:0;align-items:stretch}
-  .mmdetail .mf-card.mf-has-tat .mf-tat{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
-    border-left:none;padding-left:0;min-width:0;max-width:none;justify-content:flex-start}
-}
+/* The TAT grid reuses the count matrix's cells but sits under .mf-tat's own divider, so it
+   must not draw a second one. Day-suffix is dimmed like the count matrix's Total styling. */
+.mf-tat .mf-matrix{margin-top:0;border-top:none;padding-top:0}
+.mf-mx-d{font-size:.72em;font-weight:600;color:var(--txt3);margin-left:.5px}
+.mf-mx-na{color:var(--txt3);font-weight:600}
 /* 2×2 breakdown matrix (Type × Category) */
 /* colored dots used by matrix headers and labels */
 /* detail strip */
@@ -6010,28 +6000,51 @@ function mmRenderFunnel() {
       + '<div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
       + '<div class="mf-label">' + esc(s.label) + '</div></div>'
       + _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0);
-    // Average TAT rides on the Successfully Onboarded card only. It reflects the SAME
-    // filtered vs/vb the card's counts use, so it always agrees with the population
-    // shown. TAT itself is the rejection-aware In Review→Onboarded span computed in
-    // Code.gs (resubmission after the latest rejection is the start); here we just blend
-    // seller+buyer, weighted by how many carry a valid TAT, and format in whole days.
+    // Average TAT rides on the Successfully Onboarded card only, and mirrors the count
+    // matrix: a Sellers/Buyers × (categories + Overall) grid of turnaround days, using the
+    // SAME filtered vs/vb the counts use so the two always describe one population. TAT is
+    // the rejection-aware In Review→Onboarded span from Code.gs (per category via
+    // vs/vb.categories[].avgTAT; per audience via vs/vb.avgTAT). Days are whole.
     var isOnb = (s.key === 'onboarded');
     var tatBlock = '';
     if (isOnb) {
-      var tat  = _mfBlendTATc(vs, vb);
-      var tStr = tat ? _mfTatFmt(tat.v) : null;
-      var tN   = tat ? tat.n : 0;
+      var tmapS = _mmCatTatMap(vs.categories);
+      var tmapB = _mmCatTatMap(vb.categories);
+      var tcols = catRows || [];                    // same categories & order as the counts
+      var tblend = _mfBlendTATc(vs, vb);
       var tip  = 'Average TAT: average time taken to successfully onboard cases, measured '
         + 'from the latest applicable In Review / re-submission timestamp after the most '
         + 'recent rejection through the successful onboarding completion timestamp. '
-        + 'Previous rejected cycles are excluded — this is not a case-age figure.'
-        + (tN ? ' Based on ' + fmt(tN) + ' onboarded case' + (tN === 1 ? '' : 's')
-                + ' with a valid start date.'
-              : ' No onboarded case in this view carries a usable start date yet.');
+        + 'Previous rejected cycles are excluded — this is not a case-age figure. '
+        + 'Split by Seller / Buyer and category; each cell is measured over the onboarded '
+        + 'cases in that group that carry a valid start date (hover a cell for its sample).';
+      // One TAT cell — "Xd" (0 is a valid same-day TAT) or "—", with its sample size on hover.
+      var _tCell = function(o, extraCls) {
+        var has = o && o.v != null && o.n > 0;
+        var inner = has ? (fmt(o.v) + '<span class="mf-mx-d">d</span>')
+                        : '<span class="mf-mx-na">—</span>';
+        var ttl = has ? ' title="' + fmt(o.n) + ' onboarded case' + (o.n === 1 ? '' : 's')
+                        + ' with a valid TAT"' : ' title="No onboarded case here carries a start date"';
+        return '<div class="mf-mx-cell' + (extraCls || '') + '"' + ttl + '>' + inner + '</div>';
+      };
+      var tHead = '<div class="mf-mx-corner"></div>'
+        + tcols.map(function(c, ci) {
+            return '<div class="mf-mx-hd" title="' + esc(c.cat) + '"><span class="mf-cat-dot" style="background:'
+              + MM_CAT_COLORS[ci % MM_CAT_COLORS.length] + '"></span><span>' + esc(_catLabel(c.cat)) + '</span></div>';
+          }).join('')
+        + '<div class="mf-mx-hd tot">Overall</div>';
+      var tSell = '<div class="mf-mx-lbl"><span class="mf-cat-dot seller"></span>Sellers</div>'
+        + tcols.map(function(c) { return _tCell(tmapS[c.cat]); }).join('')
+        + _tCell({ v: vs.avgTAT, n: vs.tatCount || 0 }, ' tot');
+      var tBuy  = '<div class="mf-mx-lbl"><span class="mf-cat-dot buyer"></span>Buyers</div>'
+        + tcols.map(function(c) { return _tCell(tmapB[c.cat]); }).join('')
+        + _tCell({ v: vb.avgTAT, n: vb.tatCount || 0 }, ' tot');
       tatBlock = '<div class="mf-tat" title="' + esc(tip) + '">'
-        + '<div class="mf-tat-lbl">Average TAT<span class="mf-tat-i" aria-hidden="true">i</span></div>'
-        + '<div class="mf-tat-v">' + (tStr != null ? esc(tStr) : '<span class="mf-tat-na">—</span>') + '</div>'
-        + '<div class="mf-tat-n">' + (tN ? 'n=' + fmt(tN) : 'Not yet measurable') + '</div>'
+        + '<div class="mf-tat-lbl">Average TAT<span class="mf-tat-i" aria-hidden="true">i</span>'
+        + (tblend && tblend.v != null ? '<span class="mf-tat-ov">' + esc(_mfTatFmt(tblend.v) || '') + '</span>' : '')
+        + '</div>'
+        + '<div class="mf-matrix mf-tat-mx" style="grid-template-columns:auto repeat(' + (tcols.length + 1) + ',1fr)">'
+        + tHead + tSell + tBuy + '</div>'
         + '</div>';
     }
     html += '<div class="mf-card' + (isOnb ? ' mf-has-tat' : '') + '" data-stage="' + s.key + '" role="button" tabindex="0"'
