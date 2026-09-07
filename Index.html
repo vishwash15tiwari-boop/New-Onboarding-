@@ -5116,6 +5116,7 @@ var _mmExtraCache = {};       // keyed cache for expensive panel extra HTML (rat
 // Geo panel state: which region is expanded, hovered/selected state, cached rows.
 // _geo.cat: optional category filter ('metal'|'plastic'|null) set when chained from Volume/Funnel.
 var _geo = { key:null, region:null, state:null, hover:null, pKey:null, cat:null, aud:'seller', rows:{ seller:null, buyer:null }, loading:false };
+var _geoLblData = null; // last _geoAgg result — read by _geoAddStateLabels
 
 function _mmC(vs, vb, f) { return (vs && vs[f] || 0) + (vb && vb[f] || 0); }
 function _mmParseDate(s) {
@@ -6950,6 +6951,7 @@ function mmRenderGeo() {
   // A specific category shows a single-count legend; "All categories" bifurcates by category.
   var geoCats = _geo.cat ? [] : _geoCats();
   var by = _geoAgg(geoCats);
+  _geoLblData = by;
   var audN = function(id) { return (by[id] && by[id][aud]) || 0; };
   var withData = Object.keys(IN_STATES).filter(function(id){ return audN(id) > 0; })
     .sort(function(a, b){ return audN(b) - audN(a); });
@@ -7061,6 +7063,70 @@ function mmRenderGeo() {
     });
   }
   _geoAnimate = false;
+  setTimeout(_geoAddStateLabels, 0);
+}
+function _geoAddStateLabels() {
+  var svg = document.querySelector('.mg-svg');
+  if (!svg || !_geoLblData) return;
+  var old = svg.querySelectorAll('.mg-count-lbl');
+  for (var i = 0; i < old.length; i++) { old[i].parentNode.removeChild(old[i]); }
+  var by = _geoLblData;
+  var aud = (_geo.aud === 'buyer') ? 'buyer' : 'seller';
+  Object.keys(IN_STATES).forEach(function(id) {
+    var d = by[id];
+    if (!d || !d.total) return;
+    var path = svg.querySelector('[data-geo="' + id + '"]');
+    if (!path) return;
+    var bbox;
+    try { bbox = path.getBBox(); } catch (e) { return; }
+    if (bbox.width < 28 || bbox.height < 18) return;
+    var cx = bbox.x + bbox.width / 2;
+    var cy = bbox.y + bbox.height / 2;
+    var fs = Math.min(18, Math.max(9, bbox.width * 0.13));
+    var sCount = d.seller || 0;
+    var bCount = d.buyer || 0;
+    var showSB = bbox.width >= 65 && sCount > 0 && bCount > 0;
+    var mainY = showSB ? cy - fs * 0.65 : cy;
+    // Fill-opacity is 0.22–0.66; even the darkest is medium — dark text reads well.
+    var audN = (aud === 'buyer') ? bCount : sCount;
+    var fillOp = parseFloat(path.getAttribute('fill-opacity') || '0');
+    var isDark = fillOp > 0.55;
+    var textColor = isDark ? '#ffffff' : '#1e3a8a';
+    var subColor  = isDark ? 'rgba(255,255,255,0.82)' : 'rgba(30,58,138,0.70)';
+
+    var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('class', 'mg-count-lbl');
+    text.setAttribute('x', String(cx));
+    text.setAttribute('y', String(mainY));
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('font-size', String(fs));
+    text.setAttribute('font-weight', '700');
+    text.setAttribute('fill', textColor);
+    text.setAttribute('pointer-events', 'none');
+    text.setAttribute('font-family', 'inherit');
+    text.textContent = String(audN || d.total);
+    svg.appendChild(text);
+
+    if (showSB) {
+      var parts = [];
+      if (sCount > 0) parts.push(String(sCount) + 'S');
+      if (bCount > 0) parts.push(String(bCount) + 'B');
+      var sub = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      sub.setAttribute('class', 'mg-count-lbl');
+      sub.setAttribute('x', String(cx));
+      sub.setAttribute('y', String(cy + fs * 0.85));
+      sub.setAttribute('text-anchor', 'middle');
+      sub.setAttribute('dominant-baseline', 'middle');
+      sub.setAttribute('font-size', String(fs * 0.72));
+      sub.setAttribute('font-weight', '600');
+      sub.setAttribute('fill', subColor);
+      sub.setAttribute('pointer-events', 'none');
+      sub.setAttribute('font-family', 'inherit');
+      sub.textContent = parts.join(' · ');
+      svg.appendChild(sub);
+    }
+  });
 }
 function _geoClearCat() { _geo.cat = null; _geoAnimate = true; mmRenderGeo(); }
 // Seller / Buyer map toggle — instant repaint; both datasets are already loaded.
