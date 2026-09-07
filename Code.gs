@@ -2727,7 +2727,7 @@ function getQualityData() {
   // vendors primarily by NORMALISED NAME (OMP sellers carry no GSTIN in the feed and use
   // a different id space than the score sheet), which is what makes the numbers appear.
   // Bumped so no stale v10-v13 payload (old source / all-unrated) survives the deploy.
-  var CACHE_KEY = 'quality_data_v15';
+  var CACHE_KEY = 'quality_data_v16';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -2760,7 +2760,7 @@ function getQualityData() {
   Object.keys(ompNameBuyers).forEach(function(n)  { ompNameMap[n] = ompNameBuyers[n]; });
   Object.keys(ompNameSellers).forEach(function(n) { ompNameMap[n] = ompNameSellers[n]; });
 
-  function mkR()  { return { ws: 0, rated: 0, total: 0, dist: [0,0,0,0,0] }; }
+  function mkR()  { return { ws: 0, rated: 0, total: 0, dist: [0,0,0,0,0], exceptions: 0 }; }
   function mkO()  { return { completed: 0, pending: 0, failed: 0, notInitiated: 0, total: 0 }; }
   function mkD()  { return { complete: 0, partial: 0, incomplete: 0, missing: 0, total: 0 }; }
   function mkAcc(){ return { r: mkR(), o: mkO(), d: mkD() }; }
@@ -2952,7 +2952,12 @@ function getQualityData() {
         var rawD2 = vsDenom >= 0 ? parseFloat(row[vsDenom]) : NaN;
         var rawS2 = vsScore >= 0 ? parseFloat(row[vsScore]) : NaN;
         var sv2 = !isNaN(rawD2) ? rawD2 / _qScDiv : !isNaN(rawS2) ? rawS2 / _qScDiv : NaN;
-        if (!isNaN(sv2) && sv2 >= 0 && sv2 <= 10) {
+        if (!isNaN(sv2) && sv2 === 0) {
+          // Score of exactly 0 is treated as an exception (anomalous evaluation, not
+          // a missing score). Kept separate from both "rated" and "unrated" so the
+          // aggregate tile can surface them as "Exceptions" rather than "Unrated".
+          _sr.exceptions++;
+        } else if (!isNaN(sv2) && sv2 > 0 && sv2 <= 10) {
           _sr.ws += sv2;
           _sr.rated++;
           _sr.dist[Math.min(4, Math.max(0, Math.floor(sv2 / 2)))]++;
@@ -2987,7 +2992,7 @@ function getQualityData() {
       });
       // Override acc with sheet-derived counts (more accurate than the join).
       acc['seller'].r   = _sr;
-      acc['combined'].r = { ws: _sr.ws, rated: _sr.rated, total: _sr.total, dist: _sr.dist.slice() };
+      acc['combined'].r = { ws: _sr.ws, rated: _sr.rated, total: _sr.total, dist: _sr.dist.slice(), exceptions: _sr.exceptions };
       // OSV: override completed/pending with sheet-level counts.
       acc['seller'].o.completed   = _sosvC;
       acc['seller'].o.pending     = _sosvP;
@@ -3143,7 +3148,7 @@ function getQualityData() {
   });
 
   // ── Finalize accumulators → output shape ─────────────────────
-  function fR(r) { return { avg: r.rated>0?Math.round(r.ws/r.rated*10)/10:null, total:r.total, rated:r.rated, dist:r.dist }; }
+  function fR(r) { return { avg: r.rated>0?Math.round(r.ws/r.rated*10)/10:null, total:r.total, rated:r.rated, dist:r.dist, exceptions:r.exceptions||0 }; }
   function fO(o) { return { completed:o.completed, pending:o.pending, failed:o.failed, notInitiated:o.notInitiated, total:o.total }; }
   function fD(d) { return { complete:d.complete, partial:d.partial, incomplete:d.incomplete, missing:d.missing, total:d.total }; }
   function fA(a) { return { rating:fR(a.r), osv:fO(a.o), docs:fD(a.d) }; }

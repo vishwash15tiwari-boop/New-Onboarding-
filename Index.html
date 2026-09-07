@@ -5579,7 +5579,10 @@ function _mmVertModules(key) {
     var rRated = q.rating.rated || 0, rTotal = q.rating.total || 0, rAvg = q.rating.avg;
     var rDist = q.rating.dist || [0,0,0,0,0];
     var rUnr  = Math.max(0, rTotal - rRated);
+    var rExc  = (q.rating && q.rating.exceptions) || 0;
     var selVR = (qualityData && qualityData.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
+    // 0-scored vendors are "Exceptions" — exclude from all score stats/bars
+    var selVRRated = selVR.filter(function(v){ return v.rating > 0; });
 
     // Per-material score stats helper
     var _vrMatStats = function(records, matFilter) {
@@ -5612,9 +5615,9 @@ function _mmVertModules(key) {
       return h;
     };
 
-    var overallStats = { dist: rDist, rated: rRated, records: selVR };
-    var metalVR      = _vrMatStats(selVR, 'Metal');
-    var plasticVR    = _vrMatStats(selVR, 'Plastic');
+    var overallStats = { dist: rDist, rated: rRated, records: selVRRated };
+    var metalVR      = _vrMatStats(selVRRated, 'Metal');
+    var plasticVR    = _vrMatStats(selVRRated, 'Plastic');
     var hasMats      = (metalVR && metalVR.rated > 0) || (plasticVR && plasticVR.rated > 0);
 
     var _rCKey = 'r2:' + rRated + ':' + (rAvg != null ? rAvg.toFixed(2) : '') + ':' + rDist.join(',')
@@ -5672,9 +5675,9 @@ function _mmVertModules(key) {
       panel:{
         eye:'Vendor Score · Average Seller Score', badge:'Sellers only',
         headline:{ v:(rAvg != null ? rAvg.toFixed(1) : '—'), raw:true, rawv:(rAvg != null ? rAvg.toFixed(1) + ' / 10' : '—'), label:rSubLine, tone:'warn' },
-        bar:[ { label:'Rated', v:rRated, color:'#16a34a' }, { label:'Unrated', v:rUnr, color:'#8a93a1' } ],
+        bar:[ { label:'Rated', v:rRated, color:'#16a34a' }, { label:'Exceptions', v:rExc, color:'#d97706' } ],
         tiles:[ { label:'Sellers Rated', v:rRated, sub:'have a score', tone:'good' },
-                { label:'Unrated', v:rUnr, sub:'no score yet' } ],
+                { label:'Exceptions', v:rExc, sub:'exception score' } ],
         extra:  rExtra
       }
     });
@@ -8014,7 +8017,9 @@ function openKpiModal(cardId) {
         var avg    = r.avg != null ? r.avg.toFixed(1) : '—';
         var rRated = r.rated || 0;
         var rTotal = r.total || 0;
+        var rExcKm = r.exceptions || 0;
         var selVR  = (qd.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
+        var selVRRatedKm = selVR.filter(function(v){ return v.rating > 0; });
         // Per-material breakdown
         var _popMatStats = function(records, matFilter) {
           var rs = matFilter ? records.filter(function(v){ return v.category === matFilter; }) : records;
@@ -8036,11 +8041,11 @@ function openKpiModal(cardId) {
         content =
           hero(avg + (r.avg != null ? ' / 10' : ''), 'Average Seller Score (out of 10)')
           + srow([
-              {v: fmt(rRated),                  l: 'Sellers Rated',       s: 'have a score'},
-              {v: fmt(rTotal - rRated),          l: 'Unrated',             s: 'no score yet'},
+              {v: fmt(rRated),   l: 'Sellers Rated', s: 'have a score'},
+              {v: fmt(rExcKm),   l: 'Exceptions',    s: 'exception score'},
             ])
           + matSumHtml
-          + (rRated > 0 ? sec('Score Distribution · out of 10', starBarsHtml(r.dist || [0,0,0,0,0], rRated, selVR)) : '');
+          + (rRated > 0 ? sec('Score Distribution · out of 10', starBarsHtml(r.dist || [0,0,0,0,0], rRated, selVRRatedKm)) : '');
       }
 
     } else if (cardId === 'osv') {
