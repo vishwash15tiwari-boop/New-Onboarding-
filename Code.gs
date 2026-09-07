@@ -69,6 +69,13 @@ var BUYER_TAT_COLS = {
   end:   7,   // Column H
 };
 
+// GSTIN positional fallback — used when no GSTIN header is detected in the feed.
+// _mb_sellers col G (index 6); _mb_buyers col L (index 11).
+var MB_GSTIN_COLS = {
+  seller: 6,   // Column G in _mb_sellers
+  buyer:  11,  // Column L in _mb_buyers
+};
+
 // Candidate column names in the 5292 detail tab (headers are normalized to
 // lower_snake_case by readSheetObj_). First populated match wins per record.
 var TAT_COLS = {
@@ -1611,6 +1618,14 @@ function normalizeRows(raw, cfg) {
     var gstin     = String(firstVal_(row, idx, [
       'gst_number', 'gstin', 'gstin_number', 'gst_no', 'gstin_no', 'gst'
     ]) || '').trim();
+    // Positional fallback: if the header-based search found nothing, read the
+    // column the user confirmed carries GSTIN for each feed (col G for sellers,
+    // col L for buyers).  Only used when the header match returned empty so an
+    // explicit header always wins and this never silently clobbers real data.
+    if (!gstin) {
+      var _gfc = (cfg.audience === 'buyer') ? MB_GSTIN_COLS.buyer : MB_GSTIN_COLS.seller;
+      gstin = String(row[_gfc] || '').trim();
+    }
     var gstStatus = String(firstVal_(row, idx, [
       'gstin_status', 'gst_status', 'gst_registration_status', 'registration_status'
     ]) || '').toUpperCase();
@@ -2712,7 +2727,7 @@ function getQualityData() {
   // vendors primarily by NORMALISED NAME (OMP sellers carry no GSTIN in the feed and use
   // a different id space than the score sheet), which is what makes the numbers appear.
   // Bumped so no stale v10-v13 payload (old source / all-unrated) survives the deploy.
-  var CACHE_KEY = 'quality_data_v14';
+  var CACHE_KEY = 'quality_data_v15';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -2921,8 +2936,14 @@ function getQualityData() {
       // The join above may miss vendors whose names don't normalise identically,
       // leading to under-counted totals. The vendor score sheet is already
       // curated to OMP sellers, so every named row is a valid seller entry.
+      // Unmatched rows that have a valid score are also added to vendorRatings
+      // (using the sheet's own category) so Metal + Plastic always sums to
+      // the same total that the aggregate tile shows.
       var _sr = { ws:0, rated:0, total:0, dist:[0,0,0,0,0] };
       var _sosvC = 0, _sosvP = 0;
+      // Index of names already captured by the join loop above.
+      var _joinedNmIdx = {};
+      vendorRatings.forEach(function(v) { _joinedNmIdx[_qNormName_(v.name)] = true; });
       vsd.rows.forEach(function(row) {
         var nm = vsNm >= 0 ? String(row[vsNm] || '').trim() : '';
         if (!nm) return;
@@ -2935,6 +2956,22 @@ function getQualityData() {
           _sr.ws += sv2;
           _sr.rated++;
           _sr.dist[Math.min(4, Math.max(0, Math.floor(sv2 / 2)))]++;
+          // If the join loop missed this vendor, add it now using the sheet's own
+          // category so the Metal / Plastic breakdown is complete.
+          if (!_joinedNmIdx[_qNormName_(nm)]) {
+            var _cat2 = vsCat >= 0 ? String(row[vsCat] || '').trim() : '';
+            var _gst2 = vsGst >= 0 ? String(row[vsGst] || '').trim() : '';
+            vendorRatings.push({
+              id:               '',
+              name:             nm.slice(0, 60),
+              gstin:            _gst2.slice(0, 20),
+              rating:           Math.round(sv2 * 10) / 10,
+              onboardingStatus: 'COMPLETED',
+              category:         _cat2,
+              aud:              'seller'
+            });
+            _joinedNmIdx[_qNormName_(nm)] = true;
+          }
         }
         // OSV Status
         var osR2 = String(row[vsOsv] || '').trim();
