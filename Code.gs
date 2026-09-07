@@ -433,6 +433,98 @@ function getVerticalRows(vertKey, filtersJson) {
   }
 }
 
+// ─── Transaction Distribution (geo-status module) ────────────────────────────
+// Aggregates ALL onboarding cases (across every vertical) by:
+//   state × audience (seller/buyer) × category (Plastic/Metal/Other) × status group
+// Status groups:  COMPLETED → 'completed'
+//                 IN_REVIEW → 'pending'
+//                 DRAFT     → 'pending'
+//                 REJECTED  → 'failed'
+// Returns { stateMap: { stateId: { completed, pending, failed, seller, buyer,
+//                                   byMat:{ Plastic:{completed,pending,failed},… } } },
+//           allIndia: { completed, pending, failed, total,
+//                       seller:{completed,pending,failed,total},
+//                       buyer: {completed,pending,failed,total},
+//                       byMat:{ Plastic:{…}, Metal:{…}, Other:{…} } } }
+function getGeoTransactionData(filtersJson) {
+  try {
+    var f = filtersJson ? JSON.parse(filtersJson) : {};
+    var cacheKey = 'geo_txn_v1_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
+                                                     f.audience||'all', f.category||'all']);
+    var cache = CacheService.getScriptCache();
+    var hit = cache.get(cacheKey);
+    if (hit) return hit;
+
+    var statusGroup = function(status) {
+      var s = String(status || '').toUpperCase();
+      if (s === 'COMPLETED') return 'completed';
+      if (s === 'REJECTED')  return 'failed';
+      return 'pending'; // DRAFT, IN_REVIEW, or anything else
+    };
+
+    var stateMap = {}, ai = { completed:0, pending:0, failed:0, total:0,
+                               seller:{completed:0,pending:0,failed:0,total:0},
+                               buyer: {completed:0,pending:0,failed:0,total:0},
+                               byMat:{} };
+
+    var AUDS = [['seller', AUDIENCE_CFG.seller], ['buyer', AUDIENCE_CFG.buyer]];
+    AUDS.forEach(function(pair) {
+      var aud = pair[0], cfg = pair[1];
+      var rows = normalizeRows(readData(aud), cfg);
+      rows.forEach(function(r) {
+        if (!applyDateFilter(r, f)) return;
+        // Optional audience / category filter
+        if (f.audience && f.audience !== 'all' && f.audience !== aud) return;
+        var cat = String(r.category || 'Other');
+        if (f.category && f.category !== 'all' && f.category.toLowerCase() !== cat.toLowerCase()) return;
+
+        var sg  = statusGroup(r.status);
+        var sid = _geoStateIdGs(String(r.state || ''));
+        if (!sid) return;
+
+        // State bucket
+        if (!stateMap[sid]) stateMap[sid] = { completed:0, pending:0, failed:0, total:0,
+                                               seller:{completed:0,pending:0,failed:0,total:0},
+                                               buyer: {completed:0,pending:0,failed:0,total:0},
+                                               byMat:{} };
+        var st = stateMap[sid];
+        st[sg]++; st.total++;
+        st[aud][sg]++; st[aud].total++;
+        if (!st.byMat[cat]) st.byMat[cat] = {completed:0,pending:0,failed:0};
+        st.byMat[cat][sg]++;
+
+        // All-India bucket
+        ai[sg]++; ai.total++;
+        ai[aud][sg]++; ai[aud].total++;
+        if (!ai.byMat[cat]) ai.byMat[cat] = {completed:0,pending:0,failed:0,total:0};
+        ai.byMat[cat][sg]++; ai.byMat[cat].total++;
+      });
+    });
+
+    var out = JSON.stringify({ success:true, stateMap:stateMap, allIndia:ai });
+    try { cache.put(cacheKey, out, CONFIG.CACHE_TTL); } catch(e) {}
+    return out;
+  } catch(err) {
+    return JSON.stringify({ success:false, error:(err&&err.message)?err.message:String(err) });
+  }
+}
+
+// Helper: resolve a raw state name string → ISO2 id (mirrors _geoStateId in the frontend).
+function _geoStateIdGs(raw) {
+  if (!raw) return '';
+  var GN = { andhrapradesh:'AP', arunachalpradesh:'AR', assam:'AS', bihar:'BR',
+    chhattisgarh:'CT', chattisgarh:'CT', goa:'GA', gujarat:'GJ', haryana:'HR',
+    himachalpradesh:'HP', jharkhand:'JH', karnataka:'KA', kerala:'KL', lakshadweep:'LD',
+    madhyapradesh:'MP', maharashtra:'MH', manipur:'MN', meghalaya:'ML', mizoram:'MZ',
+    nagaland:'NL', odisha:'OD', orissa:'OD', punjab:'PB', rajasthan:'RJ', sikkim:'SK',
+    tamilnadu:'TN', telangana:'TS', tripura:'TR', uttarpradesh:'UP', uttarakhand:'UK',
+    westbengal:'WB', delhi:'DL', nctofdelhi:'DL', jammuandkashmir:'JK', jammukashmir:'JK',
+    ladakh:'JK', chandigarh:'CH', puducherry:'PY', pondicherry:'PY', andamannicobar:'AN',
+    andamanandnicobar:'AN', dadranagarhaveli:'DN', damananddiu:'DD', andamanandnicobarislands:'AN' };
+  var key = raw.toLowerCase().replace(/&/g,'and').replace(/[^a-z]/g,'');
+  return GN[key] || '';
+}
+
 // Returns transacted OMP vendors (both seller + buyer) for the drill-down table.
 // Uses the vertical-rows cache populated by getDashboardData so no extra reads occur.
 function getTransactedVendors(filtersJson) {

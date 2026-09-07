@@ -1763,6 +1763,75 @@ body.view-gst #vert-tabs-bar{display:none}
   border-radius:0 9px 9px 0;
 }
 .vert-tab-gst.active{border-left-color:transparent;border-radius:9px}
+/* Transaction Distribution tab — mirrors GST tab treatment */
+.vert-tab-txndist{
+  border-left:1px solid rgba(0,0,0,.12);margin-left:0;padding-left:14px;
+  border-radius:0 9px 9px 0;
+}
+.vert-tab-txndist.active{border-left-color:transparent;border-radius:9px}
+/* ── Transaction Distribution View ── */
+:root{
+  --tdt-card:var(--card);--tdt-bg:var(--bg);--tdt-bg2:#f0f4f8;
+  --tdt-border:var(--border);--tdt-ink:var(--txt);--tdt-ink2:var(--txt2);--tdt-ink3:var(--txt3);
+  --tdt-shadow-sm:0 1px 6px rgba(0,0,0,.07);--tdt-shadow:0 4px 20px rgba(0,0,0,.12);
+  --tdt-green:#16a34a;--tdt-green-bg:#dcfce7;
+  --tdt-amber:#d97706;--tdt-amber-bg:#fef3c7;
+  --tdt-red:#dc2626;--tdt-red-bg:#fee2e2;
+  --tdt-blue:#005dff;--tdt-blue-bg:#dbeafe;
+}
+#tab-txndist{padding:0}
+#tab-txndist>*{animation:gpReveal .42s cubic-bezier(.22,.8,.36,1) both}
+.tdt-wrap{display:flex;flex-direction:column;gap:14px;padding-bottom:24px}
+.tdt-back-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.tdt-back-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:var(--pill);border:none;background:var(--seg-track);color:var(--tdt-ink);font-size:11.5px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .15s}
+.tdt-back-btn:hover{background:rgba(120,120,128,.18)}
+.tdt-title{font-size:17px;font-weight:700;color:var(--tdt-ink);letter-spacing:-.3px}
+.tdt-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tdt-filter-grp{display:flex;align-items:center;gap:4px}
+.tdt-filter-lbl{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--tdt-ink3);white-space:nowrap}
+.tdt-chip{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 13px;border:1.5px solid var(--tdt-border);border-radius:20px;cursor:pointer;background:var(--tdt-card);color:var(--tdt-ink2);transition:background .15s,border-color .15s,color .15s;white-space:nowrap}
+.tdt-chip:hover{border-color:var(--tdt-blue);color:var(--tdt-blue)}
+.tdt-chip.active{background:var(--tdt-blue);border-color:var(--tdt-blue);color:#fff}
+.tdt-chip.active-green{background:var(--tdt-green);border-color:var(--tdt-green);color:#fff}
+.tdt-chip.active-amber{background:var(--tdt-amber);border-color:var(--tdt-amber);color:#fff}
+.tdt-chip.active-red{background:var(--tdt-red);border-color:var(--tdt-red);color:#fff}
+.tdt-body{display:grid;grid-template-columns:1fr 320px;gap:14px;align-items:start}
+@media(max-width:760px){.tdt-body{grid-template-columns:1fr}}
+.tdt-map-card{background:var(--tdt-card);border:1px solid var(--tdt-border);border-radius:20px;padding:18px 20px;box-shadow:var(--tdt-shadow-sm)}
+.tdt-map-svg-wrap{width:100%;max-width:480px;margin:0 auto;position:relative}
+.tdt-map-svg-wrap svg{width:100%;height:auto;display:block}
+.tdt-map-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.tdt-map-title{font-size:13px;font-weight:700;color:var(--tdt-ink)}
+.tdt-map-legend{display:flex;gap:12px;flex-wrap:wrap}
+.tdt-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--tdt-ink2)}
+.tdt-leg-dot{width:10px;height:10px;border-radius:50%}
+.tdt-right-panel{display:flex;flex-direction:column;gap:14px}
+.tdt-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tdt-kpi{background:var(--tdt-card);border:1px solid var(--tdt-border);border-radius:16px;padding:14px 16px;box-shadow:var(--tdt-shadow-sm)}
+.tdt-kpi-val{font-size:22px;font-weight:750;letter-spacing:-1px;font-variant-numeric:tabular-nums;color:var(--tdt-ink)}
+.tdt-kpi-lbl{font-size:11px;font-weight:600;color:var(--tdt-ink3);margin-top:3px}
+.tdt-kpi.green .tdt-kpi-val{color:var(--tdt-green)}
+.tdt-kpi.amber .tdt-kpi-val{color:var(--tdt-amber)}
+.tdt-kpi.red .tdt-kpi-val{color:var(--tdt-red)}
+.tdt-state-list-card{background:var(--tdt-card);border:1px solid var(--tdt-border);border-radius:16px;padding:14px 16px;box-shadow:var(--tdt-shadow-sm);max-height:380px;overflow-y:auto}
+.tdt-sl-hdr{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--tdt-ink3);margin-bottom:8px}
+.tdt-sl-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--tdt-border)}
+.tdt-sl-row:last-child{border-bottom:none}
+.tdt-sl-name{flex:1;font-size:12px;font-weight:600;color:var(--tdt-ink);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tdt-sl-bar-wrap{flex:1;height:5px;background:var(--tdt-bg2);border-radius:5px;overflow:hidden}
+.tdt-sl-bar{height:100%;border-radius:5px;background:var(--tdt-blue)}
+.tdt-sl-n{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--tdt-ink);min-width:28px;text-align:right}
+.tdt-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:2px}
+@media(max-width:680px){.tdt-summary{grid-template-columns:repeat(2,1fr)}}
+.tdt-sum-tile{background:var(--tdt-card);border:1px solid var(--tdt-border);border-radius:16px;padding:16px 18px;box-shadow:var(--tdt-shadow-sm);display:flex;flex-direction:column;gap:4px}
+.tdt-sum-val{font-size:24px;font-weight:750;letter-spacing:-1px;font-variant-numeric:tabular-nums;color:var(--tdt-ink)}
+.tdt-sum-lbl{font-size:11.5px;font-weight:600;color:var(--tdt-ink3)}
+.tdt-sum-sub{font-size:10.5px;font-weight:500;color:var(--tdt-ink3)}
+.tdt-skel{background:linear-gradient(90deg,var(--tdt-bg2) 0%,var(--tdt-card) 40%,var(--tdt-bg2) 80%);background-size:640px 100%;animation:gpShimmer 1.3s infinite linear;border-radius:12px}
+/* map state default */
+.tdt-state{cursor:default;transition:opacity .15s}
+.tdt-state.has-data{cursor:pointer}
+.tdt-state.has-data:hover{opacity:.8}
 
 /* ── Vertical context hero — lives inside the hero row ── */
 .vert-ctx-hdr{
@@ -3302,6 +3371,9 @@ body.view-gst #mm-crumbs{display:none}
   <!-- ── VIEW: GST PAYABLES ── -->
   <div id="tab-gst" style="display:none"></div>
 
+  <!-- ── VIEW: TRANSACTION DISTRIBUTION ── -->
+  <div id="tab-txndist" style="display:none"></div>
+
   </div><!-- /dash-content -->
 
   <!-- Sidebar navigation — built by buildSideNav() -->
@@ -3748,23 +3820,27 @@ function loadData(silent) {
 // ── View chrome (Sellers · Buyers · GST Payables) ────────────────
 // Shows/hides the right panels + controls and syncs the tab active states.
 function updateViewChrome() {
-  var isGst = currentView === 'gst';
+  var isGst    = currentView === 'gst';
+  var isTxndist = currentView === 'txndist';
+  var isDash   = !isGst && !isTxndist;
   var ov = document.getElementById('tab-overview');
   var gt = document.getElementById('tab-gst');
+  var td = document.getElementById('tab-txndist');
   var pc = document.getElementById('onb-period-controls');
 
   var vt = document.getElementById('view-title');
   var tb = document.getElementById('vert-tabs-bar');
-  if (ov) ov.style.display = isGst ? 'none' : '';
+  if (ov) ov.style.display = isDash ? '' : 'none';
   if (gt) gt.style.display = isGst ? 'block' : 'none';
-  if (pc) pc.style.display = isGst ? 'none' : 'inline-flex';
+  if (td) td.style.display = isTxndist ? 'block' : 'none';
+  if (pc) pc.style.display = isDash ? 'inline-flex' : 'none';
   if (tb) tb.style.display = 'none';   // legacy tab bar — superseded by the mind-map nav
 
-  if (vt) vt.textContent = isGst ? 'GST Payables' : 'Business Verticals';
+  if (vt) vt.textContent = isGst ? 'GST Payables' : isTxndist ? 'Transaction Distribution' : 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
   setAura(isGst ? 'gst' : (activeVertKey || 'OMP'));
-  renderVertCtxHdr(isGst ? null : activeVertKey);   // hero row: clear in GST, restore on return
-  if (!isGst) positionVertThumb(false);   // bar may have re-rendered while hidden
+  renderVertCtxHdr((isGst || isTxndist) ? null : activeVertKey);
+  if (isDash) positionVertThumb(false);
   var g = document.getElementById('aud-gst');
   if (g) g.classList.toggle('active', isGst);
   buildSideNav();
@@ -3774,34 +3850,44 @@ function updateViewChrome() {
 function renderAudienceTabs() { updateViewChrome(); }
 
 function switchAudience(a) {
-  // Audience tabs removed; this function is kept for backward compat with
-  // any remaining callers (e.g. sidebar group click). Just switch back to
-  // the overview and keep the combined data.
   currentView = 'onboarding';
+  _TXN = null;   // clear txndist cache so it reloads fresh on next visit
   updateViewChrome();
 }
 
 // Switch to the GST Payables view (paint cached data instantly, then refresh).
 function switchView(view) {
-  if (view !== 'gst') { switchAudience(currentAudience); return; }
-  if (currentView === 'gst') return;
-  currentView = 'gst';
+  if (view !== 'gst' && view !== 'txndist') { switchAudience(currentAudience); return; }
+  if (view === 'gst') {
+    if (currentView === 'gst') return;
+    currentView = 'gst';
+    snActiveKey = null;
+    if (selectedVert) closeVertDetail();
+    document.body.style.overflow = '';
+    updateViewChrome();
+    renderVNav();
+    var swrDone = false;
+    try {
+      var stored = localStorage.getItem(STORE_PFX + 'gst_' + gpYear);
+      if (stored) {
+        var parsed = JSON.parse(stored);
+        if (parsed && parsed.success) { GST = parsed; renderGST(); swrDone = true; }
+      }
+    } catch (e) {}
+    if (!swrDone) { GST = null; renderGSTSkeleton(); }
+    loadGSTData(swrDone);
+    return;
+  }
+  // ── Transaction Distribution ──
+  if (currentView === 'txndist') return;
+  currentView = 'txndist';
   snActiveKey = null;
   if (selectedVert) closeVertDetail();
   document.body.style.overflow = '';
   updateViewChrome();
-  renderVNav();   // reflect GST-active state in the mind-map nav
-
-  var swrDone = false;
-  try {
-    var stored = localStorage.getItem(STORE_PFX + 'gst_' + gpYear);
-    if (stored) {
-      var parsed = JSON.parse(stored);
-      if (parsed && parsed.success) { GST = parsed; renderGST(); swrDone = true; }
-    }
-  } catch (e) {}
-  if (!swrDone) { GST = null; renderGSTSkeleton(); }
-  loadGSTData(swrDone);
+  renderVNav();
+  renderTxnDistSkeleton();
+  loadTxnDistData();
 }
 
 function hideLoading() {
@@ -6829,7 +6915,8 @@ function renderVertTabBar() {
       + esc(c.name)
       + '</button>';
   }).join('')
-  + '<button class="vert-tab vert-tab-gst" onclick="switchView(\'gst\')">GST Payables</button>';
+  + '<button class="vert-tab vert-tab-gst' + (currentView === 'gst' ? ' active' : '') + '" onclick="switchView(\'gst\')">GST Payables</button>'
+  + '<button class="vert-tab vert-tab-txndist' + (currentView === 'txndist' ? ' active' : '') + '" onclick="switchView(\'txndist\')">Transaction Distribution</button>';
   positionVertThumb(false);
 }
 
@@ -11815,6 +11902,228 @@ function mrExportCSV() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   } catch(e) { /* fallback: copy to clipboard */ }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRANSACTION DISTRIBUTION  (txndist view)
+// ═══════════════════════════════════════════════════════════════
+var _TXN = null;                          // last fetched data object
+var _tdtFilters = { ent:'All', mat:'All', status:'All' };
+
+function renderTxnDistSkeleton() {
+  var host = document.getElementById('tab-txndist');
+  if (!host) return;
+  host.style.display = '';
+  var skelCard = function(h) {
+    return '<div class="tdt-skel" style="height:' + h + 'px;width:100%;margin-bottom:12px"></div>';
+  };
+  host.innerHTML = '<div class="tdt-wrap">'
+    + '<div class="tdt-back-row">' + skelCard(30) + '</div>'
+    + skelCard(18)
+    + '<div style="display:flex;gap:8px">' + [0,0,0].map(function(){ return '<div class="tdt-skel" style="height:28px;width:90px"></div>'; }).join('') + '</div>'
+    + '<div class="tdt-body">'
+    +   '<div class="tdt-map-card">' + skelCard(360) + '</div>'
+    +   '<div class="tdt-right-panel">'
+    +     '<div class="tdt-kpi-grid">'
+    +       [0,0,0,0].map(function(){ return '<div class="tdt-skel" style="height:74px;border-radius:16px"></div>'; }).join('')
+    +     '</div>'
+    +     '<div class="tdt-state-list-card">' + [0,0,0,0,0].map(function(){ return skelCard(24); }).join('') + '</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="tdt-summary">' + [0,0,0,0].map(function(){ return '<div class="tdt-skel" style="height:80px;border-radius:16px"></div>'; }).join('') + '</div>'
+    + '</div>';
+}
+
+function loadTxnDistData() {
+  var filtersJson = JSON.stringify(_tdtFilters);
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
+      try {
+        var data = JSON.parse(res);
+        if (data.success) {
+          _TXN = data;
+          if (currentView === 'txndist') renderTxnDist();
+        } else {
+          _tdtShowError(data.error || 'No data returned.');
+        }
+      } catch (e) {
+        _tdtShowError('Parse error: ' + e.message);
+      }
+    })
+    .withFailureHandler(function(err) {
+      if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
+      _tdtShowError((err && err.message) ? err.message : 'Server error loading transaction data.');
+    })
+    .getGeoTransactionData(filtersJson);
+}
+
+function _tdtShowError(msg) {
+  var host = document.getElementById('tab-txndist');
+  if (!host) return;
+  host.innerHTML = '<div class="tdt-wrap"><div class="tdt-back-row">'
+    + '<button class="tdt-back-btn" onclick="switchView(\'onboarding\')">← Back to Dashboard</button></div>'
+    + '<div style="background:var(--tdt-card);border:1px solid var(--tdt-border);border-radius:20px;padding:48px 24px;text-align:center;box-shadow:var(--tdt-shadow-sm)">'
+    + '<div style="color:var(--tdt-red);font-weight:700;font-size:15px;margin-bottom:8px">⚠ Could not load Transaction Distribution</div>'
+    + '<div style="color:var(--tdt-ink2);margin-bottom:18px">' + esc(msg) + '</div>'
+    + '<button onclick="loadTxnDistData()" style="padding:9px 22px;border-radius:999px;border:none;background:var(--tdt-blue);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">↻ Retry</button>'
+    + '</div></div>';
+}
+
+function _tdtAgg(stateMap, filters) {
+  var ent = filters.ent, mat = filters.mat, status = filters.status;
+  var out = {};
+  Object.keys(stateMap).forEach(function(id) {
+    var s = stateMap[id];
+    var src;
+    if (mat !== 'All') {
+      src = (s.byMat && s.byMat[mat]) ? s.byMat[mat] : { completed:0, pending:0, failed:0, total:0 };
+    } else {
+      src = s;
+    }
+    var c = src.completed || 0, p = src.pending || 0, f = src.failed || 0;
+    if (ent === 'Seller') { var r = s; c = Math.round(c * (r.seller||0) / (r.total||1)); p = Math.round(p * (r.seller||0) / (r.total||1)); f = Math.round(f * (r.seller||0) / (r.total||1)); }
+    if (ent === 'Buyer')  { var r = s; c = Math.round(c * (r.buyer||0)  / (r.total||1)); p = Math.round(p * (r.buyer||0)  / (r.total||1)); f = Math.round(f * (r.buyer||0)  / (r.total||1)); }
+    var shown = (status === 'Completed') ? c : (status === 'Pending') ? p : (status === 'Failed') ? f : (c + p + f);
+    if (shown > 0) out[id] = { completed:c, pending:p, failed:f, total:c+p+f, shown:shown };
+  });
+  return out;
+}
+
+function _tdtSetFilter(btn, val) {
+  var grp = btn.parentElement;
+  var key = grp.getAttribute('data-fkey');
+  if (!key) return;
+  _tdtFilters[key] = val;
+  if (currentView === 'txndist') renderTxnDist();
+}
+
+function renderTxnDist() {
+  if (!_TXN) { renderTxnDistSkeleton(); loadTxnDistData(); return; }
+  var host = document.getElementById('tab-txndist');
+  if (!host) return;
+  var stateMap = _TXN.stateMap || {};
+  var allIndia = _TXN.allIndia || {};
+  var f = _tdtFilters;
+  var agg = _tdtAgg(stateMap, f);
+
+  // compute totals from agg
+  var totC = 0, totP = 0, totF = 0, grand = 0;
+  Object.keys(agg).forEach(function(id){ totC += agg[id].completed; totP += agg[id].pending; totF += agg[id].failed; grand += agg[id].total; });
+
+  // sort states by shown count
+  var sortedStates = Object.keys(agg).sort(function(a,b){ return (agg[b].shown||0) - (agg[a].shown||0); });
+  var maxShown = sortedStates.length ? (agg[sortedStates[0]].shown || 1) : 1;
+
+  // ── Map SVG paths ──
+  var statusColor = function(d) {
+    if (!d) return 'var(--mg-base)';
+    var shown = f.status === 'Completed' ? d.completed : f.status === 'Pending' ? d.pending : f.status === 'Failed' ? d.failed : d.total;
+    if (!shown) return 'var(--mg-base)';
+    if (f.status === 'Completed') return '#16a34a';
+    if (f.status === 'Pending')   return '#d97706';
+    if (f.status === 'Failed')    return '#dc2626';
+    // default: dominant status
+    if (d.completed >= d.pending && d.completed >= d.failed) return '#16a34a';
+    if (d.pending  >= d.completed && d.pending  >= d.failed) return '#d97706';
+    return '#dc2626';
+  };
+  var paths = Object.keys(IN_STATES).map(function(id) {
+    var st = IN_STATES[id], d = agg[id];
+    var shown = d ? d.shown : 0;
+    var fill, op;
+    if (shown > 0) {
+      fill = statusColor(d);
+      op   = (0.25 + 0.55 * (shown / maxShown)).toFixed(3);
+    } else {
+      fill = 'var(--mg-base)'; op = '1';
+    }
+    var cls = 'tdt-state' + (shown > 0 ? ' has-data' : '');
+    var tip = (shown > 0)
+      ? st.name + ': ' + fmt(d.completed) + ' done · ' + fmt(d.pending) + ' pending · ' + fmt(d.failed) + ' failed'
+      : st.name + ': no data';
+    return '<path class="' + cls + '" d="' + st.d + '" fill="' + fill + '" fill-opacity="' + op
+      + '" stroke="var(--card)" stroke-width="1"><title>' + esc(tip) + '</title></path>';
+  }).join('');
+
+  // ── Legend ──
+  var legend = (f.status === 'All')
+    ? '<div class="tdt-map-legend">'
+      + '<span class="tdt-leg-item"><span class="tdt-leg-dot" style="background:#16a34a"></span>Completed</span>'
+      + '<span class="tdt-leg-item"><span class="tdt-leg-dot" style="background:#d97706"></span>Pending</span>'
+      + '<span class="tdt-leg-item"><span class="tdt-leg-dot" style="background:#dc2626"></span>Failed</span>'
+      + '</div>'
+    : '';
+
+  // ── Filter chips ──
+  var mkGrp = function(fkey, values, colors) {
+    var cur = _tdtFilters[fkey];
+    return '<div class="tdt-filter-grp" data-fkey="' + fkey + '">'
+      + '<span class="tdt-filter-lbl">' + (fkey === 'ent' ? 'Entity' : fkey === 'mat' ? 'Material' : 'Status') + '</span>'
+      + values.map(function(v, i){
+          var active = cur === v;
+          var col = colors[i];
+          var cls = 'tdt-chip' + (active ? (' active' + (col ? '-' + col : '')) : '');
+          return '<button class="' + cls + '" onclick="_tdtSetFilter(this,\'' + v + '\')">' + esc(v) + '</button>';
+        }).join('')
+      + '</div>';
+  };
+  var filtersHtml = '<div class="tdt-filters">'
+    + mkGrp('ent',    ['All','Seller','Buyer'],             [null, null, null])
+    + mkGrp('mat',    ['All','Metal','Plastic'],             [null, null, null])
+    + mkGrp('status', ['All','Completed','Pending','Failed'],[null,'green','amber','red'])
+    + '</div>';
+
+  // ── State list ──
+  var stateRows = sortedStates.slice(0, 20).map(function(id) {
+    var d = agg[id], nm = IN_STATES[id] ? IN_STATES[id].name : id;
+    var barPct = (d.shown / maxShown * 100).toFixed(1);
+    return '<div class="tdt-sl-row">'
+      + '<span class="tdt-sl-name" title="' + esc(nm) + '">' + esc(nm) + '</span>'
+      + '<div class="tdt-sl-bar-wrap"><div class="tdt-sl-bar" style="width:' + barPct + '%"></div></div>'
+      + '<span class="tdt-sl-n">' + fmt(d.shown) + '</span>'
+      + '</div>';
+  }).join('');
+
+  // ── KPI cards ──
+  var convPct = grand ? ((totC / grand) * 100).toFixed(1) : '0';
+  var kpiCards = '<div class="tdt-kpi-grid">'
+    + '<div class="tdt-kpi"><div class="tdt-kpi-val">' + fmt(grand) + '</div><div class="tdt-kpi-lbl">Total Transactions</div></div>'
+    + '<div class="tdt-kpi green"><div class="tdt-kpi-val">' + fmt(totC) + '</div><div class="tdt-kpi-lbl">Completed</div></div>'
+    + '<div class="tdt-kpi amber"><div class="tdt-kpi-val">' + fmt(totP) + '</div><div class="tdt-kpi-lbl">Pending</div></div>'
+    + '<div class="tdt-kpi red"><div class="tdt-kpi-val">' + fmt(totF) + '</div><div class="tdt-kpi-lbl">Failed</div></div>'
+    + '</div>';
+
+  // ── Summary tiles ──
+  var sellerTot = 0, buyerTot = 0;
+  Object.keys(stateMap).forEach(function(id){ sellerTot += stateMap[id].seller||0; buyerTot += stateMap[id].buyer||0; });
+  var summaryHtml = '<div class="tdt-summary">'
+    + '<div class="tdt-sum-tile"><div class="tdt-sum-val">' + fmt(grand) + '</div><div class="tdt-sum-lbl">Total Transactions</div><div class="tdt-sum-sub">Across all states</div></div>'
+    + '<div class="tdt-sum-tile"><div class="tdt-sum-val" style="color:var(--tdt-green)">' + convPct + '%</div><div class="tdt-sum-lbl">Completion Rate</div><div class="tdt-sum-sub">' + fmt(totC) + ' of ' + fmt(grand) + '</div></div>'
+    + '<div class="tdt-sum-tile"><div class="tdt-sum-val">' + fmt(sellerTot) + '</div><div class="tdt-sum-lbl">Seller Transactions</div><div class="tdt-sum-sub">Onboarded sellers</div></div>'
+    + '<div class="tdt-sum-tile"><div class="tdt-sum-val">' + fmt(buyerTot) + '</div><div class="tdt-sum-lbl">Buyer Transactions</div><div class="tdt-sum-sub">Onboarded buyers</div></div>'
+    + '</div>';
+
+  host.innerHTML = '<div class="tdt-wrap">'
+    + '<div class="tdt-back-row"><button class="tdt-back-btn" onclick="switchView(\'onboarding\')">← Back to Dashboard</button>'
+    + '<span style="font-size:11px;color:var(--tdt-ink3)">' + Object.keys(agg).length + ' state(s) with data</span></div>'
+    + '<div class="tdt-title">Transaction Distribution</div>'
+    + filtersHtml
+    + '<div class="tdt-body">'
+    +   '<div class="tdt-map-card">'
+    +     '<div class="tdt-map-hdr"><span class="tdt-map-title">State-wise Distribution</span>' + legend + '</div>'
+    +     '<div class="tdt-map-svg-wrap"><svg viewBox="0 0 1000 1100" aria-label="India map — transaction distribution">' + paths + '</svg></div>'
+    +   '</div>'
+    +   '<div class="tdt-right-panel">'
+    +     kpiCards
+    +     '<div class="tdt-state-list-card">'
+    +       '<div class="tdt-sl-hdr">Top States</div>'
+    +       (stateRows || '<div style="color:var(--tdt-ink3);font-size:12px;padding:8px 0">No data for selected filters</div>')
+    +     '</div>'
+    +   '</div>'
+    + '</div>'
+    + summaryHtml
+    + '</div>';
 }
 </script>
 </body>
