@@ -4898,7 +4898,7 @@ function _vsBandColor(i)     { return i >= 3 ? '#22C55E' : i === 2 ? '#F59E0B' :
 // Toggle Material filter inside Vendor Rating inline panel
 function _vsToggleMat(btn, mat) {
   var wrap = btn;
-  while (wrap && !wrap.getAttribute('data-vs-wrap')) wrap = wrap.parentElement;
+  while (wrap && !wrap.hasAttribute('data-vs-wrap')) wrap = wrap.parentElement;
   if (!wrap) return;
   var ACTIVE_CSS = 'background:var(--blue);border-color:var(--blue);color:#fff';
   var OFF_CSS    = 'background:var(--card);color:var(--txt2)';
