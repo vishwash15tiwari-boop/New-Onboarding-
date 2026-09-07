@@ -6821,7 +6821,7 @@ function _mmGeoDetailHtml(id, by, swatchColor) {
     var total = d[aud] || 0;
     if (!total) return '';
     var txnAud = _txnSd ? (_txnSd[aud] || null) : null;
-    var txnTotal = txnAud ? (txnAud.total || 0) : null;
+    var txnTotal = txnAud ? (txnAud.transacted || 0) : null;
     var rows = catKeys.filter(function(c) { return (d.cats[c] && d.cats[c][aud] || 0) > 0; });
     var hAct = "openGeoStateRecords('" + id + "','" + aud + "',null)";
     var trs = rows.map(function(c) {
@@ -6829,7 +6829,7 @@ function _mmGeoDetailHtml(id, by, swatchColor) {
       var cnt = d.cats[c][aud] || 0;
       var pct = total ? Math.round(cnt / total * 100) : 0;
       var capC = c.charAt(0).toUpperCase() + c.slice(1);
-      var txnMat = (txnAud && txnAud.byMat && txnAud.byMat[capC]) ? (txnAud.byMat[capC].total || 0) : null;
+      var txnMat = (txnAud && txnAud.byMat && txnAud.byMat[c]) ? (txnAud.byMat[c].transacted || 0) : null;
       return '<tr class="mgsd-clk" role="button" tabindex="0"'
         + ' onclick="' + cAct + '" onkeydown="if(event.key===\'Enter\'){' + cAct + '}">'
         + '<td>' + esc(dispCat(c)) + '</td>'
@@ -6911,8 +6911,8 @@ function _mmGeoFixedHtml() {
       + colKeys.map(function(k) {
           var onb = (tally[k] && tally[k][a]) || 0;
           var capK = k.charAt(0).toUpperCase() + k.slice(1);
-          var txnN = (_txnAI && _txnAI[a] && _txnAI[a].byMat && _txnAI[a].byMat[capK])
-                     ? (_txnAI[a].byMat[capK].total || 0) : null;
+          var txnN = (_txnAI && _txnAI[a] && _txnAI[a].byMat && _txnAI[a].byMat[k])
+                     ? (_txnAI[a].byMat[k].transacted || 0) : null;
           return '<td>' + fmt(onb)
             + (txnN !== null ? '<div style="font-size:9px;color:var(--txt3);margin-top:1px;line-height:1.2">' + fmt(txnN) + ' transacted</div>' : '')
             + '</td>';

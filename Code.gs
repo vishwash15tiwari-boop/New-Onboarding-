@@ -456,7 +456,7 @@ function getVerticalRows(vertKey, filtersJson) {
 function getGeoTransactionData(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
-    var cacheKey = 'geo_txn_v2_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
+    var cacheKey = 'geo_txn_v3_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
                                                      f.audience||'all', f.category||'all']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -469,9 +469,9 @@ function getGeoTransactionData(filtersJson) {
       return 'pending'; // DRAFT, IN_REVIEW, or anything else
     };
 
-    var stateMap = {}, ai = { completed:0, pending:0, failed:0, total:0,
-                               seller:{completed:0,pending:0,failed:0,total:0},
-                               buyer: {completed:0,pending:0,failed:0,total:0},
+    var stateMap = {}, ai = { completed:0, pending:0, failed:0, total:0, transacted:0,
+                               seller:{completed:0,pending:0,failed:0,total:0,transacted:0},
+                               buyer: {completed:0,pending:0,failed:0,total:0,transacted:0},
                                byMat:{} };
 
     var AUDS = [['seller', AUDIENCE_CFG.seller], ['buyer', AUDIENCE_CFG.buyer]];
@@ -482,36 +482,39 @@ function getGeoTransactionData(filtersJson) {
         if (!applyDateFilter(r, f)) return;
         // Optional audience / category filter
         if (f.audience && f.audience !== 'all' && f.audience !== aud) return;
-        var cat = String(r.category || 'Other');
-        if (f.category && f.category !== 'all' && f.category.toLowerCase() !== cat.toLowerCase()) return;
+        var cat = String(r.category || 'other').trim().toLowerCase();
+        if (f.category && f.category !== 'all' && f.category.toLowerCase() !== cat) return;
 
         var sg  = statusGroup(r.status);
         var sid = _geoStateIdGs(String(r.state || ''));
         if (!sid) return;
 
         // State bucket
-        if (!stateMap[sid]) stateMap[sid] = { completed:0, pending:0, failed:0, total:0,
-                                               seller:{completed:0,pending:0,failed:0,total:0},
-                                               buyer: {completed:0,pending:0,failed:0,total:0},
+        if (!stateMap[sid]) stateMap[sid] = { completed:0, pending:0, failed:0, total:0, transacted:0,
+                                               seller:{completed:0,pending:0,failed:0,total:0,transacted:0,byMat:{}},
+                                               buyer: {completed:0,pending:0,failed:0,total:0,transacted:0,byMat:{}},
                                                byMat:{} };
         var st = stateMap[sid];
         st[sg]++; st.total++;
         st[aud][sg]++; st[aud].total++;
-        if (!st.byMat[cat]) st.byMat[cat] = {completed:0,pending:0,failed:0};
-        st.byMat[cat][sg]++;
-        // entity × material breakdown for the right-panel table
-        if (!st[aud].byMat) st[aud].byMat = {};
-        if (!st[aud].byMat[cat]) st[aud].byMat[cat] = {completed:0,pending:0,failed:0};
-        st[aud].byMat[cat][sg]++;
+        if (!st.byMat[cat]) st.byMat[cat] = {completed:0,pending:0,failed:0,total:0,transacted:0};
+        st.byMat[cat][sg]++; st.byMat[cat].total++;
+        if (!st[aud].byMat[cat]) st[aud].byMat[cat] = {completed:0,pending:0,failed:0,total:0,transacted:0};
+        st[aud].byMat[cat][sg]++; st[aud].byMat[cat].total++;
+        if (r.hasTransacted) {
+          st[aud].byMat[cat].transacted++; st[aud].transacted++; st.transacted++;
+        }
 
         // All-India bucket
         ai[sg]++; ai.total++;
         ai[aud][sg]++; ai[aud].total++;
-        if (!ai.byMat[cat]) ai.byMat[cat] = {completed:0,pending:0,failed:0,total:0};
+        if (r.hasTransacted) { ai.transacted++; ai[aud].transacted++; }
+        if (!ai.byMat[cat]) ai.byMat[cat] = {completed:0,pending:0,failed:0,total:0,transacted:0};
         ai.byMat[cat][sg]++; ai.byMat[cat].total++;
         if (!ai[aud].byMat) ai[aud].byMat = {};
-        if (!ai[aud].byMat[cat]) ai[aud].byMat[cat] = {completed:0,pending:0,failed:0,total:0};
+        if (!ai[aud].byMat[cat]) ai[aud].byMat[cat] = {completed:0,pending:0,failed:0,total:0,transacted:0};
         ai[aud].byMat[cat][sg]++; ai[aud].byMat[cat].total++;
+        if (r.hasTransacted) { ai[aud].byMat[cat].transacted++; }
       });
     });
 
