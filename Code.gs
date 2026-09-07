@@ -272,7 +272,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v36_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v37_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -304,7 +304,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v18_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v19_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -321,21 +321,21 @@ function getDashboardData(filtersJson) {
 
 // Returns seller + buyer dashboard data in one call so the frontend can
 // render both pipelines side-by-side without two round trips.
-// Fast path: compose from individual dash_v36_ cache entries when both are warm
+// Fast path: compose from individual dash_v37_ cache entries when both are warm
 // (they are pre-warmed by syncAllOnboarding for every period). Only falls through
 // to the slow double-read when both individual caches are cold.
 function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v36_cmb_' + periodKey;
+    var cacheKey  = 'dash_v37_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v36_seller_' + periodKey;
-    var bIndKey = 'dash_v36_buyer_'  + periodKey;
+    var sIndKey = 'dash_v37_seller_' + periodKey;
+    var bIndKey = 'dash_v37_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -394,7 +394,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v18_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v19_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -541,7 +541,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v18_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v19_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
@@ -1608,8 +1608,12 @@ function normalizeRows(raw, cfg) {
       _bs = _be ? parseDate(gv(row, idx, 'onboarding_created_date') || row[BUYER_TAT_COLS.start]) : null;
     }
 
-    var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || gv(row, idx, 'gstin_number') || '').trim();
-    var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
+    var gstin     = String(firstVal_(row, idx, [
+      'gst_number', 'gstin', 'gstin_number', 'gst_no', 'gstin_no', 'gst'
+    ]) || '').trim();
+    var gstStatus = String(firstVal_(row, idx, [
+      'gstin_status', 'gst_status', 'gst_registration_status', 'registration_status'
+    ]) || '').toUpperCase();
     var txnRaw    = gv(row, idx, 'transaction_activation_status')
                  || gv(row, idx, 'transacted')
                  || gv(row, idx, 'is_transacted')
