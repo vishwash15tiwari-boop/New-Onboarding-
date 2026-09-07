@@ -3521,3 +3521,219 @@ function debugDocs() {
   } catch (e) { Logger.log('getQualityData failed: ' + e.message); }
   Logger.log('════ END ════');
 }
+
+// ═══════════════════════════════════════════════════════════════
+// OSV DASHBOARD — Consent & Verification Status
+// Reads OMP seller data (transaction status) + Vendor Score
+// workbook (OSV status + post-OSV scores) to assemble the full
+// 7-stage OSV journey, status distribution and score analysis.
+// ═══════════════════════════════════════════════════════════════
+function getOSVDashboardData() {
+  var CACHE_KEY = 'osv_dash_v3';
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get(CACHE_KEY);
+  if (cached) return cached;
+
+  // ── 1. Read _mb_sellers for OMP onboarded + transaction status ──
+  var onboardedSellers = [];   // { id, name, category, hasTransaction }
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var selSheet = ss.getSheetByName('_mb_sellers');
+    if (selSheet && selSheet.getLastRow() > 1) {
+      var maxCol = Math.min(selSheet.getLastColumn(), 60);
+      var vals   = selSheet.getRange(1, 1, selSheet.getLastRow(), maxCol).getValues();
+      var hdrs   = vals[0].map(function(h) {
+        return String(h).trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+      });
+      function fc_(cands) { return qualityFindCol_(hdrs, cands); }
+      var idC  = fc_(['seller_id','id','vendor_id','vendorid']);
+      var nmC  = fc_(['seller_name','name','vendor_name','business_name','company_name']);
+      var catC = fc_(['business_category','category','vertical_category','cat']);
+      var bvC  = fc_(['business_vertical','vertical','biz_vertical']);
+      var stC  = fc_(['onboarding_status','status','onboard_status']);
+      var txC  = fc_(['transaction_activation_status','transacted','is_transacted',
+                      'transaction_status','txn_status']);
+      var gmvC = fc_(['transaction_value','txn_value','gmv','total_transaction_value',
+                      'transaction_amount','lifetimevalue']);
+      if (idC >= 0) {
+        vals.slice(1).forEach(function(row) {
+          var id = String(row[idC] || '').trim(); if (!id) return;
+          var bv = bvC >= 0 ? String(row[bvC] || '').trim().toLowerCase() : '';
+          if (bv.indexOf('open marketplace') < 0 && bv.indexOf('open_marketplace') < 0 && bv !== 'omp') return;
+          var st = stC >= 0 ? String(row[stC] || '').trim().toUpperCase() : '';
+          if (st !== 'COMPLETED') return;
+          var txRaw = txC >= 0 ? String(row[txC] || '').trim().toUpperCase() : '';
+          var txPos = { TRANSACTED:1, YES:1, Y:1, TRUE:1, '1':1, DONE:1, ACTIVE:1, 'TRANSACTED YES':1 };
+          var gmv   = gmvC >= 0 ? parseFloat(row[gmvC]) : NaN;
+          var hasTxn = txPos[txRaw] === 1 || (!isNaN(gmv) && gmv > 0);
+          onboardedSellers.push({
+            id:             id,
+            name:           nmC  >= 0 ? String(row[nmC]  || '').trim().slice(0, 60) : '',
+            category:       catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
+            hasTransaction: hasTxn
+          });
+        });
+      }
+    }
+  } catch (e) { Logger.log('getOSVDashboardData sellers: ' + e.message); }
+
+  // Name-normalised join helpers
+  var _nrm = function(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g,''); };
+  var selById   = {};
+  var selByName = {};
+  onboardedSellers.forEach(function(s) {
+    selById[s.id] = s;
+    if (s.name) selByName[_nrm(s.name)] = s;
+  });
+
+  // ── 2. Read Vendor Score workbook (OSV status + scores + material) ──
+  var osvRecords = [];
+  try {
+    var vsd = qualityReadExternalSheet_(CONFIG.VENDOR_SCORE_SHEET_ID, CONFIG.VENDOR_SCORE_TAB);
+    if (!vsd.error && vsd.rows.length) {
+      var vsh = vsd.headers;
+      function vfc_(c) { return qualityFindCol_(vsh, c); }
+      var vsId   = vfc_(['seller_id','buyer_id','id','vendor_id','vendorid','entity_id']);
+      var vsNm   = vfc_(['seller_name','name','vendor_name','business_name','company_name']);
+      var vsCat  = vfc_(['business_category','category','vertical_category','cat','material','material_type']);
+      var vsOsv  = vfc_(['osv_status','osv','on_site_verification','onsite_verification','osv_state',
+                         'osv_consent_status','consent_status','verification_status','osv_verification_status']);
+      if (vsOsv < 0) vsOsv = VS_COLS.osvStatus;
+      var vsScr  = vfc_(['score','vendor_score','vendor_scores','overall_score','average_score','final_score','rating_score']);
+      var vsDen  = vfc_(['denominator','score_out_of_10','rating_out_of_10','vendor_rating_score']);
+      if (vsScr < 0 && vsDen < 0) { vsScr = -1; vsDen = VS_COLS.denominator; }
+      var vsAsg  = vfc_(['assigned_user','assigned_to','assignee','owner','sales_poc','poc',
+                         'account_manager','rm','kam','executive','agent']);
+      var vsUpd  = vfc_(['last_updated','last_updated_date','updated_at','updated_date',
+                         'osv_date','osv_updated_date','consent_date','status_date']);
+
+      vsd.rows.forEach(function(row) {
+        var vid = vsId >= 0 ? String(row[vsId] || '').trim() : '';
+        var nm  = vsNm >= 0 ? String(row[vsNm] || '').trim() : '';
+        var sel = selById[vid] || (nm && selByName[_nrm(nm)]) || null;
+        if (!sel) return;
+        var vsOsvIdx = Math.max(0, vsOsv);
+        var osRaw  = String(row[vsOsvIdx] || '').trim();
+        var osUp   = osRaw.toUpperCase().replace(/\s+/g,'_');
+        var osvSt  =
+          (osUp==='CONSENT_ACCEPTED'||osUp==='YES'||osUp==='Y'||osUp==='TRUE'||
+           osUp==='DONE'||osUp==='COMPLETED'||osUp==='VERIFIED'||osUp==='POSITIVE') ? 'verified'
+        : (osUp==='CONSENT_PENDING'||osUp==='PENDING'||osUp==='IN_PROGRESS'||
+           osUp==='INITIATED'||osUp==='ONGOING'||osUp==='PROCESSING'||
+           osUp==='SCHEDULED'||osUp==='VISIT_SCHEDULED'||osUp==='PARTIAL')          ? 'in_progress'
+        : (osUp==='CONSENT_OBTAINED'||osUp==='CONSENT_RECEIVED'||osUp==='CONSENT_GIVEN'||
+           osUp==='CONSENTED'||osUp==='CONSENT_YES')                                 ? 'consent_obtained'
+        : 'not_initiated';
+        var rawDen = vsDen >= 0 ? parseFloat(row[vsDen]) : NaN;
+        var rawScr = vsScr >= 0 ? parseFloat(row[vsScr]) : NaN;
+        var sv     = !isNaN(rawDen) ? rawDen : !isNaN(rawScr) ? rawScr / 10 : NaN;
+        var score  = (!isNaN(sv) && sv >= 0 && sv <= 10) ? Math.round(sv * 10) / 10 : null;
+        var cat    = (vsCat >= 0 ? String(row[vsCat] || '').trim() : '') || sel.category || '';
+        var upd    = '';
+        if (vsUpd >= 0) { var _pd = parseDate(row[vsUpd]); upd = _pd ? fmtDate(_pd) : ''; }
+        osvRecords.push({
+          name: sel.name || nm.slice(0, 60), id: sel.id || vid,
+          osvStatus: osvSt, score: score, category: cat,
+          assignedTo: vsAsg >= 0 ? String(row[vsAsg] || '').trim().slice(0, 60) : '',
+          updatedDate: upd, hasTransaction: sel.hasTransaction
+        });
+      });
+    }
+  } catch (e) { Logger.log('getOSVDashboardData vendor-score: ' + e.message); }
+
+  // ── 3. Journey stage counts ──────────────────────────────────
+  var onbCount  = onboardedSellers.length;
+  var txnCount  = onboardedSellers.filter(function(s) { return s.hasTransaction; }).length;
+  var eligCount = txnCount;   // OSV eligible = has qualifying completed transaction
+
+  var consentCnt = 0, initCnt = 0, cmpCnt = 0, scoreCnt = 0;
+  var inScoreSheet = {};
+  osvRecords.forEach(function(r) {
+    inScoreSheet[r.id] = true;
+    if (r.osvStatus === 'verified') {
+      consentCnt++; initCnt++; cmpCnt++;
+      if (r.score !== null) scoreCnt++;
+    } else if (r.osvStatus === 'in_progress') {
+      consentCnt++; initCnt++;
+    } else if (r.osvStatus === 'consent_obtained') {
+      consentCnt++;
+    }
+  });
+
+  // ── 4. Status distribution ──────────────────────────────────
+  var eniCnt = 0;
+  osvRecords.forEach(function(r) { if (r.osvStatus === 'not_initiated') eniCnt++; });
+  onboardedSellers.forEach(function(s) {
+    if (s.hasTransaction && !inScoreSheet[s.id]) eniCnt++;
+  });
+  var inProgCnt  = osvRecords.filter(function(r) { return r.osvStatus === 'in_progress'; }).length;
+  var notEligCnt = Math.max(0, onbCount - txnCount);
+
+  // ── 5. Score distribution by material ───────────────────────
+  function mkMat() { return { dist: [0,0,0,0,0], sum: 0, count: 0 }; }
+  var mats = { Plastic: mkMat(), Metal: mkMat(), Other: mkMat() };
+  var scoredSellers = 0, pendingScore = 0, totalScoreSum = 0;
+  osvRecords.forEach(function(r) {
+    if (r.osvStatus !== 'verified') return;
+    if (r.score === null) { pendingScore++; return; }
+    scoredSellers++;
+    totalScoreSum += r.score;
+    var band   = Math.min(4, Math.max(0, Math.floor(r.score / 2)));
+    var catUp  = String(r.category || '').toUpperCase();
+    var matKey = catUp.indexOf('PLASTIC') >= 0 ? 'Plastic'
+               : catUp.indexOf('METAL')   >= 0 ? 'Metal' : 'Other';
+    mats[matKey].dist[band]++;
+    mats[matKey].sum  += r.score;
+    mats[matKey].count++;
+  });
+
+  function fMat_(m) {
+    var t = m.count;
+    return { avgScore: t > 0 ? Math.round(m.sum / t * 10) / 10 : null, total: t,
+             dist: m.dist.map(function(n){ return { count:n, pct: t>0 ? Math.round(n/t*100) : 0 }; }) };
+  }
+  var avgScore    = scoredSellers > 0 ? Math.round(totalScoreSum / scoredSellers * 10) / 10 : null;
+  var scoreCovPct = cmpCnt > 0 ? Math.round(scoredSellers / cmpCnt * 100) : 0;
+
+  // Build complete seller list: start from ALL onboarded sellers, merge OSV record data
+  var osvById = {};
+  osvRecords.forEach(function(r) { osvById[r.id] = r; });
+  var fullSellerList = onboardedSellers.map(function(s) {
+    var r = osvById[s.id];
+    return {
+      name:           s.name,
+      id:             s.id,
+      osvStatus:      r ? r.osvStatus       : 'not_initiated',
+      score:          r ? r.score           : null,
+      category:       r ? r.category        : s.category,
+      assignedTo:     r ? r.assignedTo      : '',
+      updatedDate:    r ? r.updatedDate     : '',
+      hasTransaction: s.hasTransaction
+    };
+  });
+
+  var result = {
+    success: true,
+    lastUpdated: new Date().toISOString(),
+    journey: {
+      onboarded: onbCount, completedTxn: txnCount, eligible: eligCount,
+      consentObtained: consentCnt, initiated: initCnt,
+      completed: cmpCnt, scoreUpdated: scoreCnt
+    },
+    statusDist: {
+      notEligible: notEligCnt, eligibleNotInitiated: eniCnt,
+      inProgress:  inProgCnt,  completed: cmpCnt, total: onbCount
+    },
+    postOSV: {
+      avgScore: avgScore, scoredSellers: scoredSellers,
+      pendingScore: pendingScore, coverage: scoreCovPct,
+      scoreImprovement: null,
+      prevPeriodAvg: null, currentPeriodAvg: avgScore
+    },
+    scoreDist: { plastic: fMat_(mats.Plastic), metal: fMat_(mats.Metal) },
+    sellerList: fullSellerList
+  };
+  var out = JSON.stringify(result);
+  try { cache.put(CACHE_KEY, out, 300); } catch (e) {}
+  return out;
+}
