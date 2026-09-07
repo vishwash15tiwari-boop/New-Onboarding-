@@ -2915,6 +2915,29 @@ function getQualityData() {
           });
         }
       });
+
+      // Recompute seller rating summary directly from the sheet rows.
+      // The join above may miss vendors whose names don't normalise identically,
+      // leading to under-counted totals. The vendor score sheet is already
+      // curated to OMP sellers, so every named row is a valid seller entry.
+      var _sr = { ws:0, rated:0, total:0, dist:[0,0,0,0,0] };
+      vsd.rows.forEach(function(row) {
+        var nm = vsNm >= 0 ? String(row[vsNm] || '').trim() : '';
+        if (!nm) return;
+        _sr.total++;
+        var rawD2 = vsDenom >= 0 ? parseFloat(row[vsDenom]) : NaN;
+        var rawS2 = vsScore >= 0 ? parseFloat(row[vsScore]) : NaN;
+        var sv2 = !isNaN(rawD2) ? rawD2 / _qScDiv : !isNaN(rawS2) ? rawS2 / _qScDiv : NaN;
+        if (!isNaN(sv2) && sv2 >= 0 && sv2 <= 10) {
+          _sr.ws += sv2;
+          _sr.rated++;
+          _sr.dist[Math.min(4, Math.max(0, Math.floor(sv2 / 2)))]++;
+        }
+      });
+      // Override acc with the sheet-derived counts (more accurate than the join).
+      acc['seller'].r   = _sr;
+      acc['combined'].r = { ws: _sr.ws, rated: _sr.rated, total: _sr.total, dist: _sr.dist.slice() };
+      Logger.log('Vendor Score recount: total=' + _sr.total + ' rated=' + _sr.rated + ' unrated=' + (_sr.total - _sr.rated));
     }
   } catch (e) { Logger.log('getQualityData vendor-score sheet: ' + e.message); }
 
@@ -3037,13 +3060,15 @@ function getQualityData() {
     appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds);
   } catch (e) { Logger.log('getQualityData doc-completeness: ' + e.message); }
 
-  // Rating denominator = OMP-onboarded (COMPLETED) count per audience. Uses the NAME map,
-  // not the GSTIN map: OMP sellers carry no GSTIN in the feed, so ompGstinSellers is empty
-  // and the old denominator was 0 (→ everything read "unrated"). The name map is the count
-  // of vendors actually eligible to be rated.
-  acc['seller'].r.total   = Object.keys(ompNameSellers).length;
+  // Seller rating total/rated/dist are now set by the sheet-recount block inside the
+  // vendor score try-catch above (which reads all named rows directly, avoiding join
+  // misses). Only the buyer total still comes from the name map — the vendor score
+  // sheet is seller-only, so buyers remain at zero rated.
   acc['buyer'].r.total    = Object.keys(ompNameBuyers).length;
-  acc['combined'].r.total = Object.keys(ompNameSellers).length + Object.keys(ompNameBuyers).length;
+  // If the vendor score sheet was unreadable (recount never ran), fall back to name-map count.
+  if (!acc['seller'].r.total) acc['seller'].r.total = Object.keys(ompNameSellers).length;
+  // Combined total = seller (from sheet) + buyer (from name map).
+  acc['combined'].r.total = acc['seller'].r.total + acc['buyer'].r.total;
 
   // OSV denominator = OMP-onboarded count. Not-initiated is whatever remains
   // after the verified (completed) and in-progress (pending) vendors, so the
