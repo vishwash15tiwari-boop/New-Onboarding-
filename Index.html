@@ -4895,6 +4895,24 @@ function _catLabel(name) {
 function _vsBand(score)      { return Math.min(4, Math.max(0, Math.floor(score / 2))); }
 function _vsBandLabel(i)     { return (i * 2) + '–' + (i * 2 + 2); }
 function _vsBandColor(i)     { return i >= 3 ? '#22C55E' : i === 2 ? '#F59E0B' : '#EF4444'; }
+// Toggle Material filter inside Vendor Rating inline panel
+function _vsToggleMat(btn, mat) {
+  var wrap = btn;
+  while (wrap && !wrap.getAttribute('data-vs-wrap')) wrap = wrap.parentElement;
+  if (!wrap) return;
+  var ACTIVE_CSS = 'background:var(--blue);border-color:var(--blue);color:#fff';
+  var OFF_CSS    = 'background:var(--card);color:var(--txt2)';
+  wrap.querySelectorAll('.vs-mat-btn').forEach(function(b) {
+    var on = b.getAttribute('data-mat') === mat;
+    b.classList.toggle('active', on);
+    // Re-apply inline style because the HTML was built with inline styles (no sheet rule to override)
+    var base = 'font-family:inherit;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);cursor:pointer;transition:background .15s,border-color .15s,color .15s';
+    b.setAttribute('style', base + ';' + (on ? ACTIVE_CSS : OFF_CSS));
+  });
+  wrap.querySelectorAll('.vs-mat-sect').forEach(function(s) {
+    s.style.display = s.getAttribute('data-mat') === mat ? '' : 'none';
+  });
+}
 
 // category → { v:avgTAT|null, n:records carrying a TAT } for one audience.
 // n is kept so the roll-ups can weight by volume instead of averaging averages.
@@ -5258,50 +5276,98 @@ function _mmVertModules(key) {
     var rDist = q.rating.dist || [0,0,0,0,0];
     var rUnr  = Math.max(0, rTotal - rRated);
     var selVR = (qualityData && qualityData.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
-    // Build star-distribution section HTML — cached so repeated tree rebuilds skip the work
-    var _rCKey = 'r:' + rRated + ':' + (rAvg != null ? rAvg.toFixed(2) : '') + ':' + rDist.join(',') + ':' + selVR.length;
+
+    // Per-material score stats helper
+    var _vrMatStats = function(records, matFilter) {
+      var r = matFilter ? records.filter(function(v){ return v.category === matFilter; }) : records;
+      if (!r.length) return null;
+      var dist = [0,0,0,0,0], sum = 0;
+      r.forEach(function(v){ dist[_vsBand(v.rating)]++; sum += v.rating; });
+      return { records: r, dist: dist, avg: sum / r.length, rated: r.length };
+    };
+    // Build a set of score distribution bars for a given stats object
+    var _vrBarsHtml = function(statsObj) {
+      if (!statsObj || !statsObj.rated) return '<div style="color:var(--txt3);font-size:12px;padding:8px 0">No rated vendors in this category</div>';
+      var mxD = Math.max.apply(null, statsObj.dist) || 1;
+      var h = '';
+      for (var bi = 4; bi >= 0; bi--) {
+        var rc = statsObj.dist[bi] || 0;
+        var bp = Math.round(rc / mxD * 100);
+        var dp = statsObj.rated > 0 ? Math.round(rc / statsObj.rated * 100) : 0;
+        var col = _vsBandColor(bi);
+        var hasRecs = rc > 0 && statsObj.records && statsObj.records.filter(function(v){ return _vsBand(v.rating) === bi; }).length > 0;
+        h += '<div class="km-star-row' + (hasRecs ? ' km-star-clickable' : '') + '"'
+          + (hasRecs ? ' role="button" tabindex="0" onclick="openRatingRecords(' + bi + ')"'
+              + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openRatingRecords(' + bi + ')}"' : '')
+          + '><span class="km-star-n">' + _vsBandLabel(bi) + '</span>'
+          + '<div class="km-star-track"><div class="km-star-fill" style="width:' + bp + '%;background:' + col + '"></div></div>'
+          + '<span class="km-star-cnt">' + fmt(rc) + '</span>'
+          + '<span class="km-star-pct">' + dp + '%' + (hasRecs ? ' <span class="km-star-arr">▶</span>' : '') + '</span>'
+          + '</div>';
+      }
+      return h;
+    };
+
+    var overallStats = { dist: rDist, rated: rRated, records: selVR };
+    var metalVR      = _vrMatStats(selVR, 'Metal');
+    var plasticVR    = _vrMatStats(selVR, 'Plastic');
+    var hasMats      = (metalVR && metalVR.rated > 0) || (plasticVR && plasticVR.rated > 0);
+
+    var _rCKey = 'r2:' + rRated + ':' + (rAvg != null ? rAvg.toFixed(2) : '') + ':' + rDist.join(',')
+              + ':' + (metalVR ? metalVR.rated : 0) + ':' + (plasticVR ? plasticVR.rated : 0);
     var rExtra = '';
     if (!_mmExtraCache.hasOwnProperty(_rCKey)) {
-    if (rRated > 0) {
-      var rMaxD = Math.max.apply(null, rDist) || 1;
-      rExtra = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
-        + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">Score Distribution · out of 10</div>';
-      for (var bandI = 4; bandI >= 0; bandI--) {
-        var rC   = rDist[bandI] || 0;
-        var rBP  = Math.round(rC / rMaxD * 100);
-        var rDP  = rRated > 0 ? Math.round(rC / rRated * 100) : 0;
-        var rCol = _vsBandColor(bandI);
-        var rSV  = selVR.filter(function(v){ return _vsBand(v.rating) === bandI; })
-                        .sort(function(a, b){ return b.rating - a.rating; });
-        var rTid = 'mp-svl-' + bandI;
-        if (rSV.length) {
-          // Clicking the band opens its vendors in the full records overlay
-          // (openRatingRecords), like the funnel cards and OSV.
-          rExtra += '<div class="km-star-row km-star-clickable" role="button" tabindex="0"'
-            + ' onclick="openRatingRecords(' + bandI + ')"'
-            + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openRatingRecords(' + bandI + ')}">'
-            + '<span class="km-star-n">' + _vsBandLabel(bandI) + '</span>'
-            + '<div class="km-star-track"><div class="km-star-fill" style="width:' + rBP + '%;background:' + rCol + '"></div></div>'
-            + '<span class="km-star-cnt">' + fmt(rC) + '</span>'
-            + '<span class="km-star-pct">' + rDP + '% <span class="km-star-arr">▶</span></span>'
+      if (rRated > 0) {
+        var overallBars = _vrBarsHtml(overallStats);
+        var rExtraInner;
+        if (hasMats) {
+          // Material mini-cards (avg + rated count)
+          var matCardStyle = 'flex:1;background:var(--bg2);border-radius:10px;padding:8px 12px;min-width:100px';
+          var matLblStyle  = 'font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);margin-bottom:2px';
+          var matValStyle  = 'font-size:16px;font-weight:750;color:var(--txt)';
+          var matSubStyle  = 'font-size:10.5px;color:var(--txt3)';
+          var matBtnBase   = 'font-family:inherit;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);cursor:pointer;transition:background .15s,border-color .15s,color .15s';
+          var matBtnOff    = 'background:var(--card);color:var(--txt2)';
+          var matBtnOn     = 'background:var(--blue);border-color:var(--blue);color:#fff';
+          var matCards = '<div style="display:flex;gap:8px;margin-bottom:10px;margin-top:6px;flex-wrap:wrap">';
+          if (metalVR && metalVR.rated > 0)   matCards += '<div style="' + matCardStyle + '"><div style="' + matLblStyle + '">Metal</div><div style="' + matValStyle + '">' + metalVR.avg.toFixed(1) + '<span style="font-size:11px;font-weight:500;color:var(--txt3)">/10</span></div><div style="' + matSubStyle + '">' + fmt(metalVR.rated) + ' rated</div></div>';
+          if (plasticVR && plasticVR.rated > 0) matCards += '<div style="' + matCardStyle + '"><div style="' + matLblStyle + '">Plastic</div><div style="' + matValStyle + '">' + plasticVR.avg.toFixed(1) + '<span style="font-size:11px;font-weight:500;color:var(--txt3)">/10</span></div><div style="' + matSubStyle + '">' + fmt(plasticVR.rated) + ' rated</div></div>';
+          matCards += '</div>';
+          rExtraInner = '<div data-vs-wrap style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+            + '<span style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3)">Score Distribution · out of 10</span>'
+            + '<div style="display:flex;gap:4px">'
+            + '<button class="vs-mat-btn active" data-mat="All" onclick="_vsToggleMat(this,\'All\')" style="' + matBtnBase + ';' + matBtnOn + '">All</button>'
+            + (metalVR && metalVR.rated > 0   ? '<button class="vs-mat-btn" data-mat="Metal"   onclick="_vsToggleMat(this,\'Metal\')"   style="' + matBtnBase + ';' + matBtnOff + '">Metal</button>' : '')
+            + (plasticVR && plasticVR.rated > 0 ? '<button class="vs-mat-btn" data-mat="Plastic" onclick="_vsToggleMat(this,\'Plastic\')" style="' + matBtnBase + ';' + matBtnOff + '">Plastic</button>' : '')
+            + '</div></div>'
+            + matCards
+            + '<div class="vs-mat-sect" data-mat="All">' + overallBars + '</div>'
+            + (metalVR   && metalVR.rated   > 0 ? '<div class="vs-mat-sect" data-mat="Metal"   style="display:none">' + _vrBarsHtml(metalVR)   + '</div>' : '')
+            + (plasticVR && plasticVR.rated > 0 ? '<div class="vs-mat-sect" data-mat="Plastic" style="display:none">' + _vrBarsHtml(plasticVR) + '</div>' : '')
             + '</div>';
         } else {
-          rExtra += '<div class="km-star-row">'
-            + '<span class="km-star-n">' + _vsBandLabel(bandI) + '</span>'
-            + '<div class="km-star-track"><div class="km-star-fill" style="width:' + rBP + '%;background:' + rCol + '"></div></div>'
-            + '<span class="km-star-cnt">' + fmt(rC) + '</span>'
-            + '<span class="km-star-pct">' + rDP + '%</span>'
-            + '</div>';
+          rExtraInner = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
+            + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">Score Distribution · out of 10</div>'
+            + overallBars + '</div>';
         }
+        rExtra = rExtraInner;
       }
-      rExtra += '</div>';
-    }
-    _mmExtraCache[_rCKey] = rExtra;
+      _mmExtraCache[_rCKey] = rExtra;
     } else { rExtra = _mmExtraCache[_rCKey]; }
+
+    // Summary sub-line: e.g. "Metal 4.2 · Plastic 3.7"
+    var rSubLine = '';
+    if (metalVR && metalVR.rated > 0 && plasticVR && plasticVR.rated > 0)
+      rSubLine = 'Metal ' + metalVR.avg.toFixed(1) + ' · Plastic ' + plasticVR.avg.toFixed(1) + ' · out of 10';
+    else if (metalVR && metalVR.rated > 0)   rSubLine = 'Metal ' + metalVR.avg.toFixed(1) + ' · out of 10';
+    else if (plasticVR && plasticVR.rated > 0) rSubLine = 'Plastic ' + plasticVR.avg.toFixed(1) + ' · out of 10';
+    else rSubLine = 'Average Seller Score (out of 10)';
+
     mods.push({ t:'Vendor Ratings', ic:MM_IC.star, tone:'t-amber', kind:'module', expand:'inline-panel', eye:'Vendor Rating',
       panel:{
         eye:'Vendor Score · Average Seller Score', badge:'Sellers only',
-        headline:{ v:(rAvg != null ? rAvg.toFixed(1) : '—'), raw:true, rawv:(rAvg != null ? rAvg.toFixed(1) + ' / 10' : '—'), label:'Average Seller Score (out of 10)', tone:'warn' },
+        headline:{ v:(rAvg != null ? rAvg.toFixed(1) : '—'), raw:true, rawv:(rAvg != null ? rAvg.toFixed(1) + ' / 10' : '—'), label:rSubLine, tone:'warn' },
         bar:[ { label:'Rated', v:rRated, color:'#16a34a' }, { label:'Unrated', v:rUnr, color:'#8a93a1' } ],
         tiles:[ { label:'Sellers Rated', v:rRated, sub:'have a score', tone:'good' },
                 { label:'Unrated', v:rUnr, sub:'no score yet' } ],
@@ -5321,63 +5387,80 @@ function _mmVertModules(key) {
     var osvOTot  = q.osv.total        || 0;
     var osvPctV  = osvOTot > 0 ? Math.round(osvVer / osvOTot * 100) : 0;
     var osvVL    = (qualityData && qualityData.vendorOSV) || [];
-    var verVL    = osvVL.filter(function(v){ return v.status === 'verified'; });
-    var ipVL     = osvVL.filter(function(v){ return v.status === 'in_progress'; });
-    var niVL     = osvVL.filter(function(v){ return v.status === 'not_initiated'; });
-    var ogid     = 'mp-osvg';
-    var osvBarH  = (osvVer + osvIP + osvNI > 0)
+    // OSV status tile — clickable to records overlay when count > 0
+    var mkOsvTile = function(statusKey, cnt, c, lbl) {
+      if (!cnt) return '<div class="km-sg-item"><div class="km-sg-v">0</div>'
+        + '<div class="km-sg-l"><i class="km-dot" style="background:' + c + '"></i>' + esc(lbl) + '</div></div>';
+      var call = "openOsvRecords('" + statusKey + "')";
+      return '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
+        + ' title="View ' + esc(cnt + ' ' + lbl) + ' vendors"'
+        + ' onclick="' + call + '" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + call + '}">'
+        + '<div class="km-sg-v">' + fmt(cnt) + '</div>'
+        + '<div class="km-sg-l"><i class="km-dot" style="background:' + c + '"></i>' + esc(lbl)
+        + ' <span class="km-star-arr" style="transform:none">→</span></div></div>';
+    };
+    // Transaction-gated lifecycle numbers
+    var ompOnboarded  = vs.completed || 0;   // total OMP sellers with COMPLETED status
+    var notInSheet    = Math.max(0, ompOnboarded - osvOTot);
+    var consentStart  = osvIP + osvVer;
+    var lifePct       = function(n) { return ompOnboarded > 0 ? Math.round(n / ompOnboarded * 100) : 0; };
+    // Segmented progress bar (Completed/In-Progress/Not-Initiated)
+    var osvBarH = (osvVer + osvIP + osvNI > 0)
       ? '<div class="km-prog">'
-        + (osvVer ? '<div class="km-prog-seg" style="flex:' + osvVer + ';background:var(--st-onboarded)"></div>' : '')
+        + (osvVer ? '<div class="km-prog-seg" style="flex:' + osvVer + ';background:#16a34a"></div>' : '')
         + (osvIP  ? '<div class="km-prog-seg" style="flex:' + osvIP  + ';background:#F59E0B"></div>' : '')
         + (osvNI  ? '<div class="km-prog-seg" style="flex:' + osvNI  + ';background:#8b5cf6"></div>' : '')
         + '</div>' : '';
-    // Each tile opens the OSV records table pre-filtered to its own status, rather
-    // than expanding an inline list — the table carries the full record detail
-    // (vertical, assigned user, last updated) with search, sort and export.
-    var mkOsvTile = function(statusKey, cnt, c, lbl) {
-      var dead = !cnt;
-      if (dead) {
-        return '<div class="km-sg-item">'
-          + '<div class="km-sg-v">' + fmt(cnt) + '</div>'
-          + '<div class="km-sg-l"><i class="km-dot" style="background:' + c + '"></i>' + esc(lbl) + '</div>'
-          + '</div>';
-      }
-      var call = "openOsvRecords('" + statusKey + "')";
-      return '<div class="km-sg-item km-sg-xp" role="button" tabindex="0"'
-        + ' title="View the ' + esc(cnt + ' ' + lbl) + ' vendor records"'
-        + ' onclick="' + call + '"'
-        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + call + '}">'
-        + '<div class="km-sg-v">' + fmt(cnt) + '</div>'
-        + '<div class="km-sg-l"><i class="km-dot" style="background:' + c + '"></i>' + esc(lbl)
-        + ' <span class="km-star-arr" style="transform:none">→</span></div>'
-        + '</div>';
-    };
     // Build OSV extra section — cached so repeated tree rebuilds skip the string work
-    var _oCKey = 'o:' + osvVer + ':' + osvIP + ':' + osvNI + ':' + osvOTot
-               + ':' + verVL.length + ':' + ipVL.length + ':' + niVL.length;
+    var _oCKey = 'o2:' + osvVer + ':' + osvIP + ':' + osvNI + ':' + osvOTot + ':' + ompOnboarded;
     var osvExtra;
     if (_mmExtraCache.hasOwnProperty(_oCKey)) {
       osvExtra = _mmExtraCache[_oCKey];
     } else {
+      // Lifecycle arrow step builder
+      var lifeStep = function(lbl, val, pct, col, isLast) {
+        return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:0;text-align:center">'
+          + '<div style="font-size:15px;font-weight:750;color:' + col + ';font-variant-numeric:tabular-nums;line-height:1.2">' + fmt(val) + '</div>'
+          + '<div style="font-size:8.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);line-height:1.3">' + lbl + '</div>'
+          + '<div style="font-size:11px;font-weight:600;color:' + col + '">' + pct + '%</div>'
+          + '</div>'
+          + (isLast ? '' : '<div style="font-size:14px;color:var(--txt3);flex-shrink:0;align-self:center;padding-bottom:12px;margin:0 2px">›</div>');
+      };
+      var lifecycleHtml = '<div style="display:flex;align-items:stretch;background:var(--bg2);border-radius:12px;padding:10px 8px;margin:8px 0">'
+        + lifeStep('Onboarded', ompOnboarded, 100, 'var(--txt)', false)
+        + lifeStep('OSV Eligible', osvOTot, lifePct(osvOTot), '#005dff', false)
+        + lifeStep('Consent Started', consentStart, lifePct(consentStart), '#F59E0B', false)
+        + lifeStep('Completed', osvVer, lifePct(osvVer), '#16a34a', true)
+        + '</div>';
+      var statusGrid = '<div class="km-sg" style="grid-template-columns:repeat(3,1fr);margin-top:8px">'
+        + mkOsvTile('verified',      osvVer, '#16a34a', 'Completed')
+        + mkOsvTile('in_progress',   osvIP,  '#F59E0B', 'In Progress')
+        + mkOsvTile('not_initiated', osvNI,  '#8b5cf6', 'Not Initiated')
+        + '</div>';
       osvExtra = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
-        + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">Consent Status</div>'
+        + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:2px">OSV Journey</div>'
+        + lifecycleHtml
+        + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-top:12px;margin-bottom:6px">Status Breakdown</div>'
         + osvBarH
-        + '<div class="km-sg" id="' + ogid + '-g" style="grid-template-columns:repeat(3,1fr);margin-top:8px">'
-        + mkOsvTile('verified',      osvVer, 'var(--st-onboarded)', 'Done')
-        + mkOsvTile('in_progress',   osvIP,  '#F59E0B',             'In Progress')
-        + mkOsvTile('not_initiated', osvNI,  '#8b5cf6',             'Not Initiated')
-        + '</div>'
-        + '<div style="font-size:.68rem;color:var(--txt3);margin-top:9px">Select a status to open its vendor records.</div>'
+        + statusGrid
+        + (notInSheet > 0
+          ? '<div style="margin-top:10px;padding:8px 10px;background:var(--bg2);border-radius:8px;font-size:11px;color:var(--txt3)">'
+            + '<b style="color:var(--txt2)">' + fmt(notInSheet) + '</b> onboarded seller(s) not yet assessed for OSV.</div>'
+          : '')
+        + '<div style="font-size:.68rem;color:var(--txt3);margin-top:8px">Click a status tile to view its vendor records.</div>'
         + '</div>';
       _mmExtraCache[_oCKey] = osvExtra;
     }
     mods.push({ t:'OSV Status', ic:MM_IC.shield, tone:'t-green', kind:'module', expand:'inline-panel', eye:'OSV Consent',
       panel:{
-        eye:'OSV Consent · Verification Status', badge:'Sellers only',
-        headline:{ v:osvVer, label:'OSV Completed', tone:'good' },
-        bar:[],
-        tiles:[ { label:'Verification Rate', v:osvPctV + '%', sub:'of OMP onboarded', raw:true },
-                { label:'Total Onboarded Sellers (OMP)', v:osvOTot, sub:'COMPLETED status' } ],
+        eye:'OSV Consent · Verification Lifecycle', badge:'Sellers only',
+        headline:{ v:osvVer, label:'OSV Completed · ' + osvPctV + '% of ' + fmt(osvOTot) + ' eligible', tone:'good' },
+        bar:[ { label:'Completed', v:osvVer, color:'#16a34a' },
+              { label:'In Progress', v:osvIP, color:'#F59E0B' },
+              { label:'Not Initiated', v:osvNI, color:'#8b5cf6' } ],
+        tiles:[ { label:'Completion Rate', v:osvPctV + '%', sub:'of OSV-eligible sellers', raw:true, tone:'good' },
+                { label:'In Progress', v:osvIP, sub:'consent started' },
+                { label:'Not Initiated', v:osvNI, sub:'eligible, not started' } ],
         extra:  osvExtra,
         records:'osv'
       }
@@ -7469,12 +7552,31 @@ function openKpiModal(cardId) {
         var rRated = r.rated || 0;
         var rTotal = r.total || 0;
         var selVR  = (qd.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
+        // Per-material breakdown
+        var _popMatStats = function(records, matFilter) {
+          var rs = matFilter ? records.filter(function(v){ return v.category === matFilter; }) : records;
+          if (!rs.length) return null;
+          var dist2 = [0,0,0,0,0], s2 = 0;
+          rs.forEach(function(v){ dist2[_vsBand(v.rating)]++; s2 += v.rating; });
+          return { dist: dist2, rated: rs.length, avg: s2 / rs.length, records: rs };
+        };
+        var mVR = _popMatStats(selVR, 'Metal');
+        var pVR = _popMatStats(selVR, 'Plastic');
+        // Material summary mini-cards
+        var matSumHtml = '';
+        if ((mVR && mVR.rated > 0) || (pVR && pVR.rated > 0)) {
+          matSumHtml = '<div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap">';
+          if (mVR && mVR.rated > 0) matSumHtml += '<div style="flex:1;background:var(--km-bg2,var(--bg2));border-radius:10px;padding:8px 12px;min-width:90px"><div style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);margin-bottom:2px">Metal</div><div style="font-size:16px;font-weight:750;color:var(--txt)">' + mVR.avg.toFixed(1) + '<span style="font-size:11px;font-weight:500;color:var(--txt3)">/10</span></div><div style="font-size:10.5px;color:var(--txt3)">' + fmt(mVR.rated) + ' rated</div></div>';
+          if (pVR && pVR.rated > 0) matSumHtml += '<div style="flex:1;background:var(--km-bg2,var(--bg2));border-radius:10px;padding:8px 12px;min-width:90px"><div style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);margin-bottom:2px">Plastic</div><div style="font-size:16px;font-weight:750;color:var(--txt)">' + pVR.avg.toFixed(1) + '<span style="font-size:11px;font-weight:500;color:var(--txt3)">/10</span></div><div style="font-size:10.5px;color:var(--txt3)">' + fmt(pVR.rated) + ' rated</div></div>';
+          matSumHtml += '</div>';
+        }
         content =
           hero(avg + (r.avg != null ? ' / 10' : ''), 'Average Seller Score (out of 10)')
           + srow([
               {v: fmt(rRated),                  l: 'Sellers Rated',       s: 'have a score'},
               {v: fmt(rTotal - rRated),          l: 'Unrated',             s: 'no score yet'},
             ])
+          + matSumHtml
           + (rRated > 0 ? sec('Score Distribution · out of 10', starBarsHtml(r.dist || [0,0,0,0,0], rRated, selVR)) : '');
       }
 
@@ -7488,24 +7590,40 @@ function openKpiModal(cardId) {
         var o    = (qd.seller || {}).osv || {};
         var oT   = o.total || 0;
         var oPct = oT > 0 ? Math.round((o.completed || 0) / oT * 100) : 0;
+        var oCons = (o.completed || 0) + (o.pending || 0);
+        // Lifecycle steps
+        var osvLifeHtml = '<div style="display:flex;align-items:stretch;background:var(--km-bg2,var(--bg2));border-radius:12px;padding:10px 8px;margin:8px 0">';
+        var popLifeStep = function(lbl, val, pct, col, isLast) {
+          return '<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center">'
+            + '<div style="font-size:15px;font-weight:750;color:' + col + ';font-variant-numeric:tabular-nums;line-height:1.2">' + fmt(val) + '</div>'
+            + '<div style="font-size:8.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);line-height:1.3">' + lbl + '</div>'
+            + '<div style="font-size:11px;font-weight:600;color:' + col + '">' + pct + '%</div>'
+            + '</div>'
+            + (isLast ? '' : '<div style="font-size:14px;color:var(--txt3);flex-shrink:0;align-self:center;padding-bottom:12px">›</div>');
+        };
+        osvLifeHtml += popLifeStep('OSV Eligible', oT, 100, 'var(--txt)', false)
+          + popLifeStep('Consent Started', oCons, oT > 0 ? Math.round(oCons/oT*100) : 0, '#F59E0B', false)
+          + popLifeStep('Completed', o.completed || 0, oPct, '#16a34a', true)
+          + '</div>';
+        var vl = qd.vendorOSV || [];
         content =
-          hero(fmt(o.completed || 0), 'OSV Completed')
+          hero(fmt(o.completed || 0), 'OSV Completed · ' + oPct + '% rate')
           + srow([
-              {v: oPct + '%', l: 'Verification Rate',              s: 'of OMP onboarded'},
-              {v: fmt(oT),    l: 'Total Onboarded Sellers (OMP)',  s: 'COMPLETED status'},
+              {v: oPct + '%',   l: 'Completion Rate',   s: 'of eligible sellers'},
+              {v: fmt(oT),      l: 'OSV Eligible',       s: 'in assessment sheet'},
             ])
-          + sec('Consent Status',
+          + sec('OSV Journey', osvLifeHtml)
+          + sec('Status Breakdown',
               progBar([
-                {w: o.completed    || 0, color: 'var(--st-onboarded)'},
+                {w: o.completed    || 0, color: '#16a34a'},
                 {w: o.pending      || 0, color: '#F59E0B'},
-                {w: o.notInitiated || 0, color: 'var(--st-draft)'},
+                {w: o.notInitiated || 0, color: '#8b5cf6'},
               ])
               + (function() {
-                  var vl = qd.vendorOSV || [];
                   return expandTileGrid([
-                    {v: fmt(o.completed    || 0), l: 'Done',          c: 'var(--st-onboarded)', vendors: vl.filter(function(v){return v.status==='verified';}),      mode:'osv'},
-                    {v: fmt(o.pending      || 0), l: 'In Progress',   c: '#F59E0B',             vendors: vl.filter(function(v){return v.status==='in_progress';}),   mode:'osv'},
-                    {v: fmt(o.notInitiated || 0), l: 'Not Initiated', c: 'var(--st-draft)',     vendors: vl.filter(function(v){return v.status==='not_initiated';}), mode:'osv'},
+                    {v: fmt(o.completed    || 0), l: 'Completed',     c: '#16a34a',      vendors: vl.filter(function(v){return v.status==='verified';}),      mode:'osv'},
+                    {v: fmt(o.pending      || 0), l: 'In Progress',   c: '#F59E0B',      vendors: vl.filter(function(v){return v.status==='in_progress';}),   mode:'osv'},
+                    {v: fmt(o.notInitiated || 0), l: 'Not Initiated', c: '#8b5cf6',      vendors: vl.filter(function(v){return v.status==='not_initiated';}), mode:'osv'},
                   ]);
                 })()
             );
