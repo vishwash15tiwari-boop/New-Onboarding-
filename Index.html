@@ -6810,24 +6810,34 @@ function _mmGeoDetailHtml(id, by, swatchColor) {
   function dispCat(c) {
     return CAT_SHORT[c] || (c.charAt(0).toUpperCase() + c.slice(1));
   }
+  var _txnSd = (_TXN && _TXN.stateMap && _TXN.stateMap[id]) || null;
   function section(aud, label, color) {
     var total = d[aud] || 0;
     if (!total) return '';
+    var txnAud = _txnSd ? (_txnSd[aud] || null) : null;
+    var txnTotal = txnAud ? (txnAud.total || 0) : null;
     var rows = catKeys.filter(function(c) { return (d.cats[c] && d.cats[c][aud] || 0) > 0; });
     var hAct = "openGeoStateRecords('" + id + "','" + aud + "',null)";
     var trs = rows.map(function(c) {
       var cAct = "openGeoStateRecords('" + id + "','" + aud + "','" + c.replace(/'/g, "\\'") + "')";
       var cnt = d.cats[c][aud] || 0;
       var pct = total ? Math.round(cnt / total * 100) : 0;
+      var capC = c.charAt(0).toUpperCase() + c.slice(1);
+      var txnMat = (txnAud && txnAud.byMat && txnAud.byMat[capC]) ? (txnAud.byMat[capC].total || 0) : null;
       return '<tr class="mgsd-clk" role="button" tabindex="0"'
         + ' onclick="' + cAct + '" onkeydown="if(event.key===\'Enter\'){' + cAct + '}">'
         + '<td>' + esc(dispCat(c)) + '</td>'
-        + '<td>' + fmt(cnt) + '<span style="font-size:9px;font-weight:400;color:var(--txt3);margin-left:4px">(' + pct + '%)</span></td></tr>';
+        + '<td>' + fmt(cnt) + '<span style="font-size:9px;font-weight:400;color:var(--txt3);margin-left:4px">(' + pct + '%)</span></td>'
+        + '<td style="font-size:9px;color:var(--txt3);white-space:nowrap">' + (txnMat !== null ? fmt(txnMat) + ' txn' : '—') + '</td>'
+        + '</tr>';
     }).join('');
+    var txnBadge = txnTotal !== null
+      ? '<span style="font-size:9px;font-weight:500;color:var(--txt3);margin-left:5px">(' + fmt(txnTotal) + ' txn)</span>'
+      : '';
     return '<div class="mgsd-section sec-' + aud + '">'
       + '<div class="mgsd-sec-hd mgsd-clk" role="button" tabindex="0"'
       + ' onclick="' + hAct + '" onkeydown="if(event.key===\'Enter\'){' + hAct + '}">'
-      + esc(label) + ' · ' + fmt(total) + '</div>'
+      + esc(label) + ' · ' + fmt(total) + txnBadge + '</div>'
       + '<table class="mgsd-tbl"><tbody>' + trs + '</tbody></table>'
       + '</div>';
   }
@@ -6888,10 +6898,19 @@ function _mmGeoFixedHtml() {
   // Sellers=blue, Buyers=green (matches the map toggle); a colour dot ties each row to
   // its map hue, and the audience currently shown on the map is highlighted.
   var selAud = (_geo.aud === 'buyer') ? 'buyer' : 'seller';
+  var _txnAI = (_TXN && _TXN.allIndia) || null;
   function audRow(a, color, label, sep) {
     return '<tr class="mgsd-aud' + (sep ? ' mgsd-sep' : '') + (a === selAud ? ' mgsd-aud-on' : '') + '">'
       + '<td style="color:' + color + '"><span class="mgsd-dot" style="background:' + color + '"></span>' + esc(label) + '</td>'
-      + colKeys.map(function(k) { return '<td>' + fmt((tally[k] && tally[k][a]) || 0) + '</td>'; }).join('')
+      + colKeys.map(function(k) {
+          var onb = (tally[k] && tally[k][a]) || 0;
+          var capK = k.charAt(0).toUpperCase() + k.slice(1);
+          var txnN = (_txnAI && _txnAI[a] && _txnAI[a].byMat && _txnAI[a].byMat[capK])
+                     ? (_txnAI[a].byMat[capK].total || 0) : null;
+          return '<td>' + fmt(onb)
+            + (txnN !== null ? '<div style="font-size:9px;color:var(--txt3);margin-top:1px;line-height:1.2">' + fmt(txnN) + ' txn</div>' : '')
+            + '</td>';
+        }).join('')
       + '</tr>';
   }
   return '<div class="mgsd-fix-hd">Category Overview · Sellers / Buyers</div>'
