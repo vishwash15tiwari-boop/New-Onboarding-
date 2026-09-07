@@ -1887,6 +1887,11 @@ body.view-gst #vert-tabs-bar{display:none}
 .txn-state-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .txn-state-name{font-size:19px;font-weight:750;color:var(--txt);letter-spacing:-.3px;line-height:1.2}
 .txn-total-block{text-align:right;flex-shrink:0}
+.txn-aud-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.txn-aud-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;white-space:nowrap}
+.txn-aud-chip.s-chip{background:#dcfce7;color:#15803d}
+.txn-aud-chip.b-chip{background:#dbeafe;color:#1d4ed8}
+.txn-aud-chip strong{font-size:13.5px;font-weight:750;letter-spacing:-.3px}
 .txn-total-n{display:block;font-size:26px;font-weight:750;color:var(--txt);letter-spacing:-1.2px;line-height:1}
 .txn-total-lbl{font-size:11px;font-weight:600;color:var(--txt3);margin-top:2px}
 /* KPI cards */
@@ -12604,19 +12609,46 @@ function _tdtAddStateLabels() {
     var fs = Math.min(20, Math.max(10, bbox.width * 0.13));
     var fill = path.style.fill || path.getAttribute('fill') || '';
     var isDark = (fill === '#60a5fa' || fill === '#2563eb' || fill === '#1e3a8a');
+    var mainColor = isDark ? '#ffffff' : '#1e3a8a';
+
+    // Show seller/buyer sub-label on large states when both audiences visible
+    var sCount = sd ? _tdtStateStats(sd, 'Sellers', f.mat, f.status).t : 0;
+    var bCount = sd ? _tdtStateStats(sd, 'Buyers',  f.mat, f.status).t : 0;
+    var showSB = bbox.width >= 65 && f.ent === 'All' && (sCount > 0 || bCount > 0);
+    var mainY  = showSB ? cy - fs * 0.65 : cy;
+
     var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     text.setAttribute('class', 'tdt-count-lbl');
     text.setAttribute('x', cx);
-    text.setAttribute('y', cy);
+    text.setAttribute('y', mainY);
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('dominant-baseline', 'middle');
     text.setAttribute('font-size', fs);
     text.setAttribute('font-weight', '700');
-    text.setAttribute('fill', isDark ? '#ffffff' : '#1e3a8a');
+    text.setAttribute('fill', mainColor);
     text.setAttribute('pointer-events', 'none');
     text.setAttribute('font-family', 'inherit');
     text.textContent = _tdtCompactN(cnt);
     svg.appendChild(text);
+
+    if (showSB) {
+      var parts = [];
+      if (sCount > 0) parts.push(_tdtCompactN(sCount) + 'S');
+      if (bCount > 0) parts.push(_tdtCompactN(bCount) + 'B');
+      var sub = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      sub.setAttribute('class', 'tdt-count-lbl');
+      sub.setAttribute('x', cx);
+      sub.setAttribute('y', cy + fs * 0.85);
+      sub.setAttribute('text-anchor', 'middle');
+      sub.setAttribute('dominant-baseline', 'middle');
+      sub.setAttribute('font-size', fs * 0.7);
+      sub.setAttribute('font-weight', '600');
+      sub.setAttribute('fill', isDark ? 'rgba(255,255,255,0.85)' : 'rgba(30,58,138,0.72)');
+      sub.setAttribute('pointer-events', 'none');
+      sub.setAttribute('font-family', 'inherit');
+      sub.textContent = parts.join(' · ');
+      svg.appendChild(sub);
+    }
   });
 }
 
@@ -12725,6 +12757,8 @@ function _tdtRightHtml() {
   var st = _tdtStateStats(sd, f.ent, f.mat, f.status);
   var tot = st.t;
   var pct = function(n) { return tot > 0 ? Math.round(n / tot * 100) + '%' : '0%'; };
+  var sCount = _tdtStateStats(sd, 'Sellers', f.mat, f.status).t;
+  var bCount = _tdtStateStats(sd, 'Buyers',  f.mat, f.status).t;
 
   var _kIcCheck = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
   var _kIcClock = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
@@ -12759,8 +12793,15 @@ function _tdtRightHtml() {
     + mkF('status', ['All','Completed','Pending','Failed'], 'Status')
     + '</div>';
 
+  var audChips = '';
+  if (f.ent !== 'Buyers'  && sCount > 0) audChips += '<span class="txn-aud-chip s-chip"><strong>' + fmt(sCount) + '</strong> Sellers</span>';
+  if (f.ent !== 'Sellers' && bCount > 0) audChips += '<span class="txn-aud-chip b-chip"><strong>' + fmt(bCount) + '</strong> Buyers</span>';
+
   return '<div class="txn-state-hero">'
-    + '<div class="txn-state-name">' + esc(nm) + '</div>'
+    + '<div>'
+    +   '<div class="txn-state-name">' + esc(nm) + '</div>'
+    +   (audChips ? '<div class="txn-aud-row">' + audChips + '</div>' : '')
+    + '</div>'
     + '<div class="txn-total-block"><span class="txn-total-n">' + fmt(tot) + '</span><div class="txn-total-lbl">Total Transactions</div></div>'
     + '</div>'
     + kpiHtml + filHtml
