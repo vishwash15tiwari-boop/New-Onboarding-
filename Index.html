@@ -2898,6 +2898,58 @@ body.view-gst #mm-crumbs{display:none}
 .mf-detail-vd svg{width:15px;height:15px;flex-shrink:0}
 .mf-detail-vd:hover{opacity:.88;transform:translateY(-1px)}
 
+/* ── Onboarding Journey rich 3-column card layout (detail/vertical mode) ── */
+/* Hidden in compact horizontal mode; shown only inside .mmdetail */
+.mfrc-left,.mfrc-right{display:none}
+.mmdetail .mf-card{display:flex;flex-direction:row;align-items:flex-start;gap:0;max-width:none;width:100%;padding:20px 18px}
+.mmdetail .mfrc-left{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:120px;max-width:140px;padding-right:18px;flex-shrink:0;text-align:center}
+.mmdetail .mfrc-mid{flex:1;min-width:0}
+.mmdetail .mfrc-right{display:flex;flex-direction:column;justify-content:center;min-width:180px;max-width:220px;padding-left:18px;border-left:1px solid var(--border);flex-shrink:0}
+/* In detail mode hide the duplicate inline head (number+label are in mfrc-left) */
+.mmdetail .mf-head-inline{display:none}
+/* Icon circle */
+.mfrc-ic-wrap{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mfrc-ic-wrap svg{width:22px;height:22px}
+.mfrc-ic-green{background:#dcfce7;color:#16a34a}
+.mfrc-ic-red{background:#fee2e2;color:#dc2626}
+.mfrc-ic-amber{background:#fef3c7;color:#d97706}
+.mfrc-ic-blue{background:#dbeafe;color:#2563eb}
+.mfrc-ic-purple{background:#f3e8ff;color:#8b5cf6}
+/* Percentage badge */
+.mfrc-badge{font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;margin-top:2px}
+.mfrc-badge-green{background:#dcfce7;color:#15803d}
+.mfrc-badge-red{background:#fee2e2;color:#b91c1c}
+.mfrc-badge-amber{background:#fef3c7;color:#b45309}
+.mfrc-badge-blue{background:#dbeafe;color:#1d4ed8}
+.mfrc-badge-purple{background:#f3e8ff;color:#7c3aed}
+.mfrc-badge-gray{background:var(--bg2);color:var(--txt2)}
+/* Stage definition text */
+.mfrc-def{font-size:.75rem;color:var(--txt2);line-height:1.55;margin:0}
+/* Connector with percentage text in detail/vertical mode */
+.mmdetail .mf-sep{width:100%;height:auto;display:flex;flex-direction:column;align-items:flex-start;padding:2px 0;gap:0}
+.mmdetail .mf-sep svg{transform:rotate(90deg);width:20px;height:20px;margin-left:60px}
+.mfsep-pct{font-size:.72rem;color:var(--txt3);margin-left:60px;line-height:1.4;display:none}
+.mmdetail .mfsep-pct{display:block}
+.mfsep-pct-num{font-size:.88rem;font-weight:800;color:var(--txt2);margin-right:4px}
+/* Bottom summary tiles — only in detail mode */
+.mf-summary{display:none}
+.mmdetail .mf-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 2px 4px;border-top:1px solid var(--border);margin-top:8px}
+.mf-sum-tile{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;align-items:flex-start;gap:10px}
+.mf-sum-ic{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mf-sum-ic svg{width:13px;height:13px}
+.mf-sum-ic.s-green{background:#dcfce7;color:#16a34a}
+.mf-sum-ic.s-blue{background:#dbeafe;color:#2563eb}
+.mf-sum-ic.s-amber{background:#fef3c7;color:#d97706}
+.mf-sum-ic.s-red{background:#fee2e2;color:#dc2626}
+.mf-sum-txt{}
+.mf-sum-v{font-size:1.5rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.mf-sum-lbl{font-size:.69rem;color:var(--txt2);margin-top:4px;line-height:1.35}
+.mf-sum-tile.ts-green .mf-sum-v{color:#16a34a}
+.mf-sum-tile.ts-blue .mf-sum-v{color:#2563eb}
+.mf-sum-tile.ts-amber .mf-sum-v{color:#d97706}
+.mf-sum-tile.ts-red .mf-sum-v{color:#dc2626}
+@media(max-width:700px){.mmdetail .mf-summary{grid-template-columns:repeat(2,1fr)}}
+
 /* ── Shared detail popup shell (.mfp): a small floating card appended to <body>,
    used by the Quality KPI rows (contextual breakdown). One open/close/placement/
    animation everywhere so every popup reads as the same interaction. */
@@ -4865,21 +4917,21 @@ function _mmVertModules(key) {
 
   // 1 — Funnel (expands inline as a horizontal stage dashboard)
   mods.push({ t:'Breakup', ic:MM_IC.funnel, tone:'t-blue', kind:'module', expand:'inline-funnel', eye:'Breakup · stages', children:[
-    f('Logged In Cases', _mmC(vs,vb,'total'), MM_IC.funnel, 't-blue',
-      [ _d('Sellers', fmt(vs.total||0), MM_IC.users), _d('Buyers', fmt(vb.total||0), MM_IC.users) ]
-        .concat(_catDetails(catTot)).concat([ _vd('total') ])),
-    f('Draft Cases', _mmC(vs,vb,'draft'), MM_IC.draft, 't-purple',
-      [ _d('Sellers', fmt(vs.draft||0), MM_IC.users), _d('Buyers', fmt(vb.draft||0), MM_IC.users) ]
-        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'draft'))).concat([ _vd('draft') ])),
-    f('Cases Under Review', _mmC(vs,vb,'inReview'), MM_IC.clock, 't-amber',
-      [ _d('Sellers', fmt(vs.inReview||0), MM_IC.users), _d('Buyers', fmt(vb.inReview||0), MM_IC.users) ]
-        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'inReview'))).concat([ _vd('review') ])),
     f('Successfully Onboarded', onb, MM_IC.check, 't-green',
       [ _d('Sellers', fmt(vs.completed||0), MM_IC.users), _d('Buyers', fmt(vb.completed||0), MM_IC.users) ]
         .concat(_catDetails(catOnb)).concat([ _vd('onboarded') ])),
     f('Rejected Cases', _mmC(vs,vb,'rejected'), MM_IC.x, 't-red',
       [ _d('Sellers', fmt(vs.rejected||0), MM_IC.users), _d('Buyers', fmt(vb.rejected||0), MM_IC.users) ]
         .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'rejected'))).concat([ _vd('rejected') ])),
+    f('Cases Under Review', _mmC(vs,vb,'inReview'), MM_IC.clock, 't-amber',
+      [ _d('Sellers', fmt(vs.inReview||0), MM_IC.users), _d('Buyers', fmt(vb.inReview||0), MM_IC.users) ]
+        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'inReview'))).concat([ _vd('review') ])),
+    f('Logged In Cases', _mmC(vs,vb,'total'), MM_IC.funnel, 't-blue',
+      [ _d('Sellers', fmt(vs.total||0), MM_IC.users), _d('Buyers', fmt(vb.total||0), MM_IC.users) ]
+        .concat(_catDetails(catTot)).concat([ _vd('total') ])),
+    f('Draft Cases', _mmC(vs,vb,'draft'), MM_IC.draft, 't-purple',
+      [ _d('Sellers', fmt(vs.draft||0), MM_IC.users), _d('Buyers', fmt(vb.draft||0), MM_IC.users) ]
+        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'draft'))).concat([ _vd('draft') ])),
   ]});
 
   // 2 — Volume (onboarded composition — Type × Category cross-tab, chains into Geography).
@@ -5696,12 +5748,26 @@ var IN_STATES = {"AN":{"name":"Andaman & Nicobar Island","region":"South","d":"M
 // catField is the per-category key on the server's categories[] that corresponds to
 // this stage, so every card can show the Metal / Plastic split rather than a bare count.
 var MF_STAGES = [
-  { key:'total',     label:'Logged In',             color:'blue',   field:'total',     vdAction:'total',     catField:'total'     },
-  { key:'draft',     label:'Draft',                 color:'purple', field:'draft',     vdAction:'draft',     catField:'draft'     },
-  { key:'review',    label:'Under Review',           color:'amber',  field:'inReview',  vdAction:'review',    catField:'inReview'  },
   { key:'onboarded', label:'Successfully Onboarded', color:'green',  field:'completed', vdAction:'onboarded', catField:'onboarded' },
   { key:'rejected',  label:'Rejected',              color:'red',    field:'rejected',  vdAction:'rejected',  catField:'rejected'  },
+  { key:'review',    label:'Under Review',           color:'amber',  field:'inReview',  vdAction:'review',    catField:'inReview'  },
+  { key:'total',     label:'Logged In',             color:'blue',   field:'total',     vdAction:'total',     catField:'total'     },
+  { key:'draft',     label:'Draft',                 color:'purple', field:'draft',     vdAction:'draft',     catField:'draft'     },
 ];
+
+// Stage definitions shown in the right panel of each Onboarding Journey card.
+var MF_DEFS = {
+  total:     'Cases initiated in the system by sellers or buyers. Represents total registrations received in the selected period.',
+  draft:     'Registrations that are created but not yet formally submitted for verification.',
+  review:    'Submitted registrations that are currently under verification or approval.',
+  onboarded: 'Registrations that have completed all required checks and are activated on the platform.',
+  rejected:  'Registrations that could not be approved due to validation issues or non-compliance.'
+};
+// Icon and badge colour class maps keyed by stage key.
+var MF_IC_CLS  = { total:'mfrc-ic-purple', draft:'mfrc-ic-amber', review:'mfrc-ic-blue', onboarded:'mfrc-ic-green', rejected:'mfrc-ic-red' };
+var MF_BADGE_CLS = { total:'mfrc-badge-purple', draft:'mfrc-badge-amber', review:'mfrc-badge-blue', onboarded:'mfrc-badge-green', rejected:'mfrc-badge-red' };
+var MF_SUM_CLS = { total:'ts-blue', draft:'ts-amber', review:'ts-blue', onboarded:'ts-green', rejected:'ts-red' };
+var MF_IC_MAP  = { total:MM_IC.funnel, draft:MM_IC.draft, review:MM_IC.clock, onboarded:MM_IC.check, rejected:MM_IC.x };
 
 // mmSelectFunnelStage removed: the whole stage card is one click target that
 // opens that stage's full detailed record list in the records overlay
@@ -5989,28 +6055,25 @@ function mmRenderFunnel() {
 
   // The WHOLE card is one click target — clicking anywhere on it opens that
   // stage's full detailed record list in the records overlay (openStageRecords).
-  // The headline metric, label and audience × category matrix inside are purely
-  // informational; nothing in them is separately clickable. The corner arrow is
-  // the affordance that the card is clickable.
+  // In detail/vertical (.mmdetail) mode each card renders as a rich 3-column layout:
+  // left = icon + big number + label + % badge, mid = breakdown matrix, right = definition.
+  // In compact horizontal mode the left/right panels are hidden via CSS.
+  var grandTotal = _mmC(vs, vb, 'total') || 1;
   var html = '<div class="mf-flow">';
   MF_STAGES.forEach(function(s, i) {
     var total   = (vs[s.field]||0) + (vb[s.field]||0);
     var catRows = s.catField ? _mmCatRowsFixed(vs, vb, s.catField) : null;
-    var headMatrix = '<div class="mf-head">'
-      + '<div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
-      + '<div class="mf-label">' + esc(s.label) + '</div></div>'
-      + _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0);
-    // Average TAT rides on the Successfully Onboarded card only, and mirrors the count
-    // matrix: a Sellers/Buyers × (categories + Overall) grid of turnaround days, using the
-    // SAME filtered vs/vb the counts use so the two always describe one population. TAT is
-    // the rejection-aware In Review→Onboarded span from Code.gs (per category via
-    // vs/vb.categories[].avgTAT; per audience via vs/vb.avgTAT). Days are whole.
+    var matrixHtml = _mfMatrix(catRows, vs[s.field]||0, vb[s.field]||0);
+    var stagePctRaw = grandTotal > 0 ? (total / grandTotal * 100) : 0;
+    var stagePctStr = stagePctRaw >= 99.5 ? '100' : stagePctRaw < 1 ? stagePctRaw.toFixed(1) : String(Math.round(stagePctRaw));
+
+    // Average TAT block (Successfully Onboarded card only).
     var isOnb = (s.key === 'onboarded');
     var tatBlock = '';
     if (isOnb) {
       var tmapS = _mmCatTatMap(vs.categories);
       var tmapB = _mmCatTatMap(vb.categories);
-      var tcols = catRows || [];                    // same categories & order as the counts
+      var tcols = catRows || [];
       var tblend = _mfBlendTATc(vs, vb);
       var tip  = 'Average TAT: average time taken to successfully onboard cases, measured '
         + 'from the latest applicable In Review / re-submission timestamp after the most '
@@ -6018,7 +6081,6 @@ function mmRenderFunnel() {
         + 'Previous rejected cycles are excluded — this is not a case-age figure. '
         + 'Split by Seller / Buyer and category; each cell is measured over the onboarded '
         + 'cases in that group that carry a valid start date (hover a cell for its sample).';
-      // One TAT cell — "Xd" (0 is a valid same-day TAT) or "—", with its sample size on hover.
       var _tCell = function(o, extraCls) {
         var has = o && o.v != null && o.n > 0;
         var inner = has ? (fmt(o.v) + '<span class="mf-mx-d">d</span>')
@@ -6047,18 +6109,67 @@ function mmRenderFunnel() {
         + tHead + tSell + tBuy + '</div>'
         + '</div>';
     }
+
+    // Rich left panel (icon + big number + label + % badge) — shown only in detail mode.
+    var richLeft = '<div class="mfrc-left">'
+      + '<div class="mfrc-ic-wrap ' + (MF_IC_CLS[s.key] || '') + '">' + (MF_IC_MAP[s.key] || '') + '</div>'
+      + '<div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
+      + '<div class="mf-label">' + esc(s.label) + '</div>'
+      + '<div class="mfrc-badge ' + (MF_BADGE_CLS[s.key] || 'mfrc-badge-gray') + '">' + stagePctStr + '% of total cases</div>'
+      + '</div>';
+
+    // Inline head (compact horizontal mode — hidden in detail mode via CSS).
+    var inlineHead = '<div class="mf-head mf-head-inline">'
+      + '<div class="mf-v ' + s.color + '">' + fmt(total) + '</div>'
+      + '<div class="mf-label">' + esc(s.label) + '</div></div>';
+
+    // Center column: inline head + matrix (+ TAT for onboarded).
+    var midContent = isOnb
+      ? '<div class="mf-body">' + inlineHead + matrixHtml + '</div>' + tatBlock
+      : inlineHead + matrixHtml;
+    var richMid = '<div class="mfrc-mid">' + midContent + '</div>';
+
+    // Right definition panel — shown only in detail mode.
+    var richRight = '<div class="mfrc-right"><p class="mfrc-def">' + esc(MF_DEFS[s.key] || '') + '</p></div>';
+
     html += '<div class="mf-card' + (isOnb ? ' mf-has-tat' : '') + '" data-stage="' + s.key + '" role="button" tabindex="0"'
       + ' aria-label="' + esc(s.label) + ': ' + fmt(total) + '. Open detailed records">'
       + '<span class="mf-open-ic" aria-hidden="true">→</span>'
-      + (isOnb ? '<div class="mf-body">' + headMatrix + '</div>' + tatBlock : headMatrix)
+      + richLeft + richMid + richRight
       + '</div>';
+
     if (i < MF_STAGES.length - 1) {
+      var ns = MF_STAGES[i + 1];
+      var nt = (vs[ns.field]||0) + (vb[ns.field]||0);
+      var np = grandTotal > 0 ? (nt / grandTotal * 100) : 0;
+      var npStr = np < 1 ? np.toFixed(1) : String(Math.round(np));
       html += '<div class="mf-sep">'
         + '<svg viewBox="0 0 44 44" aria-hidden="true">'
-        + '<path class="mf-sep-arrow" d="M4 19 L30 19 L30 13 L40 22 L30 31 L30 25 L4 25 Z"/></svg></div>';
+        + '<path class="mf-sep-arrow" d="M4 19 L30 19 L30 13 L40 22 L30 31 L30 25 L4 25 Z"/></svg>'
+        + '<div class="mfsep-pct"><span class="mfsep-pct-num">' + npStr + '%</span>' + esc(ns.label) + '</div>'
+        + '</div>';
     }
   });
   html += '</div>';
+
+  // Bottom summary tiles — only rendered in detail/full-page mode (CSS hides them in compact mode).
+  var compTot = _mmC(vs, vb, 'completed'), draftTot = _mmC(vs, vb, 'draft'), rejTot = _mmC(vs, vb, 'rejected');
+  var convPct = Math.round(compTot / grandTotal * 100);
+  var draftPct = Math.round(draftTot / grandTotal * 100);
+  var rejPctR = rejTot / grandTotal * 100;
+  var rejPctStr = rejPctR < 1 ? rejPctR.toFixed(1) : String(Math.round(rejPctR));
+  var tatBlend = _mfBlendTATc(vs, vb);
+  var tatSumStr = (tatBlend && tatBlend.v != null) ? esc(_mfTatFmt(tatBlend.v) || '—') : '—';
+  html += '<div class="mf-summary">'
+    + '<div class="mf-sum-tile ts-green"><div class="mf-sum-ic s-green">' + MM_IC.check + '</div>'
+    + '<div class="mf-sum-txt"><div class="mf-sum-v">' + convPct + '%</div><div class="mf-sum-lbl">Onboarding Conversion Rate</div></div></div>'
+    + '<div class="mf-sum-tile ts-blue"><div class="mf-sum-ic s-blue">' + MM_IC.clock + '</div>'
+    + '<div class="mf-sum-txt"><div class="mf-sum-v">' + tatSumStr + '</div><div class="mf-sum-lbl">Average Time to Onboard</div></div></div>'
+    + '<div class="mf-sum-tile ts-amber"><div class="mf-sum-ic s-amber">' + MM_IC.draft + '</div>'
+    + '<div class="mf-sum-txt"><div class="mf-sum-v">' + draftPct + '%</div><div class="mf-sum-lbl">Cases in Draft</div></div></div>'
+    + '<div class="mf-sum-tile ts-red"><div class="mf-sum-ic s-red">' + MM_IC.x + '</div>'
+    + '<div class="mf-sum-txt"><div class="mf-sum-v">' + rejPctStr + '%</div><div class="mf-sum-lbl">Cases Rejected</div></div></div>'
+    + '</div>';
 
   panel.innerHTML = html;
   panel.className = 'mf mf-open';
