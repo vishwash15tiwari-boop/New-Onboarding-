@@ -5556,7 +5556,8 @@ function _mmVertModules(key) {
     if (gmv != null) {
       // GMV is seller-side only — buyer-side transaction value is excluded by design.
       _gmvReconcile(gmv, catGmv, 'Transactions panel · ' + key);
-      tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true });
+      var _gmvBd = catGmv.map(function(x){ return { l: x.cat, v: fmtINR(x.v), raw: true }; });
+      tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true, breakdown: _gmvBd });
       catGmv.forEach(function(x){ tTiles.push({ label:'GMV · ' + x.cat, v:fmtINR(x.v), raw:true }); });
     }
     mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transaction activity',
@@ -7290,7 +7291,7 @@ function mmRenderModPanel() {
             ? '<div class="mp-tile-cats">'
               + t.breakdown.map(function(c, i) {
                   return (i > 0 ? '<span class="mp-tile-cat-sep">·</span>' : '')
-                    + '<span class="mp-tile-cat"><span class="mp-tile-cat-v">' + fmt(c.v) + '</span>'
+                    + '<span class="mp-tile-cat"><span class="mp-tile-cat-v">' + (c.raw ? esc(c.v) : fmt(c.v)) + '</span>'
                     + '<span class="mp-tile-cat-l">' + esc(c.l) + '</span></span>';
                 }).join('') + '</div>'
             : '') + '</div>';
