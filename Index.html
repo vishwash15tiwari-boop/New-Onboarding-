@@ -5116,7 +5116,8 @@ var _mmExtraCache = {};       // keyed cache for expensive panel extra HTML (rat
 // Geo panel state: which region is expanded, hovered/selected state, cached rows.
 // _geo.cat: optional category filter ('metal'|'plastic'|null) set when chained from Volume/Funnel.
 var _geo = { key:null, region:null, state:null, hover:null, pKey:null, cat:null, aud:'seller', rows:{ seller:null, buyer:null }, loading:false };
-var _geoLblData = null; // last _geoAgg result — read by _geoAddStateLabels
+var _geoLblData = null;    // last _geoAgg result — read by _geoAddStateLabels
+var _geoTxnLoading = false; // guard: prevents duplicate background txn loads
 
 function _mmC(vs, vb, f) { return (vs && vs[f] || 0) + (vb && vb[f] || 0); }
 function _mmParseDate(s) {
@@ -6636,7 +6637,8 @@ function mmRenderFunnel() {
     + '<div class="mf-sum-tile ts-green"><div class="mf-sum-ic s-green">' + MM_IC.check + '</div>'
     + '<div class="mf-sum-txt"><div class="mf-sum-v">' + convPct + '%</div><div class="mf-sum-lbl">Onboarding Conversion Rate</div></div></div>'
     + '<div class="mf-sum-tile ts-blue mf-sum-clickable" onclick="openTatModal()" role="button" aria-label="Average TAT detail"><div class="mf-sum-ic s-blue">' + MM_IC.clock + '</div>'
-    + '<div class="mf-sum-txt"><div class="mf-sum-v">' + tatSumStr + '</div><div class="mf-sum-lbl">Average Time to Onboard</div></div></div>'
+    + '<div class="mf-sum-txt"><div class="mf-sum-v">' + tatSumStr + '</div><div class="mf-sum-lbl">Average Time to Onboard</div>'
+    + '<div style="font-size:9px;color:var(--blue);margin-top:6px;text-align:right;font-weight:600;letter-spacing:.02em;opacity:.85">Click for Details ›</div></div></div>'
     + '<div class="mf-sum-tile ts-amber"><div class="mf-sum-ic s-amber">' + MM_IC.draft + '</div>'
     + '<div class="mf-sum-txt"><div class="mf-sum-v">' + draftPct + '%</div><div class="mf-sum-lbl">Cases in Draft</div></div></div>'
     + '<div class="mf-sum-tile ts-red"><div class="mf-sum-ic s-red">' + MM_IC.x + '</div>'
@@ -6828,11 +6830,11 @@ function _mmGeoDetailHtml(id, by, swatchColor) {
         + ' onclick="' + cAct + '" onkeydown="if(event.key===\'Enter\'){' + cAct + '}">'
         + '<td>' + esc(dispCat(c)) + '</td>'
         + '<td>' + fmt(cnt) + '<span style="font-size:9px;font-weight:400;color:var(--txt3);margin-left:4px">(' + pct + '%)</span></td>'
-        + '<td style="font-size:9px;color:var(--txt3);white-space:nowrap">' + (txnMat !== null ? fmt(txnMat) + ' txn' : '—') + '</td>'
+        + '<td style="font-size:9px;color:var(--txt3);white-space:nowrap">' + (txnMat !== null ? fmt(txnMat) + ' transacted' : '—') + '</td>'
         + '</tr>';
     }).join('');
     var txnBadge = txnTotal !== null
-      ? '<span style="font-size:9px;font-weight:500;color:var(--txt3);margin-left:5px">(' + fmt(txnTotal) + ' txn)</span>'
+      ? '<span style="font-size:9px;font-weight:500;color:var(--txt3);margin-left:5px">(' + fmt(txnTotal) + ' transacted)</span>'
       : '';
     return '<div class="mgsd-section sec-' + aud + '">'
       + '<div class="mgsd-sec-hd mgsd-clk" role="button" tabindex="0"'
@@ -6908,7 +6910,7 @@ function _mmGeoFixedHtml() {
           var txnN = (_txnAI && _txnAI[a] && _txnAI[a].byMat && _txnAI[a].byMat[capK])
                      ? (_txnAI[a].byMat[capK].total || 0) : null;
           return '<td>' + fmt(onb)
-            + (txnN !== null ? '<div style="font-size:9px;color:var(--txt3);margin-top:1px;line-height:1.2">' + fmt(txnN) + ' txn</div>' : '')
+            + (txnN !== null ? '<div style="font-size:9px;color:var(--txt3);margin-top:1px;line-height:1.2">' + fmt(txnN) + ' transacted</div>' : '')
             + '</td>';
         }).join('')
       + '</tr>';
@@ -7083,6 +7085,7 @@ function mmRenderGeo() {
   }
   _geoAnimate = false;
   setTimeout(_geoAddStateLabels, 0);
+  setTimeout(_geoEnsureTxnData, 0);
 }
 function _geoAddStateLabels() {
   var svg = document.querySelector('.mg-svg');
@@ -7146,6 +7149,31 @@ function _geoAddStateLabels() {
       svg.appendChild(sub);
     }
   });
+}
+// Auto-load transaction data in the background when the Geo module is open and
+// _TXN hasn't been populated yet (user hasn't visited the Txn Distribution tab).
+// On success, refreshes the state detail panel + map labels with unique transactor counts.
+function _geoEnsureTxnData() {
+  if (_TXN || _geoTxnLoading) return;
+  _geoTxnLoading = true;
+  var f = { period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      _geoTxnLoading = false;
+      try {
+        var data = JSON.parse(res);
+        if (data && data.success) {
+          _TXN = data;
+          _geoAddStateLabels();
+          var fixedEl = document.getElementById('mg-state-fixed');
+          if (fixedEl) fixedEl.innerHTML = _mmGeoFixedHtml();
+          _mmGeoUpdateDetail(_geo.hover || _geo.state || null);
+        }
+      } catch (e) { /* silent — geo panel stays visible without txn data */ }
+    })
+    .withFailureHandler(function() { _geoTxnLoading = false; })
+    .getGeoTransactionData(JSON.stringify(f));
 }
 function _geoClearCat() { _geo.cat = null; _geoAnimate = true; mmRenderGeo(); }
 // Seller / Buyer map toggle — instant repaint; both datasets are already loaded.
