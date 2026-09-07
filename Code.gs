@@ -304,7 +304,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v17_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v18_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -394,7 +394,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v17_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v18_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -534,7 +534,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v17_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v18_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
@@ -1601,7 +1601,7 @@ function normalizeRows(raw, cfg) {
       _bs = _be ? parseDate(gv(row, idx, 'onboarding_created_date') || row[BUYER_TAT_COLS.start]) : null;
     }
 
-    var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || '').trim();
+    var gstin     = String(gv(row, idx, 'gst_number') || gv(row, idx, 'gstin') || gv(row, idx, 'gstin_number') || '').trim();
     var gstStatus = String(gv(row, idx, 'gstin_status') || gv(row, idx, 'gst_status') || '').toUpperCase();
     var txnRaw    = gv(row, idx, 'transaction_activation_status')
                  || gv(row, idx, 'transacted')
