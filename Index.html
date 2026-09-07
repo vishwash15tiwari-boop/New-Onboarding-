@@ -1831,7 +1831,112 @@ body.view-gst #vert-tabs-bar{display:none}
 /* map state default */
 .tdt-state{cursor:default;transition:opacity .15s}
 .tdt-state.has-data{cursor:pointer}
-.tdt-state.has-data:hover{opacity:.8}
+.tdt-state.has-data:hover{opacity:.85}
+.tdt-sel-state{stroke:#1d4ed8!important;stroke-width:2.5!important}
+/* ── Transaction Distribution redesign ── */
+.txn-page{display:flex;flex-direction:column;gap:16px;padding:18px 0 28px}
+.txn-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.txn-hdr-left{flex:1;min-width:220px}
+.txn-pg-title{font-size:22px;font-weight:750;color:var(--txt);letter-spacing:-.4px;line-height:1.2}
+.txn-pg-sub{font-size:12.5px;color:var(--txt3);margin-top:4px}
+.txn-hdr-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:2px}
+.txn-date-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:500;color:var(--txt2);cursor:default;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.txn-period-grp{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.txn-pd-btn{font-family:inherit;font-size:12px;font-weight:600;padding:7px 14px;border:none;border-right:1px solid var(--border);background:transparent;color:var(--txt2);cursor:pointer;transition:background .15s,color .15s;white-space:nowrap}
+.txn-pd-btn:last-child{border-right:none}
+.txn-pd-btn:hover{background:var(--bg2);color:var(--txt)}
+.txn-pd-btn.active{background:#dbeafe;color:#1d4ed8}
+/* 2-col main */
+.txn-main{display:grid;grid-template-columns:54fr 46fr;gap:14px;align-items:start}
+@media(max-width:840px){.txn-main{grid-template-columns:1fr}}
+/* Map panel */
+.txn-map-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.txn-map-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.txn-region-sel{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:var(--txt);cursor:pointer;user-select:none}
+.txn-region-ch{font-size:10px;color:var(--txt3)}
+.txn-map-hint{font-size:11.5px;color:var(--txt3)}
+.txn-map-inner-wrap{position:relative;overflow:hidden;border-radius:8px;background:var(--bg2)}
+.txn-map-inner-wrap svg{width:100%;height:auto;display:block}
+/* Zoom controls */
+.txn-zoom{position:absolute;left:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:4px;z-index:5}
+.txn-zoom-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--border);border-radius:7px;cursor:pointer;font-size:15px;font-weight:500;color:var(--txt2);box-shadow:0 1px 4px rgba(0,0,0,.09);transition:background .15s;line-height:1;font-family:inherit}
+.txn-zoom-btn:hover{background:var(--bg2)}
+/* Legend */
+.txn-legend-box{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.94);border:1px solid var(--border);border-radius:10px;padding:9px 12px;z-index:5}
+.txn-legend-title{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.txn-legend-grad{width:110px;height:8px;border-radius:4px;background:linear-gradient(90deg,#c8ede0 0%,#8fd4b8 30%,#4db89a 60%,#2e9c72 80%,#1a6650 100%)}
+.txn-legend-labels{display:flex;justify-content:space-between;margin-top:3px;width:110px}
+.txn-legend-lbl{font-size:9px;color:var(--txt3);font-weight:600}
+/* Tooltip */
+.txn-tt{position:absolute;z-index:20;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 13px;box-shadow:0 4px 18px rgba(0,0,0,.14);pointer-events:none;min-width:148px;max-width:200px}
+.txn-tt-name{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:3px}
+.txn-tt-n{font-size:12px;font-weight:600;color:var(--txt2)}
+.txn-tt-detail{font-size:11px;color:var(--txt3);margin-top:3px}
+/* Right analytics panel */
+.txn-analytics{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:16px}
+/* State hero */
+.txn-state-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.txn-state-name{font-size:19px;font-weight:750;color:var(--txt);letter-spacing:-.3px;line-height:1.2}
+.txn-total-block{text-align:right;flex-shrink:0}
+.txn-total-n{display:block;font-size:26px;font-weight:750;color:var(--txt);letter-spacing:-1.2px;line-height:1}
+.txn-total-lbl{font-size:11px;font-weight:600;color:var(--txt3);margin-top:2px}
+/* KPI cards */
+.txn-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:520px){.txn-kpi-row{grid-template-columns:repeat(2,1fr)}}
+.txn-kpi-card{border:1px solid var(--border);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:3px}
+.txn-kpi-ic{font-size:14px;line-height:1}
+.txn-kpi-n{font-size:18px;font-weight:750;letter-spacing:-.6px;font-variant-numeric:tabular-nums;color:var(--txt)}
+.txn-kpi-lbl{font-size:10.5px;font-weight:600;color:var(--txt3);line-height:1.3}
+.txn-kpi-pct{font-size:10.5px;font-weight:700;margin-top:1px}
+.txn-kpi-card.ck-green{background:#f0fdf4;border-color:#bbf7d0}.txn-kpi-card.ck-green .txn-kpi-n,.txn-kpi-card.ck-green .txn-kpi-pct{color:#15803d}
+.txn-kpi-card.ck-amber{background:#fffbeb;border-color:#fde68a}.txn-kpi-card.ck-amber .txn-kpi-n,.txn-kpi-card.ck-amber .txn-kpi-pct{color:#b45309}
+.txn-kpi-card.ck-red{background:#fff1f2;border-color:#fecdd3}.txn-kpi-card.ck-red .txn-kpi-n,.txn-kpi-card.ck-red .txn-kpi-pct{color:#be123c}
+.txn-kpi-card.ck-blue{background:#eff6ff;border-color:#bfdbfe}.txn-kpi-card.ck-blue .txn-kpi-n{color:#1d4ed8}
+/* Filters in right panel */
+.txn-filter-section{display:flex;flex-direction:column;gap:7px}
+.txn-filter-row2{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.txn-filter-lbl2{font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;min-width:52px;flex-shrink:0}
+.txn-fbtns{display:flex;gap:4px;flex-wrap:wrap}
+.txn-fb{font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);color:var(--txt2);cursor:pointer;transition:background .15s,border-color .15s,color .15s;white-space:nowrap}
+.txn-fb:hover{border-color:#3b82f6;color:#1d4ed8}
+.txn-fb.active{background:#dbeafe;border-color:#3b82f6;color:#1d4ed8}
+/* Breakdown table */
+.txn-breakdown{display:flex;flex-direction:column;gap:8px}
+.txn-bd-title{font-size:13px;font-weight:700;color:var(--txt)}
+.txn-tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+.txn-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:340px}
+.txn-tbl th{background:#f0f4ff;color:var(--txt2);font-weight:600;padding:9px 10px;text-align:left;border-bottom:1px solid var(--border);font-size:11.5px;white-space:nowrap}
+.txn-tbl th:nth-child(n+3){text-align:center}
+.txn-tbl td{padding:8px 10px;border-bottom:1px solid rgba(0,0,0,.05);color:var(--txt);vertical-align:middle}
+.txn-tbl td:nth-child(n+3){text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+.txn-tbl tr:last-child td{border-bottom:none}
+.txn-ent-cell{font-weight:700;color:var(--txt);font-size:11.5px;white-space:nowrap}
+.txn-mat-cell{color:var(--txt2);padding-left:16px!important;font-size:11.5px}
+.txn-sub-total td{background:#f8faff;font-weight:700}
+.txn-sub-total .txn-mat-cell{color:var(--txt);font-weight:700}
+.txn-grand-total td{background:#eef2ff;font-weight:700;border-top:2px solid #c7d2fe!important}
+.tc-green{color:#15803d!important}.tc-amber{color:#b45309!important}.tc-red{color:#be123c!important}
+/* All India Summary bar */
+.txn-ais{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 20px;box-shadow:0 1px 6px rgba(0,0,0,.06);flex-wrap:wrap}
+.txn-ais-title{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.txn-ais-ic{font-size:18px}
+.txn-ais-lbl{font-size:13px;font-weight:700;color:var(--txt);white-space:nowrap}
+.txn-ais-div{width:1px;height:40px;background:var(--border);flex-shrink:0}
+@media(max-width:580px){.txn-ais-div{display:none}}
+.txn-ais-metrics{display:flex;gap:20px;flex-wrap:wrap;flex:1}
+.txn-aim{display:flex;flex-direction:column;gap:2px}
+.txn-aim-n{font-size:18px;font-weight:750;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.txn-aim-lbl{font-size:11px;font-weight:600;color:var(--txt3)}
+.txn-aim-sub{font-size:10.5px;font-weight:500;color:var(--txt3)}
+.txn-aim.mc-green .txn-aim-n{color:#15803d}
+.txn-aim.mc-amber .txn-aim-n{color:#b45309}
+.txn-aim.mc-red   .txn-aim-n{color:#be123c}
+.txn-aim.mc-blue  .txn-aim-n{color:#1d4ed8}
+/* No state placeholder */
+.txn-no-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center;color:var(--txt3);gap:8px;flex:1}
+.txn-no-state-ic{font-size:32px;opacity:.5}
+.txn-no-state-msg{font-size:13.5px;font-weight:700;color:var(--txt2)}
+.txn-no-state-hint{font-size:12px;max-width:220px;line-height:1.5}
 
 /* ── Vertical context hero — lives inside the hero row ── */
 .vert-ctx-hdr{
@@ -3967,6 +4072,7 @@ function onPeriodSelect(val) {
   // triggers a full re-render, even if lastUpdated happens to match the prior call.
   _lastDashHash['combined'] = null;
   loadData();
+  if (currentView === 'txndist') { _TXN = null; renderTxnDist(); }
 }
 
 function onCustomDates() {
@@ -12025,35 +12131,57 @@ function mrExportCSV() {
 // ═══════════════════════════════════════════════════════════════
 // TRANSACTION DISTRIBUTION  (txndist view)
 // ═══════════════════════════════════════════════════════════════
-var _TXN = null;                          // last fetched data object
-var _tdtFilters = { ent:'All', mat:'All', status:'All' };
+var _TXN = null;
+var _tdtFilters  = { ent: 'All', mat: 'All', status: 'All' };
+var _tdtSelState = null;   // selected state ISO2 id
+var _tdtPeriodKey = null;  // period key when _TXN was fetched
+var _tdtZoom     = 1;
+
+function _tdtPKey() {
+  return JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+}
+
+function _tdtPeriodLabel() {
+  var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var now = new Date();
+  var fd = function(d) { return d.getDate() + ' ' + M[d.getMonth()] + ' ' + d.getFullYear(); };
+  if (currentPeriod === 'Today') return fd(now);
+  if (currentPeriod === 'MTD') return fd(new Date(now.getFullYear(), now.getMonth(), 1)) + ' – ' + fd(now);
+  if (currentPeriod === 'YTD') {
+    var fy = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+    return fd(new Date(fy, 3, 1)) + ' – ' + fd(now);
+  }
+  if (currentPeriod === 'Custom' && customStart && customEnd) return customStart + ' – ' + customEnd;
+  return 'All Time';
+}
 
 function renderTxnDistSkeleton() {
   var host = document.getElementById('tab-txndist');
   if (!host) return;
   host.style.display = '';
-  var skelCard = function(h) {
-    return '<div class="tdt-skel" style="height:' + h + 'px;width:100%;margin-bottom:12px"></div>';
+  var sk = function(h, w, r) {
+    return '<div class="tdt-skel" style="height:' + h + 'px;width:' + (w || '100%') + ';border-radius:' + (r || 12) + 'px;margin-bottom:0"></div>';
   };
-  host.innerHTML = '<div class="tdt-wrap">'
-    + '<div class="tdt-back-row">' + skelCard(30) + '</div>'
-    + skelCard(18)
-    + '<div style="display:flex;gap:8px">' + [0,0,0].map(function(){ return '<div class="tdt-skel" style="height:28px;width:90px"></div>'; }).join('') + '</div>'
-    + '<div class="tdt-body">'
-    +   '<div class="tdt-map-card">' + skelCard(360) + '</div>'
-    +   '<div class="tdt-right-panel">'
-    +     '<div class="tdt-kpi-grid">'
-    +       [0,0,0,0].map(function(){ return '<div class="tdt-skel" style="height:74px;border-radius:16px"></div>'; }).join('')
-    +     '</div>'
-    +     '<div class="tdt-state-list-card">' + [0,0,0,0,0].map(function(){ return skelCard(24); }).join('') + '</div>'
+  host.innerHTML = '<div class="txn-page">'
+    + '<div class="txn-hdr"><div>' + sk(26, '200px') + '<div style="margin-top:7px">' + sk(15, '300px') + '</div></div>'
+    + '<div style="display:flex;gap:8px">' + [100,70,70,80].map(function(w){ return sk(32, w + 'px', 8); }).join('') + '</div></div>'
+    + '<div class="txn-main">'
+    +   '<div class="txn-map-panel">' + sk(380) + '</div>'
+    +   '<div class="txn-analytics">'
+    +     sk(26, '55%') + '<div style="margin-top:10px"><div class="txn-kpi-row">'
+    +     [0,0,0,0].map(function(){ return sk(80); }).join('') + '</div></div>'
+    +     '<div style="margin-top:10px">' + [sk(20,'40%'),sk(20,'60%'),sk(20,'70%')].join('<div style="margin-bottom:7px"></div>') + '</div>'
+    +     '<div style="margin-top:12px">' + sk(200) + '</div>'
     +   '</div>'
     + '</div>'
-    + '<div class="tdt-summary">' + [0,0,0,0].map(function(){ return '<div class="tdt-skel" style="height:80px;border-radius:16px"></div>'; }).join('') + '</div>'
+    + '<div class="txn-ais">' + sk(60) + '</div>'
     + '</div>';
 }
 
 function loadTxnDistData() {
-  var filtersJson = JSON.stringify(_tdtFilters);
+  var pKey = _tdtPKey();
+  var f = { period: currentPeriod };
+  if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
   google.script.run
     .withSuccessHandler(function(res) {
       if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
@@ -12061,186 +12189,336 @@ function loadTxnDistData() {
         var data = JSON.parse(res);
         if (data.success) {
           _TXN = data;
+          _tdtPeriodKey = pKey;
           if (currentView === 'txndist') renderTxnDist();
-        } else {
-          _tdtShowError(data.error || 'No data returned.');
-        }
-      } catch (e) {
-        _tdtShowError('Parse error: ' + e.message);
-      }
+        } else { _tdtShowError(data.error || 'No data returned.'); }
+      } catch (e) { _tdtShowError('Parse error: ' + e.message); }
     })
     .withFailureHandler(function(err) {
       if (_isFirstLoad) { hideLoading(); _isFirstLoad = false; }
-      _tdtShowError((err && err.message) ? err.message : 'Server error loading transaction data.');
+      _tdtShowError((err && err.message) ? err.message : 'Server error.');
     })
-    .getGeoTransactionData(filtersJson);
+    .getGeoTransactionData(JSON.stringify(f));
 }
 
 function _tdtShowError(msg) {
   var host = document.getElementById('tab-txndist');
   if (!host) return;
-  host.innerHTML = '<div class="tdt-wrap"><div class="tdt-back-row">'
-    + '<button class="tdt-back-btn" onclick="switchView(\'onboarding\')">← Back to Dashboard</button></div>'
-    + '<div style="background:var(--tdt-card);border:1px solid var(--tdt-border);border-radius:20px;padding:48px 24px;text-align:center;box-shadow:var(--tdt-shadow-sm)">'
-    + '<div style="color:var(--tdt-red);font-weight:700;font-size:15px;margin-bottom:8px">⚠ Could not load Transaction Distribution</div>'
-    + '<div style="color:var(--tdt-ink2);margin-bottom:18px">' + esc(msg) + '</div>'
-    + '<button onclick="loadTxnDistData()" style="padding:9px 22px;border-radius:999px;border:none;background:var(--tdt-blue);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">↻ Retry</button>'
+  host.innerHTML = '<div class="txn-page"><div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:48px 24px;text-align:center">'
+    + '<div style="color:#be123c;font-weight:700;font-size:15px;margin-bottom:8px">Could not load Transaction Distribution</div>'
+    + '<div style="color:var(--txt2);margin-bottom:18px">' + esc(msg) + '</div>'
+    + '<button onclick="loadTxnDistData()" style="padding:9px 22px;border-radius:999px;border:none;background:#005dff;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Retry</button>'
     + '</div></div>';
 }
 
-function _tdtAgg(stateMap, filters) {
-  var ent = filters.ent, mat = filters.mat, status = filters.status;
-  var out = {};
-  Object.keys(stateMap).forEach(function(id) {
-    var s = stateMap[id];
-    var src;
+function _tdtStateStats(stData, ent, mat, status) {
+  if (!stData) return { c: 0, p: 0, f: 0, t: 0 };
+  var auds = ent === 'Sellers' ? ['seller'] : ent === 'Buyers' ? ['buyer'] : ['seller', 'buyer'];
+  var c = 0, p = 0, f = 0;
+  auds.forEach(function(ak) {
+    var ad = stData[ak] || {};
     if (mat !== 'All') {
-      src = (s.byMat && s.byMat[mat]) ? s.byMat[mat] : { completed:0, pending:0, failed:0, total:0 };
+      var bm = (ad.byMat && ad.byMat[mat]) ? ad.byMat[mat] : {};
+      c += bm.completed || 0; p += bm.pending || 0; f += bm.failed || 0;
     } else {
-      src = s;
+      c += ad.completed || 0; p += ad.pending || 0; f += ad.failed || 0;
     }
-    var c = src.completed || 0, p = src.pending || 0, f = src.failed || 0;
-    if (ent === 'Seller') { var r = s; c = Math.round(c * (r.seller||0) / (r.total||1)); p = Math.round(p * (r.seller||0) / (r.total||1)); f = Math.round(f * (r.seller||0) / (r.total||1)); }
-    if (ent === 'Buyer')  { var r = s; c = Math.round(c * (r.buyer||0)  / (r.total||1)); p = Math.round(p * (r.buyer||0)  / (r.total||1)); f = Math.round(f * (r.buyer||0)  / (r.total||1)); }
-    var shown = (status === 'Completed') ? c : (status === 'Pending') ? p : (status === 'Failed') ? f : (c + p + f);
-    if (shown > 0) out[id] = { completed:c, pending:p, failed:f, total:c+p+f, shown:shown };
   });
-  return out;
+  if (status === 'Completed') { p = 0; f = 0; }
+  if (status === 'Pending')   { c = 0; f = 0; }
+  if (status === 'Failed')    { c = 0; p = 0; }
+  return { c: c, p: p, f: f, t: c + p + f };
 }
 
-function _tdtSetFilter(btn, val) {
-  var grp = btn.parentElement;
-  var key = grp.getAttribute('data-fkey');
-  if (!key) return;
+function _tdtFillColor(count, max) {
+  if (!count || !max) return '#e6f4ef';
+  var lvl = Math.log(count + 1) / Math.log(max + 1);
+  if (lvl < 0.2) return '#c8ede0';
+  if (lvl < 0.4) return '#8fd4b8';
+  if (lvl < 0.65) return '#4db89a';
+  if (lvl < 0.85) return '#2e9c72';
+  return '#1a6650';
+}
+
+function _tdtTTShow(evt, id) {
+  var tt = document.getElementById('tdt-tt');
+  if (!tt || !_TXN) return;
+  var wrap = document.getElementById('tdt-map-wrap');
+  if (!wrap) return;
+  var wr = wrap.getBoundingClientRect();
+  var x = Math.min(evt.clientX - wr.left + 14, wr.width - 180);
+  var y = Math.max(evt.clientY - wr.top - 78, 5);
+  var st = IN_STATES[id];
+  var sd = (_TXN.stateMap || {})[id];
+  var nm = st ? st.name : id;
+  var total = sd ? (sd.total || 0) : 0;
+  var parts = [];
+  if (sd) {
+    var b = sd.buyer ? (sd.buyer.total || 0) : 0;
+    var s = sd.seller ? (sd.seller.total || 0) : 0;
+    if (b > 0) parts.push('Buyers ' + fmt(b));
+    if (s > 0) parts.push('Sellers ' + fmt(s));
+    var bm = sd.byMat || {}, topM = '', topN = 0;
+    Object.keys(bm).forEach(function(m) {
+      var n = (bm[m].completed||0)+(bm[m].pending||0)+(bm[m].failed||0);
+      if (n > topN) { topN = n; topM = m; }
+    });
+    if (topM && topN > 0) parts.push(topM + ' ' + fmt(topN));
+  }
+  tt.innerHTML = '<div class="txn-tt-name">' + esc(nm) + '</div>'
+    + '<div class="txn-tt-n">' + fmt(total) + ' Transaction' + (total !== 1 ? 's' : '') + '</div>'
+    + (parts.length ? '<div class="txn-tt-detail">' + esc(parts.join(' | ')) + '</div>' : '');
+  tt.style.left = x + 'px';
+  tt.style.top  = y + 'px';
+  tt.style.display = '';
+}
+
+function _tdtTTHide() {
+  var tt = document.getElementById('tdt-tt');
+  if (tt) tt.style.display = 'none';
+}
+
+function _tdtSelectState(id) {
+  _tdtSelState = (_tdtSelState === id) ? null : id;
+  _tdtTTHide();
+  var svg = document.getElementById('tdt-map-svg');
+  if (svg) {
+    svg.querySelectorAll('.tdt-state').forEach(function(p) {
+      var sel = p.getAttribute('data-sid') === _tdtSelState;
+      p.style.stroke      = sel ? '#1d4ed8' : 'var(--card)';
+      p.style.strokeWidth = sel ? '2.5' : '1';
+      p.style.opacity     = '';
+    });
+  }
+  var rp = document.getElementById('tdt-right');
+  if (rp) rp.innerHTML = _tdtRightHtml();
+}
+
+function _tdtSetFilter(key, val) {
   _tdtFilters[key] = val;
-  if (currentView === 'txndist') renderTxnDist();
+  var rp = document.getElementById('tdt-right');
+  if (rp) rp.innerHTML = _tdtRightHtml();
+}
+
+function _tdtZoomMap(delta) {
+  _tdtZoom = Math.max(0.65, Math.min(2.6, _tdtZoom + delta));
+  var inner = document.getElementById('tdt-map-inner');
+  if (inner) { inner.style.transform = 'scale(' + _tdtZoom + ')'; inner.style.transformOrigin = 'center top'; }
+}
+
+function _tdtResetZoom() {
+  _tdtZoom = 1;
+  var inner = document.getElementById('tdt-map-inner');
+  if (inner) { inner.style.transform = ''; }
+}
+
+function _tdtBreakdownTable(stData) {
+  var f = _tdtFilters, ent = f.ent, mat = f.mat;
+  var MATS = mat === 'All' ? ['Plastic', 'Metal'] : [mat];
+  var AUDS = ent === 'All' ? [['seller','Sellers'],['buyer','Buyers']]
+           : ent === 'Sellers' ? [['seller','Sellers']] : [['buyer','Buyers']];
+  var cv = function(n, cls) {
+    return '<td class="' + cls + '" style="text-align:center;font-weight:600">'
+      + (n > 0 ? '<span>' + fmt(n) + '</span>' : '<span style="color:var(--txt3)">0</span>') + '</td>';
+  };
+  var rows = '', gc = 0, gp = 0, gf = 0;
+  AUDS.forEach(function(ap) {
+    var ak = ap[0], albl = ap[1];
+    var ad = (stData && stData[ak]) || {};
+    var abm = ad.byMat || {};
+    var first = true, ec = 0, ep = 0, ef = 0;
+    MATS.forEach(function(m) {
+      var md = abm[m] || {completed:0,pending:0,failed:0};
+      var mc = md.completed||0, mp = md.pending||0, mf = md.failed||0;
+      ec += mc; ep += mp; ef += mf;
+      rows += '<tr>'
+        + (first ? '<td class="txn-ent-cell" rowspan="' + (MATS.length + 1) + '">' + esc(albl) + '</td>' : '')
+        + '<td class="txn-mat-cell">' + esc(m) + '</td>'
+        + cv(mc, 'tc-green') + cv(mp, 'tc-amber') + cv(mf, 'tc-red')
+        + '<td style="text-align:center;font-weight:700">' + (mc+mp+mf > 0 ? fmt(mc+mp+mf) : '<span style="color:var(--txt3)">0</span>') + '</td>'
+        + '</tr>';
+      first = false;
+    });
+    rows += '<tr class="txn-sub-total"><td class="txn-mat-cell">Total</td>'
+      + cv(ec,'tc-green') + cv(ep,'tc-amber') + cv(ef,'tc-red')
+      + '<td style="text-align:center;font-weight:700">' + (ec+ep+ef > 0 ? fmt(ec+ep+ef) : '<span style="color:var(--txt3)">0</span>') + '</td></tr>';
+    gc += ec; gp += ep; gf += ef;
+  });
+  rows += '<tr class="txn-grand-total"><td colspan="2" style="font-weight:700">Total</td>'
+    + cv(gc,'tc-green') + cv(gp,'tc-amber') + cv(gf,'tc-red')
+    + '<td style="text-align:center;font-weight:700">' + (gc+gp+gf > 0 ? fmt(gc+gp+gf) : '<span style="color:var(--txt3)">0</span>') + '</td></tr>';
+  return '<div class="txn-tbl-wrap"><table class="txn-tbl"><thead><tr>'
+    + '<th>Entity</th><th>Material</th>'
+    + '<th style="color:#15803d">Completed</th>'
+    + '<th style="color:#b45309">Pending</th>'
+    + '<th style="color:#be123c">Failed</th>'
+    + '<th>Total</th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+function _tdtRightHtml() {
+  var f = _tdtFilters;
+  var sd = _tdtSelState ? ((_TXN && _TXN.stateMap) ? _TXN.stateMap[_tdtSelState] : null) : null;
+  var nm = _tdtSelState ? (IN_STATES[_tdtSelState] ? IN_STATES[_tdtSelState].name : _tdtSelState) : null;
+
+  if (!_tdtSelState) {
+    return '<div class="txn-no-state">'
+      + '<div class="txn-no-state-ic">&#128506;</div>'
+      + '<div class="txn-no-state-msg">Select a state</div>'
+      + '<div class="txn-no-state-hint">Click any state on the map to see detailed transaction data</div>'
+      + '</div>';
+  }
+
+  var st = _tdtStateStats(sd, f.ent, f.mat, f.status);
+  var tot = st.t;
+  var pct = function(n) { return tot > 0 ? Math.round(n / tot * 100) + '%' : '0%'; };
+
+  var kpis = [
+    { cls:'ck-green', ic:'&#10003;', n:st.c, lbl:'Completed',         pct:pct(st.c) },
+    { cls:'ck-amber', ic:'&#9203;',  n:st.p, lbl:'Pending',           pct:pct(st.p) },
+    { cls:'ck-red',   ic:'&#10007;', n:st.f, lbl:'Failed',            pct:pct(st.f) },
+    { cls:'ck-blue',  ic:'&#128203;',n:tot,  lbl:'Total Transactions', pct:null     }
+  ];
+  var kpiHtml = '<div class="txn-kpi-row">'
+    + kpis.map(function(k) {
+      return '<div class="txn-kpi-card ' + k.cls + '">'
+        + '<div class="txn-kpi-ic">' + k.ic + '</div>'
+        + '<div class="txn-kpi-n">' + fmt(k.n) + '</div>'
+        + '<div class="txn-kpi-lbl">' + k.lbl + '</div>'
+        + (k.pct ? '<div class="txn-kpi-pct">' + k.pct + '</div>' : '')
+        + '</div>';
+    }).join('')
+    + '</div>';
+
+  var mkF = function(fkey, opts, lbl) {
+    return '<div class="txn-filter-row2"><span class="txn-filter-lbl2">' + lbl + '</span><div class="txn-fbtns">'
+      + opts.map(function(v) {
+        return '<button class="txn-fb' + (f[fkey] === v ? ' active' : '') + '" onclick="_tdtSetFilter(\'' + fkey + '\',\'' + v + '\')">' + esc(v) + '</button>';
+      }).join('') + '</div></div>';
+  };
+  var filHtml = '<div class="txn-filter-section">'
+    + mkF('ent',    ['All','Sellers','Buyers'],             'Entity')
+    + mkF('mat',    ['All','Plastic','Metal'],              'Material')
+    + mkF('status', ['All','Completed','Pending','Failed'], 'Status')
+    + '</div>';
+
+  return '<div class="txn-state-hero">'
+    + '<div class="txn-state-name">' + esc(nm) + '</div>'
+    + '<div class="txn-total-block"><span class="txn-total-n">' + fmt(tot) + '</span><div class="txn-total-lbl">Total Transactions</div></div>'
+    + '</div>'
+    + kpiHtml + filHtml
+    + '<div class="txn-breakdown">'
+    + '<div class="txn-bd-title">Transaction Status by Entity and Material</div>'
+    + _tdtBreakdownTable(sd)
+    + '</div>';
 }
 
 function renderTxnDist() {
-  if (!_TXN) { renderTxnDistSkeleton(); loadTxnDistData(); return; }
+  var pKey = _tdtPKey();
+  if (!_TXN || _tdtPeriodKey !== pKey) {
+    _TXN = null; _tdtPeriodKey = null;
+    renderTxnDistSkeleton(); loadTxnDistData(); return;
+  }
   var host = document.getElementById('tab-txndist');
   if (!host) return;
+
   var stateMap = _TXN.stateMap || {};
-  var allIndia = _TXN.allIndia || {};
-  var f = _tdtFilters;
-  var agg = _tdtAgg(stateMap, f);
+  var ai = _TXN.allIndia || {};
+  var mapMax = 1;
+  Object.keys(stateMap).forEach(function(id) { if ((stateMap[id].total||0) > mapMax) mapMax = stateMap[id].total; });
 
-  // compute totals from agg
-  var totC = 0, totP = 0, totF = 0, grand = 0;
-  Object.keys(agg).forEach(function(id){ totC += agg[id].completed; totP += agg[id].pending; totF += agg[id].failed; grand += agg[id].total; });
-
-  // sort states by shown count
-  var sortedStates = Object.keys(agg).sort(function(a,b){ return (agg[b].shown||0) - (agg[a].shown||0); });
-  var maxShown = sortedStates.length ? (agg[sortedStates[0]].shown || 1) : 1;
-
-  // ── Map SVG paths ──
-  var statusColor = function(d) {
-    if (!d) return 'var(--mg-base)';
-    var shown = f.status === 'Completed' ? d.completed : f.status === 'Pending' ? d.pending : f.status === 'Failed' ? d.failed : d.total;
-    if (!shown) return 'var(--mg-base)';
-    if (f.status === 'Completed') return '#16a34a';
-    if (f.status === 'Pending')   return '#d97706';
-    if (f.status === 'Failed')    return '#dc2626';
-    // default: dominant status
-    if (d.completed >= d.pending && d.completed >= d.failed) return '#16a34a';
-    if (d.pending  >= d.completed && d.pending  >= d.failed) return '#d97706';
-    return '#dc2626';
-  };
+  // Map SVG
   var paths = Object.keys(IN_STATES).map(function(id) {
-    var st = IN_STATES[id], d = agg[id];
-    var shown = d ? d.shown : 0;
-    var fill, op;
-    if (shown > 0) {
-      fill = statusColor(d);
-      op   = (0.25 + 0.55 * (shown / maxShown)).toFixed(3);
-    } else {
-      fill = 'var(--mg-base)'; op = '1';
-    }
-    var cls = 'tdt-state' + (shown > 0 ? ' has-data' : '');
-    var tip = (shown > 0)
-      ? st.name + ': ' + fmt(d.completed) + ' done · ' + fmt(d.pending) + ' pending · ' + fmt(d.failed) + ' failed'
-      : st.name + ': no data';
-    return '<path class="' + cls + '" d="' + st.d + '" fill="' + fill + '" fill-opacity="' + op
-      + '" stroke="var(--card)" stroke-width="1"><title>' + esc(tip) + '</title></path>';
+    var st = IN_STATES[id];
+    var sd = stateMap[id];
+    var total = sd ? (sd.total || 0) : 0;
+    var isSel = id === _tdtSelState;
+    return '<path class="tdt-state' + (total > 0 ? ' has-data' : '') + '"'
+      + ' data-sid="' + id + '"'
+      + ' d="' + st.d + '"'
+      + ' fill="' + _tdtFillColor(total, mapMax) + '"'
+      + ' stroke="' + (isSel ? '#1d4ed8' : 'var(--card)') + '"'
+      + ' stroke-width="' + (isSel ? '2.5' : '1') + '"'
+      + ' onclick="_tdtSelectState(\'' + id + '\')"'
+      + ' onmouseenter="_tdtTTShow(event,\'' + id + '\')"'
+      + ' onmouseleave="_tdtTTHide()">'
+      + '<title>' + esc(st.name) + (total ? ': ' + fmt(total) + ' transactions' : ': no data') + '</title>'
+      + '</path>';
   }).join('');
 
-  // ── Legend ──
-  var legend = (f.status === 'All')
-    ? '<div class="tdt-map-legend">'
-      + '<span class="tdt-leg-item"><span class="tdt-leg-dot" style="background:#16a34a"></span>Completed</span>'
-      + '<span class="tdt-leg-item"><span class="tdt-leg-dot" style="background:#d97706"></span>Pending</span>'
-      + '<span class="tdt-leg-item"><span class="tdt-leg-dot" style="background:#dc2626"></span>Failed</span>'
-      + '</div>'
-    : '';
+  // Period controls
+  var perBtns = [['Today','Today'],['MTD','MTD'],['YTD','YTD'],['All','All Time']].map(function(p) {
+    return '<button class="txn-pd-btn' + (currentPeriod === p[0] ? ' active' : '') + '" onclick="onPeriodSelect(\'' + p[0] + '\')">' + p[1] + '</button>';
+  }).join('');
 
-  // ── Filter chips ──
-  var mkGrp = function(fkey, values, colors) {
-    var cur = _tdtFilters[fkey];
-    return '<div class="tdt-filter-grp" data-fkey="' + fkey + '">'
-      + '<span class="tdt-filter-lbl">' + (fkey === 'ent' ? 'Entity' : fkey === 'mat' ? 'Material' : 'Status') + '</span>'
-      + values.map(function(v, i){
-          var active = cur === v;
-          var col = colors[i];
-          var cls = 'tdt-chip' + (active ? (' active' + (col ? '-' + col : '')) : '');
-          return '<button class="' + cls + '" onclick="_tdtSetFilter(this,\'' + v + '\')">' + esc(v) + '</button>';
-        }).join('')
-      + '</div>';
-  };
-  var filtersHtml = '<div class="tdt-filters">'
-    + mkGrp('ent',    ['All','Seller','Buyer'],             [null, null, null])
-    + mkGrp('mat',    ['All','Metal','Plastic'],             [null, null, null])
-    + mkGrp('status', ['All','Completed','Pending','Failed'],[null,'green','amber','red'])
-    + '</div>';
-
-  // ── State list ──
-  var stateRows = sortedStates.slice(0, 20).map(function(id) {
-    var d = agg[id], nm = IN_STATES[id] ? IN_STATES[id].name : id;
-    var barPct = (d.shown / maxShown * 100).toFixed(1);
-    return '<div class="tdt-sl-row">'
-      + '<span class="tdt-sl-name" title="' + esc(nm) + '">' + esc(nm) + '</span>'
-      + '<div class="tdt-sl-bar-wrap"><div class="tdt-sl-bar" style="width:' + barPct + '%"></div></div>'
-      + '<span class="tdt-sl-n">' + fmt(d.shown) + '</span>'
+  // All India Summary
+  var aiTot = ai.total || 0;
+  var aiPct = function(n) { return aiTot > 0 ? Math.round(n / aiTot * 100) : 0; };
+  var sumMetrics = [
+    { cls:'mc-green', n:ai.completed||0, lbl:'Completed',          sub:aiPct(ai.completed||0)+'% of total transactions' },
+    { cls:'mc-amber', n:ai.pending||0,   lbl:'Pending',            sub:aiPct(ai.pending||0)+'% of total transactions' },
+    { cls:'mc-red',   n:ai.failed||0,    lbl:'Failed',             sub:aiPct(ai.failed||0)+'% of total transactions' },
+    { cls:'mc-blue',  n:aiTot,            lbl:'Total Transactions', sub:'100%' }
+  ].map(function(m) {
+    return '<div class="txn-aim ' + m.cls + '">'
+      + '<span class="txn-aim-n">' + fmt(m.n) + '</span>'
+      + '<span class="txn-aim-lbl">' + m.lbl + '</span>'
+      + '<span class="txn-aim-sub">' + m.sub + '</span>'
       + '</div>';
   }).join('');
 
-  // ── KPI cards ──
-  var convPct = grand ? ((totC / grand) * 100).toFixed(1) : '0';
-  var kpiCards = '<div class="tdt-kpi-grid">'
-    + '<div class="tdt-kpi"><div class="tdt-kpi-val">' + fmt(grand) + '</div><div class="tdt-kpi-lbl">Total Transactions</div></div>'
-    + '<div class="tdt-kpi green"><div class="tdt-kpi-val">' + fmt(totC) + '</div><div class="tdt-kpi-lbl">Completed</div></div>'
-    + '<div class="tdt-kpi amber"><div class="tdt-kpi-val">' + fmt(totP) + '</div><div class="tdt-kpi-lbl">Pending</div></div>'
-    + '<div class="tdt-kpi red"><div class="tdt-kpi-val">' + fmt(totF) + '</div><div class="tdt-kpi-lbl">Failed</div></div>'
-    + '</div>';
-
-  // ── Summary tiles ──
-  var sellerTot = 0, buyerTot = 0;
-  Object.keys(stateMap).forEach(function(id){ sellerTot += stateMap[id].seller||0; buyerTot += stateMap[id].buyer||0; });
-  var summaryHtml = '<div class="tdt-summary">'
-    + '<div class="tdt-sum-tile"><div class="tdt-sum-val">' + fmt(grand) + '</div><div class="tdt-sum-lbl">Total Transactions</div><div class="tdt-sum-sub">Across all states</div></div>'
-    + '<div class="tdt-sum-tile"><div class="tdt-sum-val" style="color:var(--tdt-green)">' + convPct + '%</div><div class="tdt-sum-lbl">Completion Rate</div><div class="tdt-sum-sub">' + fmt(totC) + ' of ' + fmt(grand) + '</div></div>'
-    + '<div class="tdt-sum-tile"><div class="tdt-sum-val">' + fmt(sellerTot) + '</div><div class="tdt-sum-lbl">Seller Transactions</div><div class="tdt-sum-sub">Onboarded sellers</div></div>'
-    + '<div class="tdt-sum-tile"><div class="tdt-sum-val">' + fmt(buyerTot) + '</div><div class="tdt-sum-lbl">Buyer Transactions</div><div class="tdt-sum-sub">Onboarded buyers</div></div>'
-    + '</div>';
-
-  host.innerHTML = '<div class="tdt-wrap">'
-    + '<div class="tdt-back-row"><button class="tdt-back-btn" onclick="switchView(\'onboarding\')">← Back to Dashboard</button>'
-    + '<span style="font-size:11px;color:var(--tdt-ink3)">' + Object.keys(agg).length + ' state(s) with data</span></div>'
-    + '<div class="tdt-title">Transaction Distribution</div>'
-    + filtersHtml
-    + '<div class="tdt-body">'
-    +   '<div class="tdt-map-card">'
-    +     '<div class="tdt-map-hdr"><span class="tdt-map-title">State-wise Distribution</span>' + legend + '</div>'
-    +     '<div class="tdt-map-svg-wrap"><svg viewBox="0 0 1000 1100" aria-label="India map — transaction distribution">' + paths + '</svg></div>'
+  host.innerHTML = '<div class="txn-page">'
+    // Header
+    + '<div class="txn-hdr">'
+    +   '<div class="txn-hdr-left">'
+    +     '<div class="txn-pg-title">Transaction Distribution</div>'
+    +     '<div class="txn-pg-sub">Track transaction outcomes across geography, entity and material.</div>'
     +   '</div>'
-    +   '<div class="tdt-right-panel">'
-    +     kpiCards
-    +     '<div class="tdt-state-list-card">'
-    +       '<div class="tdt-sl-hdr">Top States</div>'
-    +       (stateRows || '<div style="color:var(--tdt-ink3);font-size:12px;padding:8px 0">No data for selected filters</div>')
-    +     '</div>'
+    +   '<div class="txn-hdr-right">'
+    +     '<div class="txn-date-pill"><span>&#128197;</span><span>' + esc(_tdtPeriodLabel()) + '</span><span style="font-size:10px;color:var(--txt3)">&#9660;</span></div>'
+    +     '<div class="txn-period-grp">' + perBtns + '</div>'
     +   '</div>'
     + '</div>'
-    + summaryHtml
+    // Main 2-col
+    + '<div class="txn-main">'
+    //   Left: Map
+    +   '<div class="txn-map-panel">'
+    +     '<div class="txn-map-top">'
+    +       '<div class="txn-region-sel">All India <span class="txn-region-ch">&#9660;</span></div>'
+    +       '<span class="txn-map-hint">Select a state to view detailed transaction data</span>'
+    +     '</div>'
+    +     '<div class="txn-map-inner-wrap" id="tdt-map-wrap">'
+    +       '<div id="tdt-map-inner">'
+    +         '<svg id="tdt-map-svg" viewBox="0 0 1000 1100" aria-label="India transaction map">' + paths + '</svg>'
+    +       '</div>'
+    +       '<div class="txn-zoom">'
+    +         '<button class="txn-zoom-btn" onclick="_tdtZoomMap(.3)" title="Zoom in">+</button>'
+    +         '<button class="txn-zoom-btn" onclick="_tdtZoomMap(-.3)" title="Zoom out">&#8722;</button>'
+    +         '<button class="txn-zoom-btn" onclick="_tdtResetZoom()" title="Reset" style="font-size:12px">&#9711;</button>'
+    +       '</div>'
+    +       '<div id="tdt-tt" class="txn-tt" style="display:none"></div>'
+    +       '<div class="txn-legend-box">'
+    +         '<div class="txn-legend-title">Transactions</div>'
+    +         '<div class="txn-legend-grad"></div>'
+    +         '<div class="txn-legend-labels">'
+    +           '<span class="txn-legend-lbl">0</span>'
+    +           '<span class="txn-legend-lbl">1–10</span>'
+    +           '<span class="txn-legend-lbl">11–50</span>'
+    +           '<span class="txn-legend-lbl">51–200</span>'
+    +           '<span class="txn-legend-lbl">&gt;200</span>'
+    +         '</div>'
+    +       '</div>'
+    +     '</div>'
+    +   '</div>'
+    //   Right: Analytics panel
+    +   '<div class="txn-analytics" id="tdt-right">' + _tdtRightHtml() + '</div>'
+    + '</div>'
+    // All India Summary
+    + '<div class="txn-ais">'
+    +   '<div class="txn-ais-title"><span class="txn-ais-ic">&#128202;</span><span class="txn-ais-lbl">All India Summary</span></div>'
+    +   '<div class="txn-ais-div"></div>'
+    +   '<div class="txn-ais-metrics">' + sumMetrics + '</div>'
+    + '</div>'
     + '</div>';
 }
 </script>

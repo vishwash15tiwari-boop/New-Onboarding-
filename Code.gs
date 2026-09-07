@@ -449,7 +449,7 @@ function getVerticalRows(vertKey, filtersJson) {
 function getGeoTransactionData(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
-    var cacheKey = 'geo_txn_v1_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
+    var cacheKey = 'geo_txn_v2_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
                                                      f.audience||'all', f.category||'all']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -492,12 +492,19 @@ function getGeoTransactionData(filtersJson) {
         st[aud][sg]++; st[aud].total++;
         if (!st.byMat[cat]) st.byMat[cat] = {completed:0,pending:0,failed:0};
         st.byMat[cat][sg]++;
+        // entity × material breakdown for the right-panel table
+        if (!st[aud].byMat) st[aud].byMat = {};
+        if (!st[aud].byMat[cat]) st[aud].byMat[cat] = {completed:0,pending:0,failed:0};
+        st[aud].byMat[cat][sg]++;
 
         // All-India bucket
         ai[sg]++; ai.total++;
         ai[aud][sg]++; ai[aud].total++;
         if (!ai.byMat[cat]) ai.byMat[cat] = {completed:0,pending:0,failed:0,total:0};
         ai.byMat[cat][sg]++; ai.byMat[cat].total++;
+        if (!ai[aud].byMat) ai[aud].byMat = {};
+        if (!ai[aud].byMat[cat]) ai[aud].byMat[cat] = {completed:0,pending:0,failed:0,total:0};
+        ai[aud].byMat[cat][sg]++; ai[aud].byMat[cat].total++;
       });
     });
 
