@@ -3122,6 +3122,9 @@ body.view-gst #mm-crumbs{display:none}
 .mf-sum-tile.ts-blue .mf-sum-v{color:#2563eb}
 .mf-sum-tile.ts-amber .mf-sum-v{color:#d97706}
 .mf-sum-tile.ts-red .mf-sum-v{color:#dc2626}
+.mf-sum-tile.mf-sum-clickable{cursor:pointer;transition:box-shadow .15s,transform .15s}
+.mf-sum-tile.mf-sum-clickable:hover{box-shadow:0 4px 14px rgba(37,99,235,.15);transform:translateY(-2px)}
+.mf-sum-tile.mf-sum-clickable:active{transform:translateY(0);box-shadow:none}
 @media(max-width:700px){.mmdetail .mf-summary{grid-template-columns:repeat(2,1fr)}}
 
 /* ── Shared detail popup shell (.mfp): a small floating card appended to <body>,
@@ -6438,7 +6441,7 @@ function mmRenderFunnel() {
   html += '<div class="mf-summary">'
     + '<div class="mf-sum-tile ts-green"><div class="mf-sum-ic s-green">' + MM_IC.check + '</div>'
     + '<div class="mf-sum-txt"><div class="mf-sum-v">' + convPct + '%</div><div class="mf-sum-lbl">Onboarding Conversion Rate</div></div></div>'
-    + '<div class="mf-sum-tile ts-blue"><div class="mf-sum-ic s-blue">' + MM_IC.clock + '</div>'
+    + '<div class="mf-sum-tile ts-blue mf-sum-clickable" onclick="openTatModal()" role="button" aria-label="Average TAT detail"><div class="mf-sum-ic s-blue">' + MM_IC.clock + '</div>'
     + '<div class="mf-sum-txt"><div class="mf-sum-v">' + tatSumStr + '</div><div class="mf-sum-lbl">Average Time to Onboard</div></div></div>'
     + '<div class="mf-sum-tile ts-amber"><div class="mf-sum-ic s-amber">' + MM_IC.draft + '</div>'
     + '<div class="mf-sum-txt"><div class="mf-sum-v">' + draftPct + '%</div><div class="mf-sum-lbl">Cases in Draft</div></div></div>'
