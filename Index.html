@@ -12578,6 +12578,48 @@ function _tdtSelectState(id) {
   if (rp) rp.innerHTML = _tdtRightHtml();
 }
 
+function _tdtCompactN(n) {
+  if (n >= 10000) return Math.round(n / 1000) + 'k';
+  if (n >= 1000)  return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return String(n);
+}
+
+function _tdtAddStateLabels() {
+  var svg = document.getElementById('tdt-map-svg');
+  if (!svg || !_TXN) return;
+  var old = svg.querySelectorAll('.tdt-count-lbl');
+  for (var i = 0; i < old.length; i++) { old[i].parentNode.removeChild(old[i]); }
+  var stateMap = _TXN.stateMap || {};
+  var f = _tdtFilters;
+  svg.querySelectorAll('.tdt-state').forEach(function(path) {
+    var id = path.getAttribute('data-sid');
+    var sd = stateMap[id];
+    var cnt = sd ? _tdtStateStats(sd, f.ent, f.mat, f.status).t : 0;
+    if (!cnt) return;
+    var bbox;
+    try { bbox = path.getBBox(); } catch (e) { return; }
+    if (bbox.width < 28 || bbox.height < 18) return;
+    var cx = bbox.x + bbox.width / 2;
+    var cy = bbox.y + bbox.height / 2;
+    var fs = Math.min(20, Math.max(10, bbox.width * 0.13));
+    var fill = path.style.fill || path.getAttribute('fill') || '';
+    var isDark = (fill === '#60a5fa' || fill === '#2563eb' || fill === '#1e3a8a');
+    var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('class', 'tdt-count-lbl');
+    text.setAttribute('x', cx);
+    text.setAttribute('y', cy);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('font-size', fs);
+    text.setAttribute('font-weight', '700');
+    text.setAttribute('fill', isDark ? '#ffffff' : '#1e3a8a');
+    text.setAttribute('pointer-events', 'none');
+    text.setAttribute('font-family', 'inherit');
+    text.textContent = _tdtCompactN(cnt);
+    svg.appendChild(text);
+  });
+}
+
 function _tdtRefreshMapColors() {
   if (!_TXN || !_TXN.stateMap) return;
   var stateMap = _TXN.stateMap;
@@ -12595,6 +12637,7 @@ function _tdtRefreshMapColors() {
     var cnt = sd ? _tdtStateStats(sd, f.ent, f.mat, f.status).t : 0;
     path.style.fill = _tdtFillColor(cnt, mapMax);
   });
+  _tdtAddStateLabels();
 }
 
 function _tdtSetFilter(key, val) {
@@ -12839,6 +12882,7 @@ function renderTxnDist() {
     +   '<div class="txn-ais-metrics">' + sumMetrics + '</div>'
     + '</div>'
     + '</div>';
+  setTimeout(_tdtAddStateLabels, 0);
 }
 
 // ═══════════════════════════════════════════════════════════════
