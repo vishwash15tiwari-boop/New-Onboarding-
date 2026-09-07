@@ -2778,6 +2778,7 @@ function getQualityData() {
   // and a perfect 10 folds back into the top band).
   // Rows join to onboarded vendors by GSTIN first, then by id — same keys the rest
   // of the quality build uses. Vendors absent from this workbook stay unrated.
+  var _vsSheetTotal = 0;  // set from sheet recount; used for OSV denominator
   try {
     var vsd = qualityReadExternalSheet_(CONFIG.VENDOR_SCORE_SHEET_ID, CONFIG.VENDOR_SCORE_TAB);
     if (vsd.error) {
@@ -2916,15 +2917,17 @@ function getQualityData() {
         }
       });
 
-      // Recompute seller rating summary directly from the sheet rows.
+      // Recompute rating + OSV summary directly from the sheet rows.
       // The join above may miss vendors whose names don't normalise identically,
       // leading to under-counted totals. The vendor score sheet is already
       // curated to OMP sellers, so every named row is a valid seller entry.
       var _sr = { ws:0, rated:0, total:0, dist:[0,0,0,0,0] };
+      var _sosvC = 0, _sosvP = 0;
       vsd.rows.forEach(function(row) {
         var nm = vsNm >= 0 ? String(row[vsNm] || '').trim() : '';
         if (!nm) return;
         _sr.total++;
+        // Score
         var rawD2 = vsDenom >= 0 ? parseFloat(row[vsDenom]) : NaN;
         var rawS2 = vsScore >= 0 ? parseFloat(row[vsScore]) : NaN;
         var sv2 = !isNaN(rawD2) ? rawD2 / _qScDiv : !isNaN(rawS2) ? rawS2 / _qScDiv : NaN;
@@ -2933,11 +2936,31 @@ function getQualityData() {
           _sr.rated++;
           _sr.dist[Math.min(4, Math.max(0, Math.floor(sv2 / 2)))]++;
         }
+        // OSV Status
+        var osR2 = String(row[vsOsv] || '').trim();
+        var osU2 = osR2.toUpperCase().replace(/\s+/g, '_');
+        if (osU2 === 'CONSENT_ACCEPTED' || osU2 === 'YES' || osU2 === 'Y' || osU2 === 'TRUE'
+            || osU2 === 'DONE' || osU2 === 'COMPLETED' || osU2 === 'VERIFIED' || osU2 === 'POSITIVE') {
+          _sosvC++;
+        } else if (osU2 === 'CONSENT_PENDING' || osU2 === 'PENDING' || osU2 === 'IN_PROGRESS'
+                   || osU2 === 'INITIATED' || osU2 === 'ONGOING' || osU2 === 'PROCESSING'
+                   || osU2 === 'SCHEDULED' || osU2 === 'VISIT_SCHEDULED' || osU2 === 'PARTIAL') {
+          _sosvP++;
+        }
       });
-      // Override acc with the sheet-derived counts (more accurate than the join).
+      // Override acc with sheet-derived counts (more accurate than the join).
       acc['seller'].r   = _sr;
       acc['combined'].r = { ws: _sr.ws, rated: _sr.rated, total: _sr.total, dist: _sr.dist.slice() };
-      Logger.log('Vendor Score recount: total=' + _sr.total + ' rated=' + _sr.rated + ' unrated=' + (_sr.total - _sr.rated));
+      // OSV: override completed/pending with sheet-level counts.
+      acc['seller'].o.completed   = _sosvC;
+      acc['seller'].o.pending     = _sosvP;
+      acc['combined'].o.completed = _sosvC;
+      acc['combined'].o.pending   = _sosvP;
+      _vsSheetTotal = _sr.total;
+      Logger.log('Vendor Score recount: total=' + _sr.total + ' rated=' + _sr.rated
+        + ' unrated=' + (_sr.total - _sr.rated)
+        + ' osv_verified=' + _sosvC + ' osv_pending=' + _sosvP
+        + ' osv_not_initiated=' + Math.max(0, _sr.total - _sosvC - _sosvP));
     }
   } catch (e) { Logger.log('getQualityData vendor-score sheet: ' + e.message); }
 
@@ -3073,9 +3096,12 @@ function getQualityData() {
   // OSV denominator = OMP-onboarded count. Not-initiated is whatever remains
   // after the verified (completed) and in-progress (pending) vendors, so the
   // three bands always sum to the total.
+  // Use the sheet row count (_vsSheetTotal) when available — it's more accurate than
+  // ompTotal (which comes from _mb_sellers and may miss some vendors due to join misses).
+  var _osvDenomSeller = _vsSheetTotal > 0 ? _vsSheetTotal : ompTotal;
   ['seller', 'combined'].forEach(function(t) {
-    acc[t].o.total        = ompTotal;
-    acc[t].o.notInitiated = Math.max(0, ompTotal - acc[t].o.completed - acc[t].o.pending);
+    acc[t].o.total        = _osvDenomSeller;
+    acc[t].o.notInitiated = Math.max(0, _osvDenomSeller - acc[t].o.completed - acc[t].o.pending);
     acc[t].o.failed       = 0;
   });
 
@@ -3310,69 +3336,143 @@ function colLetter_(i) {
 // ─────────────────────────────────────────────────────────────
 function debugVendorScoreSheet() {
   var d = qualityReadExternalSheet_(CONFIG.VENDOR_SCORE_SHEET_ID, CONFIG.VENDOR_SCORE_TAB);
-  Logger.log('Vendor Score workbook: ' + CONFIG.VENDOR_SCORE_SHEET_ID);
+  Logger.log('════════════════════════════════════════════════');
+  Logger.log('Vendor Score Audit — ' + CONFIG.VENDOR_SCORE_SHEET_ID);
+  Logger.log('════════════════════════════════════════════════');
   if (d.error) { Logger.log('✗ could not read: ' + d.error); return; }
-  Logger.log('tab: "' + d.tab + '"   rows: ' + d.rows.length + '   columns: ' + d.headers.length);
-  Logger.log('\n── all columns ──');
+  Logger.log('Tab: "' + d.tab + '"  |  Data rows: ' + d.rows.length + '  |  Columns: ' + d.headers.length);
+
+  // ── 1. All column headers ──────────────────────────────────────
+  Logger.log('\n── Column Map ──');
   d.headers.forEach(function(h, i) {
-    Logger.log('  ' + colLetter_(i) + ' (idx ' + i + '): ' + (h || '(blank header)'));
+    Logger.log('  ' + colLetter_(i) + ' (' + i + '): ' + (h || '(blank)'));
   });
 
-  [['denominator', VS_COLS.denominator], ['osvStatus', VS_COLS.osvStatus]].forEach(function(p) {
-    var key = p[0], ci = p[1];
-    Logger.log('\n── configured ' + key + ' → column ' + colLetter_(ci) + ' ──');
-    if (ci >= d.headers.length) { Logger.log('  ✗ column out of range — sheet has only ' + d.headers.length + ' columns'); return; }
-    Logger.log('  header: ' + (d.headers[ci] || '(blank)'));
-    var vals = d.rows.slice(0, 8).map(function(r) { return JSON.stringify(r[ci]); });
-    Logger.log('  first 8 values: ' + vals.join(', '));
-    var nums = d.rows.map(function(r) { return parseFloat(r[ci]); }).filter(function(n) { return !isNaN(n); });
-    if (nums.length) {
-      Logger.log('  numeric in ' + nums.length + '/' + d.rows.length + ' rows · min ' + Math.min.apply(null, nums)
-        + ' · max ' + Math.max.apply(null, nums));
-    } else {
-      var distinct = {};
-      d.rows.forEach(function(r) { var v = String(r[ci] || '').trim(); if (v) distinct[v] = (distinct[v] || 0) + 1; });
-      Logger.log('  non-numeric · distinct values: ' + JSON.stringify(distinct).slice(0, 500));
-    }
+  // ── 2. Resolve columns by header name (same logic as getQualityData) ──
+  var nmC   = qualityFindCol_(d.headers, ['seller_name','name','vendor_name','business_name','company_name']);
+  var idC   = qualityFindCol_(d.headers, ['seller_id','buyer_id','id','vendor_id','vendorid','entity_id']);
+  var gstC  = qualityFindCol_(d.headers, ['gstin','gst_number','gst_no','gstin_number','gst']);
+  var scC   = qualityFindCol_(d.headers, ['score','vendor_score','vendor_scores','overall_score','average_score','final_score','rating_score']);
+  var denC  = qualityFindCol_(d.headers, ['denominator','score_out_of_10','rating_out_of_10','vendor_rating_score']);
+  var osvC  = qualityFindCol_(d.headers, ['osv_status','osv','on_site_verification','onsite_verification',
+                'osv_state','osv_consent_status','consent_status','verification_status','osv_verification_status']);
+  var catC  = qualityFindCol_(d.headers, ['business_category','category','vertical_category','cat','material','material_type']);
+
+  // Fallbacks (same as production code)
+  if (scC < 0 && denC < 0) scC = VS_COLS.denominator;
+  if (osvC < 0) osvC = VS_COLS.osvStatus;
+
+  Logger.log('\n── Resolved Columns ──');
+  Logger.log('  Name:     ' + (nmC  >= 0 ? colLetter_(nmC)  + ' (' + d.headers[nmC]  + ')' : '✗ NOT FOUND'));
+  Logger.log('  ID:       ' + (idC  >= 0 ? colLetter_(idC)  + ' (' + d.headers[idC]  + ')' : '✗ NOT FOUND'));
+  Logger.log('  GSTIN:    ' + (gstC >= 0 ? colLetter_(gstC) + ' (' + d.headers[gstC] + ')' : '✗ NOT FOUND'));
+  Logger.log('  Score:    ' + (scC  >= 0 ? colLetter_(scC)  + ' (' + (d.headers[scC]  || 'fallback/positional') + ')' : '✗'));
+  Logger.log('  Denom:    ' + (denC >= 0 ? colLetter_(denC) + ' (' + d.headers[denC] + ')' : '✗ NOT FOUND — Score col used'));
+  Logger.log('  OSV:      ' + (osvC >= 0 ? colLetter_(osvC) + ' (' + (d.headers[osvC] || 'fallback/positional') + ')' : '✗'));
+  Logger.log('  Category: ' + (catC >= 0 ? colLetter_(catC) + ' (' + d.headers[catC] + ')' : '✗ NOT FOUND'));
+
+  // ── 3. Score column — sample, range, scale detection ──────────
+  var effScC = denC >= 0 ? denC : scC;
+  var scNums = d.rows.map(function(r) { return parseFloat(r[effScC]); }).filter(function(n) { return !isNaN(n); });
+  var scMax  = scNums.length ? Math.max.apply(null, scNums) : 0;
+  var scMin  = scNums.length ? Math.min.apply(null, scNums) : 0;
+  var scDiv  = scMax > 10 ? 10 : 1;
+  Logger.log('\n── Score Column: ' + colLetter_(effScC) + ' ──');
+  Logger.log('  Numeric values: ' + scNums.length + ' / ' + d.rows.length
+    + '  |  Blank/non-numeric: ' + (d.rows.length - scNums.length));
+  Logger.log('  Raw range: min=' + scMin + '  max=' + scMax);
+  Logger.log('  Auto-detected scale: ' + (scMax > 10 ? '0-100 (÷10 applied)' : '0-10 (used as-is)'));
+  Logger.log('  Normalised range: min=' + (scMin/scDiv).toFixed(2) + '  max=' + (scMax/scDiv).toFixed(2));
+  // Distribution of normalised scores
+  var distLbls = ['0-2','2-4','4-6','6-8','8-10'];
+  var dist = [0,0,0,0,0];
+  var wsum = 0;
+  scNums.forEach(function(v) {
+    var sv = v / scDiv;
+    if (sv < 0 || sv > 10) return;
+    dist[Math.min(4, Math.max(0, Math.floor(sv/2)))]++;
+    wsum += sv;
   });
-
-  // The 0-100 "Score" column is what actually carries the rating (Denominator is
-  // usually blank), so surface its coverage explicitly.
-  var scoreC = qualityFindCol_(d.headers, ['score','vendor_score','vendor_scores','overall_score','average_score','final_score','rating_score']);
-  Logger.log('\n── score column (0-100, ÷10 for the out-of-10 UI) ──');
-  if (scoreC >= 0) {
-    var snums = d.rows.map(function(r) { return parseFloat(r[scoreC]); }).filter(function(n) { return !isNaN(n); });
-    Logger.log('  ' + colLetter_(scoreC) + ' (' + d.headers[scoreC] + ') · numeric in ' + snums.length + '/' + d.rows.length + ' rows'
-      + (snums.length ? ' · min ' + Math.min.apply(null, snums) + ' · max ' + Math.max.apply(null, snums) : ''));
-  } else { Logger.log('  ✗ no Score column found'); }
-
-  // Which columns could join these rows back to the dashboard's vendors.
-  var idC  = qualityFindCol_(d.headers, ['seller_id','buyer_id','id','vendor_id','vendorid','entity_id']);
-  var gstC = qualityFindCol_(d.headers, ['gstin','gst_number','gst_no','gstin_number','gst']);
-  var nmC  = qualityFindCol_(d.headers, ['seller_name','name','vendor_name','business_name','company_name']);
-  Logger.log('\n── join keys ──');
-  Logger.log('  id column:    ' + (idC  >= 0 ? colLetter_(idC)  + ' (' + d.headers[idC]  + ')' : '✗ NOT FOUND'));
-  Logger.log('  gstin column: ' + (gstC >= 0 ? colLetter_(gstC) + ' (' + d.headers[gstC] + ')' : '✗ NOT FOUND'));
-  Logger.log('  name column:  ' + (nmC  >= 0 ? colLetter_(nmC)  + ' (' + d.headers[nmC]  + ')' : '✗ NOT FOUND'));
-
-  // Actual match rate against onboarded OMP sellers — the number that decides whether
-  // the dashboard shows ratings. NAME is the join that lands (OMP sellers have no GSTIN).
-  var ompNameMap = buildOmpNameMap_('_mb_sellers', 'seller');
-  var nOnboarded = Object.keys(ompNameMap).length;
-  if (nmC >= 0 && nOnboarded > 0) {
-    var hit = 0;
-    d.rows.forEach(function(r) {
-      var k = _qNormName_(r[nmC]);
-      if (k && ompNameMap[k]) hit++;
-    });
-    Logger.log('\n── name join → onboarded OMP sellers ──');
-    Logger.log('  onboarded (COMPLETED) OMP sellers: ' + nOnboarded);
-    Logger.log('  vendor-score rows matched by name: ' + hit + '  ('
-      + (d.rows.length ? Math.round(hit / d.rows.length * 100) : 0) + '% of ' + d.rows.length + ' rows)');
-    if (hit === 0) Logger.log('  ⚠ zero name matches — check that _mb_sellers is populated and names align.');
-  } else if (idC < 0 && gstC < 0 && nmC < 0) {
-    Logger.log('  ⚠ no join key detected — rows cannot be matched to onboarded vendors.');
+  Logger.log('  Avg (normalised): ' + (scNums.length ? (wsum/scNums.length).toFixed(2) : '—') + ' / 10');
+  Logger.log('  Distribution:');
+  for (var bi = 4; bi >= 0; bi--) {
+    Logger.log('    ' + distLbls[bi] + ' : ' + dist[bi] + '  (' + (scNums.length ? Math.round(dist[bi]/scNums.length*100) : 0) + '%)');
   }
+  // First 10 sample values
+  var samples = d.rows.slice(0, 10).map(function(r) {
+    var raw = parseFloat(r[effScC]);
+    var nm  = nmC >= 0 ? String(r[nmC] || '').trim().slice(0, 30) : '?';
+    return nm + ': raw=' + (isNaN(raw) ? 'blank' : raw) + (isNaN(raw) ? '' : ' → ' + (raw/scDiv).toFixed(2));
+  });
+  Logger.log('  First 10 rows: ');
+  samples.forEach(function(s) { Logger.log('    ' + s); });
+
+  // ── 4. OSV Status column — value distribution ──────────────────
+  Logger.log('\n── OSV Status Column: ' + colLetter_(osvC) + ' ──');
+  var osvDist = {};
+  var osvVerified = 0, osvPending = 0, osvNone = 0;
+  d.rows.forEach(function(r) {
+    var nm = nmC >= 0 ? String(r[nmC] || '').trim() : '';
+    if (!nm) return;
+    var raw = String(r[osvC] || '').trim();
+    var up  = raw.toUpperCase().replace(/\s+/g,'_');
+    osvDist[raw || '(blank)'] = (osvDist[raw || '(blank)'] || 0) + 1;
+    if (up==='CONSENT_ACCEPTED'||up==='YES'||up==='Y'||up==='TRUE'||up==='DONE'||up==='COMPLETED'||up==='VERIFIED'||up==='POSITIVE') osvVerified++;
+    else if (up==='CONSENT_PENDING'||up==='PENDING'||up==='IN_PROGRESS'||up==='INITIATED'||up==='ONGOING'||up==='PROCESSING'||up==='SCHEDULED'||up==='VISIT_SCHEDULED'||up==='PARTIAL') osvPending++;
+    else osvNone++;
+  });
+  Logger.log('  Distinct values in sheet: ' + JSON.stringify(osvDist).slice(0, 800));
+  Logger.log('  Classified → Verified: ' + osvVerified + '  In-Progress: ' + osvPending + '  Not-Initiated: ' + osvNone);
+  Logger.log('  ⚠ Any "Unclassified" values will fall to Not-Initiated — check distinct values above.');
+
+  // ── 5. Named row count (total denominator) ─────────────────────
+  var namedRows = 0;
+  d.rows.forEach(function(r) { if (nmC >= 0 && String(r[nmC]||'').trim()) namedRows++; });
+  Logger.log('\n── Row Counts ──');
+  Logger.log('  Total sheet rows:  ' + d.rows.length);
+  Logger.log('  Named rows (total denominator): ' + namedRows);
+  Logger.log('  Scored rows: ' + scNums.length);
+  Logger.log('  Unscored (rated as blank): ' + (namedRows - scNums.length));
+
+  // ── 6. Category breakdown ──────────────────────────────────────
+  if (catC >= 0) {
+    var catCounts = {};
+    d.rows.forEach(function(r) {
+      var nm = nmC >= 0 ? String(r[nmC]||'').trim() : '';
+      if (!nm) return;
+      var c = String(r[catC]||'').trim() || '(blank)';
+      catCounts[c] = (catCounts[c] || 0) + 1;
+    });
+    Logger.log('\n── Category Breakdown ──');
+    Object.keys(catCounts).sort().forEach(function(c) { Logger.log('  ' + c + ': ' + catCounts[c]); });
+  }
+
+  // ── 7. Name-join match rate vs OMP sellers ─────────────────────
+  if (nmC >= 0) {
+    var ompNameMap = buildOmpNameMap_('_mb_sellers', 'seller');
+    var nOnboarded = Object.keys(ompNameMap).length;
+    var hit = 0, miss = [];
+    d.rows.forEach(function(r) {
+      var nm = String(r[nmC]||'').trim();
+      if (!nm) return;
+      var k = _qNormName_(nm);
+      if (k && ompNameMap[k]) hit++;
+      else if (miss.length < 10) miss.push(nm.slice(0,40));
+    });
+    Logger.log('\n── Name Join vs _mb_sellers OMP COMPLETED Sellers ──');
+    Logger.log('  _mb_sellers OMP COMPLETED: ' + nOnboarded);
+    Logger.log('  Vendor score rows: ' + d.rows.length + '  Matched: ' + hit + '  Unmatched: ' + (d.rows.length - hit));
+    if (miss.length) Logger.log('  First unmatched names: ' + JSON.stringify(miss));
+    Logger.log('  ⚠ Unmatched rows are excluded from the detail table (vendorRatings) but ARE');
+    Logger.log('    included in total/rated counts (the sheet-direct recount).');
+  }
+
+  Logger.log('\n════════════════════════════════════════════════');
+  Logger.log('EXPECTED ON DASHBOARD:');
+  Logger.log('  Rating: Rated ' + scNums.length + ' / Total ' + namedRows + ' / Unrated ' + (namedRows - scNums.length));
+  Logger.log('  OSV: Verified ' + osvVerified + ' / In-Progress ' + osvPending + ' / Not-Initiated ' + osvNone);
+  Logger.log('  Avg score: ' + (scNums.length ? (wsum/scNums.length).toFixed(1) : '—') + '/10');
+  Logger.log('════════════════════════════════════════════════');
 }
 
 // Read the "Doc Completeness" sheet (card 5674) and add per-vendor document
