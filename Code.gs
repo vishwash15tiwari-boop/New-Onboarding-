@@ -2810,10 +2810,24 @@ function getQualityData() {
       var vsScore = qualityFindCol_(vsh, ['score','vendor_score','vendor_scores','overall_score',
         'average_score','final_score','rating_score']);
       var vsDenom = qualityFindCol_(vsh, ['denominator','score_out_of_10','rating_out_of_10','vendor_rating_score']);
-      if (vsScore < 0 && vsDenom < 0) { vsScore = -1; vsDenom = VS_COLS.denominator; }
+      // When neither header matched, fall back to column H (user-confirmed score column).
+      if (vsScore < 0 && vsDenom < 0) vsScore = VS_COLS.denominator;
       var vsOsv = qualityFindCol_(vsh, ['osv_status','osv','on_site_verification','onsite_verification',
         'osv_state','osv_consent_status','consent_status','verification_status','osv_verification_status']);
       if (vsOsv < 0) vsOsv = VS_COLS.osvStatus;
+
+      // Auto-detect scale: pre-scan the active score column. If any value exceeds 10 the
+      // column is on the 0-100 scale (→ divide by 10); otherwise it is already 0-10 (→ use
+      // as-is). This makes the code robust to both "Score" (0-100) and "Denominator" (0-10)
+      // column naming conventions without relying on header guessing.
+      var _qScIdx = vsDenom >= 0 ? vsDenom : (vsScore >= 0 ? vsScore : VS_COLS.denominator);
+      var _qScMax = 0;
+      for (var _qsi = 0; _qsi < vsd.rows.length; _qsi++) {
+        var _qsv = parseFloat(vsd.rows[_qsi][_qScIdx]);
+        if (!isNaN(_qsv) && _qsv > _qScMax) _qScMax = _qsv;
+      }
+      var _qScDiv = (_qScMax > 10) ? 10 : 1;
+      Logger.log('Vendor Score (quality): col ' + colLetter_(_qScIdx) + ' ("' + (vsh[_qScIdx] || '') + '") max=' + _qScMax + ' divisor=' + _qScDiv);
 
       // GSTIN is a case-insensitive identifier; normalise (upper-case, strip spaces &
       // punctuation) on both sides so a formatting drift in the sheet can't break the join.
@@ -2834,14 +2848,12 @@ function getQualityData() {
         if (!omp) return;   // not an OMP-onboarded vendor — out of scope
         var aud = omp.aud === 'buyer' ? 'buyer' : 'seller';
 
-        // — Vendor Score (normalised to out of 10) —
-        // Prefer the 0-10 "Denominator" when the row actually has it; otherwise take the
-        // 0-100 "Score" and divide by 10 (Denominator = Score/10). A blank cell is unrated
-        // (NaN) and doesn't count; a literal 0 is a real score and lands in the 0-2 band.
+        // — Vendor Score (normalised to out of 10 using auto-detected divisor) —
+        // A blank cell is unrated (NaN); a literal 0 is a real score (0-2 band).
         var rawDenom = vsDenom >= 0 ? parseFloat(row[vsDenom]) : NaN;
         var rawScore = vsScore >= 0 ? parseFloat(row[vsScore]) : NaN;
-        var sv = !isNaN(rawDenom) ? rawDenom
-               : !isNaN(rawScore) ? rawScore / 10
+        var sv = !isNaN(rawDenom) ? rawDenom / _qScDiv
+               : !isNaN(rawScore) ? rawScore / _qScDiv
                : NaN;
         if (!isNaN(sv) && sv >= 0 && sv <= 10) {
           var band = Math.min(4, Math.max(0, Math.floor(sv / 2)));
@@ -3601,11 +3613,19 @@ function getOSVDashboardData() {
       if (vsOsv < 0) vsOsv = VS_COLS.osvStatus;
       var vsScr  = vfc_(['score','vendor_score','vendor_scores','overall_score','average_score','final_score','rating_score']);
       var vsDen  = vfc_(['denominator','score_out_of_10','rating_out_of_10','vendor_rating_score']);
-      if (vsScr < 0 && vsDen < 0) { vsScr = -1; vsDen = VS_COLS.denominator; }
+      if (vsScr < 0 && vsDen < 0) vsScr = VS_COLS.denominator;
       var vsAsg  = vfc_(['assigned_user','assigned_to','assignee','owner','sales_poc','poc',
                          'account_manager','rm','kam','executive','agent']);
       var vsUpd  = vfc_(['last_updated','last_updated_date','updated_at','updated_date',
                          'osv_date','osv_updated_date','consent_date','status_date']);
+      // Auto-detect scale — same logic as getQualityData.
+      var _osvScIdx = vsDen >= 0 ? vsDen : (vsScr >= 0 ? vsScr : VS_COLS.denominator);
+      var _osvScMax = 0;
+      for (var _oi = 0; _oi < vsd.rows.length; _oi++) {
+        var _ov = parseFloat(vsd.rows[_oi][_osvScIdx]);
+        if (!isNaN(_ov) && _ov > _osvScMax) _osvScMax = _ov;
+      }
+      var _osvDiv = (_osvScMax > 10) ? 10 : 1;
 
       vsd.rows.forEach(function(row) {
         var vid = vsId >= 0 ? String(row[vsId] || '').trim() : '';
@@ -3626,7 +3646,7 @@ function getOSVDashboardData() {
         : 'not_initiated';
         var rawDen = vsDen >= 0 ? parseFloat(row[vsDen]) : NaN;
         var rawScr = vsScr >= 0 ? parseFloat(row[vsScr]) : NaN;
-        var sv     = !isNaN(rawDen) ? rawDen : !isNaN(rawScr) ? rawScr / 10 : NaN;
+        var sv     = !isNaN(rawDen) ? rawDen / _osvDiv : !isNaN(rawScr) ? rawScr / _osvDiv : NaN;
         var score  = (!isNaN(sv) && sv >= 0 && sv <= 10) ? Math.round(sv * 10) / 10 : null;
         var cat    = (vsCat >= 0 ? String(row[vsCat] || '').trim() : '') || sel.category || '';
         var upd    = '';
