@@ -13377,9 +13377,10 @@ function _osvDrill(title, sub, sellers, opts) {
         + (showKyc ? '<td>' + kycBadge(r.kycStatus) + '</td>' : '')
         + (showSent ? '<td style="text-align:center">' + (r.osvSent ? '<span style="color:#15803d;font-weight:700">&#10003;</span>' : '<span style="color:#94a3b8">&#8212;</span>') + '</td>' : '')
         + (showTpv  ? '<td style="text-align:center">' + (r.thirdParty ? '<span style="color:#7c3aed;font-weight:700">&#10003;</span>' : '<span style="color:#94a3b8">&#8212;</span>') + '</td>' : '');
-      return '<tr><td>' + esc(r.name || '—') + '</td><td>' + esc(r.category || '—') + '</td><td>' + badge + '</td><td>' + score + '</td>' + tdExtra + '<td>' + esc(r.assignedTo || '—') + '</td><td>' + esc(r.updatedDate || '—') + '</td></tr>';
+      var gstDisp = r.gstin ? '<span style="font-family:monospace;font-size:10px">' + esc(r.gstin) + '</span>' : '<span style="color:var(--txt3)">—</span>';
+      return '<tr><td>' + esc(r.name || '—') + '</td><td>' + gstDisp + '</td><td>' + esc(r.category || '—') + '</td><td>' + badge + '</td><td>' + score + '</td>' + tdExtra + '<td>' + esc(r.assignedTo || '—') + '</td><td>' + esc(r.updatedDate || '—') + '</td></tr>';
     }).join('');
-    body.innerHTML = '<table class="osv-drill-tbl"><thead><tr><th>Seller Name</th><th>Category</th><th>OSV Status</th><th>Post-OSV Score</th>' + thExtra + '<th>Assigned To</th><th>Last Updated</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    body.innerHTML = '<table class="osv-drill-tbl"><thead><tr><th>Seller Name</th><th>GSTIN</th><th>Category</th><th>OSV Status</th><th>Post-OSV Score</th>' + thExtra + '<th>Assigned To</th><th>Last Updated</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
   ovl.classList.add('open');
 }
@@ -13506,7 +13507,7 @@ function renderOSVDash() {
   // ── Score distribution bars ──
   function buildDistCard(title, distData, barCls, avgScore) {
     if (!distData) distData = { avgScore:null, total:0, dist:[] };
-    var bands = ['8–10','6–8','4–6','2–4','0–2'];
+    var bands = ['0–2','2–4','4–6','6–8','8–10'];
     var avgDisp = distData.avgScore !== null ? 'Avg Score: ' + distData.avgScore + ' / 10' : 'No data';
     var rows = '';
     for (var i = 4; i >= 0; i--) {

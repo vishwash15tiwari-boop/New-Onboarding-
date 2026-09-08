@@ -3842,7 +3842,7 @@ function debugDocs() {
 // 7-stage OSV journey, status distribution and score analysis.
 // ═══════════════════════════════════════════════════════════════
 function getOSVDashboardData() {
-  var CACHE_KEY = 'osv_dash_v5';
+  var CACHE_KEY = 'osv_dash_v6';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -3869,6 +3869,8 @@ function getOSVDashboardData() {
       var catC = fc_(['business_category','category','vertical_category','cat']);
       var bvC  = fc_(['business_vertical','vertical','biz_vertical']);
       var stC  = fc_(['onboarding_status','status','onboard_status']);
+      var gstC = fc_(['gstin','gst_number','gst_no','gstin_number','gstin_no','gst',
+                      'vendor_gstin','seller_gstin','gst_identification_number']);
       var txC  = fc_(['transaction_activation_status','transacted','is_transacted',
                       'transaction_status','txn_status']);
       var gmvC = fc_(['transaction_value','txn_value','gmv','total_transaction_value',
@@ -3887,6 +3889,7 @@ function getOSVDashboardData() {
           onboardedSellers.push({
             id:             id,
             name:           nmC  >= 0 ? String(row[nmC]  || '').trim().slice(0, 60) : '',
+            gstin:          gstC >= 0 ? String(row[gstC] || '').trim().toUpperCase().slice(0, 20) : '',
             category:       catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
             hasTransaction: hasTxn
           });
@@ -4066,6 +4069,7 @@ function getOSVDashboardData() {
     return {
       name:           s.name,
       id:             s.id,
+      gstin:          s.gstin || '',
       osvStatus:      r ? r.osvStatus       : 'not_initiated',
       score:          r ? r.score           : null,
       preScore:       r ? (r.preScore !== undefined ? r.preScore : null) : null,
