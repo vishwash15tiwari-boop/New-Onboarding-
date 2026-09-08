@@ -385,9 +385,10 @@ select,input{font-family:inherit}
 .co-ok .co-num{color:var(--green,#1DC797)}
 .co-exc .co-num{color:var(--red,#F44336)}
 .co-tot .co-num{color:var(--txt)}
-.co-bar-wrap{flex:1;min-width:120px;position:relative;background:var(--border);border-radius:20px;height:8px;overflow:hidden}
-.co-bar-fill{position:absolute;left:0;top:0;height:100%;background:var(--green,#1DC797);border-radius:20px;transition:width .4s}
-.co-bar-pct{position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;color:var(--txt2);white-space:nowrap;margin-right:-48px}
+.co-bar-col{flex:1;min-width:120px;display:flex;flex-direction:column;gap:4px;justify-content:center}
+.co-bar-wrap{position:relative;background:var(--border);border-radius:20px;height:8px;overflow:hidden}
+.co-bar-fill{position:absolute;left:0;top:0;height:100%;background:var(--green,#1DC797);border-radius:20px}
+.co-bar-pct{font-size:10px;font-weight:600;color:var(--txt2);white-space:nowrap;text-align:right}
 .co-exc-note{margin-top:10px;font-size:10px;color:var(--txt3);line-height:1.6}
 .co-exc-list{display:inline-flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .co-exc-tag{background:rgba(244,67,54,.1);color:var(--red,#F44336);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600}
@@ -9838,8 +9839,8 @@ function renderCompliantOnboarding(wrap, d) {
     + '<div class="co-num">' + fmt(d.total) + '</div>'
     + '<div class="co-lbl">Total</div>'
     + '</div>'
-    + '<div class="co-bar-wrap">'
-    + '<div class="co-bar-fill" style="width:' + pct + '%"></div>'
+    + '<div class="co-bar-col">'
+    + '<div class="co-bar-wrap"><div class="co-bar-fill" style="width:' + pct + '%"></div></div>'
     + '<span class="co-bar-pct">' + pct + '% compliant</span>'
     + '</div>'
     + '</div>'
