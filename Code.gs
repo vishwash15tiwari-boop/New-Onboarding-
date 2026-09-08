@@ -76,6 +76,49 @@ var MB_GSTIN_COLS = {
   buyer:  11,  // Column L in _mb_buyers
 };
 
+// Per-execution GSTIN lookup cache.  Built once on first call, reused for every
+// subsequent normalizeRows call within the same server-side execution.
+var _gstinLookupCache_ = null;
+// Build id→GSTIN maps for sellers and buyers by reading _mb_sellers / _mb_buyers
+// from META_SHEET_ID directly.  This is the authoritative source regardless of
+// what the main data pipeline (Metabase API, fallback sheet) supplies.
+function _getGstinLookup_() {
+  if (_gstinLookupCache_) return _gstinLookupCache_;
+  var lkp = { seller: {}, buyer: {} };
+  if (!CONFIG.META_SHEET_ID) { _gstinLookupCache_ = lkp; return lkp; }
+  try {
+    var ss = SpreadsheetApp.openById(CONFIG.META_SHEET_ID);
+    var specs = [
+      { aud: 'seller', tab: '_mb_sellers', idCands: ['seller_id','id','vendor_id','entity_id'], gstDef: 6 },
+      { aud: 'buyer',  tab: '_mb_buyers',  idCands: ['buyer_id', 'id','vendor_id','entity_id'], gstDef: 11 }
+    ];
+    specs.forEach(function(sp) {
+      var sheet = ss.getSheetByName(sp.tab);
+      if (!sheet || sheet.getLastRow() < 2) return;
+      var cols = Math.min(sheet.getLastColumn(), 25);
+      var vals = sheet.getRange(1, 1, sheet.getLastRow(), cols).getValues();
+      var hdrs = vals[0].map(function(h) {
+        return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      });
+      var idIdx = -1, gstIdx = sp.gstDef;
+      hdrs.forEach(function(h, i) {
+        for (var c = 0; c < sp.idCands.length; c++) {
+          if (h === sp.idCands[c] && idIdx < 0) { idIdx = i; break; }
+        }
+        if (/^(gstin|gstin_number|gst_number|gst_no|gstin_no|gst)$/.test(h)) gstIdx = i;
+      });
+      if (idIdx < 0) return;
+      vals.slice(1).forEach(function(row) {
+        var id  = String(row[idIdx]  || '').trim();
+        var gst = String(row[gstIdx] || '').trim().toUpperCase();
+        if (id && gst && isValidGSTIN(gst)) lkp[sp.aud][id] = gst;
+      });
+    });
+  } catch (e) { Logger.log('_getGstinLookup_: ' + e.message); }
+  _gstinLookupCache_ = lkp;
+  return lkp;
+}
+
 // Candidate column names in the 5292 detail tab (headers are normalized to
 // lower_snake_case by readSheetObj_). First populated match wins per record.
 var TAT_COLS = {
@@ -279,7 +322,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v38_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v39_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -311,7 +354,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v20_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v21_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -328,21 +371,21 @@ function getDashboardData(filtersJson) {
 
 // Returns seller + buyer dashboard data in one call so the frontend can
 // render both pipelines side-by-side without two round trips.
-// Fast path: compose from individual dash_v38_ cache entries when both are warm
+// Fast path: compose from individual dash_v39_ cache entries when both are warm
 // (they are pre-warmed by syncAllOnboarding for every period). Only falls through
 // to the slow double-read when both individual caches are cold.
 function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v38_cmb_' + periodKey;
+    var cacheKey  = 'dash_v39_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v38_seller_' + periodKey;
-    var bIndKey = 'dash_v38_buyer_'  + periodKey;
+    var sIndKey = 'dash_v39_seller_' + periodKey;
+    var bIndKey = 'dash_v39_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -401,7 +444,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v20_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v21_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -584,7 +627,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v20_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v21_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
@@ -1662,15 +1705,23 @@ function normalizeRows(raw, cfg) {
     }
 
     var gstin     = String(firstVal_(row, idx, [
-      'gst_number', 'gstin', 'gstin_number', 'gst_no', 'gstin_no', 'gst'
-    ]) || '').trim();
-    // Positional fallback: if the header-based search found nothing, read the
-    // column the user confirmed carries GSTIN for each feed (col G for sellers,
-    // col L for buyers).  Only used when the header match returned empty so an
-    // explicit header always wins and this never silently clobbers real data.
+      'gst_number', 'gstin', 'gstin_number', 'gst_no', 'gstin_no', 'gst',
+      'gst_identification_number', 'gstin_no', 'vendor_gstin', 'seller_gstin', 'buyer_gstin'
+    ]) || '').trim().toUpperCase();
+    // Positional fallback: col G (index 6) for sellers, col L (index 11) for buyers.
     if (!gstin) {
       var _gfc = (cfg.audience === 'buyer') ? MB_GSTIN_COLS.buyer : MB_GSTIN_COLS.seller;
-      gstin = String(row[_gfc] || '').trim();
+      var _gfv = String(row[_gfc] || '').trim().toUpperCase();
+      if (_gfv) gstin = _gfv;
+    }
+    // Format-scan fallback: scan every column for a value that matches the GSTIN
+    // pattern — catches GSTIN stored under any column name in the feed.
+    if (!isValidGSTIN(gstin)) {
+      gstin = '';
+      for (var _gs = 0; _gs < row.length; _gs++) {
+        var _gv2 = String(row[_gs] || '').trim().toUpperCase();
+        if (isValidGSTIN(_gv2)) { gstin = _gv2; break; }
+      }
     }
     var gstStatus = String(firstVal_(row, idx, [
       'gstin_status', 'gst_status', 'gst_registration_status', 'registration_status'
@@ -1842,20 +1893,32 @@ function normalizeRows(raw, cfg) {
     if (r.vertical !== 'Others') { result.push(r); return; }
     var isTS = isTransportOrSupport_((r.category || '').toLowerCase(), (r.bizVertical || '').toLowerCase());
     if (isTS) {
-      // Transport / Support: keep every record in Others, unconditionally.
       result.push(r);
       return;
     }
-    // Non-transport Others rows also surface under Managed Marketplace…
     var mmRow = {};
     for (var k in r) mmRow[k] = r[k];
     mmRow.vertical = 'Marketplace';
     result.push(mmRow);
-    // …and remain in the Others catch-all only when recent enough.
     if (!r.createdDate || r.createdDate >= OTHERS_CUTOFF) {
       result.push(r);
     }
   });
+
+  // Layer 3: enrich GSTIN from META_SHEET_ID for any row where format-scan
+  // still found nothing.  This covers the case where the main data source
+  // (Metabase API / fallback sheet) simply doesn't carry the GSTIN column.
+  try {
+    var _gLkp = _getGstinLookup_();
+    var _audLkp = cfg.audience === 'buyer' ? _gLkp.buyer : _gLkp.seller;
+    result.forEach(function(r) {
+      if (!r.gstin && r.id && _audLkp[r.id]) {
+        r.gstin  = _audLkp[r.id];
+        r.hasGST = true;
+      }
+    });
+  } catch (e) { /* non-fatal — rows without GSTIN stay as-is */ }
+
   return result;
 }
 
