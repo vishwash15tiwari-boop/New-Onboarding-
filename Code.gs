@@ -456,7 +456,7 @@ function getVerticalRows(vertKey, filtersJson) {
 function getGeoTransactionData(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
-    var cacheKey = 'geo_txn_v3_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
+    var cacheKey = 'geo_txn_v4_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
                                                      f.audience||'all', f.category||'all']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -473,6 +473,10 @@ function getGeoTransactionData(filtersJson) {
                                seller:{completed:0,pending:0,failed:0,total:0,transacted:0},
                                buyer: {completed:0,pending:0,failed:0,total:0,transacted:0},
                                byMat:{} };
+
+    // Tracks unique transacted vendors to avoid double-counting rows where the
+    // same vendor appears in multiple verticals (e.g. OMP + Marketplace).
+    var seenTxn = {};
 
     var AUDS = [['seller', AUDIENCE_CFG.seller], ['buyer', AUDIENCE_CFG.buyer]];
     AUDS.forEach(function(pair) {
@@ -501,20 +505,47 @@ function getGeoTransactionData(filtersJson) {
         st.byMat[cat][sg]++; st.byMat[cat].total++;
         if (!st[aud].byMat[cat]) st[aud].byMat[cat] = {completed:0,pending:0,failed:0,total:0,transacted:0};
         st[aud].byMat[cat][sg]++; st[aud].byMat[cat].total++;
+
         if (r.hasTransacted) {
-          st[aud].byMat[cat].transacted++; st[aud].transacted++; st.transacted++;
+          var rid = String(r.id || r.name || '');
+          // Per state × audience × category — unique vendor
+          var k1 = sid + '\x00' + aud + '\x00' + cat + '\x00' + rid;
+          if (!seenTxn[k1]) {
+            seenTxn[k1] = true;
+            st[aud].byMat[cat].transacted++;
+          }
+          // Per state × audience — unique vendor (for section header badge)
+          var k2 = sid + '\x00' + aud + '\x00' + rid;
+          if (!seenTxn[k2]) {
+            seenTxn[k2] = true;
+            st[aud].transacted++;
+            st.transacted++;
+          }
         }
 
         // All-India bucket
         ai[sg]++; ai.total++;
         ai[aud][sg]++; ai[aud].total++;
-        if (r.hasTransacted) { ai.transacted++; ai[aud].transacted++; }
         if (!ai.byMat[cat]) ai.byMat[cat] = {completed:0,pending:0,failed:0,total:0,transacted:0};
         ai.byMat[cat][sg]++; ai.byMat[cat].total++;
         if (!ai[aud].byMat) ai[aud].byMat = {};
         if (!ai[aud].byMat[cat]) ai[aud].byMat[cat] = {completed:0,pending:0,failed:0,total:0,transacted:0};
         ai[aud].byMat[cat][sg]++; ai[aud].byMat[cat].total++;
-        if (r.hasTransacted) { ai[aud].byMat[cat].transacted++; }
+
+        if (r.hasTransacted) {
+          var rid2 = String(r.id || r.name || '');
+          var k3 = 'ai\x00' + aud + '\x00' + cat + '\x00' + rid2;
+          if (!seenTxn[k3]) {
+            seenTxn[k3] = true;
+            ai[aud].byMat[cat].transacted++;
+          }
+          var k4 = 'ai\x00' + aud + '\x00' + rid2;
+          if (!seenTxn[k4]) {
+            seenTxn[k4] = true;
+            ai[aud].transacted++;
+            ai.transacted++;
+          }
+        }
       });
     });
 
