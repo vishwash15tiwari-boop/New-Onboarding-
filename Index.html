@@ -7092,10 +7092,12 @@ function mmRenderGeo() {
   setTimeout(_geoEnsureTxnData, 0);
 }
 function _geoAddStateLabels() {
+  // Numbers show only in the click/hover detail panel — clear any stale labels.
   var svg = document.querySelector('.mg-svg');
-  if (!svg || !_geoLblData) return;
+  if (!svg) return;
   var old = svg.querySelectorAll('.mg-count-lbl');
   for (var i = 0; i < old.length; i++) { old[i].parentNode.removeChild(old[i]); }
+  return;
   var by = _geoLblData;
   var aud = (_geo.aud === 'buyer') ? 'buyer' : 'seller';
   Object.keys(IN_STATES).forEach(function(id) {
