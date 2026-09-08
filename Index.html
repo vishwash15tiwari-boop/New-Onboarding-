@@ -11713,7 +11713,11 @@ function openGeoStateRecords(stateId, aud, cat) {
       return true;
     });
   }
-  var srcRows = aud === 'buyer' ? (_ovnRows && _ovnRows.buyer) : vertRows;
+  // Prefer _ovnRows (full onboarding row cache); fall back to _geo.rows which is
+  // always loaded when the geo panel is open, so buyer clicks always produce records.
+  var srcRows = aud === 'buyer'
+    ? ((_ovnRows && _ovnRows.buyer) || (_geo.rows && _geo.rows.buyer))
+    : vertRows;
   _mrCtx = {
     module: 'geo', geoState: true, stateId: stateId, geoAud: aud, geoCat: cat || null,
     label: label, vertLabel: vertName, preStatus: null, forceSeller: aud !== 'buyer',
