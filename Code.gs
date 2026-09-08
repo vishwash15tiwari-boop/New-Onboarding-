@@ -279,7 +279,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v37_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v38_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -311,7 +311,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v19_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v20_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -328,21 +328,21 @@ function getDashboardData(filtersJson) {
 
 // Returns seller + buyer dashboard data in one call so the frontend can
 // render both pipelines side-by-side without two round trips.
-// Fast path: compose from individual dash_v37_ cache entries when both are warm
+// Fast path: compose from individual dash_v38_ cache entries when both are warm
 // (they are pre-warmed by syncAllOnboarding for every period). Only falls through
 // to the slow double-read when both individual caches are cold.
 function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v37_cmb_' + periodKey;
+    var cacheKey  = 'dash_v38_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v37_seller_' + periodKey;
-    var bIndKey = 'dash_v37_buyer_'  + periodKey;
+    var sIndKey = 'dash_v38_seller_' + periodKey;
+    var bIndKey = 'dash_v38_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -401,7 +401,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v19_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v20_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -456,8 +456,8 @@ function getVerticalRows(vertKey, filtersJson) {
 function getGeoTransactionData(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
-    var cacheKey = 'geo_txn_v4_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
-                                                     f.audience||'all', f.category||'all']);
+    var cacheKey = 'geo_txn_v5_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
+                                                     f.audience||'all', f.category||'all', f.vertical||'all']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -482,6 +482,8 @@ function getGeoTransactionData(filtersJson) {
     AUDS.forEach(function(pair) {
       var aud = pair[0], cfg = pair[1];
       var rows = normalizeRows(readData(aud), cfg);
+      // Filter to active vertical so transacted counts match the map's onboarded counts.
+      if (f.vertical) rows = rows.filter(function(r) { return r.vertical === f.vertical; });
       rows.forEach(function(r) {
         if (!applyDateFilter(r, f)) return;
         // Optional audience / category filter
@@ -582,7 +584,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v19_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v20_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
@@ -624,16 +626,26 @@ function readData(audience) {
   var fallbackId = AUDIENCE_CFG[audience] && AUDIENCE_CFG[audience].sheetId;
   var cardId     = CONFIG.MB_CARDS[audience];
 
-  // 1. Local synced sheet — no HTTP, fastest path
+  // 1. Local synced sheet — META_SHEET_ID is the canonical home for _mb_* tabs;
+  //    fall back to the active spreadsheet when running in the same workbook.
   if (localName) {
-    try {
-      var local = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(localName);
-      if (local && local.getLastRow() > 1) {
-        var d = readSheetObj_(local);
+    var _localSheet = null;
+    if (CONFIG.META_SHEET_ID) {
+      try {
+        var _metaSS = SpreadsheetApp.openById(CONFIG.META_SHEET_ID);
+        _localSheet = _metaSS.getSheetByName(localName);
+      } catch (e) { /* fall through to active spreadsheet */ }
+    }
+    if (!_localSheet) {
+      try { _localSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(localName); } catch (e) {}
+    }
+    if (_localSheet && _localSheet.getLastRow() > 1) {
+      try {
+        var d = readSheetObj_(_localSheet);
         d.source = 'metabase_sync';
         return d;
-      }
-    } catch (e) { /* fall through */ }
+      } catch (e) { /* fall through */ }
+    }
   }
 
   // 2. Metabase direct — live backend data when the local sync hasn't run yet
@@ -3742,7 +3754,7 @@ function debugDocs() {
 // 7-stage OSV journey, status distribution and score analysis.
 // ═══════════════════════════════════════════════════════════════
 function getOSVDashboardData() {
-  var CACHE_KEY = 'osv_dash_v4';
+  var CACHE_KEY = 'osv_dash_v5';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -3750,8 +3762,13 @@ function getOSVDashboardData() {
   // ── 1. Read _mb_sellers for OMP onboarded + transaction status ──
   var onboardedSellers = [];   // { id, name, category, hasTransaction }
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var selSheet = ss.getSheetByName('_mb_sellers');
+    var selSheet = null;
+    if (CONFIG.META_SHEET_ID) {
+      try { selSheet = SpreadsheetApp.openById(CONFIG.META_SHEET_ID).getSheetByName('_mb_sellers'); } catch (e) {}
+    }
+    if (!selSheet) {
+      try { selSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('_mb_sellers'); } catch (e) {}
+    }
     if (selSheet && selSheet.getLastRow() > 1) {
       var maxCol = Math.min(selSheet.getLastColumn(), 60);
       var vals   = selSheet.getRange(1, 1, selSheet.getLastRow(), maxCol).getValues();
@@ -4087,4 +4104,72 @@ function getOSVDashboardData() {
   var out = JSON.stringify(result);
   try { cache.put(CACHE_KEY, out, 300); } catch (e) {}
   return out;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMPLIANT ONBOARDING
+// Reads "Scoring & OSV Tracker" tab in the Vendor Score workbook.
+// Column G (index 6) = scoring done; blank = exception (scoring not done).
+// Returns: { total, compliant, exceptions, exceptionRows[] }
+// ═══════════════════════════════════════════════════════════════
+function getCompliantOnboardingData() {
+  var CACHE_KEY = 'compliant_onb_v1';
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get(CACHE_KEY);
+  if (hit) return hit;
+
+  try {
+    var ss    = SpreadsheetApp.openById(CONFIG.VENDOR_SCORE_SHEET_ID);
+    var sheet = ss.getSheetByName('Scoring & OSV Tracker');
+    if (!sheet || sheet.getLastRow() < 2) {
+      return JSON.stringify({ success: false, error: 'Sheet not found or empty' });
+    }
+
+    var lastCol = Math.min(sheet.getLastColumn(), 20);
+    var vals    = sheet.getRange(1, 1, sheet.getLastRow(), lastCol).getValues();
+    var hdrs    = vals[0].map(function(h) {
+      return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    });
+
+    // Column G is index 6 (0-based); also check headers for robustness.
+    var scoringColIdx = 6;
+    var nameColIdx    = -1;
+    var idColIdx      = -1;
+    hdrs.forEach(function(h, i) {
+      if (/score|scoring|kra_score|total_score|final_score/.test(h)) scoringColIdx = i;
+      if (/seller_name|vendor_name|name|business_name/.test(h) && nameColIdx < 0) nameColIdx = i;
+      if (/seller_id|vendor_id|id|entity_id/.test(h) && idColIdx < 0) idColIdx = i;
+    });
+
+    var total = 0, compliant = 0, exceptions = 0;
+    var exceptionRows = [];
+
+    vals.slice(1).forEach(function(row) {
+      if (!row.some(function(c) { return c !== '' && c !== null && c !== undefined; })) return;
+      total++;
+      var scoreVal  = scoringColIdx < row.length ? row[scoringColIdx] : '';
+      var isException = (scoreVal === '' || scoreVal === null || scoreVal === undefined);
+      if (isException) {
+        exceptions++;
+        var nm = nameColIdx >= 0 ? String(row[nameColIdx] || '').trim() : '';
+        var id = idColIdx  >= 0 ? String(row[idColIdx]  || '').trim() : '';
+        exceptionRows.push({ id: id, name: nm || id || ('Row ' + (total + 1)) });
+      } else {
+        compliant++;
+      }
+    });
+
+    var result = {
+      success:       true,
+      total:         total,
+      compliant:     compliant,
+      exceptions:    exceptions,
+      exceptionRows: exceptionRows
+    };
+    var out = JSON.stringify(result);
+    try { cache.put(CACHE_KEY, out, 600); } catch (e) {}
+    return out;
+  } catch (err) {
+    return JSON.stringify({ success: false, error: (err && err.message) ? err.message : String(err) });
+  }
 }

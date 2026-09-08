@@ -374,6 +374,24 @@ select,input{font-family:inherit}
 }
 .cc-cap::before{display:none}
 
+/* ── Compliant Onboarding ── */
+.co-loading{font-size:11px;color:var(--txt3);padding:8px 0}
+.co-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;margin-bottom:18px}
+.co-hd{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt2);margin-bottom:12px}
+.co-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.co-stat{display:flex;flex-direction:column;align-items:center;min-width:60px}
+.co-num{font-size:20px;font-weight:700;line-height:1.1}
+.co-lbl{font-size:10px;color:var(--txt3);font-weight:500;margin-top:2px}
+.co-ok .co-num{color:var(--green,#1DC797)}
+.co-exc .co-num{color:var(--red,#F44336)}
+.co-tot .co-num{color:var(--txt)}
+.co-bar-wrap{flex:1;min-width:120px;position:relative;background:var(--border);border-radius:20px;height:8px;overflow:hidden}
+.co-bar-fill{position:absolute;left:0;top:0;height:100%;background:var(--green,#1DC797);border-radius:20px;transition:width .4s}
+.co-bar-pct{position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;color:var(--txt2);white-space:nowrap;margin-right:-48px}
+.co-exc-note{margin-top:10px;font-size:10px;color:var(--txt3);line-height:1.6}
+.co-exc-list{display:inline-flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.co-exc-tag{background:rgba(244,67,54,.1);color:var(--red,#F44336);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600}
+
 /* Onboarded-by-category cards */
 .cc-cats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
 .cc-cat{
@@ -6724,7 +6742,11 @@ function _geoStateId(raw) {
 function mmGeoOpen(region) {
   var key = (typeof activeVertKey !== 'undefined' && activeVertKey) || selectedVert;
   var pKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
-  if (_geo.key !== key || _geo.pKey !== pKey) _geo.rows = { seller:null, buyer:null };
+  if (_geo.key !== key || _geo.pKey !== pKey) {
+    _geo.rows = { seller:null, buyer:null };
+    // Vertical changed — stale _TXN is for the old vertical; clear it so it reloads.
+    if (_geo.key !== key) { _TXN = null; _geoTxnLoading = false; }
+  }
   _geo.key = key; _geo.pKey = pKey; _geo.region = region;
   // Seed the active audience from already-loaded detail rows.
   var aud = (selectedAud === 'buyer') ? 'buyer' : 'seller';
@@ -7176,7 +7198,7 @@ function _geoAddStateLabels() {
 function _geoEnsureTxnData() {
   if (_TXN || _geoTxnLoading) return;
   _geoTxnLoading = true;
-  var f = { period: currentPeriod };
+  var f = { period: currentPeriod, vertical: _geo.key };
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
   google.script.run
     .withSuccessHandler(function(res) {
@@ -9745,6 +9767,7 @@ function renderInlineDetail(key) {
       + '<button class="vd-close" onclick="vdfClear()">Clear</button>'
       + '</div>';
     bodyContent = catSection
+      + '<div id="compliant-onb-wrap"></div>'
       + '<div id="cat-detail-wrap" style="display:none"></div>'
       + filtersHtml
       + '<div class="kb-wrap mt-16" id="vd-board-view"><div class="kb-board" id="vd-board"></div></div>'
@@ -9762,7 +9785,68 @@ function renderInlineDetail(key) {
 
   if (vdF.category && vdF.category !== 'All') showCatDetail(vdF.category, true);
   renderVdRecords();
+  loadCompliantOnboarding();
 }
+
+// ── Compliant Onboarding ──────────────────────────────────────
+var _coData = null, _coLoading = false;
+function loadCompliantOnboarding() {
+  var wrap = document.getElementById('compliant-onb-wrap');
+  if (!wrap) return;
+  if (_coData) { renderCompliantOnboarding(wrap, _coData); return; }
+  if (_coLoading) { wrap.innerHTML = '<div class="co-loading">Loading compliance data…</div>'; return; }
+  _coLoading = true;
+  wrap.innerHTML = '<div class="co-loading">Loading compliance data…</div>';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      _coLoading = false;
+      try { _coData = JSON.parse(res); } catch (e) { _coData = null; }
+      var w2 = document.getElementById('compliant-onb-wrap');
+      if (w2) renderCompliantOnboarding(w2, _coData);
+    })
+    .withFailureHandler(function() {
+      _coLoading = false;
+      var w2 = document.getElementById('compliant-onb-wrap');
+      if (w2) w2.innerHTML = '';
+    })
+    .getCompliantOnboardingData();
+}
+function renderCompliantOnboarding(wrap, d) {
+  if (!d || !d.success || !d.total) { wrap.innerHTML = ''; return; }
+  var pct = d.total ? Math.round(d.compliant / d.total * 100) : 0;
+  var exRows = (d.exceptionRows || []);
+  var exHtml = '';
+  if (exRows.length) {
+    exHtml = '<div class="co-exc-list">'
+      + exRows.map(function(r) {
+          return '<span class="co-exc-tag">' + esc(r.name || r.id || '—') + '</span>';
+        }).join('')
+      + '</div>';
+  }
+  wrap.innerHTML = '<div class="co-wrap">'
+    + '<div class="co-hd">Compliant Onboarding</div>'
+    + '<div class="co-row">'
+    + '<div class="co-stat co-ok">'
+    + '<div class="co-num">' + fmt(d.compliant) + '</div>'
+    + '<div class="co-lbl">Compliant</div>'
+    + '</div>'
+    + '<div class="co-stat co-exc">'
+    + '<div class="co-num">' + fmt(d.exceptions) + '</div>'
+    + '<div class="co-lbl">Exceptions</div>'
+    + '</div>'
+    + '<div class="co-stat co-tot">'
+    + '<div class="co-num">' + fmt(d.total) + '</div>'
+    + '<div class="co-lbl">Total</div>'
+    + '</div>'
+    + '<div class="co-bar-wrap">'
+    + '<div class="co-bar-fill" style="width:' + pct + '%"></div>'
+    + '<span class="co-bar-pct">' + pct + '% compliant</span>'
+    + '</div>'
+    + '</div>'
+    + (exRows.length ? '<div class="co-exc-note">Scoring not done (exceptions): ' + exHtml + '</div>' : '')
+    + '</div>';
+}
+// ─────────────────────────────────────────────────────────────
 
 // SELLERS / BUYERS toggle inside the detailed view section.
 function setDetailAud(aud) {
