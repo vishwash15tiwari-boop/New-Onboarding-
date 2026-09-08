@@ -13533,7 +13533,7 @@ function renderOSVDash() {
   var ks = d.kycSummary || {};
   var kycBase = ks.total || 1;
   var kycHtml = '';
-  if (ks.total > 0 || osvSentCount > 0) {
+  if (ks.total > 0 || (ks.osvSent && ks.osvSent > 0)) {
     var kycTiles = [
       { n: ks.completed||0, lbl:'KYC Completed', sub: _osvPct(ks.completed||0, kycBase) + '% of scored sellers', cls:'ok-green',   ic:_osvIcCheck },
       { n: ks.pending||0,   lbl:'KYC Pending',   sub: _osvPct(ks.pending||0,   kycBase) + '% awaiting completion', cls:'ok-amber',  ic:_osvIcClock },

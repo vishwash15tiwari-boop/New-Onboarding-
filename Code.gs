@@ -2836,7 +2836,7 @@ function getQualityData() {
   // vendors primarily by NORMALISED NAME (OMP sellers carry no GSTIN in the feed and use
   // a different id space than the score sheet), which is what makes the numbers appear.
   // Bumped so no stale v10-v13 payload (old source / all-unrated) survives the deploy.
-  var CACHE_KEY = 'quality_data_v16';
+  var CACHE_KEY = 'quality_data_v18';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -3048,7 +3048,7 @@ function getQualityData() {
       // Unmatched rows that have a valid score are also added to vendorRatings
       // (using the sheet's own category) so Metal + Plastic always sums to
       // the same total that the aggregate tile shows.
-      var _sr = { ws:0, rated:0, total:0, dist:[0,0,0,0,0] };
+      var _sr = { ws:0, rated:0, total:0, dist:[0,0,0,0,0], exceptions:0 };
       var _sosvC = 0, _sosvP = 0;
       // Index of names already captured by the join loop above.
       var _joinedNmIdx = {};
@@ -3280,8 +3280,13 @@ function getQualityData() {
 
 // Builds a { id: true } lookup set from a Metabase-synced sheet.
 function buildQualityIdSet_(sheetName, idCols) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
+  var sheet = null;
+  if (CONFIG.META_SHEET_ID) {
+    try { sheet = SpreadsheetApp.openById(CONFIG.META_SHEET_ID).getSheetByName(sheetName); } catch(e) {}
+  }
+  if (!sheet) {
+    try { sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName); } catch(e) {}
+  }
   if (!sheet || sheet.getLastRow() < 2) return {};
   var maxCol  = Math.min(sheet.getLastColumn(), 40);
   var vals    = sheet.getRange(1, 1, sheet.getLastRow(), maxCol).getValues();
@@ -3301,8 +3306,13 @@ function buildQualityIdSet_(sheetName, idCols) {
 
 // Returns { id: { name, gstin, category, onboardingStatus } } for OMP-onboarded sellers.
 function buildOmpOnboardedMap_() {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('_mb_sellers');
+  var sheet = null;
+  if (CONFIG.META_SHEET_ID) {
+    try { sheet = SpreadsheetApp.openById(CONFIG.META_SHEET_ID).getSheetByName('_mb_sellers'); } catch(e) {}
+  }
+  if (!sheet) {
+    try { sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('_mb_sellers'); } catch(e) {}
+  }
   if (!sheet || sheet.getLastRow() < 2) return {};
   var maxCol  = Math.min(sheet.getLastColumn(), 60);
   var vals    = sheet.getRange(1, 1, sheet.getLastRow(), maxCol).getValues();
@@ -3340,8 +3350,13 @@ function buildOmpOnboardedMap_() {
 // Returns { gstin: { id, name, category, onboardingStatus, aud } } for OMP-onboarded records.
 // sheetName = '_mb_sellers' or '_mb_buyers'; aud = 'seller' or 'buyer'.
 function buildOmpGstinMap_(sheetName, aud) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
+  var sheet = null;
+  if (CONFIG.META_SHEET_ID) {
+    try { sheet = SpreadsheetApp.openById(CONFIG.META_SHEET_ID).getSheetByName(sheetName); } catch(e) {}
+  }
+  if (!sheet) {
+    try { sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName); } catch(e) {}
+  }
   if (!sheet || sheet.getLastRow() < 2) return {};
   var maxCol  = Math.min(sheet.getLastColumn(), 60);
   var vals    = sheet.getRange(1, 1, sheet.getLastRow(), maxCol).getValues();
@@ -3389,8 +3404,13 @@ function _qNormName_(s) {
 // rating/OSV join for OMP sellers and as the rating denominator (count of onboarded,
 // COMPLETED Open-Marketplace vendors actually eligible to be scored).
 function buildOmpNameMap_(sheetName, aud) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
+  var sheet = null;
+  if (CONFIG.META_SHEET_ID) {
+    try { sheet = SpreadsheetApp.openById(CONFIG.META_SHEET_ID).getSheetByName(sheetName); } catch(e) {}
+  }
+  if (!sheet) {
+    try { sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName); } catch(e) {}
+  }
   if (!sheet || sheet.getLastRow() < 2) return {};
   var maxCol  = Math.min(sheet.getLastColumn(), 60);
   var vals    = sheet.getRange(1, 1, sheet.getLastRow(), maxCol).getValues();
@@ -3434,8 +3454,13 @@ function qualityFindCol_(headers, candidates) {
 }
 
 function qualityReadSheet_(name) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(name);
+  var sheet = null;
+  if (CONFIG.META_SHEET_ID) {
+    try { sheet = SpreadsheetApp.openById(CONFIG.META_SHEET_ID).getSheetByName(name); } catch(e) {}
+  }
+  if (!sheet) {
+    try { sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name); } catch(e) {}
+  }
   if (!sheet || sheet.getLastRow() < 2) return { headers: [], rows: [] };
   var vals    = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
   var headers = vals[0].map(function(h) {
