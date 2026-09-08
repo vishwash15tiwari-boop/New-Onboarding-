@@ -7368,69 +7368,9 @@ function openRegionSplitModal(aud) {
   _modalOpenClass(modal, 'km-open', _kpiEsc);
 }
 
-// Average TAT → detailed records table (Name, GSTIN, TAT) for all onboarded rows.
+// Average TAT tile click → full-page records view (same pattern as other detail pages).
 function openTatModal() {
-  var key = activeVertKey || selectedVert;
-  var el = document.getElementById('km-pn'), modal = document.getElementById('kpi-modal');
-  if (!el || !modal) return;
-  var vs = (DS && DS.verticals || {})[key] || {}, vb = (DB && DB.verticals || {})[key] || {};
-  var blend = _bnBlendTAT(vs, vb);
-
-  function _header() {
-    return '<div class="km-head"><div style="display:flex;align-items:center;min-width:0">'
-      + '<div class="km-icon" style="color:var(--blue)">' + MM_IC.clock + '</div>'
-      + '<div class="km-htxt"><div class="km-title">Average TAT</div><div class="km-sub">Days from Level 1 review to onboarded</div></div></div>'
-      + '<button class="km-close" onclick="closeKpiModal()" aria-label="Close">✕</button></div>'
-      + '<div class="km-hero"><div class="km-hero-num">' + (blend != null ? blend + 'd' : '—') + '</div><div class="km-hero-lbl">Blended Average TAT</div></div>';
-  }
-
-  function _tableHtml(rows) {
-    var filtered = [];
-    for (var i = 0; i < rows.length; i++) {
-      var r = rows[i];
-      if (r.tat !== null && r.tat !== undefined && r.tat !== '' && r.tat !== '—') filtered.push(r);
-    }
-    filtered.sort(function(a, b) { return (parseInt(b.tat, 10) || 0) - (parseInt(a.tat, 10) || 0); });
-    if (!filtered.length) return '<div style="padding:24px;text-align:center;color:var(--txt3);font-size:13px">No TAT data available</div>';
-    var h = '<table style="width:100%;border-collapse:collapse;font-size:12.5px">'
-      + '<thead><tr style="background:var(--bg2)">'
-      + '<th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--txt2);border-bottom:1px solid var(--div)">Name</th>'
-      + '<th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--txt2);border-bottom:1px solid var(--div)">GSTIN</th>'
-      + '<th style="padding:8px 10px;text-align:right;font-weight:600;color:var(--txt2);border-bottom:1px solid var(--div)">TAT</th>'
-      + '</tr></thead><tbody>';
-    for (var j = 0; j < filtered.length; j++) {
-      var r = filtered[j];
-      var bg = j % 2 === 0 ? '' : 'background:var(--bg2)';
-      h += '<tr style="' + bg + '">'
-        + '<td style="padding:7px 10px;border-bottom:1px solid var(--div)">'
-        +   '<strong style="font-size:12.5px">' + esc(r.name || '—') + '</strong>'
-        +   (r.id ? '<div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id) + '</div>' : '')
-        + '</td>'
-        + '<td style="padding:7px 10px;border-bottom:1px solid var(--div)">'
-        +   (r.gstin ? '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>'
-                     : '<span class="td-dim">—</span>')
-        + '</td>'
-        + '<td style="padding:7px 10px;text-align:right;border-bottom:1px solid var(--div)">' + tatChip(r.tat) + '</td>'
-        + '</tr>';
-    }
-    h += '</tbody></table>';
-    return h;
-  }
-
-  el.innerHTML = _header()
-    + '<div id="tat-tbl-wrap" style="overflow-y:auto;max-height:52vh;margin-top:8px">'
-    + '<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px">Loading…</div>'
-    + '</div>';
-  _modalOpenClass(modal, 'km-open', _kpiEsc);
-
-  var _sRows = null, _bRows = null;
-  function _tryRender() {
-    if (_sRows === null || _bRows === null) return;
-    var wrap = document.getElementById('tat-tbl-wrap');
-    if (wrap) wrap.innerHTML = _tableHtml((_sRows || []).concat(_bRows || []));
-  }
-  _ensureAudRows(key, 'seller', function(rows) { _sRows = rows; _tryRender(); });
-  _ensureAudRows(key, 'buyer',  function(rows) { _bRows = rows; _tryRender(); });
+  openTatRecords(selectedAud === 'buyer' ? 'buyer' : 'seller', null);
 }
 
 // Detailed Records slide-over
