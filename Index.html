@@ -3272,7 +3272,7 @@ body.view-gst #mm-crumbs{display:none}
 .mmdetail .mf-card{display:flex;flex-direction:row;align-items:flex-start;gap:0;max-width:none;width:100%;padding:20px 18px}
 .mmdetail .mfrc-left{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:120px;max-width:140px;padding-right:18px;flex-shrink:0;text-align:center}
 .mmdetail .mfrc-mid{flex:1;min-width:0}
-.mmdetail .mfrc-right{display:flex;flex-direction:column;justify-content:center;min-width:180px;max-width:220px;padding-left:18px;border-left:1px solid var(--border);flex-shrink:0}
+.mmdetail .mfrc-right{display:flex;flex-direction:column;justify-content:flex-start;padding-top:4px;min-width:140px;max-width:170px;padding-left:18px;border-left:1px solid var(--border);flex-shrink:0}
 /* In detail mode hide the duplicate inline head (number+label are in mfrc-left) */
 .mmdetail .mf-head-inline{display:none}
 /* Icon circle */
@@ -3292,7 +3292,7 @@ body.view-gst #mm-crumbs{display:none}
 .mfrc-badge-purple{background:#f3e8ff;color:#7c3aed}
 .mfrc-badge-gray{background:var(--bg2);color:var(--txt2)}
 /* Stage definition text */
-.mfrc-def{font-size:.75rem;color:var(--txt2);line-height:1.55;margin:0}
+.mfrc-def{font-size:.68rem;color:var(--txt2);line-height:1.4;margin:0}
 /* Connector with percentage text in detail/vertical mode */
 .mmdetail .mf-sep{width:100%;height:auto;display:flex;flex-direction:column;align-items:flex-start;padding:2px 0;gap:0}
 .mmdetail .mf-sep svg{transform:rotate(90deg);width:20px;height:20px;margin-left:60px}
@@ -6259,11 +6259,11 @@ var MF_STAGES = [
 
 // Stage definitions shown in the right panel of each Onboarding Journey card.
 var MF_DEFS = {
-  total:     'Cases initiated in the system by sellers or buyers. Represents total registrations received in the selected period.',
-  draft:     'Registrations that are created but not yet formally submitted for verification.',
-  review:    'Submitted registrations that are currently under verification or approval.',
-  onboarded: 'Registrations that have completed all required checks and are activated on the platform.',
-  rejected:  'Registrations that could not be approved due to validation issues or non-compliance.'
+  total:     'Total registrations initiated in the selected period.',
+  draft:     'Created but not yet submitted for verification.',
+  review:    'Under verification or approval.',
+  onboarded: 'Completed all checks and activated on the platform.',
+  rejected:  'Could not be approved due to validation issues or non-compliance.'
 };
 // Icon and badge colour class maps keyed by stage key.
 var MF_IC_CLS  = { total:'mfrc-ic-purple', draft:'mfrc-ic-amber', review:'mfrc-ic-blue', onboarded:'mfrc-ic-green', rejected:'mfrc-ic-red' };
