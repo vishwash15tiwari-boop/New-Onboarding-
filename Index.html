@@ -3182,7 +3182,10 @@ body.view-gst #mm-crumbs{display:none}
 .mf-v.blue{color:#005dff}.mf-v.purple{color:#8b5cf6}.mf-v.amber{color:#d97706}.mf-v.green{color:#16a34a}.mf-v.red{color:#dc2626}
 .mf-label{font-size:.75rem;color:var(--txt2);margin-bottom:8px;line-height:1.3}
 /* 2×2 breakdown matrix (Type × Category) */
+.mf-matrix-scroller{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--border) transparent;border-top:1px solid var(--border);margin-top:4px;padding-top:0}
+.mf-matrix-scroller .mf-matrix{border-top:none;margin-top:0;padding-top:8px;min-width:max-content}
 .mf-matrix{display:grid;grid-template-columns:auto 1fr 1fr;gap:2px 4px;border-top:1px solid var(--border);padding-top:10px;margin-top:4px;align-items:center}
+.mf-matrix-scroll{min-width:max-content}
 .mf-mx-corner{} /* top-left empty cell */
 .mf-mx-hd{font-size:.68rem;font-weight:600;color:var(--txt3);text-align:center;padding:0 2px 4px;display:flex;align-items:center;justify-content:center;gap:3px}
 .mf-mx-lbl{font-size:.7rem;color:var(--txt2);padding:3px 6px 3px 0;display:flex;align-items:center;gap:4px;white-space:nowrap}
@@ -4431,6 +4434,7 @@ var MR_COLS = [
   { key:'id',          label:'ID' },
   { key:'category',    label:'Category' },
   { key:'vendorType',  label:'Vendor Type' },
+  { key:'audType',     label:'Type' },
   { key:'status',      label:'Status' },
   { key:'state',       label:'State' },
   { key:'gstin',       label:'GSTIN' },
@@ -4441,6 +4445,8 @@ var MR_COLS = [
   { key:'txnCount',    label:'# Txns' },
   { key:'txnGmv',      label:'Total GMV' },
   { key:'txnDate',     label:'Latest Txn' },
+  { key:'rating',      label:'Score (/10)' },
+  { key:'osvStatus',   label:'OSV Status' },
 ];
 // OSV records view — a different dataset from MR_COLS. These rows come from the
 // quality feed (qualityData.vendorOSV), one per OMP-onboarded seller, rather than
@@ -6260,9 +6266,11 @@ var MF_IC_MAP  = { total:MM_IC.funnel, draft:MM_IC.draft, review:MM_IC.clock, on
 function _mfMatrix(catRows, sTot, bTot) {
   var cols = (catRows && catRows.length) ? catRows : null;
   var n = cols ? cols.length + 1 : 1;
-  // Purely informational — the whole card is the single click target (opens the
-  // stage's detailed records popup); no element inside the matrix is separately
-  // clickable.
+  // Minimum cell width grows with fewer columns; compresses gracefully as columns increase.
+  var cellMin = n <= 4 ? 48 : n <= 7 ? 38 : n <= 10 ? 32 : 28;
+  var colTemplate = 'auto repeat(' + n + ',minmax(' + cellMin + 'px,1fr))';
+  // Scroll horizontally only when there are enough columns to overflow.
+  var needScroll = n > 7;
   var head = '<div class="mf-mx-corner"></div>';
   var sRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot seller"></span>Sellers</div>';
   var bRow = '<div class="mf-mx-lbl"><span class="mf-cat-dot buyer"></span>Buyers</div>';
@@ -6282,8 +6290,9 @@ function _mfMatrix(catRows, sTot, bTot) {
     sRow += '<div class="mf-mx-cell">' + fmt(sTot || 0) + '</div>';
     bRow += '<div class="mf-mx-cell">' + fmt(bTot || 0) + '</div>';
   }
-  return '<div class="mf-matrix" style="grid-template-columns:auto repeat(' + n + ',1fr)">'
+  var grid = '<div class="mf-matrix' + (needScroll ? ' mf-matrix-scroll' : '') + '" style="grid-template-columns:' + colTemplate + '">'
     + head + sRow + bRow + '</div>';
+  return needScroll ? '<div class="mf-matrix-scroller">' + grid + '</div>' : grid;
 }
 
 // ── Contextual detail popup for the funnel stage matrix ─────────────────────
@@ -6582,8 +6591,13 @@ function mmRenderFunnel() {
         + '<div class="mf-tat-lbl">Average TAT<span class="mf-tat-i" aria-hidden="true">i</span>'
         + (tblend && tblend.v != null ? '<span class="mf-tat-ov">' + esc(_mfTatFmt(tblend.v) || '') + '</span>' : '')
         + '</div>'
-        + '<div class="mf-matrix mf-tat-mx" style="grid-template-columns:auto repeat(' + (tcols.length + 1) + ',1fr)">'
-        + tHead + tSell + tBuy + '</div>'
+        + (function() {
+            var tn = tcols.length + 1;
+            var tm = tn <= 4 ? 48 : tn <= 7 ? 38 : tn <= 10 ? 32 : 28;
+            var tCols = 'auto repeat(' + tn + ',minmax(' + tm + 'px,1fr))';
+            var inner = '<div class="mf-matrix mf-tat-mx' + (tn > 7 ? ' mf-matrix-scroll' : '') + '" style="grid-template-columns:' + tCols + '">' + tHead + tSell + tBuy + '</div>';
+            return tn > 7 ? '<div class="mf-matrix-scroller">' + inner + '</div>' : inner;
+          })()
         + '</div>';
     }
 
@@ -7878,17 +7892,130 @@ function openKpiModal(cardId) {
 
   } else if (cardId === 'oldvsnew') {
     title = 'Vendor Classification';
-    subtitle = 'Existing vs. new vendors onboarded through Marketplace';
+    subtitle = 'Existing vs. new vendors — onboarding, transaction activity, and conversion rates';
     iconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
     var totalOnb  = (d.newS + d.oldS) + (d.newB + d.oldB);
     var totalNew  = d.newS + d.newB;
     var totalExst = d.oldS + d.oldB;
+
+    // Compute transaction breakdown per cohort from live rows
+    var NEW_CUT = new Date(2026, 3, 1); // April 1, 2026
+    var sRows = Array.isArray(vertRows) ? vertRows : [];
+    var bRows = (_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : [];
+
+    var exSel = 0, newSel = 0, exSelTxn = 0, newSelTxn = 0;
+    var exBuy = 0, newBuy = 0, exBuyTxn = 0, newBuyTxn = 0;
+
+    sRows.forEach(function(r) {
+      if (r.status !== 'COMPLETED') return;
+      var dt = r.onbDate ? parseDMY(r.onbDate) : null;
+      var isNew = dt ? (dt >= NEW_CUT) : false;
+      if (isNew) { newSel++; if (r.hasTransacted) newSelTxn++; }
+      else        { exSel++;  if (r.hasTransacted) exSelTxn++;  }
+    });
+    bRows.forEach(function(r) {
+      if (r.status !== 'COMPLETED') return;
+      var dt = r.onbDate ? parseDMY(r.onbDate) : null;
+      var isNew = dt ? (dt >= NEW_CUT) : false;
+      if (isNew) { newBuy++; if (r.hasTransacted) newBuyTxn++; }
+      else        { exBuy++;  if (r.hasTransacted) exBuyTxn++;  }
+    });
+
+    var exTotal    = exSel  + exBuy;
+    var newTotal   = newSel + newBuy;
+    var exTxnTotal = exSelTxn + exBuyTxn;
+    var newTxnTotal= newSelTxn + newBuyTxn;
+
+    var exRate  = exTotal  > 0 ? Math.round(exTxnTotal  / exTotal  * 100) : 0;
+    var newRate = newTotal > 0 ? Math.round(newTxnTotal / newTotal * 100) : 0;
+    var exSelRate  = exSel  > 0 ? Math.round(exSelTxn  / exSel  * 100) : 0;
+    var newSelRate = newSel > 0 ? Math.round(newSelTxn / newSel * 100) : 0;
+    var exBuyRate  = exBuy  > 0 ? Math.round(exBuyTxn  / exBuy  * 100) : 0;
+    var newBuyRate = newBuy > 0 ? Math.round(newBuyTxn / newBuy * 100) : 0;
+
+    // Determine which cohort has higher conversion — drive the narrative
+    var leaderStr = exRate === newRate ? 'Both cohorts convert equally'
+      : exRate > newRate
+        ? ('Existing vendors convert ' + (exRate - newRate) + 'pp higher than New')
+        : ('New vendors convert ' + (newRate - exRate) + 'pp higher than Existing');
+
+    // Visual bar builder
+    function convBar(label, converted, total, rate, barColor) {
+      var pct = Math.min(100, rate);
+      return '<div style="margin-bottom:14px">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">'
+        +   '<span style="font-size:12px;font-weight:600;color:var(--txt)">' + label + '</span>'
+        +   '<span style="font-size:12px;font-weight:700;color:' + barColor + '">' + rate + '% (' + fmt(converted) + ' / ' + fmt(total) + ')</span>'
+        + '</div>'
+        + '<div style="background:var(--bg2);border-radius:999px;height:10px;overflow:hidden">'
+        +   '<div style="width:' + pct + '%;height:100%;border-radius:999px;background:' + barColor + ';transition:width .6s ease"></div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    var hasTxnData = (exSel + newSel + exBuy + newBuy) > 0;
+    var txnSection = '';
+    if (hasTxnData) {
+      txnSection = sec('Transaction Conversion', (function() {
+        var h = '<div style="padding:4px 0 8px;font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">'
+          + 'How many vendors have completed at least one transaction?'
+          + '</div>';
+        h += convBar('&#127942; Existing Vendors', exTxnTotal, exTotal, exRate, '#16a34a');
+        h += convBar('&#128640; New Vendors',       newTxnTotal, newTotal, newRate, '#2563eb');
+        // Segmented breakdown
+        h += '<div style="margin-top:14px;border-top:1px dashed var(--bord);padding-top:12px">';
+        h += '<div style="font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Breakdown by User Type</div>';
+        h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+        h += '<div style="background:var(--bg2);border-radius:10px;padding:10px 12px">'
+          +   '<div style="font-size:10px;color:var(--txt3);font-weight:600;margin-bottom:4px">EXISTING SELLERS</div>'
+          +   '<div style="font-size:18px;font-weight:800;color:#16a34a">' + exSelRate + '%</div>'
+          +   '<div style="font-size:11px;color:var(--txt2)">' + fmt(exSelTxn) + ' of ' + fmt(exSel) + ' transacted</div>'
+          + '</div>';
+        h += '<div style="background:var(--bg2);border-radius:10px;padding:10px 12px">'
+          +   '<div style="font-size:10px;color:var(--txt3);font-weight:600;margin-bottom:4px">NEW SELLERS</div>'
+          +   '<div style="font-size:18px;font-weight:800;color:#2563eb">' + newSelRate + '%</div>'
+          +   '<div style="font-size:11px;color:var(--txt2)">' + fmt(newSelTxn) + ' of ' + fmt(newSel) + ' transacted</div>'
+          + '</div>';
+        if (exBuy + newBuy > 0) {
+          h += '<div style="background:var(--bg2);border-radius:10px;padding:10px 12px">'
+            +   '<div style="font-size:10px;color:var(--txt3);font-weight:600;margin-bottom:4px">EXISTING BUYERS</div>'
+            +   '<div style="font-size:18px;font-weight:800;color:#16a34a">' + exBuyRate + '%</div>'
+            +   '<div style="font-size:11px;color:var(--txt2)">' + fmt(exBuyTxn) + ' of ' + fmt(exBuy) + ' transacted</div>'
+            + '</div>';
+          h += '<div style="background:var(--bg2);border-radius:10px;padding:10px 12px">'
+            +   '<div style="font-size:10px;color:var(--txt3);font-weight:600;margin-bottom:4px">NEW BUYERS</div>'
+            +   '<div style="font-size:18px;font-weight:800;color:#2563eb">' + newBuyRate + '%</div>'
+            +   '<div style="font-size:11px;color:var(--txt2)">' + fmt(newBuyTxn) + ' of ' + fmt(newBuy) + ' transacted</div>'
+            + '</div>';
+        }
+        h += '</div></div>';
+        return h;
+      })());
+
+      // Analysis insight bar
+      var insightColor = exRate > newRate ? '#16a34a' : '#2563eb';
+      txnSection += '<div style="background:linear-gradient(135deg,var(--bg2),var(--bg));border-radius:12px;padding:14px 16px;margin-top:4px;border:1.5px solid var(--bord)">'
+        + '<div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">&#128202; Key Insight</div>'
+        + '<div style="font-size:13px;font-weight:600;color:' + insightColor + '">' + leaderStr + '</div>'
+        + (exRate !== newRate ? '<div style="font-size:11px;color:var(--txt2);margin-top:3px">'
+          + (exRate > newRate
+            ? 'Existing vendors bring established business habits — they transact faster and more reliably.'
+            : 'New vendors are showing strong early adoption — a positive signal for future GMV growth.')
+          + '</div>' : '')
+        + '</div>';
+    }
+
     content =
       hero(fmt(totalOnb), 'Total Vendors')
       + srow([
-          {v: fmt(totalExst), l: 'Existing Vendors'},
-          {v: fmt(totalNew),  l: 'New Vendors'},
+          {v: fmt(exTotal || totalExst),  l: 'Existing Vendors', s: 'Onboarded before Apr 1, 2026'},
+          {v: fmt(newTotal || totalNew),  l: 'New Vendors',       s: 'Onboarded from Apr 1, 2026'},
         ])
+      + sbar([
+          { w: totalExst, color: '#16a34a' },
+          { w: totalNew,  color: '#2563eb' },
+        ])
+      + txnSection
       + (d.catOnb && d.catOnb.length ? sec('Category Distribution', catBadges(d.catOnb)) : '');
   }
 
@@ -11727,8 +11854,41 @@ function openModRecords(module) {
   _mrSort = { key:'', dir:1 };
   _mrPg = { size:25, page:0 };
   if (cfg.isTxnView) {
-    // Transacted-sellers view: show name, category, vendorType, state, txnCount, txnGmv, txnDate
-    _mrColVis = { id:true, status:true, gstin:true, createdDate:true, tat:true, txn:true };
+    // Build quality lookups for score + OSV status join
+    var _qd = (typeof qualityData !== 'undefined') ? qualityData : null;
+    var _ratingLkp = {}, _osvLkp = {};
+    if (_qd && _qd.vendorRatings) {
+      (_qd.vendorRatings || []).forEach(function(v) {
+        if (v.id) _ratingLkp[v.id] = v.rating;
+      });
+    }
+    if (_qd && _qd.vendorOSV) {
+      (_qd.vendorOSV || []).forEach(function(v) {
+        if (v.id) _osvLkp[v.id] = v.status;
+      });
+    }
+    // Enrich seller rows
+    _mrRows = vertRows.filter(function(r) { return r.hasTransacted; }).map(function(r) {
+      var copy = {};
+      for (var k in r) copy[k] = r[k];
+      copy.audType   = 'Seller';
+      copy.rating    = _ratingLkp[r.id] !== undefined ? _ratingLkp[r.id] : null;
+      copy.osvStatus = _osvLkp[r.id] || 'not_initiated';
+      return copy;
+    });
+    // Merge buyer rows if available
+    var buyerSrc = (_ovnRows && _ovnRows.buyer) ? _ovnRows.buyer : [];
+    buyerSrc.filter(function(r) { return r.hasTransacted; }).forEach(function(r) {
+      var copy = {};
+      for (var k in r) copy[k] = r[k];
+      copy.audType   = 'Buyer';
+      copy.rating    = _ratingLkp[r.id] !== undefined ? _ratingLkp[r.id] : null;
+      copy.osvStatus = _osvLkp[r.id] || 'not_initiated';
+      _mrRows.push(copy);
+    });
+    _mrCtx.label = 'Transacted Sellers & Buyers';
+    // Show: name, category, audType, state, txnCount, txnGmv, txnDate, rating, osvStatus
+    _mrColVis = { id:true, status:true, gstin:true, createdDate:true, tat:true, txn:true, vendorType:true };
   } else {
     _mrColVis = { id:true };
     if (!cfg.showTxnF) _mrColVis['txn'] = true;
@@ -11802,7 +11962,12 @@ function _mrRenderHeader() {
     var txnRows = _mrRows.filter(function(r) { return r.hasTransacted; });
     var sumTxns = txnRows.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
     var sumGmv  = txnRows.reduce(function(s, r) { return s + (r.txnValue  || 0); }, 0);
-    if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(txnRows.length) + ' unique sellers · ' + fmt(sumTxns) + ' txns · ' + fmtINR(sumGmv) + ' GMV)';
+    var selCnt  = txnRows.filter(function(r) { return r.audType !== 'Buyer'; }).length;
+    var buyCnt  = txnRows.filter(function(r) { return r.audType === 'Buyer'; }).length;
+    var audDesc = selCnt > 0 && buyCnt > 0 ? fmt(selCnt) + ' sellers · ' + fmt(buyCnt) + ' buyers'
+                : selCnt > 0 ? fmt(selCnt) + ' sellers'
+                : fmt(buyCnt) + ' buyers';
+    if (tt) tt.textContent = _mrCtx.cfg.label + '  (' + audDesc + ' · ' + fmt(sumTxns) + ' txns · ' + fmtINR(sumGmv) + ' GMV)';
   } else if (_mrCtx.aging) {
     // Count the bucket, not the feed: _mrRows holds every row for the vertical, so
     // "source rows" here would contradict the number on the card that was clicked.
@@ -12156,6 +12321,18 @@ function _mrCellHtml(r, key) {
       return r.txnValue > 0 ? '<span class="mr-txn-chip">⚡ ' + fmtINR(r.txnValue) + '</span>' : '<span class="td-dim">—</span>';
     case 'txnDate':
       return '<span class="td-dim td-num">' + esc(r.txnDate && r.txnDate !== '—' ? r.txnDate : '—') + '</span>';
+    case 'audType': {
+      var isB = r.audType === 'Buyer';
+      return '<span class="km-vbadge" style="background:' + (isB ? 'rgba(0,122,255,.10);color:#024C8A' : 'rgba(139,92,246,.12);color:#5B3FA8') + ';font-weight:600">' + esc(r.audType || '—') + '</span>';
+    }
+    case 'rating': {
+      if (r.rating === null || r.rating === undefined) return '<span class="td-dim">—</span>';
+      var col = _vsBandColor ? _vsBandColor(_vsBand ? _vsBand(r.rating) : 0) : 'var(--txt)';
+      return '<span class="km-vrating" style="color:' + col + ';font-weight:700">' + Number(r.rating).toFixed(1) + ' / 10</span>';
+    }
+    case 'osvStatus': {
+      return _osvChip ? _osvChip(r.osvStatus) : esc(r.osvStatus || '—');
+    }
     default: return esc(String(r[key] || '—'));
   }
 }
@@ -12219,13 +12396,17 @@ function _mrRenderTable() {
     var isTatV = !!(_mrCtx && _mrCtx.tat);
     var isAgeV = !!(_mrCtx && _mrCtx.aging);
     var isStgV = !!(_mrCtx && _mrCtx.stage);
-    var countLabel = isTxnV ? 'sellers' : isOsvV ? 'vendors' : isAgeV ? 'sellers' : isStgV ? 'records'
+    var countLabel = isTxnV ? 'vendors' : isOsvV ? 'vendors' : isAgeV ? 'sellers' : isStgV ? 'records'
                    : isTatV ? (_mrCtx.tatAud === 'buyer' ? 'buyers' : 'sellers') : 'records';
     var footExtra = '';
     if (isTxnV && total) {
       var sumTxnsF = allFiltered.reduce(function(s, r) { return s + (r.txnCount || 1); }, 0);
       var sumGmvF  = allFiltered.reduce(function(s, r) { return s + (r.txnValue  || 0); }, 0);
-      footExtra = ' · ' + fmt(sumTxnsF) + ' txns · ' + fmtINR(sumGmvF) + ' GMV';
+      var selF = allFiltered.filter(function(r) { return r.audType !== 'Buyer'; }).length;
+      var buyF = allFiltered.filter(function(r) { return r.audType === 'Buyer'; }).length;
+      footExtra = ' · ' + (selF > 0 ? fmt(selF) + ' sellers' : '') + (buyF > 0 ? (selF > 0 ? ', ' : ' ') + fmt(buyF) + ' buyers' : '')
+        + (sumTxnsF > 0 ? ' · ' + fmt(sumTxnsF) + ' txns' : '')
+        + (sumGmvF > 0 ? ' · ' + fmtINR(sumGmvF) + ' GMV' : '');
     }
     if (isTatV && total) {
       var tv = allFiltered.map(function(r) { return parseInt(r.tat, 10); })
@@ -13075,21 +13256,45 @@ function _osvBadgeCls(s) {
 }
 
 // Open drill-down overlay for a given seller subset
-function _osvDrill(title, sub, sellers) {
+function _osvDrill(title, sub, sellers, opts) {
   var ovl = document.getElementById('osv-drill-ovl');
   if (!ovl) return;
+  opts = opts || {};
   ovl.querySelector('.osv-drill-title').textContent = title;
   ovl.querySelector('.osv-drill-sub').textContent   = sub;
   var body = ovl.querySelector('.osv-drill-body');
   if (!sellers || sellers.length === 0) {
     body.innerHTML = '<div style="padding:32px 0;text-align:center;color:var(--txt3);font-size:13px">No records found.</div>';
   } else {
+    var showPre = opts.showPre || sellers.some(function(r){ return r.preScore !== null && r.preScore !== undefined; });
+    var showKyc = opts.showKyc || sellers.some(function(r){ return r.kycStatus; });
+    var showSent = opts.showSent || sellers.some(function(r){ return r.osvSent; });
+    var showTpv  = opts.showTpv  || sellers.some(function(r){ return r.thirdParty; });
+
+    function kycBadge(st) {
+      var cls = st === 'completed' ? 'background:#dcfce7;color:#15803d'
+              : st === 'pending'   ? 'background:#fef3c7;color:#92400e'
+              : 'background:#f1f5f9;color:#64748b';
+      var lbl = st === 'completed' ? 'Done' : st === 'pending' ? 'Pending' : st ? 'Not Started' : '—';
+      return '<span style="' + cls + ';padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">' + lbl + '</span>';
+    }
+
+    var thExtra = (showPre ? '<th>Pre-OSV Score</th>' : '') + (showKyc ? '<th>KYC</th>' : '') + (showSent ? '<th>OSV Sent</th>' : '') + (showTpv ? '<th>3rd Party</th>' : '');
     var rows = sellers.slice(0, 300).map(function(r) {
       var badge = '<span class="osv-st-badge ' + _osvBadgeCls(r.osvStatus) + '">' + esc(_osvStLabel(r.osvStatus)) + '</span>';
-      var score = r.score !== null && r.score !== undefined ? r.score + ' / 10' : '—';
-      return '<tr><td>' + esc(r.name || '—') + '</td><td>' + esc(r.category || '—') + '</td><td>' + badge + '</td><td>' + score + '</td><td>' + esc(r.assignedTo || '—') + '</td><td>' + esc(r.updatedDate || '—') + '</td></tr>';
+      var score  = r.score    !== null && r.score    !== undefined ? r.score    + ' / 10' : '—';
+      var preScr = r.preScore !== null && r.preScore !== undefined ? r.preScore + ' / 10' : '—';
+      var delta  = (r.score !== null && r.preScore !== null)
+        ? '<span style="color:' + (r.score - r.preScore > 0 ? '#15803d' : (r.score - r.preScore < 0 ? '#dc2626' : '#64748b')) + ';font-weight:600">'
+          + (r.score - r.preScore > 0 ? '+' : '') + Math.round((r.score - r.preScore) * 10) / 10 + '</span>'
+        : '';
+      var tdExtra = (showPre ? '<td>' + preScr + (delta ? ' <small>(' + delta + ')</small>' : '') + '</td>' : '')
+        + (showKyc ? '<td>' + kycBadge(r.kycStatus) + '</td>' : '')
+        + (showSent ? '<td style="text-align:center">' + (r.osvSent ? '<span style="color:#15803d;font-weight:700">&#10003;</span>' : '<span style="color:#94a3b8">&#8212;</span>') + '</td>' : '')
+        + (showTpv  ? '<td style="text-align:center">' + (r.thirdParty ? '<span style="color:#7c3aed;font-weight:700">&#10003;</span>' : '<span style="color:#94a3b8">&#8212;</span>') + '</td>' : '');
+      return '<tr><td>' + esc(r.name || '—') + '</td><td>' + esc(r.category || '—') + '</td><td>' + badge + '</td><td>' + score + '</td>' + tdExtra + '<td>' + esc(r.assignedTo || '—') + '</td><td>' + esc(r.updatedDate || '—') + '</td></tr>';
     }).join('');
-    body.innerHTML = '<table class="osv-drill-tbl"><thead><tr><th>Seller Name</th><th>Category</th><th>OSV Status</th><th>Post-OSV Score</th><th>Assigned To</th><th>Last Updated</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    body.innerHTML = '<table class="osv-drill-tbl"><thead><tr><th>Seller Name</th><th>Category</th><th>OSV Status</th><th>Post-OSV Score</th>' + thExtra + '<th>Assigned To</th><th>Last Updated</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
   ovl.classList.add('open');
 }
@@ -13239,6 +13444,133 @@ function renderOSVDash() {
       + '</div>';
   }
 
+  // ── KYC Summary + Channel metrics row ──
+  var ks = d.kycSummary || {};
+  var kycBase = ks.total || 1;
+  var kycHtml = '';
+  if (ks.total > 0 || osvSentCount > 0) {
+    var kycTiles = [
+      { n: ks.completed||0, lbl:'KYC Completed', sub: _osvPct(ks.completed||0, kycBase) + '% of scored sellers', cls:'ok-green',   ic:_osvIcCheck },
+      { n: ks.pending||0,   lbl:'KYC Pending',   sub: _osvPct(ks.pending||0,   kycBase) + '% awaiting completion', cls:'ok-amber',  ic:_osvIcClock },
+      { n: ks.notStarted||0,lbl:'KYC Not Started',sub:_osvPct(ks.notStarted||0,kycBase) + '% not yet initiated', cls:'ok-neutral', ic:_osvIcBan },
+      { n: ks.osvSent||0,   lbl:'OSV Invite Sent',sub:'Verification invite dispatched', cls:'ok-blue',   ic:_osvIcDoc },
+      { n: ks.thirdParty||0,lbl:'Third Party Verified', sub:'External verification completed', cls:'ok-purple', ic:_osvIcShield }
+    ];
+    kycHtml = '<div class="osv-sect-wrap" style="margin-bottom:20px">'
+      + '<div class="osv-sect-hd"><span class="osv-sect-title">KYC &amp; Verification Channels</span><span class="osv-sect-sub">Across ' + fmt(ks.total||0) + ' sellers in the OSV score sheet</span></div>'
+      + '<div class="osv-kpi-row">'
+      + kycTiles.map(function(k) {
+        return '<div class="osv-kpi-card ' + k.cls + '">'
+          + '<div class="osv-kpi-ic">' + k.ic + '</div>'
+          + '<div class="osv-kpi-body">'
+          + '<div class="osv-kpi-n">' + fmt(k.n) + '</div>'
+          + '<div class="osv-kpi-lbl">' + k.lbl + '</div>'
+          + '<div class="osv-kpi-sub">' + k.sub + '</div>'
+          + '</div></div>';
+      }).join('')
+      + '</div></div>';
+  }
+
+  // ── OSV Impact storytelling ──
+  var imp = d.impact || null;
+  var impactHtml = '';
+  if (imp) {
+    var impColor = imp.delta > 0 ? '#15803d' : (imp.delta < 0 ? '#dc2626' : '#64748b');
+    var impArrow = imp.delta > 0 ? '&#9650;' : (imp.delta < 0 ? '&#9660;' : '&#8213;');
+    if (imp.cohortComparison) {
+      // No pre-score: compare verified vs non-verified cohort
+      var cohortDelta = imp.delta !== null ? imp.delta : 0;
+      var cohortColor = cohortDelta > 0 ? '#15803d' : '#dc2626';
+      impactHtml = '<div class="osv-sect-wrap" style="margin-bottom:20px">'
+        + '<div class="osv-sect-hd"><span class="osv-sect-title">&#127775; OSV Impact Story</span><span class="osv-sect-sub">Score comparison: OSV-completed sellers vs those still in progress</span></div>'
+        + '<div class="osv-impact-row">'
+        + '<div class="osv-impact-cohort" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac">'
+        +   '<div style="font-size:11px;font-weight:600;color:#15803d;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">OSV Completed (' + fmt(imp.sampleSize) + ' sellers)</div>'
+        +   '<div style="font-size:32px;font-weight:800;color:#15803d">' + (imp.verifiedAvg !== null ? imp.verifiedAvg : '—') + '<span style="font-size:14px;font-weight:500"> / 10</span></div>'
+        +   '<div style="font-size:12px;color:#166534;margin-top:4px">Average score after verification</div>'
+        + '</div>'
+        + (imp.nonVerifiedAvg !== null ? '<div class="osv-impact-cohort" style="background:linear-gradient(135deg,#fff7ed,#fed7aa);border:1.5px solid #fdba74">'
+        +   '<div style="font-size:11px;font-weight:600;color:#c2410c;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Not Yet Completed</div>'
+        +   '<div style="font-size:32px;font-weight:800;color:#c2410c">' + imp.nonVerifiedAvg + '<span style="font-size:14px;font-weight:500"> / 10</span></div>'
+        +   '<div style="font-size:12px;color:#9a3412;margin-top:4px">Average score for pending sellers</div>'
+        + '</div>' : '')
+        + (imp.delta !== null ? '<div class="osv-impact-delta" style="text-align:center;padding:24px 28px;background:var(--bg2);border-radius:12px;border:1.5px solid var(--bord)">'
+        +   '<div style="font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Score Difference</div>'
+        +   '<div style="font-size:36px;font-weight:900;color:' + cohortColor + '">' + (cohortDelta >= 0 ? '+' : '') + cohortDelta + '</div>'
+        +   '<div style="font-size:12px;color:var(--txt2);margin-top:4px">Verified sellers score ' + Math.abs(cohortDelta) + ' points ' + (cohortDelta >= 0 ? 'higher' : 'lower') + ' on average</div>'
+        + '</div>' : '')
+        + '</div></div>';
+    } else {
+      // Has pre-score: genuine before vs after
+      var totalAnalyzed = imp.sampleSize;
+      var improvPct = totalAnalyzed > 0 ? Math.round(imp.improvers / totalAnalyzed * 100) : 0;
+      var declPct   = totalAnalyzed > 0 ? Math.round(imp.decliners / totalAnalyzed * 100) : 0;
+      var stayPct   = totalAnalyzed > 0 ? Math.round(imp.unchanged / totalAnalyzed * 100) : 0;
+      impactHtml = '<div class="osv-sect-wrap" style="margin-bottom:20px">'
+        + '<div class="osv-sect-hd"><span class="osv-sect-title">&#127775; OSV Score Impact &ndash; Before vs After</span><span class="osv-sect-sub">Analysed ' + fmt(totalAnalyzed) + ' verified sellers with both pre-OSV and post-OSV scores</span></div>'
+        + '<div class="osv-impact-row">'
+        + '<div class="osv-impact-cohort" style="background:linear-gradient(135deg,#f8fafc,#e2e8f0);border:1.5px solid #cbd5e1">'
+        +   '<div style="font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Before OSV (Pre-Score)</div>'
+        +   '<div style="font-size:32px;font-weight:800;color:#334155">' + imp.preAvg + '<span style="font-size:14px;font-weight:500"> / 10</span></div>'
+        +   '<div style="font-size:12px;color:#475569;margin-top:4px">Average score before verification</div>'
+        + '</div>'
+        + '<div class="osv-impact-cohort" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac">'
+        +   '<div style="font-size:11px;font-weight:600;color:#15803d;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">After OSV (Post-Score)</div>'
+        +   '<div style="font-size:32px;font-weight:800;color:#15803d">' + imp.postAvg + '<span style="font-size:14px;font-weight:500"> / 10</span></div>'
+        +   '<div style="font-size:12px;color:#166534;margin-top:4px">Average score after verification</div>'
+        + '</div>'
+        + '<div class="osv-impact-delta" style="text-align:center;padding:24px 28px;background:var(--bg2);border-radius:12px;border:1.5px solid var(--bord)">'
+        +   '<div style="font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Net Change</div>'
+        +   '<div style="font-size:36px;font-weight:900;color:' + impColor + '">' + impArrow + ' ' + (imp.delta >= 0 ? '+' : '') + imp.delta + '</div>'
+        +   '<div style="font-size:12px;color:var(--txt2);margin-top:4px">Average score movement</div>'
+        + '</div>'
+        + '</div>'
+        + '<div class="osv-impact-bands" style="margin-top:14px">'
+        + '<div style="font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">How scores shifted</div>'
+        + '<div style="display:flex;gap:12px;flex-wrap:wrap">'
+        + '<div style="flex:1;min-width:120px;padding:14px 16px;background:#f0fdf4;border-radius:10px;border:1.5px solid #86efac;text-align:center">'
+        +   '<div style="font-size:26px;font-weight:800;color:#15803d">' + imp.improvers + '</div>'
+        +   '<div style="font-size:11px;font-weight:600;color:#15803d">' + improvPct + '% Improved</div>'
+        +   '<div style="font-size:10px;color:#166534;margin-top:2px">Score went up &gt; 0.5</div>'
+        + '</div>'
+        + '<div style="flex:1;min-width:120px;padding:14px 16px;background:#fefce8;border-radius:10px;border:1.5px solid #fde047;text-align:center">'
+        +   '<div style="font-size:26px;font-weight:800;color:#854d0e">' + imp.unchanged + '</div>'
+        +   '<div style="font-size:11px;font-weight:600;color:#854d0e">' + stayPct + '% Stable</div>'
+        +   '<div style="font-size:10px;color:#713f12;margin-top:2px">Score within &plusmn; 0.5</div>'
+        + '</div>'
+        + '<div style="flex:1;min-width:120px;padding:14px 16px;background:#fef2f2;border-radius:10px;border:1.5px solid #fca5a5;text-align:center">'
+        +   '<div style="font-size:26px;font-weight:800;color:#dc2626">' + imp.decliners + '</div>'
+        +   '<div style="font-size:11px;font-weight:600;color:#dc2626">' + declPct + '% Declined</div>'
+        +   '<div style="font-size:10px;color:#b91c1c;margin-top:2px">Score went down &gt; 0.5</div>'
+        + '</div>'
+        + '</div></div>'
+        + '</div>';
+    }
+  }
+
+  // ── Transacted Sellers + OSV Status ──
+  var ti = d.txnAndInitiated || {};
+  var txnImpHtml = '';
+  if (ti.total > 0) {
+    var vPct  = _osvPct(ti.verified||0,    ti.total);
+    var iPct  = _osvPct(ti.inProgress||0,  ti.total);
+    var niPct = _osvPct(ti.notInitiated||0,ti.total);
+    txnImpHtml = '<div class="osv-sect-wrap" style="margin-bottom:20px">'
+      + '<div class="osv-sect-hd"><span class="osv-sect-title">&#128200; Transacted Sellers &amp; OSV Status</span><span class="osv-sect-sub">Sellers who have completed at least one transaction — their OSV progress</span></div>'
+      + '<div style="display:flex;gap:0;border-radius:12px;overflow:hidden;border:1.5px solid var(--bord);margin-bottom:12px">'
+      + (ti.verified   > 0 ? '<div style="flex:' + ti.verified   + ';background:#16a34a;padding:12px 16px;text-align:center"><div style="font-size:22px;font-weight:800;color:#fff">' + ti.verified   + '</div><div style="font-size:10px;color:#dcfce7;font-weight:600;text-transform:uppercase">OSV Verified</div><div style="font-size:11px;color:#bbf7d0">' + vPct  + '%</div></div>' : '')
+      + (ti.inProgress > 0 ? '<div style="flex:' + ti.inProgress + ';background:#d97706;padding:12px 16px;text-align:center"><div style="font-size:22px;font-weight:800;color:#fff">' + ti.inProgress + '</div><div style="font-size:10px;color:#fef3c7;font-weight:600;text-transform:uppercase">In Progress</div><div style="font-size:11px;color:#fde68a">' + iPct  + '%</div></div>' : '')
+      + (ti.notInitiated>0 ? '<div style="flex:' + ti.notInitiated + ';background:#64748b;padding:12px 16px;text-align:center"><div style="font-size:22px;font-weight:800;color:#fff">' + ti.notInitiated + '</div><div style="font-size:10px;color:#e2e8f0;font-weight:600;text-transform:uppercase">OSV Pending</div><div style="font-size:11px;color:#cbd5e1">' + niPct + '%</div></div>' : '')
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--txt3);padding:6px 2px">'
+      + fmt(ti.total) + ' sellers have transacted &middot; '
+      + fmt(ti.withOsv||0) + ' (' + _osvPct(ti.withOsv||0,ti.total) + '%) have OSV initiated or completed &middot; '
+      + fmt(ti.notInitiated||0) + ' (' + niPct + '%) transacted sellers yet to start OSV'
+      + '</div>'
+      + '<button class="osv-drill-action-btn" onclick="_osvOpenStatusFilter(\'transactedOSV\')" style="margin-top:8px">View Transacted Sellers &#8594;</button>'
+      + '</div>';
+  }
+
   // ── Key Takeaways ──
   var j = jn, s2 = sd, p = po;
   var takeaways = [];
@@ -13250,12 +13582,18 @@ function renderOSVDash() {
   if (cmpPct > 0) takeaways.push(cmpPct + '% of eligible sellers have completed OSV.');
   if (p.avgScore !== null) {
     var impText = 'Average post-OSV score is ' + p.avgScore;
-    if (p.scoreImprovement !== null && p.scoreImprovement !== undefined) {
-      impText += ', an improvement of ' + Math.abs(p.scoreImprovement) + ' vs previous period.';
+    if (p.scoreImprovement !== null && p.scoreImprovement !== undefined && p.scoreImprovement !== 0) {
+      impText += ', a ' + (p.scoreImprovement > 0 ? 'gain' : 'dip') + ' of ' + Math.abs(p.scoreImprovement) + ' points vs pre-OSV.';
     } else {
       impText += ' / 10.';
     }
     takeaways.push(impText);
+  }
+  if (ti.total > 0 && ti.notInitiated > 0) {
+    takeaways.push(fmt(ti.notInitiated) + ' sellers have transacted but OSV is yet to be initiated — they should be prioritised.');
+  }
+  if (ks.total > 0 && ks.osvSent > 0) {
+    takeaways.push(fmt(ks.osvSent) + ' OSV invitations have been dispatched across ' + fmt(ks.total) + ' scored sellers.');
   }
   if (takeaways.length === 0) takeaways.push('Data is loading — check back after the next backend sync.');
   var ktHtml = '<div class="osv-kt-wrap"><div class="osv-kt-hd"><div class="osv-kt-ic">' + _osvIcBulb + '</div><div class="osv-kt-title">Key Takeaways</div></div>'
@@ -13296,6 +13634,12 @@ function renderOSVDash() {
     +     scoreHtml
     +   '</div>'
     + '</div>'
+    // KYC + Channel metrics
+    + kycHtml
+    // OSV Impact storytelling
+    + impactHtml
+    // Transacted sellers OSV breakdown
+    + txnImpHtml
     // Bottom row: Plastic dist + Metal dist + Key Takeaways
     + '<div class="osv-bot-row">'
     +   buildDistCard('Score Distribution &ndash; Plastic', sc.plastic, 'osv-sdist-plastic', null)
@@ -13314,6 +13658,13 @@ function renderOSVDash() {
     +   '</div>'
     + '</div>';
 }
+
+// helper button style (defined once for OSV sections above)
+(function() {
+  var s = document.createElement('style');
+  s.textContent = '.osv-impact-row{display:flex;gap:14px;flex-wrap:wrap}.osv-impact-cohort,.osv-impact-delta{flex:1;min-width:160px;padding:20px 22px;border-radius:12px}.osv-impact-bands{padding:0 2px}.osv-sect-wrap{padding:0 0 4px}.osv-drill-action-btn{background:var(--acc);color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}';
+  document.head.appendChild(s);
+})();
 
 // ── Click handlers for journey stages and status cards ───────
 function _osvOpenJourneyFilter(key) {
@@ -13341,11 +13692,12 @@ function _osvOpenStatusFilter(key) {
     inProgress:           { title: 'In Progress',               sub: 'Sellers with active OSV verification',                fn: function(r){ return r.osvStatus==='in_progress'; } },
     completed:            { title: 'OSV Completed',             sub: 'Sellers who have completed OSV',                      fn: function(r){ return r.osvStatus==='verified'; } },
     scoredSellers:        { title: 'Scored Sellers',            sub: 'Sellers with post-OSV scores',                        fn: function(r){ return r.osvStatus==='verified'&&r.score!==null; } },
-    pendingScore:         { title: 'Pending Score',             sub: 'Completed OSVs awaiting score generation',            fn: function(r){ return r.osvStatus==='verified'&&(r.score===null||r.score===undefined); } }
+    pendingScore:         { title: 'Pending Score',             sub: 'Completed OSVs awaiting score generation',            fn: function(r){ return r.osvStatus==='verified'&&(r.score===null||r.score===undefined); } },
+    transactedOSV:        { title: 'Transacted Sellers',        sub: 'Sellers who have completed transactions — with OSV status', fn: function(r){ return !!r.hasTransaction; }, opts: { showKyc: true, showSent: true, showTpv: true } }
   };
   var cfg = configs[key]; if (!cfg) return;
   var filtered = sl.filter(cfg.fn);
-  _osvDrill(cfg.title, cfg.sub + ' · ' + filtered.length + ' sellers', filtered);
+  _osvDrill(cfg.title, cfg.sub + ' · ' + filtered.length + ' sellers', filtered, cfg.opts);
 }
 </script>
 </body>

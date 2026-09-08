@@ -3742,7 +3742,7 @@ function debugDocs() {
 // 7-stage OSV journey, status distribution and score analysis.
 // ═══════════════════════════════════════════════════════════════
 function getOSVDashboardData() {
-  var CACHE_KEY = 'osv_dash_v3';
+  var CACHE_KEY = 'osv_dash_v4';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -3819,6 +3819,17 @@ function getOSVDashboardData() {
                          'account_manager','rm','kam','executive','agent']);
       var vsUpd  = vfc_(['last_updated','last_updated_date','updated_at','updated_date',
                          'osv_date','osv_updated_date','consent_date','status_date']);
+      // New columns: KYC Status / OSV Sent / Third Party / Pre-OSV Score
+      var vsKyc      = vfc_(['kyc_status','kyc','kyc_verification_status','kyc_state',
+                             'kyc_verification','kyc_completed','kyc_done','kyc_result']);
+      var vsOsvSent  = vfc_(['osv_sent','osv_sent_date','osv_initiation_date','osv_initiated_date',
+                             'consent_sent','consent_sent_date','osv_dispatch_date','osv_invite_date',
+                             'osv_invite_sent','verification_sent_date']);
+      var vsThirdPty = vfc_(['third_party','third_party_verification','tpv','third_party_status',
+                             '3rd_party','third_party_verified','tpv_status','third_party_check']);
+      var vsPreScr   = vfc_(['pre_osv_score','score_before_osv','initial_score','baseline_score',
+                             'pre_score','score_pre','previous_score','old_score','score_before',
+                             'pre_verification_score','pre_audit_score']);
       // Auto-detect scale — same logic as getQualityData.
       var _osvScIdx = vsDen >= 0 ? vsDen : (vsScr >= 0 ? vsScr : VS_COLS.denominator);
       var _osvScMax = 0;
@@ -3852,11 +3863,37 @@ function getOSVDashboardData() {
         var cat    = (vsCat >= 0 ? String(row[vsCat] || '').trim() : '') || sel.category || '';
         var upd    = '';
         if (vsUpd >= 0) { var _pd = parseDate(row[vsUpd]); upd = _pd ? fmtDate(_pd) : ''; }
+
+        // KYC Status
+        var kycRaw = vsKyc >= 0 ? String(row[vsKyc] || '').trim() : '';
+        var kycUp  = kycRaw.toUpperCase().replace(/\s+/g,'_');
+        var kycSt  = (kycUp==='COMPLETED'||kycUp==='DONE'||kycUp==='YES'||kycUp==='Y'||
+                      kycUp==='TRUE'||kycUp==='VERIFIED'||kycUp==='APPROVED') ? 'completed'
+                   : (kycUp==='PENDING'||kycUp==='IN_PROGRESS'||kycUp==='PROCESSING'||
+                      kycUp==='ONGOING'||kycUp==='INITIATED'||kycUp==='UNDER_REVIEW') ? 'pending'
+                   : (kycRaw ? 'not_started' : '');
+
+        // OSV Sent — treat any non-empty date/flag as sent
+        var osvSentRaw = vsOsvSent >= 0 ? String(row[vsOsvSent] || '').trim() : '';
+        var osvSent = osvSentRaw !== '' && osvSentRaw !== '-' && osvSentRaw !== '—' && osvSentRaw !== 'N/A';
+
+        // Third Party Verification
+        var tpvRaw = vsThirdPty >= 0 ? String(row[vsThirdPty] || '').trim() : '';
+        var tpvUp  = tpvRaw.toUpperCase().replace(/\s+/g,'_');
+        var thirdParty = (tpvUp==='YES'||tpvUp==='Y'||tpvUp==='TRUE'||tpvUp==='DONE'||
+                          tpvUp==='VERIFIED'||tpvUp==='COMPLETED'||tpvUp==='POSITIVE');
+
+        // Pre-OSV Score
+        var preRaw = vsPreScr >= 0 ? parseFloat(row[vsPreScr]) : NaN;
+        var preScore = (!isNaN(preRaw) && preRaw >= 0) ? Math.round(preRaw / _osvDiv * 10) / 10 : null;
+
         osvRecords.push({
           name: sel.name || nm.slice(0, 60), id: sel.id || vid,
-          osvStatus: osvSt, score: score, category: cat,
+          osvStatus: osvSt, score: score, preScore: preScore,
+          category: cat,
           assignedTo: vsAsg >= 0 ? String(row[vsAsg] || '').trim().slice(0, 60) : '',
-          updatedDate: upd, hasTransaction: sel.hasTransaction
+          updatedDate: upd, hasTransaction: sel.hasTransaction,
+          kycStatus: kycSt, osvSent: osvSent, thirdParty: thirdParty
         });
       });
     }
@@ -3926,11 +3963,96 @@ function getOSVDashboardData() {
       id:             s.id,
       osvStatus:      r ? r.osvStatus       : 'not_initiated',
       score:          r ? r.score           : null,
+      preScore:       r ? (r.preScore !== undefined ? r.preScore : null) : null,
       category:       r ? r.category        : s.category,
       assignedTo:     r ? r.assignedTo      : '',
       updatedDate:    r ? r.updatedDate     : '',
-      hasTransaction: s.hasTransaction
+      hasTransaction: s.hasTransaction,
+      kycStatus:      r ? (r.kycStatus  || '') : '',
+      osvSent:        r ? (r.osvSent    || false) : false,
+      thirdParty:     r ? (r.thirdParty || false) : false
     };
+  });
+
+  // KYC + OSV Sent + Third Party summary metrics
+  var kycCompleted = 0, kycPending = 0, kycNotStarted = 0;
+  var osvSentCount = 0, thirdPartyCount = 0;
+  osvRecords.forEach(function(r) {
+    if (r.kycStatus === 'completed')    kycCompleted++;
+    else if (r.kycStatus === 'pending') kycPending++;
+    else if (r.kycStatus)              kycNotStarted++;
+    if (r.osvSent)     osvSentCount++;
+    if (r.thirdParty)  thirdPartyCount++;
+  });
+
+  // OSV Impact: pre vs post score analysis
+  var impact = null;
+  var preScoreRecords = osvRecords.filter(function(r) {
+    return r.preScore !== null && r.score !== null && r.osvStatus === 'verified';
+  });
+  if (preScoreRecords.length > 0) {
+    var preSum = 0, postSum = 0, improvers = 0, decliners = 0, unchanged = 0;
+    var bandMoves = { noMove: 0, upOne: 0, upTwo: 0, upThree: 0, down: 0 };
+    preScoreRecords.forEach(function(r) {
+      preSum  += r.preScore;
+      postSum += r.score;
+      var delta = r.score - r.preScore;
+      if (delta > 0.5)       improvers++;
+      else if (delta < -0.5) decliners++;
+      else                   unchanged++;
+      var preBand  = Math.floor(r.preScore / 2.5);
+      var postBand = Math.floor(r.score    / 2.5);
+      var diff = postBand - preBand;
+      if      (diff >= 3)  bandMoves.upThree++;
+      else if (diff === 2) bandMoves.upTwo++;
+      else if (diff === 1) bandMoves.upOne++;
+      else if (diff < 0)   bandMoves.down++;
+      else                 bandMoves.noMove++;
+    });
+    impact = {
+      sampleSize: preScoreRecords.length,
+      preAvg:   Math.round(preSum  / preScoreRecords.length * 10) / 10,
+      postAvg:  Math.round(postSum / preScoreRecords.length * 10) / 10,
+      delta:    Math.round((postSum - preSum) / preScoreRecords.length * 10) / 10,
+      improvers: improvers, decliners: decliners, unchanged: unchanged,
+      bandMoves: bandMoves
+    };
+  } else {
+    // No pre-score column — cohort comparison: verified vs not
+    var verifiedScores = osvRecords.filter(function(r) {
+      return r.osvStatus === 'verified' && r.score !== null;
+    });
+    var otherScores = osvRecords.filter(function(r) {
+      return r.osvStatus !== 'verified' && r.score !== null;
+    });
+    if (verifiedScores.length > 0) {
+      var vSum = verifiedScores.reduce(function(a, r) { return a + r.score; }, 0);
+      var oSum = otherScores.reduce(function(a, r)   { return a + r.score; }, 0);
+      impact = {
+        sampleSize: verifiedScores.length,
+        cohortComparison: true,
+        verifiedAvg: Math.round(vSum / verifiedScores.length * 10) / 10,
+        nonVerifiedAvg: otherScores.length > 0
+          ? Math.round(oSum / otherScores.length * 10) / 10 : null,
+        delta: otherScores.length > 0
+          ? Math.round((vSum / verifiedScores.length - oSum / otherScores.length) * 10) / 10
+          : null,
+        improvers: 0, decliners: 0, unchanged: 0
+      };
+    }
+  }
+
+  // Transacted sellers with OSV data
+  var txnAndInitiated = {
+    total: 0, withOsv: 0, verified: 0, inProgress: 0, notInitiated: 0
+  };
+  fullSellerList.forEach(function(s) {
+    if (!s.hasTransaction) return;
+    txnAndInitiated.total++;
+    if (s.osvStatus === 'verified')      txnAndInitiated.verified++;
+    else if (s.osvStatus === 'in_progress') txnAndInitiated.inProgress++;
+    else                                 txnAndInitiated.notInitiated++;
+    if (s.osvStatus !== 'not_initiated') txnAndInitiated.withOsv++;
   });
 
   var result = {
@@ -3948,9 +4070,17 @@ function getOSVDashboardData() {
     postOSV: {
       avgScore: avgScore, scoredSellers: scoredSellers,
       pendingScore: pendingScore, coverage: scoreCovPct,
-      scoreImprovement: null,
-      prevPeriodAvg: null, currentPeriodAvg: avgScore
+      scoreImprovement: impact ? impact.delta : null,
+      prevPeriodAvg: impact && !impact.cohortComparison ? impact.preAvg : null,
+      currentPeriodAvg: avgScore
     },
+    kycSummary: {
+      completed: kycCompleted, pending: kycPending, notStarted: kycNotStarted,
+      osvSent: osvSentCount, thirdParty: thirdPartyCount,
+      total: osvRecords.length
+    },
+    impact: impact,
+    txnAndInitiated: txnAndInitiated,
     scoreDist: { plastic: fMat_(mats.Plastic), metal: fMat_(mats.Metal) },
     sellerList: fullSellerList
   };
