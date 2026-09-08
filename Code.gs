@@ -654,6 +654,115 @@ function getTransactedVendors(filtersJson) {
   }
 }
 
+// ─── Marketplace Transactions Module ──────────────────────────────────────────
+// Computes a comprehensive transaction summary for the Transactions dashboard view.
+function getTransactionModuleData(filtersJson) {
+  try {
+    var f    = filtersJson ? JSON.parse(filtersJson) : {};
+    var catF = (f.category || 'all').toLowerCase();
+    var cKey = 'txn_mod_v1_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF]);
+    var cache = CacheService.getScriptCache();
+    var hit   = cache.get(cKey);
+    if (hit) return hit;
+
+    var sCfg = AUDIENCE_CFG.seller;
+    var bCfg = AUDIENCE_CFG.buyer;
+    var sAll = normalizeRows(readData('seller'), sCfg).filter(function(r) { return applyDateFilter(r, f); });
+    var bAll = normalizeRows(readData('buyer'),  bCfg).filter(function(r) { return applyDateFilter(r, f); });
+    if (catF !== 'all') {
+      sAll = sAll.filter(function(r) { return String(r.category||'').toLowerCase() === catF; });
+      bAll = bAll.filter(function(r) { return String(r.category||'').toLowerCase() === catF; });
+    }
+
+    var now = new Date();
+
+    function cntCat(rows, cat) {
+      return rows.filter(function(r) { return String(r.category||'').toLowerCase() === cat; }).length;
+    }
+    function sumGmv(rows, cat) {
+      return rows.reduce(function(s, r) {
+        if (cat && String(r.category||'').toLowerCase() !== cat) return s;
+        return s + (r.txnValue || 0);
+      }, 0);
+    }
+    function aging(rows) {
+      var lt30=0, d30=0, gt90=0;
+      rows.forEach(function(r) {
+        if (!r.onboardedDate) return;
+        var days = Math.floor((now - r.onboardedDate) / 86400000);
+        if (days < 30) lt30++; else if (days <= 90) d30++; else gt90++;
+      });
+      return { lt30:lt30, d30_90:d30, gt90:gt90 };
+    }
+    function mkMm(rows) {
+      var mm = {};
+      rows.forEach(function(r) {
+        if (!r.txnDate) return;
+        var k = r.txnDate.getFullYear() + '-' + String(r.txnDate.getMonth()+1).padStart(2,'0');
+        mm[k] = (mm[k]||0)+1;
+      });
+      return mm;
+    }
+
+    var sTxn = sAll.filter(function(r) { return r.hasTransacted; });
+    var bTxn = bAll.filter(function(r) { return r.hasTransacted; });
+    var sMm  = mkMm(sTxn);
+    var bMm  = mkMm(bTxn);
+
+    var monthSet = {};
+    Object.keys(sMm).forEach(function(k) { monthSet[k]=1; });
+    Object.keys(bMm).forEach(function(k) { monthSet[k]=1; });
+    var months = Object.keys(monthSet).sort();
+
+    var gmvMm = {};
+    sTxn.concat(bTxn).forEach(function(r) {
+      if (!r.txnDate) return;
+      var k = r.txnDate.getFullYear() + '-' + String(r.txnDate.getMonth()+1).padStart(2,'0');
+      gmvMm[k] = (gmvMm[k]||0) + (r.txnValue||0);
+    });
+
+    var sGmvTot  = sumGmv(sTxn, null);
+    var bGmvTot  = sumGmv(bTxn, null);
+    var sRepeat  = sTxn.filter(function(r) { return (r.totalOrders||0) > 1; }).length;
+    var sSingle  = sTxn.filter(function(r) { return (r.totalOrders||0) === 1; }).length;
+    var repRate  = sTxn.length > 0 ? Math.round(sRepeat/sTxn.length*100) : 0;
+    var newRate  = sTxn.length > 0 ? Math.round(sSingle/sTxn.length*100) : 0;
+    var avgOrd   = sTxn.length > 0 ? Math.round(sTxn.reduce(function(s,r){return s+(r.totalOrders||0);},0)/sTxn.length) : 0;
+    var avgGmv   = sTxn.length > 0 ? Math.round(sGmvTot/sTxn.length) : 0;
+
+    var result = {
+      success: true,
+      total: sTxn.length + bTxn.length,
+      nonTransacted: (sAll.length - sTxn.length) + (bAll.length - bTxn.length),
+      seller: {
+        total:   sTxn.length,
+        metal:   cntCat(sTxn,'metal'),
+        plastic: cntCat(sTxn,'plastic'),
+        aging:   aging(sTxn),
+        gmv:     { total:sGmvTot, metal:sumGmv(sTxn,'metal'), plastic:sumGmv(sTxn,'plastic') }
+      },
+      buyer: {
+        total:   bTxn.length,
+        metal:   cntCat(bTxn,'metal'),
+        plastic: cntCat(bTxn,'plastic'),
+        aging:   aging(bTxn),
+        gmv:     { total:bGmvTot, metal:sumGmv(bTxn,'metal'), plastic:sumGmv(bTxn,'plastic') }
+      },
+      gmv: { total:sGmvTot+bGmvTot, metal:sumGmv(sTxn,'metal')+sumGmv(bTxn,'metal'), plastic:sumGmv(sTxn,'plastic')+sumGmv(bTxn,'plastic') },
+      health: { repeatRate:repRate, newTxnRate:newRate, avgOrders:avgOrd, avgGmv:avgGmv },
+      months: months,
+      monthData: months.map(function(m) {
+        return { month:m, sellers:sMm[m]||0, buyers:bMm[m]||0, gmv:gmvMm[m]||0 };
+      })
+    };
+    var out = JSON.stringify(result);
+    try { cache.put(cKey, out, 300); } catch(e) {}
+    return out;
+  } catch(err) {
+    return JSON.stringify({ success:false, error:(err&&err.message)?err.message:String(err) });
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // DATA READ + NORMALIZATION
 // ─────────────────────────────────────────────────────────────
