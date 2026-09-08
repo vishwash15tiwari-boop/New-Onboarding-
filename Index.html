@@ -3266,13 +3266,19 @@ body.view-gst #mm-crumbs{display:none}
 .mf-detail-vd svg{width:15px;height:15px;flex-shrink:0}
 .mf-detail-vd:hover{opacity:.88;transform:translateY(-1px)}
 
-/* ── Onboarding Journey rich 3-column card layout (detail/vertical mode) ── */
+/* ── Onboarding Journey card layout (detail/vertical mode) ── */
 /* Hidden in compact horizontal mode; shown only inside .mmdetail */
-.mfrc-left,.mfrc-right{display:none}
-.mmdetail .mf-card{display:flex;flex-direction:row;align-items:flex-start;gap:0;max-width:none;width:100%;padding:20px 18px}
-.mmdetail .mfrc-left{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:120px;max-width:140px;padding-right:18px;flex-shrink:0;text-align:center}
+.mfrc-left,.mfrc-right,.mfrc-top{display:none}
+/* Card becomes a column: def strip on top, then left+mid row below */
+.mmdetail .mf-card{display:flex;flex-direction:column;align-items:stretch;gap:0;max-width:none;width:100%;padding:0}
+/* Top definition strip */
+.mmdetail .mfrc-top{display:block;padding:6px 16px 5px;border-bottom:1px solid var(--border)}
+/* Row wrapping icon+stats panel and matrix panel */
+.mmdetail .mfrc-row{display:flex;flex-direction:row;align-items:flex-start;gap:0;padding:16px 18px}
+.mmdetail .mfrc-left{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:112px;max-width:130px;padding-right:16px;flex-shrink:0;text-align:center}
 .mmdetail .mfrc-mid{flex:1;min-width:0}
-.mmdetail .mfrc-right{display:flex;flex-direction:column;justify-content:flex-start;padding-top:4px;min-width:140px;max-width:170px;padding-left:18px;border-left:1px solid var(--border);flex-shrink:0}
+/* Right panel removed — definition now lives in mfrc-top */
+.mfrc-right,.mmdetail .mfrc-right{display:none!important}
 /* In detail mode hide the duplicate inline head (number+label are in mfrc-left) */
 .mmdetail .mf-head-inline{display:none}
 /* Icon circle */
@@ -3292,7 +3298,7 @@ body.view-gst #mm-crumbs{display:none}
 .mfrc-badge-purple{background:#f3e8ff;color:#7c3aed}
 .mfrc-badge-gray{background:var(--bg2);color:var(--txt2)}
 /* Stage definition text */
-.mfrc-def{font-size:.68rem;color:var(--txt2);line-height:1.4;margin:0}
+.mfrc-def{font-size:.67rem;color:var(--txt3);line-height:1.35;margin:0}
 /* Connector with percentage text in detail/vertical mode */
 .mmdetail .mf-sep{width:100%;height:auto;display:flex;flex-direction:column;align-items:flex-start;padding:2px 0;gap:0}
 .mmdetail .mf-sep svg{transform:rotate(90deg);width:20px;height:20px;margin-left:60px}
@@ -6639,13 +6645,16 @@ function mmRenderFunnel() {
       : inlineHead + matrixHtml;
     var richMid = '<div class="mfrc-mid">' + midContent + '</div>';
 
-    // Right definition panel — shown only in detail mode.
-    var richRight = '<div class="mfrc-right"><p class="mfrc-def">' + esc(MF_DEFS[s.key] || '') + '</p></div>';
+    // Top definition strip — shown only in detail mode.
+    var richTop = MF_DEFS[s.key]
+      ? '<div class="mfrc-top"><p class="mfrc-def">' + esc(MF_DEFS[s.key]) + '</p></div>'
+      : '';
 
     html += '<div class="mf-card' + (isOnb ? ' mf-has-tat' : '') + '" data-stage="' + s.key + '" role="button" tabindex="0"'
       + ' aria-label="' + esc(s.label) + ': ' + fmt(total) + '. Open detailed records">'
       + '<span class="mf-open-ic" aria-hidden="true">→</span>'
-      + richLeft + richMid + richRight
+      + richTop
+      + '<div class="mfrc-row">' + richLeft + richMid + '</div>'
       + '</div>';
 
     if (i < MF_STAGES.length - 1) {
