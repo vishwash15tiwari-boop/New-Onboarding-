@@ -5486,26 +5486,7 @@ function _mmVertModules(key) {
   var f = function(t, v, ic, tone, kids) { return { t:t, v:fmt(v), ic:ic, tone:tone, kind:'kpi', children:kids }; };
   var mods = [];
 
-  // 1 — Funnel (expands inline as a horizontal stage dashboard)
-  mods.push({ t:'Breakup', ic:MM_IC.funnel, tone:'t-blue', kind:'module', expand:'inline-funnel', eye:'Breakup · stages', children:[
-    f('Successfully Onboarded', onb, MM_IC.check, 't-green',
-      [ _d('Sellers', fmt(vs.completed||0), MM_IC.users), _d('Buyers', fmt(vb.completed||0), MM_IC.users) ]
-        .concat(_catDetails(catOnb)).concat([ _vd('onboarded') ])),
-    f('Rejected Cases', _mmC(vs,vb,'rejected'), MM_IC.x, 't-red',
-      [ _d('Sellers', fmt(vs.rejected||0), MM_IC.users), _d('Buyers', fmt(vb.rejected||0), MM_IC.users) ]
-        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'rejected'))).concat([ _vd('rejected') ])),
-    f('Cases Under Review', _mmC(vs,vb,'inReview'), MM_IC.clock, 't-amber',
-      [ _d('Sellers', fmt(vs.inReview||0), MM_IC.users), _d('Buyers', fmt(vb.inReview||0), MM_IC.users) ]
-        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'inReview'))).concat([ _vd('review') ])),
-    f('Logged In Cases', _mmC(vs,vb,'total'), MM_IC.funnel, 't-blue',
-      [ _d('Sellers', fmt(vs.total||0), MM_IC.users), _d('Buyers', fmt(vb.total||0), MM_IC.users) ]
-        .concat(_catDetails(catTot)).concat([ _vd('total') ])),
-    f('Draft Cases', _mmC(vs,vb,'draft'), MM_IC.draft, 't-purple',
-      [ _d('Sellers', fmt(vs.draft||0), MM_IC.users), _d('Buyers', fmt(vb.draft||0), MM_IC.users) ]
-        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'draft'))).concat([ _vd('draft') ])),
-  ]});
-
-  // 2 — Volume (onboarded composition — Type × Category cross-tab, chains into Geography).
+  // 1 — Volume (onboarded composition — Type × Category cross-tab, chains into Geography).
   //     Category columns are data-driven per vertical; rows are Sellers / Buyers.
   var volBar = catOnb.length
     ? catOnb.map(function(x, i){ return { label:x.cat, v:x.s + x.b, color:MM_CAT_COLORS[i % MM_CAT_COLORS.length], seg:_mmGeoSeg(x.cat) }; })
@@ -5645,6 +5626,25 @@ function _mmVertModules(key) {
       chain:true, records:'onboarded'
     }
   });
+
+  // 2 — Funnel (expands inline as a horizontal stage dashboard)
+  mods.push({ t:'Breakup', ic:MM_IC.funnel, tone:'t-blue', kind:'module', expand:'inline-funnel', eye:'Breakup · stages', children:[
+    f('Successfully Onboarded', onb, MM_IC.check, 't-green',
+      [ _d('Sellers', fmt(vs.completed||0), MM_IC.users), _d('Buyers', fmt(vb.completed||0), MM_IC.users) ]
+        .concat(_catDetails(catOnb)).concat([ _vd('onboarded') ])),
+    f('Rejected Cases', _mmC(vs,vb,'rejected'), MM_IC.x, 't-red',
+      [ _d('Sellers', fmt(vs.rejected||0), MM_IC.users), _d('Buyers', fmt(vb.rejected||0), MM_IC.users) ]
+        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'rejected'))).concat([ _vd('rejected') ])),
+    f('Cases Under Review', _mmC(vs,vb,'inReview'), MM_IC.clock, 't-amber',
+      [ _d('Sellers', fmt(vs.inReview||0), MM_IC.users), _d('Buyers', fmt(vb.inReview||0), MM_IC.users) ]
+        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'inReview'))).concat([ _vd('review') ])),
+    f('Logged In Cases', _mmC(vs,vb,'total'), MM_IC.funnel, 't-blue',
+      [ _d('Sellers', fmt(vs.total||0), MM_IC.users), _d('Buyers', fmt(vb.total||0), MM_IC.users) ]
+        .concat(_catDetails(catTot)).concat([ _vd('total') ])),
+    f('Draft Cases', _mmC(vs,vb,'draft'), MM_IC.draft, 't-purple',
+      [ _d('Sellers', fmt(vs.draft||0), MM_IC.users), _d('Buyers', fmt(vb.draft||0), MM_IC.users) ]
+        .concat(_catDetails(_mmCatRowsFixed(vs, vb, 'draft'))).concat([ _vd('draft') ])),
+  ]});
 
   // 3 — Geographic Split (each region expands an inline interactive India map).
   //     Regions carry BOTH audiences — each card shows onboarded seller · buyer.
