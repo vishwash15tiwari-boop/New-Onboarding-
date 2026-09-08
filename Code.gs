@@ -79,39 +79,57 @@ var MB_GSTIN_COLS = {
 // Per-execution GSTIN lookup cache.  Built once on first call, reused for every
 // subsequent normalizeRows call within the same server-side execution.
 var _gstinLookupCache_ = null;
-// Build id→GSTIN maps for sellers and buyers by reading _mb_sellers / _mb_buyers
-// from META_SHEET_ID directly.  This is the authoritative source regardless of
-// what the main data pipeline (Metabase API, fallback sheet) supplies.
+// Build id→GSTIN and name→GSTIN maps for sellers and buyers from _mb_sellers / _mb_buyers.
+// Name-based lookup is the critical fallback for OMP sellers whose ID space in card 5712
+// doesn't match the seller_id in _mb_sellers — same reason quality uses name joins.
 function _getGstinLookup_() {
   if (_gstinLookupCache_) return _gstinLookupCache_;
-  var lkp = { seller: {}, buyer: {} };
+  var lkp = { seller: {}, buyer: {}, sellerByName: {}, buyerByName: {} };
   if (!CONFIG.META_SHEET_ID) { _gstinLookupCache_ = lkp; return lkp; }
   try {
     var ss = SpreadsheetApp.openById(CONFIG.META_SHEET_ID);
     var specs = [
-      { aud: 'seller', tab: '_mb_sellers', idCands: ['seller_id','id','vendor_id','entity_id'], gstDef: 6 },
-      { aud: 'buyer',  tab: '_mb_buyers',  idCands: ['buyer_id', 'id','vendor_id','entity_id'], gstDef: 11 }
+      { aud: 'seller', tab: '_mb_sellers',
+        idCands:   ['seller_id','id','vendor_id','entity_id'],
+        nameCands: ['seller_name','name','vendor_name','business_name','company_name'],
+        gstDef: 6 },
+      { aud: 'buyer',  tab: '_mb_buyers',
+        idCands:   ['buyer_id','id','vendor_id','entity_id'],
+        nameCands: ['buyer_name','name','vendor_name','business_name','company_name'],
+        gstDef: 11 }
     ];
     specs.forEach(function(sp) {
       var sheet = ss.getSheetByName(sp.tab);
       if (!sheet || sheet.getLastRow() < 2) return;
-      var cols = Math.min(sheet.getLastColumn(), 25);
+      // Read ALL columns so we never miss GSTIN stored beyond column 25.
+      var cols = sheet.getLastColumn();
       var vals = sheet.getRange(1, 1, sheet.getLastRow(), cols).getValues();
       var hdrs = vals[0].map(function(h) {
         return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
       });
-      var idIdx = -1, gstIdx = sp.gstDef;
+      var idIdx = -1, nmIdx = -1, gstIdx = sp.gstDef;
       hdrs.forEach(function(h, i) {
         for (var c = 0; c < sp.idCands.length; c++) {
           if (h === sp.idCands[c] && idIdx < 0) { idIdx = i; break; }
         }
+        for (var n = 0; n < sp.nameCands.length; n++) {
+          if (h === sp.nameCands[n] && nmIdx < 0) { nmIdx = i; break; }
+        }
         if (/^(gstin|gstin_number|gst_number|gst_no|gstin_no|gst)$/.test(h)) gstIdx = i;
       });
-      if (idIdx < 0) return;
+      var byId   = lkp[sp.aud];
+      var byName = lkp[sp.aud + 'ByName'];
       vals.slice(1).forEach(function(row) {
-        var id  = String(row[idIdx]  || '').trim();
         var gst = String(row[gstIdx] || '').trim().toUpperCase();
-        if (id && gst && isValidGSTIN(gst)) lkp[sp.aud][id] = gst;
+        if (!isValidGSTIN(gst)) return;
+        if (idIdx >= 0) {
+          var id = String(row[idIdx] || '').trim();
+          if (id) byId[id] = gst;
+        }
+        if (nmIdx >= 0) {
+          var nm = _qNormName_(String(row[nmIdx] || ''));
+          if (nm) byName[nm] = gst;
+        }
       });
     });
   } catch (e) { Logger.log('_getGstinLookup_: ' + e.message); }
@@ -322,7 +340,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v39_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v40_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -354,7 +372,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v21_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v22_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -378,14 +396,14 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v39_cmb_' + periodKey;
+    var cacheKey  = 'dash_v40_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v39_seller_' + periodKey;
-    var bIndKey = 'dash_v39_buyer_'  + periodKey;
+    var sIndKey = 'dash_v40_seller_' + periodKey;
+    var bIndKey = 'dash_v40_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -444,7 +462,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v21_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v22_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -627,7 +645,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v21_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v22_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
@@ -2017,13 +2035,23 @@ function normalizeRows(raw, cfg) {
   // Layer 3: enrich GSTIN from META_SHEET_ID for any row where format-scan
   // still found nothing.  This covers the case where the main data source
   // (Metabase API / fallback sheet) simply doesn't carry the GSTIN column.
+  // Two sub-layers: ID-based first, then name-based.  Name-based is the critical
+  // path for OMP sellers whose Metabase card ID (card 5712) doesn't match the
+  // seller_id stored in _mb_sellers (different ID systems).
   try {
-    var _gLkp = _getGstinLookup_();
-    var _audLkp = cfg.audience === 'buyer' ? _gLkp.buyer : _gLkp.seller;
+    var _gLkp    = _getGstinLookup_();
+    var _audLkp  = cfg.audience === 'buyer' ? _gLkp.buyer         : _gLkp.seller;
+    var _nameLkp = cfg.audience === 'buyer' ? _gLkp.buyerByName   : _gLkp.sellerByName;
     result.forEach(function(r) {
-      if (!r.gstin && r.id && _audLkp[r.id]) {
-        r.gstin  = _audLkp[r.id];
-        r.hasGST = true;
+      if (r.gstin) return; // already populated
+      // 3a. ID-based lookup
+      if (r.id && _audLkp[r.id]) {
+        r.gstin = _audLkp[r.id]; r.hasGST = true; return;
+      }
+      // 3b. Name-based lookup (OMP sellers: ID spaces differ; name is the shared key)
+      if (r.name) {
+        var _nk = _qNormName_(r.name);
+        if (_nk && _nameLkp[_nk]) { r.gstin = _nameLkp[_nk]; r.hasGST = true; }
       }
     });
   } catch (e) { /* non-fatal — rows without GSTIN stay as-is */ }
