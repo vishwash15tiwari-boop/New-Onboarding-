@@ -115,12 +115,20 @@ function _getGstinLookup_() {
         for (var n = 0; n < sp.nameCands.length; n++) {
           if (h === sp.nameCands[n] && nmIdx < 0) { nmIdx = i; break; }
         }
-        if (/^(gstin|gstin_number|gst_number|gst_no|gstin_no|gst)$/.test(h)) gstIdx = i;
+        if (/^(gstin|gstin_number|gst_number|gst_no|gstin_no|gst|vendor_gstin|seller_gstin|buyer_gstin|gst_identification_number|gstin_no|company_gst|gst_reg)$/.test(h)) gstIdx = i;
       });
       var byId   = lkp[sp.aud];
       var byName = lkp[sp.aud + 'ByName'];
       vals.slice(1).forEach(function(row) {
+        // Primary: header-detected or positional column
         var gst = String(row[gstIdx] || '').trim().toUpperCase();
+        // Fallback: format-scan entire row for a valid GSTIN when primary column is blank/invalid
+        if (!isValidGSTIN(gst)) {
+          for (var _gsi = 0; _gsi < row.length; _gsi++) {
+            var _gsc = String(row[_gsi] || '').trim().toUpperCase();
+            if (isValidGSTIN(_gsc)) { gst = _gsc; break; }
+          }
+        }
         if (!isValidGSTIN(gst)) return;
         if (idIdx >= 0) {
           var id = String(row[idIdx] || '').trim();
@@ -133,6 +141,48 @@ function _getGstinLookup_() {
       });
     });
   } catch (e) { Logger.log('_getGstinLookup_: ' + e.message); }
+
+  // Layer 4: Vendor Score sheet — has GSTINs for rated sellers that may be
+  // blank in _mb_sellers (only fills gaps; never overwrites an existing entry).
+  try {
+    if (CONFIG.VENDOR_SCORE_SHEET_ID) {
+      var vsSS  = SpreadsheetApp.openById(CONFIG.VENDOR_SCORE_SHEET_ID);
+      var vsTab = CONFIG.VENDOR_SCORE_TAB ? vsSS.getSheetByName(CONFIG.VENDOR_SCORE_TAB) : vsSS.getSheets()[0];
+      if (vsTab && vsTab.getLastRow() >= 2) {
+        var vsCols = vsTab.getLastColumn();
+        var vsVals = vsTab.getRange(1, 1, vsTab.getLastRow(), vsCols).getValues();
+        var vsHdrs = vsVals[0].map(function(h) {
+          return String(h).trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+        });
+        var vsGstIdx = -1, vsNmIdx = -1, vsIdIdx = -1;
+        vsHdrs.forEach(function(h, i) {
+          if (/^(gstin|gstin_number|gst_number|gst_no|gstin_no|gst|vendor_gstin|seller_gstin)$/.test(h) && vsGstIdx < 0) vsGstIdx = i;
+          if (['seller_name','name','vendor_name','business_name','company_name'].indexOf(h) >= 0 && vsNmIdx < 0) vsNmIdx = i;
+          if (['seller_id','id','vendor_id','entity_id'].indexOf(h) >= 0 && vsIdIdx < 0) vsIdIdx = i;
+        });
+        vsVals.slice(1).forEach(function(row) {
+          var gst = vsGstIdx >= 0 ? String(row[vsGstIdx] || '').trim().toUpperCase() : '';
+          // Format-scan fallback if primary column is blank
+          if (!isValidGSTIN(gst)) {
+            for (var _vi = 0; _vi < row.length; _vi++) {
+              var _vc = String(row[_vi] || '').trim().toUpperCase();
+              if (isValidGSTIN(_vc)) { gst = _vc; break; }
+            }
+          }
+          if (!isValidGSTIN(gst)) return;
+          if (vsIdIdx >= 0) {
+            var vsId = String(row[vsIdIdx] || '').trim();
+            if (vsId && !lkp.seller[vsId]) lkp.seller[vsId] = gst;
+          }
+          if (vsNmIdx >= 0) {
+            var vsNm = _qNormName_(String(row[vsNmIdx] || ''));
+            if (vsNm && !lkp.sellerByName[vsNm]) lkp.sellerByName[vsNm] = gst;
+          }
+        });
+      }
+    }
+  } catch(e) { Logger.log('_getGstinLookup_ VS: ' + e.message); }
+
   _gstinLookupCache_ = lkp;
   return lkp;
 }
@@ -340,7 +390,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v40_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v42_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -372,7 +422,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v22_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v24_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -396,14 +446,14 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v40_cmb_' + periodKey;
+    var cacheKey  = 'dash_v42_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v40_seller_' + periodKey;
-    var bIndKey = 'dash_v40_buyer_'  + periodKey;
+    var sIndKey = 'dash_v42_seller_' + periodKey;
+    var bIndKey = 'dash_v42_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -462,7 +512,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v22_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v24_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -645,7 +695,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v22_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v24_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
@@ -678,7 +728,7 @@ function getTransactionModuleData(filtersJson) {
   try {
     var f    = filtersJson ? JSON.parse(filtersJson) : {};
     var catF = (f.category || 'all').toLowerCase();
-    var cKey = 'txn_mod_v1_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF]);
+    var cKey = 'txn_mod_v2_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF]);
     var cache = CacheService.getScriptCache();
     var hit   = cache.get(cKey);
     if (hit) return hit;
@@ -708,9 +758,9 @@ function getTransactionModuleData(filtersJson) {
       rows.forEach(function(r) {
         if (!r.onboardedDate) return;
         var days = Math.floor((now - r.onboardedDate) / 86400000);
-        if (days < 30) lt30++; else if (days <= 90) d30++; else gt90++;
+        if (days <= 30) lt30++; else if (days <= 60) d30++; else gt90++;
       });
-      return { lt30:lt30, d30_90:d30, gt90:gt90 };
+      return { lt30:lt30, d30_60:d30, gt60:gt90 };
     }
     function mkMm(rows) {
       var mm = {};
@@ -722,8 +772,12 @@ function getTransactionModuleData(filtersJson) {
       return mm;
     }
 
-    var sTxn = sAll.filter(function(r) { return r.hasTransacted; });
-    var bTxn = bAll.filter(function(r) { return r.hasTransacted; });
+    var sTxn  = sAll.filter(function(r) { return r.hasTransacted; });
+    var bTxn  = bAll.filter(function(r) { return r.hasTransacted; });
+    var sNonT = sAll.filter(function(r) { return !r.hasTransacted && r.status === 'COMPLETED'; });
+    var bNonT = bAll.filter(function(r) { return !r.hasTransacted && r.status === 'COMPLETED'; });
+    var sOnb  = sAll.filter(function(r) { return r.status === 'COMPLETED'; }).length;
+    var bOnb  = bAll.filter(function(r) { return r.status === 'COMPLETED'; }).length;
     var sMm  = mkMm(sTxn);
     var bMm  = mkMm(bTxn);
 
@@ -748,30 +802,50 @@ function getTransactionModuleData(filtersJson) {
     var avgOrd   = sTxn.length > 0 ? Math.round(sTxn.reduce(function(s,r){return s+(r.totalOrders||0);},0)/sTxn.length) : 0;
     var avgGmv   = sTxn.length > 0 ? Math.round(sGmvTot/sTxn.length) : 0;
 
+    var totalOnb    = sOnb + bOnb;
+    var totalTxn    = sTxn.length + bTxn.length;
+    var firstTxnPct = totalOnb > 0 ? Math.round(totalTxn / totalOnb * 100) : 0;
+    var sNonTAging  = aging(sNonT);
+    var bNonTAging  = aging(bNonT);
+
     var result = {
       success: true,
-      total: sTxn.length + bTxn.length,
-      nonTransacted: (sAll.length - sTxn.length) + (bAll.length - bTxn.length),
+      total: totalTxn,
+      nonTransacted: sNonT.length + bNonT.length,
       seller: {
         total:   sTxn.length,
         metal:   cntCat(sTxn,'metal'),
         plastic: cntCat(sTxn,'plastic'),
-        aging:   aging(sTxn),
+        agingNonTxn: sNonTAging,
         gmv:     { total:sGmvTot, metal:sumGmv(sTxn,'metal'), plastic:sumGmv(sTxn,'plastic') }
       },
       buyer: {
         total:   bTxn.length,
         metal:   cntCat(bTxn,'metal'),
         plastic: cntCat(bTxn,'plastic'),
-        aging:   aging(bTxn),
+        agingNonTxn: bNonTAging,
         gmv:     { total:bGmvTot, metal:sumGmv(bTxn,'metal'), plastic:sumGmv(bTxn,'plastic') }
       },
+      agingNonTxn: {
+        lt30:  (sNonTAging.lt30  ||0) + (bNonTAging.lt30  ||0),
+        d30_60:(sNonTAging.d30_60||0) + (bNonTAging.d30_60||0),
+        gt60:  (sNonTAging.gt60  ||0) + (bNonTAging.gt60  ||0),
+      },
       gmv: { total:sGmvTot+bGmvTot, metal:sumGmv(sTxn,'metal')+sumGmv(bTxn,'metal'), plastic:sumGmv(sTxn,'plastic')+sumGmv(bTxn,'plastic') },
-      health: { repeatRate:repRate, newTxnRate:newRate, avgOrders:avgOrd, avgGmv:avgGmv },
+      health: {
+        firstTxnPct: firstTxnPct,
+        repeatRate:  repRate,
+        newTxnRate:  newRate,
+        avgOrders:   avgOrd,
+        avgGmv:      avgGmv,
+        activeTxn:   totalTxn,
+        noTxn:       sNonT.length + bNonT.length,
+      },
       months: months,
       monthData: months.map(function(m) {
         return { month:m, sellers:sMm[m]||0, buyers:bMm[m]||0, gmv:gmvMm[m]||0 };
-      })
+      }),
+      sellerTotal: sOnb, buyerTotal: bOnb,
     };
     var out = JSON.stringify(result);
     try { cache.put(cKey, out, 300); } catch(e) {}
@@ -2244,6 +2318,7 @@ function vStats(data, vertKey) {
   var hasTxnValData = false, txnValSum = 0;
   var agingCount = 0, overdueCount = 0;
   var tats = [];
+  var withinSla = 0, delayed = 0;
 
   data.forEach(function(r) {
     var isDone = r.status === 'COMPLETED';
@@ -2262,7 +2337,10 @@ function vStats(data, vertKey) {
     // onbTAT is the Level1→Onboarded TAT (Level 1 from card 5292; Onboarded/Created
     // from the main card — see normalizeRows), defined only for completed records.
     // TAT_MAX_DAYS clamps outlier noise.
-    if (r.onbTAT !== null) tats.push(r.onbTAT);   // onboarded-only + range enforced at assignment
+    if (r.onbTAT !== null) {
+      tats.push(r.onbTAT);   // onboarded-only + range enforced at assignment
+      if (r.onbTAT <= 7) withinSla++; else delayed++;
+    }
 
     if (r.hasTxn)        hasTxnData = true;
     if (r.hasTransacted) { transactedCount++; txnCountSum += (r.txnCount || 1); }
@@ -2289,12 +2367,15 @@ function vStats(data, vertKey) {
       transacted: 0, hasTxn: false,
       txnValue: 0, hasTxnVal: false,
       vendorTypes: {},
-      tats: [],
+      tats: [], withinSla: 0, delayed: 0,
     };
     var cs = catMap[c];
     cs.total++;
     // Category TAT uses the same guard as the headline average so the numbers agree.
-    if (r.onbTAT !== null) cs.tats.push(r.onbTAT);
+    if (r.onbTAT !== null) {
+      cs.tats.push(r.onbTAT);
+      if (r.onbTAT <= 7) cs.withinSla++; else cs.delayed++;
+    }
     if (r.status === 'COMPLETED')  cs.onboarded++;
     if (r.status === 'DRAFT')      cs.draft++;
     if (r.status === 'IN_REVIEW')  cs.inReview++;
@@ -2328,6 +2409,7 @@ function vStats(data, vertKey) {
       // record in the category carries a usable TAT).
       avgTAT:   cat.tats.length ? Math.round(avg(cat.tats)) : null,
       tatCount: cat.tats.length,
+      withinSla: cat.withinSla, delayed: cat.delayed,
     };
   }).sort(function(a, b) { return b.onboarded - a.onboarded || b.total - a.total; });
 
@@ -2413,6 +2495,14 @@ function vStats(data, vertKey) {
     // seller+buyer average precisely (by TAT-bearing count, not raw onboarded count) and
     // show an honest "n=" behind the figure.
     tatCount: tats.length,
+    withinSla: withinSla,
+    delayed:   delayed,
+    tatDist: {
+      d01:  tats.filter(function(t){ return t <= 1; }).length,
+      d23:  tats.filter(function(t){ return t >= 2 && t <= 3; }).length,
+      d47:  tats.filter(function(t){ return t >= 4 && t <= 7; }).length,
+      dgt7: tats.filter(function(t){ return t > 7; }).length,
+    },
     // Which start date every TAT in this vertical was measured from ('review' |
     // 'level1' | null) so the UI can label the figure honestly.
     tatBasis: (function() {
