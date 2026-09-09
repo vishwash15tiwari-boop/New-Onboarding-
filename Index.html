@@ -14222,12 +14222,12 @@ function renderTransactionDash() {
       + ' stroke-dasharray="' + dash.toFixed(2) + ' ' + gap.toFixed(2) + '"'
       + ' stroke-dashoffset="' + off.toFixed(2) + '" stroke-linecap="butt"/>';
   }
-  // Metal = green (#049769), Plastic = blue (#005DFF) — matching reference
-  var donutSvg = '<svg width="130" height="130" viewBox="0 0 140 140" style="flex-shrink:0">'
+  // Metal = green (#049769), Plastic = blue (#005DFF)
+  var donutSvg = '<svg width="140" height="140" viewBox="0 0 140 140" style="flex-shrink:0">'
     + donutArc(mPct, 0,    '#049769', 50)
     + donutArc(pPct, mPct, '#005DFF', 50)
-    + '<text x="70" y="64" text-anchor="middle" font-size="11" font-weight="800" fill="currentColor">' + fmtCr(gTotal) + '</text>'
-    + '<text x="70" y="78" text-anchor="middle" font-size="9" fill="var(--txt3)">Total GMV</text>'
+    + '<text x="70" y="63" text-anchor="middle" font-size="12" font-weight="800" fill="currentColor">' + fmtCr(gTotal) + '</text>'
+    + '<text x="70" y="77" text-anchor="middle" font-size="9.5" fill="var(--txt3)">Total</text>'
     + '</svg>';
 
   function fmtMonth(k) {
@@ -14372,17 +14372,17 @@ function renderTransactionDash() {
       + '</div>'
       + '<div class="txn2-legs"><div class="txn2-leg"><div class="txn2-ld" style="background:#22c55e;border-radius:50%"></div>Transacted</div><div class="txn2-leg"><div class="txn2-ld" style="background:#f97316;border-radius:50%"></div>Non-Transacted</div></div>'
       + '<div class="txn2-cards5">'
-      + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#049769">' + fmtN(sTotal) + '</div><div class="txn2-mc-lbl">Sellers</div><div class="txn2-mc-sub"><b>' + fmtN(s.plastic||0) + '</b> Plastic / <b>' + fmtN(s.metal||0) + '</b> Metal</div></div>'
-      + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#005DFF">' + fmtN(bTotal) + '</div><div class="txn2-mc-lbl">Buyers</div><div class="txn2-mc-sub"><b>' + fmtN(b.plastic||0) + '</b> Plastic / <b>' + fmtN(b.metal||0) + '</b> Metal</div></div>'
-      + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#22c55e">' + fmtN(agLt30) + '</div><div class="txn2-mc-lbl">Ageing 0–30</div><div class="txn2-mc-sub">days since onboarding</div></div>'
-      + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#B25000">' + fmtN(ag3060) + '</div><div class="txn2-mc-lbl">Ageing 31–60</div><div class="txn2-mc-sub">days since onboarding</div></div>'
-      + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#dc2626">' + fmtN(agGt60) + '</div><div class="txn2-mc-lbl">Ageing 60+</div><div class="txn2-mc-sub">days since onboarding</div></div>'
+      + '<div class="txn2-mc"><div class="txn2-mc-big">' + fmtN(sTotal) + '</div><div class="txn2-mc-lbl">Sellers</div><div class="txn2-mc-sub"><b>' + fmtN(s.plastic||0) + '</b> PLASTIC / <b>' + fmtN(s.metal||0) + '</b> METAL</div></div>'
+      + '<div class="txn2-mc"><div class="txn2-mc-big">' + fmtN(bTotal) + '</div><div class="txn2-mc-lbl">Buyers</div><div class="txn2-mc-sub"><b>' + fmtN(b.plastic||0) + '</b> PLASTIC / <b>' + fmtN(b.metal||0) + '</b> METAL</div></div>'
+      + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#22c55e">' + fmtN(agLt30) + '</div><div class="txn2-mc-lbl">Ageing &middot; 0&ndash;30 days</div><div class="txn2-mc-sub">Non-transacted</div></div>'
+      + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#f59e0b">' + fmtN(ag3060) + '</div><div class="txn2-mc-lbl">Ageing &middot; 31&ndash;60 days</div><div class="txn2-mc-sub">Non-transacted</div></div>'
+      + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#dc2626">' + fmtN(agGt60) + '</div><div class="txn2-mc-lbl">Ageing &middot; 60+ days</div><div class="txn2-mc-sub">Non-transacted</div></div>'
       + '</div>'
-      // GMV cards — Metal green, Plastic blue
+      // GMV cards
       + '<div class="txn2-gmv3">'
-      + '<div class="txn2-gc"><div class="txn2-gc-lbl">Total GMV</div><div class="txn2-gc-big">' + fmtCr(gTotal) + '</div><div class="txn2-gc-sub">Combined seller + buyer</div></div>'
-      + '<div class="txn2-gc"><div class="txn2-gc-lbl">Metal GMV</div><div class="txn2-gc-big" style="color:#049769">' + fmtCr(gMetal) + '</div><div class="txn2-gc-sub"><b>' + mPct + '%</b> of total GMV</div></div>'
-      + '<div class="txn2-gc"><div class="txn2-gc-lbl">Plastic GMV</div><div class="txn2-gc-big" style="color:#005DFF">' + fmtCr(gPlastic) + '</div><div class="txn2-gc-sub"><b>' + pPct + '%</b> of total GMV</div></div>'
+      + '<div class="txn2-gc"><div class="txn2-gc-lbl">GMV &middot; Total</div><div class="txn2-gc-big">' + fmtCr(gTotal) + '</div><div class="txn2-gc-sub"><b>' + fmtCr(gMetal) + '</b> METAL &middot; <b>' + fmtCr(gPlastic) + '</b> PLASTIC</div></div>'
+      + '<div class="txn2-gc"><div class="txn2-gc-lbl">GMV &middot; Metal</div><div class="txn2-gc-big">' + fmtCr(gMetal) + '</div><div class="txn2-gc-sub"><b>' + mPct + '%</b> of total GMV</div></div>'
+      + '<div class="txn2-gc"><div class="txn2-gc-lbl">GMV &middot; Plastic</div><div class="txn2-gc-big">' + fmtCr(gPlastic) + '</div><div class="txn2-gc-sub"><b>' + pPct + '%</b> of total GMV</div></div>'
       + '</div>'
       + '<button class="txn2-vdb" onclick="openModRecords(\'transacted\')">View Detailed Records &#8599;</button>'
       + '</div>'
@@ -14415,10 +14415,9 @@ function renderTransactionDash() {
         + '<div class="txn2-card-title" style="margin-bottom:12px">Material-wise GMV</div>'
         + '<div style="display:flex;align-items:center;gap:18px">'
         + donutSvg
-        + '<div style="display:flex;flex-direction:column;gap:10px">'
-        + '<div class="txn2-leg"><div class="txn2-ld" style="background:#049769"></div><span>Metal</span>&nbsp;<b style="color:var(--txt)">' + fmtCr(gMetal) + '</b><span style="color:var(--txt3);font-size:11px;margin-left:4px">(' + mPct + '%)</span></div>'
-        + '<div class="txn2-leg"><div class="txn2-ld" style="background:#005DFF"></div><span>Plastic</span>&nbsp;<b style="color:var(--txt)">' + fmtCr(gPlastic) + '</b><span style="color:var(--txt3);font-size:11px;margin-left:4px">(' + pPct + '%)</span></div>'
-        + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;color:var(--txt3)">Total: <b style="color:var(--txt)">' + fmtCr(gTotal) + '</b></div>'
+        + '<div style="display:flex;flex-direction:column;gap:12px">'
+        + '<div class="txn2-leg" style="gap:8px"><div class="txn2-ld" style="background:#005DFF;border-radius:50%;width:10px;height:10px;flex-shrink:0"></div><div><div style="font-size:13px;font-weight:600">Plastic</div><div style="font-size:12px;color:var(--txt)">' + fmtCr(gPlastic) + ' <span style="color:var(--txt3);font-size:11px">(' + pPct + '%)</span></div></div></div>'
+        + '<div class="txn2-leg" style="gap:8px"><div class="txn2-ld" style="background:#049769;border-radius:50%;width:10px;height:10px;flex-shrink:0"></div><div><div style="font-size:13px;font-weight:600">Metal</div><div style="font-size:12px;color:var(--txt)">' + fmtCr(gMetal) + ' <span style="color:var(--txt3);font-size:11px">(' + mPct + '%)</span></div></div></div>'
         + '</div></div>'
         + '</div>'
       + '</div>'
