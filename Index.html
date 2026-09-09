@@ -14203,6 +14203,16 @@ function renderTransactionDash() {
   var activeTxn    = h.activeTxn   || total;
   var noTxnVendors = h.noTxn       || nonTxn;
 
+  function deltaBadge(val, up) {
+    if (!val) return '';
+    return '<span style="font-size:10.5px;color:' + (up?'#16a34a':'#dc2626') + ';font-weight:600;margin-left:4px">'
+      + (up?'&#9650;':'&#9660;') + ' ' + Math.abs(val) + '% vs previous period</span>';
+  }
+  var d1 = h.firstTxnPctDelta  || 0, d1up = d1 >= 0;
+  var d2 = h.repeatRateDelta   || 0, d2up = d2 >= 0;
+  var d3 = h.activeTxnDelta    || 0, d3up = d3 >= 0;
+  var d4 = h.noTxnDelta        || 0, d4up = d4 <= 0;
+
   function donutArc(pct, offset, color, r) {
     var circ = 2 * Math.PI * r;
     var dash = circ * pct / 100;
@@ -14255,8 +14265,7 @@ function renderTransactionDash() {
     dateRange = monShort[parseInt(fparts[1],10)||0] + ' – ' + monShort[parseInt(lparts[1],10)||0] + ' ' + (lparts[0]||'');
   }
 
-  var mthConvHtml = (dateRange ? '<div style="font-size:11px;color:var(--txt3);margin-bottom:8px;font-weight:500">' + esc(dateRange) + '</div>' : '')
-    + '<table class="txn2-tbl"><thead><tr>'
+  var mthConvHtml = '<table class="txn2-tbl"><thead><tr>'
     + '<th>Entity</th>' + mthColHdrs
     + '<th style="color:#16a34a;font-weight:700">Total Transacted</th>'
     + '<th style="color:#dc2626;font-weight:700">Total Non-Transacted</th>'
@@ -14273,17 +14282,17 @@ function renderTransactionDash() {
     + '</tr>'
     + '</tbody></table>'
     + '<div class="txn2-tbl-legend" style="margin-top:10px">'
-    + '<span style="font-size:11px;color:var(--txt3);margin-right:6px">Activity:</span>'
     + '<div class="txn2-tbl-leg-item"><div class="txn2-tbl-leg-swatch" style="background:#bbf7d0"></div>Higher Activity</div>'
     + '<div class="txn2-tbl-leg-item"><div class="txn2-tbl-leg-swatch" style="background:#dcfce7"></div>Moderate</div>'
     + '<div class="txn2-tbl-leg-item"><div class="txn2-tbl-leg-swatch" style="background:#f0fdf4"></div>Lower Activity</div>'
-    + '</div>';
+    + '</div>'
+    + '<div style="font-size:11px;color:var(--txt3);margin-top:8px">Shows unique vendors who transacted in each month</div>';
 
-  // Dual y-axis trend chart: Transactions (blue line+dots, left axis) + GMV Cr (green line, right axis)
+  // Dual y-axis trend chart: blue BARS for Transactions (left axis) + green LINE for GMV (right axis)
   function buildTrendChart() {
     var chartMths = mths.slice(-12);
     if (!chartMths.length) return '<div style="color:var(--txt3);font-size:12px;padding:12px">No data</div>';
-    var W=530, H=195, padL=44, padR=52, padT=22, padB=42;
+    var W=530, H=200, padL=46, padR=54, padT=24, padB=44;
     var cW = W - padL - padR, cH = H - padT - padB;
     var n = chartMths.length;
     var maxTxn = Math.max.apply(null, chartMths.map(function(m){ return (m.sellers||0)+(m.buyers||0); }).concat([1]));
@@ -14292,31 +14301,37 @@ function renderTransactionDash() {
     var gmvCrMax = maxGmv / 10000000;
     var gmvTop = Math.ceil(gmvCrMax/10)*10 || 40;
     var gap = cW / n;
+    var barW = Math.max(4, Math.floor(gap * 0.55));
     var svg = '';
+    // Grid + y-axes
     for (var yi = 0; yi <= 4; yi++) {
       var yy = padT + cH - Math.round(yi/4 * cH);
-      svg += '<line x1="' + padL + '" y1="' + yy + '" x2="' + (W-padR) + '" y2="' + yy + '" stroke="var(--border)" stroke-width="1" opacity=".5"/>';
+      svg += '<line x1="' + padL + '" y1="' + yy + '" x2="' + (W-padR) + '" y2="' + yy + '" stroke="var(--border)" stroke-width="1" opacity=".4"/>';
       svg += '<text x="' + (padL-5) + '" y="' + (yy+3) + '" text-anchor="end" font-size="9" fill="#005DFF">' + Math.round(txnTop*yi/4) + '</text>';
       svg += '<text x="' + (W-padR+5) + '" y="' + (yy+3) + '" text-anchor="start" font-size="9" fill="#049769">' + Math.round(gmvTop*yi/4) + '</text>';
     }
-    var txnPts = [], gmvPts = [];
+    var gmvPts = [];
     chartMths.forEach(function(m, i) {
       var cx = padL + i*gap + gap/2;
       var txnVal = (m.sellers||0)+(m.buyers||0);
-      var txnY = padT + cH - Math.round(txnVal/txnTop * cH);
+      var bh = Math.max(2, Math.round(txnVal/txnTop * cH));
+      var bx = cx - barW/2;
+      var by = padT + cH - bh;
+      // Blue bar for transactions
+      svg += '<rect x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + barW + '" height="' + bh.toFixed(1) + '" rx="3" fill="#005DFF" opacity=".8"/>';
+      // GMV point
       var gmvCrV = (m.gmv||0)/10000000;
       var gmvY = padT + cH - Math.round(gmvCrV/gmvTop * cH);
-      txnPts.push(cx.toFixed(1) + ',' + txnY.toFixed(1));
       gmvPts.push(cx.toFixed(1) + ',' + gmvY.toFixed(1));
+      // X-axis label
       svg += '<text x="' + cx.toFixed(1) + '" y="' + (padT+cH+14) + '" text-anchor="middle" font-size="9" fill="var(--txt3)">' + esc(fmtMonth(m.month)) + '</text>';
     });
-    if (txnPts.length >= 2) svg += '<polyline points="' + txnPts.join(' ') + '" fill="none" stroke="#005DFF" stroke-width="2.5" stroke-linejoin="round"/>';
-    txnPts.forEach(function(p){ svg += '<circle cx="' + p.split(',')[0] + '" cy="' + p.split(',')[1] + '" r="4" fill="#005DFF" stroke="#fff" stroke-width="1.5"/>'; });
+    // Green line for GMV (drawn on top of bars)
     if (gmvPts.length >= 2) svg += '<polyline points="' + gmvPts.join(' ') + '" fill="none" stroke="#049769" stroke-width="2.5" stroke-linejoin="round"/>';
-    gmvPts.forEach(function(p){ svg += '<circle cx="' + p.split(',')[0] + '" cy="' + p.split(',')[1] + '" r="3" fill="#049769" stroke="#fff" stroke-width="1.5"/>'; });
-    // Y-axis labels
-    svg += '<text x="' + padL + '" y="' + (padT-6) + '" font-size="9" fill="#005DFF" font-weight="600">Txns</text>';
-    svg += '<text x="' + (W-padR) + '" y="' + (padT-6) + '" text-anchor="end" font-size="9" fill="#049769" font-weight="600">GMV (&#8377; Cr)</text>';
+    gmvPts.forEach(function(p){ svg += '<circle cx="' + p.split(',')[0] + '" cy="' + p.split(',')[1] + '" r="3.5" fill="#049769" stroke="#fff" stroke-width="1.5"/>'; });
+    // Axis labels
+    svg += '<text x="' + padL + '" y="' + (padT-8) + '" font-size="9" fill="#005DFF" font-weight="600">Transactions</text>';
+    svg += '<text x="' + (W-padR) + '" y="' + (padT-8) + '" text-anchor="end" font-size="9" fill="#049769" font-weight="600">GMV (&#8377; Cr)</text>';
     return '<svg class="txn2-chart-svg" viewBox="0 0 ' + W + ' ' + H + '" height="' + H + '">' + svg + '</svg>';
   }
 
@@ -14327,27 +14342,35 @@ function renderTransactionDash() {
     + '<div class="txn2-title">Transactions</div>'
     + '<div class="txn2-sub">Track transaction activity, vendor engagement and material-wise GMV.</div>'
     + '</div>'
-    // Period filter bar
-    + '<div class="txn2-fbar">'
-    + '<div style="display:flex;gap:4px">'
-    + '<button class="txn2-pf-btn txn2-pf-btn-active">For the Month</button>'
+    // Period + filter bars
+    + '<div class="txn2-fbar" style="flex-direction:column;gap:10px;align-items:stretch">'
+    + '<div style="display:flex;align-items:center;gap:6px">'
     + '<button class="txn2-pf-btn">Today</button>'
+    + '<button class="txn2-pf-btn">For the Month</button>'
     + '<button class="txn2-pf-btn">YTD</button>'
-    + '<button class="txn2-pf-btn">All</button>'
-    + '</div>'
+    + '<button class="txn2-pf-btn txn2-pf-btn-active">All</button>'
     + '<select class="txn2-fsel" style="margin-left:auto"><option>All Time</option></select>'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    + '<select class="txn2-fsel"><option>All States</option></select>'
+    + '<select class="txn2-fsel"><option>All Cities</option></select>'
+    + '<select class="txn2-fsel"><option>All Categories</option></select>'
+    + '<select class="txn2-fsel"><option>All Transactions</option></select>'
+    + '<select class="txn2-fsel"><option>All Materials</option></select>'
+    + '<input class="txn2-fsearch" placeholder="Search vendor, ID, or location…" style="flex:1;min-width:180px" />'
+    + '</div>'
     + '</div>'
     + '<div class="txn2-layout">'
       // Left: Transaction Activity card
       + '<div class="txn2-card">'
       + '<div class="txn2-card-hdr"><div class="txn2-card-title">Transaction Activity</div><div class="txn2-pill" style="border-color:#16a34a;color:#16a34a;background:rgba(22,163,74,.06)">Sellers &amp; Buyers</div></div>'
       + '<div class="txn2-big">' + fmtN(sTotal+bTotal) + '</div>'
-      + '<div class="txn2-biglab">Vendors with at least one completed transaction</div>'
-      + '<div class="txn2-split" style="height:8px;margin:10px 0 6px">'
-      + '<div class="txn2-split-t" style="width:' + (nonTxn > 0 ? Math.round((sTotal+bTotal)/(sTotal+bTotal+nonTxn)*100) : 100) + '%"></div>'
-      + '<div class="txn2-split-n" style="background:#fca5a5"></div>'
+      + '<div class="txn2-biglab">Transacted (Unique &middot; Sellers &amp; Buyers)</div>'
+      + '<div class="txn2-split">'
+      + '<div class="txn2-split-t" style="width:' + (nonTxn > 0 ? Math.round((sTotal+bTotal)/(sTotal+bTotal+nonTxn)*100) : 100) + '%">Transacted &ndash; ' + fmtN(sTotal+bTotal) + '</div>'
+      + '<div class="txn2-split-n">Non-Transacted &ndash; ' + fmtN(nonTxn) + '</div>'
       + '</div>'
-      + '<div class="txn2-legs"><div class="txn2-leg"><div class="txn2-ld" style="background:#22c55e"></div>Transacted – ' + fmtN(sTotal+bTotal) + '</div><div class="txn2-leg"><div class="txn2-ld" style="background:#fca5a5"></div>Non-Transacted – ' + fmtN(nonTxn) + '</div></div>'
+      + '<div class="txn2-legs"><div class="txn2-leg"><div class="txn2-ld" style="background:#22c55e;border-radius:50%"></div>Transacted</div><div class="txn2-leg"><div class="txn2-ld" style="background:#f97316;border-radius:50%"></div>Non-Transacted</div></div>'
       + '<div class="txn2-cards5">'
       + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#049769">' + fmtN(sTotal) + '</div><div class="txn2-mc-lbl">Sellers</div><div class="txn2-mc-sub"><b>' + fmtN(s.plastic||0) + '</b> Plastic / <b>' + fmtN(s.metal||0) + '</b> Metal</div></div>'
       + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#005DFF">' + fmtN(bTotal) + '</div><div class="txn2-mc-lbl">Buyers</div><div class="txn2-mc-sub"><b>' + fmtN(b.plastic||0) + '</b> Plastic / <b>' + fmtN(b.metal||0) + '</b> Metal</div></div>'
@@ -14370,20 +14393,20 @@ function renderTransactionDash() {
         + '<div class="txn2-card-hdr"><div class="txn2-card-title">Transaction Health</div><a style="font-size:12px;color:var(--accent);cursor:pointer;white-space:nowrap;font-weight:500">View Insights &#8594;</a></div>'
         + '<div class="txn2-health-grid">'
         + '<div class="txn2-hm">'
-        + '<div class="txn2-hm-ic" style="background:#dcfce7;color:#16a34a;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">&#8635;</div>'
-        + '<div style="flex:1"><div style="display:flex;align-items:baseline;gap:4px"><div class="txn2-hm-v" style="color:#16a34a">' + firstTxnPct + '%</div></div><div class="txn2-hm-l">First Transaction (after onboarding)</div></div>'
+        + '<div class="txn2-hm-ic" style="background:#dcfce7;color:#16a34a;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#128203;</div>'
+        + '<div style="flex:1"><div class="txn2-hm-v" style="color:#16a34a">' + firstTxnPct + '%</div><div class="txn2-hm-l">First Transaction (after onboarding)</div>' + (d1 ? deltaBadge(d1, d1up) : '') + '</div>'
         + '</div>'
         + '<div class="txn2-hm">'
-        + '<div class="txn2-hm-ic" style="background:#dbeafe;color:#2563eb;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">&#9854;</div>'
-        + '<div style="flex:1"><div style="display:flex;align-items:baseline;gap:4px"><div class="txn2-hm-v" style="color:#2563eb">' + (repeatRate||0) + '%</div></div><div class="txn2-hm-l">Repeat Transaction Rate</div></div>'
+        + '<div class="txn2-hm-ic" style="background:#dbeafe;color:#2563eb;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#128257;</div>'
+        + '<div style="flex:1"><div class="txn2-hm-v" style="color:#2563eb">' + (repeatRate||0) + '%</div><div class="txn2-hm-l">Repeat Transaction Rate</div>' + (d2 ? deltaBadge(d2, d2up) : '') + '</div>'
         + '</div>'
         + '<div class="txn2-hm">'
-        + '<div class="txn2-hm-ic" style="background:#f0fdf4;color:#16a34a;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">&#10003;</div>'
-        + '<div style="flex:1"><div class="txn2-hm-v">' + fmtN(activeTxn) + '</div><div class="txn2-hm-l">Active Transacting Vendors</div></div>'
+        + '<div class="txn2-hm-ic" style="background:#f3e8ff;color:#7c3aed;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#128722;</div>'
+        + '<div style="flex:1"><div class="txn2-hm-v" style="color:var(--txt)">' + fmtN(activeTxn) + '</div><div class="txn2-hm-l">Active Transacting Vendors</div>' + (d3 ? deltaBadge(d3, d3up) : '') + '</div>'
         + '</div>'
         + '<div class="txn2-hm">'
-        + '<div class="txn2-hm-ic" style="background:#fef2f2;color:#dc2626;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">&#9888;</div>'
-        + '<div style="flex:1"><div class="txn2-hm-v" style="color:#dc2626">' + fmtN(noTxnVendors) + '</div><div class="txn2-hm-l">Onboarded Vendors with No Transaction</div></div>'
+        + '<div class="txn2-hm-ic" style="background:#fef2f2;color:#dc2626;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#9888;</div>'
+        + '<div style="flex:1"><div class="txn2-hm-v" style="color:#dc2626">' + fmtN(noTxnVendors) + '</div><div class="txn2-hm-l">Onboarded Vendors with No Transaction</div>' + (d4 ? deltaBadge(Math.abs(d4), d4up) : '') + '</div>'
         + '</div>'
         + '</div>'
         + '</div>'
@@ -14401,15 +14424,15 @@ function renderTransactionDash() {
       + '</div>'
     + '</div>'
     + '<div class="txn2-bottom">'
-      + '<div class="txn2-card"><div class="txn2-chart-title">Transaction Conversion by Month</div>' + mthConvHtml + '</div>'
+      + '<div class="txn2-card"><div class="txn2-chart-title">Transaction Conversion by Month<span style="font-size:11px;font-weight:400;color:var(--txt3);margin-left:8px">' + esc(dateRange) + '</span></div>' + mthConvHtml + '</div>'
       + '<div class="txn2-card"><div class="txn2-chart-title">Monthly Transaction Trend'
       + '<span style="font-size:11px;font-weight:400;color:var(--txt3);margin-left:10px">'
       + '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px">'
-      + '<svg width="14" height="8" viewBox="0 0 14 8"><line x1="0" y1="4" x2="14" y2="4" stroke="#005DFF" stroke-width="2"/><circle cx="7" cy="4" r="3" fill="#005DFF" stroke="#fff" stroke-width="1"/></svg>'
+      + '<svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" rx="2" fill="#005DFF" opacity=".8"/></svg>'
       + 'Transactions</span>'
       + '<span style="display:inline-flex;align-items:center;gap:4px">'
-      + '<svg width="14" height="8" viewBox="0 0 14 8"><line x1="0" y1="4" x2="14" y2="4" stroke="#049769" stroke-width="2"/></svg>'
-      + 'GMV (Cr)</span>'
+      + '<svg width="14" height="8" viewBox="0 0 14 8"><line x1="0" y1="4" x2="14" y2="4" stroke="#049769" stroke-width="2"/><circle cx="7" cy="4" r="3" fill="#049769" stroke="#fff" stroke-width="1"/></svg>'
+      + 'GMV (&#8377; Cr)</span>'
       + '</span></div>' + buildTrendChart() + '</div>'
     + '</div>'
   + '</div>';
