@@ -3662,6 +3662,9 @@ body.view-gst #mm-crumbs{display:none}
 .txn2-pf-btn{padding:5px 13px;border:1px solid var(--border);border-radius:7px;background:var(--card);font-size:12px;color:var(--txt2);cursor:pointer;font-family:inherit;font-weight:500;transition:all .15s}
 .txn2-pf-btn:hover{border-color:var(--accent);color:var(--accent)}
 .txn2-pf-btn-active{background:#005DFF;color:#fff;border-color:#005DFF;font-weight:600}
+/* Full-page views hide the toolbar row (breadcrumb + period controls) and strip dash-content padding */
+body.view-transactions .section-title,body.view-vendorratings .section-title{display:none!important}
+body.view-transactions #dash-content,body.view-vendorratings #dash-content{padding:0!important;max-width:none!important}
 .txn2-fsearch{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);font-size:12px;color:var(--txt);font-family:inherit;flex:1;min-width:140px;outline:none}
 .txn2-fsearch:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,93,255,.1)}
 .txn2-layout{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;margin-bottom:16px}
@@ -4436,6 +4439,8 @@ function updateViewChrome() {
                    transactions:'Marketplace Transactions', vendorratings:'Vendor Ratings' };
   if (vt) vt.textContent = titleMap[currentView] || 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
+  document.body.classList.toggle('view-transactions', isTxn);
+  document.body.classList.toggle('view-vendorratings', isVR);
   setAura(isGst ? 'gst' : (activeVertKey || 'OMP'));
   renderVertCtxHdr((isDash) ? activeVertKey : null);
   if (isDash) positionVertThumb(false);
@@ -14130,6 +14135,20 @@ function _osvOpenStatusFilter(key) {
 
 var _TXN_MOD = null;
 var _txnModLoading = false;
+// Active filter state — cleared on change to force a backend reload
+var _txnPeriod = 'All';
+var _txnState  = 'all';
+var _txnCat    = 'all';
+
+function _txnReload() {
+  _TXN_MOD = null;
+  if (currentView !== 'transactions') return;
+  renderTransactionSkeleton();
+  loadTransactionData();
+}
+function setTxnPeriod(p) { if (p !== _txnPeriod) { _txnPeriod = p; _txnReload(); } }
+function setTxnState(s)  { if (s !== _txnState)  { _txnState  = s; _txnReload(); } }
+function setTxnCat(c)    { if (c !== _txnCat)    { _txnCat    = c; _txnReload(); } }
 
 function renderTransactionSkeleton() {
   var host = document.getElementById('tab-transactions');
@@ -14157,7 +14176,7 @@ function loadTransactionData() {
       var host = document.getElementById('tab-transactions');
       if (host) host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Failed to load: ' + esc(String(err)) + '</div>';
     })
-    .getTransactionModuleData('{}');
+    .getTransactionModuleData(JSON.stringify({ period: _txnPeriod, state: _txnState, category: _txnCat }));
 }
 
 function renderTransactionDash() {
@@ -14345,21 +14364,31 @@ function renderTransactionDash() {
     + '</div>'
     // Period + filter bars
     + '<div class="txn2-fbar" style="flex-direction:column;gap:10px;align-items:stretch">'
-    + '<div style="display:flex;align-items:center;gap:6px">'
-    + '<button class="txn2-pf-btn">Today</button>'
-    + '<button class="txn2-pf-btn">For the Month</button>'
-    + '<button class="txn2-pf-btn">YTD</button>'
-    + '<button class="txn2-pf-btn txn2-pf-btn-active">All</button>'
-    + '<select class="txn2-fsel" style="margin-left:auto"><option>All Time</option></select>'
-    + '</div>'
-    + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-    + '<select class="txn2-fsel"><option>All States</option></select>'
-    + '<select class="txn2-fsel"><option>All Cities</option></select>'
-    + '<select class="txn2-fsel"><option>All Categories</option></select>'
-    + '<select class="txn2-fsel"><option>All Transactions</option></select>'
-    + '<select class="txn2-fsel"><option>All Materials</option></select>'
-    + '<input class="txn2-fsearch" placeholder="Search vendor, ID, or location…" style="flex:1;min-width:180px" />'
-    + '</div>'
+    + (function() {
+        function pfBtn(lbl, period) {
+          return '<button class="txn2-pf-btn' + (_txnPeriod === period ? ' txn2-pf-btn-active' : '') + '" onclick="setTxnPeriod(\'' + period + '\')">' + lbl + '</button>';
+        }
+        var stateOpts = '<option value="all"' + (_txnState === 'all' ? ' selected' : '') + '>All States</option>';
+        if (d.states) d.states.forEach(function(st) {
+          stateOpts += '<option value="' + esc(st.toLowerCase()) + '"' + (_txnState === st.toLowerCase() ? ' selected' : '') + '>' + esc(st) + '</option>';
+        });
+        var catOpts = '<option value="all"' + (_txnCat === 'all' ? ' selected' : '') + '>All Categories</option>';
+        if (d.categories) d.categories.forEach(function(ct) {
+          catOpts += '<option value="' + esc(ct.toLowerCase()) + '"' + (_txnCat === ct.toLowerCase() ? ' selected' : '') + '>' + esc(ct) + '</option>';
+        });
+        return '<div style="display:flex;align-items:center;gap:6px">'
+          + pfBtn('Today', 'Today') + pfBtn('For the Month', 'MTD') + pfBtn('YTD', 'YTD') + pfBtn('All', 'All')
+          + '<select class="txn2-fsel" style="margin-left:auto"><option>All Time</option></select>'
+          + '</div>'
+          + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+          + '<select class="txn2-fsel" onchange="setTxnState(this.value)">' + stateOpts + '</select>'
+          + '<select class="txn2-fsel"><option>All Cities</option></select>'
+          + '<select class="txn2-fsel" onchange="setTxnCat(this.value)">' + catOpts + '</select>'
+          + '<select class="txn2-fsel"><option>All Transactions</option></select>'
+          + '<select class="txn2-fsel"><option>All Materials</option></select>'
+          + '<input class="txn2-fsearch" placeholder="Search vendor, ID, or location…" style="flex:1;min-width:180px" />'
+          + '</div>';
+      }())
     + '</div>'
     + '<div class="txn2-layout">'
       // Left: Transaction Activity card
