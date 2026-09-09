@@ -5901,7 +5901,7 @@ function _mmVertModules(key) {
       tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true, breakdown: _gmvBd });
       catGmv.forEach(function(x){ tTiles.push({ label:'GMV · ' + x.cat, v:fmtINR(x.v), raw:true }); });
     }
-    mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', switchView:'transactions', eye:'Transaction activity',
+    mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transaction activity',
       panel:{
         eye:'Transaction activity', badge:'Sellers & Buyers',
         headline: (sTxn != null || bTxn != null)
@@ -6013,7 +6013,7 @@ function _mmVertModules(key) {
     else if (plasticVR && plasticVR.rated > 0) rSubLine = 'Plastic ' + plasticVR.avg.toFixed(1) + ' · out of 10';
     else rSubLine = 'Average Seller Score (out of 10)';
 
-    mods.push({ t:'Vendor Ratings', ic:MM_IC.star, tone:'t-amber', kind:'module', expand:'inline-panel', switchView:'vendorratings', eye:'Vendor Rating',
+    mods.push({ t:'Vendor Ratings', ic:MM_IC.star, tone:'t-amber', kind:'module', expand:'inline-panel', eye:'Vendor Rating',
       panel:{
         eye:'Vendor Score · Average Seller Score', badge:'Sellers only',
         headline:{ v:(rAvg != null ? rAvg.toFixed(1) : '—'), raw:true, rawv:(rAvg != null ? rAvg.toFixed(1) + ' / 10' : '—'), label:rSubLine, tone:'warn' },
@@ -6475,7 +6475,6 @@ function mmClickNode(id) {
     }
     _mmAnimateReveal = true; mmPaint(); return;
   }
-  if (node.switchView) { switchView(node.switchView); return; }
   if (node.expand === 'inline-panel') {
     var modOpen = mmModActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
     mmFunnelActive = false; mmGeoActive = false; _geo.region = null; _geo.state = null;
