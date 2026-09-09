@@ -727,43 +727,19 @@ function getTransactedVendors(filtersJson) {
 function getTransactionModuleData(filtersJson) {
   try {
     var f    = filtersJson ? JSON.parse(filtersJson) : {};
-    var catF   = (f.category || 'all').toLowerCase();
-    var stateF = (f.state    || 'all').toLowerCase();
-    var cKey = 'txn_mod_v3_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, stateF]);
+    var catF = (f.category || 'all').toLowerCase();
+    var cKey = 'txn_mod_v2_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF]);
     var cache = CacheService.getScriptCache();
     var hit   = cache.get(cKey);
     if (hit) return hit;
 
     var sCfg = AUDIENCE_CFG.seller;
     var bCfg = AUDIENCE_CFG.buyer;
-    // Load all rows without date filter — transactions are filtered by txnDate below,
-    // so that period views show vendors who transacted in the period, not vendors who
-    // were onboarded in the period.
-    var sAll = normalizeRows(readData('seller'), sCfg);
-    var bAll = normalizeRows(readData('buyer'),  bCfg);
+    var sAll = normalizeRows(readData('seller'), sCfg).filter(function(r) { return applyDateFilter(r, f); });
+    var bAll = normalizeRows(readData('buyer'),  bCfg).filter(function(r) { return applyDateFilter(r, f); });
     if (catF !== 'all') {
       sAll = sAll.filter(function(r) { return String(r.category||'').toLowerCase() === catF; });
       bAll = bAll.filter(function(r) { return String(r.category||'').toLowerCase() === catF; });
-    }
-    if (stateF !== 'all') {
-      sAll = sAll.filter(function(r) { return String(r.state||'').toLowerCase() === stateF; });
-      bAll = bAll.filter(function(r) { return String(r.state||'').toLowerCase() === stateF; });
-    }
-    // Collect available states and categories for dropdown population
-    var _stateSet = {}, _catSet = {};
-    sAll.concat(bAll).forEach(function(r) {
-      if (r.state)    _stateSet[r.state]    = 1;
-      if (r.category) _catSet[r.category]   = 1;
-    });
-    var stateList = Object.keys(_stateSet).sort();
-    var catList   = Object.keys(_catSet).sort();
-    // Filter transacted records by txnDate so period views reflect when vendors transacted,
-    // not when they were onboarded.
-    function applyTxnFilter(r) {
-      if (!f.period || f.period === 'All') return true;
-      var d = r.txnDate;
-      if (!d) return false;
-      return applyDateFilter({ status: 'COMPLETED', onboardedDate: d, createdDate: d }, f);
     }
 
     var now = new Date();
@@ -796,8 +772,8 @@ function getTransactionModuleData(filtersJson) {
       return mm;
     }
 
-    var sTxn  = sAll.filter(function(r) { return r.hasTransacted && applyTxnFilter(r); });
-    var bTxn  = bAll.filter(function(r) { return r.hasTransacted && applyTxnFilter(r); });
+    var sTxn  = sAll.filter(function(r) { return r.hasTransacted; });
+    var bTxn  = bAll.filter(function(r) { return r.hasTransacted; });
     var sNonT = sAll.filter(function(r) { return !r.hasTransacted && r.status === 'COMPLETED'; });
     var bNonT = bAll.filter(function(r) { return !r.hasTransacted && r.status === 'COMPLETED'; });
     var sOnb  = sAll.filter(function(r) { return r.status === 'COMPLETED'; }).length;
@@ -870,7 +846,6 @@ function getTransactionModuleData(filtersJson) {
         return { month:m, sellers:sMm[m]||0, buyers:bMm[m]||0, gmv:gmvMm[m]||0 };
       }),
       sellerTotal: sOnb, buyerTotal: bOnb,
-      states: stateList, categories: catList,
     };
     var out = JSON.stringify(result);
     try { cache.put(cKey, out, 300); } catch(e) {}
