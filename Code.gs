@@ -4464,22 +4464,30 @@ function getOverviewStats() {
       months.push({ key: d.getFullYear() + '-' + (d.getMonth() + 1), year: d.getFullYear(), month: d.getMonth() + 1 });
     }
     var buckets = {};
-    months.forEach(function(m) { buckets[m.key] = { sellers: 0, buyers: 0 }; });
+    months.forEach(function(m) { buckets[m.key] = { sellers: 0, buyers: 0, verts: {} }; });
 
     sRows.forEach(function(r) {
       if (!(r.createdDate instanceof Date) || isNaN(r.createdDate)) return;
       var k = r.createdDate.getFullYear() + '-' + (r.createdDate.getMonth() + 1);
-      if (buckets[k]) buckets[k].sellers++;
+      if (buckets[k]) {
+        buckets[k].sellers++;
+        var v = r.vertical || 'Others';
+        buckets[k].verts[v] = (buckets[k].verts[v] || 0) + 1;
+      }
     });
     bRows.forEach(function(r) {
       if (!(r.createdDate instanceof Date) || isNaN(r.createdDate)) return;
       var k = r.createdDate.getFullYear() + '-' + (r.createdDate.getMonth() + 1);
-      if (buckets[k]) buckets[k].buyers++;
+      if (buckets[k]) {
+        buckets[k].buyers++;
+        var v = r.vertical || 'Others';
+        buckets[k].verts[v] = (buckets[k].verts[v] || 0) + 1;
+      }
     });
 
     var monthly = months.map(function(m) {
       var b = buckets[m.key];
-      return { month: m.key, sellers: b.sellers, buyers: b.buyers };
+      return { month: m.key, sellers: b.sellers, buyers: b.buyers, verts: b.verts };
     });
 
     var out = JSON.stringify({ success: true, monthly: monthly });
