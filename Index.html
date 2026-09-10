@@ -4605,8 +4605,10 @@ function onPeriodSelect(val) {
   // Invalidate the render-dedup hash so the response for the new period always
   // triggers a full re-render, even if lastUpdated happens to match the prior call.
   _lastDashHash['combined'] = null;
+  _TXN = null; _TXN_MOD = null;
   loadData();
-  if (currentView === 'txndist') { _TXN = null; renderTxnDist(); }
+  if (currentView === 'txndist') renderTxnDist();
+  if (currentView === 'transactions') { renderTransactionSkeleton(); loadTransactionData(); }
 }
 
 function onCustomDates() {
@@ -4614,7 +4616,7 @@ function onCustomDates() {
   var en = document.getElementById('top-end');
   customStart = st ? st.value : '';
   customEnd   = en ? en.value : '';
-  if (customStart && customEnd) { _lastDashHash['combined'] = null; loadData(); }
+  if (customStart && customEnd) { _lastDashHash['combined'] = null; _TXN = null; _TXN_MOD = null; loadData(); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -14156,7 +14158,7 @@ function loadTransactionData() {
       var host = document.getElementById('tab-transactions');
       if (host) host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Failed to load: ' + esc(String(err)) + '</div>';
     })
-    .getTransactionModuleData('{}');
+    .getTransactionModuleData((function() { var f = { period: currentPeriod }; if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; } return JSON.stringify(f); }()));
 }
 
 function renderTransactionDash() {

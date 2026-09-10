@@ -35,9 +35,11 @@ var CONFIG = {
   BUYER_SHEET_ID:  '1G9Ocq8PXovCx5eBE3dOfE8CUcmfgwcl6Te37p79u0wI',
 
   // TAT source — dedicated tab holding Metabase card 5292 ("Onboarding Detail"),
-  // synced by Metabase.gs (syncDetail) every 5 min. Every TAT metric is derived
-  // from this tab's Level 1 date; see getLevel1Lookup_(). Run debugTAT()
-  // to inspect column detection and match rate against the live tab.
+  // synced by Metabase.gs (syncDetail) every 5 min. Sellers: TAT is sourced
+  // directly from _mb_sellers rows via tatEffStartFromRow_ (multi-level workflow
+  // columns); _mb_detail is the fallback when those columns are absent. Buyers:
+  // TAT is created→final approval from _mb_buyers (level2/level1_approved_at).
+  // Run debugTAT() to inspect column detection and match rate against the live tab.
   TAT_DETAIL_SHEET: '_mb_detail',
 
   // Workbook the Metabase tabs are synced into. TAT reads _mb_detail from here by
@@ -60,13 +62,12 @@ var VS_COLS = {
   osvStatus:   13,   // Column N — OSV Status
 };
 
-// Buyer TAT is read positionally from the buyer feed (_mb_buyers): column G is the
-// start and column H the end, as specified. Addressed by position rather than header
-// name because that is how they were given. Run debugBuyerTatCols() to confirm what
-// actually sits at those positions and the span they produce.
+// Buyer TAT start column — Column G (0-based index 6) in the buyer feed (_mb_buyers),
+// used as the 'fixed' basis start (_bs) when no header-named column matches. The TAT
+// end for buyers is derived from level2_approved_at / level1_approved_at, NOT from a
+// positional column. Run debugBuyerTatCols() to confirm what actually sits at col G.
 var BUYER_TAT_COLS = {
-  start: 6,   // Column G
-  end:   7,   // Column H
+  start: 6,   // Column G — positional fallback for TAT start (_bs)
 };
 
 // GSTIN positional fallback — used when no GSTIN header is detected in the feed.
@@ -1695,7 +1696,7 @@ function debugBuyerTatCols() {
   var cfg = AUDIENCE_CFG.buyer, raw;
   try { raw = readData('buyer'); } catch (e) { Logger.log('✗ readData failed: ' + e.message); return; }
   var idx = buildIndex(raw.headers);
-  var sI = BUYER_TAT_COLS.start, eI = BUYER_TAT_COLS.end;
+  var sI = BUYER_TAT_COLS.start, eI = 7; // col H — TAT end now from level2/level1_approved_at; H kept here for diagnostics
   Logger.log('════ BUYER TAT COLUMNS ════');
   Logger.log('source: ' + raw.source + '   rows: ' + raw.rows.length + '   columns: ' + raw.headers.length);
   if (raw.headers.length <= eI) {
