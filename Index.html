@@ -3914,6 +3914,8 @@ body.view-ov #ov-screen{display:block}
 .ov-vert-sub{font-size:9.5px;color:var(--txt2);font-weight:500;margin-top:1px}
 .ov-vert-arrow{font-size:16px;color:var(--border2);margin-left:2px;flex-shrink:0;transition:color .15s,transform .15s;line-height:1}
 .ov-vert-card:hover .ov-vert-arrow{color:var(--blue);transform:translateX(2px)}
+.ov-vert-prog{height:3px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden;width:100%}
+.ov-vert-prog-fill{height:100%;border-radius:2px;transition:width .7s var(--ease-out)}
 
 /* Responsive */
 @media(max-width:1100px){.ov-analytics-row{grid-template-columns:1fr 260px}.ov-verts-grid{grid-template-columns:repeat(3,1fr)}}
@@ -15168,16 +15170,19 @@ function renderOvVerts() {
   el.innerHTML = cfg.map(function(vc) {
     var vs  = (DS && DS.verticals || {})[vc.key] || {};
     var vb  = (DB && DB.verticals || {})[vc.key] || {};
-    var tot = (vs.total || 0) + (vb.total || 0);
+    var tot = (vs.total     || 0) + (vb.total     || 0);
+    var onb = (vs.completed || 0) + (vb.completed || 0);
+    var pct = tot > 0 ? Math.round(onb / tot * 100) : 0;
     var col = (VERT_COLORS[vc.key] || VERT_COLORS.Others).c;
     var iconBg = hexRGBA(col, .09);
     return '<button class="ov-vert-card" onclick="enterDashboard(\'' + vc.key + '\',\'COMPLETED\')"'
-      + ' role="button" aria-label="' + vc.name + ': ' + fmt(tot) + ' onboardings">'
+      + ' role="button" aria-label="' + vc.name + ': ' + fmt(tot) + ' total, ' + fmt(onb) + ' onboarded">'
       + '<div class="ov-vert-icon" style="background:' + iconBg + ';color:' + col + '">' + _ovVertSVG(vc.key) + '</div>'
       + '<div class="ov-vert-body">'
       + '<div class="ov-vert-name">' + vc.name + '</div>'
       + '<div class="ov-vert-count">' + fmt(tot) + '</div>'
-      + '<div class="ov-vert-sub">Onboardings</div>'
+      + '<div class="ov-vert-sub">' + fmt(onb) + ' onboarded &middot; ' + pct + '%</div>'
+      + '<div class="ov-vert-prog"><div class="ov-vert-prog-fill" style="width:' + pct + '%;background:' + col + '"></div></div>'
       + '</div>'
       + '<div class="ov-vert-arrow">›</div>'
       + '</button>';
