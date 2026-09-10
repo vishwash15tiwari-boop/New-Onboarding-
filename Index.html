@@ -14944,11 +14944,12 @@ function _ovStatus() {
 }
 
 // Format a percentage delta for display.
+// pos/neg = semantic (good/bad); pct drives the arrow direction independently.
 function _ovDelta(pct, lowerIsBetter) {
   if (pct === null || pct === undefined || isNaN(pct)) return null;
   var pos = lowerIsBetter ? pct < 0 : pct > 0;
   var neg = lowerIsBetter ? pct > 0 : pct < 0;
-  return { text: (pct > 0 ? '+' : '') + pct + '%', pos: pos, neg: neg };
+  return { text: (pct > 0 ? '+' : '') + pct + '%', pos: pos, neg: neg, pct: pct };
 }
 
 // SVG icon path data per vertical.
@@ -15061,7 +15062,7 @@ function _buildOvKpiCards() {
     var deltaHtml = '';
     if (delta) {
       var c = delta.pos ? 'var(--green)' : (delta.neg ? 'var(--red)' : 'var(--txt3)');
-      var arr = delta.pos ? '↑' : (delta.neg ? '↓' : '');
+      var arr = delta.pct > 0 ? '↑' : (delta.pct < 0 ? '↓' : '');
       deltaHtml = '<div class="ov-kpi-delta" style="color:' + c + '">'
         + '<span class="dv">' + arr + ' ' + delta.text + '</span>'
         + '&nbsp;<span class="dl">' + fyLabel + '</span>'
@@ -15106,10 +15107,10 @@ function renderOvDonut() {
     return;
   }
   var segs = [
-    { label: 'Completed',   val: st.comp,  color: '#005DFF' },
-    { label: 'In Progress', val: st.inRev, color: '#1DC797' },
-    { label: 'Pending',     val: st.draft, color: '#8460D4' },
-    { label: 'Rejected',    val: st.rej,   color: '#D70015' },
+    { label: 'Onboarded', val: st.comp,  color: '#005DFF' },
+    { label: 'In Review',  val: st.inRev, color: '#1DC797' },
+    { label: 'Draft',      val: st.draft, color: '#8460D4' },
+    { label: 'Rejected',   val: st.rej,   color: '#D70015' },
   ].filter(function(s) { return s.val > 0; });
 
   var R = 46, CX = 60, CY = 60, SW = 13;
