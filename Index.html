@@ -3850,7 +3850,6 @@ body.view-ov #ov-screen{display:block}
 /* Page intro */
 .ov-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px}
 .ov-eyebrow{font-size:13px;font-weight:700;letter-spacing:.18em;color:var(--blue);text-transform:uppercase;margin-bottom:0}
-.ov-title{font-size:20px;font-weight:800;letter-spacing:-.5px;color:var(--txt);line-height:1.1}
 .ov-sub{display:none}
 .ov-period-row{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;align-self:flex-end}
 
@@ -4082,9 +4081,9 @@ body.view-ov #ov-screen{display:block}
 
     <!-- Executive KPI snapshot — exactly 3 cards -->
     <div class="ov-kpi-row" id="ov-kpi-row">
-      <div class="ov-kpi sk" style="min-height:154px"></div>
-      <div class="ov-kpi sk" style="min-height:154px"></div>
-      <div class="ov-kpi sk" style="min-height:154px"></div>
+      <div class="ov-kpi sk" style="min-height:112px"></div>
+      <div class="ov-kpi sk" style="min-height:112px"></div>
+      <div class="ov-kpi sk" style="min-height:112px"></div>
     </div>
 
     <!-- Analytics: monthly bar chart + health donut -->
@@ -15038,9 +15037,9 @@ function renderOvScreen() {
   var kpiEl = document.getElementById('ov-kpi-row');
   if (kpiEl) {
     if (!hasData) {
-      kpiEl.innerHTML = '<div class="ov-kpi sk" style="min-height:154px"></div>'
-        + '<div class="ov-kpi sk" style="min-height:154px"></div>'
-        + '<div class="ov-kpi sk" style="min-height:154px"></div>';
+      kpiEl.innerHTML = '<div class="ov-kpi sk" style="min-height:112px"></div>'
+        + '<div class="ov-kpi sk" style="min-height:112px"></div>'
+        + '<div class="ov-kpi sk" style="min-height:112px"></div>';
     } else {
       kpiEl.innerHTML = _buildOvKpiCards();
       animateCounters(kpiEl);
