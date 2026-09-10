@@ -3839,6 +3839,11 @@ body.view-gst #mm-crumbs{display:none}
 #ov-screen{display:none;background:var(--bg);min-height:calc(100vh - 56px)}
 body.view-ov #main{display:none!important}
 body.view-ov #ov-screen{display:block}
+/* Override global .sk min-height:280px — overview skeletons have explicit heights */
+#ov-screen .sk{min-height:0!important}
+/* Screen-switch fade overlay */
+#ov-trans{position:fixed;inset:0;background:var(--bg);opacity:0;pointer-events:none;z-index:998;transition:opacity .22s cubic-bezier(.4,0,.2,1);will-change:opacity}
+#ov-trans.ov-fading{opacity:1;pointer-events:auto}
 
 .ov-wrap{max-width:1280px;margin:0 auto;padding:14px 36px 16px}
 
@@ -7887,10 +7892,14 @@ function openTatModal() {
   openTatRecords(selectedAud === 'buyer' ? 'buyer' : 'seller', null);
 }
 
-// Detailed Records slide-over
+// Detailed Records slide-over — pre-filtered to Onboarded (COMPLETED) cases.
 function openRecordsSheet(aud) {
   var key = activeVertKey || selectedVert;
   if (aud && aud !== selectedAud) { setDetailAud(aud); return; }   // setDetailAud opens the sheet
+  // Show only onboarded records by default
+  vdF.status = 'COMPLETED';
+  var statusEl = document.getElementById('vdf-status');
+  if (statusEl) statusEl.value = 'COMPLETED';
   if (key) { renderInlineDetail(key); if (!vertRows.length && !vertRowsLoading) loadVertRows(key); }
   _showRecSheet(key);
 }
@@ -10464,14 +10473,14 @@ function buildCard(cfg, v, pipelineLabel) {
       + '</div>';
   }
 
-function openVertDetail(key, aud) {
+function openVertDetail(key, aud, statusFilter) {
   aud = aud || 'seller';
   // If a different vertical tab — switch to it, which resets rows and re-renders.
   if (activeVertKey !== key) {
     selectedAud = aud;
     activeVertKey = key;
     selectedVert  = key;
-    vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+    vdF = { category: 'All', vendor: 'All', status: statusFilter || 'All', gst: 'All', search: '' };
     vdSort = { key: '', dir: 1 };
     vertRows = []; vertRowsLoading = true; vertRowsError = null;
     _vertRowsPKey = null; ++_vertRowsGen; _ovnRows = {};
@@ -14818,21 +14827,43 @@ function renderVendorRatingsDash() {
 // ══════════════════════════════════════════════════════════════════
 var _ovMonthlyData = null;
 
-// Switch to the overview landing screen.
-function showOverview() {
-  document.body.classList.add('view-ov');
-  renderOvScreen();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+// Returns (or lazily creates) the screen-switch fade overlay.
+function _ovTrans() {
+  var el = document.getElementById('ov-trans');
+  if (!el) { el = document.createElement('div'); el.id = 'ov-trans'; document.body.appendChild(el); }
+  return el;
 }
 
-// Leave the overview and enter the detailed dashboard.
-// vertKey: optional — if provided, opens that vertical's detail panel.
-function enterDashboard(vertKey) {
-  document.body.classList.remove('view-ov');
-  if (vertKey) {
-    requestAnimationFrame(function() { openVertDetail(vertKey); });
-  }
-  window.scrollTo({ top: 0, behavior: 'instant' });
+// Switch to the overview landing screen (animated).
+function showOverview() {
+  var tr = _ovTrans();
+  tr.classList.add('ov-fading');
+  setTimeout(function() {
+    document.body.classList.add('view-ov');
+    renderOvScreen();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { tr.classList.remove('ov-fading'); });
+    });
+  }, 230);
+}
+
+// Leave the overview and enter the detailed dashboard (animated).
+// vertKey: if provided, opens that vertical's detail panel.
+// statusFilter: if provided, pre-sets the status filter (e.g. 'COMPLETED').
+function enterDashboard(vertKey, statusFilter) {
+  var tr = _ovTrans();
+  tr.classList.add('ov-fading');
+  setTimeout(function() {
+    document.body.classList.remove('view-ov');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (vertKey) {
+      requestAnimationFrame(function() { openVertDetail(vertKey, 'seller', statusFilter); });
+    }
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { tr.classList.remove('ov-fading'); });
+    });
+  }, 230);
 }
 
 // Aggregate fyBreakdown across all verticals and both audiences.
@@ -15134,7 +15165,7 @@ function renderOvVerts() {
     var tot = (vs.total || 0) + (vb.total || 0);
     var col = (VERT_COLORS[vc.key] || VERT_COLORS.Others).c;
     var iconBg = hexRGBA(col, .09);
-    return '<button class="ov-vert-card" onclick="enterDashboard(\'' + vc.key + '\')"'
+    return '<button class="ov-vert-card" onclick="enterDashboard(\'' + vc.key + '\',\'COMPLETED\')"'
       + ' role="button" aria-label="' + vc.name + ': ' + fmt(tot) + ' onboardings">'
       + '<div class="ov-vert-icon" style="background:' + iconBg + ';color:' + col + '">' + _ovVertSVG(vc.key) + '</div>'
       + '<div class="ov-vert-body">'
