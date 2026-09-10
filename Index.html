@@ -219,6 +219,9 @@ select,input{font-family:inherit}
 .status-dot{width:7px;height:7px;border-radius:50%;background:#1DC797;flex-shrink:0;animation:pulse 2.4s ease infinite;box-shadow:0 0 6px rgba(29,199,151,.5)}
 .live-pill{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;color:var(--txt2);background:var(--seg-track);border:none;border-radius:var(--pill);padding:5px 12px;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.08em}
 .live-pill b{color:var(--txt);font-weight:700}
+.ov-back-btn{display:none;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--blue);background:rgba(0,93,255,.07);border:1px solid rgba(0,93,255,.15);border-radius:var(--pill);padding:5px 13px;cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s;white-space:nowrap;line-height:1}
+.ov-back-btn:hover{background:rgba(0,93,255,.13);border-color:rgba(0,93,255,.3)}
+body:not(.view-ov) .ov-back-btn{display:flex}
 
 /* ===== Filter Controls — Apple pill-chip system ===== */
 .filter-group{display:flex;align-items:center;gap:6px}
@@ -3937,6 +3940,9 @@ body.view-ov #ov-screen{display:block}
     <div class="logo-text">ONBOARDING</div>
   </div>
   <div class="header-spacer"></div>
+  <button class="ov-back-btn" onclick="showOverview()" aria-label="Back to Overview">
+    &#8592; Overview
+  </button>
   <!-- Quick search trigger removed. The ⌘K / Ctrl+K shortcut still opens the
        palette; see the keydown handler if that should go too. -->
   <div class="header-meta">
