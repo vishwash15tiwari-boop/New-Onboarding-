@@ -15165,8 +15165,8 @@ function renderOvBarChart(monthly) {
     var parts = String(d.month || '').split('-');
     var yr = parts[0] || '', mo = parseInt(parts[1] || '0', 10);
     var lbl = (mo >= 1 && mo <= 12) ? moNames[mo] + ' \'' + String(yr).slice(2) : (d.label || d.month || '');
-    var tipData = JSON.stringify({ m: lbl, s: d.sellers || 0, b: d.buyers || 0, t: tot });
-    return '<div class="ov-bar-col" onmouseenter="ovTip(event,' + tipData + ')" onmouseleave="ovTipH()" onmousemove="ovTipM(event)">'
+    var safeM = lbl.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return '<div class="ov-bar-col" data-m="' + safeM + '" data-s="' + (d.sellers||0) + '" data-b="' + (d.buyers||0) + '" data-t="' + tot + '" onmouseenter="ovTip(event)" onmouseleave="ovTipH()" onmousemove="ovTipM(event)">'
       + '<div class="ov-bar-tot">' + tot + '</div>'
       + '<div class="ov-bar-grp">'
       + (bH > 0 ? '<div class="ov-bar-b" style="height:' + bH + 'px"></div>' : '')
@@ -15200,18 +15200,23 @@ function renderOvBarChart(monthly) {
 }
 
 // Bar chart tooltip helpers
-function ovTip(e, d) {
+function ovTip(e) {
+  var el = e.currentTarget;
+  var m = el.getAttribute('data-m') || '';
+  var s = +el.getAttribute('data-s') || 0;
+  var b = +el.getAttribute('data-b') || 0;
+  var tot = +el.getAttribute('data-t') || 0;
   var t = document.getElementById('ov-tooltip');
   if (!t) return;
   t.style.display = 'block';
-  t.innerHTML = '<b style="display:block;margin-bottom:5px">' + d.m + '</b>'
+  t.innerHTML = '<b style="display:block;margin-bottom:5px">' + m + '</b>'
     + '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">'
     + '<span style="width:8px;height:8px;background:#4A7DFF;border-radius:2px;display:inline-block"></span>'
-    + 'Sellers&nbsp;<b>' + d.s + '</b></div>'
+    + 'Sellers&nbsp;<b>' + s + '</b></div>'
     + '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">'
     + '<span style="width:8px;height:8px;background:#1DC797;border-radius:2px;display:inline-block"></span>'
-    + 'Buyers&nbsp;<b>' + d.b + '</b></div>'
-    + '<div style="border-top:1px solid rgba(255,255,255,.18);padding-top:5px">Total&nbsp;<b>' + d.t + '</b></div>';
+    + 'Buyers&nbsp;<b>' + b + '</b></div>'
+    + '<div style="border-top:1px solid rgba(255,255,255,.18);padding-top:5px">Total&nbsp;<b>' + tot + '</b></div>';
   ovTipP(e);
 }
 function ovTipH() { var t = document.getElementById('ov-tooltip'); if (t) t.style.display = 'none'; }
