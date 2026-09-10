@@ -3903,16 +3903,16 @@ body.view-ov #ov-screen{display:block}
 .ov-verts-hdr{display:flex;align-items:center;margin-bottom:7px}
 .ov-verts-title{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.1px}
 .ov-verts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.ov-vert-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;box-shadow:var(--shadow-card);display:flex;align-items:center;gap:10px;cursor:pointer;transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring),border-color .2s;font-family:inherit;width:100%;text-align:left}
+.ov-vert-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;box-shadow:var(--shadow-card);display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring),border-color .2s;font-family:inherit;width:100%;text-align:left}
 .ov-vert-card:hover{box-shadow:var(--shadow);transform:translateY(-2px);border-color:rgba(0,93,255,.18)}
 .ov-vert-card:active{transform:translateY(0);transition-duration:.08s}
-.ov-vert-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ov-vert-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .ov-vert-icon svg{width:17px;height:17px}
 .ov-vert-body{flex:1;min-width:0}
 .ov-vert-name{font-size:11px;font-weight:700;color:var(--txt);letter-spacing:-.1px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ov-vert-count{font-size:16px;font-weight:800;color:var(--txt);letter-spacing:-.3px;line-height:1.1}
 .ov-vert-sub{font-size:9.5px;color:var(--txt2);font-weight:500;margin-top:1px}
-.ov-vert-arrow{font-size:16px;color:var(--border2);margin-left:2px;flex-shrink:0;transition:color .15s,transform .15s;line-height:1}
+.ov-vert-arrow{font-size:16px;color:var(--border2);margin-left:2px;flex-shrink:0;transition:color .15s,transform .15s;line-height:1;align-self:center}
 .ov-vert-card:hover .ov-vert-arrow{color:var(--blue);transform:translateX(2px)}
 .ov-vert-prog{height:3px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden;width:100%}
 .ov-vert-prog-fill{height:100%;border-radius:2px;transition:width .7s var(--ease-out)}
@@ -14856,16 +14856,27 @@ function showOverview() {
 }
 
 // Leave the overview and enter the detailed dashboard (animated).
-// vertKey: if provided, opens that vertical's detail panel.
-// statusFilter: if provided, pre-sets the status filter (e.g. 'COMPLETED').
-function enterDashboard(vertKey, statusFilter) {
+// vertKey: if provided, selects that vertical and shows its module branches.
+function enterDashboard(vertKey) {
   var tr = _ovTrans();
   tr.classList.add('ov-fading');
   setTimeout(function() {
     document.body.classList.remove('view-ov');
     window.scrollTo({ top: 0, behavior: 'instant' });
     if (vertKey) {
-      requestAnimationFrame(function() { openVertDetail(vertKey, 'seller', statusFilter); });
+      requestAnimationFrame(function() {
+        if (activeVertKey !== vertKey) {
+          // Full setup: renders vertical KPIs, pipeline, mm-tree with module branches.
+          selectVertTab(vertKey);
+        } else {
+          // Already on this vertical — retarget mm-tree to its top-level modules.
+          _mmVert = vertKey;
+          mmPath = ['root', 'root/' + vertKey];
+          _mmCloseInline();
+          _mmAnimateReveal = true;
+          renderBranchNav(vertKey);
+        }
+      });
     }
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { tr.classList.remove('ov-fading'); });
@@ -15174,7 +15185,7 @@ function renderOvVerts() {
     var pct = tot > 0 ? Math.round(onb / tot * 100) : 0;
     var col = (VERT_COLORS[vc.key] || VERT_COLORS.Others).c;
     var iconBg = hexRGBA(col, .09);
-    return '<button class="ov-vert-card" onclick="enterDashboard(\'' + vc.key + '\',\'COMPLETED\')"'
+    return '<button class="ov-vert-card" onclick="enterDashboard(\'' + vc.key + '\')"'
       + ' role="button" aria-label="' + vc.name + ': ' + fmt(onb) + ' onboarded out of ' + fmt(tot) + '">'
       + '<div class="ov-vert-icon" style="background:' + iconBg + ';color:' + col + '">' + _ovVertSVG(vc.key) + '</div>'
       + '<div class="ov-vert-body">'
