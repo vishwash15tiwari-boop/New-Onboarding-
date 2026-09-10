@@ -15169,9 +15169,8 @@ function renderOvVerts() {
   }
   el.innerHTML = cfg.map(function(vc) {
     var vs  = (DS && DS.verticals || {})[vc.key] || {};
-    var vb  = (DB && DB.verticals || {})[vc.key] || {};
-    var tot = (vs.total     || 0) + (vb.total     || 0);
-    var onb = (vs.completed || 0) + (vb.completed || 0);
+    var tot = vs.total     || 0;
+    var onb = vs.completed || 0;
     var pct = tot > 0 ? Math.round(onb / tot * 100) : 0;
     var col = (VERT_COLORS[vc.key] || VERT_COLORS.Others).c;
     var iconBg = hexRGBA(col, .09);
