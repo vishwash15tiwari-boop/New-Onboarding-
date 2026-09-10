@@ -755,13 +755,13 @@ function getTransactionModuleData(filtersJson) {
       }, 0);
     }
     function aging(rows) {
-      var lt30=0, d30=0, gt90=0;
+      var lt30=0, d30=0, gt60=0;
       rows.forEach(function(r) {
         if (!r.onboardedDate) return;
         var days = Math.floor((now - r.onboardedDate) / 86400000);
-        if (days <= 30) lt30++; else if (days <= 60) d30++; else gt90++;
+        if (days <= 30) lt30++; else if (days <= 60) d30++; else gt60++;
       });
-      return { lt30:lt30, d30_60:d30, gt60:gt90 };
+      return { lt30:lt30, d30_60:d30, gt60:gt60 };
     }
     function mkMm(rows) {
       var mm = {};
@@ -1197,9 +1197,14 @@ function lookupLevel1_(id, name, audience) {
 // review entry → flagged for exclusion. hasCols is false for a feed without these columns
 // (e.g. _mb_buyers), signalling the caller to fall back. Returns {start,exclude,hasCols}.
 function tatEffStartFromRow_(row, idx) {
-  var revNames = ['review_submission_date', 'level1', 'level2', 'level3', 'level4'];
+  // Include both space-normalised forms: "level1" (no separator) and "level_1" (underscore).
+  // readSheetObj_ normalises "Level 1" → "level_1" via replace(/\s+/g,'_'), so a sheet
+  // with space-separated headers would never match "level1" alone.
+  var revNames = ['review_submission_date', 'level1', 'level_1', 'level2', 'level_2', 'level3', 'level_3', 'level4', 'level_4'];
   var rejNames = ['level1_rejected1', 'level1_rejected2', 'level2_rejected1', 'level2_rejected2',
-                  'level3_rejected1', 'level3_rejected2', 'level4_rejected1', 'level4_rejected2'];
+                  'level3_rejected1', 'level3_rejected2', 'level4_rejected1', 'level4_rejected2',
+                  'level_1_rejected1', 'level_1_rejected2', 'level_2_rejected1', 'level_2_rejected2',
+                  'level_3_rejected1', 'level_3_rejected2', 'level_4_rejected1', 'level_4_rejected2'];
   var hasCols = false, i, dt, rejMax = null, revs = [];
   for (i = 0; i < rejNames.length; i++) {
     if (idx[rejNames[i]] === undefined) continue;
@@ -2630,14 +2635,6 @@ function buildFiscalYears(all) {
 // ─────────────────────────────────────────────────────────────
 function buildIndex(headers) { var idx = {}; headers.forEach(function(h, i) { idx[h] = i; }); return idx; }
 function gv(row, idx, key) { return (idx[key] !== undefined) ? row[idx[key]] : ''; }
-// Returns the value from the first column key that actually exists in idx.
-// Unlike || chaining, this preserves 0 and other falsy-but-valid cell values.
-function firstDef_(row, idx, keys) {
-  for (var i = 0; i < keys.length; i++) {
-    if (idx[keys[i]] !== undefined) return row[idx[keys[i]]];
-  }
-  return '';
-}
 
 function parseDate(val) {
   if (val === null || val === undefined || val === '') return null;
@@ -3059,6 +3056,7 @@ function diagnoseGSTPayables() {
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
 function getQualityData() {
+  try {
   // v14: Vendor Rating / OSV sourced from "Open Marketplace Vendor Scores" — the 0-10
   // rating is the "Denominator" column, OSV is "OSV Status". Joined to onboarded OMP
   // vendors primarily by NORMALISED NAME (OMP sellers carry no GSTIN in the feed and use
@@ -3235,6 +3233,9 @@ function getQualityData() {
             (osUp === 'CONSENT_ACCEPTED' || osUp === 'YES' || osUp === 'Y' || osUp === 'TRUE'
              || osUp === 'DONE' || osUp === 'COMPLETED' || osUp === 'VERIFIED' || osUp === 'POSITIVE')
               ? 'verified'
+            : (osUp === 'CONSENT_OBTAINED' || osUp === 'CONSENT_RECEIVED' || osUp === 'CONSENT_GIVEN'
+               || osUp === 'CONSENTED' || osUp === 'CONSENT_YES')
+              ? 'consent_obtained'
             : (osUp === 'CONSENT_PENDING' || osUp === 'PENDING' || osUp === 'IN_PROGRESS'
                || osUp === 'INITIATED' || osUp === 'ONGOING' || osUp === 'PROCESSING'
                || osUp === 'SCHEDULED' || osUp === 'VISIT_SCHEDULED' || osUp === 'PARTIAL')
@@ -3243,7 +3244,7 @@ function getQualityData() {
           if (osvStatus === 'verified') {
             acc['seller'].o.completed   += 1;
             acc['combined'].o.completed += 1;
-          } else if (osvStatus === 'in_progress') {
+          } else if (osvStatus === 'in_progress' || osvStatus === 'consent_obtained') {
             acc['seller'].o.pending   += 1;
             acc['combined'].o.pending += 1;
           }
@@ -3321,7 +3322,9 @@ function getQualityData() {
         if (osU2 === 'CONSENT_ACCEPTED' || osU2 === 'YES' || osU2 === 'Y' || osU2 === 'TRUE'
             || osU2 === 'DONE' || osU2 === 'COMPLETED' || osU2 === 'VERIFIED' || osU2 === 'POSITIVE') {
           _sosvC++;
-        } else if (osU2 === 'CONSENT_PENDING' || osU2 === 'PENDING' || osU2 === 'IN_PROGRESS'
+        } else if (osU2 === 'CONSENT_OBTAINED' || osU2 === 'CONSENT_RECEIVED' || osU2 === 'CONSENT_GIVEN'
+                   || osU2 === 'CONSENTED' || osU2 === 'CONSENT_YES'
+                   || osU2 === 'CONSENT_PENDING' || osU2 === 'PENDING' || osU2 === 'IN_PROGRESS'
                    || osU2 === 'INITIATED' || osU2 === 'ONGOING' || osU2 === 'PROCESSING'
                    || osU2 === 'SCHEDULED' || osU2 === 'VISIT_SCHEDULED' || osU2 === 'PARTIAL') {
           _sosvP++;
@@ -3502,8 +3505,11 @@ function getQualityData() {
 
   var result = { success: true, lastUpdated: new Date().toISOString(), combined: combined, seller: seller, buyer: buyer, vendorRatings: vendorRatings || [], vendorOSV: vendorOSV || [], vendorDocs: vendorDocs || [] };
   var out = JSON.stringify(result);
-  try { cache.put(CACHE_KEY, out, 300); } catch (e) {}
+  try { cache.put(CACHE_KEY, out, CONFIG.CACHE_TTL); } catch (e) {}
   return out;
+  } catch (err) {
+    return JSON.stringify({ success: false, error: (err && err.message) ? err.message : String(err) });
+  }
 }
 
 // Builds a { id: true } lookup set from a Metabase-synced sheet.
@@ -4070,6 +4076,7 @@ function debugDocs() {
 // 7-stage OSV journey, status distribution and score analysis.
 // ═══════════════════════════════════════════════════════════════
 function getOSVDashboardData() {
+  try {
   var CACHE_KEY = 'osv_dash_v6';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
@@ -4422,8 +4429,11 @@ function getOSVDashboardData() {
     sellerList: fullSellerList
   };
   var out = JSON.stringify(result);
-  try { cache.put(CACHE_KEY, out, 300); } catch (e) {}
+  try { cache.put(CACHE_KEY, out, CONFIG.CACHE_TTL); } catch (e) {}
   return out;
+  } catch (err) {
+    return JSON.stringify({ success: false, error: (err && err.message) ? err.message : String(err) });
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4487,7 +4497,7 @@ function getCompliantOnboardingData() {
       exceptionRows: exceptionRows
     };
     var out = JSON.stringify(result);
-    try { cache.put(CACHE_KEY, out, 600); } catch (e) {}
+    try { cache.put(CACHE_KEY, out, CONFIG.CACHE_TTL); } catch (e) {}
     return out;
   } catch (err) {
     return JSON.stringify({ success: false, error: (err && err.message) ? err.message : String(err) });
