@@ -3845,6 +3845,25 @@ body.view-ov #ov-screen{display:block}
 #ov-trans{position:fixed;inset:0;background:var(--bg);opacity:0;pointer-events:none;z-index:998;transition:opacity .22s cubic-bezier(.4,0,.2,1);will-change:opacity}
 #ov-trans.ov-fading{opacity:1;pointer-events:auto}
 
+/* ── View Transitions API — directional SPA navigation ──────────────────
+   overview→dashboard ("enter"): old content fades back and shrinks,
+   new content rises from just below — a drill-in gesture.
+   dashboard→overview ("exit"): old content falls away,
+   new content descends from above — surfacing back up.
+   Fallback: browsers without the API keep the existing #ov-trans whiteout. */
+@keyframes _vt-out-shrink { to{opacity:0;transform:scale(.97) translateY(-6px)} }
+@keyframes _vt-in-rise    { from{opacity:0;transform:translateY(20px)} }
+@keyframes _vt-out-fall   { to{opacity:0;transform:translateY(14px)} }
+@keyframes _vt-in-drop    { from{opacity:0;transform:translateY(-16px)} }
+
+:root[data-nav="enter"]::view-transition-old(root){animation:_vt-out-shrink 200ms cubic-bezier(.4,0,1,1) both}
+:root[data-nav="enter"]::view-transition-new(root){animation:_vt-in-rise    340ms cubic-bezier(.16,1,.3,1) both}
+:root[data-nav="exit"]::view-transition-old(root) {animation:_vt-out-fall   200ms cubic-bezier(.4,0,1,1) both}
+:root[data-nav="exit"]::view-transition-new(root) {animation:_vt-in-drop    340ms cubic-bezier(.16,1,.3,1) both}
+@media(prefers-reduced-motion:reduce){
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:.01ms!important}
+}
+
 .ov-wrap{max-width:1280px;margin:0 auto;padding:14px 36px 16px}
 
 /* Page intro */
@@ -14845,51 +14864,71 @@ function _ovTrans() {
   return el;
 }
 
+// Card lift micro-animation (120 ms) → then fire the transition.
+// Gives immediate tactile feedback: the card "rises" before the view changes.
+function ovCardTap(e, key) {
+  var card = e.currentTarget;
+  card.style.transition = 'transform 110ms var(--ease-spring),box-shadow 110ms var(--ease-spring)';
+  card.style.transform  = 'translateY(-4px) scale(1.018)';
+  card.style.boxShadow  = 'var(--shadow-lg)';
+  setTimeout(function() { enterDashboard(key); }, 120);
+}
+
 // Switch to the overview landing screen (animated).
 function showOverview() {
   closeRecordsSheet();
-  var tr = _ovTrans();
-  tr.classList.add('ov-fading');
-  setTimeout(function() {
+  var doNav = function() {
     document.body.classList.add('view-ov');
     renderOvScreen();
     window.scrollTo({ top: 0, behavior: 'instant' });
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() { tr.classList.remove('ov-fading'); });
-    });
-  }, 230);
+  };
+  document.documentElement.setAttribute('data-nav', 'exit');
+  if ('startViewTransition' in document) {
+    document.startViewTransition(doNav);
+  } else {
+    var tr = _ovTrans();
+    tr.classList.add('ov-fading');
+    setTimeout(function() {
+      doNav();
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { tr.classList.remove('ov-fading'); });
+      });
+    }, 230);
+  }
 }
 
 // Leave the overview and enter the detailed dashboard (animated).
 // vertKey: if provided, selects that vertical and shows its module branches.
 function enterDashboard(vertKey) {
   closeRecordsSheet();
-  var tr = _ovTrans();
-  tr.classList.add('ov-fading');
-  setTimeout(function() {
+  var doNav = function() {
     document.body.classList.remove('view-ov');
     window.scrollTo({ top: 0, behavior: 'instant' });
     if (vertKey) {
-      requestAnimationFrame(function() {
-        // Always reset path so the tree lands on vertical + modules,
-        // never mid-way through a sub-panel left open from a previous visit.
-        _mmVert = vertKey;
-        mmPath  = ['root', 'root/' + vertKey];
-        _mmCloseInline();
-        if (activeVertKey !== vertKey) {
-          // Full setup: KPIs, pipeline, aura, then mm-tree with module branches.
-          selectVertTab(vertKey);
-        } else {
-          // Same vertical — just re-paint the tree at the top-level modules view.
-          _mmAnimateReveal = true;
-          renderBranchNav(vertKey);
-        }
-      });
+      _mmVert = vertKey;
+      mmPath  = ['root', 'root/' + vertKey];
+      _mmCloseInline();
+      if (activeVertKey !== vertKey) {
+        selectVertTab(vertKey);
+      } else {
+        _mmAnimateReveal = true;
+        renderBranchNav(vertKey);
+      }
     }
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() { tr.classList.remove('ov-fading'); });
-    });
-  }, 230);
+  };
+  document.documentElement.setAttribute('data-nav', 'enter');
+  if ('startViewTransition' in document) {
+    document.startViewTransition(doNav);
+  } else {
+    var tr = _ovTrans();
+    tr.classList.add('ov-fading');
+    setTimeout(function() {
+      doNav();
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { tr.classList.remove('ov-fading'); });
+      });
+    }, 230);
+  }
 }
 
 // Aggregate fyBreakdown across all verticals and both audiences.
@@ -15195,7 +15234,7 @@ function renderOvVerts() {
     var pct = tot > 0 ? Math.round(onb / tot * 100) : 0;
     var col = (VERT_COLORS[vc.key] || VERT_COLORS.Others).c;
     var iconBg = hexRGBA(col, .09);
-    return '<button class="ov-vert-card" onclick="enterDashboard(\'' + vc.key + '\')"'
+    return '<button class="ov-vert-card" onclick="ovCardTap(event,\'' + vc.key + '\')"'
       + ' role="button" aria-label="' + vc.name + ': ' + fmt(onb) + ' onboarded out of ' + fmt(tot) + '">'
       + '<div class="ov-vert-icon" style="background:' + iconBg + ';color:' + col + '">' + _ovVertSVG(vc.key) + '</div>'
       + '<div class="ov-vert-body">'
