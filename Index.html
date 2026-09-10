@@ -15176,12 +15176,12 @@ function renderOvVerts() {
     var col = (VERT_COLORS[vc.key] || VERT_COLORS.Others).c;
     var iconBg = hexRGBA(col, .09);
     return '<button class="ov-vert-card" onclick="enterDashboard(\'' + vc.key + '\',\'COMPLETED\')"'
-      + ' role="button" aria-label="' + vc.name + ': ' + fmt(tot) + ' total, ' + fmt(onb) + ' onboarded">'
+      + ' role="button" aria-label="' + vc.name + ': ' + fmt(onb) + ' onboarded out of ' + fmt(tot) + '">'
       + '<div class="ov-vert-icon" style="background:' + iconBg + ';color:' + col + '">' + _ovVertSVG(vc.key) + '</div>'
       + '<div class="ov-vert-body">'
       + '<div class="ov-vert-name">' + vc.name + '</div>'
-      + '<div class="ov-vert-count">' + fmt(tot) + '</div>'
-      + '<div class="ov-vert-sub">' + fmt(onb) + ' onboarded &middot; ' + pct + '%</div>'
+      + '<div class="ov-vert-count">' + fmt(onb) + '</div>'
+      + '<div class="ov-vert-sub">Onboarded &middot; ' + pct + '% of ' + fmt(tot) + '</div>'
       + '<div class="ov-vert-prog"><div class="ov-vert-prog-fill" style="width:' + pct + '%;background:' + col + '"></div></div>'
       + '</div>'
       + '<div class="ov-vert-arrow">›</div>'
