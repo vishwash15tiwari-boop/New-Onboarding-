@@ -4442,6 +4442,54 @@ function getOSVDashboardData() {
 // Column G (index 6) = scoring done; blank = exception (scoring not done).
 // Returns: { total, compliant, exceptions, exceptionRows[] }
 // ═══════════════════════════════════════════════════════════════
+// Returns monthly onboarding counts (calendar months, last 12) for sellers and buyers.
+// Used exclusively by the Central Onboarding Overview bar chart.
+function getOverviewStats() {
+  var CACHE_KEY = 'overview_v1';
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get(CACHE_KEY);
+  if (hit) return hit;
+
+  try {
+    var sCfg = AUDIENCE_CFG['seller'];
+    var bCfg = AUDIENCE_CFG['buyer'];
+    var sRows = normalizeRows(readData('seller'), sCfg);
+    var bRows = normalizeRows(readData('buyer'),  bCfg);
+
+    // Build the ordered list of the last 12 calendar months (YYYY-M strings).
+    var now     = new Date();
+    var months  = [];
+    for (var mi = 11; mi >= 0; mi--) {
+      var d = new Date(now.getFullYear(), now.getMonth() - mi, 1);
+      months.push({ key: d.getFullYear() + '-' + (d.getMonth() + 1), year: d.getFullYear(), month: d.getMonth() + 1 });
+    }
+    var buckets = {};
+    months.forEach(function(m) { buckets[m.key] = { sellers: 0, buyers: 0 }; });
+
+    sRows.forEach(function(r) {
+      if (!(r.createdDate instanceof Date) || isNaN(r.createdDate)) return;
+      var k = r.createdDate.getFullYear() + '-' + (r.createdDate.getMonth() + 1);
+      if (buckets[k]) buckets[k].sellers++;
+    });
+    bRows.forEach(function(r) {
+      if (!(r.createdDate instanceof Date) || isNaN(r.createdDate)) return;
+      var k = r.createdDate.getFullYear() + '-' + (r.createdDate.getMonth() + 1);
+      if (buckets[k]) buckets[k].buyers++;
+    });
+
+    var monthly = months.map(function(m) {
+      var b = buckets[m.key];
+      return { month: m.key, sellers: b.sellers, buyers: b.buyers };
+    });
+
+    var out = JSON.stringify({ success: true, monthly: monthly });
+    try { cache.put(CACHE_KEY, out, CONFIG.CACHE_TTL); } catch (e) {}
+    return out;
+  } catch (err) {
+    return JSON.stringify({ success: false, error: (err && err.message) ? err.message : String(err) });
+  }
+}
+
 function getCompliantOnboardingData() {
   var CACHE_KEY = 'compliant_onb_v1';
   var cache = CacheService.getScriptCache();

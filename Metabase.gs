@@ -278,9 +278,10 @@ function bustDashboardCache_() {
   // Quality metrics cache — range covering the current key (quality_data_v14) + margin.
   for (var qv = 2; qv <= 20; qv++) keys.push('quality_data_v' + qv);
 
-  // OSV dashboard + compliant onboarding — simple version-ranged keys.
+  // OSV dashboard + compliant onboarding + overview stats — simple version-ranged keys.
   for (var ov = 1; ov <= 10; ov++) keys.push('osv_dash_v' + ov);
   for (var cv2 = 1; cv2 <= 5; cv2++) keys.push('compliant_onb_v' + cv2);
+  keys.push('overview_v1');
 
   // Transaction module + geo-txn — period-keyed; bust the no-custom-filter variants.
   // (Custom-date keys are one-shot and expire naturally within CONFIG.CACHE_TTL seconds.)
