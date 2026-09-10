@@ -14841,6 +14841,7 @@ function _ovTrans() {
 
 // Switch to the overview landing screen (animated).
 function showOverview() {
+  closeRecordsSheet();
   var tr = _ovTrans();
   tr.classList.add('ov-fading');
   setTimeout(function() {
@@ -14856,6 +14857,7 @@ function showOverview() {
 // Leave the overview and enter the detailed dashboard (animated).
 // vertKey: if provided, selects that vertical and shows its module branches.
 function enterDashboard(vertKey) {
+  closeRecordsSheet();
   var tr = _ovTrans();
   tr.classList.add('ov-fading');
   setTimeout(function() {
@@ -15178,8 +15180,9 @@ function renderOvVerts() {
   }
   el.innerHTML = cfg.map(function(vc) {
     var vs  = (DS && DS.verticals || {})[vc.key] || {};
-    var tot = vs.total     || 0;
-    var onb = vs.completed || 0;
+    var vb  = (DB && DB.verticals || {})[vc.key] || {};
+    var tot = (vs.total     || 0) + (vb.total     || 0);
+    var onb = (vs.completed || 0) + (vb.completed || 0);
     var pct = tot > 0 ? Math.round(onb / tot * 100) : 0;
     var col = (VERT_COLORS[vc.key] || VERT_COLORS.Others).c;
     var iconBg = hexRGBA(col, .09);
