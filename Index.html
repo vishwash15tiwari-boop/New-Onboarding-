@@ -3867,9 +3867,9 @@ body.view-ov #ov-screen{display:block}
 .ov-kpi-delta .dl{color:var(--txt3);font-weight:400;font-size:10px}
 
 /* Analytics row */
-.ov-analytics-row{display:grid;grid-template-columns:1fr 260px;gap:12px;margin-bottom:10px;align-items:start}
+.ov-analytics-row{display:grid;grid-template-columns:1fr 260px;gap:12px;margin-bottom:10px;align-items:stretch}
 .ov-chart-card,.ov-donut-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow-card)}
-.ov-donut-card{cursor:pointer;transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring)}
+.ov-donut-card{cursor:pointer;transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring);display:flex;flex-direction:column;justify-content:center}
 .ov-donut-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
 .ov-card-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px}
 .ov-card-title{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.15px}
@@ -3881,7 +3881,7 @@ body.view-ov #ov-screen{display:block}
 .ov-bar-col:hover .ov-bar-tot{opacity:1}
 .ov-bar-grp{width:100%;display:flex;flex-direction:column;border-radius:5px 5px 0 0;overflow:hidden}
 .ov-bar-b{background:#1DC797;transition:height .4s var(--ease-out)}
-.ov-bar-s{background:#4A7DFF;transition:height .4s var(--ease-out)}
+.ov-bar-s{background:var(--blue);transition:height .4s var(--ease-out)}
 .ov-bar-tot{font-size:9px;font-weight:700;color:var(--txt2);text-align:center;margin-bottom:2px;white-space:nowrap;opacity:0;transition:opacity .15s}
 .ov-bar-col:hover .ov-bar-tot,.ov-bar-col.always-lbl .ov-bar-tot{opacity:1}
 .ov-bar-lbl{font-size:8.5px;color:var(--txt3);text-align:center;margin-top:4px;white-space:nowrap}
@@ -15169,7 +15169,7 @@ function renderOvDonut() {
     + '</svg>'
     + '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">'
     + '<div style="font-size:18px;font-weight:800;letter-spacing:-.5px;color:var(--txt);line-height:1" data-count="' + st.total + '" data-count-id="ov_health_tot">' + fmt(st.total) + '</div>'
-    + '<div style="font-size:8px;color:var(--txt2);font-weight:500;margin-top:3px;text-align:center;line-height:1.3">Total<br>Onboardings</div>'
+    + '<div style="font-size:8px;color:var(--txt2);font-weight:500;margin-top:3px;text-align:center;line-height:1.3">Total<br>Onboarded</div>'
     + '</div>'
     + '</div>'
     + '<div style="width:100%">' + legend + '</div>'
@@ -15318,7 +15318,7 @@ function renderOvBarChart(monthly) {
         + '</div>';
     }).join('');
 
-    var legendHtml = '<div class="ov-bar-legend-item"><div class="ov-bar-legend-dot" style="background:#4A7DFF"></div><span>Sellers</span></div>'
+    var legendHtml = '<div class="ov-bar-legend-item"><div class="ov-bar-legend-dot" style="background:#005DFF"></div><span>Sellers</span></div>'
       + '<div class="ov-bar-legend-item"><div class="ov-bar-legend-dot" style="background:#1DC797"></div><span>Buyers</span></div>';
 
     el.innerHTML = _wrap(cols, yMax, legendHtml);
@@ -15337,7 +15337,7 @@ function ovTip(e) {
   t.style.display = 'block';
   t.innerHTML = '<b style="display:block;margin-bottom:5px">' + m + '</b>'
     + '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">'
-    + '<span style="width:8px;height:8px;background:#4A7DFF;border-radius:2px;display:inline-block"></span>'
+    + '<span style="width:8px;height:8px;background:#005DFF;border-radius:2px;display:inline-block"></span>'
     + 'Sellers&nbsp;<b>' + s + '</b></div>'
     + '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">'
     + '<span style="width:8px;height:8px;background:#1DC797;border-radius:2px;display:inline-block"></span>'
