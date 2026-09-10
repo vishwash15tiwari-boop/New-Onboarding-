@@ -7895,8 +7895,9 @@ function openTatModal() {
 // Detailed Records slide-over — pre-filtered to Onboarded (COMPLETED) cases.
 function openRecordsSheet(aud) {
   var key = activeVertKey || selectedVert;
-  if (aud && aud !== selectedAud) { setDetailAud(aud); return; }   // setDetailAud opens the sheet
-  // Show only onboarded records by default
+  // Latch the filter so audience switches inside the open sheet preserve it.
+  _recSheetStatus = 'COMPLETED';
+  if (aud && aud !== selectedAud) { setDetailAud(aud); return; }   // setDetailAud reads _recSheetStatus
   vdF.status = 'COMPLETED';
   var statusEl = document.getElementById('vdf-status');
   if (statusEl) statusEl.value = 'COMPLETED';
@@ -7908,6 +7909,7 @@ function closeRecordsSheet() {
   var wasOpen = ovl && ovl.classList.contains('show');
   if (ovl) ovl.classList.remove('show');
   document.body.classList.remove('rec-open');
+  _recSheetStatus = null;   // clear the onboarded-only filter when the sheet closes
   if (wasOpen) unlockBodyScroll();
 }
 document.addEventListener('keydown', function(e) {
@@ -10345,8 +10347,8 @@ function setDetailAud(aud) {
   }
   selectedAud = aud;
   renderPipelinePair(key);   // updates .det-active class on the cards
-  // Reset and reload rows for the new audience
-  vdF = { category: 'All', vendor: 'All', status: 'All', gst: 'All', search: '' };
+  // Reset rows; preserve the records-sheet status filter if one is active.
+  vdF = { category: 'All', vendor: 'All', status: _recSheetStatus || 'All', gst: 'All', search: '' };
   vdSort = { key: '', dir: 1 };
   vertRows = []; vertRowsLoading = true; vertRowsError = null;
   _vertRowsPKey = null; ++_vertRowsGen;
@@ -14826,6 +14828,9 @@ function renderVendorRatingsDash() {
 // CENTRAL ONBOARDING — OVERVIEW SCREEN
 // ══════════════════════════════════════════════════════════════════
 var _ovMonthlyData = null;
+// Status filter held while the Detailed Records sheet is open (null = no filter).
+// setDetailAud reads this so audience switches inside the sheet preserve the filter.
+var _recSheetStatus = null;
 
 // Returns (or lazily creates) the screen-switch fade overlay.
 function _ovTrans() {
