@@ -14871,14 +14871,16 @@ function enterDashboard(vertKey) {
     window.scrollTo({ top: 0, behavior: 'instant' });
     if (vertKey) {
       requestAnimationFrame(function() {
+        // Always reset path so the tree lands on vertical + modules,
+        // never mid-way through a sub-panel left open from a previous visit.
+        _mmVert = vertKey;
+        mmPath  = ['root', 'root/' + vertKey];
+        _mmCloseInline();
         if (activeVertKey !== vertKey) {
-          // Full setup: renders vertical KPIs, pipeline, mm-tree with module branches.
+          // Full setup: KPIs, pipeline, aura, then mm-tree with module branches.
           selectVertTab(vertKey);
         } else {
-          // Already on this vertical — retarget mm-tree to its top-level modules.
-          _mmVert = vertKey;
-          mmPath = ['root', 'root/' + vertKey];
-          _mmCloseInline();
+          // Same vertical — just re-paint the tree at the top-level modules view.
           _mmAnimateReveal = true;
           renderBranchNav(vertKey);
         }
