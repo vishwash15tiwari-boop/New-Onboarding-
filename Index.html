@@ -26,144 +26,71 @@
   color-scheme:light;
   transition:--aura-a .9s cubic-bezier(.25,.1,.25,1),--aura-b .9s cubic-bezier(.25,.1,.25,1);
 
-  /* ── Ambient vertical aura ── */
-  --aura-a: rgba(0,93,255,.16);
-  --aura-b: rgba(0,93,255,.09);
+  /* ── Ambient vertical aura — faint wash behind the cards (Recykal blue) ── */
+  --aura-a: rgba(0,93,255,.12);
+  --aura-b: rgba(0,93,255,.06);
 
-  /* ── Surfaces — Claymorphism palette ── */
-  --bg:      #ECF0FB;   /* soft blue-indigo clay ground */
-  --bg2:     #E3E8F7;   /* deeper clay wash — page background */
+  /* ── Surfaces — Apple SF palette ── */
+  --bg:      #FFFFFF;
+  --bg2:     #F5F5F7;   /* Apple's exact page-wash grey */
   --card:    #FFFFFF;
-  --card2:   #F5F7FF;
-  --sidebar: #F3F5FF;
-  --hover:   rgba(0,63,220,.045);
-  --header-bg: rgba(236,240,251,.88);   /* clay-tinted frosted glass */
+  --card2:   #F9F9FB;
+  --sidebar: #F9F9FB;   /* subtle tint for sticky table / section headers */
+  --hover:   rgba(0,0,0,.035);
+  --header-bg: rgba(255,255,255,.78);   /* frosted glass — Apple nav bar */
 
-  /* ── Borders — clay-blue tint, let shadows define depth ── */
-  --border:  rgba(148,163,212,.28);
-  --border2: rgba(148,163,212,.48);
+  /* ── Borders — ultra-thin Apple hairlines ── */
+  --border:  rgba(0,0,0,.09);
+  --border2: rgba(0,0,0,.15);
 
-  /* ── Ink — unchanged hierarchy ── */
-  --txt:     #1D1D1F;
-  --txt2:    #6E6E73;
-  --txt3:    #86868B;
+  /* ── Ink — Apple's exact type hierarchy ── */
+  --txt:     #1D1D1F;   /* Apple primary label */
+  --txt2:    #6E6E73;   /* Apple secondary label */
+  --txt3:    #86868B;   /* tertiary label — apple.com body-secondary grey, legible (was #AEAEB2) */
 
   /* ── Recykal brand palette — Bright Blue accent, brand green for success. ──
         Bright Blue #005DFF · Midnight Blue #024C8A · Medium Purple #8460D4 ·
         Bright Green #1DC797 · Dark Green #049769 (per Recykal Brand Guidelines). */
-  --blue:      #005DFF;
-  --blue-ink:  #024C8A;
+  --blue:      #005DFF;   /* Bright Blue — primary accent */
+  --blue-ink:  #024C8A;   /* Midnight Blue — blue text/ink */
   --blue2:     #024C8A;
-  --purple:    #8460D4;
+  --purple:    #8460D4;   /* Medium Purple */
   --duke:      #8460D4;
-  --green-ink: #049769;
-  --accent-soft: rgba(0,93,255,.09);
+  --green-ink: #049769;   /* Duke Green — readable green for text/icons on light-green tints */
+  --accent-soft: rgba(0,93,255,.08);
 
-  /* ── Status ink ── */
-  --green:   #049769;
+  /* ── Status ink (TAT / deltas) ── */
+  --green:   #049769;   /* Dark Green — brand */
   --amber:   #B25000;
   --red:     #D70015;
 
-  /* ── Stage palette ── */
-  --st-total:      #8E8E93;   --st-total-bg:     #EEEEF4;   --st-total-tx:     #636366;
-  --st-draft:      #8460D4;   --st-draft-bg:     #EDE8F9;   --st-draft-tx:     #5B3FA8;
-  --st-review:     #FF9500;   --st-review-bg:    #FFF3E0;   --st-review-tx:    #B25000;
-  --st-onboarded:  #1DC797;   --st-onboarded-bg: #DFF6EE;   --st-onboarded-tx: #049769;
-  --st-transacted: #005DFF;   --st-transacted-bg:#E0ECFF;   --st-transacted-tx:#024C8A;
-  --st-rejected:   #FF3B30;   --st-rejected-bg:  #FCE8E7;   --st-rejected-tx:  #D70015;
+  /* ── Stage palette — brand hues as dots, chips & chart fills.
+        Amber/red kept for functional review/rejected states. ── */
+  --st-total:      #8E8E93;   --st-total-bg:     #F2F2F7;   --st-total-tx:     #636366;
+  --st-draft:      #8460D4;   --st-draft-bg:     #F1ECFB;   --st-draft-tx:     #5B3FA8;
+  --st-review:     #FF9500;   --st-review-bg:    #FFF4E5;   --st-review-tx:    #B25000;
+  --st-onboarded:  #1DC797;   --st-onboarded-bg: #E3F8F1;   --st-onboarded-tx: #049769;
+  --st-transacted: #005DFF;   --st-transacted-bg:#E6EFFF;   --st-transacted-tx:#024C8A;
+  --st-rejected:   #FF3B30;   --st-rejected-bg:  #FDECEB;   --st-rejected-tx:  #D70015;
 
-  /* ── Elevation — Claymorphism: outer blue-grey shadow + inner white highlight ── */
-  --shadow-sm:   4px 4px 10px rgba(148,163,212,.32), -2px -2px 6px rgba(255,255,255,.90);
-  --shadow:      6px 6px 18px rgba(148,163,212,.42), -4px -4px 10px rgba(255,255,255,.88);
-  --shadow-lg:   10px 10px 28px rgba(148,163,212,.50), -5px -5px 14px rgba(255,255,255,.86);
-  --shadow-card: 6px 6px 16px rgba(148,163,212,.38), -4px -4px 10px rgba(255,255,255,.92),
-                 inset 0 1px 3px rgba(255,255,255,.80), inset 0 -1px 3px rgba(148,163,212,.14);
+  /* ── Elevation — borderless cards, one soft shadow ── */
+  --shadow-sm:   0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
+  --shadow:      0 2px 6px rgba(0,0,0,.04), 0 8px 28px rgba(0,0,0,.07);
+  --shadow-lg:   0 4px 12px rgba(0,0,0,.05), 0 20px 48px rgba(0,0,0,.10);
+  --shadow-card: 0 0 0 .5px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.05), 0 6px 20px rgba(0,0,0,.05);
   --ring:        0 0 0 3px rgba(0,93,255,.22);
 
-  /* ── Geometry & motion ── */
-  --r:    22px;   /* enlarged for clay puffiness */
-  --r2:   14px;
-  --seg-track: rgba(120,120,128,.12);
+  /* ── Geometry & motion — Apple 8-pt grid, easing curves ── */
+  --r:    18px;   /* card radius — Apple.com card */
+  --r2:   12px;
+  --seg-track: rgba(120,120,128,.12);   /* iOS segmented-control track */
   --pill: 999px;
-  --ease:        cubic-bezier(.25,.1,.25,1);
-  --ease-out:    cubic-bezier(.16,1,.3,1);
-  --ease-sheet:  cubic-bezier(.32,.72,0,1);
-  --ease-spring: cubic-bezier(.34,1.35,.62,1);
+  --ease:        cubic-bezier(.25,.1,.25,1);    /* Apple default */
+  --ease-out:    cubic-bezier(.16,1,.3,1);      /* expo decelerate — entrances */
+  --ease-sheet:  cubic-bezier(.32,.72,0,1);     /* iOS sheet spring */
+  --ease-spring: cubic-bezier(.34,1.35,.62,1);  /* gentle overshoot — micro-presses */
 
   --wash: none;
-}
-
-/* ── Dark mode clay — deep navy ground, lifted card surfaces ── */
-@media(prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    color-scheme:dark;
-    --bg:        #1C1F32;
-    --bg2:       #14172A;
-    --card:      #252840;
-    --card2:     #1E2138;
-    --sidebar:   #202336;
-    --hover:     rgba(255,255,255,.055);
-    --header-bg: rgba(28,31,50,.88);
-    --border:    rgba(255,255,255,.09);
-    --border2:   rgba(255,255,255,.16);
-    --txt:       #F2F2F7;
-    --txt2:      #9A9AA5;
-    --txt3:      #72727A;
-    --shadow-sm:   4px 4px 12px rgba(0,0,0,.38), -2px -2px 6px rgba(255,255,255,.035);
-    --shadow:      6px 6px 20px rgba(0,0,0,.44), -4px -4px 10px rgba(255,255,255,.03);
-    --shadow-lg:   10px 10px 30px rgba(0,0,0,.52), -5px -5px 14px rgba(255,255,255,.025);
-    --shadow-card: 6px 6px 18px rgba(0,0,0,.42), -3px -3px 8px rgba(255,255,255,.04),
-                   inset 0 1px 3px rgba(255,255,255,.06), inset 0 -1px 3px rgba(0,0,0,.28);
-    --aura-a: rgba(0,93,255,.20);
-    --aura-b: rgba(0,93,255,.12);
-    --st-total-bg:     rgba(142,142,147,.14);
-    --st-draft-bg:     rgba(132,96,212,.14);
-    --st-review-bg:    rgba(255,149,0,.12);
-    --st-onboarded-bg: rgba(29,199,151,.12);
-    --st-transacted-bg:rgba(0,93,255,.15);
-    --st-rejected-bg:  rgba(255,59,48,.12);
-    --accent-soft:     rgba(0,93,255,.16);
-  }
-}
-:root[data-theme="dark"]{
-  color-scheme:dark;
-  --bg:        #1C1F32;
-  --bg2:       #14172A;
-  --card:      #252840;
-  --card2:     #1E2138;
-  --sidebar:   #202336;
-  --hover:     rgba(255,255,255,.055);
-  --header-bg: rgba(28,31,50,.88);
-  --border:    rgba(255,255,255,.09);
-  --border2:   rgba(255,255,255,.16);
-  --txt:       #F2F2F7;
-  --txt2:      #9A9AA5;
-  --txt3:      #72727A;
-  --shadow-sm:   4px 4px 12px rgba(0,0,0,.38), -2px -2px 6px rgba(255,255,255,.035);
-  --shadow:      6px 6px 20px rgba(0,0,0,.44), -4px -4px 10px rgba(255,255,255,.03);
-  --shadow-lg:   10px 10px 30px rgba(0,0,0,.52), -5px -5px 14px rgba(255,255,255,.025);
-  --shadow-card: 6px 6px 18px rgba(0,0,0,.42), -3px -3px 8px rgba(255,255,255,.04),
-                 inset 0 1px 3px rgba(255,255,255,.06), inset 0 -1px 3px rgba(0,0,0,.28);
-  --aura-a: rgba(0,93,255,.20);
-  --aura-b: rgba(0,93,255,.12);
-  --st-total-bg:     rgba(142,142,147,.14);
-  --st-draft-bg:     rgba(132,96,212,.14);
-  --st-review-bg:    rgba(255,149,0,.12);
-  --st-onboarded-bg: rgba(29,199,151,.12);
-  --st-transacted-bg:rgba(0,93,255,.15);
-  --st-rejected-bg:  rgba(255,59,48,.12);
-  --accent-soft:     rgba(0,93,255,.16);
-}
-:root[data-theme="light"]{
-  color-scheme:light;
-  --bg:   #ECF0FB; --bg2:#E3E8F7; --card:#FFFFFF; --card2:#F5F7FF;
-  --border:rgba(148,163,212,.28); --border2:rgba(148,163,212,.48);
-  --txt:#1D1D1F; --txt2:#6E6E73; --txt3:#86868B;
-  --header-bg:rgba(236,240,251,.88);
-  --shadow-card: 6px 6px 16px rgba(148,163,212,.38), -4px -4px 10px rgba(255,255,255,.92),
-                 inset 0 1px 3px rgba(255,255,255,.80), inset 0 -1px 3px rgba(148,163,212,.14);
-  --shadow: 6px 6px 18px rgba(148,163,212,.42), -4px -4px 10px rgba(255,255,255,.88);
-  --shadow-lg: 10px 10px 28px rgba(148,163,212,.50), -5px -5px 14px rgba(255,255,255,.86);
 }
 
 html{
@@ -643,7 +570,6 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .chip-review{background:var(--st-review-bg);color:var(--st-review-tx)}
 .chip-rejected{background:var(--st-rejected-bg);color:var(--st-rejected-tx)}
 .gst-ok{color:var(--st-onboarded-tx);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
-.gst-warn{color:var(--st-review-tx);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
 .gst-bad{color:var(--st-rejected-tx);font-size:11.5px;font-weight:600}
 /* ===== Detail KPI Mini-Cards ===== */
 .vd-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:22px}
@@ -2206,66 +2132,6 @@ body.view-gst #vert-tabs-bar{display:none}
 .osv-st-badge.b-not_initiated{background:#f3f4f6;color:#6E6E73}
 .osv-st-badge.b-eligible{background:#E6EFFF;color:#8460D4}
 .osv-st-badge.b-not_eligible{background:#f3f4f6;color:#6E6E73}
-/* ── OSV v2 redesign (Transaction Activity & OSV) ── */
-.ov2-hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 24px 16px;gap:12px;flex-wrap:wrap}
-.ov2-hdr-main{flex:1;min-width:220px}
-.ov2-pg-title{font-size:21px;font-weight:800;color:var(--txt);letter-spacing:-.4px}
-.ov2-pg-sub{font-size:12.5px;color:var(--txt2);margin-top:3px}
-.ov2-hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-.ov2-rule-banner{display:flex;align-items:center;gap:7px;background:#E6EFFF;border:1px solid #c2d3ff;border-radius:10px;padding:7px 12px;font-size:11.5px;font-weight:600;color:#003399;white-space:nowrap}
-.ov2-rule-banner svg{width:14px;height:14px;flex-shrink:0}
-.ov2-lc-wrap{padding:14px 24px 16px;background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.ov2-lc-lbl{font-size:10.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px}
-.ov2-lc-row{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:2px}
-.ov2-lc-row::-webkit-scrollbar{height:4px}.ov2-lc-row::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
-.ov2-lc-stage{flex:1;min-width:110px;text-align:center;padding:12px 10px;border-radius:10px}
-.ov2-lc-n{font-size:26px;font-weight:900;letter-spacing:-.5px}
-.ov2-lc-name{font-size:10.5px;font-weight:700;margin-top:3px;opacity:.85}
-.ov2-lc-conv{font-size:10px;margin-top:2px;opacity:.65;font-weight:600}
-.ov2-lc-arrow{display:flex;align-items:center;padding:0 6px;color:var(--txt3);flex-shrink:0}
-.ov2-lc-arrow svg{width:16px;height:16px}
-.lc-txn{background:#E6EFFF}.lc-txn .ov2-lc-n,.lc-txn .ov2-lc-name{color:#003399}
-.lc-elig{background:#EEF2FE}.lc-elig .ov2-lc-n,.lc-elig .ov2-lc-name{color:#3B4BDB}
-.lc-init{background:#FFF4E5}.lc-init .ov2-lc-n,.lc-init .ov2-lc-name{color:#B25000}
-.lc-done{background:#E3F8F1}.lc-done .ov2-lc-n,.lc-done .ov2-lc-name{color:#049769}
-.ov2-body{display:grid;grid-template-columns:1fr 340px;gap:16px;padding:16px 24px 24px;align-items:start}
-@media(max-width:900px){.ov2-body{grid-template-columns:1fr}}
-.ov2-txn-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px}
-.ov2-card-hd{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
-.ov2-txn-big{font-size:40px;font-weight:900;color:#005DFF;letter-spacing:-1px;line-height:1}
-.ov2-txn-biglab{font-size:12px;color:var(--txt2);margin-top:3px;font-weight:500}
-.ov2-bar{display:flex;border-radius:8px;overflow:hidden;height:30px;margin:12px 0 5px}
-.ov2-bar-t{background:#049769;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:#fff;padding:0 8px;white-space:nowrap}
-.ov2-bar-n{background:#B25000;flex:1;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:#fff;padding:0 8px;white-space:nowrap}
-.ov2-legs{display:flex;gap:14px;margin-bottom:12px}
-.ov2-leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt2)}
-.ov2-led{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.ov2-mc5{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:12px}
-.ov2-mc{background:var(--bg2);border-radius:9px;padding:9px 6px;text-align:center}
-.ov2-mc-n{font-size:18px;font-weight:900;color:var(--txt)}
-.ov2-mc-lbl{font-size:10px;font-weight:600;color:var(--txt2);margin-top:2px;line-height:1.3}
-.ov2-mc-sub{font-size:9.5px;color:var(--txt3);margin-top:1px;line-height:1.2}
-.ov2-gmv3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
-.ov2-gc{background:var(--bg2);border-radius:10px;padding:12px}
-.ov2-gc-lbl{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px}
-.ov2-gc-big{font-size:16px;font-weight:800;color:var(--txt);margin:4px 0 2px}
-.ov2-gc-sub{font-size:10px;color:var(--txt3);line-height:1.4}
-.ov2-vdb{display:inline-flex;align-items:center;gap:6px;background:#005DFF;color:#fff;border:none;border-radius:999px;padding:9px 20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
-.ov2-vdb:hover{opacity:.9}
-.ov2-right{display:flex;flex-direction:column;gap:12px}
-.ov2-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
-.ov2-elig-n{font-size:38px;font-weight:900;color:#005DFF;letter-spacing:-1px;line-height:1;margin-top:8px}
-.ov2-elig-pct{font-size:12px;color:var(--txt2);margin-top:4px;font-weight:500}
-.ov2-osv-status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
-.ov2-osc{border-radius:10px;padding:14px 12px}
-.ov2-osc-n{font-size:26px;font-weight:900;letter-spacing:-.5px}
-.ov2-osc-lbl{font-size:10.5px;font-weight:700;margin-top:2px;opacity:.85}
-.ov2-osc-pct{font-size:10px;opacity:.65;font-weight:600;margin-top:2px}
-.ov2-score-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
-.ov2-sc{background:var(--bg2);border-radius:10px;padding:12px;text-align:center}
-.ov2-sc-n{font-size:22px;font-weight:900}
-.ov2-sc-lbl{font-size:10px;font-weight:600;color:var(--txt3);margin-top:2px}
-.ov2-improv{font-size:11px;color:var(--txt2);text-align:center;margin-top:8px;font-weight:500}
 /* ── Vertical context hero — lives inside the hero row ── */
 .vert-ctx-hdr{
   display:flex;align-items:center;gap:12px;
@@ -2663,8 +2529,8 @@ body.view-gst #vert-tabs-bar{display:none}
 .vds-body .cc-cat{background:var(--bg2);box-shadow:none}
 .vds-body .cc-cat-click:hover{background:var(--card);box-shadow:var(--shadow);transform:scale(1.02)}
 
-/* Sidebar hidden on the overview; visible in all detailed views */
-body.view-ov #side-nav{display:none!important}
+/* Sidebar no longer needed — vertical tabs replace it */
+#side-nav{display:none!important}
 
 /* ══════════════════════════════════════════════════
    DOCUMENT MANAGEMENT — Open Marketplace only
@@ -2792,15 +2658,14 @@ body.view-ov #side-nav{display:none!important}
    SIDEBAR NAVIGATION
    ═══════════════════════════════════════════════════════════ */
 #side-nav{
-  width:224px;flex-shrink:0;
-  order:-1; /* Left of #dash-content in the flex-row #main */
+  width:220px;flex-shrink:0;
   position:sticky;top:56px;
   height:calc(100vh - 56px);
   overflow-y:auto;
-  background:var(--bg);
-  border-right:1px solid var(--border);
+  /* No border — blends with the page wash background */
+  background:transparent;
   display:flex;flex-direction:column;
-  padding:0 0 40px;
+  padding:16px 0 40px;
   z-index:10;
 }
 #side-nav::-webkit-scrollbar{width:3px}
@@ -2955,96 +2820,6 @@ body.view-ov #side-nav{display:none!important}
 .sp-empty{text-align:center;padding:40px;color:var(--txt3);font-size:13px}
 .sp-footer{display:flex;gap:16px;padding:10px 20px;border-top:1px solid rgba(0,0,0,.06);font-size:10.5px;color:var(--txt3)}
 .sp-footer kbd{font-family:inherit;font-size:10px;font-weight:600;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;margin-right:3px}
-
-/* ── Contextual sidebar elements ── */
-.sn-ctx-back{
-  display:flex;align-items:center;gap:6px;
-  width:100%;padding:14px 16px 12px;
-  font-size:11.5px;font-weight:700;color:var(--blue);
-  border:none;background:none;cursor:pointer;
-  font-family:inherit;text-align:left;
-  border-bottom:1px solid var(--border);
-  transition:background .13s;
-}
-.sn-ctx-back:hover{background:rgba(0,93,255,.05)}
-.sn-ctx-back svg{width:14px;height:14px;flex-shrink:0}
-
-.sn-ctx-vert{
-  padding:14px 16px 10px;
-  border-bottom:1px solid var(--border);
-}
-.sn-ctx-vert-label{
-  font-size:9px;font-weight:700;color:var(--txt3);
-  text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px
-}
-.sn-ctx-vert-name{
-  font-size:13px;font-weight:800;color:var(--txt);
-  letter-spacing:-.2px;margin-bottom:2px
-}
-.sn-ctx-vert-count{
-  font-size:20px;font-weight:900;color:var(--txt);
-  letter-spacing:-.5px;line-height:1.1
-}
-.sn-ctx-vert-sub{font-size:10.5px;color:var(--txt3);font-weight:500;margin-top:1px}
-
-.sn-ctx-sect{
-  font-size:9px;font-weight:700;color:var(--txt3);
-  text-transform:uppercase;letter-spacing:.12em;
-  padding:14px 16px 6px;
-}
-
-.sn-ctx-mod{
-  display:flex;align-items:center;gap:8px;
-  width:100%;padding:8px 16px;
-  font-size:12.5px;font-weight:500;color:var(--txt2);
-  border:none;background:none;cursor:pointer;
-  font-family:inherit;text-align:left;
-  border-radius:0;
-  transition:background .12s,color .12s;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.sn-ctx-mod:hover{background:rgba(0,93,255,.05);color:var(--txt)}
-.sn-ctx-mod.active{
-  background:rgba(0,93,255,.08);color:var(--blue);
-  font-weight:700;
-  border-right:2px solid var(--blue);
-}
-.sn-ctx-mod-dot{
-  width:5px;height:5px;border-radius:50%;
-  background:var(--border2);flex-shrink:0;
-  transition:background .12s;
-}
-.sn-ctx-mod.active .sn-ctx-mod-dot{background:var(--blue)}
-
-/* Icon-based module buttons */
-.sn-ctx-mod-ic{
-  width:16px;height:16px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--txt3);transition:color .12s;
-}
-.sn-ctx-mod-ic svg{width:16px;height:16px}
-.sn-ctx-mod.active .sn-ctx-mod-ic{color:var(--blue)}
-.sn-ctx-mod:hover .sn-ctx-mod-ic{color:var(--txt)}
-.sn-ctx-mod-lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sn-ctx-mod-badge{
-  font-size:9px;font-weight:600;color:var(--txt3);
-  background:var(--border);border-radius:99px;
-  padding:1px 6px;flex-shrink:0;letter-spacing:.02em;
-}
-
-.sn-ctx-help{
-  margin-top:auto;padding:14px 16px;
-  border-top:1px solid var(--border);
-  font-size:11px;color:var(--txt3);
-  display:flex;gap:8px;align-items:flex-start;
-}
-.sn-ctx-help-ic{
-  width:26px;height:26px;border-radius:50%;
-  background:var(--bg2);border:1px solid var(--border);
-  display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:700;color:var(--txt2);flex-shrink:0
-}
-.sn-ctx-help-txt{font-size:11px;color:var(--txt3);line-height:1.45}
 
 /* Responsive: collapse sidebar on small screens */
 @media(max-width:1024px){
@@ -4014,110 +3789,6 @@ body.view-gst #mm-crumbs{display:none}
 .vr2-ins-sub{font-size:12px;color:var(--txt3)}
 .vr2-ins-cta{background:#fff;border:2px solid #005DFF;color:#005DFF;border-radius:8px;padding:9px 18px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0;display:flex;align-items:center;gap:6px}
 .vr2-ins-cta:hover{background:#005DFF;color:#fff}
-/* ── Vendor Rating v3 (full-page redesign) ──────────────────────── */
-.vr3-wrap{padding:20px 28px 56px;max-width:1300px}
-.vr3-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:16px}
-.vr3-hdr-left{display:flex;align-items:flex-start;gap:14px}
-.vr3-hdr-icon{width:48px;height:48px;border-radius:12px;background:#E6EFFF;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.vr3-hdr-title{font-size:22px;font-weight:800;color:var(--txt);margin-bottom:2px}
-.vr3-hdr-sub{font-size:12.5px;color:var(--txt3);max-width:480px;line-height:1.45}
-.vr3-toggle{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px;flex-shrink:0}
-.vr3-tog-btn{padding:7px 16px;border-radius:8px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:var(--txt2);cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:6px;white-space:nowrap}
-.vr3-tog-btn.active{background:var(--card);color:var(--txt);box-shadow:0 1px 4px rgba(0,0,0,.12)}
-.vr3-kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
-.vr3-kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:flex-start;gap:12px}
-.vr3-kpi-ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.vr3-kpi-body{min-width:0}
-.vr3-kpi-lbl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;line-height:1.3}
-.vr3-kpi-val{font-size:1.6rem;font-weight:800;color:var(--txt);line-height:1;margin-bottom:1px;font-variant-numeric:tabular-nums}
-.vr3-kpi-val span{font-size:.85rem;font-weight:500;color:var(--txt3)}
-.vr3-kpi-sub{font-size:11px;color:var(--txt3)}
-.vr3-mid{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-bottom:16px;align-items:start}
-.vr3-txn-panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:20px 22px}
-.vr3-txn-hdr{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px}
-.vr3-txn-hdr-ic{width:30px;height:30px;border-radius:8px;background:#E6EFFF;display:flex;align-items:center;justify-content:center;color:#005DFF;font-size:14px;flex-shrink:0}
-.vr3-txn-title{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:1px}
-.vr3-txn-def{font-size:11px;color:var(--txt3);line-height:1.4}
-.vr3-txn-info{display:inline-flex;align-items:center;gap:5px;background:#F0F5FF;border:1px solid #C8D9FF;border-radius:6px;padding:5px 10px;font-size:11px;color:#005DFF;font-weight:500;margin-bottom:14px}
-.vr3-txn-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.vr3-txn-mc{background:var(--bg2);border-radius:10px;padding:14px 16px}
-.vr3-txn-mc-lbl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
-.vr3-txn-mc-val{font-size:1.6rem;font-weight:800;color:var(--txt);line-height:1;margin-bottom:2px;font-variant-numeric:tabular-nums}
-.vr3-txn-mc-val span{font-size:.85rem;font-weight:500;color:var(--txt3)}
-.vr3-txn-mc-delta{font-size:12px;font-weight:700;margin-bottom:2px}
-.vr3-txn-mc-sub{font-size:10.5px;color:var(--txt3)}
-.vr3-cmp-panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:20px 22px}
-.vr3-cmp-title{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:18px}
-.vr3-cmp-chart{display:flex;gap:24px;align-items:flex-end;justify-content:center;min-height:140px;padding:0 10px}
-.vr3-cmp-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1}
-.vr3-cmp-bar{width:100%;border-radius:8px 8px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:8px;font-size:14px;font-weight:800;color:#fff;transition:height .6s;min-width:60px}
-.vr3-cmp-lbl{font-size:11px;color:var(--txt2);text-align:center;font-weight:600;line-height:1.35}
-.vr3-cmp-sub{font-size:10px;color:var(--txt3);text-align:center}
-.vr3-dist{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:20px 22px;margin-bottom:16px}
-.vr3-dist-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.vr3-dist-title{font-size:14px;font-weight:700;color:var(--txt)}
-.vr3-dist-subtitle{font-size:12px;color:var(--txt3);margin-bottom:14px}
-.vr3-dist-filt{display:flex;gap:6px}
-.vr3-dflt{padding:4px 14px;border-radius:999px;border:1px solid var(--border);background:transparent;font-size:12px;font-weight:600;color:var(--txt2);cursor:pointer;font-family:inherit;transition:.15s}
-.vr3-dflt.active{background:#005DFF;border-color:#005DFF;color:#fff}
-.vr3-mat-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.vr3-ms{background:var(--bg2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px}
-.vr3-ms-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.vr3-ms-body{min-width:0}
-.vr3-ms-score{font-size:1.5rem;font-weight:800;color:var(--txt);line-height:1;margin-bottom:1px}
-.vr3-ms-score span{font-size:.8rem;font-weight:500;color:var(--txt3)}
-.vr3-ms-lbl{font-size:11px;color:var(--txt2);font-weight:600}
-.vr3-ms-sub{font-size:10.5px;color:var(--txt3)}
-.vr3-bucket{display:grid;grid-template-columns:50px 1fr 52px 52px;align-items:center;gap:12px;padding:6px 8px;cursor:pointer;border-radius:8px;transition:background .12s}
-.vr3-bucket:hover{background:var(--bg2)}
-.vr3-brng{font-size:12px;font-weight:600;color:var(--txt2)}
-.vr3-bbar{height:12px;border-radius:6px;background:var(--bg2);overflow:hidden}
-.vr3-bfill{height:100%;border-radius:6px;transition:width .6s}
-.vr3-bcnt{font-size:12.5px;font-weight:700;color:var(--txt);text-align:right;font-variant-numeric:tabular-nums}
-.vr3-bpct{font-size:11.5px;color:var(--txt3);text-align:right;font-variant-numeric:tabular-nums}
-.vr3-takeaway{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:18px 20px;display:flex;align-items:flex-start;gap:14px}
-.vr3-ta-ic{width:36px;height:36px;border-radius:10px;background:#E6EFFF;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.vr3-ta-body{flex:1}
-.vr3-ta-title{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px}
-.vr3-ta-delta{font-size:2rem;font-weight:800;color:#005DFF;line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
-.vr3-ta-text{font-size:12px;color:var(--txt2);line-height:1.5}
-/* ── Onboarded via Exception module ─────────────────────────────── */
-.vex-wrap{padding:20px 28px 56px;max-width:1300px}
-.vex-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:16px}
-.vex-hdr-left{display:flex;align-items:flex-start;gap:14px}
-.vex-hdr-icon{width:48px;height:48px;border-radius:12px;background:#FFF0EB;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.vex-hdr-title{font-size:22px;font-weight:800;color:var(--txt);margin-bottom:2px}
-.vex-hdr-sub{font-size:12.5px;color:var(--txt3);max-width:560px;line-height:1.45}
-.vex-info{display:inline-flex;align-items:center;gap:6px;background:#FFF0EB;border:1px solid #FFCAB4;border-radius:6px;padding:7px 12px;font-size:11.5px;color:#B25000;font-weight:500;flex-shrink:0}
-.vex-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
-.vex-kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:flex-start;gap:12px}
-.vex-kpi-ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.vex-kpi-lbl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;line-height:1.3}
-.vex-kpi-val{font-size:1.8rem;font-weight:800;color:var(--txt);line-height:1;margin-bottom:1px;font-variant-numeric:tabular-nums}
-.vex-kpi-sub{font-size:11px;color:var(--txt3)}
-.vex-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
-.vex-list-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:18px 20px}
-.vex-list-title{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:4px}
-.vex-list-sub{font-size:12px;color:var(--txt3);margin-bottom:14px}
-.vex-vendor-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
-.vex-vendor-item:last-child{border-bottom:none}
-.vex-vendor-avatar{width:30px;height:30px;border-radius:8px;background:#E6EFFF;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#005DFF;flex-shrink:0;text-transform:uppercase}
-.vex-vendor-name{font-size:12.5px;font-weight:600;color:var(--txt);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.vex-vendor-id{font-size:10.5px;color:var(--txt3)}
-.vex-progress-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:18px 20px}
-.vex-prog-title{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:14px}
-.vex-prog-item{margin-bottom:12px}
-.vex-prog-lbl{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-.vex-prog-name{font-size:12px;font-weight:600;color:var(--txt2)}
-.vex-prog-val{font-size:12px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
-.vex-prog-bar{height:10px;border-radius:5px;background:var(--bg2);overflow:hidden}
-.vex-prog-fill{height:100%;border-radius:5px}
-.vex-insight{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:18px 20px;display:flex;align-items:flex-start;gap:14px}
-.vex-ins-ic{width:36px;height:36px;border-radius:10px;background:#FFF0EB;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.vex-ins-body{flex:1}
-.vex-ins-title{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px}
-.vex-ins-pct{font-size:1.8rem;font-weight:800;color:#D70015;line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
-.vex-ins-text{font-size:12px;color:var(--txt2);line-height:1.5}
 /* ── Onboarded Details rich panel ──────────────────────────────── */
 .onbd-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 .onbd-kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
@@ -4173,7 +3844,7 @@ body.view-gst #mm-crumbs{display:none}
    CENTRAL ONBOARDING — OVERVIEW SCREEN
    A clean executive landing screen that precedes the detailed mindmap.
    ════════════════════════════════════════════════════════════════ */
-#ov-screen{display:none;background:var(--bg);min-height:calc(100vh - 56px)}
+#ov-screen{display:none;background:var(--bg2);min-height:calc(100vh - 56px)}
 body.view-ov #main{display:none!important}
 body.view-ov #ov-screen{display:block}
 /* Override global .sk min-height:280px — overview skeletons have explicit heights */
@@ -4205,9 +3876,8 @@ body.view-ov #ov-screen{display:block}
 
 /* Page intro */
 .ov-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px}
-.ov-eyebrow{font-size:10px;font-weight:700;letter-spacing:.18em;color:var(--blue);text-transform:uppercase;margin-bottom:4px}
-.ov-title{font-size:28px;font-weight:700;color:var(--txt);letter-spacing:-.6px;margin:0 0 3px;line-height:1.1}
-.ov-sub{font-size:12.5px;color:var(--txt2);margin-top:0;line-height:1.45}
+.ov-eyebrow{font-size:13px;font-weight:700;letter-spacing:.18em;color:var(--blue);text-transform:uppercase;margin-bottom:0}
+.ov-sub{display:none}
 .ov-period-row{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;align-self:flex-end}
 
 /* Executive KPI cards */
@@ -4230,7 +3900,7 @@ body.view-ov #ov-screen{display:block}
 .ov-donut-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
 .ov-card-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px}
 .ov-card-title{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.15px}
-.ov-card-sub{font-size:11px;color:var(--txt3);margin-top:1px;margin-bottom:6px;display:block}
+.ov-card-sub{display:none}
 .ov-chart-sel{background:var(--seg-track);border:none;font-family:inherit;font-size:11px;font-weight:600;color:var(--txt2);cursor:pointer;padding:4px 22px 4px 9px;border-radius:var(--pill);outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23AEAEB2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center}
 
 /* Bar chart */
@@ -4276,177 +3946,10 @@ body.view-ov #ov-screen{display:block}
 /* Responsive */
 @media(max-width:1100px){.ov-analytics-row{grid-template-columns:1fr 260px}.ov-verts-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:820px){.ov-kpi-row{grid-template-columns:1fr}.ov-analytics-row{grid-template-columns:1fr}.ov-verts-grid{grid-template-columns:repeat(2,1fr)}.ov-wrap{padding:12px 16px 16px}.ov-page-hdr{flex-direction:column}.ov-period-row{align-self:flex-start}}
-
-/* ═══════════════════════════════════════════════════════════════
-   CLAYMORPHISM — component-level clay overrides
-   All colour/shadow tokens cascade from :root above; these rules
-   handle hardcoded values that don't use the token system yet.
-   ═══════════════════════════════════════════════════════════════ */
-
-/* Page ground — soft radial clay glow centered top */
-html{
-  background: var(--bg2);
-}
-#aura{
-  background:
-    radial-gradient(800px 420px at 15% -10%, var(--aura-a), transparent 62%),
-    radial-gradient(700px 360px at 85% -14%, var(--aura-b), transparent 60%),
-    radial-gradient(400px 300px at 50% 80%,  rgba(132,96,212,.06), transparent 70%);
-}
-
-/* Header — clay glass */
-#header{
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 12px rgba(148,163,212,.18);
-}
-
-/* Sidebar rail — clay surface */
-#side-nav{
-  background: var(--bg);
-  border-right: 1px solid var(--border);
-  box-shadow: 4px 0 16px rgba(148,163,212,.12);
-}
-
-/* ── Interactive buttons — clay press effect ── */
-button.ov-vert-card,
-.ov-vert-card{
-  border-radius: var(--r);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border);
-  transition: box-shadow .22s var(--ease), transform .22s var(--ease-spring), border-color .22s;
-}
-.ov-vert-card:hover{
-  box-shadow: var(--shadow);
-  transform: translateY(-3px) scale(1.01);
-  border-color: rgba(0,93,255,.22);
-}
-.ov-vert-card:active{
-  box-shadow: 2px 2px 8px rgba(148,163,212,.30), -1px -1px 4px rgba(255,255,255,.80),
-              inset 0 2px 6px rgba(148,163,212,.20);
-  transform: translateY(0) scale(.985);
-  transition-duration:.08s;
-}
-
-/* ── Overview KPI cards ── */
-.ov-kpi{
-  border-radius: var(--r);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border);
-  transition: box-shadow .22s var(--ease), transform .22s var(--ease-spring);
-}
-.ov-kpi:hover{ box-shadow: var(--shadow); transform: translateY(-2px); }
-
-/* ── Analytics/donut cards ── */
-.ov-chart-card,.ov-donut-card{
-  border-radius: var(--r);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border);
-}
-.ov-donut-card:hover{ box-shadow: var(--shadow); transform: translateY(-2px); }
-
-/* ── Vertical comparison cards ── */
-.compare-card{
-  border-radius: var(--r);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border);
-  transition: box-shadow .25s var(--ease-out), transform .25s var(--ease-out);
-}
-.compare-card:hover{ box-shadow: var(--shadow-lg); transform: translateY(-3px) scale(1.012); }
-.compare-card:active{
-  box-shadow: 2px 2px 10px rgba(148,163,212,.28), -1px -1px 5px rgba(255,255,255,.75),
-              inset 0 2px 6px rgba(148,163,212,.18);
-  transform: scale(.985); transition-duration:.1s;
-}
-
-/* ── Hero "Total Onboarded" card — deep brand-blue clay ── */
-.vkpi-card.vk-onboarded{
-  background: linear-gradient(145deg, #1650CC 0%, #0041B5 48%, #002E99 100%);
-  box-shadow: 8px 8px 22px rgba(0,40,180,.38), -3px -3px 8px rgba(90,130,255,.22),
-              inset 0 2px 5px rgba(255,255,255,.18), inset 0 -2px 5px rgba(0,20,100,.28);
-  border: none;
-}
-.vkpi-card.vk-onboarded:hover{
-  box-shadow: 10px 10px 28px rgba(0,40,180,.46), -4px -4px 10px rgba(90,130,255,.20),
-              inset 0 2px 5px rgba(255,255,255,.18), inset 0 -2px 5px rgba(0,20,100,.28);
-  transform: translateY(-2px);
-}
-
-/* ── Standard vkpi tiles ── */
-.vkpi-card{
-  box-shadow: var(--shadow-card);
-  border-radius: var(--r);
-}
-
-/* ── OSV journey container & stage tiles ── */
-.osv-journey-wrap{
-  border-radius: var(--r);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border);
-}
-.osv-stage{
-  border-radius: var(--r2);
-  box-shadow: 3px 3px 8px rgba(148,163,212,.25), -2px -2px 5px rgba(255,255,255,.85),
-              inset 0 1px 2px rgba(255,255,255,.70);
-  border: 1px solid var(--border);
-}
-
-/* ── GST payable year-filter chips ── */
-.gp-year-chip.active, .qf-chip.active{
-  box-shadow: 2px 2px 6px rgba(148,163,212,.30), -1px -1px 4px rgba(255,255,255,.80),
-              inset 0 1px 2px rgba(0,93,255,.12);
-}
-
-/* ── Scrollbar thumbs — tinted for clay ── */
-::-webkit-scrollbar-thumb{
-  background: rgba(148,163,212,.40);
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-::-webkit-scrollbar-thumb:hover{ background: rgba(0,93,255,.35); background-clip:content-box; }
-
-/* ── Modal / floating popup ── */
-.mfp{
-  border-radius: var(--r2);
-  box-shadow: 10px 10px 28px rgba(148,163,212,.42), -4px -4px 10px rgba(255,255,255,.88),
-              inset 0 1px 3px rgba(255,255,255,.75);
-  border: 1px solid var(--border);
-}
-@media(prefers-color-scheme:dark){
-  :root:not([data-theme="light"]) .mfp{
-    box-shadow: 10px 10px 30px rgba(0,0,0,.50), -3px -3px 8px rgba(255,255,255,.04),
-                inset 0 1px 3px rgba(255,255,255,.05);
-  }
-}
-:root[data-theme="dark"] .mfp{
-  box-shadow: 10px 10px 30px rgba(0,0,0,.50), -3px -3px 8px rgba(255,255,255,.04),
-              inset 0 1px 3px rgba(255,255,255,.05);
-}
-
-/* ── Vendor Rating, Exception, OSV shared card containers ── */
-.vr3-kpi-wrap > div, .exc-kpi-wrap > div,
-.ov2-kpi-wrap > div, .osv2-kpi > div{
-  border-radius: var(--r2);
-  box-shadow: var(--shadow-card);
-}
-
-/* ── Skeleton shimmer — clay tinted ── */
-.sk{ background: var(--card); box-shadow: var(--shadow-card); }
-.sk-kpi-card{ background: var(--card2); border-radius: var(--r); }
-
-/* ── Context sidebar module buttons — clay active pill ── */
-.sn-ctx-mod.active{
-  box-shadow: inset 2px 2px 5px rgba(0,93,255,.12), inset -1px -1px 3px rgba(255,255,255,.70);
-  border-radius: var(--r2);
-}
-
-/* ── Dark mode: geo map base (already in use) ── */
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--mg-base:#232640}}
-:root[data-theme="dark"]{--mg-base:#232640}
 </style>
 </head>
 
-<body class="view-ov">
+<body>
 
 <!-- Ambient vertical aura — behind everything -->
 <div id="aura" aria-hidden="true"></div>
@@ -4579,9 +4082,6 @@ button.ov-vert-card,
   <!-- ── VIEW: VENDOR RATINGS ── -->
   <div id="tab-vendorratings" style="display:none"></div>
 
-  <!-- ── VIEW: ONBOARDED VIA EXCEPTION ── -->
-  <div id="tab-exception" style="display:none"></div>
-
   </div><!-- /dash-content -->
 
   <!-- Sidebar navigation — built by buildSideNav() -->
@@ -4600,8 +4100,7 @@ button.ov-vert-card,
     <!-- Page intro + period controls -->
     <div class="ov-page-hdr">
       <div>
-        <div class="ov-eyebrow">Central Onboarding</div>
-        <h1 class="ov-title">Central Onboarding</h1>
+        <div class="ov-eyebrow">Central Onboarding Dashboard</div>
         <p class="ov-sub">Executive view of onboarding performance across all business verticals.</p>
       </div>
       <div class="ov-period-row" id="ov-period-row"></div>
@@ -4945,12 +4444,8 @@ function scheduleNextRefresh() {
 
 // Reload whichever view is active (manual refresh button + auto-refresh timer).
 function refreshActive(silent) {
-  if (currentView === 'gst')           { loadGSTData(silent); return; }
-  if (currentView === 'exception')     { _EXC = null; _excLoading = false; renderExceptionSkeleton(); loadExceptionData(); return; }
-  if (currentView === 'osv')           { _OSV = null; _osvLoading = false; renderOSVSkeleton(); loadOSVData(); return; }
-  if (currentView === 'vendorratings') { _VR = null; _vrLoading = false; renderVendorRatingsSkeleton(); loadVendorRatingsData(); return; }
-  if (currentView === 'transactions')  { _TXN_MOD = null; _txnModLoading = false; renderTransactionSkeleton(); loadTransactionData(); return; }
-  loadData(silent);
+  if (currentView === 'gst') loadGSTData(silent);
+  else loadData(silent);
 }
 
 // Primary: getCombinedDashboard (one call, seller + buyer together).
@@ -5109,15 +4604,13 @@ function updateViewChrome() {
   var isOsv     = currentView === 'osv';
   var isTxn     = currentView === 'transactions';
   var isVR      = currentView === 'vendorratings';
-  var isExc     = currentView === 'exception';
-  var isDash    = !isGst && !isTxndist && !isOsv && !isTxn && !isVR && !isExc;
+  var isDash    = !isGst && !isTxndist && !isOsv && !isTxn && !isVR;
   var ov   = document.getElementById('tab-overview');
   var gt   = document.getElementById('tab-gst');
   var td   = document.getElementById('tab-txndist');
   var osv  = document.getElementById('tab-osv');
   var txn  = document.getElementById('tab-transactions');
   var vrd  = document.getElementById('tab-vendorratings');
-  var exc  = document.getElementById('tab-exception');
   var pc   = document.getElementById('onb-period-controls');
 
   var vt = document.getElementById('view-title');
@@ -5128,13 +4621,11 @@ function updateViewChrome() {
   if (osv) osv.style.display = isOsv     ? 'block' : 'none';
   if (txn) txn.style.display = isTxn     ? 'block' : 'none';
   if (vrd) vrd.style.display = isVR      ? 'block' : 'none';
-  if (exc) exc.style.display = isExc     ? 'block' : 'none';
   if (pc)  pc.style.display  = isDash    ? 'inline-flex' : 'none';
   if (tb)  tb.style.display  = 'none';
 
   var titleMap = { gst:'GST Payables', txndist:'Transaction Distribution', osv:'OSV Status',
-                   transactions:'Marketplace Transactions', vendorratings:'Vendor Ratings',
-                   exception:'Onboarded via Exception' };
+                   transactions:'Marketplace Transactions', vendorratings:'Vendor Ratings' };
   if (vt) vt.textContent = titleMap[currentView] || 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
   setAura(isGst ? 'gst' : (activeVertKey || 'OMP'));
@@ -5156,7 +4647,7 @@ function switchAudience(a) {
 
 // Switch to the GST Payables view (paint cached data instantly, then refresh).
 function switchView(view) {
-  if (view !== 'gst' && view !== 'txndist' && view !== 'osv' && view !== 'transactions' && view !== 'vendorratings' && view !== 'exception') {
+  if (view !== 'gst' && view !== 'txndist' && view !== 'osv' && view !== 'transactions' && view !== 'vendorratings') {
     switchAudience(currentAudience); return;
   }
   // ── Transactions module ──
@@ -5216,19 +4707,6 @@ function switchView(view) {
     } catch (e) {}
     if (!swrDone) { GST = null; renderGSTSkeleton(); }
     loadGSTData(swrDone);
-    return;
-  }
-  // ── Onboarded via Exception ──
-  if (view === 'exception') {
-    if (currentView === 'exception') return;
-    currentView = 'exception';
-    snActiveKey = null;
-    if (selectedVert) closeVertDetail();
-    document.body.style.overflow = '';
-    updateViewChrome();
-    renderVNav();
-    renderExceptionSkeleton();
-    loadExceptionData();
     return;
   }
   // ── Transaction Distribution ──
@@ -5322,7 +4800,7 @@ function onPeriodSelect(val) {
   _lastDashHash['combined'] = null;
   _TXN = null; _TXN_MOD = null;
   loadData();
-  if (currentView === 'txndist')      renderTxnDist();
+  if (currentView === 'txndist') renderTxnDist();
   if (currentView === 'transactions') { renderTransactionSkeleton(); loadTransactionData(); }
 }
 
@@ -8493,9 +7971,7 @@ function renderVertTabBar() {
       + '</button>';
   }).join('')
   + '<button class="vert-tab vert-tab-gst' + (currentView === 'gst' ? ' active' : '') + '" onclick="switchView(\'gst\')">GST Payables</button>'
-  + '<button class="vert-tab vert-tab-txndist' + (currentView === 'txndist' ? ' active' : '') + '" onclick="switchView(\'txndist\')">Transaction Distribution</button>'
-  + '<button class="vert-tab vert-tab-txndist' + (currentView === 'vendorratings' ? ' active' : '') + '" onclick="switchView(\'vendorratings\')">Vendor Ratings</button>'
-  + '<button class="vert-tab vert-tab-txndist' + (currentView === 'exception' ? ' active' : '') + '" onclick="switchView(\'exception\')">Onboarded via Exception</button>';
+  + '<button class="vert-tab vert-tab-txndist' + (currentView === 'txndist' ? ' active' : '') + '" onclick="switchView(\'txndist\')">Transaction Distribution</button>';
   positionVertThumb(false);
 }
 
@@ -11528,7 +11004,7 @@ function renderVdTable() {
           + '<td>' + esc(r.category || '—') + '</td>'
           + '<td class="td-dim">' + esc(r.vendorType || '—') + '</td>'
           + '<td>' + statusChip(r.status) + '</td>'
-          + '<td>' + (r.gstin ? (r.hasGST ? '<span class="gst-ok">' + esc(r.gstin) + '</span>' : '<span class="gst-warn">' + esc(r.gstin) + '</span>') : '<span style="color:var(--txt3)">—</span>') + '</td>'
+          + '<td>' + (r.hasGST ? '<span class="gst-ok">' + esc(r.gstin) + '</span>' : '<span class="gst-bad">Missing</span>') + '</td>'
           + '<td class="td-dim">' + esc(r.state || '—') + '</td>'
           + '<td class="td-dim td-num">' + esc(r.createdDate) + '</td>'
           + '<td class="td-dim td-num">' + esc(r.onbDate) + '</td>'
@@ -12408,103 +11884,69 @@ var snActiveKey = null;    // which vertical's section is active (scroll spy)
 var snVertsOpen = false;   // sidebar verticals list collapsed by default
 var _scrollSpyObs = null;  // IntersectionObserver instance for scroll spy
 
-// Open a mind-map inline panel from the sidebar; navigates to onboarding view first if needed.
-function snOpenPanel(panel) {
-  var doOpen = function() {
-    if (panel === 'funnel') {
-      mmGeoActive = false; mmModActive = false;
-      mmFunnelActive = true; mmPaint();
-    } else if (panel === 'geo') {
-      mmFunnelActive = false; mmModActive = false;
-      mmGeoOpen('All');
-    } else if (panel === 'mod') {
-      mmFunnelActive = false; mmGeoActive = false;
-      mmModActive = true; _mmModAnimate = true; mmPaint();
-    }
-    buildSideNav();
-  };
-  if (currentView === 'onboarding') {
-    doOpen();
-  } else {
-    enterDashboard(activeVertKey || 'OMP');
-    setTimeout(doOpen, 450);
-  }
-}
-
 function buildSideNav() {
   var nav = document.getElementById('side-nav');
   if (!nav) return;
 
-  // Overview uses the full viewport — no sidebar needed
-  if (document.body.classList.contains('view-ov')) { nav.innerHTML = ''; return; }
-
-  var cv = currentView;
-  var vertKey = activeVertKey || 'OMP';
-
-  // ── Back to Central Onboarding ──
-  var backIc = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
-  var html = '<button class="sn-ctx-back" onclick="showOverview()">' + backIc + ' Central Onboarding</button>';
-
-  // ── Active vertical identity ──
   var cfgList = getVertCfg();
-  var activeCfg = null;
-  for (var i = 0; i < cfgList.length; i++) {
-    if (cfgList[i].key === vertKey) { activeCfg = cfgList[i]; break; }
-  }
-  var vs  = DS && DS.verticals && DS.verticals[vertKey] || {};
-  var vb  = DB && DB.verticals && DB.verticals[vertKey] || {};
-  var tot = (vs.total || 0) + (vb.total || 0);
-  if (activeCfg) {
-    html += '<div class="sn-ctx-vert">'
-      + '<div class="sn-ctx-vert-label">' + esc(activeCfg.key) + '</div>'
-      + '<div class="sn-ctx-vert-name">' + esc(activeCfg.name) + '</div>'
-      + '<div class="sn-ctx-vert-count">' + fmt(tot) + '</div>'
-      + '<div class="sn-ctx-vert-sub">Onboarded</div>'
-      + '</div>';
-  }
+  var isGST   = currentView === 'gst';
+  var isOvw   = !isGST;
 
-  // ── Modules ──
-  html += '<div class="sn-ctx-sect">Modules</div>';
+  var html = '<div class="sn-sect">Navigation</div>';
 
-  var isOnb   = cv === 'onboarding' && !mmFunnelActive && !mmGeoActive && !mmModActive;
-  var isBreak = cv === 'onboarding' && mmFunnelActive;
-  var isGeo   = cv === 'onboarding' && mmGeoActive;
-  var isTxn   = cv === 'transactions';
-  var isVR    = cv === 'vendorratings';
-  var isOSV   = cv === 'osv';
-  var isMod   = cv === 'onboarding' && mmModActive;
-
-  function mod(lbl, icon, active, onclick, badge) {
-    return '<button class="sn-ctx-mod' + (active ? ' active' : '') + '" onclick="' + onclick + '">'
-      + '<span class="sn-ctx-mod-ic">' + icon + '</span>'
-      + '<span class="sn-ctx-mod-lbl">' + esc(lbl) + '</span>'
-      + (badge ? '<span class="sn-ctx-mod-badge">' + esc(badge) + '</span>' : '')
-      + '</button>';
+  // ── Verticals group (collapsed by default, toggles on click) ──
+  var vertsOpen = isOvw && snVertsOpen;
+  html += '<button class="sn-grp' + (isOvw ? ' sn-active' : '') + (vertsOpen ? ' sn-open' : '') + '"'
+    + ' onclick="if(currentView===\'gst\'){switchView(\'onboarding\');}else{snVertsOpen=!snVertsOpen;buildSideNav();}">'
+    + '<span class="sn-grp-ic">V</span>'
+    + '<span class="sn-grp-lbl">Verticals</span>'
+    + '<span class="sn-grp-arr">›</span>'
+    + '</button>';
+  if (vertsOpen && cfgList.length) {
+    html += '<div class="sn-subs sn-open">';
+    cfgList.forEach(function(cfg) {
+      var vs  = DS && DS.verticals && DS.verticals[cfg.key] || {};
+      var vb  = DB && DB.verticals && DB.verticals[cfg.key] || {};
+      var tot = (vs.total || 0) + (vb.total || 0);
+      var vc  = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
+      html += '<button class="sn-sub' + (snActiveKey === cfg.key ? ' sn-active' : '') + '"'
+        + ' data-key="' + esc(cfg.key) + '"'
+        + ' style="--vc:' + vc.c + ';--vc-ink:' + vc.ink + ';--vc-soft:' + hexRGBA(vc.c, .09) + '"'
+        + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
+        + '<span class="sn-sub-dot"></span>'
+        + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
+        + '</button>';
+    });
+    html += '</div>';
   }
 
-  var IC_ONBOARD = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="2"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="11" y2="9"/><line x1="5" y1="12" x2="9" y2="12"/></svg>';
-  var IC_BREAKUP = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12l-2.5 4h-7L2 3z"/><path d="M5.5 7l-.7 4h6.4l-.7-4"/><line x1="8" y1="11" x2="8" y2="14"/></svg>';
-  var IC_GEO     = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M2 8h12"/><path d="M8 2c-2 2-3 4-3 6s1 4 3 6"/><path d="M8 2c2 2 3 4 3 6s-1 4-3 6"/></svg>';
-  var IC_TXN     = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h10"/><polyline points="10,3 12,5 10,7"/><path d="M14 11H4"/><polyline points="6,9 4,11 6,13"/></svg>';
-  var IC_VR      = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="8,1.5 10,6 14.5,6.5 11,9.8 12,14.5 8,12 4,14.5 5,9.8 1.5,6.5 6,6"/></svg>';
-  var IC_OSV     = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1L2 4v4c0 3.3 2.5 5.8 6 7 3.5-1.2 6-3.7 6-7V4L8 1z"/><polyline points="5.5,8 7.2,9.8 10.5,6.5"/></svg>';
-  var IC_EXVSNEW = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="4.5" cy="8" r="2.5"/><circle cx="11.5" cy="8" r="2.5"/><line x1="8" y1="4" x2="8" y2="12"/></svg>';
+  // ── Separator + GST Payables ───────────────────────────────
+  html += '<div class="sn-sep"></div>';
+  html += '<button class="sn-gst' + (isGST ? ' sn-active' : '') + '" onclick="switchView(\'gst\')">'
+    + '<span class="sn-gst-ic">₹</span>'
+    + '<span class="sn-gst-lbl">GST Payables</span>'
+    + '</button>';
 
-  var vrBadge  = (typeof _vrLoading  !== 'undefined' && _vrLoading)  ? 'Loading…' : '';
-  var osvBadge = (typeof _osvLoading !== 'undefined' && _osvLoading) ? 'Loading…' : '';
+  // ── OSV — Consent & Verification Status ────────────────────
+  var isOSV = currentView === 'osv';
+  html += '<button class="sn-gst' + (isOSV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'osv\')">'
+    + '<span class="sn-gst-ic" style="font-size:11px">✓</span>'
+    + '<span class="sn-gst-lbl">OSV Status</span>'
+    + '</button>';
 
-  html += mod('Onboarded (Details)', IC_ONBOARD,  isOnb,   'enterDashboard(\'' + esc(vertKey) + '\')')
-       +  mod('Breakup',             IC_BREAKUP,  isBreak, 'snOpenPanel(\'funnel\')')
-       +  mod('Geographic Split',    IC_GEO,      isGeo,   'snOpenPanel(\'geo\')')
-       +  mod('Transactions',        IC_TXN,      isTxn,   'switchView(\'transactions\')')
-       +  mod('Vendor Ratings',      IC_VR,       isVR,    'switchView(\'vendorratings\')',  vrBadge)
-       +  mod('OSV Status',          IC_OSV,      isOSV,   'switchView(\'osv\')',             osvBadge)
-       +  mod('Existing vs New',     IC_EXVSNEW,  isMod,   'snOpenPanel(\'mod\')');
+  // ── Marketplace Transactions ────────────────────────────────
+  var isTxnV = currentView === 'transactions';
+  html += '<button class="sn-gst' + (isTxnV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'transactions\')">'
+    + '<span class="sn-gst-ic" style="font-size:11px">↔</span>'
+    + '<span class="sn-gst-lbl">Transactions</span>'
+    + '</button>';
 
-  // ── Help footer ──
-  html += '<div class="sn-ctx-help"><div class="sn-ctx-help-ic">?</div>'
-    + '<div class="sn-ctx-help-txt"><b>Need Help?</b><br>View the onboarding guide or raise a request.</div>'
-    + '</div>';
+  // ── Vendor Ratings ──────────────────────────────────────────
+  var isVRV = currentView === 'vendorratings';
+  html += '<button class="sn-gst' + (isVRV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'vendorratings\')">'
+    + '<span class="sn-gst-ic" style="font-size:11px">★</span>'
+    + '<span class="sn-gst-lbl">Vendor Ratings</span>'
+    + '</button>';
 
   nav.innerHTML = html;
 }
@@ -14492,104 +13934,22 @@ function _osvCloseDrill() {
   if (ovl) ovl.classList.remove('open');
 }
 
-// Main render function — Transaction Activity & OSV redesign (v2)
+// Main render function
 function renderOSVDash() {
   var host = document.getElementById('tab-osv');
   if (!host || !_OSV) return;
 
-  var d   = _OSV;
-  var jn  = d.journey          || {};
-  var po  = d.postOSV          || {};
-  var ti  = d.txnAndInitiated  || {};
-  var imp = d.impact            || null;
-  var txm = (_TXN_MOD && _TXN_MOD.success) ? _TXN_MOD : null;
+  var d  = _OSV;
+  var jn = d.journey     || {};
+  var sd = d.statusDist  || {};
+  var po = d.postOSV     || {};
+  var sc = d.scoreDist   || {};
+  var sl = d.sellerList  || [];
 
   // ── Period buttons ──
   var perBtns = [['Today','Today'],['MTD','MTD'],['YTD','YTD'],['All','All Time']].map(function(p) {
     return '<button class="osv-pd-btn' + (currentPeriod === p[0] ? ' active' : '') + '" onclick="onPeriodSelect(\'' + p[0] + '\')">' + p[1] + '</button>';
   }).join('');
-
-  // ── OSV Lifecycle (4 key stages) ──
-  var txnCnt  = jn.completedTxn || 0;
-  var eligCnt = jn.eligible     || 0;
-  var initCnt = jn.initiated    || 0;
-  var cmpCnt  = jn.completed    || 0;
-  var initPctN = eligCnt > 0 ? Math.round(initCnt / eligCnt * 100) : 0;
-  var cmpPctN  = eligCnt > 0 ? Math.round(cmpCnt  / eligCnt * 100) : 0;
-  var arrowSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
-  var lcStages = [
-    { n: txnCnt,  name: 'Transaction Completed', conv: 'Baseline',       cls: 'lc-txn',  filter: 'completedTxn' },
-    { n: eligCnt, name: 'OSV Eligible',           conv: '100% of above',  cls: 'lc-elig', filter: 'eligible' },
-    { n: initCnt, name: 'OSV Initiated',           conv: initPctN + '% of eligible', cls: 'lc-init', filter: 'initiated' },
-    { n: cmpCnt,  name: 'OSV Completed',           conv: cmpPctN  + '% of eligible', cls: 'lc-done', filter: 'completed' }
-  ];
-  var lcHtml = lcStages.map(function(s, i) {
-    var arrow = i < 3 ? '<div class="ov2-lc-arrow">' + arrowSvg + '</div>' : '';
-    return '<div class="ov2-lc-stage ' + s.cls + '" onclick="_osvOpenJourneyFilter(\'' + s.filter + '\')" style="cursor:pointer">'
-      + '<div class="ov2-lc-n">' + fmt(s.n) + '</div>'
-      + '<div class="ov2-lc-name">' + s.name + '</div>'
-      + '<div class="ov2-lc-conv">' + s.conv + '</div>'
-      + '</div>' + arrow;
-  }).join('');
-
-  // ── Transaction Activity data ──
-  var fmtCr = function(v) { if (!v) return '&#8377;0'; var cr = v/10000000; return cr >= 1 ? '&#8377;' + cr.toFixed(2) + ' Cr' : '&#8377;' + (v/100000).toFixed(2) + ' L'; };
-  var fmtN  = function(v) { return (v || 0).toLocaleString('en-IN'); };
-  var txTotal, txSellers, txBuyers, txNonTxn, txAg30, txAg3060, txAg60, gTotal, gMetal, gPlastic, mPct, pPct;
-  if (txm) {
-    var ts = txm.seller || {}, tb = txm.buyer || {}, tg = txm.gmv || {}, tag = txm.agingNonTxn || {};
-    txSellers = ts.total || 0; txBuyers = tb.total || 0;
-    txTotal   = txSellers + txBuyers;
-    txNonTxn  = txm.nonTransacted || 0;
-    txAg30  = tag.lt30   || 0; txAg3060 = tag.d30_60 || 0; txAg60 = tag.gt60 || 0;
-    gTotal  = tg.total   || 0; gMetal = tg.metal || 0; gPlastic = tg.plastic || 0;
-    mPct = gTotal > 0 ? Math.round(gMetal/gTotal*100)   : 0;
-    pPct = gTotal > 0 ? Math.round(gPlastic/gTotal*100) : 0;
-  } else {
-    txTotal   = ti.total || 0; txSellers = txTotal; txBuyers = null;
-    txNonTxn  = Math.max(0, (jn.onboarded || 0) - txTotal);
-    txAg30 = txAg3060 = txAg60 = gTotal = gMetal = gPlastic = null;
-    mPct = pPct = 0;
-  }
-  var txPct = (txTotal + txNonTxn) > 0 ? Math.round(txTotal / (txTotal + txNonTxn) * 100) : 100;
-  var mc5Html = '<div class="ov2-mc5">'
-    + '<div class="ov2-mc"><div class="ov2-mc-n">' + fmtN(txSellers) + '</div><div class="ov2-mc-lbl">Sellers</div>'
-    + (txm ? '<div class="ov2-mc-sub"><b>' + fmtN((txm.seller||{}).plastic||0) + '</b> PLASTIC<br><b>' + fmtN((txm.seller||{}).metal||0) + '</b> METAL</div>' : '') + '</div>'
-    + '<div class="ov2-mc"><div class="ov2-mc-n">' + (txBuyers !== null ? fmtN(txBuyers) : '—') + '</div><div class="ov2-mc-lbl">Buyers</div>'
-    + (txm ? '<div class="ov2-mc-sub"><b>' + fmtN((txm.buyer||{}).plastic||0) + '</b> PLASTIC<br><b>' + fmtN((txm.buyer||{}).metal||0) + '</b> METAL</div>' : '') + '</div>'
-    + '<div class="ov2-mc"><div class="ov2-mc-n" style="color:#049769">' + (txAg30 !== null ? fmtN(txAg30) : '—') + '</div><div class="ov2-mc-lbl">Ageing · 0–30 days</div><div class="ov2-mc-sub">Non-transacted</div></div>'
-    + '<div class="ov2-mc"><div class="ov2-mc-n" style="color:#FF9500">' + (txAg3060 !== null ? fmtN(txAg3060) : '—') + '</div><div class="ov2-mc-lbl">Ageing · 31–60 days</div><div class="ov2-mc-sub">Non-transacted</div></div>'
-    + '<div class="ov2-mc"><div class="ov2-mc-n" style="color:#D70015">' + (txAg60 !== null ? fmtN(txAg60) : '—') + '</div><div class="ov2-mc-lbl">Ageing · 60+ days</div><div class="ov2-mc-sub">Non-transacted</div></div>'
-    + '</div>';
-  var gmvHtml = gTotal !== null
-    ? '<div class="ov2-gmv3">'
-      + '<div class="ov2-gc"><div class="ov2-gc-lbl">GMV · Total</div><div class="ov2-gc-big">' + fmtCr(gTotal) + '</div><div class="ov2-gc-sub"><b>' + fmtCr(gMetal) + '</b> METAL &middot; <b>' + fmtCr(gPlastic) + '</b> PLASTIC</div></div>'
-      + '<div class="ov2-gc"><div class="ov2-gc-lbl">GMV · Metal</div><div class="ov2-gc-big">' + fmtCr(gMetal) + '</div><div class="ov2-gc-sub"><b>' + mPct + '%</b> of total GMV</div></div>'
-      + '<div class="ov2-gc"><div class="ov2-gc-lbl">GMV · Plastic</div><div class="ov2-gc-big">' + fmtCr(gPlastic) + '</div><div class="ov2-gc-sub"><b>' + pPct + '%</b> of total GMV</div></div>'
-      + '</div>'
-    : '';
-
-  // ── Post-OSV Score Update ──
-  var preScore = null, postScore = null, scoreDelta = null, scoreImprovPct = null;
-  if (imp) {
-    if (!imp.cohortComparison) { preScore = imp.preAvg; postScore = imp.postAvg; scoreDelta = imp.delta; }
-    else { preScore = imp.nonVerifiedAvg; postScore = imp.verifiedAvg; scoreDelta = imp.delta; }
-  } else if (po.prevPeriodAvg !== null && po.prevPeriodAvg !== undefined) {
-    preScore = po.prevPeriodAvg; postScore = po.currentPeriodAvg; scoreDelta = po.scoreImprovement;
-  }
-  if (preScore !== null && scoreDelta !== null && preScore > 0) {
-    scoreImprovPct = Math.round(Math.abs(scoreDelta) / preScore * 100 * 10) / 10;
-  }
-  var deltaColor = scoreDelta !== null ? (scoreDelta >= 0 ? '#049769' : '#D70015') : 'var(--txt)';
-  var scoreHtml = '<div class="ov2-score-row">'
-    + '<div class="ov2-sc"><div class="ov2-sc-n" style="color:#636366">' + (preScore !== null ? preScore : '—') + '</div><div class="ov2-sc-lbl">Pre-OSV Score</div></div>'
-    + '<div class="ov2-sc"><div class="ov2-sc-n" style="color:#049769">' + (postScore !== null ? postScore : '—') + '</div><div class="ov2-sc-lbl">Post-OSV Score</div></div>'
-    + '<div class="ov2-sc"><div class="ov2-sc-n" style="color:' + deltaColor + '">' + (scoreDelta !== null ? (scoreDelta > 0 ? '+' : '') + scoreDelta + ' &#9650;' : '—') + '</div><div class="ov2-sc-lbl">Score Change</div></div>'
-    + '</div>'
-    + (scoreImprovPct !== null ? '<div class="ov2-improv"><b style="color:' + deltaColor + '">+' + scoreImprovPct + '% improvement</b></div>' : '')
-    + (imp ? '<div style="background:var(--bg2);border-radius:8px;padding:9px 12px;margin-top:10px;font-size:11px;color:var(--txt2);line-height:1.5;font-weight:500">'
-      + (imp.cohortComparison ? '&#127775; OSV completion is associated with an improvement in score.' : '&#127775; Analysed ' + fmt(imp.sampleSize||0) + ' sellers with pre- and post-OSV scores.')
-      + '</div>' : '');
 
   // ── KPI row (4 top cards) ──
   var verRate = jn.eligible > 0 ? Math.round(jn.completed / jn.eligible * 100) + '%' : '0%';
@@ -14597,96 +13957,327 @@ function renderOSVDash() {
   var improvDisp   = po.scoreImprovement !== null && po.scoreImprovement !== undefined
     ? (po.scoreImprovement > 0 ? '+' : '') + po.scoreImprovement + ' vs previous period'
     : null;
-  // (legacy kpiCards retained for drill-down compatibility but not displayed in v2 layout)
-  var kpiCards = [];
-  var kpiHtml = ''; // v2: no top KPI row — data surfaces in lifecycle + cards below
+  var kpiCards = [
+    { cls:'ok-green',   ic:_osvIcShield,  n:fmt(jn.completed||0),     lbl:'OSV Completed',               sub:'Successfully verified sellers' },
+    { cls:'ok-blue',    ic:_osvIcClock,   n:verRate,                   lbl:'Verification Rate',            sub:'OSV completed out of eligible sellers' },
+    { cls:'ok-purple',  ic:_osvIcUsers,   n:fmt(jn.onboarded||0),      lbl:'Total Onboarded Sellers (OMP)',sub:'Completed onboarding' },
+    { cls:'ok-emerald', ic:_osvIcBar,     n:avgScoreDisp,              lbl:'Average Post-OSV Score',       sub:improvDisp ? '<span style="color:#049769">&#9650; ' + improvDisp + '</span>' : 'Based on completed OSVs' }
+  ];
+  var kpiHtml = '<div class="osv-kpi-row">'
+    + kpiCards.map(function(k) {
+      return '<div class="osv-kpi-card ' + k.cls + '">'
+        + '<div class="osv-kpi-ic">' + k.ic + '</div>'
+        + '<div class="osv-kpi-body">'
+        + '<div class="osv-kpi-n">' + k.n + '</div>'
+        + '<div class="osv-kpi-lbl">' + k.lbl + '</div>'
+        + '<div class="osv-kpi-sub">' + k.sub + '</div>'
+        + '</div></div>';
+    }).join('')
+    + '</div>';
 
-  // v2: journey stages now rendered as compact 4-stage lifecycle bar (lcHtml)
+  // ── Journey stages ──
+  var stages = [
+    { n:jn.onboarded||0,      lbl:'Onboarded Sellers',        desc:'Completed onboarding',                         cls:'s-neutral',  ic:_osvIcUsers,   filter:null },
+    { n:jn.completedTxn||0,   lbl:'Completed Transaction',    desc:'At least one qualifying transaction completed', cls:'s-blue',     ic:_osvIcTxn,     filter:'completedTxn' },
+    { n:jn.eligible||0,        lbl:'OSV Eligible',             desc:'Eligible to initiate OSV',                     cls:'s-indigo',   ic:_osvIcConst,   filter:'eligible' },
+    { n:jn.consentObtained||0, lbl:'Consent Obtained',         desc:'Seller consent received',                      cls:'s-violet',   ic:_osvIcDoc,     filter:'consentObtained' },
+    { n:jn.initiated||0,       lbl:'OSV Initiated',            desc:'Verification in progress',                     cls:'s-amber',    ic:_osvIcShield,  filter:'initiated' },
+    { n:jn.completed||0,       lbl:'OSV Completed',            desc:'Verification completed',                       cls:'s-green',    ic:_osvIcCheck,   filter:'completed' },
+    { n:jn.scoreUpdated||0,    lbl:'Post-OSV Score Updated',   desc:'Score generated and updated',                  cls:'s-emerald',  ic:_osvIcStar,    filter:'scoreUpdated' }
+  ];
+  var stageHtml = '<div class="osv-journey-stages">';
+  stages.forEach(function(s, i) {
+    if (i > 0) stageHtml += '<div class="osv-arrow">' + _osvIcArrow + '</div>';
+    var clickable = s.filter ? ' onclick="_osvOpenJourneyFilter(\'' + s.filter + '\')" style="cursor:pointer"' : '';
+    stageHtml += '<div class="osv-stage ' + s.cls + '"' + clickable + '>'
+      + '<div class="osv-stage-ic">' + s.ic + '</div>'
+      + '<div class="osv-stage-n">' + fmt(s.n) + '</div>'
+      + '<div class="osv-stage-lbl">' + s.lbl + '</div>'
+      + '<div class="osv-stage-desc">' + s.desc + '</div>'
+      + '</div>';
+  });
+  stageHtml += '</div>';
 
-  // ── Assemble full page (v2 layout) ──
-  var infoIc = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+  // ── Sellers by OSV status cards ──
+  var statTotal = sd.total || jn.onboarded || 1;
+  var statusCards = [
+    { cls:'sc-neutral', ic:_osvIcBan,     n:sd.notEligible||0,          lbl:'Not Eligible',            def:'No completed transaction',                        filter:'notEligible' },
+    { cls:'sc-blue',    ic:_osvIcClock,   n:sd.eligibleNotInitiated||0,  lbl:'Eligible - Not Initiated',def:'Completed transaction but OSV not started',        filter:'eligibleNotInitiated' },
+    { cls:'sc-amber',   ic:_osvIcShield,  n:sd.inProgress||0,            lbl:'In Progress',             def:'OSV initiated and under verification',             filter:'inProgress' },
+    { cls:'sc-green',   ic:_osvIcCheck,   n:sd.completed||0,             lbl:'Completed',               def:'OSV completed',                                    filter:'completed' }
+  ];
+  var statusHtml = '<div class="osv-status-grid">'
+    + statusCards.map(function(c) {
+      var pct = _osvPct(c.n, statTotal);
+      return '<div class="osv-sc ' + c.cls + '" onclick="_osvOpenStatusFilter(\'' + c.filter + '\')">'
+        + '<div class="osv-sc-ic">' + c.ic + '</div>'
+        + '<div class="osv-sc-n">' + fmt(c.n) + '</div>'
+        + '<div class="osv-sc-lbl">' + c.lbl + '</div>'
+        + '<div class="osv-sc-def">' + c.def + '</div>'
+        + '<div class="osv-sc-pct">' + pct + '%</div>'
+        + '</div>';
+    }).join('')
+    + '</div>';
 
+  // ── Post-OSV Score Performance panel ──
+  var scoreVal  = po.avgScore !== null ? po.avgScore + ' / 10' : '— / 10';
+  var covPct    = po.coverage !== undefined ? po.coverage + '%' : '—';
+  var prevAvg   = po.prevPeriodAvg    !== null ? po.prevPeriodAvg    + ' / 10' : '—';
+  var curAvg    = po.currentPeriodAvg !== null ? po.currentPeriodAvg + ' / 10' : '—';
+  var improv    = po.scoreImprovement;
+  var improvHtml = '';
+  if (improv !== null && improv !== undefined) {
+    var cls = improv >= 0 ? '' : ' negative';
+    var arrow = improv >= 0 ? _osvIcTrend : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>';
+    improvHtml = '<div class="osv-score-imprv' + cls + '">' + arrow + '<span>' + (improv >= 0 ? '+' : '') + improv + ' vs previous period</span></div>';
+  }
+  var scoreHtml = '<div class="osv-score-main">'
+    + '<div class="osv-score-ic">' + _osvIcStar + '</div>'
+    + '<div class="osv-score-big">'
+    + '<div class="osv-score-val">' + scoreVal + '</div>'
+    + '<div class="osv-score-lbl">Average Post-OSV Score</div>'
+    + improvHtml
+    + '</div></div>'
+    + '<div class="osv-score-grid">'
+    + '<div class="osv-sg-cell" onclick="_osvOpenStatusFilter(\'scoredSellers\')" style="cursor:pointer"><div class="osv-sg-n">' + fmt(po.scoredSellers||0) + '</div><div class="osv-sg-lbl">Scored Sellers</div></div>'
+    + '<div class="osv-sg-cell" onclick="_osvOpenStatusFilter(\'pendingScore\')" style="cursor:pointer"><div class="osv-sg-n">' + fmt(po.pendingScore||0) + '</div><div class="osv-sg-lbl">Pending Score</div></div>'
+    + '<div class="osv-sg-cell"><div class="osv-sg-n">' + covPct + '</div><div class="osv-sg-lbl">Score Coverage</div></div>'
+    + '</div>'
+    + '<div class="osv-score-period">'
+    + '<div class="osv-sp-cell"><div class="osv-sp-n">' + prevAvg + '</div><div class="osv-sp-lbl">Previous Period</div></div>'
+    + '<div class="osv-sp-cell"><div class="osv-sp-n" style="color:#049769">' + curAvg + '</div><div class="osv-sp-lbl">Current Period</div></div>'
+    + '</div>';
+
+  // ── Score distribution bars ──
+  function buildDistCard(title, distData, barCls, avgScore) {
+    if (!distData) distData = { avgScore:null, total:0, dist:[] };
+    var bands = ['0–2','2–4','4–6','6–8','8–10'];
+    var avgDisp = distData.avgScore !== null ? 'Avg Score: ' + distData.avgScore + ' / 10' : 'No data';
+    var rows = '';
+    for (var i = 4; i >= 0; i--) {
+      var entry = distData.dist && distData.dist[i] ? distData.dist[i] : { count: 0, pct: 0 };
+      var pct   = entry.pct || 0;
+      var cnt   = entry.count || 0;
+      rows += '<div class="osv-sdist-row">'
+        + '<span class="osv-sdist-lbl">' + bands[i] + '</span>'
+        + '<div class="osv-sdist-bar-bg"><div class="osv-sdist-bar" style="width:' + Math.min(100, pct) + '%"></div></div>'
+        + '<span class="osv-sdist-count">' + cnt + '</span>'
+        + '<span class="osv-sdist-pct">' + pct + '%</span>'
+        + '</div>';
+    }
+    return '<div class="osv-sdist-wrap ' + barCls + '">'
+      + '<div class="osv-sdist-hd">'
+      + '<div class="osv-sdist-title">' + _osvIcBar + '<span>' + title + '</span></div>'
+      + '<div class="osv-sdist-avg">' + avgDisp + '</div>'
+      + '</div>'
+      + rows
+      + '</div>';
+  }
+
+  // ── KYC Summary + Channel metrics row ──
+  var ks = d.kycSummary || {};
+  var kycBase = ks.total || 1;
+  var kycHtml = '';
+  if (ks.total > 0 || (ks.osvSent && ks.osvSent > 0)) {
+    var kycTiles = [
+      { n: ks.completed||0, lbl:'KYC Completed', sub: _osvPct(ks.completed||0, kycBase) + '% of scored sellers', cls:'ok-green',   ic:_osvIcCheck },
+      { n: ks.pending||0,   lbl:'KYC Pending',   sub: _osvPct(ks.pending||0,   kycBase) + '% awaiting completion', cls:'ok-amber',  ic:_osvIcClock },
+      { n: ks.notStarted||0,lbl:'KYC Not Started',sub:_osvPct(ks.notStarted||0,kycBase) + '% not yet initiated', cls:'ok-neutral', ic:_osvIcBan },
+      { n: ks.osvSent||0,   lbl:'OSV Invite Sent',sub:'Verification invite dispatched', cls:'ok-blue',   ic:_osvIcDoc },
+      { n: ks.thirdParty||0,lbl:'Third Party Verified', sub:'External verification completed', cls:'ok-purple', ic:_osvIcShield }
+    ];
+    kycHtml = '<div class="osv-sect-wrap" style="margin-bottom:20px">'
+      + '<div class="osv-sect-hd"><span class="osv-sect-title">KYC &amp; Verification Channels</span><span class="osv-sect-sub">Across ' + fmt(ks.total||0) + ' sellers in the OSV score sheet</span></div>'
+      + '<div class="osv-kpi-row">'
+      + kycTiles.map(function(k) {
+        return '<div class="osv-kpi-card ' + k.cls + '">'
+          + '<div class="osv-kpi-ic">' + k.ic + '</div>'
+          + '<div class="osv-kpi-body">'
+          + '<div class="osv-kpi-n">' + fmt(k.n) + '</div>'
+          + '<div class="osv-kpi-lbl">' + k.lbl + '</div>'
+          + '<div class="osv-kpi-sub">' + k.sub + '</div>'
+          + '</div></div>';
+      }).join('')
+      + '</div></div>';
+  }
+
+  // ── OSV Impact storytelling ──
+  var imp = d.impact || null;
+  var impactHtml = '';
+  if (imp) {
+    var impColor = imp.delta > 0 ? '#049769' : (imp.delta < 0 ? '#D70015' : '#6E6E73');
+    var impArrow = imp.delta > 0 ? '&#9650;' : (imp.delta < 0 ? '&#9660;' : '&#8213;');
+    if (imp.cohortComparison) {
+      // No pre-score: compare verified vs non-verified cohort
+      var cohortDelta = imp.delta !== null ? imp.delta : 0;
+      var cohortColor = cohortDelta > 0 ? '#049769' : '#D70015';
+      impactHtml = '<div class="osv-sect-wrap" style="margin-bottom:20px">'
+        + '<div class="osv-sect-hd"><span class="osv-sect-title">&#127775; OSV Impact Story</span><span class="osv-sect-sub">Score comparison: OSV-completed sellers vs those still in progress</span></div>'
+        + '<div class="osv-impact-row">'
+        + '<div class="osv-impact-cohort" style="background:linear-gradient(135deg,#E3F8F1,#E3F8F1);border:1.5px solid #1DC797">'
+        +   '<div style="font-size:11px;font-weight:600;color:#049769;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">OSV Completed (' + fmt(imp.sampleSize) + ' sellers)</div>'
+        +   '<div style="font-size:32px;font-weight:800;color:#049769">' + (imp.verifiedAvg !== null ? imp.verifiedAvg : '—') + '<span style="font-size:14px;font-weight:500"> / 10</span></div>'
+        +   '<div style="font-size:12px;color:#049769;margin-top:4px">Average score after verification</div>'
+        + '</div>'
+        + (imp.nonVerifiedAvg !== null ? '<div class="osv-impact-cohort" style="background:linear-gradient(135deg,#FFF4E5,#FFF4E5);border:1.5px solid #FF9500">'
+        +   '<div style="font-size:11px;font-weight:600;color:#B25000;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Not Yet Completed</div>'
+        +   '<div style="font-size:32px;font-weight:800;color:#B25000">' + imp.nonVerifiedAvg + '<span style="font-size:14px;font-weight:500"> / 10</span></div>'
+        +   '<div style="font-size:12px;color:#B25000;margin-top:4px">Average score for pending sellers</div>'
+        + '</div>' : '')
+        + (imp.delta !== null ? '<div class="osv-impact-delta" style="text-align:center;padding:24px 28px;background:var(--bg2);border-radius:12px;border:1.5px solid var(--bord)">'
+        +   '<div style="font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Score Difference</div>'
+        +   '<div style="font-size:36px;font-weight:900;color:' + cohortColor + '">' + (cohortDelta >= 0 ? '+' : '') + cohortDelta + '</div>'
+        +   '<div style="font-size:12px;color:var(--txt2);margin-top:4px">Verified sellers score ' + Math.abs(cohortDelta) + ' points ' + (cohortDelta >= 0 ? 'higher' : 'lower') + ' on average</div>'
+        + '</div>' : '')
+        + '</div></div>';
+    } else {
+      // Has pre-score: genuine before vs after
+      var totalAnalyzed = imp.sampleSize;
+      var improvPct = totalAnalyzed > 0 ? Math.round(imp.improvers / totalAnalyzed * 100) : 0;
+      var declPct   = totalAnalyzed > 0 ? Math.round(imp.decliners / totalAnalyzed * 100) : 0;
+      var stayPct   = totalAnalyzed > 0 ? Math.round(imp.unchanged / totalAnalyzed * 100) : 0;
+      impactHtml = '<div class="osv-sect-wrap" style="margin-bottom:20px">'
+        + '<div class="osv-sect-hd"><span class="osv-sect-title">&#127775; OSV Score Impact &ndash; Before vs After</span><span class="osv-sect-sub">Analysed ' + fmt(totalAnalyzed) + ' verified sellers with both pre-OSV and post-OSV scores</span></div>'
+        + '<div class="osv-impact-row">'
+        + '<div class="osv-impact-cohort" style="background:linear-gradient(135deg,#f8fafc,#e2e8f0);border:1.5px solid #cbd5e1">'
+        +   '<div style="font-size:11px;font-weight:600;color:#636366;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Before OSV (Pre-Score)</div>'
+        +   '<div style="font-size:32px;font-weight:800;color:#3A3A3C">' + imp.preAvg + '<span style="font-size:14px;font-weight:500"> / 10</span></div>'
+        +   '<div style="font-size:12px;color:#636366;margin-top:4px">Average score before verification</div>'
+        + '</div>'
+        + '<div class="osv-impact-cohort" style="background:linear-gradient(135deg,#E3F8F1,#E3F8F1);border:1.5px solid #1DC797">'
+        +   '<div style="font-size:11px;font-weight:600;color:#049769;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">After OSV (Post-Score)</div>'
+        +   '<div style="font-size:32px;font-weight:800;color:#049769">' + imp.postAvg + '<span style="font-size:14px;font-weight:500"> / 10</span></div>'
+        +   '<div style="font-size:12px;color:#049769;margin-top:4px">Average score after verification</div>'
+        + '</div>'
+        + '<div class="osv-impact-delta" style="text-align:center;padding:24px 28px;background:var(--bg2);border-radius:12px;border:1.5px solid var(--bord)">'
+        +   '<div style="font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Net Change</div>'
+        +   '<div style="font-size:36px;font-weight:900;color:' + impColor + '">' + impArrow + ' ' + (imp.delta >= 0 ? '+' : '') + imp.delta + '</div>'
+        +   '<div style="font-size:12px;color:var(--txt2);margin-top:4px">Average score movement</div>'
+        + '</div>'
+        + '</div>'
+        + '<div class="osv-impact-bands" style="margin-top:14px">'
+        + '<div style="font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">How scores shifted</div>'
+        + '<div style="display:flex;gap:12px;flex-wrap:wrap">'
+        + '<div style="flex:1;min-width:120px;padding:14px 16px;background:#E3F8F1;border-radius:10px;border:1.5px solid #1DC797;text-align:center">'
+        +   '<div style="font-size:26px;font-weight:800;color:#049769">' + imp.improvers + '</div>'
+        +   '<div style="font-size:11px;font-weight:600;color:#049769">' + improvPct + '% Improved</div>'
+        +   '<div style="font-size:10px;color:#049769;margin-top:2px">Score went up &gt; 0.5</div>'
+        + '</div>'
+        + '<div style="flex:1;min-width:120px;padding:14px 16px;background:#fefce8;border-radius:10px;border:1.5px solid #FF9500;text-align:center">'
+        +   '<div style="font-size:26px;font-weight:800;color:#B25000">' + imp.unchanged + '</div>'
+        +   '<div style="font-size:11px;font-weight:600;color:#B25000">' + stayPct + '% Stable</div>'
+        +   '<div style="font-size:10px;color:#B25000;margin-top:2px">Score within &plusmn; 0.5</div>'
+        + '</div>'
+        + '<div style="flex:1;min-width:120px;padding:14px 16px;background:#FDECEB;border-radius:10px;border:1.5px solid #FDECEB;text-align:center">'
+        +   '<div style="font-size:26px;font-weight:800;color:#D70015">' + imp.decliners + '</div>'
+        +   '<div style="font-size:11px;font-weight:600;color:#D70015">' + declPct + '% Declined</div>'
+        +   '<div style="font-size:10px;color:#D70015;margin-top:2px">Score went down &gt; 0.5</div>'
+        + '</div>'
+        + '</div></div>'
+        + '</div>';
+    }
+  }
+
+  // ── Transacted Sellers + OSV Status ──
+  var ti = d.txnAndInitiated || {};
+  var txnImpHtml = '';
+  if (ti.total > 0) {
+    var vPct  = _osvPct(ti.verified||0,    ti.total);
+    var iPct  = _osvPct(ti.inProgress||0,  ti.total);
+    var niPct = _osvPct(ti.notInitiated||0,ti.total);
+    txnImpHtml = '<div class="osv-sect-wrap" style="margin-bottom:20px">'
+      + '<div class="osv-sect-hd"><span class="osv-sect-title">&#128200; Transacted Sellers &amp; OSV Status</span><span class="osv-sect-sub">Sellers who have completed at least one transaction — their OSV progress</span></div>'
+      + '<div style="display:flex;gap:0;border-radius:12px;overflow:hidden;border:1.5px solid var(--bord);margin-bottom:12px">'
+      + (ti.verified   > 0 ? '<div style="flex:' + ti.verified   + ';background:#049769;padding:12px 16px;text-align:center"><div style="font-size:22px;font-weight:800;color:#fff">' + ti.verified   + '</div><div style="font-size:10px;color:#E3F8F1;font-weight:600;text-transform:uppercase">OSV Verified</div><div style="font-size:11px;color:#E3F8F1">' + vPct  + '%</div></div>' : '')
+      + (ti.inProgress > 0 ? '<div style="flex:' + ti.inProgress + ';background:#B25000;padding:12px 16px;text-align:center"><div style="font-size:22px;font-weight:800;color:#fff">' + ti.inProgress + '</div><div style="font-size:10px;color:#FFF4E5;font-weight:600;text-transform:uppercase">In Progress</div><div style="font-size:11px;color:#FFF4E5">' + iPct  + '%</div></div>' : '')
+      + (ti.notInitiated>0 ? '<div style="flex:' + ti.notInitiated + ';background:#6E6E73;padding:12px 16px;text-align:center"><div style="font-size:22px;font-weight:800;color:#fff">' + ti.notInitiated + '</div><div style="font-size:10px;color:#e2e8f0;font-weight:600;text-transform:uppercase">OSV Pending</div><div style="font-size:11px;color:#cbd5e1">' + niPct + '%</div></div>' : '')
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--txt3);padding:6px 2px">'
+      + fmt(ti.total) + ' sellers have transacted &middot; '
+      + fmt(ti.withOsv||0) + ' (' + _osvPct(ti.withOsv||0,ti.total) + '%) have OSV initiated or completed &middot; '
+      + fmt(ti.notInitiated||0) + ' (' + niPct + '%) transacted sellers yet to start OSV'
+      + '</div>'
+      + '<button class="osv-drill-action-btn" onclick="_osvOpenStatusFilter(\'transactedOSV\')" style="margin-top:8px">View Transacted Sellers &#8594;</button>'
+      + '</div>';
+  }
+
+  // ── Key Takeaways ──
+  var j = jn, s2 = sd, p = po;
+  var takeaways = [];
+  var notEligPct = _osvPct(s2.notEligible||0, s2.total||1);
+  if (notEligPct > 0) takeaways.push(notEligPct + '% of onboarded sellers are not yet eligible for OSV (no completed transaction).');
+  var inProgPct = j.eligible > 0 ? _osvPct(s2.inProgress||0, j.eligible) : 0;
+  if (inProgPct > 0) takeaways.push(inProgPct + '% of eligible sellers have initiated OSV and are in progress.');
+  var cmpPct = j.eligible > 0 ? _osvPct(j.completed||0, j.eligible) : 0;
+  if (cmpPct > 0) takeaways.push(cmpPct + '% of eligible sellers have completed OSV.');
+  if (p.avgScore !== null) {
+    var impText = 'Average post-OSV score is ' + p.avgScore;
+    if (p.scoreImprovement !== null && p.scoreImprovement !== undefined && p.scoreImprovement !== 0) {
+      impText += ', a ' + (p.scoreImprovement > 0 ? 'gain' : 'dip') + ' of ' + Math.abs(p.scoreImprovement) + ' points vs pre-OSV.';
+    } else {
+      impText += ' / 10.';
+    }
+    takeaways.push(impText);
+  }
+  if (ti.total > 0 && ti.notInitiated > 0) {
+    takeaways.push(fmt(ti.notInitiated) + ' sellers have transacted but OSV is yet to be initiated — they should be prioritised.');
+  }
+  if (ks.total > 0 && ks.osvSent > 0) {
+    takeaways.push(fmt(ks.osvSent) + ' OSV invitations have been dispatched across ' + fmt(ks.total) + ' scored sellers.');
+  }
+  if (takeaways.length === 0) takeaways.push('Data is loading — check back after the next backend sync.');
+  var ktHtml = '<div class="osv-kt-wrap"><div class="osv-kt-hd"><div class="osv-kt-ic">' + _osvIcBulb + '</div><div class="osv-kt-title">Key Takeaways</div></div>'
+    + '<div class="osv-kt-list">'
+    + takeaways.map(function(t, i) {
+      return '<div class="osv-kt-item"><div class="osv-kt-num">' + (i+1) + '</div><div class="osv-kt-txt">' + esc(t) + '</div></div>';
+    }).join('')
+    + '</div></div>';
+
+  // ── Assemble full page ──
   host.innerHTML = '<div class="osv-page">'
-
-    // ── Header ──
-    + '<div class="ov2-hdr">'
-    +   '<div class="ov2-hdr-main">'
-    +     '<div class="ov2-pg-title">Transaction Activity &amp; OSV</div>'
-    +     '<div class="ov2-pg-sub">Transaction performance and OSV status across sellers and buyers.</div>'
+    // Header
+    + '<div class="osv-hdr">'
+    +   '<div class="osv-hdr-left">'
+    +     '<div class="osv-pg-title">OSV &ndash; Consent &amp; Verification Status</div>'
+    +     '<div class="osv-pg-sub">Initiated only after a completed transaction. Track consent, verification progress and post-OSV scores.</div>'
     +   '</div>'
-    +   '<div class="ov2-hdr-right">'
-    +     '<div class="ov2-rule-banner">' + infoIc + ' OSV is initiated only after a transaction is completed.</div>'
-    +     '<div style="display:flex;align-items:center;gap:8px">'
-    +       '<div class="osv-date-pill"><span>&#128197;</span><span>' + esc(_tdtPeriodLabel()) + '</span><span style="font-size:10px;color:var(--txt3)">&#9660;</span></div>'
-    +       '<div class="osv-period-grp">' + perBtns + '</div>'
-    +     '</div>'
+    +   '<div class="osv-hdr-right">'
+    +     '<div class="osv-date-pill"><span>&#128197;</span><span>' + esc(_tdtPeriodLabel()) + '</span><span style="font-size:10px;color:var(--txt3)">&#9660;</span></div>'
+    +     '<div class="osv-period-grp">' + perBtns + '</div>'
     +   '</div>'
     + '</div>'
-
-    // ── OSV Lifecycle (4 stages) ──
-    + '<div class="ov2-lc-wrap">'
-    +   '<div class="ov2-lc-lbl">OSV Lifecycle</div>'
-    +   '<div class="ov2-lc-row">' + lcHtml + '</div>'
+    // KPI row
+    + kpiHtml
+    // OSV Journey
+    + '<div class="osv-journey-wrap">'
+    +   '<div class="osv-journey-hd"><span class="osv-journey-title">OSV Journey</span><span class="osv-journey-sub">OSV can be initiated only after a qualifying transaction is completed.</span></div>'
+    +   stageHtml
     + '</div>'
-
-    // ── Body: 2-col ──
-    + '<div class="ov2-body">'
-
-      // Left: Transaction Activity card
-      +   '<div class="ov2-txn-card">'
-      +     '<div class="ov2-card-hd">Transaction Activity <span style="font-size:10px;font-weight:500;color:var(--txt3);text-transform:none;letter-spacing:0">Sellers &amp; Buyers</span></div>'
-      +     '<div class="ov2-txn-big">' + (txTotal || 0).toLocaleString('en-IN') + '</div>'
-      +     '<div class="ov2-txn-biglab">Transacted (Unique &middot; Sellers &amp; Buyers)</div>'
-      +     '<div class="ov2-bar">'
-      +       '<div class="ov2-bar-t" style="width:' + txPct + '%">Transacted &ndash; ' + (txTotal||0).toLocaleString('en-IN') + '</div>'
-      +       '<div class="ov2-bar-n">Non-Transacted &ndash; ' + (txNonTxn||0).toLocaleString('en-IN') + '</div>'
-      +     '</div>'
-      +     '<div class="ov2-legs"><div class="ov2-leg"><div class="ov2-led" style="background:#049769"></div>Transacted</div><div class="ov2-leg"><div class="ov2-led" style="background:#B25000"></div>Non-Transacted</div></div>'
-      +     mc5Html
-      +     gmvHtml
-      +     '<button class="ov2-vdb" onclick="openModRecords ? openModRecords(\'transacted\') : switchView(\'transactions\')">&#128196; View Detailed Records &#8594;</button>'
-      +   '</div>'
-
-      // Right column: 3 cards stacked
-      +   '<div class="ov2-right">'
-
-            // OSV Eligibility card
-      +     '<div class="ov2-card">'
-      +       '<div class="ov2-card-hd">OSV Eligibility <span style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--txt3)">&mdash; Completed Transactions Only</span></div>'
-      +       '<div class="ov2-elig-n">' + fmt(eligCnt) + '</div>'
-      +       '<div class="ov2-elig-pct">Eligible for OSV</div>'
-      +       '<div class="ov2-elig-pct" style="margin-top:4px"><strong style="color:#049769">100%</strong> of completed transactions</div>'
-      +     '</div>'
-
-            // OSV Status card
-      +     '<div class="ov2-card">'
-      +       '<div class="ov2-card-hd">OSV Status</div>'
-      +       '<div class="ov2-osv-status-grid">'
-      +         '<div class="ov2-osc" style="background:#FFF4E5">'
-      +           '<div class="ov2-osc-n" style="color:#B25000">' + fmt(initCnt) + '</div>'
-      +           '<div class="ov2-osc-lbl" style="color:#B25000">OSV Initiated</div>'
-      +           '<div class="ov2-osc-pct" style="color:#B25000">' + initPctN + '% of eligible</div>'
-      +           '<div style="height:3px;background:#B25000;border-radius:3px;margin-top:8px;width:' + Math.min(100, initPctN) + '%"></div>'
-      +         '</div>'
-      +         '<div class="ov2-osc" style="background:#E3F8F1">'
-      +           '<div class="ov2-osc-n" style="color:#049769">' + fmt(cmpCnt) + '</div>'
-      +           '<div class="ov2-osc-lbl" style="color:#049769">OSV Completed</div>'
-      +           '<div class="ov2-osc-pct" style="color:#049769">' + cmpPctN + '% of eligible</div>'
-      +           '<div style="height:3px;background:#049769;border-radius:3px;margin-top:8px;width:' + Math.min(100, cmpPctN) + '%"></div>'
-      +         '</div>'
-      +       '</div>'
-      +     '</div>'
-
-            // Post-OSV Score Update card
-      +     '<div class="ov2-card">'
-      +       '<div class="ov2-card-hd">' + _osvIcBar + ' Post-OSV Score Update</div>'
-      +       scoreHtml
-      +     '</div>'
-
-      +   '</div>'
+    // Mid row: Seller Status + Post-OSV Score
+    + '<div class="osv-mid-row">'
+    +   '<div class="osv-status-wrap">'
+    +     '<div class="osv-sect-hd"><span class="osv-sect-title">Sellers by OSV Status</span><span class="osv-sect-sub">Total Onboarded Sellers: ' + fmt(sd.total||jn.onboarded||0) + '</span></div>'
+    +     statusHtml
+    +   '</div>'
+    +   '<div class="osv-score-wrap">'
+    +     '<div class="osv-sect-hd"><span class="osv-sect-title">Post-OSV Score Performance</span><span class="osv-sect-sub">Based on ' + fmt(jn.completed||0) + ' completed OSVs</span></div>'
+    +     scoreHtml
+    +   '</div>'
     + '</div>'
-
-    // Drill-down overlay (preserved from v1)
+    // KYC + Channel metrics
+    + kycHtml
+    // OSV Impact storytelling
+    + impactHtml
+    // Transacted sellers OSV breakdown
+    + txnImpHtml
+    // Bottom row: Plastic dist + Metal dist + Key Takeaways
+    + '<div class="osv-bot-row">'
+    +   buildDistCard('Score Distribution &ndash; Plastic', sc.plastic, 'osv-sdist-plastic', null)
+    +   buildDistCard('Score Distribution &ndash; Metal',   sc.metal,   'osv-sdist-metal',   null)
+    +   ktHtml
+    + '</div>'
+    + '</div>'
+    // Drill-down overlay
     + '<div class="osv-drill-ovl" id="osv-drill-ovl" onclick="if(event.target===this)_osvCloseDrill()">'
     +   '<div class="osv-drill-sheet">'
     +     '<div class="osv-drill-hd">'
@@ -14695,11 +14286,7 @@ function renderOSVDash() {
     +     '</div>'
     +     '<div class="osv-drill-body"></div>'
     +   '</div>'
-    + '</div>'
-  + '</div>';
-
-  // Background-load transaction data if not yet available (enriches transaction section)
-  if (!txm && !_txnModLoading) loadTransactionData();
+    + '</div>';
 }
 
 // helper button style (defined once for OSV sections above)
@@ -14769,7 +14356,6 @@ function loadTransactionData() {
       _txnModLoading = false;
       try { _TXN_MOD = JSON.parse(raw); } catch(e) { _TXN_MOD = { success:false, error:'Parse error' }; }
       if (currentView === 'transactions') renderTransactionDash();
-      if (currentView === 'osv' && _OSV) renderOSVDash();
     })
     .withFailureHandler(function(err) {
       _txnModLoading = false;
@@ -15066,9 +14652,6 @@ function renderTransactionDash() {
 var _VR = null;
 var _vrLoading = false;
 var _vrDistFilter = 'all';
-var _vrMode = 'all';        // 'all' = Sellers Only, 'txn' = Transaction Vendors
-var _EXC = null;
-var _excLoading = false;
 
 function renderVendorRatingsSkeleton() {
   var host = document.getElementById('tab-vendorratings');
@@ -15107,11 +14690,6 @@ function _vrSetDistFilter(f) {
   renderVendorRatingsDash();
 }
 
-function _vrSetMode(m) {
-  _vrMode = m;
-  renderVendorRatingsDash();
-}
-
 function renderVendorRatingsDash() {
   var host = document.getElementById('tab-vendorratings');
   if (!host || !_VR) return;
@@ -15121,331 +14699,165 @@ function renderVendorRatingsDash() {
   }
 
   var sr   = (_VR.seller && _VR.seller.rating) || {};
-  var allVR = (_VR.vendorRatings || []).filter(function(v){ return v.aud !== 'buyer'; });
-  var txnVR = allVR.filter(function(v){ return v.hasTransacted; });
-  var mode  = _vrMode;
-  var vr    = mode === 'txn' ? txnVR : allVR;
-  var filt  = _vrDistFilter;
+  var vr   = _VR.vendorRatings || [];
+  var filt = _vrDistFilter;
+
+  var avg   = sr.avg   != null ? sr.avg : 0;
+  var rated = sr.rated || 0;
+  var total = sr.total || 0;
 
   function fmtN(v) { return (v||0).toLocaleString('en-IN'); }
+
+  function matRatings(cat) {
+    return vr.filter(function(v) { return String(v.category||'').toLowerCase() === cat && v.rating != null && v.rating > 0; });
+  }
+  var metalVR   = matRatings('metal');
+  var plasticVR = matRatings('plastic');
   function avgOf(arr) {
     if (!arr.length) return null;
     return Math.round(arr.reduce(function(s,v){ return s+(v.rating||0); },0)/arr.length*10)/10;
   }
-  function matR(arr, cat) {
-    return arr.filter(function(v){ return String(v.category||'').toLowerCase() === cat && v.rating > 0; });
-  }
+  var metalAvg   = avgOf(metalVR);
+  var plasticAvg = avgOf(plasticVR);
 
-  // Overall (all rated sellers)
-  var overallAvg    = avgOf(allVR);
-  var metalVR_all   = matR(allVR, 'metal');
-  var plasticVR_all = matR(allVR, 'plastic');
-  var metalAvg      = avgOf(metalVR_all);
-  var plasticAvg    = avgOf(plasticVR_all);
-  var rated         = allVR.length;
-  var total         = sr.total || rated;
-  var excep         = allVR.filter(function(v){ return v.rating <= 2; }).length;
+  var transacted = _TXN_MOD && _TXN_MOD.success ? (_TXN_MOD.seller ? _TXN_MOD.seller.total : 0) : null;
+  var convRate   = (transacted != null && rated > 0) ? Math.round(transacted/rated*1000)/10 : null;
 
-  // Transaction vendors
-  var txnAvg   = avgOf(txnVR);
-  var txnRated = txnVR.length;
-  var txnDelta = (txnAvg != null && overallAvg != null) ? Math.round((txnAvg - overallAvg)*10)/10 : null;
+  var distRanges = [['8–10',4,'#049769'],['6–8',3,'#049769'],['4–6',2,'#FF9500'],['2–4',1,'#FF9500'],['0–2',0,'#D70015']];
 
-  // Active-mode distribution
-  var metalVR_cur   = matR(vr, 'metal');
-  var plasticVR_cur = matR(vr, 'plastic');
-  var distRanges = [['8–10',4,'#049769'],['6–8',3,'#1DC797'],['4–6',2,'#FF9500'],['2–4',1,'#FF9500'],['0–2',0,'#D70015']];
   function getDist() {
-    var src = filt === 'metal' ? matR(vr,'metal') : filt === 'plastic' ? matR(vr,'plastic') : vr;
+    if (filt === 'all') return sr.dist || [0,0,0,0,0];
+    var rows = filt === 'metal' ? metalVR : plasticVR;
     var d = [0,0,0,0,0];
-    src.forEach(function(v){ var b = Math.min(4,Math.max(0,Math.floor((v.rating||0)/2))); d[b]++; });
+    rows.forEach(function(v) {
+      var b = Math.min(4, Math.max(0, Math.floor((v.rating||0)/2)));
+      d[b]++;
+    });
     return d;
   }
   var dist    = getDist();
   var distMax = Math.max.apply(null, dist.concat([1]));
   var distSum = dist.reduce(function(s,v){ return s+v; }, 0);
 
-  // Comparison chart heights (max scale = 10)
-  var chartH = 120;
-  var ovH  = overallAvg != null ? Math.round(overallAvg  / 10 * chartH) : 0;
-  var txnH = txnAvg     != null ? Math.round(txnAvg      / 10 * chartH) : 0;
+  // Exceptions = vendors with score ≤ 2 (bucket 0 in 0–2 range)
+  var excep = vr.length > 0
+    ? vr.filter(function(v){ return v.rating != null && v.rating <= 2; }).length
+    : (sr.exceptions || 0);
+
+  var progRatedPct = total > 0 ? Math.round(rated/total*100) : 0;
+
+  // Period change badge (uses sr.prevAvg if available)
+  var prevAvg = sr.prevAvg || 0;
+  var periodBadge = (prevAvg > 0 && avg > 0)
+    ? (function() {
+        var chg = Math.round((avg - prevAvg) / prevAvg * 100);
+        var up = chg >= 0;
+        return '<span style="font-size:11px;color:' + (up?'#049769':'#D70015') + ';background:' + (up?'#E3F8F1':'#FDECEB') + ';padding:3px 9px;border-radius:5px;font-weight:700;margin-left:10px">'
+          + (up?'&#9650;':'&#9660;') + ' ' + Math.abs(chg) + '% vs. previous period</span>';
+      })()
+    : '';
 
   var distHtml = distRanges.map(function(rng) {
     var cnt = dist[rng[1]] || 0;
     var w   = Math.round(cnt/distMax*100);
     var pct = distSum > 0 ? Math.round(cnt/distSum*100) : 0;
-    return '<div class="vr3-bucket">'
-      + '<span class="vr3-brng">' + rng[0] + '</span>'
-      + '<div class="vr3-bbar"><div class="vr3-bfill" style="width:' + w + '%;background:' + rng[2] + '"></div></div>'
-      + '<span class="vr3-bcnt">' + cnt + '</span>'
-      + '<span class="vr3-bpct">' + pct + '%</span>'
+    return '<div class="vr2-bucket">'
+      + '<span class="vr2-brng">' + rng[0] + '</span>'
+      + '<div class="vr2-bbar"><div class="vr2-bfill" style="width:' + w + '%;background:' + rng[2] + '"></div></div>'
+      + '<span class="vr2-bcnt">' + cnt + '</span>'
+      + '<span class="vr2-bpct">' + pct + '%</span>'
+      + '<span class="vr2-bgo">&#8594;</span>'
       + '</div>';
   }).join('');
 
-  function kpiTile(bgHex, icon, lbl, val, sub) {
-    return '<div class="vr3-kpi">'
-      + '<div class="vr3-kpi-ic" style="background:' + bgHex + '">' + icon + '</div>'
-      + '<div class="vr3-kpi-body">'
-      + '<div class="vr3-kpi-lbl">' + lbl + '</div>'
-      + '<div class="vr3-kpi-val">' + val + '</div>'
-      + '<div class="vr3-kpi-sub">' + sub + '</div>'
-      + '</div></div>';
-  }
+  // Bar chart icon SVG for material cards
+  var barIcon = '<svg width="30" height="22" viewBox="0 0 30 22" style="flex-shrink:0;opacity:.7">'
+    + '<rect x="0" y="14" width="5" height="8" fill="#005DFF" rx="1"/>'
+    + '<rect x="8" y="9" width="5" height="13" fill="#005DFF" rx="1"/>'
+    + '<rect x="16" y="4" width="5" height="18" fill="#005DFF" rx="1"/>'
+    + '<rect x="24" y="0" width="5" height="22" fill="#005DFF" rx="1"/>'
+    + '</svg>';
 
-  var html = '<div class="vr3-wrap">'
-    // Header
-    + '<div class="vr3-hdr">'
-    + '<div class="vr3-hdr-left">'
-    + '<div class="vr3-hdr-icon">&#9733;</div>'
-    + '<div><div class="vr3-hdr-title">Vendor Rating</div>'
-    + '<div class="vr3-hdr-sub">Performance and rating distribution across sellers and transaction vendors.</div>'
-    + '</div></div>'
-    + '<div class="vr3-toggle">'
-    + '<button class="vr3-tog-btn' + (mode==='txn'?'':' active') + '" onclick="_vrSetMode(\'all\')">&#9745; Sellers Only</button>'
-    + '<button class="vr3-tog-btn' + (mode==='txn'?' active':'') + '" onclick="_vrSetMode(\'txn\')">&#8644; Transaction Vendors</button>'
-    + '</div></div>'
+  // Insight text
+  var txnPctOfRated = (transacted != null && rated > 0) ? Math.round(transacted/rated*100) : null;
+  var insightTxt = (transacted != null && rated > 0)
+    ? 'Only ' + fmtN(transacted) + ' out of ' + fmtN(rated) + ' rated sellers (' + txnPctOfRated + '%) have completed at least one transaction. Focus on improving the transaction activation for highly rated but non-transacting sellers.'
+    : 'Track how many rated sellers have also completed a transaction on the marketplace.';
 
-    // Executive KPI row (5 tiles)
-    + '<div class="vr3-kpi-row">'
-    + kpiTile('#E6EFFF','&#9733;','Average Vendor Score<br>(Out of 10)',
-        (overallAvg!=null?overallAvg.toFixed(1):'—')+'<span>/10</span>',
-        (metalAvg!=null?'Metal '+metalAvg.toFixed(1):''+(metalAvg!=null&&plasticAvg!=null?' &middot; ':'')+(plasticAvg!=null?'Plastic '+plasticAvg.toFixed(1):'') || 'No breakdown available'))
-    + kpiTile('#E3F8F1','&#129354;','Metal Vendor Score<br>(Out of 10)',
-        (metalAvg!=null?metalAvg.toFixed(1):'—')+'<span>/10</span>',
-        metalVR_all.length + ' rated sellers')
-    + kpiTile('#F0EEFF','&#9705;','Plastic Vendor Score<br>(Out of 10)',
-        (plasticAvg!=null?plasticAvg.toFixed(1):'—')+'<span>/10</span>',
-        plasticVR_all.length + ' rated sellers')
-    + kpiTile('#E3F8F1','&#128101;','Rated Vendors',
-        '<span style="font-size:1.8rem;font-weight:800;color:#049769">' + fmtN(rated) + '</span>',
-        'Sellers have a score')
-    + kpiTile('#FFF0EB','&#9888;','Exceptions',
-        '<span style="font-size:1.8rem;font-weight:800;color:#D70015">' + excep + '</span>',
-        'Score &le; 2 (exception level)')
+  // Material insight text
+  var matInsight = (metalAvg!=null && plasticAvg!=null)
+    ? 'Metal sellers have a ' + (metalAvg >= plasticAvg ? 'higher' : 'lower') + ' average score than plastic sellers by <b>' + Math.abs(metalAvg-plasticAvg).toFixed(1) + ' points</b>.'
+    : '';
+
+  host.innerHTML = '<div class="vr2-wrap">'
+    + '<div class="vr2-bc"><a onclick="switchView(\'onboarding\')" style="cursor:pointer">Central Onboarding</a> &rsaquo; <a>Marketplace</a> &rsaquo; Vendor Ratings</div>'
+    + '<div class="vr2-hdr-row">'
+    + '<div>'
+    + '<div class="vr2-title">Vendor Score &#8211; Average Seller Score <span class="vr2-spill">SELLERS ONLY</span></div>'
+    + '<div class="vr2-desc">Overall quality of transacting sellers based on ratings.'
+    + (metalAvg!=null?' Metal ' + metalAvg.toFixed(1) : '')
+    + (metalAvg!=null&&plasticAvg!=null?' &middot; ' : '')
+    + (plasticAvg!=null?'Plastic ' + plasticAvg.toFixed(1) : '')
+    + ((metalAvg!=null||plasticAvg!=null)?' (out of 10).' : '')
+    + '</div>'
+    + '</div>'
     + '</div>'
 
-    // Middle: Transaction panel + Comparison chart
-    + '<div class="vr3-mid">'
-    + '<div class="vr3-txn-panel">'
-    + '<div class="vr3-txn-hdr">'
-    + '<div class="vr3-txn-hdr-ic">&#8644;</div>'
-    + '<div><div class="vr3-txn-title">Transaction Vendors Rating</div>'
-    + '<div class="vr3-txn-def">Rating performance for vendors with completed transactions.</div>'
-    + '</div></div>'
-    + '<div class="vr3-txn-info">&#9432; Transaction vendors = vendors with completed transactions.</div>'
-    + '<div class="vr3-txn-metrics">'
-    + '<div class="vr3-txn-mc"><div class="vr3-txn-mc-lbl">Average Transaction Vendor Score (Out of 10)</div>'
-    + '<div class="vr3-txn-mc-val">' + (txnAvg!=null?txnAvg.toFixed(1):'—') + '<span>/10</span></div>'
-    + '</div>'
-    + '<div class="vr3-txn-mc"><div class="vr3-txn-mc-lbl">Transaction Vendors Rated</div>'
-    + '<div class="vr3-txn-mc-val" style="color:#005DFF">' + fmtN(txnRated) + '</div>'
-    + '<div class="vr3-txn-mc-sub">Vendors have a score</div>'
-    + '</div>'
-    + '<div class="vr3-txn-mc"><div class="vr3-txn-mc-lbl">vs. Overall Seller Rating</div>'
-    + (txnDelta!=null
-        ? '<div class="vr3-txn-mc-delta" style="color:' + (txnDelta>=0?'#049769':'#D70015') + ';font-size:1.6rem">'
-          + (txnDelta>=0?'+':'') + txnDelta.toFixed(1) + '</div>'
-          + '<div class="vr3-txn-mc-sub">' + (txnDelta>=0?'Higher':'Lower') + ' than overall seller rating</div>'
-        : '<div class="vr3-txn-mc-val">—</div><div class="vr3-txn-mc-sub">No transaction vendor data yet</div>')
-    + '</div>'
-    + '</div></div>'
-
-    // Comparison chart
-    + '<div class="vr3-cmp-panel">'
-    + '<div class="vr3-cmp-title">Overall vs. Transaction Vendors Rating</div>'
-    + '<div style="position:relative;height:' + (chartH+40) + 'px;padding:0 20px">'
-    + '<div style="position:absolute;left:0;right:0;top:0;bottom:28px;display:flex;align-items:flex-end;gap:18px;justify-content:center">'
-    + '<div class="vr3-cmp-col">'
-    + '<div class="vr3-cmp-bar" style="height:' + ovH + 'px;background:#005DFF;min-height:30px">' + (overallAvg!=null?overallAvg.toFixed(1):'—') + '</div>'
-    + '<div style="height:1px;background:var(--border);width:100%"></div>'
-    + '<div class="vr3-cmp-lbl" style="margin-top:6px">Overall Seller Rating<br><span style="font-weight:400;font-size:9.5px;color:var(--txt3)">(All Onboarded Sellers)</span></div>'
-    + '</div>'
-    + '<div class="vr3-cmp-col">'
-    + '<div class="vr3-cmp-bar" style="height:' + txnH + 'px;background:#1DC797;min-height:30px">' + (txnAvg!=null?txnAvg.toFixed(1):'—') + '</div>'
-    + '<div style="height:1px;background:var(--border);width:100%"></div>'
-    + '<div class="vr3-cmp-lbl" style="margin-top:6px">Transaction Vendors Rating<br><span style="font-weight:400;font-size:9.5px;color:var(--txt3)">(Completed Transactions Only)</span></div>'
-    + '</div>'
-    + '</div></div></div>'
+    + '<div class="vr2-main">'
+      + '<div class="vr2-sc">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+      + '<div class="vr2-badge">&#10003; ' + progRatedPct + '% Rated</div>'
+      + periodBadge
+      + '</div>'
+      + '<div><span class="vr2-sc-num">' + avg.toFixed(1) + '</span><span class="vr2-sc-denom">/10</span></div>'
+      + '<div class="vr2-sc-lbl">Average Seller Score</div>'
+      + '<div class="vr2-sc-sub">Based on ' + fmtN(rated) + ' rated vendors out of ' + fmtN(total) + ' onboarded</div>'
+      + '<div class="vr2-prog">'
+      + '<div class="vr2-prog-r" style="flex:' + Math.max(1,rated) + '">&#10003; Rated &#8211; ' + fmtN(rated) + '</div>'
+      + (excep > 0 ? '<div class="vr2-prog-e" style="flex:' + excep + '">&#9888; Exceptions &#8211; ' + excep + '</div>' : '')
+      + '</div>'
+      + '<div class="vr2-prog-leg">'
+      + '<div class="vr2-pl"><div class="vr2-ld" style="background:#049769"></div>Rated: ' + fmtN(rated) + '</div>'
+      + (excep > 0 ? '<div class="vr2-pl"><div class="vr2-ld" style="background:#FF9500"></div>Exceptions: ' + excep + '</div>' : '')
+      + '</div>'
+      + '<div class="vr2-kpi4">'
+      + '<div class="vr2-kpi"><div class="vr2-kpi-v" style="color:#049769">' + fmtN(rated) + '</div><div class="vr2-kpi-l">Rated Vendors</div><div class="vr2-kpi-s">have a score</div></div>'
+      + '<div class="vr2-kpi"><div class="vr2-kpi-v" style="color:#005DFF">' + (transacted!=null?fmtN(transacted):'—') + '</div><div class="vr2-kpi-l">Transacted</div><div class="vr2-kpi-s">completed &ge;1 transaction</div></div>'
+      + '<div class="vr2-kpi"><div class="vr2-kpi-v" style="color:#005DFF">' + (convRate!=null?convRate+'%':'—') + '</div><div class="vr2-kpi-l">Conversion Rate</div><div class="vr2-kpi-s">of rated sellers / have transacted</div></div>'
+      + '<div class="vr2-kpi"><div class="vr2-kpi-v" style="color:#D70015">' + excep + '</div><div class="vr2-kpi-l">Exceptions</div><div class="vr2-kpi-s">exception score (&le; 2)</div></div>'
+      + '</div>'
+      + '</div>'
+      + '<div class="vr2-mat-panel">'
+      + '<div class="vr2-mat-ph">Average Score by Material</div>'
+      + '<div class="vr2-mat-cards">'
+      + '<div class="vr2-mcard"><div style="display:flex;align-items:center;justify-content:space-between"><div class="vr2-mcard-name">Metal</div>' + barIcon + '</div><div class="vr2-mcard-score">' + (metalAvg!=null?metalAvg.toFixed(1):'—') + '<span>/10</span></div><div class="vr2-mcard-rated">' + metalVR.length + ' rated sellers</div></div>'
+      + '<div class="vr2-mcard"><div style="display:flex;align-items:center;justify-content:space-between"><div class="vr2-mcard-name">Plastic</div>' + barIcon + '</div><div class="vr2-mcard-score">' + (plasticAvg!=null?plasticAvg.toFixed(1):'—') + '<span>/10</span></div><div class="vr2-mcard-rated">' + plasticVR.length + ' rated sellers</div></div>'
+      + '</div>'
+      + (matInsight ? '<div class="vr2-mat-insight">&#128161; ' + matInsight + '</div>' : '')
+      + '</div>'
     + '</div>'
 
-    // Score Distribution
-    + '<div class="vr3-dist">'
-    + '<div class="vr3-dist-hdr">'
-    + '<div><div class="vr3-dist-title">Score Distribution <span style="font-size:12px;font-weight:500;color:var(--txt3)">(Out of 10)</span></div>'
-    + '<div class="vr3-dist-subtitle">Distribution of vendor ratings across score ranges.</div>'
+    + '<div class="vr2-dist">'
+    + '<div class="vr2-dist-top">'
+    + '<div class="vr2-dist-title">Score Distribution</div>'
+    + '<div class="vr2-dist-filt">'
+    + '<button class="vr2-dflt' + (filt==='all'    ?' active':'') + '" onclick="_vrSetDistFilter(\'all\')">All</button>'
+    + '<button class="vr2-dflt' + (filt==='metal'  ?' active':'') + '" onclick="_vrSetDistFilter(\'metal\')">Metal</button>'
+    + '<button class="vr2-dflt' + (filt==='plastic'?' active':'') + '" onclick="_vrSetDistFilter(\'plastic\')">Plastic</button>'
     + '</div>'
-    + '<div class="vr3-dist-filt">'
-    + '<button class="vr3-dflt' + (filt==='all'    ?' active':'') + '" onclick="_vrSetDistFilter(\'all\')">All</button>'
-    + '<button class="vr3-dflt' + (filt==='metal'  ?' active':'') + '" onclick="_vrSetDistFilter(\'metal\')">Metal</button>'
-    + '<button class="vr3-dflt' + (filt==='plastic'?' active':'') + '" onclick="_vrSetDistFilter(\'plastic\')">Plastic</button>'
-    + '</div></div>'
-    + '<div class="vr3-mat-summary">'
-    + '<div class="vr3-ms"><div class="vr3-ms-dot" style="background:#049769;width:12px;height:12px"></div>'
-    + '<div class="vr3-ms-body"><div class="vr3-ms-lbl">Metal</div>'
-    + '<div class="vr3-ms-score">' + (avgOf(matR(vr,'metal'))!=null?avgOf(matR(vr,'metal')).toFixed(1):'—') + '<span>/10</span></div>'
-    + '<div class="vr3-ms-sub">' + matR(vr,'metal').length + ' rated</div></div></div>'
-    + '<div class="vr3-ms"><div class="vr3-ms-dot" style="background:#8460D4;width:12px;height:12px"></div>'
-    + '<div class="vr3-ms-body"><div class="vr3-ms-lbl">Plastic</div>'
-    + '<div class="vr3-ms-score">' + (avgOf(matR(vr,'plastic'))!=null?avgOf(matR(vr,'plastic')).toFixed(1):'—') + '<span>/10</span></div>'
-    + '<div class="vr3-ms-sub">' + matR(vr,'plastic').length + ' rated</div></div></div>'
     + '</div>'
     + distHtml
     + '</div>'
 
-    // Key Takeaway
-    + '<div class="vr3-takeaway">'
-    + '<div class="vr3-ta-ic">&#128161;</div>'
-    + '<div class="vr3-ta-body">'
-    + '<div class="vr3-ta-title">Key Takeaway</div>'
-    + (txnDelta!=null
-        ? '<div class="vr3-ta-delta" style="color:' + (txnDelta>=0?'#005DFF':'#D70015') + '">'
-          + (txnDelta>=0?'+':'') + txnDelta.toFixed(1) + ' points</div>'
-          + '<div class="vr3-ta-text">Transaction vendors have a '
-          + (txnDelta>=0?'<b>higher</b>':'<b>lower</b>') + ' average rating than the overall seller base.'
-          + ' Vendors with completed transactions tend to have better compliance and operational performance.'
-          + '</div>'
-        : '<div class="vr3-ta-text">Enable transaction tracking to compare the rating profile of transacting vs. non-transacting sellers.</div>')
-    + '</div></div>'
-
-  + '</div>';
-
-  host.innerHTML = html;
-}
-
-// ══════════════════════════════════════════════════════════════════
-// ONBOARDED VIA EXCEPTION MODULE
-// ══════════════════════════════════════════════════════════════════
-function renderExceptionSkeleton() {
-  var host = document.getElementById('tab-exception');
-  if (!host) return;
-  host.innerHTML = '<div class="mod-skel" style="padding:24px 28px">'
-    + '<div class="mod-skel-row"><div class="mod-skel-block" style="height:80px;flex:1"></div>'
-    + '<div class="mod-skel-block" style="height:80px;flex:1"></div>'
-    + '<div class="mod-skel-block" style="height:80px;flex:1"></div>'
-    + '<div class="mod-skel-block" style="height:80px;flex:1"></div></div>'
-    + '<div class="mod-skel-row"><div class="mod-skel-block" style="height:260px;flex:1"></div>'
-    + '<div class="mod-skel-block" style="height:260px;flex:1"></div></div>'
-    + '<div class="mod-skel-block" style="height:70px"></div>'
-    + '</div>';
-}
-
-function loadExceptionData() {
-  if (_EXC) { renderExceptionDash(); return; }
-  if (_excLoading) return;
-  _excLoading = true;
-  google.script.run
-    .withSuccessHandler(function(raw) {
-      _excLoading = false;
-      try { _EXC = JSON.parse(raw); } catch(e) { _EXC = { success: false, error: 'Parse error' }; }
-      if (currentView === 'exception') renderExceptionDash();
-    })
-    .withFailureHandler(function(err) {
-      _excLoading = false;
-      if (currentView !== 'exception') return;
-      var host = document.getElementById('tab-exception');
-      if (host) host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Failed to load: ' + esc(String(err)) + '</div>';
-    })
-    .getCompliantOnboardingData();
-}
-
-function renderExceptionDash() {
-  var host = document.getElementById('tab-exception');
-  if (!host || !_EXC) return;
-  if (!_EXC.success) {
-    host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Error: ' + esc(_EXC.error||'Unknown') + '</div>';
-    return;
-  }
-
-  var total     = _EXC.total     || 0;
-  var compliant = _EXC.compliant || 0;
-  var excCount  = _EXC.exceptions || 0;
-  var excRows   = _EXC.exceptionRows || [];
-  var excPct    = total > 0 ? (excCount/total*100).toFixed(1) : '0.0';
-  var compPct   = total > 0 ? (compliant/total*100).toFixed(1) : '0.0';
-
-  function fmtN(v) { return (v||0).toLocaleString('en-IN'); }
-
-  function kpi(bgHex, icon, lbl, val, sub) {
-    return '<div class="vex-kpi">'
-      + '<div class="vex-kpi-ic" style="background:' + bgHex + '">' + icon + '</div>'
-      + '<div>'
-      + '<div class="vex-kpi-lbl">' + lbl + '</div>'
-      + '<div class="vex-kpi-val">' + val + '</div>'
-      + '<div class="vex-kpi-sub">' + sub + '</div>'
-      + '</div></div>';
-  }
-
-  // Exception vendor list HTML
-  var vendorListHtml = excRows.length > 0
-    ? excRows.slice(0, 15).map(function(r) {
-        var initial = String(r.name || r.id || '?').charAt(0).toUpperCase();
-        return '<div class="vex-vendor-item">'
-          + '<div class="vex-vendor-avatar">' + esc(initial) + '</div>'
-          + '<div style="min-width:0;flex:1">'
-          + '<div class="vex-vendor-name">' + esc(r.name || '—') + '</div>'
-          + (r.id ? '<div class="vex-vendor-id">ID: ' + esc(r.id) + '</div>' : '')
-          + '</div></div>';
-      }).join('')
-      + (excRows.length > 15
-          ? '<div style="padding:10px 0 0;font-size:11.5px;color:var(--txt3)">+ ' + (excRows.length-15) + ' more vendors pending scoring</div>'
-          : '')
-    : '<div style="padding:16px 0;text-align:center;color:var(--txt3);font-size:13px">No exception vendors found.</div>';
-
-  // Scoring progress bar
-  var progW = total > 0 ? Math.round(compliant/total*100) : 0;
-
-  host.innerHTML = '<div class="vex-wrap">'
-    + '<div class="vex-hdr">'
-    + '<div class="vex-hdr-left">'
-    + '<div class="vex-hdr-icon">&#9888;</div>'
-    + '<div><div class="vex-hdr-title">Onboarded via Exception</div>'
-    + '<div class="vex-hdr-sub">Vendors onboarded outside the standard scoring assessment — pending quality evaluation in the Scoring &amp; OSV Tracker.</div>'
-    + '</div></div>'
-    + '<div class="vex-info">&#9432; Exception = vendor onboarded without completed scoring</div>'
+    + '<div class="vr2-insight" style="background:#0f2d4a;border:none;color:#fff;padding:16px 20px">'
+    + '<div style="display:flex;align-items:flex-start;gap:14px">'
+    + '<div style="font-size:20px;margin-top:1px">&#128161;</div>'
+    + '<div style="flex:1">'
+    + '<div style="font-size:13px;font-weight:600;line-height:1.5;margin-bottom:2px">' + insightTxt + '</div>'
     + '</div>'
-
-    + '<div class="vex-kpi-row">'
-    + kpi('#FFF0EB','&#9888;','Total Vendors<br>in Scoring Tracker', '<span style="color:#D70015;font-size:1.8rem;font-weight:800">' + fmtN(total) + '</span>', 'In assessment scope')
-    + kpi('#FDECEB','&#128683;','Pending Scoring<br>(Exception)', '<span style="color:#D70015;font-size:1.8rem;font-weight:800">' + fmtN(excCount) + '</span>', excPct + '% of tracker total')
-    + kpi('#E3F8F1','&#10003;','Scoring Completed<br>(Compliant)', '<span style="color:#049769;font-size:1.8rem;font-weight:800">' + fmtN(compliant) + '</span>', compPct + '% have a score')
-    + kpi('#E6EFFF','&#128200;','Completion Rate', '<span style="color:#005DFF;font-size:1.8rem;font-weight:800">' + compPct + '%</span>', 'of tracker vendors scored')
-    + '</div>'
-
-    + '<div class="vex-body">'
-    + '<div class="vex-list-card">'
-    + '<div class="vex-list-title">Vendors Pending Scoring</div>'
-    + '<div class="vex-list-sub">Vendors in the scoring tracker with no score recorded — awaiting standard quality assessment.</div>'
-    + vendorListHtml
-    + '</div>'
-    + '<div class="vex-progress-card">'
-    + '<div class="vex-prog-title">Scoring Progress</div>'
-    + '<div class="vex-prog-item">'
-    + '<div class="vex-prog-lbl"><span class="vex-prog-name">Scoring Completed</span><span class="vex-prog-val">' + fmtN(compliant) + ' (' + compPct + '%)</span></div>'
-    + '<div class="vex-prog-bar"><div class="vex-prog-fill" style="width:' + progW + '%;background:#049769"></div></div>'
-    + '</div>'
-    + '<div class="vex-prog-item">'
-    + '<div class="vex-prog-lbl"><span class="vex-prog-name">Pending Scoring</span><span class="vex-prog-val">' + fmtN(excCount) + ' (' + excPct + '%)</span></div>'
-    + '<div class="vex-prog-bar"><div class="vex-prog-fill" style="width:' + (100-progW) + '%;background:#D70015"></div></div>'
-    + '</div>'
-    + '<div style="margin-top:20px;padding:14px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--txt2);line-height:1.5">'
-    + '<b style="color:var(--txt)">What is an exception?</b><br>'
-    + 'A vendor is counted as an exception when they appear in the Scoring &amp; OSV Tracker but have no score recorded in the scoring column. '
-    + 'These vendors completed onboarding but have not yet gone through the standard quality scoring assessment.'
+    + '<button class="vr2-ins-cta" onclick="switchView(\'transactions\')" style="border:1.5px solid rgba(255,255,255,.6);color:#fff;background:transparent;white-space:nowrap">View Transacted Sellers &#8594;</button>'
     + '</div>'
     + '</div>'
-    + '</div>'
-
-    + '<div class="vex-insight">'
-    + '<div class="vex-ins-ic">&#128161;</div>'
-    + '<div class="vex-ins-body">'
-    + '<div class="vex-ins-title">Key Insight</div>'
-    + '<div class="vex-ins-pct">' + excPct + '%</div>'
-    + '<div class="vex-ins-text">'
-    + (excCount > 0
-        ? fmtN(excCount) + ' of ' + fmtN(total) + ' vendors in the scoring tracker have not completed standard scoring. '
-          + 'Prioritising their assessment will improve visibility of the overall vendor quality across the onboarded base.'
-        : 'All ' + fmtN(total) + ' vendors in the scoring tracker have completed standard scoring. No exceptions remain.')
-    + '</div></div></div>'
 
   + '</div>';
 }
@@ -15480,7 +14892,6 @@ function showOverview() {
   closeRecordsSheet();
   var doNav = function() {
     document.body.classList.add('view-ov');
-    buildSideNav();   // clear sidebar while on overview
     renderOvScreen();
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
@@ -15505,7 +14916,6 @@ function enterDashboard(vertKey) {
   closeRecordsSheet();
   var doNav = function() {
     document.body.classList.remove('view-ov');
-    buildSideNav();   // build contextual module rail
     window.scrollTo({ top: 0, behavior: 'instant' });
     if (vertKey) {
       _mmVert = vertKey;
@@ -15757,7 +15167,7 @@ function _buildOvKpiCards() {
     ? kpis.avgTAT + '<span style="font-size:.5em;font-weight:600;color:var(--txt2);margin-left:3px">days</span>'
     : '—';
 
-  return card('#005DFF', 'rgba(0,93,255,.08)',   icUsers, 'Total Onboardings', totalVal, dTotal)
+  return card('#005DFF', 'rgba(0,93,255,.08)',   icUsers, 'Total Onboarded', totalVal, dTotal)
        + card('#1DC797', 'rgba(29,199,151,.08)', icCheck, 'Completion Rate',   compVal,  dComp)
        + card('#8460D4', 'rgba(132,96,212,.08)', icClock, 'Average TAT',       tatVal,   dTAT);
 }
