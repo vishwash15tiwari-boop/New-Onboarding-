@@ -12117,9 +12117,7 @@ function buildSideNav() {
     html += '<div class="sn-sect">Standalone</div>';
     html += _snStandaloneBtns(isGST, isTXN, isOSV);
     nav.innerHTML = html;
-    // Hide mind-map column grid; panel takes full width in this mode.
-    var _t = document.getElementById('tab-overview');
-    if (_t) _t.classList.add('sn-vert-active');
+    _snMmNav(false);   // keep columns hidden while in drill-down mode
     return;
   }
 
@@ -12150,10 +12148,6 @@ function buildSideNav() {
   html += '<div class="sn-sect">Modules</div>';
   html += _snStandaloneBtns(isGST, isTXN, isOSV);
 
-  // Sync mind-map columns visibility: hide when sidebar is driving navigation.
-  var _tab = document.getElementById('tab-overview');
-  if (_tab) _tab.classList.toggle('sn-vert-active', !!(snVertModKey && isOvw));
-
   nav.innerHTML = html;
 }
 
@@ -12167,7 +12161,14 @@ function _snStandaloneBtns(isGST, isTXN, isOSV) {
       + '<span class="sn-gst-ic" style="font-size:11px">✓</span><span class="sn-gst-lbl">OSV Status</span></button>';
 }
 
-// Level 1: reset to Overview.
+// Shows or hides the mind-map column grid (#mm-nav).
+// In Level 2/3 the sidebar owns navigation; the columns are redundant.
+function _snMmNav(show) {
+  var el = document.getElementById('mm-nav');
+  if (el) el.style.display = show ? '' : 'none';
+}
+
+// Level 1: reset to Overview — restore the mind-map columns.
 function snGoOverview() {
   if (currentView !== 'onboarding') switchView('onboarding');
   snActiveKey   = null;
@@ -12175,29 +12176,34 @@ function snGoOverview() {
   snModActive   = null;
   snSubActive   = null;
   activeVertKey = null;
+  _snMmNav(true);                                       // show columns
   if (typeof mmPath !== 'undefined') mmPath = ['root'];
   mmPaint();
   buildSideNav();
 }
 
-// Level 1 → Level 2: click a vertical → enter module drill-down for that vertical.
+// Level 1 → Level 2: click a vertical → hide columns, enter drill-down.
 function snSelectVert(key) {
   if (currentView !== 'onboarding') switchView('onboarding');
   snActiveKey   = key;
   snVertModKey  = key;
   snModActive   = null;
   snSubActive   = null;
-  if (typeof mmClickNode === 'function') mmClickNode('root/' + key);
+  _snMmNav(false);                                      // hide columns immediately
+  // Load vertical data + rebuild tree without navigating the columns grid.
+  if (typeof selectVertTab === 'function') selectVertTab(key);
+  if (typeof mmPath !== 'undefined') mmPath = ['root'];
   buildSideNav();
 }
 
-// Back from Level 2 → Level 1.
+// Back from Level 2 → Level 1 — restore mind-map columns.
 function snBackToVerticals() {
   snVertModKey  = null;
   snModActive   = null;
   snActiveKey   = null;
   snSubActive   = null;
   activeVertKey = null;
+  _snMmNav(true);                                       // show columns
   if (typeof mmPath !== 'undefined') mmPath = ['root'];
   mmPaint();
   buildSideNav();
