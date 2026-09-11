@@ -3128,6 +3128,14 @@ body.view-gst #mm-crumbs{display:none}
 .mmn.vd.in:hover{box-shadow:0 16px 32px -16px rgba(0,93,255,.7);border-color:var(--blue);transform:translateY(-2px)}
 @media(prefers-reduced-motion:reduce){.mmn{opacity:1!important;transform:none!important}}
 
+/* ── Modules-only focus view — entered via overview vertical-card click ──
+   Hides the Central Onboarding node column and Business Verticals column,
+   showing only the Modules column so the user can dive straight in.
+   The full tree stagger-animates back the moment a module is clicked. */
+#mm.mm-ov-entry > .mmcol:not(:last-of-type),
+#mm.mm-ov-entry > .mmcolgap,
+#mm.mm-ov-entry > .mm-svg{display:none!important}
+
 /* ── Workspace split: navigation (left) + detail canvas (right, parallel) ── */
 .mmworkspace{display:flex;align-items:flex-start;justify-content:center;gap:0}
 /* Nav shrinks to its own content; centred by default so the dashboard card
@@ -6598,6 +6606,11 @@ function _mmCloseInline() {
 }
 
 function mmClickNode(id) {
+  // If arriving from the overview, reveal the full tree before processing the click.
+  // _mmAnimateReveal is already true from the selectVertTab/renderBranchNav call,
+  // so the Central + Verticals columns stagger back in alongside the module detail.
+  var _mmEl = document.getElementById('mm');
+  if (_mmEl) _mmEl.classList.remove('mm-ov-entry');
   var node = mmFindById(id); if (!node) return;
   // Geographic Split module → immediately open full India map (all regions).
   if (node.geoModule) {
@@ -14914,6 +14927,10 @@ function enterDashboard(vertKey) {
         _mmAnimateReveal = true;
         renderBranchNav(vertKey);
       }
+      // Show only the Modules column on arrival — Central + Verticals columns
+      // are hidden until the user clicks a module (mmClickNode removes this class).
+      var mmEl = document.getElementById('mm');
+      if (mmEl) mmEl.classList.add('mm-ov-entry');
     }
   };
   document.documentElement.setAttribute('data-nav', 'enter');
