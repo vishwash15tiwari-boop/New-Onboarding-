@@ -4691,6 +4691,9 @@ function scheduleNextRefresh() {
 function refreshActive(silent) {
   if (currentView === 'gst') { loadGSTData(silent); return; }
   if (currentView === 'exception') { _EXC = null; _excLoading = false; renderExceptionSkeleton(); loadExceptionData(); return; }
+  if (currentView === 'osv') { _OSV = null; _osvLoading = false; loadOSVData(); return; }
+  if (currentView === 'vendorratings') { qualityData = null; qualityLoading = false; loadQualityData(); return; }
+  if (currentView === 'transactions') { _TXN_MOD = null; _txnModLoading = false; renderTransactionSkeleton(); loadTransactionData(); return; }
   loadData(silent);
 }
 
