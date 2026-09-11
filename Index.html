@@ -3920,11 +3920,23 @@ body.view-ov #ov-screen{display:block}
 /* Tooltip */
 .ov-tooltip{position:fixed;z-index:9000;background:rgba(29,29,31,.92);color:#fff;border-radius:10px;padding:10px 14px;font-size:11px;line-height:1.65;pointer-events:none;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 4px 20px rgba(0,0,0,.28);display:none;min-width:130px;font-family:inherit}
 
-/* Donut legend */
+/* Donut legend — legacy (kept for safety) */
 .ov-donut-legend-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px}
 .ov-donut-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .ov-donut-legend-name{font-size:11px;color:var(--txt2);font-weight:500;flex:1}
 .ov-donut-legend-pct{font-size:11.5px;font-weight:700;color:var(--txt);min-width:36px;text-align:right;flex-shrink:0}
+
+/* Interactive donut legend (new) */
+.ov-dl-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 8px;border-radius:8px;
+  cursor:default;transition:background .13s;
+}
+.ov-dl-row:hover{background:var(--bg2)}
+.ov-dl-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.ov-dl-name{font-size:11.5px;color:var(--txt2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-dl-count{font-size:12px;font-weight:700;color:var(--txt);white-space:nowrap}
+.ov-dl-pct{font-size:11px;font-weight:700;white-space:nowrap;min-width:30px;text-align:right}
 
 /* Business verticals grid */
 .ov-verts-hdr{display:flex;align-items:center;margin-bottom:7px}
@@ -15200,55 +15212,128 @@ function renderOvDonut() {
     el.innerHTML = '<div style="text-align:center;padding:48px 0;color:var(--txt3);font-size:13px">No data available</div>';
     return;
   }
-  var segs = [
-    { label: 'Onboarded', val: st.comp,  color: '#005DFF' },
-    { label: 'In Review',  val: st.inRev, color: '#1DC797' },
-    { label: 'Draft',      val: st.draft, color: '#8460D4' },
-    { label: 'Rejected',   val: st.rej,   color: '#D70015' },
-  ].filter(function(s) { return s.val > 0; });
 
-  var R = 46, CX = 60, CY = 60, SW = 13;
-  var circ = 2 * Math.PI * R;
-  var angleAccum = -90;
-  var arcs = segs.map(function(s) {
-    var pct   = s.val / st.total;
-    var dash  = pct * circ - 1.2;
-    var gap   = circ - dash;
-    var rot   = angleAccum;
-    angleAccum += pct * 360;
-    return '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '"'
-      + ' fill="none" stroke="' + s.color + '" stroke-width="' + SW + '"'
-      + ' stroke-dasharray="' + Math.max(0, dash).toFixed(2) + ' ' + gap.toFixed(2) + '"'
-      + ' stroke-linecap="butt"'
-      + ' transform="rotate(' + rot + ' ' + CX + ' ' + CY + ')"/>';
+  var segs = [
+    { label:'Onboarded', val:st.comp,  color:'#005DFF' },
+    { label:'In Review',  val:st.inRev, color:'#1DC797' },
+    { label:'Draft',      val:st.draft, color:'#8460D4' },
+    { label:'Rejected',   val:st.rej,   color:'#D70015' },
+  ].filter(function(s){ return s.val > 0; });
+
+  window._ovDonutSegs  = segs;
+  window._ovDonutTotal = st.total;
+
+  var CX = 60, CY = 60, R_OUT = 50, R_IN = 34;
+  var GAP = segs.length > 1 ? 2.5 : 0;
+  var angleAccum = 0;
+
+  function arcPath(a0, a1) {
+    if (a1 - a0 >= 360) a1 = a0 + 359.99;
+    var rad = function(d){ return (d - 90) * Math.PI / 180; };
+    var s = rad(a0), e = rad(a1), lg = (a1 - a0) > 180 ? 1 : 0;
+    var p = function(r, ang){ return [CX + r * Math.cos(ang), CY + r * Math.sin(ang)]; };
+    var o0 = p(R_OUT, s), o1 = p(R_OUT, e), i1 = p(R_IN, e), i0 = p(R_IN, s);
+    return 'M ' + o0[0].toFixed(2) + ' ' + o0[1].toFixed(2)
+      + ' A ' + R_OUT + ' ' + R_OUT + ' 0 ' + lg + ' 1 ' + o1[0].toFixed(2) + ' ' + o1[1].toFixed(2)
+      + ' L ' + i1[0].toFixed(2) + ' ' + i1[1].toFixed(2)
+      + ' A ' + R_IN  + ' ' + R_IN  + ' 0 ' + lg + ' 0 ' + i0[0].toFixed(2) + ' ' + i0[1].toFixed(2)
+      + ' Z';
+  }
+
+  var paths = segs.map(function(s, i) {
+    var sweep = s.val / st.total * 360;
+    var a0 = angleAccum + GAP / 2;
+    var a1 = angleAccum + sweep - GAP / 2;
+    angleAccum += sweep;
+    return '<path d="' + arcPath(a0, a1) + '" fill="' + s.color + '"'
+      + ' data-idx="' + i + '"'
+      + ' style="cursor:pointer;transition:opacity .18s,transform .18s;'
+      + 'transform-origin:' + CX + 'px ' + CY + 'px;transform-box:view-box"'
+      + ' onmouseenter="ovDonutHover(' + i + ')" onmouseleave="ovDonutLeave()"/>';
   }).join('');
 
-  var legend = segs.map(function(s) {
+  var legend = segs.map(function(s, i) {
     var pct = Math.round(s.val / st.total * 100);
-    return '<div class="ov-donut-legend-row">'
-      + '<div style="display:flex;align-items:center;gap:7px">'
-      + '<div class="ov-donut-legend-dot" style="background:' + s.color + '"></div>'
-      + '<span class="ov-donut-legend-name">' + s.label + '</span>'
+    return '<div class="ov-dl-row" data-lidx="' + i + '"'
+      + ' onmouseenter="ovDonutHover(' + i + ')" onmouseleave="ovDonutLeave()">'
+      + '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
+      + '<div class="ov-dl-dot" style="background:' + s.color + '"></div>'
+      + '<span class="ov-dl-name">' + s.label + '</span>'
       + '</div>'
-      + '<span class="ov-donut-legend-pct">' + pct + '%</span>'
+      + '<div style="display:flex;align-items:baseline;gap:8px">'
+      + '<span class="ov-dl-count">' + fmt(s.val) + '</span>'
+      + '<span class="ov-dl-pct" style="color:' + s.color + '">' + pct + '%</span>'
+      + '</div>'
       + '</div>';
   }).join('');
 
   el.innerHTML =
-    '<div style="display:flex;flex-direction:column;align-items:center;gap:12px">'
-    + '<div style="position:relative;width:112px;height:112px;flex-shrink:0">'
-    + '<svg viewBox="0 0 120 120" style="width:112px;height:112px">'
-    + '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="var(--bg2)" stroke-width="' + SW + '"/>'
-    + arcs
+    '<div style="display:flex;flex-direction:column;align-items:center;gap:14px">'
+    + '<div style="position:relative;width:120px;height:120px;flex-shrink:0">'
+    + '<svg id="ov-donut-svg" viewBox="0 0 120 120" style="width:120px;height:120px;overflow:visible">'
+    + '<circle cx="' + CX + '" cy="' + CY + '" r="' + ((R_OUT + R_IN) / 2).toFixed(1) + '"'
+    + ' fill="none" stroke="var(--bg2)" stroke-width="' + (R_OUT - R_IN) + '"/>'
+    + paths
     + '</svg>'
-    + '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">'
-    + '<div style="font-size:18px;font-weight:800;letter-spacing:-.5px;color:var(--txt);line-height:1" data-count="' + st.total + '" data-count-id="ov_health_tot">' + fmt(st.total) + '</div>'
-    + '<div style="font-size:8px;color:var(--txt2);font-weight:500;margin-top:3px;text-align:center;line-height:1.3">Total<br>Onboarded</div>'
+    + '<div id="ov-donut-ctr" style="position:absolute;inset:0;display:flex;flex-direction:column;'
+    + 'align-items:center;justify-content:center;pointer-events:none">'
+    + '<div id="ov-donut-cval" style="font-size:19px;font-weight:800;letter-spacing:-.5px;'
+    + 'color:var(--txt);line-height:1;transition:color .15s"'
+    + ' data-count="' + st.total + '" data-count-id="ov_health_tot">' + fmt(st.total) + '</div>'
+    + '<div id="ov-donut-clbl" style="font-size:8px;color:var(--txt2);font-weight:500;'
+    + 'margin-top:3px;text-align:center;line-height:1.35;transition:color .15s">Total<br>Cases</div>'
     + '</div>'
     + '</div>'
-    + '<div style="width:100%">' + legend + '</div>'
+    + '<div style="width:100%;display:flex;flex-direction:column;gap:1px">' + legend + '</div>'
     + '</div>';
+
   animateCounters(el);
+}
+
+function ovDonutHover(idx) {
+  var segs  = window._ovDonutSegs  || [];
+  var total = window._ovDonutTotal || 0;
+  var s = segs[idx];
+  if (!s) return;
+  var pct = total > 0 ? Math.round(s.val / total * 100) : 0;
+
+  var cval = document.getElementById('ov-donut-cval');
+  var clbl = document.getElementById('ov-donut-clbl');
+  if (cval) { cval.textContent = fmt(s.val); cval.style.color = s.color; }
+  if (clbl) { clbl.innerHTML = s.label + '<br>' + pct + '%'; clbl.style.color = s.color; }
+
+  var svg = document.getElementById('ov-donut-svg');
+  if (svg) svg.querySelectorAll('path').forEach(function(p, i) {
+    p.style.opacity   = (i === idx) ? '1'         : '0.2';
+    p.style.transform = (i === idx) ? 'scale(1.07)' : 'scale(1)';
+  });
+
+  document.querySelectorAll('.ov-dl-row').forEach(function(r) {
+    var active = parseInt(r.dataset.lidx, 10) === idx;
+    r.style.background = active ? 'var(--bg2)' : '';
+    var nameEl = r.querySelector('.ov-dl-name');
+    if (nameEl) nameEl.style.color = active ? 'var(--txt)' : '';
+  });
+}
+
+function ovDonutLeave() {
+  var total = window._ovDonutTotal || 0;
+  var cval  = document.getElementById('ov-donut-cval');
+  var clbl  = document.getElementById('ov-donut-clbl');
+  if (cval) { cval.textContent = fmt(total); cval.style.color = ''; }
+  if (clbl) { clbl.innerHTML = 'Total<br>Cases'; clbl.style.color = ''; }
+
+  var svg = document.getElementById('ov-donut-svg');
+  if (svg) svg.querySelectorAll('path').forEach(function(p) {
+    p.style.opacity   = '1';
+    p.style.transform = 'scale(1)';
+  });
+
+  document.querySelectorAll('.ov-dl-row').forEach(function(r) {
+    r.style.background = '';
+    var nameEl = r.querySelector('.ov-dl-name');
+    if (nameEl) nameEl.style.color = '';
+  });
 }
 
 function renderOvVerts() {
