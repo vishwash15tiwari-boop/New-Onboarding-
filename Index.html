@@ -3246,6 +3246,11 @@ body.view-gst #mm-crumbs{display:none}
 .mmworkspace.has-panel .mmdetail{flex:1 1 auto;flex-basis:clamp(520px,54%,900px);opacity:1;
   position:sticky;top:12px;max-height:calc(100vh - 26px);overflow-y:auto;overflow-x:hidden;
   scrollbar-width:thin}
+
+/* Sidebar vertical-drill mode: hide the columns grid; panel takes full width */
+#tab-overview.sn-vert-active .mmnav{display:none}
+#tab-overview.sn-vert-active .mmworkspace.has-panel{gap:0}
+#tab-overview.sn-vert-active .mmworkspace.has-panel .mmdetail{flex-basis:100%;max-width:100%}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar{width:8px}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
 /* inside the side canvas the panels are simply shown/hidden — the canvas slide is the reveal */
@@ -12112,6 +12117,9 @@ function buildSideNav() {
     html += '<div class="sn-sect">Standalone</div>';
     html += _snStandaloneBtns(isGST, isTXN, isOSV);
     nav.innerHTML = html;
+    // Hide mind-map column grid; panel takes full width in this mode.
+    var _t = document.getElementById('tab-overview');
+    if (_t) _t.classList.add('sn-vert-active');
     return;
   }
 
@@ -12141,6 +12149,10 @@ function buildSideNav() {
   html += '<div class="sn-sep"></div>';
   html += '<div class="sn-sect">Modules</div>';
   html += _snStandaloneBtns(isGST, isTXN, isOSV);
+
+  // Sync mind-map columns visibility: hide when sidebar is driving navigation.
+  var _tab = document.getElementById('tab-overview');
+  if (_tab) _tab.classList.toggle('sn-vert-active', !!(snVertModKey && isOvw));
 
   nav.innerHTML = html;
 }
