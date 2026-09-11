@@ -3016,6 +3016,22 @@ body.view-ov #side-nav{display:none!important}
 }
 .sn-ctx-mod.active .sn-ctx-mod-dot{background:var(--blue)}
 
+/* Icon-based module buttons */
+.sn-ctx-mod-ic{
+  width:16px;height:16px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--txt3);transition:color .12s;
+}
+.sn-ctx-mod-ic svg{width:16px;height:16px}
+.sn-ctx-mod.active .sn-ctx-mod-ic{color:var(--blue)}
+.sn-ctx-mod:hover .sn-ctx-mod-ic{color:var(--txt)}
+.sn-ctx-mod-lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sn-ctx-mod-badge{
+  font-size:9px;font-weight:600;color:var(--txt3);
+  background:var(--border);border-radius:99px;
+  padding:1px 6px;flex-shrink:0;letter-spacing:.02em;
+}
+
 .sn-ctx-help{
   margin-top:auto;padding:14px 16px;
   border-top:1px solid var(--border);
@@ -12392,6 +12408,29 @@ var snActiveKey = null;    // which vertical's section is active (scroll spy)
 var snVertsOpen = false;   // sidebar verticals list collapsed by default
 var _scrollSpyObs = null;  // IntersectionObserver instance for scroll spy
 
+// Open a mind-map inline panel from the sidebar; navigates to onboarding view first if needed.
+function snOpenPanel(panel) {
+  var doOpen = function() {
+    if (panel === 'funnel') {
+      mmGeoActive = false; mmModActive = false;
+      mmFunnelActive = true; mmPaint();
+    } else if (panel === 'geo') {
+      mmFunnelActive = false; mmModActive = false;
+      mmGeoOpen('All');
+    } else if (panel === 'mod') {
+      mmFunnelActive = false; mmGeoActive = false;
+      mmModActive = true; _mmModAnimate = true; mmPaint();
+    }
+    buildSideNav();
+  };
+  if (currentView === 'onboarding') {
+    doOpen();
+  } else {
+    enterDashboard(activeVertKey || 'OMP');
+    setTimeout(doOpen, 450);
+  }
+}
+
 function buildSideNav() {
   var nav = document.getElementById('side-nav');
   if (!nav) return;
@@ -12427,26 +12466,40 @@ function buildSideNav() {
   // ── Modules ──
   html += '<div class="sn-ctx-sect">Modules</div>';
 
-  var isOnb = cv === 'onboarding';
-  var isTxn = cv === 'transactions';
-  var isVR  = cv === 'vendorratings';
-  var isOSV = cv === 'osv';
-  var isExc = cv === 'exception';
-  var isGST = cv === 'gst';
+  var isOnb   = cv === 'onboarding' && !mmFunnelActive && !mmGeoActive && !mmModActive;
+  var isBreak = cv === 'onboarding' && mmFunnelActive;
+  var isGeo   = cv === 'onboarding' && mmGeoActive;
+  var isTxn   = cv === 'transactions';
+  var isVR    = cv === 'vendorratings';
+  var isOSV   = cv === 'osv';
+  var isMod   = cv === 'onboarding' && mmModActive;
 
-  function mod(lbl, active, onclick) {
+  function mod(lbl, icon, active, onclick, badge) {
     return '<button class="sn-ctx-mod' + (active ? ' active' : '') + '" onclick="' + onclick + '">'
-      + '<span class="sn-ctx-mod-dot"></span>'
-      + esc(lbl)
+      + '<span class="sn-ctx-mod-ic">' + icon + '</span>'
+      + '<span class="sn-ctx-mod-lbl">' + esc(lbl) + '</span>'
+      + (badge ? '<span class="sn-ctx-mod-badge">' + esc(badge) + '</span>' : '')
       + '</button>';
   }
 
-  html += mod('Onboarded (Details)',         isOnb, 'enterDashboard(\'' + esc(vertKey) + '\')')
-       +  mod('Transaction Activity & OSV',  isOSV, 'switchView(\'osv\')')
-       +  mod('Transactions',                isTxn, 'switchView(\'transactions\')')
-       +  mod('Vendor Ratings',              isVR,  'switchView(\'vendorratings\')')
-       +  mod('Onboarded via Exception',     isExc, 'switchView(\'exception\')')
-       +  mod('GST Payables',                isGST, 'switchView(\'gst\')');
+  var IC_ONBOARD = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="2"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="11" y2="9"/><line x1="5" y1="12" x2="9" y2="12"/></svg>';
+  var IC_BREAKUP = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12l-2.5 4h-7L2 3z"/><path d="M5.5 7l-.7 4h6.4l-.7-4"/><line x1="8" y1="11" x2="8" y2="14"/></svg>';
+  var IC_GEO     = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M2 8h12"/><path d="M8 2c-2 2-3 4-3 6s1 4 3 6"/><path d="M8 2c2 2 3 4 3 6s-1 4-3 6"/></svg>';
+  var IC_TXN     = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h10"/><polyline points="10,3 12,5 10,7"/><path d="M14 11H4"/><polyline points="6,9 4,11 6,13"/></svg>';
+  var IC_VR      = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="8,1.5 10,6 14.5,6.5 11,9.8 12,14.5 8,12 4,14.5 5,9.8 1.5,6.5 6,6"/></svg>';
+  var IC_OSV     = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1L2 4v4c0 3.3 2.5 5.8 6 7 3.5-1.2 6-3.7 6-7V4L8 1z"/><polyline points="5.5,8 7.2,9.8 10.5,6.5"/></svg>';
+  var IC_EXVSNEW = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="4.5" cy="8" r="2.5"/><circle cx="11.5" cy="8" r="2.5"/><line x1="8" y1="4" x2="8" y2="12"/></svg>';
+
+  var vrBadge  = (typeof _vrLoading  !== 'undefined' && _vrLoading)  ? 'Loading…' : '';
+  var osvBadge = (typeof _osvLoading !== 'undefined' && _osvLoading) ? 'Loading…' : '';
+
+  html += mod('Onboarded (Details)', IC_ONBOARD,  isOnb,   'enterDashboard(\'' + esc(vertKey) + '\')')
+       +  mod('Breakup',             IC_BREAKUP,  isBreak, 'snOpenPanel(\'funnel\')')
+       +  mod('Geographic Split',    IC_GEO,      isGeo,   'snOpenPanel(\'geo\')')
+       +  mod('Transactions',        IC_TXN,      isTxn,   'switchView(\'transactions\')')
+       +  mod('Vendor Ratings',      IC_VR,       isVR,    'switchView(\'vendorratings\')',  vrBadge)
+       +  mod('OSV Status',          IC_OSV,      isOSV,   'switchView(\'osv\')',             osvBadge)
+       +  mod('Existing vs New',     IC_EXVSNEW,  isMod,   'snOpenPanel(\'mod\')');
 
   // ── Help footer ──
   html += '<div class="sn-ctx-help"><div class="sn-ctx-help-ic">?</div>'
