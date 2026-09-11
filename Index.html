@@ -4689,8 +4689,11 @@ function scheduleNextRefresh() {
 
 // Reload whichever view is active (manual refresh button + auto-refresh timer).
 function refreshActive(silent) {
-  if (currentView === 'gst') { loadGSTData(silent); return; }
-  if (currentView === 'exception') { _EXC = null; _excLoading = false; renderExceptionSkeleton(); loadExceptionData(); return; }
+  if (currentView === 'gst')           { loadGSTData(silent); return; }
+  if (currentView === 'exception')     { _EXC = null; _excLoading = false; renderExceptionSkeleton(); loadExceptionData(); return; }
+  if (currentView === 'osv')           { _OSV = null; _osvLoading = false; renderOSVSkeleton(); loadOSVData(); return; }
+  if (currentView === 'vendorratings') { _VR = null; _vrLoading = false; renderVendorRatingsSkeleton(); loadVendorRatingsData(); return; }
+  if (currentView === 'transactions')  { _TXN_MOD = null; _txnModLoading = false; renderTransactionSkeleton(); loadTransactionData(); return; }
   loadData(silent);
 }
 
@@ -5063,7 +5066,7 @@ function onPeriodSelect(val) {
   _lastDashHash['combined'] = null;
   _TXN = null; _TXN_MOD = null;
   loadData();
-  if (currentView === 'txndist') renderTxnDist();
+  if (currentView === 'txndist')      renderTxnDist();
   if (currentView === 'transactions') { renderTransactionSkeleton(); loadTransactionData(); }
 }
 
@@ -14477,7 +14480,7 @@ function loadTransactionData() {
     })
     .withFailureHandler(function(err) {
       _txnModLoading = false;
-      if (currentView !== 'transactions' && currentView !== 'osv') return;
+      if (currentView !== 'transactions') return;
       var host = document.getElementById('tab-transactions');
       if (host) host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Failed to load: ' + esc(String(err)) + '</div>';
     })
