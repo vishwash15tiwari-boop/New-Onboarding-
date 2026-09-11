@@ -2740,6 +2740,70 @@ body.view-gst #vert-tabs-bar{display:none}
 .sn-sub.sn-active .sn-sub-dot{opacity:1;background:var(--vc,var(--blue))}
 .sn-sub.sn-active .sn-sub-lbl{color:var(--txt);font-weight:700}
 
+/* Sidebar — back button (vertical drill-down) */
+.sn-back{
+  display:flex;align-items:center;gap:7px;
+  width:100%;padding:7px 12px;
+  border:none;background:transparent;
+  cursor:pointer;font-family:inherit;
+  border-radius:8px;
+  font-size:11.5px;font-weight:600;color:var(--txt3);
+  transition:background .13s,color .13s;
+  margin-bottom:2px;
+}
+.sn-back:hover{background:rgba(15,23,32,.05);color:var(--txt2)}
+.sn-back-arr{font-size:14px;line-height:1}
+
+/* Sidebar — vertical identity header (shown in drill-down mode) */
+.sn-vert-id{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 14px 10px;
+}
+.sn-vert-id-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+}
+.sn-vert-id-name{
+  font-size:12.5px;font-weight:800;color:var(--txt);letter-spacing:-.2px;flex:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* Sidebar — module item (in vertical drill-down) */
+.sn-mod{
+  display:flex;align-items:center;gap:9px;
+  width:100%;padding:8px 12px;
+  border:none;background:transparent;
+  cursor:pointer;text-align:left;font-family:inherit;
+  border-radius:10px;
+  transition:background .13s var(--ease);
+}
+.sn-mod:hover{background:rgba(15,23,32,.05)}
+.sn-mod.sn-active{background:var(--accent-soft,rgba(0,93,255,.08))}
+.sn-mod.sn-muted{opacity:.5;pointer-events:none}
+.sn-mod-ic{
+  width:26px;height:26px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  transition:background .13s,color .13s;
+}
+.sn-mod-ic svg{width:14px;height:14px}
+.sn-mod.t-blue  .sn-mod-ic{background:var(--accent-soft);color:var(--blue)}
+.sn-mod.t-green .sn-mod-ic{background:#E3F8F1;color:#049769}
+.sn-mod.t-amber .sn-mod-ic{background:#FFF4E5;color:#B25000}
+.sn-mod.t-purple.sn-mod-ic-wrap .sn-mod-ic{background:#F1ECFB;color:#5B3FA8}
+.sn-mod.t-ink   .sn-mod-ic{background:#EDEDF0;color:var(--txt)}
+.sn-mod.t-red   .sn-mod-ic{background:#FDECEA;color:#D70015}
+.sn-mod.t-purple .sn-mod-ic{background:#F1ECFB;color:#5B3FA8}
+.sn-mod.sn-active .sn-mod-ic{filter:brightness(.95)}
+.sn-mod-body{flex:1;min-width:0}
+.sn-mod-lbl{
+  font-size:12px;font-weight:600;color:var(--txt);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  line-height:1.3;
+}
+.sn-mod.sn-active .sn-mod-lbl{color:var(--blue);font-weight:700}
+.sn-mod-sub{font-size:10px;color:var(--txt3);margin-top:1px;line-height:1}
+.sn-mod-arr{font-size:11px;color:var(--txt3);flex-shrink:0;opacity:.5}
+
 /* Separator */
 .sn-sep{height:1px;background:var(--border);margin:10px 14px;opacity:.6}
 
@@ -6502,6 +6566,8 @@ function renderBranchNav(key) {
   mmRenderGeo();
   mmRenderModPanel();
   _mmSyncDetail();
+  // Keep the sidebar module list in sync after the tree is rebuilt.
+  if (typeof buildSideNav === 'function') buildSideNav();
 }
 
 function mmRender() {
@@ -11893,8 +11959,10 @@ function fyShort(fy) { return String(fy || '').replace(/^FY\s*/, ''); }
 // ═══════════════════════════════════════════════════════════════
 // SIDEBAR NAVIGATION
 // ═══════════════════════════════════════════════════════════════
-var snActiveKey = null;    // which vertical's section is active (scroll spy)
-var snVertsOpen = false;   // sidebar verticals list collapsed by default
+var snActiveKey   = null;  // which vertical is active in the sidebar list
+var snVertsOpen   = false; // (legacy collapse toggle — no longer used)
+var snVertModKey  = null;  // when set, sidebar is in vertical-module drill-down mode
+var snModActive   = null;  // node._id of the currently active module in the sidebar
 var _scrollSpyObs = null;  // IntersectionObserver instance for scroll spy
 
 function buildSideNav() {
@@ -11902,21 +11970,64 @@ function buildSideNav() {
   if (!nav) return;
 
   var cfgList = getVertCfg();
-  var isGST   = currentView === 'gst';
-  var isTXN   = currentView === 'txndist';
-  var isOSV   = currentView === 'osv';
-  var isOvw   = !isGST && !isTXN && !isOSV;
+  var isGST = currentView === 'gst';
+  var isTXN = currentView === 'txndist';
+  var isOSV = currentView === 'osv';
+  var isOvw = !isGST && !isTXN && !isOSV;
 
   var html = '';
 
-  // ── Overview ──────────────────────────────────────────────
-  var ovwActive = isOvw && !snActiveKey;
+  // ── VERTICAL DRILL-DOWN MODE ─────────────────────────────
+  if (snVertModKey && isOvw) {
+    var vc    = VERT_COLORS[snVertModKey] || VERT_COLORS.Others;
+    var vcfg  = cfgList.filter(function(c){ return c.key === snVertModKey; })[0] || {};
+    var vNode = typeof mmFindById === 'function' ? mmFindById('root/' + snVertModKey) : null;
+    var mods  = vNode ? (vNode.children || []) : [];
+
+    html += '<button class="sn-back" onclick="snBackToVerticals()">'
+      + '<span class="sn-back-arr">‹</span> All Verticals'
+      + '</button>';
+
+    html += '<div class="sn-vert-id">'
+      + '<div class="sn-vert-id-dot" style="background:' + vc.c + '"></div>'
+      + '<span class="sn-vert-id-name" style="color:' + vc.c + '">' + esc(vcfg.name || snVertModKey) + '</span>'
+      + '</div>';
+
+    html += '<div class="sn-sect" style="padding-top:0">Modules</div>';
+
+    if (mods.length) {
+      mods.forEach(function(m) {
+        var isActive = !!(snModActive && snModActive === m._id);
+        var isMuted  = !!(m.muted);
+        var tone     = m.tone || 't-ink';
+        html += '<button class="sn-mod ' + tone + (isActive ? ' sn-active' : '') + (isMuted ? ' sn-muted' : '') + '"'
+          + ' onclick="snClickModule(\'' + esc(m._id || '') + '\')">'
+          + '<span class="sn-mod-ic">' + (m.ic || '') + '</span>'
+          + '<span class="sn-mod-body">'
+          + '<span class="sn-mod-lbl">' + esc(m.t) + '</span>'
+          + (m.s ? '<span class="sn-mod-sub">' + esc(m.s) + '</span>' : '')
+          + '</span>'
+          + '<span class="sn-mod-arr">›</span>'
+          + '</button>';
+      });
+    } else {
+      html += '<div style="padding:10px 14px;font-size:11px;color:var(--txt3)">Loading…</div>';
+    }
+
+    html += '<div class="sn-sep" style="margin-top:auto"></div>';
+    html += '<div class="sn-sect">Standalone</div>';
+    html += _snStandaloneBtns(isGST, isTXN, isOSV);
+    nav.innerHTML = html;
+    return;
+  }
+
+  // ── DEFAULT MODE: Overview + Verticals list + Standalone modules ──
+  var ovwActive = isOvw && !snActiveKey && !snVertModKey;
   html += '<button class="sn-grp' + (ovwActive ? ' sn-active' : '') + '" onclick="snGoOverview()">'
     + '<span class="sn-grp-ic" style="font-size:14px">⊞</span>'
     + '<span class="sn-grp-lbl">Overview</span>'
     + '</button>';
 
-  // ── Verticals ─────────────────────────────────────────────
   html += '<div class="sn-sep"></div>';
   html += '<div class="sn-sect">Verticals</div>';
   html += '<div class="sn-subs sn-open">';
@@ -11933,49 +12044,64 @@ function buildSideNav() {
   });
   html += '</div>';
 
-  // ── Modules ───────────────────────────────────────────────
   html += '<div class="sn-sep"></div>';
   html += '<div class="sn-sect">Modules</div>';
-
-  html += '<button class="sn-gst' + (isGST ? ' sn-active' : '') + '" onclick="switchView(\'gst\')">'
-    + '<span class="sn-gst-ic">₹</span>'
-    + '<span class="sn-gst-lbl">GST Payables</span>'
-    + '</button>';
-
-  html += '<button class="sn-gst' + (isTXN ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'txndist\')">'
-    + '<span class="sn-gst-ic" style="font-size:11px">⇄</span>'
-    + '<span class="sn-gst-lbl">Txn Distribution</span>'
-    + '</button>';
-
-  html += '<button class="sn-gst' + (isOSV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'osv\')">'
-    + '<span class="sn-gst-ic" style="font-size:11px">✓</span>'
-    + '<span class="sn-gst-lbl">OSV Status</span>'
-    + '</button>';
-
-  // ── Marketplace Transactions ────────────────────────────────
-  var isTxnV = currentView === 'transactions';
-  html += '<button class="sn-gst' + (isTxnV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'transactions\')">'
-    + '<span class="sn-gst-ic" style="font-size:11px">↔</span>'
-    + '<span class="sn-gst-lbl">Transactions</span>'
-    + '</button>';
-
-  // ── Vendor Ratings ──────────────────────────────────────────
-  var isVRV = currentView === 'vendorratings';
-  html += '<button class="sn-gst' + (isVRV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'vendorratings\')">'
-    + '<span class="sn-gst-ic" style="font-size:11px">★</span>'
-    + '<span class="sn-gst-lbl">Vendor Ratings</span>'
-    + '</button>';
+  html += _snStandaloneBtns(isGST, isTXN, isOSV);
 
   nav.innerHTML = html;
+}
+
+// Shared GST / TXN / OSV buttons used in both sidebar modes.
+function _snStandaloneBtns(isGST, isTXN, isOSV) {
+  return '<button class="sn-gst' + (isGST ? ' sn-active' : '') + '" onclick="switchView(\'gst\')">'
+      + '<span class="sn-gst-ic">₹</span><span class="sn-gst-lbl">GST Payables</span></button>'
+    + '<button class="sn-gst' + (isTXN ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'txndist\')">'
+      + '<span class="sn-gst-ic" style="font-size:11px">⇄</span><span class="sn-gst-lbl">Txn Distribution</span></button>'
+    + '<button class="sn-gst' + (isOSV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'osv\')">'
+      + '<span class="sn-gst-ic" style="font-size:11px">✓</span><span class="sn-gst-lbl">OSV Status</span></button>';
 }
 
 // Resets to the Overview (root mind-map state).
 function snGoOverview() {
   if (currentView !== 'onboarding') switchView('onboarding');
-  snActiveKey   = null;
+  snActiveKey  = null;
+  snVertModKey = null;
+  snModActive  = null;
   activeVertKey = null;
   if (typeof mmPath !== 'undefined') mmPath = ['root'];
   if (typeof renderMM === 'function') renderMM();
+  buildSideNav();
+}
+
+// Click a vertical in the list → enter drill-down mode showing its modules.
+function snSelectVert(key) {
+  if (currentView !== 'onboarding') switchView('onboarding');
+  snActiveKey  = key;
+  snVertModKey = key;
+  snModActive  = null;
+  // Navigate the mind-map to this vertical (triggers data load + renderMM).
+  if (typeof mmClickNode === 'function') {
+    mmClickNode('root/' + key);
+  }
+  buildSideNav();
+}
+
+// Back button in drill-down mode → return to the full vertical list.
+function snBackToVerticals() {
+  snVertModKey = null;
+  snModActive  = null;
+  snActiveKey  = null;
+  // Reset mind-map to root overview.
+  if (typeof mmPath !== 'undefined') mmPath = ['root'];
+  if (typeof renderMM === 'function') renderMM();
+  buildSideNav();
+}
+
+// Click a module item in the drill-down sidebar → open it in the mind-map detail panel.
+function snClickModule(nodeId) {
+  if (!nodeId) return;
+  snModActive = nodeId;
+  if (typeof mmClickNode === 'function') mmClickNode(nodeId);
   buildSideNav();
 }
 
@@ -11983,12 +12109,6 @@ function snGoOverview() {
 function snSelectGroup(aud) {
   snActiveKey = null;
   switchAudience(aud);
-}
-
-// Called when a vertical sub-item is clicked — opens the detail panel.
-function snSelectVert(key) {
-  snActiveKey = key;
-  openVertDetail(key);
 }
 
 // IntersectionObserver scroll spy — highlights the sidebar item matching the
