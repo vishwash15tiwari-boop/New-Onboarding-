@@ -12077,9 +12077,8 @@ function snGoOverview() {
 function snSelectVert(key) {
   if (currentView !== 'onboarding') switchView('onboarding');
   snActiveKey  = key;
-  snVertModKey = key;
   snModActive  = null;
-  // Navigate the mind-map to this vertical (triggers data load + renderMM).
+  // Navigate the mind-map to this vertical (modules shown there, not in sidebar).
   if (typeof mmClickNode === 'function') {
     mmClickNode('root/' + key);
   }
