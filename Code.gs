@@ -3062,7 +3062,7 @@ function getQualityData() {
   // vendors primarily by NORMALISED NAME (OMP sellers carry no GSTIN in the feed and use
   // a different id space than the score sheet), which is what makes the numbers appear.
   // Bumped so no stale v10-v13 payload (old source / all-unrated) survives the deploy.
-  var CACHE_KEY = 'quality_data_v18';
+  var CACHE_KEY = 'quality_data_v19';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -3220,7 +3220,8 @@ function getQualityData() {
             rating:           Math.round(sv * 10) / 10,
             onboardingStatus: omp.onboardingStatus,
             category:         omp.category,
-            aud:              aud
+            aud:              aud,
+            hasTransacted:    omp.hasTransacted || false
           });
         }
 
@@ -3538,7 +3539,7 @@ function buildQualityIdSet_(sheetName, idCols) {
   return set;
 }
 
-// Returns { id: { name, gstin, category, onboardingStatus } } for OMP-onboarded sellers.
+// Returns { id: { name, gstin, category, onboardingStatus, hasTransacted } } for OMP-onboarded sellers.
 function buildOmpOnboardedMap_() {
   var sheet = null;
   if (CONFIG.META_SHEET_ID) {
@@ -3560,6 +3561,9 @@ function buildOmpOnboardedMap_() {
   var catC = fc(['business_category','category','vertical_category','cat']);
   var bvC  = fc(['business_vertical','vertical','biz_vertical']);
   var stC  = fc(['onboarding_status','status','onboard_status']);
+  var txnC = fc(['transaction_activation_status','transacted','is_transacted','transaction_status','txn_status']);
+  var gmvC = fc(['lifetimevalue','lifetime_value','gmv','transaction_value','txn_value','total_transaction_value','first_transaction_value','order_value']);
+  var _txnPos = { 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 };
   if (idC < 0) return {};
   var map = {};
   vals.slice(1).forEach(function(row) {
@@ -3568,14 +3572,16 @@ function buildOmpOnboardedMap_() {
     var st = stC >= 0 ? String(row[stC] || '').trim().toUpperCase()  : '';
     if (bv.indexOf('open marketplace') < 0 && bv.indexOf('open_marketplace') < 0 && bv !== 'omp') return;
     if (st !== 'COMPLETED') return;
+    var txnRaw = txnC >= 0 ? String(row[txnC] || '').toUpperCase().replace(/\s+/g,' ').trim() : '';
+    var gmvN   = gmvC >= 0 ? parseFloat(String(row[gmvC] || '').replace(/[₹$€£¥,\s]/g,'')) : NaN;
+    var hasTransacted = _txnPos[txnRaw] === 1 || (!isNaN(gmvN) && gmvN > 0);
     map[id] = {
       name:             nmC  >= 0 ? String(row[nmC]  || '').trim().slice(0, 60) : '',
       gstin:            gstC >= 0 ? String(row[gstC] || '').trim().slice(0, 20) : '',
       category:         catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
-      // Raw business vertical, kept for the OSV records table. Always an Open
-      // Marketplace value here — the filter above admits nothing else.
       bizVertical:      bvC  >= 0 ? String(row[bvC]  || '').trim().slice(0, 40) : '',
-      onboardingStatus: st
+      onboardingStatus: st,
+      hasTransacted:    hasTransacted
     };
   });
   return map;
@@ -3604,6 +3610,9 @@ function buildOmpGstinMap_(sheetName, aud) {
   var catC = fc(['business_category','category','vertical_category','cat']);
   var bvC  = fc(['business_vertical','vertical','biz_vertical']);
   var stC  = fc(['onboarding_status','status','onboard_status']);
+  var txnC = fc(['transaction_activation_status','transacted','is_transacted','transaction_status','txn_status']);
+  var gmvC = fc(['lifetimevalue','lifetime_value','gmv','transaction_value','txn_value','total_transaction_value','first_transaction_value','order_value']);
+  var _txnPos = { 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 };
   if (gstC < 0) return {};
   var map = {};
   vals.slice(1).forEach(function(row) {
@@ -3612,12 +3621,16 @@ function buildOmpGstinMap_(sheetName, aud) {
     var st = stC >= 0 ? String(row[stC] || '').trim().toUpperCase()  : '';
     if (bv.indexOf('open marketplace') < 0 && bv.indexOf('open_marketplace') < 0 && bv !== 'omp') return;
     if (st !== 'COMPLETED') return;
+    var txnRaw = txnC >= 0 ? String(row[txnC] || '').toUpperCase().replace(/\s+/g,' ').trim() : '';
+    var gmvN   = gmvC >= 0 ? parseFloat(String(row[gmvC] || '').replace(/[₹$€£¥,\s]/g,'')) : NaN;
+    var hasTransacted = _txnPos[txnRaw] === 1 || (!isNaN(gmvN) && gmvN > 0);
     map[gstin] = {
       id:               idC  >= 0 ? String(row[idC]  || '').trim().slice(0, 30) : '',
       name:             nmC  >= 0 ? String(row[nmC]  || '').trim().slice(0, 60) : '',
       category:         catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
       onboardingStatus: st,
-      aud:              aud
+      aud:              aud,
+      hasTransacted:    hasTransacted
     };
   });
   return map;
@@ -3658,6 +3671,9 @@ function buildOmpNameMap_(sheetName, aud) {
   var catC = fc(['business_category','category','vertical_category','cat']);
   var bvC  = fc(['business_vertical','vertical','biz_vertical']);
   var stC  = fc(['onboarding_status','status','onboard_status']);
+  var txnC = fc(['transaction_activation_status','transacted','is_transacted','transaction_status','txn_status']);
+  var gmvC = fc(['lifetimevalue','lifetime_value','gmv','transaction_value','txn_value','total_transaction_value','first_transaction_value','order_value']);
+  var _txnPos = { 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 };
   if (nmC < 0) return {};
   var map = {};
   vals.slice(1).forEach(function(row) {
@@ -3667,13 +3683,17 @@ function buildOmpNameMap_(sheetName, aud) {
     var st = stC >= 0 ? String(row[stC] || '').trim().toUpperCase()  : '';
     if (bv.indexOf('open marketplace') < 0 && bv.indexOf('open_marketplace') < 0 && bv !== 'omp') return;
     if (st !== 'COMPLETED') return;
+    var txnRaw = txnC >= 0 ? String(row[txnC] || '').toUpperCase().replace(/\s+/g,' ').trim() : '';
+    var gmvN   = gmvC >= 0 ? parseFloat(String(row[gmvC] || '').replace(/[₹$€£¥,\s]/g,'')) : NaN;
+    var hasTransacted = _txnPos[txnRaw] === 1 || (!isNaN(gmvN) && gmvN > 0);
     map[key] = {
       id:               idC  >= 0 ? String(row[idC]  || '').trim().slice(0, 30) : '',
       name:             nm.slice(0, 60),
       gstin:            gstC >= 0 ? String(row[gstC] || '').trim().slice(0, 20) : '',
       category:         catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
       onboardingStatus: st,
-      aud:              aud
+      aud:              aud,
+      hasTransacted:    hasTransacted
     };
   });
   return map;
