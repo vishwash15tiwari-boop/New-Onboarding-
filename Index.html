@@ -570,6 +570,7 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .chip-review{background:var(--st-review-bg);color:var(--st-review-tx)}
 .chip-rejected{background:var(--st-rejected-bg);color:var(--st-rejected-tx)}
 .gst-ok{color:var(--st-onboarded-tx);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.gst-warn{color:var(--st-review-tx);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
 .gst-bad{color:var(--st-rejected-tx);font-size:11.5px;font-weight:600}
 /* ===== Detail KPI Mini-Cards ===== */
 .vd-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:22px}
@@ -11004,7 +11005,7 @@ function renderVdTable() {
           + '<td>' + esc(r.category || '—') + '</td>'
           + '<td class="td-dim">' + esc(r.vendorType || '—') + '</td>'
           + '<td>' + statusChip(r.status) + '</td>'
-          + '<td>' + (r.hasGST ? '<span class="gst-ok">' + esc(r.gstin) + '</span>' : '<span class="gst-bad">Missing</span>') + '</td>'
+          + '<td>' + (r.gstin ? (r.hasGST ? '<span class="gst-ok">' + esc(r.gstin) + '</span>' : '<span class="gst-warn">' + esc(r.gstin) + '</span>') : '<span style="color:var(--txt3)">—</span>') + '</td>'
           + '<td class="td-dim">' + esc(r.state || '—') + '</td>'
           + '<td class="td-dim td-num">' + esc(r.createdDate) + '</td>'
           + '<td class="td-dim td-num">' + esc(r.onbDate) + '</td>'
