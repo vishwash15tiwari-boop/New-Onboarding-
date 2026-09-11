@@ -4465,7 +4465,7 @@ function getOSVDashboardData() {
 // Returns monthly onboarding counts (calendar months, last 12) for sellers and buyers.
 // Used exclusively by the Central Onboarding Overview bar chart.
 function getOverviewStats() {
-  var CACHE_KEY = 'overview_v1';
+  var CACHE_KEY = 'overview_v2';  // bumped: now counts onboarded (COMPLETED) cases by onboardedDate
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
   if (hit) return hit;
@@ -4486,9 +4486,12 @@ function getOverviewStats() {
     var buckets = {};
     months.forEach(function(m) { buckets[m.key] = { sellers: 0, buyers: 0, verts: {} }; });
 
+    // Count only COMPLETED (onboarded) cases, bucketed by the date they were onboarded.
     sRows.forEach(function(r) {
-      if (!(r.createdDate instanceof Date) || isNaN(r.createdDate)) return;
-      var k = r.createdDate.getFullYear() + '-' + (r.createdDate.getMonth() + 1);
+      if (r.status !== 'COMPLETED') return;
+      var dt = r.onboardedDate || r.createdDate;
+      if (!(dt instanceof Date) || isNaN(dt)) return;
+      var k = dt.getFullYear() + '-' + (dt.getMonth() + 1);
       if (buckets[k]) {
         buckets[k].sellers++;
         var v = r.vertical || 'Others';
@@ -4496,8 +4499,10 @@ function getOverviewStats() {
       }
     });
     bRows.forEach(function(r) {
-      if (!(r.createdDate instanceof Date) || isNaN(r.createdDate)) return;
-      var k = r.createdDate.getFullYear() + '-' + (r.createdDate.getMonth() + 1);
+      if (r.status !== 'COMPLETED') return;
+      var dt = r.onboardedDate || r.createdDate;
+      if (!(dt instanceof Date) || isNaN(dt)) return;
+      var k = dt.getFullYear() + '-' + (dt.getMonth() + 1);
       if (buckets[k]) {
         buckets[k].buyers++;
         var v = r.vertical || 'Others';
