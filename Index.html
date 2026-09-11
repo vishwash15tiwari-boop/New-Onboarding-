@@ -2669,90 +2669,95 @@ body.view-gst #vert-tabs-bar{display:none}
 #side-nav::-webkit-scrollbar{width:3px}
 #side-nav::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;opacity:.5}
 
-/* Section label */
+/* Section label — Notion: 11px / 600 / uppercase / 0.06em */
 .sn-sect{
-  font-size:9px;font-weight:700;color:var(--txt3);
-  text-transform:uppercase;letter-spacing:1.2px;
-  padding:0 14px 10px;
+  font-size:11px;font-weight:600;color:var(--txt3);
+  text-transform:uppercase;letter-spacing:.06em;
+  padding:0 14px 8px;
+  opacity:.7;
 }
 
-/* Group button (Sellers / Buyers) */
+/* Group button (Overview / top-level nav) — Notion: 14px/500, warm hover */
 .sn-grp{
   display:flex;align-items:center;gap:9px;
-  width:100%;padding:9px 14px;
+  width:100%;padding:8px 12px;
   border:none;background:transparent;
   cursor:pointer;text-align:left;
   font-family:inherit;
-  border-radius:10px;
-  transition:background .15s var(--ease);
+  border-radius:6px;
+  transition:background 80ms ease;
 }
-.sn-grp:hover{background:rgba(15,23,32,.05)}
-.sn-grp.sn-active{background:rgba(0,93,255,.07)}
+.sn-grp:hover{background:rgba(55,53,47,.07)}
+.sn-grp.sn-active{background:rgba(55,53,47,.10)}
 .sn-grp-ic{
-  width:28px;height:28px;border-radius:8px;
+  width:26px;height:26px;border-radius:6px;
   background:var(--bg2);
   display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;color:var(--txt2);
+  font-size:11px;font-weight:600;color:var(--txt2);
   flex-shrink:0;
   transition:background .15s,color .15s;
 }
 .sn-grp.sn-active .sn-grp-ic{background:var(--blue);color:#fff}
-.sn-grp-lbl{flex:1;font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.1px}
+.sn-grp-lbl{flex:1;font-size:13px;font-weight:600;color:var(--txt);letter-spacing:-.1px}
 .sn-grp-arr{
   font-size:11px;color:var(--txt3);line-height:1;
   transition:transform .22s var(--ease-out);
 }
 .sn-grp.sn-open .sn-grp-arr{transform:rotate(90deg)}
 
-/* Sub-list (vertical items under each group) */
+/* Sub-list (vertical items) — Notion: 13px/400, warm hover at 80ms */
 .sn-subs{display:none;flex-direction:column;padding:2px 0 6px;margin:0 6px}
 .sn-subs.sn-open{display:flex}
 .sn-sub{
   display:flex;align-items:center;gap:8px;
-  padding:7px 10px 7px 20px;
+  padding:6px 8px 6px 16px;
   cursor:pointer;border:none;
   background:transparent;text-align:left;
   width:100%;font-family:inherit;
-  border-radius:8px;
-  transition:background .13s var(--ease);
+  border-radius:6px;
+  transition:background 80ms ease;
 }
-.sn-sub:hover{background:rgba(15,23,32,.05)}
+.sn-sub:hover{background:rgba(55,53,47,.07)}
 .sn-sub:active{background:var(--vc-soft,rgba(0,93,255,.07));transition-duration:.05s}
 .sn-sub-dot{
   width:6px;height:6px;border-radius:50%;
   background:var(--vc,var(--border2));
-  flex-shrink:0;opacity:.5;
+  flex-shrink:0;opacity:.45;
   transition:opacity .13s,transform .13s;
 }
 .sn-sub:hover .sn-sub-dot{opacity:.75}
 .sn-sub:active .sn-sub-dot{opacity:1;transform:scale(1.3)}
 .sn-sub-lbl{
-  flex:1;font-size:12px;font-weight:600;
-  color:var(--txt3);
+  flex:1;font-size:13px;font-weight:500;
+  color:var(--txt2);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  transition:color .13s,font-weight .13s;
+  transition:color 80ms ease;
 }
-.sn-sub:hover .sn-sub-lbl{color:var(--txt2)}
+.sn-sub:hover .sn-sub-lbl{color:var(--txt)}
 .sn-sub:active .sn-sub-lbl{color:var(--txt);font-weight:600}
 /* Count badges hidden — numbers shown on the cards themselves */
 .sn-sub-n{display:none}
 .sn-sub.sn-active{background:var(--vc-soft,rgba(0,93,255,.07))}
 .sn-sub.sn-active .sn-sub-dot{opacity:1;background:var(--vc,var(--blue))}
-.sn-sub.sn-active .sn-sub-lbl{color:var(--txt);font-weight:700}
+.sn-sub.sn-active .sn-sub-lbl{color:var(--txt);font-weight:600}
 
-/* Sidebar — back button (vertical drill-down) */
+/* Sidebar — back button — must read as primary nav, not a muted hint */
 .sn-back{
-  display:flex;align-items:center;gap:7px;
-  width:100%;padding:7px 12px;
+  display:flex;align-items:center;gap:8px;
+  width:100%;padding:8px 12px;
   border:none;background:transparent;
   cursor:pointer;font-family:inherit;
-  border-radius:8px;
-  font-size:11.5px;font-weight:600;color:var(--txt3);
-  transition:background .13s,color .13s;
-  margin-bottom:2px;
+  border-radius:6px;
+  font-size:13px;font-weight:500;color:var(--txt2);
+  transition:background 80ms ease,color 80ms ease;
+  margin-bottom:4px;
 }
-.sn-back:hover{background:rgba(15,23,32,.05);color:var(--txt2)}
-.sn-back-arr{font-size:14px;line-height:1}
+.sn-back:hover{background:rgba(55,53,47,.07);color:var(--txt)}
+.sn-back:active{background:rgba(55,53,47,.12)}
+.sn-back-arr{
+  width:16px;height:16px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;opacity:.7;
+}
 
 /* Sidebar — vertical identity header (shown in drill-down mode) */
 .sn-vert-id{
@@ -2767,20 +2772,21 @@ body.view-gst #vert-tabs-bar{display:none}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
-/* Sidebar — module item (in vertical drill-down) */
+/* Sidebar — module item (Level 2) — Notion: warm hover, 13px/500 */
 .sn-mod{
   display:flex;align-items:center;gap:9px;
-  width:100%;padding:8px 12px;
+  width:100%;padding:7px 12px;
   border:none;background:transparent;
   cursor:pointer;text-align:left;font-family:inherit;
-  border-radius:10px;
-  transition:background .13s var(--ease);
+  border-radius:6px;
+  transition:background 80ms ease;
 }
-.sn-mod:hover{background:rgba(15,23,32,.05)}
-.sn-mod.sn-active{background:var(--accent-soft,rgba(0,93,255,.08))}
-.sn-mod.sn-muted{opacity:.5;pointer-events:none}
+.sn-mod:hover{background:rgba(55,53,47,.07)}
+.sn-mod.sn-active{background:rgba(0,93,255,.08)}
+/* Muted = no data; keep pointer-events so tooltip is reachable */
+.sn-mod.sn-muted{opacity:.45;cursor:not-allowed}
 .sn-mod-ic{
-  width:26px;height:26px;border-radius:7px;
+  width:26px;height:26px;border-radius:6px;
   display:flex;align-items:center;justify-content:center;
   flex-shrink:0;
   transition:background .13s,color .13s;
@@ -2789,77 +2795,95 @@ body.view-gst #vert-tabs-bar{display:none}
 .sn-mod.t-blue  .sn-mod-ic{background:var(--accent-soft);color:var(--blue)}
 .sn-mod.t-green .sn-mod-ic{background:#E3F8F1;color:#049769}
 .sn-mod.t-amber .sn-mod-ic{background:#FFF4E5;color:#B25000}
-.sn-mod.t-purple.sn-mod-ic-wrap .sn-mod-ic{background:#F1ECFB;color:#5B3FA8}
+.sn-mod.t-purple .sn-mod-ic{background:#F1ECFB;color:#5B3FA8}
 .sn-mod.t-ink   .sn-mod-ic{background:#EDEDF0;color:var(--txt)}
 .sn-mod.t-red   .sn-mod-ic{background:#FDECEA;color:#D70015}
-.sn-mod.t-purple .sn-mod-ic{background:#F1ECFB;color:#5B3FA8}
-.sn-mod.sn-active .sn-mod-ic{filter:brightness(.95)}
+.sn-mod.sn-active .sn-mod-ic{box-shadow:0 0 0 1.5px rgba(0,93,255,.25)}
 .sn-mod-body{flex:1;min-width:0}
 .sn-mod-lbl{
-  font-size:12px;font-weight:600;color:var(--txt);
+  font-size:13px;font-weight:500;color:var(--txt);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   line-height:1.3;
 }
-.sn-mod.sn-active .sn-mod-lbl{color:var(--blue);font-weight:700}
+.sn-mod.sn-active .sn-mod-lbl{color:var(--blue);font-weight:600}
 .sn-mod-sub{font-size:10px;color:var(--txt3);margin-top:1px;line-height:1}
-.sn-mod-arr{font-size:11px;color:var(--txt3);flex-shrink:0;opacity:.5;transition:transform .18s}
-.sn-mod-arr.open{transform:rotate(90deg)}
+.sn-mod-arr{font-size:10px;color:var(--txt3);flex-shrink:0;opacity:.55;transition:transform .15s ease}
+.sn-mod-arr.open{transform:rotate(90deg);opacity:.8}
 
-/* Vertical count header — Level 2 */
+/* Vertical count header — Level 2 — keep count prominent, refine labels */
 .sn-vert-hdr{
   display:flex;align-items:center;gap:10px;
-  padding:10px 14px 12px;
+  padding:8px 12px 12px;
 }
-.sn-vert-hdr-bar{width:3px;min-height:36px;border-radius:2px;flex-shrink:0;align-self:stretch;}
+.sn-vert-hdr-bar{width:3px;min-height:32px;border-radius:2px;flex-shrink:0;align-self:stretch;}
 .sn-vert-hdr-info{flex:1;min-width:0}
-.sn-vert-hdr-name{font-size:9.5px;font-weight:800;color:var(--txt3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:2px}
-.sn-vert-hdr-count{font-size:22px;font-weight:800;color:var(--txt);line-height:1;letter-spacing:-.5px}
-.sn-vert-hdr-label{font-size:10px;color:var(--txt3);font-weight:500;margin-top:2px}
+.sn-vert-hdr-name{font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px;opacity:.7}
+.sn-vert-hdr-count{font-size:22px;font-weight:700;color:var(--txt);line-height:1;letter-spacing:-.5px}
+.sn-vert-hdr-label{font-size:11px;color:var(--txt3);font-weight:400;margin-top:2px}
 
-/* Module sub-items — Level 3 */
+/* Breadcrumb strip — Level 2 & 3 context path */
+.sn-breadcrumb{
+  display:flex;align-items:center;gap:4px;
+  padding:2px 12px 8px;
+  font-size:11px;font-weight:500;color:var(--txt3);
+  line-height:1;
+}
+.sn-bc-seg{max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.7}
+.sn-bc-seg.sn-bc-cur{color:var(--txt2);opacity:1}
+.sn-bc-div{opacity:.35;flex-shrink:0}
+
+/* Module sub-items — Level 3 — Notion: 12px/400, warm hover */
 .sn-sub-items{padding:1px 0 4px 47px;display:flex;flex-direction:column;gap:1px;}
 .sn-si{
   display:flex;align-items:center;gap:7px;
   width:100%;padding:5px 8px;
   border:none;background:transparent;
   cursor:pointer;text-align:left;font-family:inherit;
-  border-radius:6px;
-  font-size:11.5px;font-weight:500;color:var(--txt3);
-  transition:color .13s,background .13s;
+  border-radius:4px;
+  font-size:12px;font-weight:400;color:var(--txt3);
+  transition:color 80ms ease,background 80ms ease;
 }
-.sn-si:hover{color:var(--txt2);background:rgba(15,23,32,.04)}
-.sn-si.sn-si-on{color:var(--blue);font-weight:700}
-.sn-si-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;
-  border:1.5px solid currentColor;opacity:.4;
+.sn-si:hover{color:var(--txt2);background:rgba(55,53,47,.06)}
+.sn-si.sn-si-on{color:var(--blue);font-weight:600}
+.sn-si-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;
+  border:1.5px solid currentColor;opacity:.35;
   transition:background .13s,opacity .13s;}
 .sn-si.sn-si-on .sn-si-dot{background:var(--blue);border-color:var(--blue);opacity:1}
 
 /* Separator */
 .sn-sep{height:1px;background:var(--border);margin:10px 14px;opacity:.6}
 
-/* GST Payables button */
+/* Standalone tool buttons (GST / TXN / OSV) — neutral hover, not amber-tinted */
 .sn-gst{
   display:flex;align-items:center;gap:9px;
-  width:100%;padding:9px 14px;
+  width:100%;padding:7px 12px;
   border:none;background:transparent;
   cursor:pointer;text-align:left;font-family:inherit;
-  border-radius:10px;
-  transition:background .15s var(--ease);
+  border-radius:6px;
+  transition:background 80ms ease;
 }
-.sn-gst:hover{background:rgba(255,149,0,.07)}
-.sn-gst.sn-active{background:rgba(255,149,0,.10)}
+.sn-gst:hover{background:rgba(55,53,47,.07)}
+.sn-gst.sn-active{background:rgba(55,53,47,.10)}
 .sn-gst-ic{
-  width:28px;height:28px;border-radius:8px;
-  background:var(--gp-orange-bg,#FFF4E5);
+  width:26px;height:26px;border-radius:6px;
+  background:var(--bg2);
   display:flex;align-items:center;justify-content:center;
-  font-size:12px;color:var(--gp-orange,#FF9500);
+  font-size:12px;color:var(--txt2);
   flex-shrink:0;
-  transition:background .15s,color .15s;
+  transition:background .13s,color .13s;
 }
-.sn-gst.sn-active .sn-gst-ic{
-  background:var(--gp-orange,#FF9500);color:#fff;
+.sn-gst.sn-active .sn-gst-ic{background:var(--blue);color:#fff}
+.sn-gst-lbl{font-size:13px;font-weight:500;color:var(--txt);letter-spacing:-.1px}
+
+/* Sidebar skeleton loader — shown while data loads */
+.sn-skel-item{
+  height:28px;border-radius:6px;
+  background:linear-gradient(90deg,var(--border) 25%,rgba(0,0,0,.05) 50%,var(--border) 75%);
+  background-size:200% 100%;
+  animation:snSkimmer 1.4s ease infinite;
+  margin:2px 0;
 }
-.sn-gst-lbl{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.1px}
+@keyframes snSkimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* On desktop: hide the top header .aud-tabs (sidebar/tab bar replaces them) */
 @media(min-width:1025px){
@@ -4120,7 +4144,7 @@ body.view-ov #ov-screen{display:block}
   <nav id="vnav" aria-label="Business verticals"></nav>
 
   <!-- Sidebar navigation — built by buildSideNav() -->
-  <nav id="side-nav"></nav>
+  <nav id="side-nav" aria-label="Dashboard navigation"></nav>
 
   <div id="dash-content">
 
@@ -12071,10 +12095,17 @@ function buildSideNav() {
       vLabel = _sp.slice(1).join(' ') || 'Onboarded';
     }
 
-    // Back → Level 1
-    html += '<button class="sn-back" onclick="snBackToVerticals()">'
-      + '<span class="sn-back-arr">‹</span> Central Onboarding'
+    // Back → Level 1 — SVG chevron, semantic label, aria
+    html += '<button class="sn-back" onclick="snBackToVerticals()" aria-label="Back to all verticals">'
+      + '<span class="sn-back-arr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+      + 'All Verticals'
       + '</button>';
+    // Breadcrumb: Overview / VertName
+    html += '<div class="sn-breadcrumb" aria-label="Navigation path">'
+      + '<span class="sn-bc-seg">Overview</span>'
+      + '<span class="sn-bc-div">›</span>'
+      + '<span class="sn-bc-seg sn-bc-cur">' + esc((vcfg.name || snVertModKey)) + '</span>'
+      + '</div>';
 
     // Vertical identity card
     html += '<div class="sn-vert-hdr">'
@@ -12096,25 +12127,33 @@ function buildSideNav() {
         var tone     = m.tone || 't-ink';
         var subs     = SN_MODULE_SUBS[m.t] || [];
         var hasPanel = m.expand === 'inline-panel' && subs.length > 0;
+        var mutedTitle = isMuted ? ' title="No data available for this module"' : '';
 
-        // Module row
+        // Module row — aria-expanded for screen readers
         html += '<button class="sn-mod ' + tone + (isActive ? ' sn-active' : '') + (isMuted ? ' sn-muted' : '') + '"'
-          + ' onclick="snClickModule(\'' + esc(m._id || '') + '\')">'
-          + '<span class="sn-mod-ic">' + (m.ic || '') + '</span>'
+          + ' onclick="' + (isMuted ? '' : 'snClickModule(\'' + esc(m._id || '') + '\')') + '"'
+          + ' aria-expanded="' + (isActive && hasPanel ? 'true' : 'false') + '"'
+          + (isActive ? ' aria-current="true"' : '')
+          + mutedTitle
+          + (isMuted ? ' aria-disabled="true"' : '')
+          + '>'
+          + '<span class="sn-mod-ic" aria-hidden="true">' + (m.ic || '') + '</span>'
           + '<span class="sn-mod-body">'
           + '<span class="sn-mod-lbl">' + esc(m.t) + '</span>'
           + '</span>'
-          + '<span class="sn-mod-arr' + (isActive && hasPanel ? ' open' : '') + '">›</span>'
+          + (hasPanel ? '<span class="sn-mod-arr' + (isActive ? ' open' : '') + '" aria-hidden="true">›</span>' : '')
           + '</button>';
 
-        // Sub-items expand only for the active module
+        // Sub-items — Level 3; aria-current on active sub
         if (isActive && hasPanel) {
-          html += '<div class="sn-sub-items">';
+          html += '<div class="sn-sub-items" role="group" aria-label="' + esc(m.t) + ' sections">';
           subs.forEach(function(si) {
             var isOn = snSubActive === si.key;
             html += '<button class="sn-si' + (isOn ? ' sn-si-on' : '') + '"'
-              + ' onclick="snClickSub(\'' + esc(si.key) + '\')">'
-              + '<span class="sn-si-dot"></span>'
+              + ' onclick="snClickSub(\'' + esc(si.key) + '\')"'
+              + (isOn ? ' aria-current="true"' : '')
+              + '>'
+              + '<span class="sn-si-dot" aria-hidden="true"></span>'
               + esc(si.label)
               + '</button>';
           });
@@ -12122,55 +12161,70 @@ function buildSideNav() {
         }
       });
     } else {
-      html += '<div style="padding:10px 14px;font-size:11px;color:var(--txt3)">Loading…</div>';
+      // Skeleton loader — avoids ambiguous "Loading…" plain text
+      html += '<div style="padding:4px 12px 8px">'
+        + '<div class="sn-skel-item" style="width:70%"></div>'
+        + '<div class="sn-skel-item" style="width:85%"></div>'
+        + '<div class="sn-skel-item" style="width:60%"></div>'
+        + '</div>';
     }
 
     html += '<div class="sn-sep" style="margin-top:auto"></div>';
-    html += '<div class="sn-sect">Standalone</div>';
+    html += '<div class="sn-sect">Tools</div>';
     html += _snStandaloneBtns(isGST, isTXN, isOSV);
     nav.innerHTML = html;
     _snMmNav(false);   // keep columns hidden while in drill-down mode
+    // Move focus to back button for keyboard users
+    var _bk = nav.querySelector('.sn-back'); if (_bk) _bk.focus({ preventScroll: true });
     return;
   }
 
   // ── LEVEL 1: Overview — full verticals list ──
   var ovwActive = isOvw && !snActiveKey && !snVertModKey;
-  html += '<button class="sn-grp' + (ovwActive ? ' sn-active' : '') + '" onclick="snGoOverview()">'
-    + '<span class="sn-grp-ic" style="font-size:14px">⊞</span>'
+  html += '<button class="sn-grp' + (ovwActive ? ' sn-active' : '') + '"'
+    + ' onclick="snGoOverview()"'
+    + (ovwActive ? ' aria-current="page"' : '')
+    + '>'
+    + '<span class="sn-grp-ic" style="font-size:14px" aria-hidden="true">⊞</span>'
     + '<span class="sn-grp-lbl">Overview</span>'
     + '</button>';
 
-  html += '<div class="sn-sep"></div>';
-  html += '<div class="sn-sect">Verticals</div>';
-  html += '<div class="sn-subs sn-open">';
+  html += '<div class="sn-sep" role="separator"></div>';
+  html += '<div class="sn-sect" id="sn-vert-hd">Verticals</div>';
+  html += '<div class="sn-subs sn-open" role="group" aria-labelledby="sn-vert-hd">';
   cfgList.forEach(function(cfg) {
     var vc = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
     var isVActive = isOvw && snActiveKey === cfg.key;
     html += '<button class="sn-sub' + (isVActive ? ' sn-active' : '') + '"'
       + ' data-key="' + esc(cfg.key) + '"'
       + ' style="--vc:' + vc.c + ';--vc-ink:' + vc.ink + ';--vc-soft:' + hexRGBA(vc.c, .09) + '"'
-      + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
-      + '<span class="sn-sub-dot"></span>'
+      + ' onclick="snSelectVert(\'' + cfg.key + '\')"'
+      + (isVActive ? ' aria-current="true"' : '')
+      + '>'
+      + '<span class="sn-sub-dot" aria-hidden="true"></span>'
       + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
       + '</button>';
   });
   html += '</div>';
 
-  html += '<div class="sn-sep"></div>';
-  html += '<div class="sn-sect">Modules</div>';
+  html += '<div class="sn-sep" role="separator"></div>';
+  html += '<div class="sn-sect" id="sn-tools-hd">Tools</div>';
   html += _snStandaloneBtns(isGST, isTXN, isOSV);
 
   nav.innerHTML = html;
 }
 
-// Shared GST / TXN / OSV buttons used in both sidebar modes.
+// Shared tool buttons (GST / TXN / OSV) — neutral icon style, not amber-biased.
 function _snStandaloneBtns(isGST, isTXN, isOSV) {
-  return '<button class="sn-gst' + (isGST ? ' sn-active' : '') + '" onclick="switchView(\'gst\')">'
-      + '<span class="sn-gst-ic">₹</span><span class="sn-gst-lbl">GST Payables</span></button>'
-    + '<button class="sn-gst' + (isTXN ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'txndist\')">'
-      + '<span class="sn-gst-ic" style="font-size:11px">⇄</span><span class="sn-gst-lbl">Txn Distribution</span></button>'
-    + '<button class="sn-gst' + (isOSV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'osv\')">'
-      + '<span class="sn-gst-ic" style="font-size:11px">✓</span><span class="sn-gst-lbl">OSV Status</span></button>';
+  return '<button class="sn-gst' + (isGST ? ' sn-active' : '') + '" onclick="switchView(\'gst\')"'
+      + (isGST ? ' aria-current="page"' : '') + '>'
+      + '<span class="sn-gst-ic" aria-hidden="true">₹</span><span class="sn-gst-lbl">GST Payables</span></button>'
+    + '<button class="sn-gst' + (isTXN ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'txndist\')"'
+      + (isTXN ? ' aria-current="page"' : '') + '>'
+      + '<span class="sn-gst-ic" style="font-size:11px" aria-hidden="true">⇄</span><span class="sn-gst-lbl">Txn Distribution</span></button>'
+    + '<button class="sn-gst' + (isOSV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'osv\')"'
+      + (isOSV ? ' aria-current="page"' : '') + '>'
+      + '<span class="sn-gst-ic" style="font-size:11px" aria-hidden="true">✓</span><span class="sn-gst-lbl">OSV Status</span></button>';
 }
 
 // Shows or hides the mind-map column grid (#mm-nav).
@@ -12283,6 +12337,8 @@ function setupScrollSpy() {
     var key = best.id.replace('vs-', '');
     if (key === snActiveKey) return;
     snActiveKey = key;
+    // Sync sidebar active state with scroll position.
+    buildSideNav();
   }, { threshold: [0.1, 0.25, 0.5], rootMargin: '-64px 0px -40% 0px' });
 
   sections.forEach(function(sec) { _scrollSpyObs.observe(sec); });
