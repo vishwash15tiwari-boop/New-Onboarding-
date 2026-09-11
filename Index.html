@@ -2529,8 +2529,6 @@ body.view-gst #vert-tabs-bar{display:none}
 .vds-body .cc-cat{background:var(--bg2);box-shadow:none}
 .vds-body .cc-cat-click:hover{background:var(--card);box-shadow:var(--shadow);transform:scale(1.02)}
 
-/* Sidebar no longer needed — vertical tabs replace it */
-#side-nav{display:none!important}
 
 /* ══════════════════════════════════════════════════
    DOCUMENT MANAGEMENT — Open Marketplace only
@@ -2658,7 +2656,7 @@ body.view-gst #vert-tabs-bar{display:none}
    SIDEBAR NAVIGATION
    ═══════════════════════════════════════════════════════════ */
 #side-nav{
-  width:220px;flex-shrink:0;
+  width:20%;min-width:200px;max-width:280px;flex-shrink:0;
   position:sticky;top:56px;
   height:calc(100vh - 56px);
   overflow-y:auto;
@@ -2738,6 +2736,9 @@ body.view-gst #vert-tabs-bar{display:none}
 .sn-sub:active .sn-sub-lbl{color:var(--txt);font-weight:600}
 /* Count badges hidden — numbers shown on the cards themselves */
 .sn-sub-n{display:none}
+.sn-sub.sn-active{background:var(--vc-soft,rgba(0,93,255,.07))}
+.sn-sub.sn-active .sn-sub-dot{opacity:1;background:var(--vc,var(--blue))}
+.sn-sub.sn-active .sn-sub-lbl{color:var(--txt);font-weight:700}
 
 /* Separator */
 .sn-sep{height:1px;background:var(--border);margin:10px 14px;opacity:.6}
@@ -4006,6 +4007,9 @@ body.view-ov #ov-screen{display:block}
   <!-- Mind-map navigation tree — one expandable node per business vertical -->
   <nav id="vnav" aria-label="Business verticals"></nav>
 
+  <!-- Sidebar navigation — built by buildSideNav() -->
+  <nav id="side-nav"></nav>
+
   <div id="dash-content">
 
   <!-- Legacy horizontal tab bar — superseded by the mind-map nav, kept hidden -->
@@ -4083,9 +4087,6 @@ body.view-ov #ov-screen{display:block}
   <div id="tab-vendorratings" style="display:none"></div>
 
   </div><!-- /dash-content -->
-
-  <!-- Sidebar navigation — built by buildSideNav() -->
-  <nav id="side-nav"></nav>
 
 </div><!-- /main -->
 
@@ -11890,45 +11891,50 @@ function buildSideNav() {
 
   var cfgList = getVertCfg();
   var isGST   = currentView === 'gst';
-  var isOvw   = !isGST;
+  var isTXN   = currentView === 'txndist';
+  var isOSV   = currentView === 'osv';
+  var isOvw   = !isGST && !isTXN && !isOSV;
 
-  var html = '<div class="sn-sect">Navigation</div>';
+  var html = '';
 
-  // ── Verticals group (collapsed by default, toggles on click) ──
-  var vertsOpen = isOvw && snVertsOpen;
-  html += '<button class="sn-grp' + (isOvw ? ' sn-active' : '') + (vertsOpen ? ' sn-open' : '') + '"'
-    + ' onclick="if(currentView===\'gst\'){switchView(\'onboarding\');}else{snVertsOpen=!snVertsOpen;buildSideNav();}">'
-    + '<span class="sn-grp-ic">V</span>'
-    + '<span class="sn-grp-lbl">Verticals</span>'
-    + '<span class="sn-grp-arr">›</span>'
+  // ── Overview ──────────────────────────────────────────────
+  var ovwActive = isOvw && !snActiveKey;
+  html += '<button class="sn-grp' + (ovwActive ? ' sn-active' : '') + '" onclick="snGoOverview()">'
+    + '<span class="sn-grp-ic" style="font-size:14px">⊞</span>'
+    + '<span class="sn-grp-lbl">Overview</span>'
     + '</button>';
-  if (vertsOpen && cfgList.length) {
-    html += '<div class="sn-subs sn-open">';
-    cfgList.forEach(function(cfg) {
-      var vs  = DS && DS.verticals && DS.verticals[cfg.key] || {};
-      var vb  = DB && DB.verticals && DB.verticals[cfg.key] || {};
-      var tot = (vs.total || 0) + (vb.total || 0);
-      var vc  = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
-      html += '<button class="sn-sub' + (snActiveKey === cfg.key ? ' sn-active' : '') + '"'
-        + ' data-key="' + esc(cfg.key) + '"'
-        + ' style="--vc:' + vc.c + ';--vc-ink:' + vc.ink + ';--vc-soft:' + hexRGBA(vc.c, .09) + '"'
-        + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
-        + '<span class="sn-sub-dot"></span>'
-        + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
-        + '</button>';
-    });
-    html += '</div>';
-  }
 
-  // ── Separator + GST Payables ───────────────────────────────
+  // ── Verticals ─────────────────────────────────────────────
   html += '<div class="sn-sep"></div>';
+  html += '<div class="sn-sect">Verticals</div>';
+  html += '<div class="sn-subs sn-open">';
+  cfgList.forEach(function(cfg) {
+    var vc = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
+    var isVActive = isOvw && snActiveKey === cfg.key;
+    html += '<button class="sn-sub' + (isVActive ? ' sn-active' : '') + '"'
+      + ' data-key="' + esc(cfg.key) + '"'
+      + ' style="--vc:' + vc.c + ';--vc-ink:' + vc.ink + ';--vc-soft:' + hexRGBA(vc.c, .09) + '"'
+      + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
+      + '<span class="sn-sub-dot"></span>'
+      + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
+      + '</button>';
+  });
+  html += '</div>';
+
+  // ── Modules ───────────────────────────────────────────────
+  html += '<div class="sn-sep"></div>';
+  html += '<div class="sn-sect">Modules</div>';
+
   html += '<button class="sn-gst' + (isGST ? ' sn-active' : '') + '" onclick="switchView(\'gst\')">'
     + '<span class="sn-gst-ic">₹</span>'
     + '<span class="sn-gst-lbl">GST Payables</span>'
     + '</button>';
 
-  // ── OSV — Consent & Verification Status ────────────────────
-  var isOSV = currentView === 'osv';
+  html += '<button class="sn-gst' + (isTXN ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'txndist\')">'
+    + '<span class="sn-gst-ic" style="font-size:11px">⇄</span>'
+    + '<span class="sn-gst-lbl">Txn Distribution</span>'
+    + '</button>';
+
   html += '<button class="sn-gst' + (isOSV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'osv\')">'
     + '<span class="sn-gst-ic" style="font-size:11px">✓</span>'
     + '<span class="sn-gst-lbl">OSV Status</span>'
@@ -11949,6 +11955,16 @@ function buildSideNav() {
     + '</button>';
 
   nav.innerHTML = html;
+}
+
+// Resets to the Overview (root mind-map state).
+function snGoOverview() {
+  if (currentView !== 'onboarding') switchView('onboarding');
+  snActiveKey   = null;
+  activeVertKey = null;
+  if (typeof mmPath !== 'undefined') mmPath = ['root'];
+  if (typeof renderMM === 'function') renderMM();
+  buildSideNav();
 }
 
 // Called when a group header (Sellers/Buyers) is clicked.
