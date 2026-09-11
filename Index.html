@@ -2802,7 +2802,37 @@ body.view-gst #vert-tabs-bar{display:none}
 }
 .sn-mod.sn-active .sn-mod-lbl{color:var(--blue);font-weight:700}
 .sn-mod-sub{font-size:10px;color:var(--txt3);margin-top:1px;line-height:1}
-.sn-mod-arr{font-size:11px;color:var(--txt3);flex-shrink:0;opacity:.5}
+.sn-mod-arr{font-size:11px;color:var(--txt3);flex-shrink:0;opacity:.5;transition:transform .18s}
+.sn-mod-arr.open{transform:rotate(90deg)}
+
+/* Vertical count header — Level 2 */
+.sn-vert-hdr{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px 12px;
+}
+.sn-vert-hdr-bar{width:3px;min-height:36px;border-radius:2px;flex-shrink:0;align-self:stretch;}
+.sn-vert-hdr-info{flex:1;min-width:0}
+.sn-vert-hdr-name{font-size:9.5px;font-weight:800;color:var(--txt3);letter-spacing:.7px;text-transform:uppercase;margin-bottom:2px}
+.sn-vert-hdr-count{font-size:22px;font-weight:800;color:var(--txt);line-height:1;letter-spacing:-.5px}
+.sn-vert-hdr-label{font-size:10px;color:var(--txt3);font-weight:500;margin-top:2px}
+
+/* Module sub-items — Level 3 */
+.sn-sub-items{padding:1px 0 4px 47px;display:flex;flex-direction:column;gap:1px;}
+.sn-si{
+  display:flex;align-items:center;gap:7px;
+  width:100%;padding:5px 8px;
+  border:none;background:transparent;
+  cursor:pointer;text-align:left;font-family:inherit;
+  border-radius:6px;
+  font-size:11.5px;font-weight:500;color:var(--txt3);
+  transition:color .13s,background .13s;
+}
+.sn-si:hover{color:var(--txt2);background:rgba(15,23,32,.04)}
+.sn-si.sn-si-on{color:var(--blue);font-weight:700}
+.sn-si-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;
+  border:1.5px solid currentColor;opacity:.4;
+  transition:background .13s,opacity .13s;}
+.sn-si.sn-si-on .sn-si-dot{background:var(--blue);border-color:var(--blue);opacity:1}
 
 /* Separator */
 .sn-sep{height:1px;background:var(--border);margin:10px 14px;opacity:.6}
@@ -7856,16 +7886,16 @@ function mmRenderModPanel() {
     + (P.note ? '<div class="mp-note">' + esc(P.note) + '</div>' : '')
     + '<div class="mp-body">';
 
-  // headline
+  // headline — anchor: sn-sec-head
   if (P.headline) {
     var h = P.headline, col = toneColor[h.tone] || 'var(--txt)';
     var hv = h.raw ? '<span>' + esc(h.rawv != null ? h.rawv : (h.v + (h.suffix || ''))) + '</span>'
                    : '<span data-count="' + (+h.v || 0) + '">0</span>' + (h.suffix ? esc(h.suffix) : '');
-    html += '<div class="mp-headline"><div class="mp-h-v" style="color:' + col + '">' + hv + '</div>'
+    html += '<div id="sn-sec-head" class="mp-headline"><div class="mp-h-v" style="color:' + col + '">' + hv + '</div>'
       + '<div class="mp-h-l">' + esc(h.label || '') + '</div></div>';
   }
 
-  // stacked composition bar
+  // stacked composition bar — anchor: sn-sec-bar
   if (P.bar && P.bar.length) {
     var tot = P.bar.reduce(function(s, x){ return s + (+x.v || 0); }, 0) || 1;
     var segs = P.bar.map(function(x) {
@@ -7876,7 +7906,7 @@ function mmRenderModPanel() {
             + ' onkeydown="if(event.key===\'Enter\'){mmChainToGeo(\'' + x.seg + '\')}" title="View ' + esc(x.label) + ' on the map"' : '')
         + '><span class="mp-seg-in">' + esc(x.label) + ' · ' + fmt(x.v) + '</span></div>';
     }).join('');
-    html += '<div class="mp-bar" aria-hidden="false">' + segs + '</div>'
+    html += '<div id="sn-sec-bar" class="mp-bar" aria-hidden="false">' + segs + '</div>'
       + '<div class="mp-legend">' + P.bar.map(function(x) {
           return '<span class="mp-leg"><i style="background:' + x.color + '"></i>' + esc(x.label) + '</span>';
         }).join('') + '</div>';
@@ -7909,9 +7939,9 @@ function mmRenderModPanel() {
     html += '<div class="mp-matrix" style="grid-template-columns:auto repeat(' + (nc + 1) + ',minmax(0,1fr))">' + mx + '</div>';
   }
 
-  // stat tiles
+  // stat tiles — anchor: sn-sec-tile
   if (P.tiles && P.tiles.length) {
-    html += '<div class="mp-tiles">' + P.tiles.map(function(t) {
+    html += '<div id="sn-sec-tile" class="mp-tiles">' + P.tiles.map(function(t) {
       var tc = toneColor[t.tone] || 'var(--txt)';
       var chainable = node.panel.chain && t.seg;
       // A tile is actionable either by chaining into the map (seg) or by carrying an
@@ -7936,14 +7966,14 @@ function mmRenderModPanel() {
     }).join('') + '</div>';
   }
 
-  // extra section (pre-built HTML for rich breakdown content)
+  // extra section — anchor: sn-sec-ext
   if (P.extra) {
-    html += P.extra;
+    html += '<div id="sn-sec-ext">' + P.extra + '</div>';
   }
 
-  // records CTA
+  // records CTA — anchor: sn-sec-rec
   if (P.records) {
-    html += '<button class="mf-detail-vd mp-vd" onclick="mmCardAction(\'' + esc(P.records) + '\')">'
+    html += '<button id="sn-sec-rec" class="mf-detail-vd mp-vd" onclick="mmCardAction(\'' + esc(P.records) + '\')">'
       + MM_IC.doc + ' View Detailed Records →</button>';
   }
 
@@ -11963,7 +11993,39 @@ var snActiveKey   = null;  // which vertical is active in the sidebar list
 var snVertsOpen   = false; // (legacy collapse toggle — no longer used)
 var snVertModKey  = null;  // when set, sidebar is in vertical-module drill-down mode
 var snModActive   = null;  // node._id of the currently active module in the sidebar
+var snSubActive   = null;  // key of the active sub-item within the current module
 var _scrollSpyObs = null;  // IntersectionObserver instance for scroll spy
+
+// Sub-items shown under each module when it is active (Level 3).
+// Keys map to anchor IDs injected into the panel by mmRenderModPanel.
+var SN_MODULE_SUBS = {
+  'Onboarded (Details)': [
+    { key: 'head', label: 'Summary'          },
+    { key: 'bar',  label: 'Category Breakup' },
+    { key: 'tile', label: 'TAT'              },
+    { key: 'rec',  label: 'Records'          },
+  ],
+  'Transactions': [
+    { key: 'head', label: 'Overview'          },
+    { key: 'tile', label: 'Activity & Ageing' },
+    { key: 'ext',  label: 'GMV'               },
+    { key: 'rec',  label: 'Records'           },
+  ],
+  'Vendor Ratings': [
+    { key: 'head', label: 'Overview'     },
+    { key: 'tile', label: 'Distribution' },
+    { key: 'rec',  label: 'Records'      },
+  ],
+  'OSV Status': [
+    { key: 'head', label: 'Overview'         },
+    { key: 'tile', label: 'Status Breakdown' },
+    { key: 'rec',  label: 'Records'          },
+  ],
+  'Existing vs New': [
+    { key: 'head', label: 'Overview'  },
+    { key: 'bar',  label: 'Breakdown' },
+  ],
+};
 
 function buildSideNav() {
   var nav = document.getElementById('side-nav');
@@ -11977,22 +12039,37 @@ function buildSideNav() {
 
   var html = '';
 
-  // ── VERTICAL DRILL-DOWN MODE ─────────────────────────────
+  // ── LEVEL 2 / 3: Vertical drill-down — shows modules + optional sub-items ──
   if (snVertModKey && isOvw) {
     var vc    = VERT_COLORS[snVertModKey] || VERT_COLORS.Others;
     var vcfg  = cfgList.filter(function(c){ return c.key === snVertModKey; })[0] || {};
     var vNode = typeof mmFindById === 'function' ? mmFindById('root/' + snVertModKey) : null;
     var mods  = vNode ? (vNode.children || []) : [];
 
+    // Onboarded count from vNode.s (e.g. "319 onboarded")
+    var vCount = '', vLabel = 'Onboarded';
+    if (vNode && vNode.s) {
+      var _sp = String(vNode.s).split(' ');
+      vCount = _sp[0] || '';
+      vLabel = _sp.slice(1).join(' ') || 'Onboarded';
+    }
+
+    // Back → Level 1
     html += '<button class="sn-back" onclick="snBackToVerticals()">'
-      + '<span class="sn-back-arr">‹</span> All Verticals'
+      + '<span class="sn-back-arr">‹</span> Central Onboarding'
       + '</button>';
 
-    html += '<div class="sn-vert-id">'
-      + '<div class="sn-vert-id-dot" style="background:' + vc.c + '"></div>'
-      + '<span class="sn-vert-id-name" style="color:' + vc.c + '">' + esc(vcfg.name || snVertModKey) + '</span>'
+    // Vertical identity card
+    html += '<div class="sn-vert-hdr">'
+      + '<div class="sn-vert-hdr-bar" style="background:' + vc.c + '"></div>'
+      + '<div class="sn-vert-hdr-info">'
+      + '<div class="sn-vert-hdr-name">' + esc((vcfg.name || snVertModKey).toUpperCase()) + '</div>'
+      + (vCount ? '<div class="sn-vert-hdr-count" style="color:' + vc.c + '">' + esc(vCount) + '</div>' : '')
+      + '<div class="sn-vert-hdr-label">' + esc(vLabel) + '</div>'
+      + '</div>'
       + '</div>';
 
+    html += '<div class="sn-sep" style="margin:4px 14px 8px"></div>';
     html += '<div class="sn-sect" style="padding-top:0">Modules</div>';
 
     if (mods.length) {
@@ -12000,15 +12077,32 @@ function buildSideNav() {
         var isActive = !!(snModActive && snModActive === m._id);
         var isMuted  = !!(m.muted);
         var tone     = m.tone || 't-ink';
+        var subs     = SN_MODULE_SUBS[m.t] || [];
+        var hasPanel = m.expand === 'inline-panel' && subs.length > 0;
+
+        // Module row
         html += '<button class="sn-mod ' + tone + (isActive ? ' sn-active' : '') + (isMuted ? ' sn-muted' : '') + '"'
           + ' onclick="snClickModule(\'' + esc(m._id || '') + '\')">'
           + '<span class="sn-mod-ic">' + (m.ic || '') + '</span>'
           + '<span class="sn-mod-body">'
           + '<span class="sn-mod-lbl">' + esc(m.t) + '</span>'
-          + (m.s ? '<span class="sn-mod-sub">' + esc(m.s) + '</span>' : '')
           + '</span>'
-          + '<span class="sn-mod-arr">›</span>'
+          + '<span class="sn-mod-arr' + (isActive && hasPanel ? ' open' : '') + '">›</span>'
           + '</button>';
+
+        // Sub-items expand only for the active module
+        if (isActive && hasPanel) {
+          html += '<div class="sn-sub-items">';
+          subs.forEach(function(si) {
+            var isOn = snSubActive === si.key;
+            html += '<button class="sn-si' + (isOn ? ' sn-si-on' : '') + '"'
+              + ' onclick="snClickSub(\'' + esc(si.key) + '\')">'
+              + '<span class="sn-si-dot"></span>'
+              + esc(si.label)
+              + '</button>';
+          });
+          html += '</div>';
+        }
       });
     } else {
       html += '<div style="padding:10px 14px;font-size:11px;color:var(--txt3)">Loading…</div>';
@@ -12021,7 +12115,7 @@ function buildSideNav() {
     return;
   }
 
-  // ── DEFAULT MODE: Overview + Verticals list + Standalone modules ──
+  // ── LEVEL 1: Overview — full verticals list ──
   var ovwActive = isOvw && !snActiveKey && !snVertModKey;
   html += '<button class="sn-grp' + (ovwActive ? ' sn-active' : '') + '" onclick="snGoOverview()">'
     + '<span class="sn-grp-ic" style="font-size:14px">⊞</span>'
@@ -12061,48 +12155,73 @@ function _snStandaloneBtns(isGST, isTXN, isOSV) {
       + '<span class="sn-gst-ic" style="font-size:11px">✓</span><span class="sn-gst-lbl">OSV Status</span></button>';
 }
 
-// Resets to the Overview (root mind-map state).
+// Level 1: reset to Overview.
 function snGoOverview() {
   if (currentView !== 'onboarding') switchView('onboarding');
-  snActiveKey  = null;
-  snVertModKey = null;
-  snModActive  = null;
+  snActiveKey   = null;
+  snVertModKey  = null;
+  snModActive   = null;
+  snSubActive   = null;
   activeVertKey = null;
   if (typeof mmPath !== 'undefined') mmPath = ['root'];
   mmPaint();
   buildSideNav();
 }
 
-// Click a vertical in the list → enter drill-down mode showing its modules.
+// Level 1 → Level 2: click a vertical → enter module drill-down for that vertical.
 function snSelectVert(key) {
   if (currentView !== 'onboarding') switchView('onboarding');
-  snActiveKey  = key;
-  snModActive  = null;
-  // Navigate the mind-map to this vertical (modules shown there, not in sidebar).
-  if (typeof mmClickNode === 'function') {
-    mmClickNode('root/' + key);
-  }
+  snActiveKey   = key;
+  snVertModKey  = key;
+  snModActive   = null;
+  snSubActive   = null;
+  if (typeof mmClickNode === 'function') mmClickNode('root/' + key);
   buildSideNav();
 }
 
-// Back button in drill-down mode → return to the full vertical list.
+// Back from Level 2 → Level 1.
 function snBackToVerticals() {
   snVertModKey  = null;
   snModActive   = null;
   snActiveKey   = null;
+  snSubActive   = null;
   activeVertKey = null;
-  // Reset mind-map to root overview.
   if (typeof mmPath !== 'undefined') mmPath = ['root'];
   mmPaint();
   buildSideNav();
 }
 
-// Click a module item in the drill-down sidebar → open it in the mind-map detail panel.
+// Level 2 → Level 3: click a module → expand its sub-items and open the panel.
 function snClickModule(nodeId) {
   if (!nodeId) return;
-  snModActive = nodeId;
+  var toggling = snModActive === nodeId;
+  if (toggling) {
+    snModActive = null;
+    snSubActive = null;
+  } else {
+    snModActive = nodeId;
+    snSubActive = null;
+    // Auto-select the first sub-item so Level 3 highlights immediately.
+    var _n = typeof mmFindById === 'function' ? mmFindById(nodeId) : null;
+    var _subs = _n && _n.t ? (SN_MODULE_SUBS[_n.t] || []) : [];
+    if (_subs.length) snSubActive = _subs[0].key;
+  }
   if (typeof mmClickNode === 'function') mmClickNode(nodeId);
   buildSideNav();
+}
+
+// Level 3: click a sub-item → highlight it and scroll to its panel section.
+function snClickSub(key) {
+  snSubActive = key;
+  buildSideNav();
+  // Records sub-item triggers the module's records CTA directly.
+  if (key === 'rec') {
+    var _n = snModActive && typeof mmFindById === 'function' ? mmFindById(snModActive) : null;
+    if (_n && _n.panel && _n.panel.records) { mmCardAction(_n.panel.records); return; }
+  }
+  // Scroll to the section anchor injected by mmRenderModPanel.
+  var el = document.getElementById('sn-sec-' + key);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // Called when a group header (Sellers/Buyers) is clicked.
