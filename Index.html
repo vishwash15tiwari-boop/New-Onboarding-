@@ -11973,7 +11973,7 @@ function buildSideNav() {
   var isGST = currentView === 'gst';
   var isTXN = currentView === 'txndist';
   var isOSV = currentView === 'osv';
-  var isOvw = !isGST && !isTXN && !isOSV;
+  var isOvw = currentView === 'onboarding';
 
   var html = '';
 
@@ -12069,7 +12069,7 @@ function snGoOverview() {
   snModActive  = null;
   activeVertKey = null;
   if (typeof mmPath !== 'undefined') mmPath = ['root'];
-  if (typeof renderMM === 'function') renderMM();
+  mmPaint();
   buildSideNav();
 }
 
@@ -12088,12 +12088,13 @@ function snSelectVert(key) {
 
 // Back button in drill-down mode → return to the full vertical list.
 function snBackToVerticals() {
-  snVertModKey = null;
-  snModActive  = null;
-  snActiveKey  = null;
+  snVertModKey  = null;
+  snModActive   = null;
+  snActiveKey   = null;
+  activeVertKey = null;
   // Reset mind-map to root overview.
   if (typeof mmPath !== 'undefined') mmPath = ['root'];
-  if (typeof renderMM === 'function') renderMM();
+  mmPaint();
   buildSideNav();
 }
 
