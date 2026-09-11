@@ -3248,9 +3248,10 @@ body.view-gst #mm-crumbs{display:none}
   scrollbar-width:thin}
 
 /* Sidebar vertical-drill mode: hide the columns grid; panel takes full width */
-#tab-overview.sn-vert-active .mmnav{display:none}
-#tab-overview.sn-vert-active .mmworkspace.has-panel{gap:0}
-#tab-overview.sn-vert-active .mmworkspace.has-panel .mmdetail{flex-basis:100%;max-width:100%}
+.mmworkspace.sn-drill .mmnav{display:none!important}
+.mmworkspace.sn-drill{gap:0}
+.mmworkspace.sn-drill.has-panel .mmdetail{flex-basis:100%;max-width:100%}
+.mp-placeholder{display:flex;align-items:center;justify-content:center;min-height:200px;font-size:13px;color:var(--txt3);letter-spacing:.01em}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar{width:8px}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
 /* inside the side canvas the panels are simply shown/hidden — the canvas slide is the reveal */
@@ -6678,6 +6679,8 @@ function _mmSyncDetail() {
   var nav = document.getElementById('mm-nav');
   if (!ws) return;
   var open = !!(mmFunnelActive || mmGeoActive || mmModActive);
+  // In sidebar drill-down keep the right pane visible (placeholder or real content).
+  if (!open && ws && ws.classList.contains('sn-drill')) open = true;
   var flipDx = 0;
   if (nav && motionOK()) {
     // First: measure nav before layout change
@@ -7883,7 +7886,16 @@ function mmRenderModPanel() {
   var panel = document.getElementById('mm-modpanel'); if (!panel) return;
   var node = mmModActive && mmPath.length ? mmFindById(mmPath[mmPath.length - 1]) : null;
   var P = node && node.expand === 'inline-panel' ? node.panel : null;
-  if (!P) { panel.className = 'mp'; panel.innerHTML = ''; return; }
+  if (!P) {
+    var _ws = document.getElementById('mm-workspace');
+    if (_ws && _ws.classList.contains('sn-drill')) {
+      panel.className = 'mp mp-open';
+      panel.innerHTML = '<div class="mp-placeholder">Select a module from the sidebar to explore details</div>';
+    } else {
+      panel.className = 'mp'; panel.innerHTML = '';
+    }
+    return;
+  }
 
   var toneColor = { good:'#049769', warn:'#B25000', crit:'#D70015', accent:'var(--blue)', ink:'var(--txt)' };
   var html = '<div class="mp-eye"><span>' + esc(P.eye || node.t) + '</span>'
@@ -12166,6 +12178,8 @@ function _snStandaloneBtns(isGST, isTXN, isOSV) {
 function _snMmNav(show) {
   var el = document.getElementById('mm-nav');
   if (el) el.style.display = show ? '' : 'none';
+  var ws = document.getElementById('mm-workspace');
+  if (ws) ws.classList.toggle('sn-drill', !show);
 }
 
 // Level 1: reset to Overview — restore the mind-map columns.
