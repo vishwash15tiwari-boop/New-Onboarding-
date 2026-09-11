@@ -2590,8 +2590,8 @@ body.view-gst #vert-tabs-bar{display:none}
 .vds-body .cc-cat{background:var(--bg2);box-shadow:none}
 .vds-body .cc-cat-click:hover{background:var(--card);box-shadow:var(--shadow);transform:scale(1.02)}
 
-/* Sidebar no longer needed — vertical tabs replace it */
-#side-nav{display:none!important}
+/* Sidebar hidden on the overview; visible in all detailed views */
+body.view-ov #side-nav{display:none!important}
 
 /* ══════════════════════════════════════════════════
    DOCUMENT MANAGEMENT — Open Marketplace only
@@ -2719,14 +2719,15 @@ body.view-gst #vert-tabs-bar{display:none}
    SIDEBAR NAVIGATION
    ═══════════════════════════════════════════════════════════ */
 #side-nav{
-  width:220px;flex-shrink:0;
+  width:224px;flex-shrink:0;
+  order:-1; /* Left of #dash-content in the flex-row #main */
   position:sticky;top:56px;
   height:calc(100vh - 56px);
   overflow-y:auto;
-  /* No border — blends with the page wash background */
-  background:transparent;
+  background:var(--bg);
+  border-right:1px solid var(--border);
   display:flex;flex-direction:column;
-  padding:16px 0 40px;
+  padding:0 0 40px;
   z-index:10;
 }
 #side-nav::-webkit-scrollbar{width:3px}
@@ -2881,6 +2882,80 @@ body.view-gst #vert-tabs-bar{display:none}
 .sp-empty{text-align:center;padding:40px;color:var(--txt3);font-size:13px}
 .sp-footer{display:flex;gap:16px;padding:10px 20px;border-top:1px solid rgba(0,0,0,.06);font-size:10.5px;color:var(--txt3)}
 .sp-footer kbd{font-family:inherit;font-size:10px;font-weight:600;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;margin-right:3px}
+
+/* ── Contextual sidebar elements ── */
+.sn-ctx-back{
+  display:flex;align-items:center;gap:6px;
+  width:100%;padding:14px 16px 12px;
+  font-size:11.5px;font-weight:700;color:var(--blue);
+  border:none;background:none;cursor:pointer;
+  font-family:inherit;text-align:left;
+  border-bottom:1px solid var(--border);
+  transition:background .13s;
+}
+.sn-ctx-back:hover{background:rgba(0,93,255,.05)}
+.sn-ctx-back svg{width:14px;height:14px;flex-shrink:0}
+
+.sn-ctx-vert{
+  padding:14px 16px 10px;
+  border-bottom:1px solid var(--border);
+}
+.sn-ctx-vert-label{
+  font-size:9px;font-weight:700;color:var(--txt3);
+  text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px
+}
+.sn-ctx-vert-name{
+  font-size:13px;font-weight:800;color:var(--txt);
+  letter-spacing:-.2px;margin-bottom:2px
+}
+.sn-ctx-vert-count{
+  font-size:20px;font-weight:900;color:var(--txt);
+  letter-spacing:-.5px;line-height:1.1
+}
+.sn-ctx-vert-sub{font-size:10.5px;color:var(--txt3);font-weight:500;margin-top:1px}
+
+.sn-ctx-sect{
+  font-size:9px;font-weight:700;color:var(--txt3);
+  text-transform:uppercase;letter-spacing:.12em;
+  padding:14px 16px 6px;
+}
+
+.sn-ctx-mod{
+  display:flex;align-items:center;gap:8px;
+  width:100%;padding:8px 16px;
+  font-size:12.5px;font-weight:500;color:var(--txt2);
+  border:none;background:none;cursor:pointer;
+  font-family:inherit;text-align:left;
+  border-radius:0;
+  transition:background .12s,color .12s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.sn-ctx-mod:hover{background:rgba(0,93,255,.05);color:var(--txt)}
+.sn-ctx-mod.active{
+  background:rgba(0,93,255,.08);color:var(--blue);
+  font-weight:700;
+  border-right:2px solid var(--blue);
+}
+.sn-ctx-mod-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--border2);flex-shrink:0;
+  transition:background .12s;
+}
+.sn-ctx-mod.active .sn-ctx-mod-dot{background:var(--blue)}
+
+.sn-ctx-help{
+  margin-top:auto;padding:14px 16px;
+  border-top:1px solid var(--border);
+  font-size:11px;color:var(--txt3);
+  display:flex;gap:8px;align-items:flex-start;
+}
+.sn-ctx-help-ic{
+  width:26px;height:26px;border-radius:50%;
+  background:var(--bg2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:var(--txt2);flex-shrink:0
+}
+.sn-ctx-help-txt{font-size:11px;color:var(--txt3);line-height:1.45}
 
 /* Responsive: collapse sidebar on small screens */
 @media(max-width:1024px){
@@ -4009,7 +4084,7 @@ body.view-gst #mm-crumbs{display:none}
    CENTRAL ONBOARDING — OVERVIEW SCREEN
    A clean executive landing screen that precedes the detailed mindmap.
    ════════════════════════════════════════════════════════════════ */
-#ov-screen{display:none;background:var(--bg2);min-height:calc(100vh - 56px)}
+#ov-screen{display:none;background:var(--bg);min-height:calc(100vh - 56px)}
 body.view-ov #main{display:none!important}
 body.view-ov #ov-screen{display:block}
 /* Override global .sk min-height:280px — overview skeletons have explicit heights */
@@ -4041,8 +4116,9 @@ body.view-ov #ov-screen{display:block}
 
 /* Page intro */
 .ov-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px}
-.ov-eyebrow{font-size:13px;font-weight:700;letter-spacing:.18em;color:var(--blue);text-transform:uppercase;margin-bottom:0}
-.ov-sub{display:none}
+.ov-eyebrow{font-size:10px;font-weight:700;letter-spacing:.18em;color:var(--blue);text-transform:uppercase;margin-bottom:4px}
+.ov-title{font-size:28px;font-weight:700;color:var(--txt);letter-spacing:-.6px;margin:0 0 3px;line-height:1.1}
+.ov-sub{font-size:12.5px;color:var(--txt2);margin-top:0;line-height:1.45}
 .ov-period-row{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;align-self:flex-end}
 
 /* Executive KPI cards */
@@ -4065,7 +4141,7 @@ body.view-ov #ov-screen{display:block}
 .ov-donut-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
 .ov-card-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px}
 .ov-card-title{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.15px}
-.ov-card-sub{display:none}
+.ov-card-sub{font-size:11px;color:var(--txt3);margin-top:1px;margin-bottom:6px;display:block}
 .ov-chart-sel{background:var(--seg-track);border:none;font-family:inherit;font-size:11px;font-weight:600;color:var(--txt2);cursor:pointer;padding:4px 22px 4px 9px;border-radius:var(--pill);outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23AEAEB2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center}
 
 /* Bar chart */
@@ -4114,7 +4190,7 @@ body.view-ov #ov-screen{display:block}
 </style>
 </head>
 
-<body>
+<body class="view-ov">
 
 <!-- Ambient vertical aura — behind everything -->
 <div id="aura" aria-hidden="true"></div>
@@ -4268,7 +4344,8 @@ body.view-ov #ov-screen{display:block}
     <!-- Page intro + period controls -->
     <div class="ov-page-hdr">
       <div>
-        <div class="ov-eyebrow">Central Onboarding Dashboard</div>
+        <div class="ov-eyebrow">Central Onboarding</div>
+        <h1 class="ov-title">Central Onboarding</h1>
         <p class="ov-sub">Executive view of onboarding performance across all business verticals.</p>
       </div>
       <div class="ov-period-row" id="ov-period-row"></div>
@@ -12076,72 +12153,62 @@ function buildSideNav() {
   var nav = document.getElementById('side-nav');
   if (!nav) return;
 
+  // Overview uses the full viewport — no sidebar needed
+  if (document.body.classList.contains('view-ov')) { nav.innerHTML = ''; return; }
+
+  var cv = currentView;
+  var vertKey = activeVertKey || 'OMP';
+
+  // ── Back to Central Onboarding ──
+  var backIc = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+  var html = '<button class="sn-ctx-back" onclick="showOverview()">' + backIc + ' Central Onboarding</button>';
+
+  // ── Active vertical identity ──
   var cfgList = getVertCfg();
-  var isGST   = currentView === 'gst';
-  var isOvw   = !isGST;
-
-  var html = '<div class="sn-sect">Navigation</div>';
-
-  // ── Verticals group (collapsed by default, toggles on click) ──
-  var vertsOpen = isOvw && snVertsOpen;
-  html += '<button class="sn-grp' + (isOvw ? ' sn-active' : '') + (vertsOpen ? ' sn-open' : '') + '"'
-    + ' onclick="if(currentView===\'gst\'){switchView(\'onboarding\');}else{snVertsOpen=!snVertsOpen;buildSideNav();}">'
-    + '<span class="sn-grp-ic">V</span>'
-    + '<span class="sn-grp-lbl">Verticals</span>'
-    + '<span class="sn-grp-arr">›</span>'
-    + '</button>';
-  if (vertsOpen && cfgList.length) {
-    html += '<div class="sn-subs sn-open">';
-    cfgList.forEach(function(cfg) {
-      var vs  = DS && DS.verticals && DS.verticals[cfg.key] || {};
-      var vb  = DB && DB.verticals && DB.verticals[cfg.key] || {};
-      var tot = (vs.total || 0) + (vb.total || 0);
-      var vc  = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
-      html += '<button class="sn-sub' + (snActiveKey === cfg.key ? ' sn-active' : '') + '"'
-        + ' data-key="' + esc(cfg.key) + '"'
-        + ' style="--vc:' + vc.c + ';--vc-ink:' + vc.ink + ';--vc-soft:' + hexRGBA(vc.c, .09) + '"'
-        + ' onclick="snSelectVert(\'' + cfg.key + '\')">'
-        + '<span class="sn-sub-dot"></span>'
-        + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
-        + '</button>';
-    });
-    html += '</div>';
+  var activeCfg = null;
+  for (var i = 0; i < cfgList.length; i++) {
+    if (cfgList[i].key === vertKey) { activeCfg = cfgList[i]; break; }
+  }
+  var vs  = DS && DS.verticals && DS.verticals[vertKey] || {};
+  var vb  = DB && DB.verticals && DB.verticals[vertKey] || {};
+  var tot = (vs.total || 0) + (vb.total || 0);
+  if (activeCfg) {
+    html += '<div class="sn-ctx-vert">'
+      + '<div class="sn-ctx-vert-label">' + esc(activeCfg.key) + '</div>'
+      + '<div class="sn-ctx-vert-name">' + esc(activeCfg.name) + '</div>'
+      + '<div class="sn-ctx-vert-count">' + fmt(tot) + '</div>'
+      + '<div class="sn-ctx-vert-sub">Onboarded</div>'
+      + '</div>';
   }
 
-  // ── Separator + GST Payables ───────────────────────────────
-  html += '<div class="sn-sep"></div>';
-  html += '<button class="sn-gst' + (isGST ? ' sn-active' : '') + '" onclick="switchView(\'gst\')">'
-    + '<span class="sn-gst-ic">₹</span>'
-    + '<span class="sn-gst-lbl">GST Payables</span>'
-    + '</button>';
+  // ── Modules ──
+  html += '<div class="sn-ctx-sect">Modules</div>';
 
-  // ── OSV — Consent & Verification Status ────────────────────
-  var isOSV = currentView === 'osv';
-  html += '<button class="sn-gst' + (isOSV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'osv\')">'
-    + '<span class="sn-gst-ic" style="font-size:11px">✓</span>'
-    + '<span class="sn-gst-lbl">OSV Status</span>'
-    + '</button>';
+  var isOnb = cv === 'onboarding';
+  var isTxn = cv === 'transactions';
+  var isVR  = cv === 'vendorratings';
+  var isOSV = cv === 'osv';
+  var isExc = cv === 'exception';
+  var isGST = cv === 'gst';
 
-  // ── Marketplace Transactions ────────────────────────────────
-  var isTxnV = currentView === 'transactions';
-  html += '<button class="sn-gst' + (isTxnV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'transactions\')">'
-    + '<span class="sn-gst-ic" style="font-size:11px">↔</span>'
-    + '<span class="sn-gst-lbl">Transactions</span>'
-    + '</button>';
+  function mod(lbl, active, onclick) {
+    return '<button class="sn-ctx-mod' + (active ? ' active' : '') + '" onclick="' + onclick + '">'
+      + '<span class="sn-ctx-mod-dot"></span>'
+      + esc(lbl)
+      + '</button>';
+  }
 
-  // ── Vendor Ratings ──────────────────────────────────────────
-  var isVRV = currentView === 'vendorratings';
-  html += '<button class="sn-gst' + (isVRV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'vendorratings\')">'
-    + '<span class="sn-gst-ic" style="font-size:11px">★</span>'
-    + '<span class="sn-gst-lbl">Vendor Ratings</span>'
-    + '</button>';
+  html += mod('Onboarded (Details)',         isOnb, 'enterDashboard(\'' + esc(vertKey) + '\')')
+       +  mod('Transaction Activity & OSV',  isOSV, 'switchView(\'osv\')')
+       +  mod('Transactions',                isTxn, 'switchView(\'transactions\')')
+       +  mod('Vendor Ratings',              isVR,  'switchView(\'vendorratings\')')
+       +  mod('Onboarded via Exception',     isExc, 'switchView(\'exception\')')
+       +  mod('GST Payables',                isGST, 'switchView(\'gst\')');
 
-  // ── Onboarded via Exception ──────────────────────────────────
-  var isExcV = currentView === 'exception';
-  html += '<button class="sn-gst' + (isExcV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'exception\')">'
-    + '<span class="sn-gst-ic" style="font-size:11px">!</span>'
-    + '<span class="sn-gst-lbl">Via Exception</span>'
-    + '</button>';
+  // ── Help footer ──
+  html += '<div class="sn-ctx-help"><div class="sn-ctx-help-ic">?</div>'
+    + '<div class="sn-ctx-help-txt"><b>Need Help?</b><br>View the onboarding guide or raise a request.</div>'
+    + '</div>';
 
   nav.innerHTML = html;
 }
@@ -15117,6 +15184,7 @@ function showOverview() {
   closeRecordsSheet();
   var doNav = function() {
     document.body.classList.add('view-ov');
+    buildSideNav();   // clear sidebar while on overview
     renderOvScreen();
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
@@ -15141,6 +15209,7 @@ function enterDashboard(vertKey) {
   closeRecordsSheet();
   var doNav = function() {
     document.body.classList.remove('view-ov');
+    buildSideNav();   // build contextual module rail
     window.scrollTo({ top: 0, behavior: 'instant' });
     if (vertKey) {
       _mmVert = vertKey;
@@ -15392,7 +15461,7 @@ function _buildOvKpiCards() {
     ? kpis.avgTAT + '<span style="font-size:.5em;font-weight:600;color:var(--txt2);margin-left:3px">days</span>'
     : '—';
 
-  return card('#005DFF', 'rgba(0,93,255,.08)',   icUsers, 'Total Onboarded', totalVal, dTotal)
+  return card('#005DFF', 'rgba(0,93,255,.08)',   icUsers, 'Total Onboardings', totalVal, dTotal)
        + card('#1DC797', 'rgba(29,199,151,.08)', icCheck, 'Completion Rate',   compVal,  dComp)
        + card('#8460D4', 'rgba(132,96,212,.08)', icClock, 'Average TAT',       tatVal,   dTAT);
 }
