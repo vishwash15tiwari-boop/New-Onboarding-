@@ -42,6 +42,13 @@
   /* ── Borders — warm hairlines (Notion) ── */
   --border:  #E7E4DF;   /* warm hairline */
   --border2: #D6D2CB;   /* strong warm hairline */
+  --field-border: #96938E;   /* ADDITIVE (Phase 3): accessible form-field border, verified 3.06:1 on
+                                 white (WCAG 1.4.11 non-text contrast, needs ≥3:1). The mission-draft
+                                 #AEA9A0 measured 2.34:1 and its suggested fallback #A29D93 measured
+                                 2.70:1 — both under the bar — so this was darkened further along the
+                                 same warm-grey line (same undertone ratio as --txt3) to actually clear
+                                 it; see phase report. Not yet wired to any selector — Phase 4 should
+                                 apply it to .gp-input/.gp-select and .filter-input/.filter-select. */
 
   /* ── Ink — warm hierarchy, all AA on white ── */
   --txt:     #1D1D1F;   /* primary — 16.8:1 */
@@ -101,6 +108,10 @@
   /* Type roles — Poppins display, Inter UI (faces applied during component unification) */
   --font-display:'Poppins','Inter',system-ui,-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
   --font-ui:'Inter','Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+
+  /* ── Chart palette — ADDITIVE (Phase 3), unused until Phase 4 wires it into chart/legend rules ── */
+  --chart-1:#005DFF; --chart-2:#1DC797; --chart-3:#8460D4; --chart-4:#FF9500; --chart-5:#8E8E93;
+  --chart-grid:rgba(60,60,67,.14); --chart-label:var(--txt3);
 }
 
 html{
@@ -993,30 +1004,34 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 
 /* ═══════════════════════════════════════════════════════════════
    GST PAYABLES VIEW — unified with Apple system palette
+   Phase 3 token canonicalization: role-equivalent tokens below now
+   alias the canonical Recykal root tokens (single source of truth).
+   --gp-orange/--gp-gold + their -bg/-ink variants are this view's
+   own identity accent (no canonical equivalent) and are kept as-is.
    ═══════════════════════════════════════════════════════════════ */
 :root{
-  --gp-bg:      #FFFFFF;
-  --gp-bg2:     #F5F5F7;   /* matches Apple page surface */
-  --gp-card:    #FFFFFF;
-  --gp-card2:   #F9F9FB;
-  --gp-ink:     #1D1D1F;   /* Apple primary label */
-  --gp-ink2:    #6E6E73;   /* Apple secondary label */
-  --gp-ink3:    #AEAEB2;   /* Apple tertiary label */
-  --gp-border:  rgba(0,0,0,.09);
-  --gp-border2: rgba(0,0,0,.15);
+  --gp-bg:      var(--bg);
+  --gp-bg2:     var(--bg2);
+  --gp-card:    var(--card);
+  --gp-card2:   var(--card2);
+  --gp-ink:     var(--txt);
+  --gp-ink2:    var(--txt2);
+  --gp-ink3:    var(--txt3);
+  --gp-border:  var(--border);
+  --gp-border2: var(--border2);
   --gp-orange:      #FF9500;
   --gp-orange-ink:  #B25000;
   --gp-orange-bg:   #FFF4E5;
-  --gp-green:       #1DC797;
-  --gp-green-bg:    #E9F9EE;
+  --gp-green:       var(--green);
+  --gp-green-bg:    var(--st-onboarded-bg);
   --gp-gold:        #FF9500;
   --gp-gold-bg:     #FFF4E5;
   --gp-gold-ink:    #B25000;
-  --gp-blue:        #005DFF;
-  --gp-purple:      #8460D4;
-  --gp-red:         #FF3B30;
-  --gp-red-bg:      #FDECEB;
-  --gp-red-ink:     #D70015;
+  --gp-blue:        var(--blue);
+  --gp-purple:      var(--purple);
+  --gp-red:         var(--red);
+  --gp-red-bg:      var(--st-rejected-bg);
+  --gp-red-ink:     var(--red);
   --gp-grid:        rgba(0,0,0,.07);
   --gp-shadow-sm: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
   --gp-shadow:    0 2px 6px rgba(0,0,0,.04), 0 8px 28px rgba(0,0,0,.07);
@@ -1705,15 +1720,19 @@ body.view-gst #vert-tabs-bar{display:none}
   border-radius:0 9px 9px 0;
 }
 .vert-tab-txndist.active{border-left-color:transparent;border-radius:9px}
-/* ── Transaction Distribution View ── */
+/* ── Transaction Distribution View ──
+   Phase 3 token canonicalization: every --tdt-* role here has an exact
+   or near-exact canonical/--st-* equivalent (this view carries no unique
+   accent identity of its own), so all are now aliased to the single
+   source of truth. */
 :root{
-  --tdt-card:var(--card);--tdt-bg:var(--bg);--tdt-bg2:#f0f4f8;
+  --tdt-card:var(--card);--tdt-bg:var(--bg);--tdt-bg2:var(--bg2);
   --tdt-border:var(--border);--tdt-ink:var(--txt);--tdt-ink2:var(--txt2);--tdt-ink3:var(--txt3);
   --tdt-shadow-sm:0 1px 6px rgba(0,0,0,.07);--tdt-shadow:0 4px 20px rgba(0,0,0,.12);
-  --tdt-green:#049769;--tdt-green-bg:#E3F8F1;
-  --tdt-amber:#B25000;--tdt-amber-bg:#FFF4E5;
-  --tdt-red:#D70015;--tdt-red-bg:#FDECEB;
-  --tdt-blue:#005dff;--tdt-blue-bg:#E6EFFF;
+  --tdt-green:var(--green);--tdt-green-bg:var(--st-onboarded-bg);
+  --tdt-amber:var(--amber);--tdt-amber-bg:var(--st-review-bg);
+  --tdt-red:var(--red);--tdt-red-bg:var(--st-rejected-bg);
+  --tdt-blue:var(--blue);--tdt-blue-bg:var(--st-transacted-bg);
 }
 #tab-txndist{padding:0}
 #tab-txndist>*{animation:gpReveal .42s cubic-bezier(.22,.8,.36,1) both}
