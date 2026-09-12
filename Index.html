@@ -907,36 +907,8 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 /* ═══════════════════════════════════════════════════════════════
    GST PAYABLES VIEW — warm cream / burnt-orange enterprise palette
    ═══════════════════════════════════════════════════════════════ */
-:root{
-  --gp-bg:      #ffffff;
-  --gp-bg2:     #f5f5f7;
-  --gp-card:    #FFFFFF;
-  --gp-card2:   #f9f9fb;
-  --gp-ink:     #1d1d1f;
-  --gp-ink2:    #6e6e73;
-  --gp-ink3:    #aeaeb2;
-  --gp-border:  #e5e5ea;
-  --gp-border2: #d1d1d6;
-  --gp-orange:      #B25000;
-  --gp-orange-ink:  #B25000;
-  --gp-orange-bg:   #FFF4E5;
-  --gp-green:       #049769;
-  --gp-green-bg:    #e3f8f1;
-  --gp-gold:        #FF9500;
-  --gp-gold-bg:     #FFF4E5;
-  --gp-blue:        #024C8A;
-  --gp-purple:      #8460D4;
-  --gp-red:         #B25000;
-  --gp-red-bg:      #fdeceb;
-  --gp-grid:        #e5e5ea;
-  --gp-shadow-sm: 0 1px 2px rgba(0,0,0,.05);
-  --gp-shadow:    0 4px 16px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.05);
-  --gp-shadow-lg: 0 16px 40px rgba(0,0,0,.12), 0 4px 10px rgba(0,0,0,.06);
-}
 
 /* Immersive warm background when the GST view is active */
-body.view-gst{background:var(--gp-bg)}
-body.view-gst #main{background:var(--gp-bg)}
 body.view-gst #header{background:rgba(255,255,255,.9);border-bottom-color:var(--gp-border)}
 body.view-gst #aud-gst.active{color:var(--gp-orange-ink)}
 body.view-gst .live-pill{background:var(--gp-orange-bg);border-color:var(--gp-border2)}
@@ -948,7 +920,6 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .gp-year-chip.active{background:var(--gp-orange);border-color:var(--gp-orange);color:#fff}
 
 /* Staggered reveal for cards */
-@keyframes gpReveal{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 #tab-gst>*{animation:gpReveal .42s cubic-bezier(.22,.8,.36,1) both}
 #tab-gst>*:nth-child(1){animation-delay:.02s}
 #tab-gst>*:nth-child(2){animation-delay:.08s}
@@ -957,56 +928,29 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 #tab-gst>*:nth-child(5){animation-delay:.26s}
 
 /* ── KPI row ── */
-.gp-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
 .gp-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gp-orange)}
-.gp-kpi:hover{box-shadow:var(--gp-shadow);transform:translateY(-3px)}
 .gp-kpi.gp-orange::before{background:var(--gp-orange)}
 .gp-kpi.gp-green::before{background:var(--gp-green)}
 .gp-kpi.gp-gold::before{background:var(--gp-gold)}
-.gp-kpi-tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:4px 11px;border-radius:20px;margin-bottom:14px}
 .gp-orange .gp-kpi-tag{background:var(--gp-orange-bg);color:var(--gp-orange-ink)}
 .gp-green .gp-kpi-tag{background:var(--gp-green-bg);color:var(--gp-green)}
 .gp-gold .gp-kpi-tag{background:var(--gp-gold-bg);color:var(--gp-gold)}
-.gp-kpi-val{font-size:30px;font-weight:750;color:var(--gp-ink);letter-spacing:-1.2px;line-height:1.05;font-variant-numeric:tabular-nums}
-.gp-kpi-sub{font-size:12.5px;color:var(--gp-ink3);font-weight:450;margin-top:6px}
 .gp-kpi-barrow{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--gp-ink3);margin-top:16px;margin-bottom:6px;text-transform:none;letter-spacing:.2px}
-.gp-kpi-track{height:6px;border-radius:6px;background:var(--gp-bg2);overflow:hidden}
-.gp-kpi-fill{height:100%;border-radius:6px;transition:width 1s cubic-bezier(.4,0,.2,1)}
-.gp-orange .gp-kpi-fill{background:var(--gp-orange)}
-.gp-green .gp-kpi-fill{background:var(--gp-green)}
-.gp-gold .gp-kpi-fill{background:var(--gp-gold)}
 
 /* ── Generic GST card ── */
-.gp-card:hover{box-shadow:var(--gp-shadow)}
-.gp-card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
-.gp-card-title{font-size:16px;font-weight:700;color:var(--gp-ink);letter-spacing:-.3px}
-.gp-card-sub{font-size:12.5px;color:var(--gp-ink3);font-weight:450;margin-top:2px}
 
 /* ── Aging row: line chart + FY cards ── */
 .gp-aging-row{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;margin-bottom:16px}
 .gp-chart-wrap{width:100%;overflow:hidden;margin-top:8px}
 .gp-line-svg{width:100%;height:auto;display:block}
 .gp-axis-txt{fill:var(--gp-ink3);font-size:10.5px;font-weight:500;font-family:inherit}
-.gp-fy-list{display:flex;flex-direction:column;gap:10px;max-height:none;overflow-y:auto;padding-right:2px}
-.gp-fy-card{background:var(--gp-card);border:1px solid var(--gp-border);border-radius:14px;padding:12px 15px;cursor:pointer;transition:box-shadow .18s,border-color .18s,transform .18s}
 .gp-fy-card:hover{box-shadow:var(--gp-shadow);border-color:var(--gp-border2);transform:translateX(2px)}
 .gp-fy-card.active{border-color:var(--gp-orange);background:var(--gp-orange-bg)}
-.gp-fy-label{font-size:11.5px;font-weight:600;color:var(--gp-ink3);letter-spacing:.2px}
 .gp-fy-val{font-size:18px;font-weight:750;color:var(--gp-ink);letter-spacing:-.6px;margin:3px 0 8px;font-variant-numeric:tabular-nums}
 .gp-fy-track{height:4px;border-radius:4px;background:var(--gp-bg2);overflow:hidden}
 .gp-fy-bar{height:100%;border-radius:4px;background:var(--gp-orange);transition:width .7s cubic-bezier(.4,0,.2,1)}
 
 /* ── Charts row: donut / bars / compliance ── */
-.gp-charts-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
-.gp-donut-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:10px}
-.gp-donut-svg{width:170px;height:170px}
-.gp-donut-num{fill:var(--gp-ink);font-size:26px;font-weight:750;font-family:inherit;letter-spacing:-1px}
-.gp-donut-lbl{fill:var(--gp-ink3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-family:inherit}
-.gp-donut-svg circle{transition:stroke-dasharray .8s cubic-bezier(.4,0,.2,1)}
-.gp-legend{display:flex;flex-direction:column;gap:7px;width:100%}
-.gp-leg{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gp-ink2);font-weight:500}
-.gp-leg b{margin-left:auto;color:var(--gp-ink);font-weight:700;font-variant-numeric:tabular-nums}
-.gp-leg-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
 .gp-vbars{display:flex;align-items:flex-end;justify-content:space-around;gap:6px;height:170px;margin-top:14px;padding:0 2px}
 .gp-vbar-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%}
 .gp-vbar{width:60%;max-width:30px;min-height:4px;border-radius:6px 6px 0 0;transition:height .7s cubic-bezier(.4,0,.2,1)}
@@ -1020,42 +964,10 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .gp-comp-val{font-size:12px;font-weight:700;color:var(--gp-ink);text-align:right;font-variant-numeric:tabular-nums}
 
 /* ── Filters ── */
-.gp-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--gp-card);border:1px solid var(--gp-border);border-radius:16px;padding:14px 16px;margin-bottom:16px;box-shadow:var(--gp-shadow-sm)}
-.gp-filters .gp-search{flex:1;min-width:200px}
-.gp-input,.gp-select{font-family:inherit;background:var(--gp-card2);border:1px solid var(--gp-border2);color:var(--gp-ink);padding:9px 12px;border-radius:11px;font-size:12.5px;font-weight:450;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
-.gp-select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:30px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23A94A18' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
-.gp-select-wrap{min-width:150px}
-.gp-input:hover,.gp-select:hover{border-color:var(--gp-orange)}
-.gp-input:focus,.gp-select:focus{border-color:var(--gp-orange);box-shadow:0 0 0 3px rgba(255,149,0,.14)}
-.gp-input::placeholder{color:var(--gp-ink3)}
 
 /* ── Vendor register table ── */
-.gp-table-card{background:var(--gp-card);border:1px solid var(--gp-border);border-radius:20px;box-shadow:var(--gp-shadow-sm);overflow:hidden}
-.gp-table-head{padding:18px 22px 14px}
-.gp-table-head .gp-card-title{font-size:15px}
-.gp-table-scroll{overflow-x:auto;max-height:620px;overflow-y:auto}
-.gp-table thead th{position:sticky;top:0;z-index:5;background:var(--gp-card2);padding:11px 16px;text-align:left;font-size:10.5px;font-weight:700;color:var(--gp-ink3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid var(--gp-border);cursor:pointer;user-select:none;transition:color .12s}
-.gp-table thead th:hover{color:var(--gp-orange-ink)}
-.gp-table thead th.gp-sort-asc::after{content:' ↑';color:var(--gp-orange)}
-.gp-table thead th.gp-sort-desc::after{content:' ↓';color:var(--gp-orange)}
-.gp-table thead th.gp-num,.gp-table td.gp-num{text-align:right;font-variant-numeric:tabular-nums}
-.gp-table tbody tr{border-bottom:1px solid var(--gp-border);transition:background .12s}
-.gp-table tbody tr:last-child{border-bottom:none}
-.gp-table tbody tr:hover{background:var(--gp-card2)}
-.gp-table td{padding:12px 16px;color:var(--gp-ink);vertical-align:middle;white-space:nowrap}
-.gp-vname{font-weight:650;color:var(--gp-ink)}
-.gp-gstno{font-size:11.5px;color:var(--gp-ink3);font-variant-numeric:tabular-nums}
-.gp-chip.active{background:var(--gp-green-bg);color:var(--gp-green)}
-.gp-chip.cancelled{background:var(--gp-red-bg);color:var(--gp-red)}
-.gp-chip.suspended{background:var(--gp-gold-bg);color:var(--gp-gold)}
-.gp-chip.inactive{background:var(--gp-bg2);color:var(--gp-ink2)}
-.gp-chip.neutral{background:var(--gp-bg2);color:var(--gp-ink2)}
-.gp-amt{font-weight:650;color:var(--gp-ink);font-variant-numeric:tabular-nums}
-.gp-amt.muted{font-weight:450;color:var(--gp-ink3)}
-.gp-table-note{padding:12px 22px;font-size:11.5px;color:var(--gp-ink3);border-top:1px solid var(--gp-border);background:var(--gp-card2)}
 
 /* Skeleton loading */
-.gp-skel{background:linear-gradient(90deg,var(--gp-bg2) 0%,var(--gp-card2) 40%,var(--gp-bg2) 80%);background-size:640px 100%;animation:gpShimmer 1.3s infinite linear;border-radius:12px}
 
 /* ── GST view responsive ── */
 @media (max-width:1100px){
