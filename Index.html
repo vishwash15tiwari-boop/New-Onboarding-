@@ -2940,8 +2940,9 @@ body:not(.view-gst) #dash-content{max-width:1500px;margin:0 auto;padding:12px 30
 .jr-funnel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 20px;display:flex;flex-direction:column;gap:12px}
 .fn-row{display:flex;align-items:center;gap:16px}
 .fn-lbl{width:104px;flex-shrink:0;font-size:12.5px;font-weight:600;color:var(--txt2)}
-.fn-track{flex:1;height:32px;border-radius:8px;background:var(--bg2);overflow:hidden}
-.fn-fill{height:100%;border-radius:8px;display:flex;align-items:center;padding:0 13px;color:#fff;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;transition:width .7s var(--ease-out);min-width:2px}
+.fn-track{flex:1;height:32px;border-radius:8px;background:var(--bg2);overflow:hidden;display:flex;align-items:center}
+.fn-fill{height:100%;border-radius:8px;transition:width .7s var(--ease-out);min-width:2px}
+.fn-val{flex-shrink:0;margin-left:10px;font-size:13px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
 .fn-meta{width:120px;flex-shrink:0;text-align:right;font-size:11.5px;font-weight:600;color:var(--txt3)}
 .fn-meta b{color:var(--txt);font-weight:700}
 /* 5 · Operational insights */
@@ -4320,9 +4321,12 @@ var GST = null;             // aggregated GST Payables data for the active FY fi
 var gpYear = 'All';         // active financial-year filter ('All' | 'FY 21-22' …)
 var gpFilters = { search: '', status: 'All', vertical: 'All', msme: 'All', itc: 'All' };
 var gpSort = { key: 'total', dir: -1 };  // vendor table sort (default: largest balance first)
-/* iOS system palette — fixed categorical order, never cycled */
-var GP_STATUS_COLORS = ['#005DFF', '#1DC797', '#8460D4', '#FF9500', '#1DC797', '#8460D4', '#3E7D44'];
-var GP_VERT_COLORS   = ['#005DFF', '#1DC797', '#8460D4', '#8460D4', '#FF9500', '#1DC797', '#3E7D44', '#8E8E93'];
+/* Shared 5-series chart palette (mirrors --chart-1..5). GP_STATUS_COLORS is kept only
+   as an unused legacy fallback — the GST status donut now colours by MEANING via
+   _gpStatusColor() below, not by position, so a status keeps its colour regardless
+   of where it falls in the backend-returned list. */
+var GP_STATUS_COLORS = ['#1DC797', '#FF9500', '#FF3B30', '#8460D4', '#8E8E93'];
+var GP_VERT_COLORS   = ['#005DFF', '#1DC797', '#8460D4', '#FF9500', '#8E8E93', '#8E8E93', '#8E8E93', '#8E8E93'];
 var GP_MAX_ROWS = 300;      // vendor rows rendered at once
 
 // Display names for raw pipeline statuses (values stay raw for filtering)
@@ -5223,12 +5227,12 @@ var KB_COLS = [            // workflow order, left to right
 
 // ── Pipeline stage palette — mirrors the CSS --st-* tokens, one set everywhere ──
 var STAGE = {
-  total:      { fill: 'var(--st-total)',      bg: 'var(--st-total-bg)',      tx: 'var(--st-total-tx)',      lbl: 'Logged In Cases' },
-  draft:      { fill: 'var(--st-draft)',      bg: 'var(--st-draft-bg)',      tx: 'var(--st-draft-tx)',      lbl: 'Draft' },
-  review:     { fill: 'var(--st-review)',     bg: 'var(--st-review-bg)',     tx: 'var(--st-review-tx)',     lbl: 'In Review' },
-  onboarded:  { fill: 'var(--st-onboarded)',  bg: 'var(--st-onboarded-bg)',  tx: 'var(--st-onboarded-tx)',  lbl: 'Onboarded' },
-  transacted: { fill: 'var(--st-transacted)', bg: 'var(--st-transacted-bg)', tx: 'var(--st-transacted-tx)', lbl: 'Transacted' },
-  rejected:   { fill: 'var(--st-rejected)',   bg: 'var(--st-rejected-bg)',   tx: 'var(--st-rejected-tx)',   lbl: 'Rejected' },
+  total:      { fill: '#8E8E93',      bg: 'var(--st-total-bg)',      tx: 'var(--st-total-tx)',      lbl: 'Logged In Cases' },
+  draft:      { fill: '#8460D4',      bg: 'var(--st-draft-bg)',      tx: 'var(--st-draft-tx)',      lbl: 'Draft' },
+  review:     { fill: '#FF9500',     bg: 'var(--st-review-bg)',     tx: 'var(--st-review-tx)',     lbl: 'In Review' },
+  onboarded:  { fill: '#1DC797',  bg: 'var(--st-onboarded-bg)',  tx: 'var(--st-onboarded-tx)',  lbl: 'Onboarded' },
+  transacted: { fill: '#005DFF', bg: 'var(--st-transacted-bg)', tx: 'var(--st-transacted-tx)', lbl: 'Transacted' },
+  rejected:   { fill: '#FF3B30',   bg: 'var(--st-rejected-bg)',   tx: 'var(--st-rejected-tx)',   lbl: 'Rejected' },
 };
 
 // The four current-status segments that partition Total.
@@ -5376,7 +5380,7 @@ function funnelBig(v, cfg) {
     + '<text x="' + c0 + '" y="' + (c0 - 2) + '" text-anchor="middle" font-family="Inter,sans-serif"'
     + ' font-size="23" font-weight="800" fill="var(--txt)">' + fmt(tot) + '</text>'
     + '<text x="' + c0 + '" y="' + (c0 + 13) + '" text-anchor="middle" font-family="Inter,sans-serif"'
-    + ' font-size="8" font-weight="600" fill="var(--txt3)" letter-spacing="0.5">TOTAL CASES</text>'
+    + ' font-size="8" font-weight="600" fill="#726F6A" letter-spacing="0.5">TOTAL CASES</text>'
     + '</g>';
 
   var svg = '<svg width="' + S + '" height="' + S + '" viewBox="0 0 ' + S + ' ' + S + '"'
@@ -5597,14 +5601,15 @@ function renderFunnel(key) {
     var w = val > 0 ? Math.max(3, val / max * 100) : 0;
     var pct = tot > 0 ? Math.round(val / tot * 100) : 0;
     return '<div class="fn-row"><div class="fn-lbl">' + lbl + '</div>'
-      + '<div class="fn-track"><div class="fn-fill" style="width:' + w.toFixed(1) + '%;background:' + color + '">' + fmt(val) + '</div></div>'
+      + '<div class="fn-track"><div class="fn-fill" style="width:' + w.toFixed(1) + '%;background:' + color + '"></div>'
+      + '<span class="fn-val">' + fmt(val) + '</span></div>'
       + '<div class="fn-meta"><b>' + pct + '%</b> of pipeline</div></div>';
   };
   el.innerHTML = '<div class="jr-funnel">'
-    + row('Draft',     draft,  'var(--st-draft)')
-    + row('In Review', review, 'var(--st-review)')
-    + row('Completed', done,   'var(--st-onboarded)')
-    + row('Rejected',  rej,    'var(--st-rejected)')
+    + row('Draft',     draft,  '#8460D4')
+    + row('In Review', review, '#FF9500')
+    + row('Completed', done,   '#1DC797')
+    + row('Rejected',  rej,    '#FF3B30')
     + '</div>';
 }
 
@@ -5770,7 +5775,7 @@ function _vd(action) { return { t:'View Details', ic:MM_IC.doc, kind:'vd', actio
 // Every vertical shows ONLY the categories it actually has (no hardcoded
 // Metal/Plastic), and every row carries both audiences so the split is always
 // visible. Union of the seller (vs) and buyer (vb) breakdowns from the backend.
-var MM_CAT_COLORS = ['#567DE8','#005DFF','#049769','#FF9500','#8460D4','#8460D4','#049769','#FF9500'];
+var MM_CAT_COLORS = ['#005DFF','#1DC797','#8460D4','#FF9500','#8E8E93','#8E8E93','#8E8E93','#8E8E93'];
 function _mmSB(s, b) { return fmt(s || 0) + ' S · ' + fmt(b || 0) + ' B'; }
 // Categories that the inline India map can filter by (chain target).
 function _mmGeoSeg(cat) { var c = String(cat || '').trim().toLowerCase().replace(/['"\\]/g, ''); return c || null; }
@@ -7026,15 +7031,15 @@ var _QS_META = {
 };
 // status key → {col,label} for OSV and Doc rows, mirroring buildQualitySect.
 var _QS_OSV = {
-  completed:    { col: 'var(--st-onboarded)', lbl: 'Done' },
+  completed:    { col: '#1DC797', lbl: 'Done' },
   pending:      { col: '#FF9500',             lbl: 'In Progress' },
-  notInitiated: { col: 'var(--st-draft)',     lbl: 'Not Initiated' }
+  notInitiated: { col: '#8460D4',     lbl: 'Not Initiated' }
 };
 var _QS_DOC = {
-  complete:   { col: 'var(--st-onboarded)', lbl: 'Complete' },
-  partial:    { col: 'var(--st-review)',    lbl: 'Partial' },
-  incomplete: { col: 'var(--st-draft)',     lbl: 'Incomplete' },
-  missing:    { col: 'var(--st-rejected)',  lbl: 'Missing' }
+  complete:   { col: '#1DC797', lbl: 'Complete' },
+  partial:    { col: '#FF9500',    lbl: 'Partial' },
+  incomplete: { col: '#8460D4',     lbl: 'Incomplete' },
+  missing:    { col: '#FF3B30',  lbl: 'Missing' }
 };
 function _qsPct(a, b) { return b > 0 ? Math.round(a / b * 100) : 0; }
 function _qsPopContent(kind, aud, sel) {
@@ -7596,7 +7601,7 @@ function mmRenderGeo() {
   // dataset the map paints; both audiences are already loaded (see _geoEnsureRows) so
   // switching is instant with no reload. The category filter (_geo.cat) still scopes
   // WHICH records are counted; the audience picks seller vs buyer.
-  var GEO_SELLER = '#005dff', GEO_BUYER = '#1dc797';
+  var GEO_SELLER = '#005DFF', GEO_BUYER = '#1DC797';
   var aud = (_geo.aud === 'buyer') ? 'buyer' : 'seller';
   var audColor = (aud === 'buyer') ? GEO_BUYER : GEO_SELLER;
   var audLabel = (aud === 'buyer') ? 'Buyers' : 'Sellers';
@@ -8208,7 +8213,7 @@ function renderVertKPIs(key) {
   // FY sparklines from real breakdown data (skipped when <2 years exist)
   var spTotal = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'total'),      'var(--vc, #005DFF)', false);
   var spOnb   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'onboarded'),  '#1DC797', true);
-  var spTxn   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'transacted'), 'var(--st-transacted)', false);
+  var spTxn   = sparkBars(mergeFYSeries(vs.fyBreakdown, vb.fyBreakdown, 'transacted'), '#005DFF', false);
 
   // Completion meter on the ink card — onboarded share of the whole pipeline
   var totAll  = totalS + totalB;
@@ -8817,10 +8822,10 @@ function openKpiModal(cardId) {
             ])
           + sec('Status Breakdown',
               progBar([
-                {w: dComb.complete   || 0, color: 'var(--st-onboarded)'},
-                {w: dComb.partial    || 0, color: 'var(--st-review)'},
-                {w: dComb.incomplete || 0, color: 'var(--st-draft)'},
-                {w: dComb.missing    || 0, color: 'var(--st-rejected)'},
+                {w: dComb.complete   || 0, color: '#1DC797'},
+                {w: dComb.partial    || 0, color: '#FF9500'},
+                {w: dComb.incomplete || 0, color: '#8460D4'},
+                {w: dComb.missing    || 0, color: '#FF3B30'},
               ])
               + (function() {
                   var vd = (qd.vendorDocs || []).slice().sort(function(a, b) {
@@ -8829,10 +8834,10 @@ function openKpiModal(cardId) {
                     return pb - pa;
                   });
                   return expandTileGrid([
-                    {v: fmt(dComb.complete   || 0), l: 'Complete',   c: 'var(--st-onboarded)', vendors: vd.filter(function(v){return v.submitted===v.total&&v.total>0;})},
-                    {v: fmt(dComb.partial    || 0), l: 'Partial',    c: 'var(--st-review)',    vendors: vd.filter(function(v){return v.submitted>0&&v.submitted<v.total;}), mode:'docs'},
-                    {v: fmt(dComb.incomplete || 0), l: 'Incomplete', c: 'var(--st-draft)',     vendors: vd.filter(function(v){return v.submitted===0&&v.total>0;}),          mode:'docs'},
-                    {v: fmt(dComb.missing    || 0), l: 'Missing',    c: 'var(--st-rejected)',  vendors: vd.filter(function(v){return v.total===0;})},
+                    {v: fmt(dComb.complete   || 0), l: 'Complete',   c: '#1DC797', vendors: vd.filter(function(v){return v.submitted===v.total&&v.total>0;})},
+                    {v: fmt(dComb.partial    || 0), l: 'Partial',    c: '#FF9500',    vendors: vd.filter(function(v){return v.submitted>0&&v.submitted<v.total;}), mode:'docs'},
+                    {v: fmt(dComb.incomplete || 0), l: 'Incomplete', c: '#8460D4',     vendors: vd.filter(function(v){return v.submitted===0&&v.total>0;}),          mode:'docs'},
+                    {v: fmt(dComb.missing    || 0), l: 'Missing',    c: '#FF3B30',  vendors: vd.filter(function(v){return v.total===0;})},
                   ]);
                 })()
             );
@@ -9631,9 +9636,9 @@ function buildQualitySect(qd, aud) {
     var o  = q.osv, oT = o.total || 1;
     var osvPct = Math.round((o.completed || 0) / oT * 100);
     var or_ = [
-      { key: 'completed',    col: 'var(--st-onboarded)', v: o.completed,    lbl: 'Done'          },
+      { key: 'completed',    col: '#1DC797', v: o.completed,    lbl: 'Done'          },
       { key: 'pending',      col: '#FF9500',             v: o.pending,      lbl: 'In Progress'   },
-      { key: 'notInitiated', col: 'var(--st-draft)',     v: o.notInitiated, lbl: 'Not Initiated' },
+      { key: 'notInitiated', col: '#8460D4',     v: o.notInitiated, lbl: 'Not Initiated' },
     ];
     html += '<div class="cc-qsect-row cc-qsect-mt cc-qsect-clk"' + _clkAttr('osvsum') + '>'
       + '<span class="cc-qsect-ic">◎</span>'
@@ -9661,10 +9666,10 @@ function buildQualitySect(qd, aud) {
   if (q.docs && q.docs.total > 0) {
     var d  = q.docs, dT = d.total || 1;
     var dr = [
-      { key: 'complete',   col: 'var(--st-onboarded)', v: d.complete,   lbl: 'Complete'   },
-      { key: 'partial',    col: 'var(--st-review)',    v: d.partial,     lbl: 'Partial'    },
-      { key: 'incomplete', col: 'var(--st-draft)',     v: d.incomplete,  lbl: 'Incomplete' },
-      { key: 'missing',    col: 'var(--st-rejected)',  v: d.missing,     lbl: 'Missing'    },
+      { key: 'complete',   col: '#1DC797', v: d.complete,   lbl: 'Complete'   },
+      { key: 'partial',    col: '#FF9500',    v: d.partial,     lbl: 'Partial'    },
+      { key: 'incomplete', col: '#8460D4',     v: d.incomplete,  lbl: 'Incomplete' },
+      { key: 'missing',    col: '#FF3B30',  v: d.missing,     lbl: 'Missing'    },
     ];
     html += '<div class="cc-qsect-row cc-qsect-mt cc-qsect-clk"' + _clkAttr('docsum') + '>'
       + '<span class="cc-qsect-ic">◻</span>'
@@ -9837,8 +9842,8 @@ function renderBizRail(cfg, vs) {
       var oT = o.total, pf = function(n) { return oT > 0 ? Math.round(n / oT * 100) : 0; };
       opCards.push(opCard('osv', 'OSV Status',
         '<div class="osv-list">'
-        + osvRow('var(--st-onboarded)', 'Done',          o.completed || 0,    pf(o.completed || 0))
-        + osvRow('var(--st-review)',    'In Progress',   o.pending || 0,      pf(o.pending || 0))
+        + osvRow('#1DC797', 'Done',          o.completed || 0,    pf(o.completed || 0))
+        + osvRow('#FF9500',    'In Progress',   o.pending || 0,      pf(o.pending || 0))
         + osvRow('#D1D1D6',             'Not Initiated', o.notInitiated || 0, pf(o.notInitiated || 0))
         + '</div>', true));
     } else {
@@ -10180,7 +10185,7 @@ function buildInlinePipeCard(cfg, v, label, aud, idx) {
     + ' onclick="setDetailAud(\'' + aud + '\')" role="button" tabindex="0"'
     + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();setDetailAud(\'' + aud + '\')}"';
   var ghost = '<span class="cc-ghost" aria-hidden="true">' + (aud === 'seller' ? 'S' : 'B') + '</span>';
-  var dotClr = aud === 'seller' ? 'var(--st-onboarded)' : 'var(--st-transacted)';
+  var dotClr = aud === 'seller' ? '#1DC797' : '#005DFF';
   var hdr = '<div class="cc-hdr2 pipe-hdr" style="align-items:center;gap:8px">'
     + '<span class="pipe-title2">' + (aud === 'seller' ? 'Sellers' : 'Buyers') + '&rsquo; Onboarding Pipeline</span>'
     + (isActive ? '<span class="pipe-viewing">Viewing below</span>' : '')
@@ -11210,10 +11215,10 @@ function renderCatDetailCard(c) {
   if (!ctot) return '';
 
   var STAGE = {
-    onboarded: { lbl: 'Onboarded', fill: 'var(--st-onboarded)' },
-    review:    { lbl: 'In Review', fill: 'var(--st-review)'    },
-    draft:     { lbl: 'Draft',     fill: 'var(--st-draft)'     },
-    rejected:  { lbl: 'Rejected',  fill: 'var(--st-rejected)'  },
+    onboarded: { lbl: 'Onboarded', fill: '#1DC797' },
+    review:    { lbl: 'In Review', fill: '#FF9500'    },
+    draft:     { lbl: 'Draft',     fill: '#8460D4'     },
+    rejected:  { lbl: 'Rejected',  fill: '#FF3B30'  },
   };
 
   var segs = [
@@ -11247,7 +11252,7 @@ function renderCatDetailCard(c) {
         }).join('');
     var ctr = '<g class="donut-ctr">'
       + '<text x="' + cx + '" y="' + (cy - 5) + '" text-anchor="middle" font-family="Inter,sans-serif" font-size="20" font-weight="800" fill="var(--txt)">' + fmt(centerNum) + '</text>'
-      + '<text x="' + cx + '" y="' + (cy + 10) + '" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="600" fill="var(--txt3)" letter-spacing="0.5">' + centerLbl + '</text>'
+      + '<text x="' + cx + '" y="' + (cy + 10) + '" text-anchor="middle" font-family="Inter,sans-serif" font-size="8" font-weight="600" fill="#726F6A" letter-spacing="0.5">' + centerLbl + '</text>'
       + '</g>';
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="display:block;margin:0 auto">' + rings + ctr + '</svg>';
   }
@@ -11710,19 +11715,37 @@ function gstChartsRow() {
     + '</div>';
 }
 
+// Colour a GST registration-status label by MEANING, not array position, so the
+// same status always gets the same colour no matter where the backend-computed
+// list ranks it. Mirrors the --st-* stage semantics used everywhere else in the
+// dashboard: cleared/active states are green, pending/provisional amber,
+// cancelled/overdue/rejected red, draft/applied purple. Anything unrecognised
+// (including the backend's 'Unknown' default) is neutral grey.
+function _gpStatusColor(label) {
+  var s = String(label || '').toUpperCase();
+  if (s.indexOf('CANCEL') !== -1 || s.indexOf('OVERDUE') !== -1 || s.indexOf('REJECT') !== -1
+      || s.indexOf('SUSPEND') !== -1 || s.indexOf('INACTIVE') !== -1) return '#FF3B30';
+  if (s.indexOf('PENDING') !== -1 || s.indexOf('REVIEW') !== -1 || s.indexOf('PROVISIONAL') !== -1
+      || s.indexOf('PROCESS') !== -1) return '#FF9500';
+  if (s.indexOf('DRAFT') !== -1 || s.indexOf('APPLIED') !== -1 || s.indexOf('NEW') !== -1) return '#8460D4';
+  if (s.indexOf('ACTIVE') !== -1 || s.indexOf('CLEAR') !== -1 || s.indexOf('REGISTERED') !== -1
+      || s.indexOf('VALID') !== -1 || s.indexOf('COMPLIANT') !== -1) return '#1DC797';
+  return '#8E8E93';
+}
+
 function gpDonut(segs) {
   var total = segs.reduce(function(a, s) { return a + s.count; }, 0);
   if (!total) return '<div class="gp-empty">No data</div>';
   var cx = 90, cy = 90, r = 66, sw = 24, circ = 2 * Math.PI * r, off = 0;
   var arcs = segs.map(function(s, i) {
-    var len = s.count / total * circ, col = GP_STATUS_COLORS[i % GP_STATUS_COLORS.length];
+    var len = s.count / total * circ, col = _gpStatusColor(s.label);
     var el = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '"'
       + ' stroke-dasharray="' + len.toFixed(2) + ' ' + (circ - len).toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '"'
       + ' transform="rotate(-90 ' + cx + ' ' + cy + ')"><title>' + esc(s.label) + ': ' + fmt(s.count) + ' (' + Math.round(s.count / total * 100) + '%)</title></circle>';
     off += len; return el;
   }).join('');
   var legend = segs.map(function(s, i) {
-    return '<div class="gp-leg"><span class="gp-leg-dot" style="background:' + GP_STATUS_COLORS[i % GP_STATUS_COLORS.length] + '"></span>'
+    return '<div class="gp-leg"><span class="gp-leg-dot" style="background:' + _gpStatusColor(s.label) + '"></span>'
       + esc(s.label) + ' <b>' + fmt(s.count) + '</b></div>';
   }).join('');
   return '<div class="gp-donut-wrap"><svg viewBox="0 0 180 180" class="gp-donut-svg" role="img" aria-label="GST status breakdown">'
@@ -14722,7 +14745,7 @@ function renderTransactionDash() {
     + donutArc(mPct, 0,    '#049769', 50)
     + donutArc(pPct, mPct, '#005DFF', 50)
     + '<text x="70" y="63" text-anchor="middle" font-size="12" font-weight="800" fill="currentColor">' + fmtCr(gTotal) + '</text>'
-    + '<text x="70" y="77" text-anchor="middle" font-size="9.5" fill="var(--txt3)">Total</text>'
+    + '<text x="70" y="77" text-anchor="middle" font-size="9.5" fill="#726F6A">Total</text>'
     + '</svg>';
 
   function fmtMonth(k) {
@@ -14802,8 +14825,8 @@ function renderTransactionDash() {
     for (var yi = 0; yi <= 4; yi++) {
       var yy = padT + cH - Math.round(yi/4 * cH);
       svg += '<line x1="' + padL + '" y1="' + yy + '" x2="' + (W-padR) + '" y2="' + yy + '" stroke="var(--border)" stroke-width="1" opacity=".4"/>';
-      svg += '<text x="' + (padL-5) + '" y="' + (yy+3) + '" text-anchor="end" font-size="9" fill="#005DFF">' + Math.round(txnTop*yi/4) + '</text>';
-      svg += '<text x="' + (W-padR+5) + '" y="' + (yy+3) + '" text-anchor="start" font-size="9" fill="#049769">' + Math.round(gmvTop*yi/4) + '</text>';
+      svg += '<text x="' + (padL-5) + '" y="' + (yy+3) + '" text-anchor="end" font-size="9" fill="#726F6A">' + Math.round(txnTop*yi/4) + '</text>';
+      svg += '<text x="' + (W-padR+5) + '" y="' + (yy+3) + '" text-anchor="start" font-size="9" fill="#726F6A">' + Math.round(gmvTop*yi/4) + '</text>';
     }
     var gmvPts = [];
     chartMths.forEach(function(m, i) {
@@ -14819,14 +14842,14 @@ function renderTransactionDash() {
       var gmvY = padT + cH - Math.round(gmvCrV/gmvTop * cH);
       gmvPts.push(cx.toFixed(1) + ',' + gmvY.toFixed(1));
       // X-axis label
-      svg += '<text x="' + cx.toFixed(1) + '" y="' + (padT+cH+14) + '" text-anchor="middle" font-size="9" fill="var(--txt3)">' + esc(fmtMonth(m.month)) + '</text>';
+      svg += '<text x="' + cx.toFixed(1) + '" y="' + (padT+cH+14) + '" text-anchor="middle" font-size="9" fill="#726F6A">' + esc(fmtMonth(m.month)) + '</text>';
     });
     // Green line for GMV (drawn on top of bars)
     if (gmvPts.length >= 2) svg += '<polyline points="' + gmvPts.join(' ') + '" fill="none" stroke="#049769" stroke-width="2.5" stroke-linejoin="round"/>';
     gmvPts.forEach(function(p){ svg += '<circle cx="' + p.split(',')[0] + '" cy="' + p.split(',')[1] + '" r="3.5" fill="#049769" stroke="#fff" stroke-width="1.5"/>'; });
     // Axis labels
-    svg += '<text x="' + padL + '" y="' + (padT-8) + '" font-size="9" fill="#005DFF" font-weight="600">Transactions</text>';
-    svg += '<text x="' + (W-padR) + '" y="' + (padT-8) + '" text-anchor="end" font-size="9" fill="#049769" font-weight="600">GMV (&#8377; Cr)</text>';
+    svg += '<text x="' + padL + '" y="' + (padT-8) + '" font-size="9" fill="#726F6A" font-weight="600">Transactions</text>';
+    svg += '<text x="' + (W-padR) + '" y="' + (padT-8) + '" text-anchor="end" font-size="9" fill="#726F6A" font-weight="600">GMV (&#8377; Cr)</text>';
     return '<svg class="txn2-chart-svg" viewBox="0 0 ' + W + ' ' + H + '" height="' + H + '">' + svg + '</svg>';
   }
 
@@ -15474,10 +15497,10 @@ function renderOvDonut() {
   }
 
   var segs = [
-    { label:'Onboarded', val:st.comp,  color:'#005DFF' },
-    { label:'In Review',  val:st.inRev, color:'#1DC797' },
+    { label:'Onboarded', val:st.comp,  color:'#1DC797' },
+    { label:'In Review',  val:st.inRev, color:'#FF9500' },
     { label:'Draft',      val:st.draft, color:'#8460D4' },
-    { label:'Rejected',   val:st.rej,   color:'#D70015' },
+    { label:'Rejected',   val:st.rej,   color:'#FF3B30' },
   ].filter(function(s){ return s.val > 0; });
 
   window._ovDonutSegs  = segs;
@@ -15627,15 +15650,20 @@ function renderOvVerts() {
 }
 
 // Distinct colours for per-vertical bar chart (avoid duplicate shades in VERT_COLORS).
+// All 8 verticals stack in the same bar simultaneously, so every key must stay
+// visually distinct — unlike a ranked top-N chart, collapsing the tail to one grey
+// would make several always-visible segments indistinguishable. Every hex below is
+// brand-exact and reused from elsewhere in this file (the 5-series chart palette,
+// plus DRS's Fern Green and Recommerce's jade already used as VERT_COLORS.ink).
 var _OV_BAR_VERT_COLORS = {
-  Marketplace:        '#005DFF',
+  Marketplace:        '#1DC797',
   EPR:                '#8460D4',
   ManagedMarketplace: '#1DC797',
-  InfraBusiness:      '#FF9F0A',
+  InfraBusiness:      '#FF9500',
   AFR:                '#FF3B30',
-  Recommerce:         '#34C759',
-  DRS:                '#30B0C7',
-  Others:             '#AEAEB2',
+  Recommerce:         '#049769',
+  DRS:                '#3E7D44',
+  Others:             '#8E8E93',
   OMP:                '#005DFF',
 };
 
