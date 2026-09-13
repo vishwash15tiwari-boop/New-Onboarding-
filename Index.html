@@ -7892,7 +7892,7 @@ function mmRenderModPanel() {
   var P = node && node.expand === 'inline-panel' ? node.panel : null;
   if (!P) {
     var _ws = document.getElementById('mm-workspace');
-    if (_ws && _ws.classList.contains('sn-drill')) {
+    if (_ws && _ws.classList.contains('sn-drill') && !mmGeoActive && !mmFunnelActive) {
       panel.className = 'mp mp-open';
       panel.innerHTML = '<div class="mp-placeholder">Select a module from the sidebar to explore details</div>';
     } else {
