@@ -2924,7 +2924,11 @@ body.view-gst #vert-tabs-bar{display:none}
 
 /* Responsive: collapse sidebar on small screens */
 @media(max-width:1024px){
-  #side-nav{display:none!important}
+  /* Single-sidebar nav stays available on narrow screens by stacking above
+     the content (the mind-map columns are retired), so navigation is never lost. */
+  #main{flex-direction:column}
+  #side-nav{width:100%;max-width:none;min-width:0;position:static;height:auto;
+    max-height:46vh;padding:10px 12px 14px;border-bottom:1px solid var(--border)}
   #dash-content{padding:18px 20px 48px}
 }
 @media(max-width:760px){
