@@ -12238,7 +12238,10 @@ function snGoOverview() {
   snModActive   = null;
   snSubActive   = null;
   activeVertKey = null;
-  showOverview();                                       // consolidated nav → overview landing (no mind-map columns)
+  _snMmNav(true);                                       // show columns
+  if (typeof mmPath !== 'undefined') mmPath = ['root'];
+  mmPaint();
+  buildSideNav();
 }
 
 // Level 1 → Level 2: click a vertical → hide columns, enter drill-down.
@@ -12262,7 +12265,10 @@ function snBackToVerticals() {
   snActiveKey   = null;
   snSubActive   = null;
   activeVertKey = null;
-  showOverview();                                       // consolidated nav → overview landing (no mind-map columns)
+  _snMmNav(true);                                       // show columns
+  if (typeof mmPath !== 'undefined') mmPath = ['root'];
+  mmPaint();
+  buildSideNav();
 }
 
 // Level 2 → Level 3: click a module → expand its sub-items and open the panel.
@@ -15256,16 +15262,25 @@ function showOverview() {
 // Leave the overview and enter the detailed dashboard (animated).
 // vertKey: if provided, selects that vertical and shows its module branches.
 function enterDashboard(vertKey) {
-  if (!vertKey) return;   // consolidated nav: the health donut no longer opens a column view
   closeRecordsSheet();
   var doNav = function() {
     document.body.classList.remove('view-ov');
     window.scrollTo({ top: 0, behavior: 'instant' });
-    _mmVert = vertKey;
-    _mmCloseInline();
-    // Single left-sidebar navigation: drill the sidebar into this vertical's
-    // modules and keep the mind-map columns hidden (reuses the proven sidebar path).
-    snSelectVert(vertKey);
+    if (vertKey) {
+      _mmVert = vertKey;
+      mmPath  = ['root', 'root/' + vertKey];
+      _mmCloseInline();
+      if (activeVertKey !== vertKey) {
+        selectVertTab(vertKey);
+      } else {
+        _mmAnimateReveal = true;
+        renderBranchNav(vertKey);
+      }
+      // Show only the Modules column on arrival — Central + Verticals columns
+      // are hidden until the user clicks a module (mmClickNode removes this class).
+      var mmEl = document.getElementById('mm');
+      if (mmEl) mmEl.classList.add('mm-ov-entry');
+    }
   };
   document.documentElement.setAttribute('data-nav', 'enter');
   if ('startViewTransition' in document) {
