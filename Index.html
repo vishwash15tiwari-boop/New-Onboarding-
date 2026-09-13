@@ -311,7 +311,7 @@ body:not(.view-ov) .ov-back-btn{display:flex}
 .qf-chip:active{transform:scale(.95);transition-duration:.08s}
 .filter-select,.filter-input{
   background:var(--card);
-  border:1px solid var(--border);
+  border:1px solid var(--field-border);
   color:var(--txt);
   padding:7px 10px;
   border-radius:var(--r2);
@@ -324,7 +324,7 @@ body:not(.view-ov) .ov-back-btn{display:flex}
 .filter-select{
   cursor:pointer;appearance:none;-webkit-appearance:none;
   padding-right:28px;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23AEAEB2' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23726F6A' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat:no-repeat;
   background-position:right 9px center;
 }
@@ -1227,8 +1227,8 @@ body.view-gst #main{background:transparent}
 /* ── Filters — Apple-style search bar ── */
 .gp-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--gp-card);border:none;border-radius:var(--r);padding:12px 16px;margin-bottom:14px;box-shadow:var(--shadow-card)}
 .gp-filters .gp-search{flex:1;min-width:180px}
-.gp-input,.gp-select{font-family:inherit;background:var(--gp-bg2);border:1px solid var(--gp-border);color:var(--gp-ink);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:400;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
-.gp-select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:26px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23AEAEB2' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
+.gp-input,.gp-select{font-family:inherit;background:var(--gp-bg2);border:1px solid var(--field-border);color:var(--gp-ink);padding:7px 10px;border-radius:var(--r-sm);font-size:12px;font-weight:400;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+.gp-select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:26px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23726F6A' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
 .gp-select-wrap{min-width:130px}
 .gp-input:hover,.gp-select:hover{border-color:var(--gp-border2)}
 .gp-input:focus,.gp-select:focus{border-color:var(--blue);box-shadow:var(--ring)}
@@ -2899,6 +2899,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .sp-icon{color:var(--txt3);flex-shrink:0}
 .sp-input{flex:1;border:none;outline:none;font-family:inherit;font-size:17px;font-weight:400;color:var(--txt);background:transparent;letter-spacing:-.2px}
 .sp-input:focus,.sp-input:focus-visible{box-shadow:none;outline:none}
+.sp-search-row:focus-within{box-shadow:var(--ring);border-radius:var(--r-sm)}
 .sp-input::placeholder{color:var(--txt3)}
 .sp-esc{font-family:inherit;font-size:11px;font-weight:600;color:var(--txt3);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:3px 7px;cursor:pointer;flex-shrink:0;letter-spacing:.05em}
 .sp-results{max-height:420px;overflow-y:auto;overscroll-behavior:contain;padding:8px}
@@ -4014,7 +4015,7 @@ body.view-ov #ov-screen{display:block}
 .ov-card-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px}
 .ov-card-title{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.15px}
 .ov-card-sub{display:none}
-.ov-chart-sel{background:var(--seg-track);border:none;font-family:inherit;font-size:11px;font-weight:600;color:var(--txt2);cursor:pointer;padding:4px 22px 4px 9px;border-radius:var(--pill);outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23AEAEB2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center}
+.ov-chart-sel{background:var(--seg-track);border:none;font-family:inherit;font-size:11px;font-weight:600;color:var(--txt2);cursor:pointer;padding:4px 22px 4px 9px;border-radius:var(--pill);outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23726F6A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center}
 
 /* Bar chart */
 .ov-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;cursor:pointer;padding:0 2px}
@@ -4262,7 +4263,7 @@ body.view-ov #ov-screen{display:block}
           <div class="sk" style="height:120px;border-radius:var(--r2)"></div>
         </div>
       </div>
-      <div class="ov-donut-card" onclick="enterDashboard(null)" title="Click to open detailed onboarding view">
+      <div class="ov-donut-card">
         <div class="ov-card-title" style="margin-bottom:4px">Onboarding Health</div>
         <div class="ov-card-sub">Current status of all onboardings.</div>
         <div id="ov-donut"><div class="sk" style="height:140px;border-radius:var(--r2)"></div></div>
