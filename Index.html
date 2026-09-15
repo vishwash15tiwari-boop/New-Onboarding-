@@ -3260,7 +3260,10 @@ body.view-gst #mm-crumbs{display:none}
 /* Sidebar vertical-drill mode: hide the columns grid; panel takes full width */
 .mmworkspace.sn-drill .mmnav{display:none!important}
 .mmworkspace.sn-drill{gap:0}
-.mmworkspace.sn-drill.has-panel .mmdetail{flex-basis:100%;max-width:100%}
+.mmworkspace.sn-drill.has-panel .mmdetail{flex-basis:100%;max-width:100%;overflow:hidden;display:flex;flex-direction:column}
+.mmworkspace.sn-drill #mm-modpanel.mp-open{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.mmworkspace.sn-drill .mp-body{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.mmworkspace.sn-drill .mp-matrix{flex:1;overflow-y:auto;margin-top:8px;align-content:start}
 .mp-placeholder{display:flex;align-items:center;justify-content:center;min-height:200px;font-size:13px;color:var(--txt3);letter-spacing:.01em}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar{width:8px}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar-thumb{background:var(--border);border-radius:var(--r-sm)}
@@ -6248,7 +6251,7 @@ function _mmVertModules(key) {
       headline:{ v:onb, label:'Total Onboarded', tone:'good' },
       bar: null,
       matrix: volMatrix,
-      tiles: volMatrix ? null : [
+      tiles: [
         { label:'Sellers', v:vs.completed||0, click:"openOnbAudRecords('seller')", tip:'View seller records' },
         { label:'Buyers',  v:vb.completed||0, click:"openOnbAudRecords('buyer')",  tip:'View buyer records' }
       ],
@@ -8072,7 +8075,32 @@ function mmRenderModPanel() {
         }).join('') + '</div>';
   }
 
-  // Type × Category cross-tab — comparable at a glance (row + column totals, bar-in-cell)
+  // stat tiles — anchor: sn-sec-tile (rendered before matrix so Summary lands above Category Breakup)
+  if (P.tiles && P.tiles.length) {
+    html += '<div id="sn-sec-tile" class="mp-tiles">' + P.tiles.map(function(t) {
+      var tc = toneColor[t.tone] || 'var(--txt)';
+      var chainable = node.panel.chain && t.seg;
+      var act = t.click ? t.click : (chainable ? "mmChainToGeo('" + t.seg + "')" : null);
+      var val = t.raw ? '<span>' + esc(t.v) + '</span>' : '<span data-count="' + (+t.v || 0) + '">0</span>';
+      return '<div class="mp-tile' + (act ? ' ch' : '') + '"'
+        + (act ? ' role="button" tabindex="0" title="' + esc(t.tip || 'View records') + '"'
+            + ' onclick="' + act + '"'
+            + ' onkeydown="if(event.key===\'Enter\'){' + act + '}"' : '')
+        + '><div class="mp-tile-v" style="color:' + tc + '">' + val + '</div>'
+        + '<div class="mp-tile-l">' + esc(t.label) + (chainable ? ' <span class="mp-go">↦ map</span>' : '') + '</div>'
+        + (t.sub ? '<div class="mp-tile-s">' + esc(t.sub) + '</div>' : '')
+        + (t.breakdown && t.breakdown.length
+            ? '<div class="mp-tile-cats">'
+              + t.breakdown.map(function(c, i) {
+                  return (i > 0 ? '<span class="mp-tile-cat-sep">·</span>' : '')
+                    + '<span class="mp-tile-cat"><span class="mp-tile-cat-v">' + (c.raw ? esc(c.v) : fmt(c.v)) + '</span>'
+                    + '<span class="mp-tile-cat-l">' + esc(c.l) + '</span></span>';
+                }).join('') + '</div>'
+            : '') + '</div>';
+    }).join('') + '</div>';
+  }
+
+  // Type × Category cross-tab — anchor: sn-sec-bar (below the summary tiles)
   if (P.matrix) {
     var M = P.matrix, nc = M.cols.length;
     var colTot = M.cols.map(function(c, ci){ return M.rows.reduce(function(s, r){ return s + (+r.vals[ci] || 0); }, 0); });
@@ -8096,34 +8124,7 @@ function mmRenderModPanel() {
             + '><span class="mp-mx-n" data-count="' + v + '">0</span>' + (ch ? '<span class="mp-mx-go">↦</span>' : '') + '</div>';
         }).join('')
       + '<div class="mp-mx-cell tot grand"><span class="mp-mx-n" data-count="' + grand + '">0</span></div>';
-    html += '<div class="mp-matrix" style="grid-template-columns:auto repeat(' + (nc + 1) + ',minmax(0,1fr))">' + mx + '</div>';
-  }
-
-  // stat tiles — anchor: sn-sec-tile
-  if (P.tiles && P.tiles.length) {
-    html += '<div id="sn-sec-tile" class="mp-tiles">' + P.tiles.map(function(t) {
-      var tc = toneColor[t.tone] || 'var(--txt)';
-      var chainable = node.panel.chain && t.seg;
-      // A tile is actionable either by chaining into the map (seg) or by carrying an
-      // explicit click handler (t.click), e.g. the ageing tiles opening their sellers.
-      var act = t.click ? t.click : (chainable ? "mmChainToGeo('" + t.seg + "')" : null);
-      var val = t.raw ? '<span>' + esc(t.v) + '</span>' : '<span data-count="' + (+t.v || 0) + '">0</span>';
-      return '<div class="mp-tile' + (act ? ' ch' : '') + '"'
-        + (act ? ' role="button" tabindex="0" title="' + esc(t.tip || 'View records') + '"'
-            + ' onclick="' + act + '"'
-            + ' onkeydown="if(event.key===\'Enter\'){' + act + '}"' : '')
-        + '><div class="mp-tile-v" style="color:' + tc + '">' + val + '</div>'
-        + '<div class="mp-tile-l">' + esc(t.label) + (chainable ? ' <span class="mp-go">↦ map</span>' : '') + '</div>'
-        + (t.sub ? '<div class="mp-tile-s">' + esc(t.sub) + '</div>' : '')
-        + (t.breakdown && t.breakdown.length
-            ? '<div class="mp-tile-cats">'
-              + t.breakdown.map(function(c, i) {
-                  return (i > 0 ? '<span class="mp-tile-cat-sep">·</span>' : '')
-                    + '<span class="mp-tile-cat"><span class="mp-tile-cat-v">' + (c.raw ? esc(c.v) : fmt(c.v)) + '</span>'
-                    + '<span class="mp-tile-cat-l">' + esc(c.l) + '</span></span>';
-                }).join('') + '</div>'
-            : '') + '</div>';
-    }).join('') + '</div>';
+    html += '<div id="sn-sec-bar" class="mp-matrix" style="grid-template-columns:auto repeat(' + (nc + 1) + ',minmax(0,1fr))">' + mx + '</div>';
   }
 
   // extra section — anchor: sn-sec-ext
@@ -8158,6 +8159,29 @@ function mmRenderModPanel() {
     [].slice.call(panel.querySelectorAll('[data-count]')).forEach(function(el){ el.textContent = fmt(+el.getAttribute('data-count')); });
   }
   _mmModAnimate = false;
+
+  // Screen-switching: when a sub-tab is active, show only that section — no scrolling.
+  var _modSubs = (typeof SN_MODULE_SUBS !== 'undefined' && node && node.t) ? (SN_MODULE_SUBS[node.t] || []) : [];
+  if (_modSubs.length && snSubActive) {
+    var _secIds = ['sn-sec-head', 'sn-sec-tile', 'sn-sec-bar', 'sn-sec-ext', 'sn-sec-rec'];
+    // Which sections belong to which sub-tab key
+    var _secMap = {
+      'head': ['sn-sec-head', 'sn-sec-tile'],
+      'bar':  ['sn-sec-tile', 'sn-sec-bar'],
+      'tile': ['sn-sec-tile'],
+      'ext':  ['sn-sec-ext'],
+      'rec':  ['sn-sec-rec']
+    };
+    var _toShow = _secMap[snSubActive] || ['sn-sec-' + snSubActive];
+    _secIds.forEach(function(id) {
+      var _el = panel.querySelector('#' + id);
+      if (_el) _el.style.display = 'none';
+    });
+    _toShow.forEach(function(id) {
+      var _el = panel.querySelector('#' + id);
+      if (_el) _el.style.display = '';
+    });
+  }
 }
 
 // Regional Split → compact modal listing regions; each drills into the
@@ -12180,7 +12204,7 @@ var SN_MODULE_SUBS = {
   'Onboarded (Details)': [
     { key: 'head', label: 'Summary'          },
     { key: 'bar',  label: 'Category Breakup' },
-    { key: 'tile', label: 'TAT'              },
+    { key: 'ext',  label: 'TAT'              },
     { key: 'rec',  label: 'Records'          },
   ],
   'Transactions': [
@@ -12239,9 +12263,11 @@ function buildSideNav() {
       + '<span class="sn-back-arr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
       + 'All Verticals'
       + '</button>';
-    // Breadcrumb: Overview (clickable) / VertName
+    // Breadcrumb: Overview (clickable) / Verticals (clickable) / VertName
     html += '<div class="sn-breadcrumb" aria-label="Navigation path">'
       + '<button class="sn-bc-seg sn-bc-link" onclick="snGoOverview()" aria-label="Go to Overview">Overview</button>'
+      + '<span class="sn-bc-div">›</span>'
+      + '<button class="sn-bc-seg sn-bc-link" onclick="snBackToVerticals()" aria-label="All Verticals">Verticals</button>'
       + '<span class="sn-bc-div">›</span>'
       + '<span class="sn-bc-seg sn-bc-cur">' + esc((vcfg.name || snVertModKey)) + '</span>'
       + '</div>';
@@ -12431,7 +12457,7 @@ function snClickModule(nodeId) {
   buildSideNav();
 }
 
-// Level 3: click a sub-item → highlight it and scroll to its panel section.
+// Level 3: click a sub-item → switch the panel to show only that section (no scroll).
 function snClickSub(key) {
   snSubActive = key;
   buildSideNav();
@@ -12440,9 +12466,13 @@ function snClickSub(key) {
     var _n = snModActive && typeof mmFindById === 'function' ? mmFindById(snModActive) : null;
     if (_n && _n.panel && _n.panel.records) { mmCardAction(_n.panel.records); return; }
   }
-  // Scroll to the section anchor injected by mmRenderModPanel.
-  var el = document.getElementById('sn-sec-' + key);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  // TAT on Onboarded (Details): pull live records via openTatModal.
+  if (key === 'ext') {
+    var _en = snModActive && typeof mmFindById === 'function' ? mmFindById(snModActive) : null;
+    if (_en && _en.t === 'Onboarded (Details)') { openTatModal(); return; }
+  }
+  // Re-render the panel so only the active section is visible — screen-switching, not scrolling.
+  if (typeof mmRenderModPanel === 'function') { mmRenderModPanel(); }
 }
 
 // Called when a group header (Sellers/Buyers) is clicked.
