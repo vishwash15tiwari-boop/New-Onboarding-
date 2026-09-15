@@ -12071,10 +12071,12 @@ function buildSideNav() {
   if (!nav) return;
 
   var cfgList = getVertCfg();
-  var isGST = currentView === 'gst';
-  var isTXN = currentView === 'txndist';
-  var isOSV = currentView === 'osv';
-  var isOvw = currentView === 'onboarding';
+  var isGST  = currentView === 'gst';
+  var isTXN  = currentView === 'txndist';
+  var isOSV  = currentView === 'osv';
+  var isTXN2 = currentView === 'transactions';
+  var isVR   = currentView === 'vendorratings';
+  var isOvw  = currentView === 'onboarding';
 
   var html = '';
 
@@ -12169,7 +12171,7 @@ function buildSideNav() {
 
     html += '<div class="sn-sep" style="margin-top:auto"></div>';
     html += '<div class="sn-sect">Tools</div>';
-    html += _snStandaloneBtns(isGST, isTXN, isOSV);
+    html += _snStandaloneBtns(isGST, isTXN, isOSV, isTXN2, isVR);
     nav.innerHTML = html;
     _snMmNav(false);   // keep columns hidden while in drill-down mode
     // Move focus to back button for keyboard users
@@ -12207,22 +12209,24 @@ function buildSideNav() {
 
   html += '<div class="sn-sep" role="separator"></div>';
   html += '<div class="sn-sect" id="sn-tools-hd">Tools</div>';
-  html += _snStandaloneBtns(isGST, isTXN, isOSV);
+  html += _snStandaloneBtns(isGST, isTXN, isOSV, isTXN2, isVR);
 
   nav.innerHTML = html;
 }
 
-// Shared tool buttons (GST / TXN / OSV) — neutral icon style, not amber-biased.
-function _snStandaloneBtns(isGST, isTXN, isOSV) {
-  return '<button class="sn-gst' + (isGST ? ' sn-active' : '') + '" onclick="switchView(\'gst\')"'
-      + (isGST ? ' aria-current="page"' : '') + '>'
-      + '<span class="sn-gst-ic" aria-hidden="true">₹</span><span class="sn-gst-lbl">GST Payables</span></button>'
-    + '<button class="sn-gst' + (isTXN ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'txndist\')"'
-      + (isTXN ? ' aria-current="page"' : '') + '>'
-      + '<span class="sn-gst-ic" style="font-size:11px" aria-hidden="true">⇄</span><span class="sn-gst-lbl">Txn Distribution</span></button>'
-    + '<button class="sn-gst' + (isOSV ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'osv\')"'
-      + (isOSV ? ' aria-current="page"' : '') + '>'
-      + '<span class="sn-gst-ic" style="font-size:11px" aria-hidden="true">✓</span><span class="sn-gst-lbl">OSV Status</span></button>';
+// Shared tool buttons — neutral icon style.
+function _snStandaloneBtns(isGST, isTXN, isOSV, isTXN2, isVR) {
+  function _btn(active, view, ic, icStyle, label) {
+    return '<button class="sn-gst' + (active ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'' + view + '\')"'
+      + (active ? ' aria-current="page"' : '') + '>'
+      + '<span class="sn-gst-ic"' + (icStyle ? ' style="' + icStyle + '"' : '') + ' aria-hidden="true">' + ic + '</span>'
+      + '<span class="sn-gst-lbl">' + label + '</span></button>';
+  }
+  return _btn(isGST,  'gst',          '₹',  '',                     'GST Payables')
+    + _btn(isTXN,     'txndist',       '⇄',  'font-size:11px',       'Txn Distribution')
+    + _btn(isTXN2,    'transactions',  '⊞',  'font-size:11px',       'Marketplace Txn')
+    + _btn(isVR,      'vendorratings', '★',  'font-size:11px',       'Vendor Ratings')
+    + _btn(isOSV,     'osv',           '✓',  'font-size:11px',       'OSV Status');
 }
 
 // Shows or hides the mind-map column grid (#mm-nav).
@@ -12388,6 +12392,10 @@ function spBuildItems(query) {
   var navItems = [
     { ic:'⊞', title:'Dashboard Overview', sub:'All verticals, onboarding pipeline', action:function(){switchView('onboarding')}, badge:'View' },
     { ic:'₹', title:'GST Payables', sub:'Vendor register, outstanding balances', action:function(){switchView('gst')}, badge:'View' },
+    { ic:'⇄', title:'Txn Distribution', sub:'Transaction distribution by vertical and period', action:function(){switchView('txndist')}, badge:'View' },
+    { ic:'⊞', title:'Marketplace Transactions', sub:'Marketplace seller & buyer transaction records', action:function(){switchView('transactions')}, badge:'View' },
+    { ic:'★', title:'Vendor Ratings', sub:'Seller quality scores and rating distribution', action:function(){switchView('vendorratings')}, badge:'View' },
+    { ic:'✓', title:'OSV Status', sub:'Consent and verification status across sellers', action:function(){switchView('osv')}, badge:'View' },
   ];
   // Add verticals from config
   var cfgList = (typeof getVertCfg === 'function') ? getVertCfg() : [];
@@ -15874,6 +15882,13 @@ document.addEventListener('DOMContentLoaded', function() {
   document.body.classList.add('view-ov');
   renderOvScreen();
   loadOverviewMonthly();
+  // Fallback: if the bar chart is still a skeleton after 12 s, show a graceful no-data state.
+  setTimeout(function() {
+    var el = document.getElementById('ov-bar-chart');
+    if (el && el.querySelector('.sk')) {
+      el.innerHTML = '<div class="c-empty" style="padding:32px 0;color:var(--txt3);font-size:12px">Monthly data unavailable — check back later</div>';
+    }
+  }, 12000);
 });
 </script>
 </body>
