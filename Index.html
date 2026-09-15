@@ -3280,6 +3280,22 @@ body.view-gst #mm-crumbs{display:none}
 .mmworkspace.sn-drill #mm-modpanel.mp-open{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .mmworkspace.sn-drill .mp-body{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .mmworkspace.sn-drill .mp-matrix{flex:1;overflow-y:auto;margin-top:8px;align-content:start}
+/* In sn-drill mode the geo panel gets full width — restore horizontal map+legend layout */
+.mmworkspace.sn-drill .mg-grid{flex-direction:row!important;gap:var(--sp-4);align-items:flex-start}
+.mmworkspace.sn-drill .mg-map{flex:1 1 55%;min-width:0;max-width:none}
+.mmworkspace.sn-drill .mg-map-svg-wrap{flex:0 0 58%}
+.mmworkspace.sn-drill .mg-state-detail{flex:0 0 42%}
+.mmworkspace.sn-drill .mg-svg{max-height:420px}
+.mmworkspace.sn-drill .mg-legend{flex:1 1 40%;min-width:240px}
+.mmworkspace.sn-drill .mg-rows{max-height:380px}
+/* Category switcher strip shown in sn-drill mode */
+.mg-catsw{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.mg-catbtn{font-family:inherit;font-size:11px;font-weight:600;color:var(--txt2);background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:8px 14px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s,color .15s;min-width:100px}
+.mg-catbtn:hover{border-color:var(--blue);color:var(--txt)}
+.mg-catbtn.on{border-color:var(--blue);background:var(--accent-soft);color:var(--blue)}
+.mg-catbtn-nm{font-size:11px;font-weight:700;letter-spacing:.02em;display:block;margin-bottom:3px}
+.mg-catbtn-v{font-size:18px;font-weight:800;letter-spacing:-.5px;display:block;color:var(--txt);line-height:1.1}
+.mg-catbtn-sb{font-size:10px;font-weight:500;color:var(--txt3);display:block;margin-top:2px}
 .mp-placeholder{display:flex;align-items:center;justify-content:center;min-height:200px;font-size:13px;color:var(--txt3);letter-spacing:.01em}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar{width:8px}
 .mmworkspace.has-panel .mmdetail::-webkit-scrollbar-thumb{background:var(--border);border-radius:var(--r-sm)}
@@ -7903,7 +7919,40 @@ function mmRenderGeo() {
     + '<button type="button" role="tab" aria-selected="' + (aud === 'seller') + '" class="mg-audbtn seller' + (aud === 'seller' ? ' on' : '') + '" onclick="mmGeoSetAud(\'seller\')"><span class="mg-auddot"></span>Sellers</button>'
     + '<button type="button" role="tab" aria-selected="' + (aud === 'buyer') + '" class="mg-audbtn buyer' + (aud === 'buyer' ? ' on' : '') + '" onclick="mmGeoSetAud(\'buyer\')"><span class="mg-auddot"></span>Buyers</button>'
     + '</span>';
+
+  // In sn-drill mode, render a category switcher strip so the user can switch
+  // between Plastic / Metal / … without needing the hidden mind-map column.
+  var catSwitcher = '';
+  var _ws2 = document.getElementById('mm-workspace');
+  var _inDrill = _ws2 && _ws2.classList.contains('sn-drill');
+  if (_inDrill) {
+    var swCats = _geoCats();
+    if (swCats.length > 1) {
+      var k2 = _geo.key || activeVertKey || _mmVert;
+      var vs2 = (DS && DS.verticals || {})[k2] || {};
+      var vb2 = (DB && DB.verticals || {})[k2] || {};
+      var swHtml = '<div class="mg-catsw" role="tablist" aria-label="Choose a category">';
+      swCats.forEach(function(cat) {
+        var catLo = String(cat).toLowerCase();
+        var catLabel = CAT_SHORT[catLo] || (cat.charAt(0).toUpperCase() + cat.slice(1));
+        var vsC = (vs2.categories || []).filter(function(c){ return String(c.category||'').toLowerCase() === catLo; })[0] || {};
+        var vbC = (vb2.categories || []).filter(function(c){ return String(c.category||'').toLowerCase() === catLo; })[0] || {};
+        var sv = (vsC.completed || vsC.total || 0), bv = (vbC.completed || vbC.total || 0);
+        var total = sv + bv;
+        var isOn = (_geo.cat || '') === catLo;
+        swHtml += '<button type="button" role="tab" aria-selected="' + isOn + '" class="mg-catbtn' + (isOn ? ' on' : '') + '" onclick="mmGeoSetCat(\'' + catLo + '\')">'
+          + '<span class="mg-catbtn-nm">' + esc(catLabel) + '</span>'
+          + '<span class="mg-catbtn-v">' + fmt(total) + '</span>'
+          + '<span class="mg-catbtn-sb">' + fmt(sv) + ' S · ' + fmt(bv) + ' B</span>'
+          + '</button>';
+      });
+      swHtml += '</div>';
+      catSwitcher = swHtml;
+    }
+  }
+
   panel.innerHTML = '<div class="mg-eye"><span>All India · ' + esc(selCat) + ' · ' + (aud === 'buyer' ? 'buyer' : 'seller') + ' distribution</span>' + audToggle + '</div>'
+    + catSwitcher
     + '<div class="mg-grid">' + mapPanel + legend + '</div>';
   panel.className = 'mg mg-open';
 
@@ -8015,6 +8064,14 @@ function _geoEnsureTxnData() {
     .getGeoTransactionData(JSON.stringify(f));
 }
 function _geoClearCat() { _geo.cat = null; _geoAnimate = true; mmRenderGeo(); }
+// Switch the map to a specific category (used by the sn-drill category switcher).
+function mmGeoSetCat(cat) {
+  var next = cat || null;
+  if (_geo.cat === next) return;
+  _geo.cat = next; _geo.state = null; _geo.hover = null; _geoAnimate = true;
+  if (typeof mmGeoOpen === 'function') mmGeoOpen(_geo.region || 'All');
+  else mmRenderGeo();
+}
 // Seller / Buyer map toggle — instant repaint; both datasets are already loaded.
 function mmGeoSetAud(a) {
   var next = (a === 'buyer') ? 'buyer' : 'seller';
@@ -12422,18 +12479,47 @@ function snBackToVerticals() {
 // Level 2 → Level 3: click a module → expand its sub-items and open the panel.
 function snClickModule(nodeId) {
   if (!nodeId) return;
+  var _n = typeof mmFindById === 'function' ? mmFindById(nodeId) : null;
+
+  // Detect Geographic Split: parent node whose children have geoCat, or geoModule node.
+  var _isGeoParent = _n && _n.children && _n.children.length && _n.children[0] && _n.children[0].geoCat != null;
+  var _isGeoModule = _n && _n.geoModule;
+
   var toggling = snModActive === nodeId;
   if (toggling) {
     snModActive = null;
     snSubActive = null;
-  } else {
-    snModActive = nodeId;
-    snSubActive = null;
-    // Auto-select the first sub-item so Level 3 highlights immediately.
-    var _n = typeof mmFindById === 'function' ? mmFindById(nodeId) : null;
-    var _subs = _n && _n.t ? (SN_MODULE_SUBS[_n.t] || []) : [];
-    if (_subs.length) snSubActive = _subs[0].key;
+    if (_isGeoParent || _isGeoModule) {
+      mmGeoActive = false; _geo.region = null; _geo.state = null; _geo.cat = null;
+      mmPaint();
+    }
+    buildSideNav();
+    return;
   }
+
+  snModActive = nodeId;
+  snSubActive = null;
+  var _subs = _n && _n.t ? (SN_MODULE_SUBS[_n.t] || []) : [];
+  if (_subs.length) snSubActive = _subs[0].key;
+
+  // Geographic Split: bypass column navigation — directly activate geo panel.
+  if (_isGeoParent || _isGeoModule) {
+    mmFunnelActive = false; mmModActive = false;
+    if (_isGeoParent) {
+      var firstCat = _n.children[0];
+      mmPath = typeof _mmPathIds === 'function' ? _mmPathIds(firstCat) : mmPath;
+      _geo.cat = (firstCat.geoCat === '__all__') ? null : firstCat.geoCat;
+    } else {
+      mmPath = typeof _mmPathIds === 'function' ? _mmPathIds(_n) : mmPath;
+      _geo.cat = null;
+    }
+    mmGeoActive = true; _geo.state = null; _geo.hover = null; _geoAnimate = true;
+    if (typeof mmGeoOpen === 'function') mmGeoOpen('All');
+    buildSideNav();
+    if (typeof mmPaint === 'function') mmPaint();
+    return;
+  }
+
   if (typeof mmClickNode === 'function') mmClickNode(nodeId);
   buildSideNav();
 }
