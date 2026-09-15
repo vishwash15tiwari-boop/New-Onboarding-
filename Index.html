@@ -5344,7 +5344,7 @@ function _ensureAudRows(key, aud, cb) {
   google.script.run
     .withSuccessHandler(function(res) {
       _audRows.loading[aud] = false;
-      try { var d = JSON.parse(res); _audRows[aud] = (d && d.success && Array.isArray(d.rows)) ? d.rows : []; }
+      try { var d = JSON.parse(res); _audRows[aud] = _enrichTat((d && d.success && Array.isArray(d.rows)) ? d.rows : []); }
       catch (e) { _audRows[aud] = []; }
       cb(_audRows[aud]);
     })
@@ -10924,7 +10924,7 @@ function loadVertRows(key) {
   try {
     var sv = JSON.parse(localStorage.getItem(lsVKey) || 'null');
     if (sv && sv.pKey === myPKey && Array.isArray(sv.rows)) {
-      vertRows = sv.rows;
+      vertRows = _enrichTat(sv.rows);
       _vertRowsPKey = myPKey;
       vertRowsLoading = false;
       vertRowsError = null;
@@ -10944,7 +10944,7 @@ function loadVertRows(key) {
       try {
         var data = JSON.parse(res);
         if (data.success && data.vertKey === selectedVert) {
-          vertRows = data.rows || [];
+          vertRows = _enrichTat(data.rows || []);
           _vertRowsPKey = myPKey;
           if (selectedAud === 'seller') refreshBizRail();  // fill Regional Split from detail rows
           // Persist so the next open is instant
@@ -11294,6 +11294,22 @@ function parseDMY(s) {
   if (!m) return null;
   var d = new Date(+m[3], +m[2] - 1, +m[1]);
   return isNaN(d.getTime()) ? null : d;
+}
+
+// Fill r.tat for any COMPLETED row where the backend left it null/undefined.
+// TAT = calendar days from createdDate to onbDate.
+function _enrichTat(rows) {
+  if (!Array.isArray(rows)) return rows;
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    if (r.tat != null && r.tat !== '' && r.tat !== '—') continue;
+    if (r.status !== 'COMPLETED') continue;
+    var d0 = parseDMY(r.createdDate), d1 = parseDMY(r.onbDate);
+    if (d0 && d1 && d1 >= d0) {
+      r.tat = Math.round((d1 - d0) / 86400000);
+    }
+  }
+  return rows;
 }
 
 // Column sort — clicking a header sorts by that column; a second click reverses it.
