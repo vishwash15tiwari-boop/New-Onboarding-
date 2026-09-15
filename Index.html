@@ -15741,15 +15741,6 @@ function _buildOvKpiCards() {
     ? _ovDelta(Math.round((curr.avgTAT - prev.avgTAT) / prev.avgTAT * 100), true) : null;
 
   function card(accentHex, iconBg, iconSvgPaths, label, valueHtml, delta) {
-    var deltaHtml = '';
-    if (delta) {
-      var c = delta.pos ? 'var(--green)' : (delta.neg ? 'var(--red)' : 'var(--txt3)');
-      var arr = delta.pct > 0 ? '↑' : (delta.pct < 0 ? '↓' : '');
-      deltaHtml = '<div class="ov-kpi-delta" style="color:' + c + '">'
-        + '<span class="dv">' + arr + ' ' + delta.text + '</span>'
-        + '&nbsp;<span class="dl">' + fyLabel + '</span>'
-        + '</div>';
-    }
     return '<div class="ov-kpi">'
       + '<div class="ov-kpi-top">'
       + '<div class="ov-kpi-lbl">' + label + '</div>'
@@ -15757,7 +15748,6 @@ function _buildOvKpiCards() {
       + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + iconSvgPaths + '</svg>'
       + '</div></div>'
       + '<div class="ov-kpi-val">' + valueHtml + '</div>'
-      + deltaHtml
       + '</div>';
   }
 
