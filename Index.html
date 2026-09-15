@@ -5064,7 +5064,10 @@ function renderPeriodControl() {
     ['MTD',       'MTD (Month to Date)'],
     ['YTD',       'YTD (Apr 1 – Today)'],
   ];
-  ((D && D.fiscalYears) || []).forEach(function(fy) { pairs.push([fy, fy.replace(/^FY/, 'FY ')]); });
+  var _fySet = {};
+  ((D && D.fiscalYears) || []).forEach(function(fy) {
+    if (!_fySet[fy]) { _fySet[fy] = true; pairs.push([fy, fy.replace(/^FY/, 'FY ')]); }
+  });
   pairs.push(['Custom', 'Custom Range']);
   sel.innerHTML = pairs.map(function(o) {
     return '<option value="' + o[0] + '">' + o[1] + '</option>';
@@ -16066,7 +16069,6 @@ function renderOvVerts() {
       + '<div class="ov-vert-body">'
       + '<div class="ov-vert-name">' + vc.name + '</div>'
       + '<div class="ov-vert-count">' + fmt(onb) + '</div>'
-      + '<div class="ov-vert-sub">Onboarded &middot; ' + pct + '% of ' + fmt(tot) + '</div>'
       + '<div class="ov-vert-prog"><div class="ov-vert-prog-fill" style="width:' + pct + '%;background:' + col + '"></div></div>'
       + '</div>'
       + '</div>';
