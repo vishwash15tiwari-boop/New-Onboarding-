@@ -3281,14 +3281,20 @@ body.view-gst #mm-crumbs{display:none}
 .mmworkspace.sn-drill #mm-modpanel.mp-open{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .mmworkspace.sn-drill .mp-body{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .mmworkspace.sn-drill .mp-matrix{flex:1;overflow-y:auto;margin-top:8px;align-content:start}
-/* In sn-drill mode the geo panel gets full width — restore horizontal map+legend layout */
-.mmworkspace.sn-drill .mg-grid{flex-direction:row!important;gap:var(--sp-4);align-items:flex-start}
-.mmworkspace.sn-drill .mg-map{flex:1 1 55%;min-width:0;max-width:none}
-.mmworkspace.sn-drill .mg-map-svg-wrap{flex:0 0 58%}
+/* In sn-drill mode the geo panel gets full width — fill height, no scrollbars */
+.mmworkspace.sn-drill #mm-geo{display:flex;flex-direction:column;height:calc(100vh - 200px);overflow:hidden;max-height:none;margin:0}
+.mmworkspace.sn-drill .mg-eye{flex-shrink:0}
+.mmworkspace.sn-drill .mg-catsw{flex-shrink:0}
+.mmworkspace.sn-drill .mg-grid{flex:1;min-height:0;flex-direction:row!important;gap:var(--sp-4);align-items:stretch}
+.mmworkspace.sn-drill .mg-map{flex:1 1 55%;min-width:0;max-width:none;overflow:hidden}
+.mmworkspace.sn-drill .mg-map-svg-wrap{flex:0 0 58%;align-items:center}
 .mmworkspace.sn-drill .mg-state-detail{flex:0 0 42%}
-.mmworkspace.sn-drill .mg-svg{max-height:420px}
-.mmworkspace.sn-drill .mg-legend{flex:1 1 40%;min-width:240px}
-.mmworkspace.sn-drill .mg-rows{max-height:380px}
+.mmworkspace.sn-drill .mg-svg{width:100%;height:auto;max-height:100%}
+.mmworkspace.sn-drill .mg-legend{flex:1 1 40%;min-width:240px;display:flex;flex-direction:column;overflow:hidden}
+.mmworkspace.sn-drill .mg-rows{flex:1;min-height:0;max-height:none;overflow-y:auto;scrollbar-width:none}
+.mmworkspace.sn-drill .mg-rows::-webkit-scrollbar{display:none}
+.mmworkspace.sn-drill .mgsd-half{overflow-y:auto;scrollbar-width:none}
+.mmworkspace.sn-drill .mgsd-half::-webkit-scrollbar{display:none}
 /* Category switcher strip shown in sn-drill mode */
 .mg-catsw{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .mg-catbtn{font-family:inherit;font-size:11px;font-weight:600;color:var(--txt2);background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:8px 14px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s,color .15s;min-width:100px}
