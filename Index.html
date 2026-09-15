@@ -5417,6 +5417,11 @@ var MR_TAT_COLS = [
 ];
 // Detail rows per audience for the TAT drill-down, cached per vertical + period.
 var _tatRows = { key:null, pKey:null, seller:null, buyer:null, loading:{} };
+// Inline TAT panel state (Onboarded Details → TAT sub-tab)
+var _snTatInlineAud    = 'seller';
+var _snTatInlineSearch = '';
+var _snTatInlineCat    = 'All';
+var _snTatInlineType   = 'All';
 
 // status key → display label, used by the table, filters and export alike
 var OSV_LABELS = { verified:'Done', in_progress:'In Progress', not_initiated:'Not Initiated' };
@@ -8203,8 +8208,9 @@ function mmRenderModPanel() {
   }
 
   // extra section — anchor: sn-sec-ext
-  if (P.extra) {
-    html += '<div id="sn-sec-ext">' + P.extra + '</div>';
+  // Always create the element when the ext sub-tab is active so _snPopulateTatInline can find it.
+  if (P.extra || snSubActive === 'ext') {
+    html += '<div id="sn-sec-ext">' + (P.extra || '') + '</div>';
   }
 
   // records CTA — anchor: sn-sec-rec
@@ -8291,6 +8297,107 @@ function openRegionSplitModal(aud) {
     + '<div class="km-sec"><div class="km-sec-t">Select a region for its vendor list</div>'
     + '<div class="km-sg" style="grid-template-columns:1fr;gap:8px">' + rows + '</div></div>';
   _modalOpenClass(modal, 'km-open', _kpiEsc);
+}
+
+// Render the TAT records table inline inside sn-sec-ext (Onboarded Details → TAT sub-tab).
+// Uses _ensureAudRows (no new API call) and the already-enriched row cache.
+function _snTatSetAud(aud) {
+  _snTatInlineAud = aud;
+  _snTatInlineSearch = '';
+  _snTatInlineCat    = 'All';
+  _snTatInlineType   = 'All';
+  _snPopulateTatInline(aud);
+}
+
+function _snTatShell(tableHtml, shown, sourceTotal, cats, types) {
+  var key = activeVertKey || selectedVert;
+  var vcfg = (typeof getVertCfg === 'function') ? (getVertCfg().filter(function(c){ return c.key === key; })[0]) : null;
+  var vertLabel = (vcfg && vcfg.name) || key || '';
+  var audLabel  = _snTatInlineAud === 'buyer' ? 'Buyers' : 'Sellers';
+  var title = sourceTotal != null
+    ? ('Average TAT · ' + audLabel + ' (' + fmt(sourceTotal) + ' source rows)')
+    : 'Loading TAT…';
+  var audToggle = '<div style="display:flex;gap:6px">'
+    + '<button class="mr-act-btn' + (_snTatInlineAud !== 'buyer' ? ' primary' : '') + '" onclick="_snTatSetAud(\'seller\')">Sellers</button>'
+    + '<button class="mr-act-btn' + (_snTatInlineAud === 'buyer' ? ' primary' : '') + '" onclick="_snTatSetAud(\'buyer\')">Buyers</button>'
+    + '</div>';
+  var filterBar = '';
+  if (cats && types) {
+    var catOpts = '<option value="All">All Categories</option>'
+      + cats.map(function(c){ return '<option' + (_snTatInlineCat === c ? ' selected' : '') + ' value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('');
+    var typeOpts = '<option value="All">All Types</option>'
+      + types.map(function(t){ return '<option' + (_snTatInlineType === t ? ' selected' : '') + ' value="' + esc(t) + '">' + esc(t) + '</option>'; }).join('');
+    filterBar = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">'
+      + '<input type="text" class="mr-search" placeholder="Search name or type…" value="' + esc(_snTatInlineSearch) + '"'
+      + ' oninput="_snTatInlineSearch=this.value;_snPopulateTatInline(_snTatInlineAud)">'
+      + '<select style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--txt);font-size:12px;cursor:pointer" onchange="_snTatInlineCat=this.value;_snPopulateTatInline(_snTatInlineAud)">' + catOpts + '</select>'
+      + '<select style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--txt);font-size:12px;cursor:pointer" onchange="_snTatInlineType=this.value;_snPopulateTatInline(_snTatInlineAud)">' + typeOpts + '</select>'
+      + '<button class="mr-act-btn" onclick="_snTatInlineSearch=\'\';_snTatInlineCat=\'All\';_snTatInlineType=\'All\';_snPopulateTatInline(_snTatInlineAud)">Clear</button>'
+      + '</div>';
+  }
+  return '<div>'
+    + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap">'
+    + '<div>'
+    + '<div style="font-size:11px;color:var(--txt3);font-weight:500;margin-bottom:2px">' + esc(vertLabel) + ' › ' + esc(audLabel) + '</div>'
+    + '<div style="font-size:15px;font-weight:700;color:var(--txt);line-height:1.2">' + esc(title) + '</div>'
+    + (shown != null ? '<div style="font-size:11.5px;color:var(--txt3);margin-top:3px">Showing ' + fmt(shown) + ' records</div>' : '')
+    + '</div>'
+    + audToggle
+    + '</div>'
+    + filterBar
+    + (tableHtml || '<div style="padding:40px 0;text-align:center;color:var(--txt3)">Loading…</div>')
+    + '</div>';
+}
+
+function _snPopulateTatInline(aud) {
+  _snTatInlineAud = aud || _snTatInlineAud || 'seller';
+  var sec = document.getElementById('sn-sec-ext');
+  if (!sec) return;
+  var key = activeVertKey || selectedVert;
+  if (!key) return;
+  sec.innerHTML = _snTatShell(null, null, null, null, null);
+  _ensureAudRows(key, _snTatInlineAud, function(rows) {
+    if (snSubActive !== 'ext') return;
+    var s = document.getElementById('sn-sec-ext');
+    if (!s) return;
+    _enrichTat(rows);
+    var sourceTotal = 0;
+    var catSet = {}, typeSet = {};
+    rows.forEach(function(r) {
+      if (r.category)  catSet[r.category]   = 1;
+      if (r.vendorType) typeSet[r.vendorType] = 1;
+      if (r.status === 'COMPLETED' && r.tat != null && r.tat !== '' && r.tat !== '—' && !isNaN(parseInt(r.tat, 10))) sourceTotal++;
+    });
+    var cats  = Object.keys(catSet).sort();
+    var types = Object.keys(typeSet).sort();
+    var q = (_snTatInlineSearch || '').toLowerCase();
+    var filtered = rows.filter(function(r) {
+      if (r.status !== 'COMPLETED') return false;
+      if (r.tat === null || r.tat === undefined || r.tat === '' || r.tat === '—' || isNaN(parseInt(r.tat, 10))) return false;
+      if (q && (r.name || '').toLowerCase().indexOf(q) < 0 && (r.vendorType || '').toLowerCase().indexOf(q) < 0) return false;
+      if (_snTatInlineCat  !== 'All' && r.category   !== _snTatInlineCat)  return false;
+      if (_snTatInlineType !== 'All' && r.vendorType  !== _snTatInlineType) return false;
+      return true;
+    });
+    filtered = filtered.slice().sort(function(a, b) {
+      return (parseInt(b.tat, 10) || 0) - (parseInt(a.tat, 10) || 0);
+    });
+    var trs = filtered.length ? filtered.map(function(r) {
+      var n = parseInt(r.tat, 10);
+      var col = n <= 7 ? 'var(--green,#1DC797)' : n <= 21 ? 'var(--amber,#FF9500)' : 'var(--red,#FF3B30)';
+      return '<tr>'
+        + '<td><strong>' + esc(r.name || '—') + '</strong>'
+        + (r.id ? '<div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id) + '</div>' : '') + '</td>'
+        + '<td class="td-dim">' + esc(r.vendorType || '—') + '</td>'
+        + '<td>' + esc(r.category || '—') + '</td>'
+        + '<td style="color:' + col + ';font-weight:700;font-variant-numeric:tabular-nums">' + n + '<small style="font-size:.65em;font-weight:600;color:var(--txt3);margin-left:1px">d</small></td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="4" style="padding:40px;text-align:center;color:var(--txt3)">No records match.</td></tr>';
+    var table = '<table class="mr-tbl" style="width:100%">'
+      + '<thead><tr><th>Name</th><th>Type</th><th>Category</th><th>TAT (Days) ↓</th></tr></thead>'
+      + '<tbody>' + trs + '</tbody></table>';
+    s.innerHTML = _snTatShell(table, filtered.length, sourceTotal, cats, types);
+  });
 }
 
 // Average TAT tile click → full-page records view (same pattern as other detail pages).
@@ -12577,6 +12684,13 @@ function snClickSub(key) {
   }
   // Re-render the panel so only the active section is visible — screen-switching, not scrolling.
   if (typeof mmRenderModPanel === 'function') { mmRenderModPanel(); }
+  // TAT sub-tab on Onboarded (Details): populate sn-sec-ext with the inline TAT table.
+  if (key === 'ext') {
+    var _extN = snModActive && typeof mmFindById === 'function' ? mmFindById(snModActive) : null;
+    if (_extN && _extN.t === 'Onboarded (Details)') {
+      _snPopulateTatInline(_snTatInlineAud || 'seller');
+    }
+  }
 }
 
 // Called when a group header (Sellers/Buyers) is clicked.
@@ -13151,6 +13265,19 @@ function openModRecords(module) {
     if (!cfg.showTxnF) _mrColVis['txn'] = true;
     // hide transacted-specific cols in all other modules
     _mrColVis['txnCount'] = true; _mrColVis['txnGmv'] = true; _mrColVis['txnDate'] = true;
+    // Enrich onboarded rows with quality data so Score and OSV Status columns are populated.
+    if (module === 'onboarded') {
+      var _qd2 = (typeof qualityData !== 'undefined') ? qualityData : null;
+      var _rLkp2 = {}, _oLkp2 = {};
+      if (_qd2 && _qd2.vendorRatings) (_qd2.vendorRatings || []).forEach(function(v) { if (v.id) _rLkp2[v.id] = v.rating; });
+      if (_qd2 && _qd2.vendorOSV)     (_qd2.vendorOSV     || []).forEach(function(v) { if (v.id) _oLkp2[v.id] = v.status; });
+      _mrRows = _mrRows.map(function(r) {
+        var c = {}; for (var k in r) c[k] = r[k];
+        c.rating    = _rLkp2[r.id] !== undefined ? _rLkp2[r.id] : null;
+        c.osvStatus = _oLkp2[r.id] || 'not_initiated';
+        return c;
+      });
+    }
   }
   var ovl = document.getElementById('mr-ovl');
   if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
