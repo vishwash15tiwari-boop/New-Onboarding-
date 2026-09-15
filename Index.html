@@ -3876,6 +3876,62 @@ body.view-gst #mm-crumbs{display:none}
 .txn2-tbl-leg-swatch{width:16px;height:8px;border-radius:3px}
 .txn2-chart-title{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
 .txn2-chart-svg{width:100%;overflow:visible}
+/* ── Transactions v3 (Redesigned Overview) ───────────────────────── */
+.txn3-wrap{padding:20px 26px 48px;max-width:1400px;width:100%;display:flex;flex-direction:column;gap:14px}
+.txn3-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:2px;flex-wrap:wrap}
+.txn3-title{font-size:22px;font-weight:800;color:var(--txt);letter-spacing:-.4px}
+.txn3-sub{font-size:12.5px;color:var(--txt3);margin-top:3px}
+.txn3-toggle{display:inline-flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);flex-shrink:0}
+.txn3-toggle-btn{font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 16px;border:none;border-right:1px solid var(--border);background:transparent;color:var(--txt2);cursor:pointer;transition:background .15s,color .15s;white-space:nowrap}
+.txn3-toggle-btn:last-child{border-right:none}
+.txn3-toggle-btn:hover{background:var(--bg2);color:var(--txt)}
+.txn3-toggle-btn.active{background:#005DFF;color:#fff}
+.txn3-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:900px){.txn3-kpi-row{grid-template-columns:repeat(2,1fr)}}
+.txn3-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.txn3-kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.txn3-kpi-lbl{font-size:12px;font-weight:500;color:var(--txt2)}
+.txn3-kpi-icon{width:32px;height:32px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.txn3-kpi-val{font-size:1.65rem;font-weight:800;color:var(--txt);line-height:1.1;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.txn3-kpi-delta{font-size:11px;font-weight:600;margin-top:4px}
+.txn3-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.txn3-row2{grid-template-columns:1fr}}
+.txn3-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.txn3-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.txn3-card-title{font-size:13px;font-weight:700;color:var(--txt)}
+.txn3-period-lbl{font-size:11.5px;color:var(--txt3);background:var(--bg2);border-radius:999px;padding:3px 10px;border:1px solid var(--border)}
+.txn3-chart-legend{display:flex;gap:var(--sp-5);margin-top:8px}
+.txn3-leg{font-size:11.5px;color:var(--txt2);display:flex;align-items:center;gap:5px}
+.txn3-ld{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.txn3-donut-wrap{display:flex;align-items:center;gap:20px;padding:8px 0}
+.txn3-donut-legs{flex:1;display:flex;flex-direction:column;gap:8px}
+.txn3-donut-row{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--txt2)}
+.txn3-status-grid{display:flex;gap:10px;flex-wrap:wrap;margin-top:2px}
+.txn3-stat{flex:1;min-width:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 10px;text-align:center}
+.txn3-stat-n{font-size:1.5rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.txn3-stat-lbl{font-size:10.5px;color:var(--txt2);margin-top:4px;line-height:1.3}
+.txn3-gmv-big{font-size:1.9rem;font-weight:800;color:var(--txt);line-height:1;margin-bottom:4px}
+.txn3-gmv-sub{font-size:11.5px;color:var(--txt3);margin-bottom:16px}
+.txn3-tbl-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.txn3-tbl-title{font-size:13px;font-weight:700;color:var(--txt)}
+.txn3-tbl-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.txn3-search-wrap{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px}
+.txn3-search{border:none;background:transparent;font-size:12px;color:var(--txt);font-family:inherit;outline:none;min-width:160px}
+.txn3-fsel{padding:5px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--card);font-size:12px;color:var(--txt2);cursor:pointer;font-family:inherit;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aaa'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:22px}
+.txn3-export-btn{padding:5px 14px;background:#005DFF;color:#fff;border:none;border-radius:var(--r-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.txn3-export-btn:hover{background:#024C8A}
+.txn3-tbl-wrap{overflow-x:auto}
+.txn3-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.txn3-tbl thead th{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);padding:8px 12px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;position:sticky;top:0;background:var(--card)}
+.txn3-tbl tbody tr{border-bottom:1px solid var(--border)}
+.txn3-tbl tbody tr:last-child{border-bottom:none}
+.txn3-tbl tbody tr:hover{background:var(--bg2)}
+.txn3-tbl tbody td{padding:10px 12px;color:var(--txt);vertical-align:middle}
+.txn3-tbl-foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.txn3-pg{display:flex;align-items:center;gap:4px}
+.txn3-pg-btn{padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:12px;font-weight:500;color:var(--txt2);cursor:pointer;font-family:inherit;transition:background .15s}
+.txn3-pg-btn:hover:not(:disabled){background:var(--bg2)}
+.txn3-pg-act{background:#005DFF!important;color:#fff!important;border-color:#005DFF!important}
 /* ── Vendor Ratings v2 ─────────────────────────────────────────── */
 .vr2-wrap{padding:20px 26px 48px;max-width:1200px}
 .vr2-bc{font-size:11px;color:var(--txt3);margin-bottom:4px}
@@ -15124,283 +15180,427 @@ function loadTransactionData() {
     .getTransactionModuleData((function() { var f = { period: currentPeriod }; if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; } return JSON.stringify(f); }()));
 }
 
+var _txnView = 'both';
+var _txnDetailSearch = '';
+var _txnDetailCat = 'All';
+var _txnDetailPage = 0;
+var _txnSearchTimer = null;
+
+function _txnGetCombinedRows() {
+  var selRows = Array.isArray(vertRows) ? vertRows.map(function(r) {
+    var c = {}; for (var k in r) { c[k] = r[k]; } c.audType = 'Seller'; return c;
+  }) : [];
+  var buyRows = (_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer.map(function(r) {
+    var c = {}; for (var k in r) { c[k] = r[k]; } c.audType = 'Buyer'; return c;
+  }) : [];
+  return selRows.concat(buyRows);
+}
+function _txnFmtCr(v) {
+  if (!v) return '&#8377;0';
+  var cr = v / 10000000;
+  return cr >= 1 ? '&#8377;' + cr.toFixed(2) + ' Cr' : '&#8377;' + (v / 100000).toFixed(2) + ' L';
+}
+function _txnFmtN(v) { return (v || 0).toLocaleString('en-IN'); }
+function _txnFmtMon(k) {
+  if (!k) return '';
+  var parts = k.split('-');
+  var mon = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return mon[parseInt(parts[1], 10) || 0] + ' \'' + (parts[0] || '').slice(2);
+}
+
+function _txnBuildActivityChart(mths) {
+  var chartMths = mths.slice(-6);
+  if (!chartMths.length) return '<div style="color:var(--txt3);font-size:12px;padding:20px 0">No data</div>';
+  var W = 480, H = 175, padL = 36, padR = 8, padT = 16, padB = 36;
+  var cW = W - padL - padR, cH = H - padT - padB;
+  var n = chartMths.length;
+  var maxV = 0;
+  chartMths.forEach(function(m) { var t = (m.sellers || 0) + (m.buyers || 0); if (t > maxV) maxV = t; });
+  maxV = maxV || 1;
+  var top = Math.ceil(maxV / 25) * 25 || 50;
+  var gap = cW / n;
+  var barW = Math.max(8, Math.floor(gap * 0.55));
+  var svg = '';
+  for (var yi = 0; yi <= 4; yi++) {
+    var yy = padT + cH - Math.round(yi / 4 * cH);
+    svg += '<line x1="' + padL + '" y1="' + yy + '" x2="' + (W - padR) + '" y2="' + yy + '" stroke="var(--border)" stroke-width="1" opacity=".5"/>';
+    if (yi > 0) svg += '<text x="' + (padL - 4) + '" y="' + (yy + 3) + '" text-anchor="end" font-size="9" fill="#726F6A">' + Math.round(top * yi / 4) + '</text>';
+  }
+  chartMths.forEach(function(m, i) {
+    var cx = padL + i * gap + gap / 2;
+    var sv = m.sellers || 0, bv = m.buyers || 0;
+    var sh = Math.max(sv > 0 ? 2 : 0, Math.round(sv / top * cH));
+    var bh = Math.max(bv > 0 ? 2 : 0, Math.round(bv / top * cH));
+    var bx = cx - barW / 2;
+    var sy = padT + cH - sh;
+    var by = sy - bh;
+    if (sh > 0) svg += '<rect x="' + bx.toFixed(1) + '" y="' + sy.toFixed(1) + '" width="' + barW + '" height="' + sh.toFixed(1) + '" rx="' + (bh === 0 ? '3 3 0 0' : '0') + '" fill="#005DFF" opacity=".85"/>';
+    if (bh > 0) svg += '<rect x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + barW + '" height="' + bh.toFixed(1) + '" rx="3 3 0 0" fill="#049769" opacity=".85"/>';
+    svg += '<text x="' + cx.toFixed(1) + '" y="' + (padT + cH + 14) + '" text-anchor="middle" font-size="9" fill="#726F6A">' + esc(_txnFmtMon(m.month)) + '</text>';
+  });
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;overflow:visible">' + svg + '</svg>';
+}
+
+function _txnBuildDonut(rows) {
+  var v = _txnView || 'both';
+  var catMap = {};
+  rows.forEach(function(r) {
+    if (!r.hasTransacted) return;
+    if (v === 'seller' && r.audType !== 'Seller') return;
+    if (v === 'buyer'  && r.audType !== 'Buyer')  return;
+    var cat = r.category || 'Others';
+    catMap[cat] = (catMap[cat] || 0) + 1;
+  });
+  var cats = [];
+  for (var k in catMap) { cats.push({ cat: k, n: catMap[k] }); }
+  cats.sort(function(a, b) { return b.n - a.n; });
+  var top4 = cats.slice(0, 4);
+  var othersN = 0;
+  cats.slice(4).forEach(function(c) { othersN += c.n; });
+  if (othersN > 0) top4.push({ cat: 'Others', n: othersN });
+  var total = 0;
+  top4.forEach(function(c) { total += c.n; });
+  if (!total) return '<div style="color:var(--txt3);font-size:12px;padding:12px 0">No transacted records</div>';
+  var colors = ['#005DFF', '#049769', '#8460D4', '#FF9500', '#726F6A'];
+  var R = 52, svgCx = 70, svgCy = 70, strokeW = 18;
+  var circ = 2 * Math.PI * R;
+  var cumPct = 0;
+  var svgArcs = '';
+  top4.forEach(function(c, i) {
+    var pct = c.n / total;
+    var dash = circ * pct;
+    var gap = circ - dash;
+    var off = circ * (0.75 - cumPct);
+    svgArcs += '<circle cx="' + svgCx + '" cy="' + svgCy + '" r="' + R + '" fill="none" stroke="' + colors[i] + '" stroke-width="' + strokeW + '"'
+      + ' stroke-dasharray="' + dash.toFixed(2) + ' ' + gap.toFixed(2) + '"'
+      + ' stroke-dashoffset="' + off.toFixed(2) + '" stroke-linecap="butt"/>';
+    cumPct += pct;
+  });
+  svgArcs += '<text x="' + svgCx + '" y="' + (svgCy - 5) + '" text-anchor="middle" font-size="15" font-weight="800" fill="currentColor">' + _txnFmtN(total) + '</text>';
+  svgArcs += '<text x="' + svgCx + '" y="' + (svgCy + 11) + '" text-anchor="middle" font-size="9" fill="#726F6A">Transactions</text>';
+  var legendHtml = '';
+  top4.forEach(function(c, i) {
+    legendHtml += '<div class="txn3-donut-row">'
+      + '<span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + colors[i] + ';flex-shrink:0"></span>' + esc(c.cat) + '</span>'
+      + '<span style="font-weight:700;color:var(--txt)">' + _txnFmtN(c.n) + ' <span style="color:var(--txt3);font-weight:400;font-size:11px">(' + Math.round(c.n / total * 100) + '%)</span></span>'
+      + '</div>';
+  });
+  return '<div class="txn3-donut-wrap">'
+    + '<svg viewBox="0 0 140 140" style="width:140px;height:140px;flex-shrink:0">' + svgArcs + '</svg>'
+    + '<div class="txn3-donut-legs">' + legendHtml + '</div>'
+    + '</div>';
+}
+
+function _txnBuildStatusCards(d) {
+  var s = d.seller || {}, b = d.buyer || {};
+  var v = _txnView || 'both';
+  var sTotal = s.total || 0, bTotal = b.total || 0;
+  var txned = v === 'seller' ? sTotal : (v === 'buyer' ? bTotal : sTotal + bTotal);
+  var nonTxn = d.nonTransacted || 0;
+  var ag = d.agingNonTxn || {};
+  var agLt30 = ag.lt30 || 0, ag3060 = ag.d30_60 || 0, agGt60 = ag.gt60 || 0;
+  function statCard(n, lbl, col, bg) {
+    return '<div class="txn3-stat">'
+      + '<div style="width:28px;height:28px;border-radius:50%;background:' + bg + ';margin:0 auto 8px;display:flex;align-items:center;justify-content:center"></div>'
+      + '<div class="txn3-stat-n" style="color:' + col + '">' + _txnFmtN(n) + '</div>'
+      + '<div class="txn3-stat-lbl">' + lbl + '</div>'
+      + '</div>';
+  }
+  return '<div class="txn3-status-grid">'
+    + statCard(txned,  'Transacted',        '#049769', 'rgba(4,151,105,.12)')
+    + statCard(nonTxn, 'Non-Transacted',    '#FF9500', 'rgba(255,149,0,.12)')
+    + statCard(agLt30, 'Aging 0&#8211;30 days', '#005DFF', 'rgba(0,93,255,.12)')
+    + statCard(ag3060, 'Aging 31&#8211;60 days', '#FF9500', 'rgba(255,149,0,.12)')
+    + statCard(agGt60, 'Aging &gt;60 days', '#D70015', 'rgba(215,0,21,.12)')
+    + '</div>';
+}
+
+function _txnBuildGMVSection(g) {
+  var gTotal = g.total || 0;
+  var gMetal = g.metal || 0;
+  var gPlastic = g.plastic || 0;
+  var gOther = Math.max(0, gTotal - gMetal - gPlastic);
+  var cats = [];
+  if (gPlastic > 0) cats.push({ label: 'Plastic', v: gPlastic, c: '#005DFF' });
+  if (gMetal > 0)   cats.push({ label: 'Metal',   v: gMetal,   c: '#049769' });
+  if (gOther > 0)   cats.push({ label: 'Others',  v: gOther,   c: '#8460D4' });
+  cats.sort(function(a, b) { return b.v - a.v; });
+  var stackHtml = '';
+  if (gTotal > 0 && cats.length) {
+    stackHtml = '<div style="height:10px;border-radius:5px;overflow:hidden;display:flex;margin-bottom:16px">';
+    cats.forEach(function(c) {
+      stackHtml += '<div style="flex:' + (c.v / gTotal) + ';background:' + c.c + '"></div>';
+    });
+    stackHtml += '</div>';
+  }
+  var max = cats.reduce(function(m, c) { return Math.max(m, c.v); }, 1);
+  var barsHtml = cats.map(function(c) {
+    var w = Math.round(c.v / max * 100);
+    var pct = gTotal > 0 ? Math.round(c.v / gTotal * 100) : 0;
+    return '<div style="margin-bottom:12px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">'
+      + '<span style="font-size:12px;color:var(--txt2);display:flex;align-items:center;gap:5px">'
+      + '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c.c + '"></span>' + esc(c.label) + '</span>'
+      + '<span style="font-size:12px;font-weight:700">' + _txnFmtCr(c.v) + ' <span style="color:var(--txt3);font-weight:400;font-size:11px">(' + pct + '%)</span></span>'
+      + '</div>'
+      + '<div style="height:7px;border-radius:4px;background:var(--bg2);overflow:hidden">'
+      + '<div style="height:100%;width:' + w + '%;border-radius:4px;background:' + c.c + '"></div>'
+      + '</div></div>';
+  }).join('');
+  return '<div class="txn3-gmv-big">' + _txnFmtCr(gTotal) + '</div>'
+    + '<div class="txn3-gmv-sub">Total GMV across all categories</div>'
+    + stackHtml + barsHtml;
+}
+
+function _txnBuildRecordsHTML(allRows) {
+  var v = _txnView || 'both';
+  var search = _txnDetailSearch || '';
+  var cat = _txnDetailCat || 'All';
+  var page = Math.max(0, _txnDetailPage || 0);
+  var pageSize = 10;
+  var filtered = allRows.filter(function(r) { return r.hasTransacted; });
+  if (v === 'seller') filtered = filtered.filter(function(r) { return r.audType !== 'Buyer'; });
+  if (v === 'buyer')  filtered = filtered.filter(function(r) { return r.audType === 'Buyer'; });
+  if (search) {
+    var q = search.toLowerCase();
+    filtered = filtered.filter(function(r) {
+      return String(r.name || '').toLowerCase().indexOf(q) >= 0
+          || String(r.category || '').toLowerCase().indexOf(q) >= 0;
+    });
+  }
+  if (cat && cat !== 'All') {
+    filtered = filtered.filter(function(r) { return r.category === cat; });
+  }
+  var total = filtered.length;
+  var totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (page >= totalPages) page = 0;
+  var slice = filtered.slice(page * pageSize, (page + 1) * pageSize);
+  var catSet = {}, catKeys = [];
+  allRows.filter(function(r) { return r.hasTransacted; }).forEach(function(r) {
+    if (r.category && !catSet[r.category]) { catSet[r.category] = true; catKeys.push(r.category); }
+  });
+  catKeys.sort();
+  var catOpts = '<option value="All">All Categories</option>';
+  catKeys.forEach(function(ck) {
+    catOpts += '<option value="' + esc(ck) + '"' + (ck === cat ? ' selected' : '') + '>' + esc(ck) + '</option>';
+  });
+  var trs = slice.map(function(r, i) {
+    var rowIdx = page * pageSize + i + 1;
+    var isT = !!r.hasTransacted;
+    var statusHtml = isT ? '&#10003; Transacted' : 'Non-Transacted';
+    var statusColor = isT ? '#049769' : '#FF9500';
+    var gmvHtml = (r.txnValue != null && r.txnValue > 0) ? '&#8377;' + _txnFmtN(r.txnValue) : '&#8212;';
+    var txnDateStr = (r.txnDate && r.txnDate !== '—') ? r.txnDate : '—';
+    return '<tr>'
+      + '<td style="color:var(--txt3);font-size:11.5px">' + rowIdx + '</td>'
+      + '<td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(r.name || '') + '">' + esc(r.name || '—') + '</td>'
+      + '<td><span style="font-size:11px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-weight:600">' + (r.audType === 'Buyer' ? 'Buyer' : 'Seller') + '</span></td>'
+      + '<td style="color:var(--txt2)">' + esc(r.category || '—') + '</td>'
+      + '<td><span style="font-size:11.5px;font-weight:600;color:' + statusColor + '">' + statusHtml + '</span></td>'
+      + '<td style="color:var(--txt2);font-variant-numeric:tabular-nums">' + esc(txnDateStr) + '</td>'
+      + '<td style="font-weight:700;font-variant-numeric:tabular-nums">' + gmvHtml + '</td>'
+      + '<td style="text-align:center"><span style="color:var(--txt3);font-size:18px;cursor:pointer;letter-spacing:2px">&#8943;</span></td>'
+      + '</tr>';
+  }).join('');
+  var pgHtml = '';
+  if (totalPages > 1) {
+    var maxPage = totalPages - 1;
+    pgHtml = '<div class="txn3-pg">';
+    pgHtml += '<button class="txn3-pg-btn" onclick="_txnPage(' + Math.max(0, page - 1) + ')"' + (page === 0 ? ' disabled style="opacity:.4"' : '') + '>&#8592;</button>';
+    for (var pi = 0; pi < totalPages; pi++) {
+      var show = (pi < 2) || (pi > maxPage - 2) || (Math.abs(pi - page) <= 1);
+      if (show) {
+        pgHtml += '<button class="txn3-pg-btn' + (pi === page ? ' txn3-pg-act' : '') + '" onclick="_txnPage(' + pi + ')">' + (pi + 1) + '</button>';
+      } else if ((pi === 2 && page > 3) || (pi === maxPage - 2 && page < maxPage - 3)) {
+        pgHtml += '<span style="padding:4px 6px;color:var(--txt3);font-size:12px">&#8230;</span>';
+      }
+    }
+    pgHtml += '<button class="txn3-pg-btn" onclick="_txnPage(' + Math.min(maxPage, page + 1) + ')"' + (page === maxPage ? ' disabled style="opacity:.4"' : '') + '>&#8594;</button>';
+    pgHtml += '</div>';
+  }
+  var showing = total === 0 ? 'No records found'
+    : 'Showing ' + (page * pageSize + 1) + '&#8211;' + Math.min((page + 1) * pageSize, total) + ' of ' + _txnFmtN(total) + ' records';
+  return '<div class="txn3-tbl-bar">'
+    + '<div class="txn3-tbl-title">Transaction Details <span style="font-weight:400;color:var(--txt3);font-size:12.5px">(' + _txnFmtN(total) + ' records)</span></div>'
+    + '<div class="txn3-tbl-tools">'
+    + '<div class="txn3-search-wrap">'
+    + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--txt3)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    + '<input class="txn3-search" value="' + esc(search) + '" placeholder="Search name or type&#8230;" oninput="_txnSearch(this.value)">'
+    + '</div>'
+    + '<select class="txn3-fsel" onchange="_txnCat(this.value)">' + catOpts + '</select>'
+    + '<button class="txn3-export-btn" onclick="_txnExportCsv()">&#8595; Export CSV</button>'
+    + '</div>'
+    + '</div>'
+    + '<div class="txn3-tbl-wrap">'
+    + '<table class="txn3-tbl"><thead><tr>'
+    + '<th>#</th><th>ENTITY NAME</th><th>TYPE</th><th>CATEGORY</th>'
+    + '<th>TRANSACTION STATUS</th><th>TRANSACTION DATE</th><th>GMV (&#8377;)</th><th>ACTIONS</th>'
+    + '</tr></thead><tbody>'
+    + (trs || '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--txt3)">No records found</td></tr>')
+    + '</tbody></table></div>'
+    + '<div class="txn3-tbl-foot">'
+    + '<span style="font-size:12px;color:var(--txt3)">' + showing + '</span>'
+    + pgHtml
+    + '</div>';
+}
+
+function _txnSetView(v) {
+  _txnView = v;
+  var btns = document.querySelectorAll('.txn3-toggle-btn');
+  for (var i = 0; i < btns.length; i++) {
+    if (btns[i].getAttribute('data-view') === v) btns[i].classList.add('active');
+    else btns[i].classList.remove('active');
+  }
+  var subEl = document.getElementById('txn3-sub-label');
+  if (subEl) subEl.textContent = 'Complete transaction overview for Marketplace (' + (v === 'seller' ? 'Sellers' : v === 'buyer' ? 'Buyers' : 'Sellers & Buyers') + ')';
+  var donutEl = document.getElementById('txn3-donut-wrap');
+  if (donutEl) donutEl.innerHTML = _txnBuildDonut(_txnGetCombinedRows());
+  var recEl = document.getElementById('txn3-records-section');
+  if (recEl) recEl.innerHTML = _txnBuildRecordsHTML(_txnGetCombinedRows());
+}
+function _txnPage(p) {
+  _txnDetailPage = p;
+  var recEl = document.getElementById('txn3-records-section');
+  if (recEl) recEl.innerHTML = _txnBuildRecordsHTML(_txnGetCombinedRows());
+}
+function _txnSearch(q) {
+  _txnDetailSearch = q; _txnDetailPage = 0;
+  clearTimeout(_txnSearchTimer);
+  _txnSearchTimer = setTimeout(function() {
+    var recEl = document.getElementById('txn3-records-section');
+    if (recEl) recEl.innerHTML = _txnBuildRecordsHTML(_txnGetCombinedRows());
+  }, 250);
+}
+function _txnCat(c) {
+  _txnDetailCat = c; _txnDetailPage = 0;
+  var recEl = document.getElementById('txn3-records-section');
+  if (recEl) recEl.innerHTML = _txnBuildRecordsHTML(_txnGetCombinedRows());
+}
+function _txnExportCsv() {
+  var rows = _txnGetCombinedRows().filter(function(r) { return r.hasTransacted; });
+  var v = _txnView || 'both';
+  if (v === 'seller') rows = rows.filter(function(r) { return r.audType !== 'Buyer'; });
+  if (v === 'buyer')  rows = rows.filter(function(r) { return r.audType === 'Buyer'; });
+  var header = 'Entity Name,Type,Category,Transaction Status,Transaction Date,GMV\n';
+  var body = rows.map(function(r) {
+    return [
+      '"' + String(r.name || '').replace(/"/g, '""') + '"',
+      r.audType === 'Buyer' ? 'Buyer' : 'Seller',
+      '"' + String(r.category || '').replace(/"/g, '""') + '"',
+      r.hasTransacted ? 'Transacted' : 'Non-Transacted',
+      (r.txnDate && r.txnDate !== '—') ? r.txnDate : '',
+      r.txnValue || ''
+    ].join(',');
+  }).join('\n');
+  try {
+    var blob = new Blob([header + body], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = 'transactions.csv'; a.click();
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+  } catch (e) {}
+}
+
 function renderTransactionDash() {
   var host = document.getElementById('tab-transactions');
   if (!host || !_TXN_MOD) return;
   if (!_TXN_MOD.success) {
-    host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Error: ' + esc(_TXN_MOD.error||'Unknown') + '</div>';
+    host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Error: ' + esc(_TXN_MOD.error || 'Unknown') + '</div>';
     return;
   }
+  _txnDetailPage = 0;
   var d    = _TXN_MOD;
   var s    = d.seller   || {};
   var b    = d.buyer    || {};
   var g    = d.gmv      || {};
   var h    = d.health   || {};
-  var mths = d.monthData|| [];
+  var mths = d.monthData || [];
 
-  function fmtCr(v) {
-    if (!v) return '₹0';
-    var cr = v / 10000000;
-    return cr >= 1 ? '₹' + cr.toFixed(2) + ' Cr' : '₹' + (v/100000).toFixed(2) + ' L';
-  }
-  function fmtN(v) { return (v||0).toLocaleString('en-IN'); }
+  var sTotal = s.total || 0;
+  var bTotal = b.total || 0;
+  var gTotal = g.total || 0;
+  var v = _txnView || 'both';
+  var subLabel = v === 'seller' ? 'Sellers' : (v === 'buyer' ? 'Buyers' : 'Sellers & Buyers');
+  var kpiTxns = v === 'seller' ? sTotal : (v === 'buyer' ? bTotal : sTotal + bTotal);
 
-  var sTotal   = s.total   || 0;
-  var bTotal   = b.total   || 0;
-  var total    = d.total   || (sTotal + bTotal);
-  var nonTxn   = d.nonTransacted || 0;
-
-  var ag     = d.agingNonTxn || {};
-  var agLt30 = ag.lt30   || 0;
-  var ag3060 = ag.d30_60 || 0;
-  var agGt60 = ag.gt60   || 0;
-  var nonTxnSellers = s.nonTransacted != null ? (s.nonTransacted||0) : agLt30+ag3060+agGt60;
-  var nonTxnBuyers  = b.nonTransacted != null ? (b.nonTransacted||0) : Math.max(0, nonTxn - nonTxnSellers);
-
-  var gMetal   = g.metal   || 0;
-  var gPlastic = g.plastic || 0;
-  var gTotal   = g.total   || 0;
-  var mPct = gTotal > 0 ? Math.round(gMetal/gTotal*100)   : 0;
-  var pPct = gTotal > 0 ? Math.round(gPlastic/gTotal*100) : 0;
-
-  var firstTxnPct  = Math.round(h.firstTxnPct || 0);
-  var repeatRate   = h.repeatRate  || 0;
-  var activeTxn    = h.activeTxn   || total;
-  var noTxnVendors = h.noTxn       || nonTxn;
-
-  function deltaBadge(val, up) {
-    if (!val) return '';
-    return '<span style="font-size:10.5px;color:' + (up?'#049769':'#D70015') + ';font-weight:600;margin-left:4px">'
-      + (up?'&#9650;':'&#9660;') + ' ' + Math.abs(val) + '% vs previous period</span>';
-  }
-  var d1 = h.firstTxnPctDelta  || 0, d1up = d1 >= 0;
-  var d2 = h.repeatRateDelta   || 0, d2up = d2 >= 0;
-  var d3 = h.activeTxnDelta    || 0, d3up = d3 >= 0;
-  var d4 = h.noTxnDelta        || 0, d4up = d4 <= 0;
-
-  function donutArc(pct, offset, color, r) {
-    var circ = 2 * Math.PI * r;
-    var dash = circ * pct / 100;
-    var gap  = circ - dash;
-    var off  = circ * (100 - offset) / 100;
-    return '<circle cx="70" cy="70" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="18"'
-      + ' stroke-dasharray="' + dash.toFixed(2) + ' ' + gap.toFixed(2) + '"'
-      + ' stroke-dashoffset="' + off.toFixed(2) + '" stroke-linecap="butt"/>';
-  }
-  // Metal = green (#049769), Plastic = blue (#005DFF)
-  var donutSvg = '<svg width="140" height="140" viewBox="0 0 140 140" style="flex-shrink:0">'
-    + donutArc(mPct, 0,    '#049769', 50)
-    + donutArc(pPct, mPct, '#005DFF', 50)
-    + '<text x="70" y="63" text-anchor="middle" font-size="12" font-weight="800" fill="currentColor">' + fmtCr(gTotal) + '</text>'
-    + '<text x="70" y="77" text-anchor="middle" font-size="9.5" fill="#726F6A">Total</text>'
-    + '</svg>';
-
-  function fmtMonth(k) {
-    if (!k) return '';
-    var parts = k.split('-');
-    var mon = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return mon[parseInt(parts[1],10)||0] + ' ' + (parts[0]||'').slice(2);
-  }
-  function fmtMonthFull(k) {
-    if (!k) return '';
-    var parts = k.split('-');
-    var mon = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
-    return mon[parseInt(parts[1],10)||0];
-  }
-
-  // Conversion table: last 3 months + Total Transacted + Total Non-Transacted
-  var recentMths = mths.slice(-3);
-  var maxS = Math.max.apply(null, recentMths.map(function(m){ return m.sellers||0; }).concat([1]));
-  var maxB = Math.max.apply(null, recentMths.map(function(m){ return m.buyers||0; }).concat([1]));
-  function colorCell(v, max) {
-    var ratio = max > 0 ? v/max : 0;
-    var cls   = ratio >= 0.7 ? 'txn2-cell-h' : ratio >= 0.35 ? 'txn2-cell-m' : 'txn2-cell-l';
-    return '<td><span class="' + cls + '">' + fmtN(v) + '</span></td>';
-  }
-  var sCells = recentMths.map(function(m){ return colorCell(m.sellers||0, maxS); }).join('');
-  var bCells = recentMths.map(function(m){ return colorCell(m.buyers||0,  maxB); }).join('');
-  var mthColHdrs = recentMths.map(function(m){ return '<th class="txn2-conv-lbl">' + esc(fmtMonthFull(m.month)) + '</th>'; }).join('');
-
-  var dateRange = '';
-  if (recentMths.length >= 2) {
-    var fm = recentMths[0].month || '';
-    var lm = recentMths[recentMths.length-1].month || '';
-    var fparts = fm.split('-'), lparts = lm.split('-');
-    var monShort = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    dateRange = monShort[parseInt(fparts[1],10)||0] + ' – ' + monShort[parseInt(lparts[1],10)||0] + ' ' + (lparts[0]||'');
-  }
-
-  var mthConvHtml = '<table class="txn2-tbl"><thead><tr>'
-    + '<th>Entity</th>' + mthColHdrs
-    + '<th style="color:#049769;font-weight:700">Total Transacted</th>'
-    + '<th style="color:#D70015;font-weight:700">Total Non-Transacted</th>'
-    + '</tr></thead><tbody>'
-    + '<tr><td><span style="display:inline-flex;align-items:center;gap:var(--sp-2)"><span class="txn2-ld" style="background:#049769"></span>Sellers</span></td>'
-    + sCells
-    + '<td style="font-weight:700;color:#049769;text-align:center">' + fmtN(sTotal) + '</td>'
-    + '<td style="font-weight:700;color:#D70015;text-align:center">' + fmtN(nonTxnSellers) + '</td>'
-    + '</tr>'
-    + '<tr><td><span style="display:inline-flex;align-items:center;gap:var(--sp-2)"><span class="txn2-ld" style="background:#005DFF"></span>Buyers</span></td>'
-    + bCells
-    + '<td style="font-weight:700;color:#049769;text-align:center">' + fmtN(bTotal) + '</td>'
-    + '<td style="font-weight:700;color:#D70015;text-align:center">' + (nonTxnBuyers > 0 ? fmtN(nonTxnBuyers) : '—') + '</td>'
-    + '</tr>'
-    + '</tbody></table>'
-    + '<div class="txn2-tbl-legend" style="margin-top:10px">'
-    + '<div class="txn2-tbl-leg-item"><div class="txn2-tbl-leg-swatch" style="background:#E3F8F1"></div>Higher Activity</div>'
-    + '<div class="txn2-tbl-leg-item"><div class="txn2-tbl-leg-swatch" style="background:#E3F8F1"></div>Moderate</div>'
-    + '<div class="txn2-tbl-leg-item"><div class="txn2-tbl-leg-swatch" style="background:#E3F8F1"></div>Lower Activity</div>'
-    + '</div>'
-    + '<div style="font-size:11px;color:var(--txt3);margin-top:8px">Shows unique vendors who transacted in each month</div>';
-
-  // Dual y-axis trend chart: blue BARS for Transactions (left axis) + green LINE for GMV (right axis)
-  function buildTrendChart() {
-    var chartMths = mths.slice(-12);
-    if (!chartMths.length) return '<div style="color:var(--txt3);font-size:12px;padding:12px">No data</div>';
-    var W=530, H=200, padL=46, padR=54, padT=24, padB=44;
-    var cW = W - padL - padR, cH = H - padT - padB;
-    var n = chartMths.length;
-    var maxTxn = Math.max.apply(null, chartMths.map(function(m){ return (m.sellers||0)+(m.buyers||0); }).concat([1]));
-    var maxGmv = Math.max.apply(null, chartMths.map(function(m){ return m.gmv||0; }).concat([1]));
-    var txnTop = Math.ceil(maxTxn/50)*50 || 200;
-    var gmvCrMax = maxGmv / 10000000;
-    var gmvTop = Math.ceil(gmvCrMax/10)*10 || 40;
-    var gap = cW / n;
-    var barW = Math.max(4, Math.floor(gap * 0.55));
-    var svg = '';
-    // Grid + y-axes
-    for (var yi = 0; yi <= 4; yi++) {
-      var yy = padT + cH - Math.round(yi/4 * cH);
-      svg += '<line x1="' + padL + '" y1="' + yy + '" x2="' + (W-padR) + '" y2="' + yy + '" stroke="var(--border)" stroke-width="1" opacity=".4"/>';
-      svg += '<text x="' + (padL-5) + '" y="' + (yy+3) + '" text-anchor="end" font-size="9" fill="#726F6A">' + Math.round(txnTop*yi/4) + '</text>';
-      svg += '<text x="' + (W-padR+5) + '" y="' + (yy+3) + '" text-anchor="start" font-size="9" fill="#726F6A">' + Math.round(gmvTop*yi/4) + '</text>';
-    }
-    var gmvPts = [];
-    chartMths.forEach(function(m, i) {
-      var cx = padL + i*gap + gap/2;
-      var txnVal = (m.sellers||0)+(m.buyers||0);
-      var bh = Math.max(2, Math.round(txnVal/txnTop * cH));
-      var bx = cx - barW/2;
-      var by = padT + cH - bh;
-      // Blue bar for transactions
-      svg += '<rect x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + barW + '" height="' + bh.toFixed(1) + '" rx="3" fill="#005DFF" opacity=".8"/>';
-      // GMV point
-      var gmvCrV = (m.gmv||0)/10000000;
-      var gmvY = padT + cH - Math.round(gmvCrV/gmvTop * cH);
-      gmvPts.push(cx.toFixed(1) + ',' + gmvY.toFixed(1));
-      // X-axis label
-      svg += '<text x="' + cx.toFixed(1) + '" y="' + (padT+cH+14) + '" text-anchor="middle" font-size="9" fill="#726F6A">' + esc(fmtMonth(m.month)) + '</text>';
-    });
-    // Green line for GMV (drawn on top of bars)
-    if (gmvPts.length >= 2) svg += '<polyline points="' + gmvPts.join(' ') + '" fill="none" stroke="#049769" stroke-width="2.5" stroke-linejoin="round"/>';
-    gmvPts.forEach(function(p){ svg += '<circle cx="' + p.split(',')[0] + '" cy="' + p.split(',')[1] + '" r="3.5" fill="#049769" stroke="#fff" stroke-width="1.5"/>'; });
-    // Axis labels
-    svg += '<text x="' + padL + '" y="' + (padT-8) + '" font-size="9" fill="#726F6A" font-weight="600">Transactions</text>';
-    svg += '<text x="' + (W-padR) + '" y="' + (padT-8) + '" text-anchor="end" font-size="9" fill="#726F6A" font-weight="600">GMV (&#8377; Cr)</text>';
-    return '<svg class="txn2-chart-svg" viewBox="0 0 ' + W + ' ' + H + '" height="' + H + '">' + svg + '</svg>';
-  }
-
-  host.innerHTML = '<div class="txn2-wrap">'
-    // Page header
-    + '<div class="txn2-pg-hdr">'
-    + '<div class="txn2-bc"><a onclick="switchView(\'onboarding\')" style="cursor:pointer">Central Onboarding</a> &rsaquo; Marketplace &rsaquo; Transactions</div>'
-    + '<div class="txn2-title">Transactions</div>'
-    + '<div class="txn2-sub">Track transaction activity, vendor engagement and material-wise GMV.</div>'
-    + '</div>'
-    // Period + filter bars
-    + '<div class="txn2-fbar" style="flex-direction:column;gap:var(--sp-3);align-items:stretch">'
-    + '<div style="display:flex;align-items:center;gap:var(--sp-2)">'
-    + '<button class="txn2-pf-btn">Today</button>'
-    + '<button class="txn2-pf-btn">For the Month</button>'
-    + '<button class="txn2-pf-btn">YTD</button>'
-    + '<button class="txn2-pf-btn txn2-pf-btn-active">All</button>'
-    + '<select class="txn2-fsel" style="margin-left:auto"><option>All Time</option></select>'
-    + '</div>'
-    + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-    + '<select class="txn2-fsel"><option>All States</option></select>'
-    + '<select class="txn2-fsel"><option>All Cities</option></select>'
-    + '<select class="txn2-fsel"><option>All Categories</option></select>'
-    + '<select class="txn2-fsel"><option>All Transactions</option></select>'
-    + '<select class="txn2-fsel"><option>All Materials</option></select>'
-    + '<input class="txn2-fsearch" placeholder="Search vendor, ID, or location…" style="flex:1;min-width:180px" />'
-    + '</div>'
-    + '</div>'
-    + '<div class="txn2-layout">'
-      // Left: Transaction Activity card
-      + '<div class="txn2-card">'
-      + '<div class="txn2-card-hdr"><div class="txn2-card-title">Transaction Activity</div><div class="txn2-pill" style="border-color:#049769;color:#049769;background:rgba(4,151,105,.06)">Sellers &amp; Buyers</div></div>'
-      + '<div class="txn2-big">' + fmtN(sTotal+bTotal) + '</div>'
-      + '<div class="txn2-biglab">Transacted (Unique &middot; Sellers &amp; Buyers)</div>'
-      + '<div class="txn2-split">'
-      + '<div class="txn2-split-t" style="width:' + (nonTxn > 0 ? Math.round((sTotal+bTotal)/(sTotal+bTotal+nonTxn)*100) : 100) + '%">Transacted &ndash; ' + fmtN(sTotal+bTotal) + '</div>'
-      + '<div class="txn2-split-n">Non-Transacted &ndash; ' + fmtN(nonTxn) + '</div>'
+  function kpiCard(iconSvg, iconBg, iconColor, label, value, delta) {
+    return '<div class="txn3-kpi">'
+      + '<div class="txn3-kpi-top">'
+      + '<span class="txn3-kpi-lbl">' + label + '</span>'
+      + '<span class="txn3-kpi-icon" style="background:' + iconBg + ';color:' + iconColor + '">'
+      + '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + iconSvg + '</svg>'
+      + '</span>'
       + '</div>'
-      + '<div class="txn2-legs"><div class="txn2-leg"><div class="txn2-ld" style="background:#049769;border-radius:50%"></div>Transacted</div><div class="txn2-leg"><div class="txn2-ld" style="background:#FF9500;border-radius:50%"></div>Non-Transacted</div></div>'
-      + '<div class="txn2-cards5">'
-      + '<div class="txn2-mc"><div class="txn2-mc-big">' + fmtN(sTotal) + '</div><div class="txn2-mc-lbl">Sellers</div><div class="txn2-mc-sub"><b>' + fmtN(s.plastic||0) + '</b> PLASTIC / <b>' + fmtN(s.metal||0) + '</b> METAL</div></div>'
-      + '<div class="txn2-mc"><div class="txn2-mc-big">' + fmtN(bTotal) + '</div><div class="txn2-mc-lbl">Buyers</div><div class="txn2-mc-sub"><b>' + fmtN(b.plastic||0) + '</b> PLASTIC / <b>' + fmtN(b.metal||0) + '</b> METAL</div></div>'
-      + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#049769">' + fmtN(agLt30) + '</div><div class="txn2-mc-lbl">Ageing &middot; 0&ndash;30 days</div><div class="txn2-mc-sub">Non-transacted</div></div>'
-      + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#FF9500">' + fmtN(ag3060) + '</div><div class="txn2-mc-lbl">Ageing &middot; 31&ndash;60 days</div><div class="txn2-mc-sub">Non-transacted</div></div>'
-      + '<div class="txn2-mc"><div class="txn2-mc-big" style="color:#D70015">' + fmtN(agGt60) + '</div><div class="txn2-mc-lbl">Ageing &middot; 60+ days</div><div class="txn2-mc-sub">Non-transacted</div></div>'
-      + '</div>'
-      // GMV cards
-      + '<div class="txn2-gmv3">'
-      + '<div class="txn2-gc"><div class="txn2-gc-lbl">GMV &middot; Total</div><div class="txn2-gc-big">' + fmtCr(gTotal) + '</div><div class="txn2-gc-sub"><b>' + fmtCr(gMetal) + '</b> METAL &middot; <b>' + fmtCr(gPlastic) + '</b> PLASTIC</div></div>'
-      + '<div class="txn2-gc"><div class="txn2-gc-lbl">GMV &middot; Metal</div><div class="txn2-gc-big">' + fmtCr(gMetal) + '</div><div class="txn2-gc-sub"><b>' + mPct + '%</b> of total GMV</div></div>'
-      + '<div class="txn2-gc"><div class="txn2-gc-lbl">GMV &middot; Plastic</div><div class="txn2-gc-big">' + fmtCr(gPlastic) + '</div><div class="txn2-gc-sub"><b>' + pPct + '%</b> of total GMV</div></div>'
-      + '</div>'
-      + '<button class="txn2-vdb" onclick="openModRecords(\'transacted\')">View Detailed Records &#8599;</button>'
-      + '</div>'
-      // Right column
-      + '<div class="txn2-right">'
-        // Transaction Health card
-        + '<div class="txn2-card">'
-        + '<div class="txn2-card-hdr"><div class="txn2-card-title">Transaction Health</div><a style="font-size:12px;color:var(--accent);cursor:pointer;white-space:nowrap;font-weight:500">View Insights &#8594;</a></div>'
-        + '<div class="txn2-health-grid">'
-        + '<div class="txn2-hm">'
-        + '<div class="txn2-hm-ic" style="background:#E3F8F1;color:#049769;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#128203;</div>'
-        + '<div style="flex:1"><div class="txn2-hm-v" style="color:#049769">' + firstTxnPct + '%</div><div class="txn2-hm-l">First Transaction (after onboarding)</div>' + (d1 ? deltaBadge(d1, d1up) : '') + '</div>'
-        + '</div>'
-        + '<div class="txn2-hm">'
-        + '<div class="txn2-hm-ic" style="background:#E6EFFF;color:#005DFF;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#128257;</div>'
-        + '<div style="flex:1"><div class="txn2-hm-v" style="color:#005DFF">' + (repeatRate||0) + '%</div><div class="txn2-hm-l">Repeat Transaction Rate</div>' + (d2 ? deltaBadge(d2, d2up) : '') + '</div>'
-        + '</div>'
-        + '<div class="txn2-hm">'
-        + '<div class="txn2-hm-ic" style="background:#F1ECFB;color:#8460D4;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#128722;</div>'
-        + '<div style="flex:1"><div class="txn2-hm-v" style="color:var(--txt)">' + fmtN(activeTxn) + '</div><div class="txn2-hm-l">Active Transacting Vendors</div>' + (d3 ? deltaBadge(d3, d3up) : '') + '</div>'
-        + '</div>'
-        + '<div class="txn2-hm">'
-        + '<div class="txn2-hm-ic" style="background:#FDECEB;color:#D70015;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#9888;</div>'
-        + '<div style="flex:1"><div class="txn2-hm-v" style="color:#D70015">' + fmtN(noTxnVendors) + '</div><div class="txn2-hm-l">Onboarded Vendors with No Transaction</div>' + (d4 ? deltaBadge(Math.abs(d4), d4up) : '') + '</div>'
-        + '</div>'
-        + '</div>'
-        + '</div>'
-        // Material-wise GMV card
-        + '<div class="txn2-card">'
-        + '<div class="txn2-card-title" style="margin-bottom:12px">Material-wise GMV</div>'
-        + '<div style="display:flex;align-items:center;gap:var(--sp-5)">'
-        + donutSvg
-        + '<div style="display:flex;flex-direction:column;gap:12px">'
-        + '<div class="txn2-leg" style="gap:8px"><div class="txn2-ld" style="background:#005DFF;border-radius:50%;width:10px;height:10px;flex-shrink:0"></div><div><div style="font-size:13px;font-weight:600">Plastic</div><div style="font-size:12px;color:var(--txt)">' + fmtCr(gPlastic) + ' <span style="color:var(--txt3);font-size:11px">(' + pPct + '%)</span></div></div></div>'
-        + '<div class="txn2-leg" style="gap:8px"><div class="txn2-ld" style="background:#049769;border-radius:50%;width:10px;height:10px;flex-shrink:0"></div><div><div style="font-size:13px;font-weight:600">Metal</div><div style="font-size:12px;color:var(--txt)">' + fmtCr(gMetal) + ' <span style="color:var(--txt3);font-size:11px">(' + mPct + '%)</span></div></div></div>'
-        + '</div></div>'
-        + '</div>'
-      + '</div>'
+      + '<div class="txn3-kpi-val">' + value + '</div>'
+      + (delta ? '<div class="txn3-kpi-delta" style="color:#049769">&#9650; ' + delta + '</div>' : '')
+      + '</div>';
+  }
+
+  var d1 = (h.totalDelta || 0), d2 = (h.gmvDelta || 0), d3 = (h.sellerDelta || 0), d4 = (h.buyerDelta || 0);
+  var icSwap = '<path d="M7 16V4m0 0L3 8m4-4 4 4"/><path d="M17 8v12m0 0 4-4m-4 4-4-4"/>';
+  var icGmv  = '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>';
+  var icSel  = '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>';
+  var icBuy  = '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 1-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>';
+
+  var allRows = _txnGetCombinedRows();
+
+  host.innerHTML = '<div class="txn3-wrap">'
+    + '<div class="txn3-header">'
+    +   '<div>'
+    +     '<div class="txn3-title">Transactions</div>'
+    +     '<div class="txn3-sub" id="txn3-sub-label">Complete transaction overview for Marketplace (' + subLabel + ')</div>'
+    +   '</div>'
+    +   '<div class="txn3-toggle">'
+    +     '<button class="txn3-toggle-btn' + (v === 'both'   ? ' active' : '') + '" data-view="both"   onclick="_txnSetView(\'both\')">Sellers &amp; Buyers</button>'
+    +     '<button class="txn3-toggle-btn' + (v === 'seller' ? ' active' : '') + '" data-view="seller" onclick="_txnSetView(\'seller\')">Sellers</button>'
+    +     '<button class="txn3-toggle-btn' + (v === 'buyer'  ? ' active' : '') + '" data-view="buyer"  onclick="_txnSetView(\'buyer\')">Buyers</button>'
+    +   '</div>'
     + '</div>'
-    + '<div class="txn2-bottom">'
-      + '<div class="txn2-card"><div class="txn2-chart-title">Transaction Conversion by Month<span style="font-size:11px;font-weight:400;color:var(--txt3);margin-left:8px">' + esc(dateRange) + '</span></div>' + mthConvHtml + '</div>'
-      + '<div class="txn2-card"><div class="txn2-chart-title">Monthly Transaction Trend'
-      + '<span style="font-size:11px;font-weight:400;color:var(--txt3);margin-left:10px">'
-      + '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px">'
-      + '<svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" rx="2" fill="#005DFF" opacity=".8"/></svg>'
-      + 'Transactions</span>'
-      + '<span style="display:inline-flex;align-items:center;gap:4px">'
-      + '<svg width="14" height="8" viewBox="0 0 14 8"><line x1="0" y1="4" x2="14" y2="4" stroke="#049769" stroke-width="2"/><circle cx="7" cy="4" r="3" fill="#049769" stroke="#fff" stroke-width="1"/></svg>'
-      + 'GMV (&#8377; Cr)</span>'
-      + '</span></div>' + buildTrendChart() + '</div>'
+    + '<div class="txn3-kpi-row">'
+    + kpiCard(icSwap, '#E6EFFF', '#005DFF', 'Total Transactions',       _txnFmtN(kpiTxns),    (d1 ? Math.abs(d1) + '% vs FY 25-26' : ''))
+    + kpiCard(icGmv,  '#E3F8F1', '#049769', 'Transactions Value (GMV)', _txnFmtCr(gTotal),    (d2 ? Math.abs(d2) + '% vs FY 25-26' : ''))
+    + kpiCard(icSel,  '#FFF3E6', '#FF9500', 'Sellers Transacted',       _txnFmtN(sTotal),     (d3 ? Math.abs(d3) + '% vs FY 25-26' : ''))
+    + kpiCard(icBuy,  '#EDE8FA', '#8460D4', 'Buyers Transacted',        _txnFmtN(bTotal),     (d4 ? Math.abs(d4) + '% vs FY 25-26' : ''))
+    + '</div>'
+    + '<div class="txn3-row2">'
+    +   '<div class="txn3-card">'
+    +     '<div class="txn3-card-hdr">'
+    +       '<div class="txn3-card-title">Transaction Activity</div>'
+    +       '<span class="txn3-period-lbl">Last 6 Months</span>'
+    +     '</div>'
+    +     _txnBuildActivityChart(mths)
+    +     '<div class="txn3-chart-legend">'
+    +       '<div class="txn3-leg"><div class="txn3-ld" style="background:#005DFF"></div>Sellers</div>'
+    +       '<div class="txn3-leg"><div class="txn3-ld" style="background:#049769"></div>Buyers</div>'
+    +     '</div>'
+    +   '</div>'
+    +   '<div class="txn3-card">'
+    +     '<div class="txn3-card-hdr"><div class="txn3-card-title">Transaction Distribution by Category</div></div>'
+    +     '<div id="txn3-donut-wrap">' + _txnBuildDonut(allRows) + '</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="txn3-row2">'
+    +   '<div class="txn3-card">'
+    +     '<div class="txn3-card-hdr"><div class="txn3-card-title">Transaction Status</div></div>'
+    +     _txnBuildStatusCards(d)
+    +   '</div>'
+    +   '<div class="txn3-card">'
+    +     '<div class="txn3-card-hdr">'
+    +       '<div class="txn3-card-title">GMV Overview</div>'
+    +       '<span style="font-size:11.5px;color:var(--txt3)">By Category</span>'
+    +     '</div>'
+    +     _txnBuildGMVSection(g)
+    +   '</div>'
+    + '</div>'
+    + '<div class="txn3-card">'
+    +   '<div id="txn3-records-section">'
+    +   _txnBuildRecordsHTML(allRows)
+    +   '</div>'
     + '</div>'
   + '</div>';
+
+
 }
+
 
 
 // ════════════════════════════════════════════════════════════════
