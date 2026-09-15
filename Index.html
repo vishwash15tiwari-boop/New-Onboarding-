@@ -3971,8 +3971,8 @@ body.view-gst #mm-crumbs{display:none}
    CENTRAL ONBOARDING — OVERVIEW SCREEN
    A clean executive landing screen that precedes the detailed mindmap.
    ════════════════════════════════════════════════════════════════ */
-#ov-screen{display:none;background:var(--bg2);min-height:calc(100vh - 56px)}
-body.view-ov #main{display:none!important}
+#ov-screen{display:none;background:var(--bg2);flex:1;min-width:0;overflow-y:auto;min-height:calc(100vh - 56px)}
+body.view-ov #dash-content{display:none!important}
 body.view-ov #ov-screen{display:block}
 /* Override global .sk min-height:280px — overview skeletons have explicit heights */
 #ov-screen .sk{min-height:0!important}
@@ -4224,7 +4224,7 @@ body.view-ov #ov-screen{display:block}
 </style>
 </head>
 
-<body>
+<body class="view-ov">
 
 <!-- Ambient vertical aura — behind everything -->
 <div id="aura" aria-hidden="true"></div>
@@ -4281,6 +4281,70 @@ body.view-ov #ov-screen{display:block}
 
   <!-- Sidebar navigation — built by buildSideNav() -->
   <nav id="side-nav" aria-label="Dashboard navigation"></nav>
+
+  <!-- ── Overview screen — shown when no vertical is selected ── -->
+  <div id="ov-screen" role="region" aria-label="Central Onboarding Overview">
+    <div class="ov-wrap">
+
+      <!-- Page intro + period controls -->
+      <div class="ov-page-hdr">
+        <div>
+          <div class="ov-eyebrow">Central Onboarding Dashboard</div>
+          <p class="ov-sub">Executive view of onboarding performance across all business verticals.</p>
+        </div>
+        <div class="ov-period-row" id="ov-period-row"></div>
+      </div>
+
+      <!-- Executive KPI snapshot — exactly 3 cards -->
+      <div class="ov-kpi-row" id="ov-kpi-row">
+        <div class="ov-kpi sk" style="min-height:112px"></div>
+        <div class="ov-kpi sk" style="min-height:112px"></div>
+        <div class="ov-kpi sk" style="min-height:112px"></div>
+      </div>
+
+      <!-- Analytics: monthly bar chart + health donut -->
+      <div class="ov-analytics-row">
+        <div class="ov-chart-card">
+          <div class="ov-card-hdr">
+            <div>
+              <div class="ov-card-title">Monthly Onboarding</div>
+              <div class="ov-card-sub">Seller and buyer onboarding across all business verticals.</div>
+            </div>
+            <div style="display:flex;gap:var(--sp-2);align-items:center">
+              <select class="ov-chart-sel" id="ov-chart-mode" onchange="renderOvBarChart(window._ovMonthlyData)">
+                <option value="aud">Sellers / Buyers</option>
+                <option value="vert">By Vertical</option>
+              </select>
+              <select class="ov-chart-sel" id="ov-months-sel" onchange="renderOvBarChart(window._ovMonthlyData)">
+                <option value="6">Last 6 Months</option>
+                <option value="9">Last 9 Months</option>
+                <option value="12">Last 12 Months</option>
+              </select>
+            </div>
+          </div>
+          <div id="ov-bar-chart">
+            <div class="sk" style="height:120px;border-radius:var(--r2)"></div>
+          </div>
+        </div>
+        <div class="ov-donut-card">
+          <div class="ov-card-title" style="margin-bottom:4px">Onboarding Health</div>
+          <div class="ov-card-sub">Current status of all onboardings.</div>
+          <div id="ov-donut"><div class="sk" style="height:140px;border-radius:var(--r2)"></div></div>
+        </div>
+      </div>
+
+      <!-- Business Verticals — navigation layer -->
+      <div>
+        <div class="ov-verts-hdr">
+          <div class="ov-verts-title">Business Verticals</div>
+        </div>
+        <div class="ov-verts-grid" id="ov-verts-grid">
+          <!-- Rendered by renderOvVerts() once DS/DB are available -->
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <div id="dash-content">
 
@@ -4360,73 +4424,6 @@ body.view-ov #ov-screen{display:block}
 
 </div><!-- /main -->
 
-<!-- ════════════════════════════════════════════════════════════════
-     CENTRAL ONBOARDING — OVERVIEW SCREEN
-     Default landing experience; transitions to #main when a vertical
-     is selected. No sidebar here — the vertical cards are the nav layer.
-     ════════════════════════════════════════════════════════════════ -->
-<div id="ov-screen" role="main" aria-label="Central Onboarding Overview">
-  <div class="ov-wrap">
-
-    <!-- Page intro + period controls -->
-    <div class="ov-page-hdr">
-      <div>
-        <div class="ov-eyebrow">Central Onboarding Dashboard</div>
-        <p class="ov-sub">Executive view of onboarding performance across all business verticals.</p>
-      </div>
-      <div class="ov-period-row" id="ov-period-row"></div>
-    </div>
-
-    <!-- Executive KPI snapshot — exactly 3 cards -->
-    <div class="ov-kpi-row" id="ov-kpi-row">
-      <div class="ov-kpi sk" style="min-height:112px"></div>
-      <div class="ov-kpi sk" style="min-height:112px"></div>
-      <div class="ov-kpi sk" style="min-height:112px"></div>
-    </div>
-
-    <!-- Analytics: monthly bar chart + health donut -->
-    <div class="ov-analytics-row">
-      <div class="ov-chart-card">
-        <div class="ov-card-hdr">
-          <div>
-            <div class="ov-card-title">Monthly Onboarding</div>
-            <div class="ov-card-sub">Seller and buyer onboarding across all business verticals.</div>
-          </div>
-          <div style="display:flex;gap:var(--sp-2);align-items:center">
-            <select class="ov-chart-sel" id="ov-chart-mode" onchange="renderOvBarChart(window._ovMonthlyData)">
-              <option value="aud">Sellers / Buyers</option>
-              <option value="vert">By Vertical</option>
-            </select>
-            <select class="ov-chart-sel" id="ov-months-sel" onchange="renderOvBarChart(window._ovMonthlyData)">
-              <option value="6">Last 6 Months</option>
-              <option value="9">Last 9 Months</option>
-              <option value="12">Last 12 Months</option>
-            </select>
-          </div>
-        </div>
-        <div id="ov-bar-chart">
-          <div class="sk" style="height:120px;border-radius:var(--r2)"></div>
-        </div>
-      </div>
-      <div class="ov-donut-card">
-        <div class="ov-card-title" style="margin-bottom:4px">Onboarding Health</div>
-        <div class="ov-card-sub">Current status of all onboardings.</div>
-        <div id="ov-donut"><div class="sk" style="height:140px;border-radius:var(--r2)"></div></div>
-      </div>
-    </div>
-
-    <!-- Business Verticals — navigation layer -->
-    <div>
-      <div class="ov-verts-hdr">
-        <div class="ov-verts-title">Business Verticals</div>
-      </div>
-      <div class="ov-verts-grid" id="ov-verts-grid">
-        <!-- Rendered by renderOvVerts() once DS/DB are available -->
-      </div>
-    </div>
-
-  </div>
-</div>
 
 <!-- Tooltip for monthly bar chart hover -->
 <div class="ov-tooltip" id="ov-tooltip" aria-hidden="true"></div>
@@ -12394,7 +12391,8 @@ function snGoOverview() {
   snModActive   = null;
   snSubActive   = null;
   activeVertKey = null;
-  showOverview();                                       // consolidated nav → overview landing (no mind-map columns)
+  buildSideNav();
+  showOverview();
 }
 
 // Level 1 → Level 2: click a vertical → hide columns, enter drill-down.
@@ -15400,6 +15398,7 @@ function showOverview() {
   var doNav = function() {
     document.body.classList.add('view-ov');
     renderOvScreen();
+    buildSideNav();
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
   document.documentElement.setAttribute('data-nav', 'exit');
