@@ -2821,7 +2821,8 @@ body.view-gst #vert-tabs-bar{display:none}
   font-size:11px;font-weight:500;color:var(--txt3);
   line-height:1;
 }
-.sn-bc-seg{max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.7}
+.sn-bc-seg{max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.7}
+.sn-breadcrumb{flex-wrap:wrap;row-gap:2px}
 .sn-bc-seg.sn-bc-cur{color:var(--txt2);opacity:1}
 .sn-bc-div{opacity:.35;flex-shrink:0}
 .sn-bc-link{background:none;border:none;font-family:inherit;font-size:inherit;font-weight:inherit;
@@ -12352,12 +12353,32 @@ function buildSideNav() {
 
       html += '<div class="sn-vert-expand" style="' + vStyle + '" role="group" aria-label="' + esc(cfg.name) + ' navigation">';
 
-      // Breadcrumb inside the expanded section
-      html += '<div class="sn-breadcrumb" aria-label="Navigation path">'
-        + '<button class="sn-bc-seg sn-bc-link" onclick="snGoOverview()" aria-label="Go to Overview">Overview</button>'
-        + '<span class="sn-bc-div">›</span>'
-        + '<span class="sn-bc-seg sn-bc-cur">' + esc(cfg.name || cfg.key) + '</span>'
-        + '</div>';
+      // Breadcrumb inside the expanded section — full path when module active
+      var _bc = '<div class="sn-breadcrumb" aria-label="Navigation path">'
+        + '<button class="sn-bc-seg sn-bc-link" onclick="snGoOverview()" aria-label="Go to Central Onboarding">Central Onboarding</button>'
+        + '<span class="sn-bc-div">›</span>';
+      if (snModActive) {
+        var _bcNode = typeof mmFindById === 'function' ? mmFindById(snModActive) : null;
+        var _bcName = _bcNode ? (_bcNode.t || '') : '';
+        var _bcSubs = (typeof SN_MODULE_SUBS !== 'undefined' && _bcName) ? (SN_MODULE_SUBS[_bcName] || []) : [];
+        _bc += '<button class="sn-bc-seg sn-bc-link" onclick="snGoOverview()" aria-label="' + esc(cfg.name || cfg.key) + '">' + esc(cfg.name || cfg.key) + '</button>'
+          + '<span class="sn-bc-div">›</span>';
+        if (snSubActive && _bcSubs.length) {
+          var _bcSubLabel = snSubActive;
+          for (var _bi = 0; _bi < _bcSubs.length; _bi++) {
+            if (_bcSubs[_bi].key === snSubActive) { _bcSubLabel = _bcSubs[_bi].label; break; }
+          }
+          _bc += '<span class="sn-bc-seg">' + esc(_bcName) + '</span>'
+            + '<span class="sn-bc-div">›</span>'
+            + '<span class="sn-bc-seg sn-bc-cur">' + esc(_bcSubLabel) + '</span>';
+        } else {
+          _bc += '<span class="sn-bc-seg sn-bc-cur">' + esc(_bcName || snModActive) + '</span>';
+        }
+      } else {
+        _bc += '<span class="sn-bc-seg sn-bc-cur">' + esc(cfg.name || cfg.key) + '</span>';
+      }
+      _bc += '</div>';
+      html += _bc;
 
       html += '<div class="sn-sect" style="padding-top:4px;padding-left:4px">Modules</div>';
 
@@ -12501,6 +12522,7 @@ function snClickModule(nodeId) {
   snSubActive = null;
   var _subs = _n && _n.t ? (SN_MODULE_SUBS[_n.t] || []) : [];
   if (_subs.length) snSubActive = _subs[0].key;
+  document.body.classList.remove('view-ov');
 
   // Geographic Split: bypass column navigation — directly activate geo panel.
   if (_isGeoParent || _isGeoModule) {
