@@ -4091,9 +4091,9 @@ body.view-ov #ov-screen{display:block}
   --lc-border:#EAEAEA; --lc-border2:#DEDEDE;
   --lc-text:#171717; --lc-text2:#5C5C5C; --lc-text3:#6B6B6B;
   --lc-accent:#005DFF; --lc-accent-rgb:0,93,255; --lc-accent-weak:rgba(0,93,255,.08);
-  --lc-ok:#16A34A; --lc-ok-weak:rgba(22,163,74,.12);
+  --lc-ok:#15803D; --lc-ok-weak:rgba(21,128,61,.12);
   --lc-warn:#B45309; --lc-warn-weak:rgba(180,83,9,.12);
-  --lc-risk:#DC2626; --lc-risk-weak:rgba(220,38,38,.12);
+  --lc-risk:#C81E1E; --lc-risk-weak:rgba(200,30,30,.12);
   --lc-ring-track:#ECECEE; --lc-shadow:0 1px 2px rgba(0,0,0,.04); --lc-seg-on:#FFFFFF;
   background:var(--lc-canvas); color:var(--lc-text);
   font-family:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -18321,11 +18321,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Exceptions (score <= 2) + table rows, scoped to the selected audience.
     var vrAll   = _VR.vendorRatings || [];
     var audRows = vrAll.filter(function (v) { return vrAud === 'combined' || v.aud === vrAud; });
+    // When an audience shows figures (rated>0) but carries no per-vendor rows of its own,
+    // the server rolls its quality up to Combined — reuse Combined rows so the Exceptions
+    // count agrees with the distribution instead of contradicting it.
+    var rollup = (audRows.length === 0 && rated > 0 && vrAud !== 'combined');
+    if (rollup) audRows = vrAll.slice();
     var excRows = audRows.filter(function (v) { return v.rating != null && v.rating <= 2; });
     var excCount = excRows.length;                 // KPI == table row count, always
 
     var band = avgBand(avg);
-    var audName = vrAud === 'combined' ? 'Combined' : (vrAud === 'seller' ? 'Sellers' : 'Buyers');
+    var audName = (vrAud === 'combined' ? 'Combined' : (vrAud === 'seller' ? 'Sellers' : 'Buyers'))
+                + (rollup ? ' · rolls up to Combined' : '');
 
     var kpis = '<div class="lc-kpis">'
       + kpi('Average Rating',
@@ -18351,7 +18357,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var tableCard = '<div class="lc-card">'
       + '<div class="lc-pad" style="padding-bottom:12px"><div class="lc-vr-cardh">Exception Vendors '
-      + '<span>rating ≤ 2 · ' + nf(excRows.length) + ' listed</span></div></div>'
+      + '<span>rating ≤ 2 · ' + nf(excRows.length) + ' listed' + (rollup ? ' · from Combined' : '') + '</span></div></div>'
       + excTable(excRows)
       + '</div>';
 
@@ -18381,24 +18387,35 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script id="lc-theme-ctl">
-/* Shared LC platform — theme controller + keyboard activation + on-brand skeleton seam. */
+/* Shared LC platform — theme controller + keyboard activation + on-brand skeleton seams. */
+function _lcSync(){
+  var t; try{ t=localStorage.getItem('rk-lc-theme')||'light'; }catch(e){ t='light'; }
+  var els=document.querySelectorAll('.lc'); for(var i=0;i<els.length;i++){ els[i].setAttribute('data-theme',t); }
+  var glyph=(t==='dark')?'☾':'☀';
+  var btns=document.querySelectorAll('.lc button'); for(var j=0;j<btns.length;j++){ var oc=btns[j].getAttribute('onclick')||''; if(oc.indexOf('lcToggleTheme')>=0){ btns[j].textContent=glyph; btns[j].setAttribute('aria-pressed', t==='dark'?'true':'false'); } }
+}
 window.lcToggleTheme = function(){
   var t; try{ t=(localStorage.getItem('rk-lc-theme')||'light')==='dark'?'light':'dark'; localStorage.setItem('rk-lc-theme',t);}catch(e){ t='light'; }
-  var els=document.querySelectorAll('.lc'); for(var i=0;i<els.length;i++){ els[i].setAttribute('data-theme',t); }
-  var glyph = (t==='dark')?'☾':'☀';
-  var btns=document.querySelectorAll('.lc button'); for(var j=0;j<btns.length;j++){ var oc=btns[j].getAttribute('onclick')||''; if(oc.indexOf('lcToggleTheme')>=0){ btns[j].textContent=glyph; btns[j].setAttribute('aria-pressed', t==='dark'?'true':'false'); } }
+  _lcSync();
   try{ if(typeof renderOvScreen==='function' && document.body.classList.contains('view-ov')) renderOvScreen(); }catch(e){}
 };
+/* Re-apply theme + toggle glyph/aria whenever any LC view re-renders, so state stays correct after a data refresh. */
+try{
+  var _lcmo=new MutationObserver(function(){ _lcSync(); });
+  ['ov-screen','tab-gst','tab-osv','tab-txndist','tab-transactions','tab-vendorratings'].forEach(function(id){ var el=document.getElementById(id); if(el) _lcmo.observe(el,{childList:true}); });
+}catch(e){}
 /* Keyboard activation for LC role=button cards (Enter/Space) — one handler covers every view. */
 document.addEventListener('keydown', function(e){
   if(e.key!=='Enter' && e.key!==' ') return;
   var tg=e.target; if(!tg || !tg.closest) return;
   var el=tg.closest('.lc [role="button"]');
   if(!el || el.tagName==='BUTTON' || el.tagName==='A' || el.tagName==='INPUT' || el.tagName==='SELECT' || el.tagName==='TEXTAREA') return;
+  if(el.getAttribute('onkeydown')) return; // element handles its own keys — don't double-fire
   if(typeof el.onclick==='function' || el.getAttribute('onclick')){ e.preventDefault(); el.click(); }
 });
-/* Keep GST cold-load / retry skeleton on-brand (renderGST paints an LC skeleton when GST is null). */
-try{ if(typeof renderGSTSkeleton==='function'){ renderGSTSkeleton = function(){ try{ if(typeof renderGST==='function') renderGST(); }catch(e){} }; } }catch(e){}
+/* Keep cold-load / retry skeletons on-brand (each LC render paints an LC skeleton when its global is null). */
+try{ if(typeof renderGSTSkeleton==='function'){ renderGSTSkeleton=function(){ try{ if(typeof renderGST==='function') renderGST(); }catch(e){} }; } }catch(e){}
+try{ if(typeof renderTxnDistSkeleton==='function'){ renderTxnDistSkeleton=function(){ try{ if(typeof renderTxnDist==='function') renderTxnDist(); }catch(e){} }; } }catch(e){}
 </script>
 </body>
 </html>
