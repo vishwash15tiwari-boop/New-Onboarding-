@@ -16135,7 +16135,7 @@ document.addEventListener('DOMContentLoaded', function() {
       +'<div class="lc-seg">'+chip('Today','Today')+chip('MTD','MTD')+chip('YTD','YTD')+chip('All','All')+'</div>'
       +'<select class="lc-selp" onchange="onPeriodSelect(this.value)"><option value="All"'+(currentPeriod==='All'?' selected':'')+'>All Time</option><option value="Today"'+(currentPeriod==='Today'?' selected':'')+'>Today</option><option value="MTD"'+(currentPeriod==='MTD'?' selected':'')+'>MTD</option><option value="YTD"'+(currentPeriod==='YTD'?' selected':'')+'>YTD</option>'+fyOpts+'<option value="Custom"'+(currentPeriod==='Custom'?' selected':'')+'>Custom</option></select>'
       +'<div class="lc-seg"><button class="'+(lcAud==='all'?'on':'')+'" onclick="lcSetAud(\'all\')">All</button><button class="'+(lcAud==='seller'?'on':'')+'" onclick="lcSetAud(\'seller\')">Seller</button><button class="'+(lcAud==='buyer'?'on':'')+'" onclick="lcSetAud(\'buyer\')">Buyer</button></div>'
-      +'<button class="lc-ico" onclick="lcToggleTheme()" aria-label="Toggle theme" title="Toggle theme">'+(theme==='dark'?'☾':'☀')+'</button>'
+      +'<button class="lc-ico" onclick="lcToggleTheme()" aria-label="Toggle light or dark theme" aria-pressed="'+(theme==='dark'?'true':'false')+'" title="Toggle theme">'+(theme==='dark'?'☾':'☀')+'</button>'
       +'<div class="lc-fresh"><span class="lc-live"></span>'+(hasData?'live':'loading…')+'</div>'
       +'</div>';
 
@@ -16178,10 +16178,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var dTot=(cur&&prev&&prev.onboarded>0)?Math.round((cur.onboarded-prev.onboarded)/prev.onboarded*100):null;
     var dComp=(cur&&prev)?(cur.compRate-prev.compRate):null;
     var dTat=(cur&&prev&&cur.avgTAT!=null&&prev.avgTAT!=null&&prev.avgTAT>0)?Math.round((cur.avgTAT-prev.avgTAT)/prev.avgTAT*100):null;
+    if(lcAud!=='all'){ dTot=null; dComp=null; dTat=null; } // FY deltas aggregate both audiences; hide when a single audience is selected
     var gstPct=port.total>0?Math.round(port.withGST/port.total*100):0;
     var kpis='<section><div class="lc-kpis">'
       +'<div class="lc-card lc-kpi"><div class="lbl">Total Onboarded</div><div class="row"><div class="val num">'+nfmt(port.comp)+'</div>'+lcDelta(dTot,false)+'</div><div class="ctx">'+esc2(_lcPeriodLabel())+' · '+fyLbl+'</div></div>'
-      +'<div class="lc-card lc-kpi"><div class="lbl">Completion Rate</div><div class="row"><div class="val num">'+port.compPct+'<small>%</small></div>'+lcDelta(dComp,false)+'</div><div class="ctx">'+nfmt(port.comp)+' of '+nfmt(port.total)+' cases</div></div>'
+      +'<div class="lc-card lc-kpi"><div class="lbl">Completion Rate</div><div class="row"><div class="val num">'+port.compPct+'<small>%</small></div>'+(dComp!=null?'<span class="lc-chip '+(dComp>=0?'ok':'risk')+'">'+(dComp>=0?'▲':'▼')+' '+Math.abs(dComp)+' pts</span>':'')+'</div><div class="ctx">'+nfmt(port.comp)+' of '+nfmt(port.total)+' cases</div></div>'
       +'<div class="lc-card lc-kpi"><div class="lbl">Average TAT</div><div class="row"><div class="val num">'+(port.avgTAT!=null?port.avgTAT+'<small> days</small>':'—')+'</div>'+lcDelta(dTat,true)+'</div><div class="ctx">lower is better'+(port.withinSla+port.delayed>0?' · '+Math.round(port.withinSla/(port.withinSla+port.delayed)*100)+'% within SLA':'')+'</div></div>'
       +'<div class="lc-card lc-kpi"><div class="lbl">Active Verticals</div><div class="row"><div class="val num">'+verts.filter(function(v){return v.total>0;}).length+'<small> / '+verts.length+'</small></div><span class="lc-chip flat">'+hc.ok+'·'+hc.warn+'·'+hc.risk+'</span></div><div class="ctx">healthy · watch · at-risk</div></div>'
       +'</div></section>';
@@ -16193,7 +16194,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var worstTat=verts.filter(function(v){return v.avgTAT!=null;}).sort(function(a,b){return b.avgTAT-a.avgTAT;})[0];
     if(worstTat&&worstTat.avgTAT>9) attn.push({sev:worstTat.avgTAT>12?'risk':'warn',tag:'TAT outlier',m:worstTat.avgTAT+' days',d:esc2(worstTat.code)+' · above 9.0 target',fn:"lcDrill('"+worstTat.key+"')"});
     var gstMiss=port.total-port.withGST;
-    if(gstMiss>0) attn.push({sev:gstPct<90?'warn':'warn',tag:'GST coverage',m:nfmt(gstMiss)+' pending',d:(100-gstPct)+'% missing GSTIN',fn:"lcOpenView('gst')"});
+    if(gstMiss>0) attn.push({sev:gstPct<90?'risk':'warn',tag:'GST coverage',m:nfmt(gstMiss)+' pending',d:(100-gstPct)+'% missing GSTIN',fn:"lcOpenView('gst')"});
     while(attn.length<4 && verts.length){ var w=verts.filter(function(v){return v.health!=='healthy';})[attn.length]; if(!w) break; attn.push({sev:HL[w.health]==='risk'?'risk':'warn',tag:esc2(w.code)+' · '+HLB[w.health].toLowerCase(),m:w.compPct+'%',d:'completion · '+esc2(w.name),fn:"lcDrill('"+w.key+"')"}); }
     var attnHtml = attn.length ? '<section><div class="lc-sech"><span class="pr">(</span><h2>Needs attention</h2><span class="pr">)</span><span class="sub">auto-surfaced from live data</span></div><div class="lc-exc-row">'
       +attn.slice(0,4).map(function(x){return '<div class="lc-card lc-exc '+x.sev+'" onclick="'+x.fn+'" role="button" tabindex="0"><div class="eh"><span class="lc-dot '+x.sev+'"></span>'+x.tag+'</div><div class="em num">'+x.m+'</div><div class="ed">'+x.d+'</div><div class="lk">View detail →</div></div>';}).join('')+'</div></section>' : '';
@@ -18380,12 +18381,24 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script id="lc-theme-ctl">
-/* Shared LC theme controller - swaps data-theme on every .lc island + persists. */
+/* Shared LC platform — theme controller + keyboard activation + on-brand skeleton seam. */
 window.lcToggleTheme = function(){
   var t; try{ t=(localStorage.getItem('rk-lc-theme')||'light')==='dark'?'light':'dark'; localStorage.setItem('rk-lc-theme',t);}catch(e){ t='light'; }
   var els=document.querySelectorAll('.lc'); for(var i=0;i<els.length;i++){ els[i].setAttribute('data-theme',t); }
+  var glyph = (t==='dark')?'☾':'☀';
+  var btns=document.querySelectorAll('.lc button'); for(var j=0;j<btns.length;j++){ var oc=btns[j].getAttribute('onclick')||''; if(oc.indexOf('lcToggleTheme')>=0){ btns[j].textContent=glyph; btns[j].setAttribute('aria-pressed', t==='dark'?'true':'false'); } }
   try{ if(typeof renderOvScreen==='function' && document.body.classList.contains('view-ov')) renderOvScreen(); }catch(e){}
 };
+/* Keyboard activation for LC role=button cards (Enter/Space) — one handler covers every view. */
+document.addEventListener('keydown', function(e){
+  if(e.key!=='Enter' && e.key!==' ') return;
+  var tg=e.target; if(!tg || !tg.closest) return;
+  var el=tg.closest('.lc [role="button"]');
+  if(!el || el.tagName==='BUTTON' || el.tagName==='A' || el.tagName==='INPUT' || el.tagName==='SELECT' || el.tagName==='TEXTAREA') return;
+  if(typeof el.onclick==='function' || el.getAttribute('onclick')){ e.preventDefault(); el.click(); }
+});
+/* Keep GST cold-load / retry skeleton on-brand (renderGST paints an LC skeleton when GST is null). */
+try{ if(typeof renderGSTSkeleton==='function'){ renderGSTSkeleton = function(){ try{ if(typeof renderGST==='function') renderGST(); }catch(e){} }; } }catch(e){}
 </script>
 </body>
 </html>
