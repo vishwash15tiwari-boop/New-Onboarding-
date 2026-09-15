@@ -2808,6 +2808,9 @@ body.view-gst #vert-tabs-bar{display:none}
 .sn-bc-seg{max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.7}
 .sn-bc-seg.sn-bc-cur{color:var(--txt2);opacity:1}
 .sn-bc-div{opacity:.35;flex-shrink:0}
+.sn-bc-link{background:none;border:none;font-family:inherit;font-size:inherit;font-weight:inherit;
+  color:inherit;padding:0;cursor:pointer;opacity:.7;transition:opacity .12s,color .12s}
+.sn-bc-link:hover{opacity:1;color:var(--blue)}
 
 /* Module sub-items — Level 3 — Notion: 12px/400, warm hover */
 .sn-sub-items{padding:1px 0 4px 47px;display:flex;flex-direction:column;gap:1px;}
@@ -12236,9 +12239,9 @@ function buildSideNav() {
       + '<span class="sn-back-arr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
       + 'All Verticals'
       + '</button>';
-    // Breadcrumb: Overview / VertName
+    // Breadcrumb: Overview (clickable) / VertName
     html += '<div class="sn-breadcrumb" aria-label="Navigation path">'
-      + '<span class="sn-bc-seg">Overview</span>'
+      + '<button class="sn-bc-seg sn-bc-link" onclick="snGoOverview()" aria-label="Go to Overview">Overview</button>'
       + '<span class="sn-bc-div">›</span>'
       + '<span class="sn-bc-seg sn-bc-cur">' + esc((vcfg.name || snVertModKey)) + '</span>'
       + '</div>';
