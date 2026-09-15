@@ -2718,6 +2718,22 @@ body.view-gst #vert-tabs-bar{display:none}
 .sn-sub.sn-active .sn-sub-dot{opacity:1;background:var(--vc,var(--blue))}
 .sn-sub.sn-active .sn-sub-lbl{color:var(--txt);font-weight:600}
 
+/* Expand arrow on vertical items */
+.sn-sub-arr{
+  font-size:10px;color:var(--txt3);line-height:1;
+  transition:transform .22s var(--ease-out);
+  flex-shrink:0;margin-left:auto;opacity:.45;
+}
+.sn-sub.sn-active .sn-sub-arr{transform:rotate(90deg);opacity:1;color:var(--vc,var(--blue))}
+
+/* Inline-expanded vertical content — modules + tools nested under the vertical */
+.sn-vert-expand{
+  border-left:2px solid var(--vc,var(--border2));
+  margin:2px 8px 8px 22px;
+  padding:4px 0 6px;
+  border-radius:0 6px 6px 0;
+}
+
 /* Sidebar — back button — must read as primary nav, not a muted hint */
 .sn-back{
   display:flex;align-items:center;gap:8px;
@@ -12240,112 +12256,12 @@ function buildSideNav() {
   var isTXN2 = currentView === 'transactions';
   var isVR   = currentView === 'vendorratings';
   var isOvw  = currentView === 'onboarding';
+  // Overview = no vertical selected and on the onboarding main view
+  var ovwActive = !snVertModKey && isOvw;
 
   var html = '';
 
-  // ── LEVEL 2 / 3: Vertical drill-down — shows modules + optional sub-items ──
-  if (snVertModKey && isOvw) {
-    var vc    = VERT_COLORS[snVertModKey] || VERT_COLORS.Others;
-    var vcfg  = cfgList.filter(function(c){ return c.key === snVertModKey; })[0] || {};
-    var vNode = typeof mmFindById === 'function' ? mmFindById('root/' + snVertModKey) : null;
-    var mods  = vNode ? (vNode.children || []) : [];
-
-    // Onboarded count from vNode.s (e.g. "319 onboarded")
-    var vCount = '', vLabel = 'Onboarded';
-    if (vNode && vNode.s) {
-      var _sp = String(vNode.s).split(' ');
-      vCount = _sp[0] || '';
-      vLabel = _sp.slice(1).join(' ') || 'Onboarded';
-    }
-
-    // Back → Level 1 — SVG chevron, semantic label, aria
-    html += '<button class="sn-back" onclick="snBackToVerticals()" aria-label="Back to all verticals">'
-      + '<span class="sn-back-arr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
-      + 'All Verticals'
-      + '</button>';
-    // Breadcrumb: Overview (clickable) / Verticals (clickable) / VertName
-    html += '<div class="sn-breadcrumb" aria-label="Navigation path">'
-      + '<button class="sn-bc-seg sn-bc-link" onclick="snGoOverview()" aria-label="Go to Overview">Overview</button>'
-      + '<span class="sn-bc-div">›</span>'
-      + '<button class="sn-bc-seg sn-bc-link" onclick="snBackToVerticals()" aria-label="All Verticals">Verticals</button>'
-      + '<span class="sn-bc-div">›</span>'
-      + '<span class="sn-bc-seg sn-bc-cur">' + esc((vcfg.name || snVertModKey)) + '</span>'
-      + '</div>';
-
-    // Vertical identity card
-    html += '<div class="sn-vert-hdr">'
-      + '<div class="sn-vert-hdr-bar" style="background:' + vc.c + '"></div>'
-      + '<div class="sn-vert-hdr-info">'
-      + '<div class="sn-vert-hdr-name">' + esc((vcfg.name || snVertModKey).toUpperCase()) + '</div>'
-      + (vCount ? '<div class="sn-vert-hdr-count" style="color:' + vc.c + '">' + esc(vCount) + '</div>' : '')
-      + '<div class="sn-vert-hdr-label">' + esc(vLabel) + '</div>'
-      + '</div>'
-      + '</div>';
-
-    html += '<div class="sn-sep" style="margin:4px 14px 8px"></div>';
-    html += '<div class="sn-sect" style="padding-top:0">Modules</div>';
-
-    if (mods.length) {
-      mods.forEach(function(m) {
-        var isActive = !!(snModActive && snModActive === m._id);
-        var isMuted  = !!(m.muted);
-        var tone     = m.tone || 't-ink';
-        var subs     = SN_MODULE_SUBS[m.t] || [];
-        var hasPanel = m.expand === 'inline-panel' && subs.length > 0;
-        var mutedTitle = isMuted ? ' title="No data available for this module"' : '';
-
-        // Module row — aria-expanded for screen readers
-        html += '<button class="sn-mod ' + tone + (isActive ? ' sn-active' : '') + (isMuted ? ' sn-muted' : '') + '"'
-          + ' onclick="' + (isMuted ? '' : 'snClickModule(\'' + esc(m._id || '') + '\')') + '"'
-          + ' aria-expanded="' + (isActive && hasPanel ? 'true' : 'false') + '"'
-          + (isActive ? ' aria-current="true"' : '')
-          + mutedTitle
-          + (isMuted ? ' aria-disabled="true"' : '')
-          + '>'
-          + '<span class="sn-mod-ic" aria-hidden="true">' + (m.ic || '') + '</span>'
-          + '<span class="sn-mod-body">'
-          + '<span class="sn-mod-lbl">' + esc(m.t) + '</span>'
-          + '</span>'
-          + (hasPanel ? '<span class="sn-mod-arr' + (isActive ? ' open' : '') + '" aria-hidden="true">›</span>' : '')
-          + '</button>';
-
-        // Sub-items — Level 3; aria-current on active sub
-        if (isActive && hasPanel) {
-          html += '<div class="sn-sub-items" role="group" aria-label="' + esc(m.t) + ' sections">';
-          subs.forEach(function(si) {
-            var isOn = snSubActive === si.key;
-            html += '<button class="sn-si' + (isOn ? ' sn-si-on' : '') + '"'
-              + ' onclick="snClickSub(\'' + esc(si.key) + '\')"'
-              + (isOn ? ' aria-current="true"' : '')
-              + '>'
-              + '<span class="sn-si-dot" aria-hidden="true"></span>'
-              + esc(si.label)
-              + '</button>';
-          });
-          html += '</div>';
-        }
-      });
-    } else {
-      // Skeleton loader — avoids ambiguous "Loading…" plain text
-      html += '<div style="padding:4px 12px 8px">'
-        + '<div class="sn-skel-item" style="width:70%"></div>'
-        + '<div class="sn-skel-item" style="width:85%"></div>'
-        + '<div class="sn-skel-item" style="width:60%"></div>'
-        + '</div>';
-    }
-
-    html += '<div class="sn-sep" style="margin-top:auto"></div>';
-    html += '<div class="sn-sect">Tools</div>';
-    html += _snStandaloneBtns(isGST, isTXN, isOSV, isTXN2, isVR);
-    nav.innerHTML = html;
-    _snMmNav(false);   // keep columns hidden while in drill-down mode
-    // Move focus to back button for keyboard users
-    var _bk = nav.querySelector('.sn-back'); if (_bk) _bk.focus({ preventScroll: true });
-    return;
-  }
-
-  // ── LEVEL 1: Overview — full verticals list ──
-  var ovwActive = isOvw && !snActiveKey && !snVertModKey;
+  // ── Overview — primary global nav item ──
   html += '<button class="sn-grp' + (ovwActive ? ' sn-active' : '') + '"'
     + ' onclick="snGoOverview()"'
     + (ovwActive ? ' aria-current="page"' : '')
@@ -12357,26 +12273,93 @@ function buildSideNav() {
   html += '<div class="sn-sep" role="separator"></div>';
   html += '<div class="sn-sect" id="sn-vert-hd">Verticals</div>';
   html += '<div class="sn-subs sn-open" role="group" aria-labelledby="sn-vert-hd">';
+
   cfgList.forEach(function(cfg) {
     var vc = VERT_COLORS[cfg.key] || VERT_COLORS.Others;
-    var isVActive = isOvw && snActiveKey === cfg.key;
-    html += '<button class="sn-sub' + (isVActive ? ' sn-active' : '') + '"'
+    var isExpanded = snVertModKey === cfg.key;
+    var vStyle = '--vc:' + vc.c + ';--vc-ink:' + vc.ink + ';--vc-soft:' + hexRGBA(vc.c, .09);
+
+    // Vertical nav item — always visible in the list
+    html += '<button class="sn-sub' + (isExpanded ? ' sn-active' : '') + '"'
       + ' data-key="' + esc(cfg.key) + '"'
-      + ' style="--vc:' + vc.c + ';--vc-ink:' + vc.ink + ';--vc-soft:' + hexRGBA(vc.c, .09) + '"'
+      + ' style="' + vStyle + '"'
       + ' onclick="snSelectVert(\'' + cfg.key + '\')"'
-      + (isVActive ? ' aria-current="true"' : '')
+      + (isExpanded ? ' aria-current="true" aria-expanded="true"' : ' aria-expanded="false"')
       + '>'
       + '<span class="sn-sub-dot" aria-hidden="true"></span>'
       + '<span class="sn-sub-lbl">' + esc(cfg.name) + '</span>'
+      + '<span class="sn-sub-arr" aria-hidden="true">›</span>'
       + '</button>';
-  });
-  html += '</div>';
 
-  html += '<div class="sn-sep" role="separator"></div>';
-  html += '<div class="sn-sect" id="sn-tools-hd">Tools</div>';
-  html += _snStandaloneBtns(isGST, isTXN, isOSV, isTXN2, isVR);
+    // Inline expansion — modules and tools nested under the selected vertical
+    if (isExpanded) {
+      var vNode = typeof mmFindById === 'function' ? mmFindById('root/' + cfg.key) : null;
+      var mods  = vNode ? (vNode.children || []) : [];
+
+      html += '<div class="sn-vert-expand" style="' + vStyle + '" role="group" aria-label="' + esc(cfg.name) + ' navigation">';
+
+      // Breadcrumb inside the expanded section
+      html += '<div class="sn-breadcrumb" aria-label="Navigation path">'
+        + '<button class="sn-bc-seg sn-bc-link" onclick="snGoOverview()" aria-label="Go to Overview">Overview</button>'
+        + '<span class="sn-bc-div">›</span>'
+        + '<span class="sn-bc-seg sn-bc-cur">' + esc(cfg.name || cfg.key) + '</span>'
+        + '</div>';
+
+      html += '<div class="sn-sect" style="padding-top:4px;padding-left:4px">Modules</div>';
+
+      if (mods.length) {
+        mods.forEach(function(m) {
+          var isActive = !!(snModActive && snModActive === m._id);
+          var isMuted  = !!(m.muted);
+          var tone     = m.tone || 't-ink';
+          var subs     = SN_MODULE_SUBS[m.t] || [];
+          var hasPanel = m.expand === 'inline-panel' && subs.length > 0;
+          var mutedTitle = isMuted ? ' title="No data available for this module"' : '';
+
+          html += '<button class="sn-mod ' + tone + (isActive ? ' sn-active' : '') + (isMuted ? ' sn-muted' : '') + '"'
+            + ' onclick="' + (isMuted ? '' : 'snClickModule(\'' + esc(m._id || '') + '\')') + '"'
+            + ' aria-expanded="' + (isActive && hasPanel ? 'true' : 'false') + '"'
+            + (isActive ? ' aria-current="true"' : '')
+            + mutedTitle + (isMuted ? ' aria-disabled="true"' : '')
+            + '>'
+            + '<span class="sn-mod-ic" aria-hidden="true">' + (m.ic || '') + '</span>'
+            + '<span class="sn-mod-body"><span class="sn-mod-lbl">' + esc(m.t) + '</span></span>'
+            + (hasPanel ? '<span class="sn-mod-arr' + (isActive ? ' open' : '') + '" aria-hidden="true">›</span>' : '')
+            + '</button>';
+
+          if (isActive && hasPanel) {
+            html += '<div class="sn-sub-items" role="group" aria-label="' + esc(m.t) + ' sections">';
+            subs.forEach(function(si) {
+              var isOn = snSubActive === si.key;
+              html += '<button class="sn-si' + (isOn ? ' sn-si-on' : '') + '"'
+                + ' onclick="snClickSub(\'' + esc(si.key) + '\')"'
+                + (isOn ? ' aria-current="true"' : '')
+                + '><span class="sn-si-dot" aria-hidden="true"></span>' + esc(si.label) + '</button>';
+            });
+            html += '</div>';
+          }
+        });
+      } else {
+        html += '<div style="padding:4px 6px 8px">'
+          + '<div class="sn-skel-item" style="width:70%"></div>'
+          + '<div class="sn-skel-item" style="width:85%"></div>'
+          + '<div class="sn-skel-item" style="width:60%"></div>'
+          + '</div>';
+      }
+
+      html += '<div class="sn-sep" style="margin:6px 0 4px 4px"></div>';
+      html += '<div class="sn-sect" style="padding-left:4px">Tools</div>';
+      html += _snStandaloneBtns(isGST, isTXN, isOSV, isTXN2, isVR);
+
+      html += '</div>'; // .sn-vert-expand
+    }
+  });
+
+  html += '</div>'; // .sn-subs.sn-open
 
   nav.innerHTML = html;
+  // Hide mind-map columns when a vertical is selected; restore on Overview.
+  _snMmNav(ovwActive);
 }
 
 // Shared tool buttons — neutral icon style.
