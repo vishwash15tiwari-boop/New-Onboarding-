@@ -16246,8 +16246,8 @@ document.addEventListener('DOMContentLoaded', function() {
     return '<div class="lc-chartscroll">'+svg+'</div>'+legend;
   }
 
-  renderOvScreen = function(){
-    var host=document.getElementById('ov-screen'); if(!host) return;
+  window._lcRenderMonitor = function(){
+    var host=document.getElementById('lc-monitor-root'); if(!host) return;
     var theme=lcThemeInit();
     var hasData=!!(DS||DB);
     var order=lcOrder();
