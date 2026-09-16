@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -18452,398 +18452,435 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style id="lc-vendorratings-css">
-/* ===== Vendor Ratings (vr) — view-scoped; every selector under .lc, classes prefixed .lc-vr-* ===== */
-
-/* Audience control row */
-.lc .lc-vr-ctrl{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap}
-
-/* Card headers reused by distribution / OSV / docs / table */
-.lc .lc-vr-cardh{display:flex;align-items:baseline;gap:8px;font-size:13px;font-weight:600;color:var(--lc-text)}
-.lc .lc-vr-cardh span{font-size:11.5px;font-weight:500;color:var(--lc-text3)}
-
-/* OSV + Docs completeness — two equal cards, ring + stacked bar + legend */
-.lc .lc-vr-grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
-.lc .lc-vr-comp{display:flex;align-items:center;gap:20px;margin-top:14px;flex-wrap:wrap}
-.lc .lc-vr-ring{position:relative;width:132px;height:132px;flex:none}
-.lc .lc-vr-ring svg{display:block;width:100%;height:100%}
-.lc .lc-vr-ringc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.lc .lc-vr-ringc b{font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1}
-.lc .lc-vr-ringc span{font-size:11px;color:var(--lc-text3);font-weight:500;margin-top:2px;text-transform:capitalize}
-.lc .lc-vr-brk{flex:1;min-width:190px;display:flex;flex-direction:column;gap:12px}
-.lc .lc-vr-stack{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--lc-subtle)}
-.lc .lc-vr-stack i{display:block;height:100%}
-.lc .lc-vr-legrows{display:flex;flex-direction:column;gap:2px}
-.lc .lc-vr-legrow{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:9px;font-size:12px;padding:3px 0}
-.lc .lc-vr-legrow .ll{color:var(--lc-text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lc .lc-vr-legrow b{font-weight:600;font-variant-numeric:tabular-nums}
-.lc .lc-vr-legrow em{font-style:normal;color:var(--lc-text3);font-weight:500;min-width:36px;text-align:right;font-variant-numeric:tabular-nums}
-.lc .lc-vr-gdot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--lc-text3);display:inline-block}
-
-/* Exception vendor table — own overflow-x so the page never scrolls sideways */
-.lc .lc-vr-tscroll{overflow-x:auto}
-.lc .lc-vr-tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:660px}
-.lc .lc-vr-tbl thead th{position:sticky;top:0;z-index:1;background:var(--lc-subtle);text-align:left;padding:0;border-bottom:1px solid var(--lc-border);white-space:nowrap}
-.lc .lc-vr-tbl thead th.ar-col{text-align:right}
-.lc .lc-vr-tbl thead th.lc-vr-idxh{padding:10px 12px;font-size:11.5px;font-weight:600;color:var(--lc-text3);text-transform:uppercase;letter-spacing:.02em}
-.lc .lc-vr-th{width:100%;display:inline-flex;align-items:center;gap:5px;background:transparent;border:0;color:var(--lc-text2);font-family:inherit;font-size:11.5px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;padding:10px 12px;cursor:pointer;text-align:left}
-.lc .lc-vr-tbl thead th.ar-col .lc-vr-th{justify-content:flex-end}
-.lc .lc-vr-th:hover{color:var(--lc-text)}
-.lc .lc-vr-th.on{color:var(--lc-accent)}
-.lc .lc-vr-th .ar{font-size:8px;line-height:1}
-.lc .lc-vr-tbl tbody td{padding:9px 12px;border-bottom:1px solid var(--lc-border);color:var(--lc-text);vertical-align:middle}
-.lc .lc-vr-tbl tbody td.ar-col{text-align:right}
-.lc .lc-vr-tbl tbody tr:hover{background:var(--lc-subtle)}
-.lc .lc-vr-tbl tbody tr:last-child td{border-bottom:0}
-.lc .lc-vr-idx{color:var(--lc-text3);font-variant-numeric:tabular-nums}
-.lc .lc-vr-vname{font-weight:600;color:var(--lc-text)}
-.lc .lc-vr-gst{color:var(--lc-text2);font-variant-numeric:tabular-nums;font-size:11.5px}
-
-/* Empty / error states */
-.lc .lc-vr-empty{padding:30px 20px;text-align:center;color:var(--lc-text3);font-size:12.5px;line-height:1.6}
-
-/* Responsive */
-@media(max-width:900px){.lc .lc-vr-grid2{grid-template-columns:1fr}}
-@media(max-width:620px){.lc .lc-vr-comp{gap:14px}.lc .lc-vr-ring{width:116px;height:116px}}
+/* ===== Vendor Ratings v3 â€” single-screen dashboard ===== */
+.lc .vr3-pg{display:flex;flex-direction:column;gap:20px;padding:22px 24px 32px;max-width:1320px;margin:0 auto}
+.lc .vr3-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.lc .vr3-title{font-size:18px;font-weight:700;color:var(--lc-text);letter-spacing:-.02em}
+.lc .vr3-bc{font-size:12px;color:var(--lc-text3);margin-bottom:4px}
+.lc .vr3-bc a{color:var(--lc-text3);text-decoration:none;cursor:pointer}
+.lc .vr3-bc a:hover{color:var(--lc-text)}
+.lc .vr3-seg{display:flex;background:var(--lc-subtle);border-radius:8px;padding:3px;gap:2px}
+.lc .vr3-seg button{padding:6px 14px;border:0;border-radius:6px;background:transparent;color:var(--lc-text2);font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;transition:background .15s,color .15s}
+.lc .vr3-seg button.on{background:var(--lc-card);color:var(--lc-text);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.lc .vr3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.lc .vr3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.lc .vr3-kpi-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--lc-text3)}
+.lc .vr3-kpi-val{font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--lc-text);font-variant-numeric:tabular-nums;line-height:1}
+.lc .vr3-kpi-val small{font-size:15px;font-weight:500;opacity:.6}
+.lc .vr3-kpi-sub{font-size:11.5px;color:var(--lc-text3)}
+.lc .vr3-mid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:16px}
+.lc .vr3-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:18px}
+.lc .vr3-cardh{font-size:13px;font-weight:600;color:var(--lc-text);margin-bottom:14px}
+.lc .vr3-cardh span{font-size:11.5px;font-weight:400;color:var(--lc-text3);margin-left:6px}
+.lc .vr3-bars{display:flex;flex-direction:column;gap:7px}
+.lc .vr3-bar{display:grid;grid-template-columns:46px 1fr 38px;align-items:center;gap:8px;font-size:12px}
+.lc .vr3-bar-lbl{color:var(--lc-text2);font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+.lc .vr3-bar-track{background:var(--lc-subtle);border-radius:4px;height:10px;overflow:hidden}
+.lc .vr3-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.lc .vr3-bar-val{color:var(--lc-text3);text-align:right;font-variant-numeric:tabular-nums}
+.lc .vr3-cattbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.lc .vr3-cattbl th{text-align:left;padding:4px 8px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--lc-text3);border-bottom:1px solid var(--lc-border)}
+.lc .vr3-cattbl td{padding:8px 8px;border-bottom:1px solid var(--lc-border);color:var(--lc-text)}
+.lc .vr3-cattbl tr:last-child td{border-bottom:0}
+.lc .vr3-donut-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+.lc .vr3-donut{position:relative;width:120px;height:120px;flex-shrink:0}
+.lc .vr3-donut svg{display:block}
+.lc .vr3-donut-ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.lc .vr3-donut-ctr b{font-size:22px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.lc .vr3-donut-ctr span{font-size:10px;color:var(--lc-text3);font-weight:500;margin-top:2px}
+.lc .vr3-donut-leg{display:flex;flex-direction:column;gap:5px;width:100%}
+.lc .vr3-dl-row{display:flex;align-items:center;gap:7px;font-size:12px}
+.lc .vr3-dl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.lc .vr3-dl-lbl{flex:1;color:var(--lc-text2)}
+.lc .vr3-dl-val{font-weight:600;font-variant-numeric:tabular-nums;color:var(--lc-text)}
+.lc .vr3-rec-hdr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.lc .vr3-rec-title{font-size:14px;font-weight:700;color:var(--lc-text);flex:1}
+.lc .vr3-search{display:flex;align-items:center;gap:6px;background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:8px;padding:6px 10px;min-width:200px}
+.lc .vr3-search input{background:transparent;border:0;outline:none;font-size:12.5px;color:var(--lc-text);font-family:inherit;width:100%}
+.lc .vr3-select{background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:8px;padding:6px 10px;font-size:12.5px;color:var(--lc-text);font-family:inherit;cursor:pointer;outline:none}
+.lc .vr3-btn{padding:6px 14px;background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:8px;font-size:12.5px;color:var(--lc-text);font-family:inherit;cursor:pointer;font-weight:500}
+.lc .vr3-btn:hover{background:var(--lc-accent);color:#fff;border-color:var(--lc-accent)}
+.lc .vr3-tscroll{overflow-x:auto}
+.lc .vr3-tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:700px}
+.lc .vr3-tbl thead th{position:sticky;top:0;z-index:1;background:var(--lc-subtle);text-align:left;padding:0;border-bottom:1px solid var(--lc-border);white-space:nowrap}
+.lc .vr3-th{width:100%;display:inline-flex;align-items:center;gap:5px;background:transparent;border:0;color:var(--lc-text2);font-family:inherit;font-size:11.5px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;padding:9px 12px;cursor:pointer}
+.lc .vr3-th.on{color:var(--lc-accent)}
+.lc .vr3-th .ar{font-size:8px;line-height:1}
+.lc .vr3-tbl tbody td{padding:9px 12px;border-bottom:1px solid var(--lc-border);color:var(--lc-text);vertical-align:middle}
+.lc .vr3-tbl tbody tr:hover{background:var(--lc-subtle)}
+.lc .vr3-tbl tbody tr:last-child td{border-bottom:0}
+.lc .vr3-vname{font-weight:600}
+.lc .vr3-gst{color:var(--lc-text2);font-size:11.5px;font-variant-numeric:tabular-nums}
+.lc .vr3-empty{padding:30px 20px;text-align:center;color:var(--lc-text3);font-size:12.5px}
+.lc .vr3-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;flex-wrap:wrap}
+.lc .vr3-pager-info{font-size:12px;color:var(--lc-text3)}
+.lc .vr3-pager-btns{display:flex;gap:6px}
+.lc .vr3-pager-btn{padding:5px 12px;border:1px solid var(--lc-border);border-radius:7px;background:var(--lc-card);font-size:12px;cursor:pointer;color:var(--lc-text);font-family:inherit}
+.lc .vr3-pager-btn:disabled{opacity:.4;cursor:not-allowed}
+.lc .vr3-pager-btn:not(:disabled):hover{background:var(--lc-accent);color:#fff;border-color:var(--lc-accent)}
+@media(max-width:1100px){.lc .vr3-mid{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.lc .vr3-kpis{grid-template-columns:repeat(2,1fr)}.lc .vr3-mid{grid-template-columns:1fr}}
+@media(max-width:600px){.lc .vr3-kpis{grid-template-columns:1fr}}
 </style>
 <script id="lc-vendorratings-js">
 /* ============================================================================
- * VENDOR RATINGS — Living Circularity frontend override (scoped, self-contained)
- * Appended AFTER the main script, so the bare reassignment of the GLOBAL
- * renderVendorRatingsDash wins. Data layer untouched: reads _VR (getQualityData).
+ * VENDOR RATINGS v3 â€” single-screen dashboard
+ * Overrides renderVendorRatingsDash after the main script.
+ * Data reads: _VR (from getQualityData). No additional backend calls.
  * ========================================================================== */
 (function () {
-  'use strict';
+  var vrAud    = 'combined';
+  var vrSort   = { key: 'rating', dir: 'asc' };
+  var vr3Page  = 1;
+  var vr3Cat   = '';
+  var vr3Stat  = '';
+  var vr3Q     = '';
+  var vr3Timer = null;
+  var PAGE_SZ  = 20;
 
-  // ---- private view state (no globals leaked except the two window handlers) --
-  var vrAud  = 'combined';                 // Combined | seller | buyer (client re-point)
-  var vrSort = { key: 'rating', dir: 'asc' }; // worst-first default
-
-  // ---- tiny helpers ---------------------------------------------------------
-  function vrTheme() {                      // read persisted LC theme (never throws)
-    try { return localStorage.getItem('rk-lc-theme') || 'light'; }
-    catch (e) { return 'light'; }
-  }
-  function nf(v) {                          // Indian-grouped integer (prefer global fmt)
-    if (typeof window.fmt === 'function') return window.fmt(v);
-    return Number(v || 0).toLocaleString('en-IN');
-  }
-  function esc2(s) {                        // HTML-escape (prefer global esc)
-    if (typeof window.esc === 'function') return window.esc(s);
+  function nf(v)    { return (v == null ? 0 : v).toLocaleString('en-IN'); }
+  function num1(v)  { return v == null ? '0.0' : (Math.round(v * 10) / 10).toFixed(1); }
+  function pctOf(a,b){ return b > 0 ? Math.round(a / b * 100) : 0; }
+  function esc2(s)  {
     return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
-  function pctOf(a, b) { return b > 0 ? Math.round((a / b) * 100) : 0; }
-  function num1(v) { return (Math.round(v * 10) / 10).toFixed(1); }
-
+  function vrTheme() {
+    try { return localStorage.getItem('rk-lc-theme') || 'light'; } catch(e) { return 'light'; }
+  }
+  function shell(theme, content) {
+    return '<div class="lc" data-theme="' + theme + '"><div class="vr3-pg">' + content + '</div></div>';
+  }
+  function bandChip(avg) {
+    if (avg == null) return '<span class="lc-chip flat">Unrated</span>';
+    if (avg >= 8) return '<span class="lc-chip ok">Excellent</span>';
+    if (avg >= 6) return '<span class="lc-chip ok">Good</span>';
+    if (avg >= 4) return '<span class="lc-chip warn">Fair</span>';
+    return '<span class="lc-chip risk">Poor</span>';
+  }
   function statusLabel(s) {
-    var m = (typeof window.STATUS_LABELS === 'object' && window.STATUS_LABELS) ||
-            { COMPLETED: 'Onboarded', DRAFT: 'Draft', IN_REVIEW: 'In Review', REJECTED: 'Rejected' };
-    return m[s] || (s ? String(s) : '—');
+    if (!s) return 'â€”';
+    var m = { COMPLETED:'Completed', IN_PROGRESS:'In Progress', NOT_INITIATED:'Not Initiated',
+              PENDING:'Pending', APPROVED:'Approved', REJECTED:'Rejected',
+              completed:'Completed', in_progress:'In Progress', not_initiated:'Not Initiated' };
+    return m[s] || s.replace(/_/g,' ');
   }
-  function statusClass(s) {
-    if (s === 'COMPLETED') return 'ok';
-    if (s === 'REJECTED')  return 'risk';
-    if (s === 'IN_REVIEW') return 'warn';
-    return 'flat';                          // DRAFT / unknown
+  function statusCls(s) {
+    if (!s) return 'flat';
+    var sl = s.toLowerCase();
+    if (sl === 'completed' || sl === 'approved') return 'ok';
+    if (sl === 'in_progress' || sl === 'pending') return 'warn';
+    if (sl === 'rejected') return 'risk';
+    return 'flat';
   }
-
-  // Compact status ring (hand-rolled inline SVG, tokens only)
-  function ringSvg(pct, colorVar) {
-    var r = 54, cx = 66, cy = 66, sw = 11, c = 2 * Math.PI * r;
-    var frac = Math.max(0, Math.min(1, pct / 100));
-    var off = c * (1 - frac);
-    return '<svg viewBox="0 0 132 132" width="132" height="132" aria-hidden="true" style="transform:rotate(-90deg)">'
-      + '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="var(--lc-ring-track)" stroke-width="' + sw + '"/>'
-      + '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + colorVar + '" stroke-width="' + sw + '" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"/>'
+  function scoreColor(r) {
+    if (r == null || r === 0) return 'var(--lc-text3)';
+    if (r >= 6) return 'var(--lc-ok)';
+    if (r >= 4) return 'var(--lc-warn)';
+    return 'var(--lc-risk)';
+  }
+  function donutSvg(pct, color) {
+    var sz = 120, r = 46, circ = 2 * Math.PI * r;
+    var dash = (pct / 100) * circ;
+    return '<svg width="120" height="120" viewBox="0 0 120 120">'
+      + '<circle cx="60" cy="60" r="' + r + '" fill="none" stroke="var(--lc-subtle)" stroke-width="12"/>'
+      + '<circle cx="60" cy="60" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="12"'
+      + ' stroke-dasharray="' + dash.toFixed(2) + ' ' + circ.toFixed(2) + '"'
+      + ' stroke-linecap="round" transform="rotate(-90 60 60)"/>'
       + '</svg>';
   }
-
-  // ---- chrome ---------------------------------------------------------------
-  function topbar(theme) {
-    var fresh = '';
-    if (_VR && _VR.lastUpdated) {
-      var t = '';
-      try { t = new Date(_VR.lastUpdated).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); }
-      catch (e) { t = ''; }
-      if (t) fresh = '<div class="lc-fresh"><span class="lc-live"></span>Updated ' + esc2(t) + '</div>';
-    }
-    return '<div class="lc-top">'
-      + '<div class="lc-brand"><span class="lc-mark"></span>Vendor Ratings<small>Quality &amp; OSV</small></div>'
-      + '<div class="lc-sp"></div>'
-      + fresh
-      + '<button class="lc-ico" onclick="window.lcToggleTheme&&window.lcToggleTheme()" aria-label="Toggle light or dark theme" title="Toggle theme">'
-      + (theme === 'dark' ? '☾' : '☀') + '</button>'
-      + '</div>';
-  }
-
-  function shell(theme, innerMain) {
-    return '<div class="lc lc-vr" data-theme="' + theme + '">'
-      + topbar(theme)
-      + '<div class="lc-main">' + innerMain + '</div>'
-      + '</div>';
-  }
-
-  // ---- skeleton / error -----------------------------------------------------
-  function skeleton() {
-    var kp = '';
-    for (var i = 0; i < 4; i++) kp += '<div class="lc-skb" style="height:118px"></div>';
-    return '<div class="lc-skb" style="height:26px;width:240px;margin-bottom:4px"></div>'
-      + '<div class="lc-skb" style="height:34px;width:280px"></div>'
-      + '<div class="lc-kpis">' + kp + '</div>'
-      + '<div class="lc-skb" style="height:230px"></div>'
-      + '<div class="lc-vr-grid2"><div class="lc-skb" style="height:210px"></div><div class="lc-skb" style="height:210px"></div></div>'
-      + '<div class="lc-skb" style="height:280px"></div>';
-  }
-  function errorBox(msg) {
-    return '<div class="lc-card lc-pad lc-vr-empty">'
-      + '<div style="font-size:22px;margin-bottom:6px">⚠</div>'
-      + 'Could not load vendor ratings.<br><span style="color:var(--lc-text3)">' + esc2(msg || 'Unknown error') + '</span>'
-      + '</div>';
-  }
-
-  // ---- pieces ---------------------------------------------------------------
   function segBtn(k, label) {
     var on = vrAud === k;
-    return '<button class="' + (on ? 'on' : '') + '" role="tab" aria-selected="' + on + '" onclick="window.lcVrAud(\'' + k + '\')">' + label + '</button>';
+    return '<button class="' + (on ? 'on' : '') + '" onclick="window.lcVrAud(\'' + k + '\')">' + label + '</button>';
   }
-
-  function kpi(lbl, valHtml, chipHtml, ctx) {
-    return '<div class="lc-card lc-kpi">'
-      + '<div class="lbl">' + lbl + '</div>'
-      + '<div class="row"><div class="val num">' + valHtml + '</div>' + (chipHtml || '') + '</div>'
-      + '<div class="ctx">' + ctx + '</div>'
-      + '</div>';
-  }
-
-  function avgBand(avg) {                   // classification of the shown avg (not invented data)
-    if (avg == null) return { cls: 'flat', t: 'Unrated' };
-    if (avg >= 8) return { cls: 'ok',   t: 'Excellent' };
-    if (avg >= 6) return { cls: 'ok',   t: 'Good' };
-    if (avg >= 4) return { cls: 'warn', t: 'Fair' };
-    return { cls: 'risk', t: 'Poor' };
-  }
-
-  // 5-band rating distribution as lc-bars (high band first)
-  function distCard(rating) {
-    var dist = (rating && rating.dist) || [0, 0, 0, 0, 0];
-    var labels = ['0 – 2', '2 – 4', '4 – 6', '6 – 8', '8 – 10'];
-    var colors = ['var(--lc-risk)', 'var(--lc-warn)', 'var(--lc-warn)', 'var(--lc-ok)', 'var(--lc-ok)'];
-    var sum = dist.reduce(function (a, b) { return a + (b || 0); }, 0);
-    var max = Math.max.apply(null, dist.concat([1]));
-    var rows = '';
-    for (var i = 4; i >= 0; i--) {
-      var cnt = dist[i] || 0;
-      var w = Math.round((cnt / max) * 100);
-      var p = sum > 0 ? Math.round((cnt / sum) * 100) : 0;
-      rows += '<div class="lc-bar">'
-        + '<span class="bn">' + labels[i] + '</span>'
-        + '<span class="bt"><i style="width:' + w + '%;background:' + colors[i] + '"></i></span>'
-        + '<span class="bv num">' + nf(cnt) + ' · ' + p + '%</span>'
-        + '</div>';
-    }
-    return '<div class="lc-card lc-pad">'
-      + '<div class="lc-vr-cardh">Rating Distribution <span>score out of 10 · 5 bands</span></div>'
-      + '<div class="lc-bars" style="margin-top:12px">' + rows + '</div>'
-      + '<div class="lc-note" style="margin-top:12px">'
-      + nf(sum) + ' rated vendors · <span style="color:var(--lc-risk)">●</span> 0–2 &amp; <span style="color:var(--lc-warn)">●</span> 2–4 flag quality risk</div>'
-      + '</div>';
-  }
-
-  // OSV / Docs completeness — ring headline + stacked bar + legend rows
-  function compCard(title, scope, segs, ringPct, ringLabel, ringColor, total) {
-    if (!total) {
-      return '<div class="lc-card lc-pad">'
-        + '<div class="lc-vr-cardh">' + title + ' <span>' + scope + '</span></div>'
-        + '<div class="lc-vr-empty" style="padding:26px 8px">No ' + esc2(title.toLowerCase()) + ' data for this audience.</div>'
-        + '</div>';
-    }
-    var stack = '', legend = '';
-    segs.forEach(function (s) {
-      var w = (s.v / total) * 100;
-      if (w > 0) stack += '<i style="width:' + w.toFixed(2) + '%;background:' + s.color + '" title="' + esc2(s.label) + '"></i>';
-      var dot = s.dotClass
-        ? '<span class="lc-dot ' + s.dotClass + '"></span>'
-        : '<span class="lc-vr-gdot"></span>';
-      legend += '<div class="lc-vr-legrow">' + dot
-        + '<span class="ll">' + s.label + '</span>'
-        + '<b class="num">' + nf(s.v) + '</b>'
-        + '<em class="num">' + pctOf(s.v, total) + '%</em></div>';
-    });
-    return '<div class="lc-card lc-pad">'
-      + '<div class="lc-vr-cardh">' + title + ' <span>' + scope + '</span></div>'
-      + '<div class="lc-vr-comp">'
-      + '<div class="lc-vr-ring">' + ringSvg(ringPct, ringColor)
-      + '<div class="lc-vr-ringc"><b class="num">' + ringPct + '%</b><span>' + ringLabel + '</span></div></div>'
-      + '<div class="lc-vr-brk">'
-      + '<div class="lc-vr-stack">' + stack + '</div>'
-      + '<div class="lc-vr-legrows">' + legend + '</div>'
-      + '</div></div></div>';
-  }
-
-  function osvCard(osv) {
-    osv = osv || {};
-    var total = osv.total || 0;
-    var segs = [
-      { label: 'Completed',     v: osv.completed    || 0, color: 'var(--lc-ok)',   dotClass: 'ok' },
-      { label: 'Pending',       v: osv.pending      || 0, color: 'var(--lc-warn)', dotClass: 'warn' },
-      { label: 'Failed',        v: osv.failed       || 0, color: 'var(--lc-risk)', dotClass: 'risk' },
-      { label: 'Not Initiated', v: osv.notInitiated || 0, color: 'var(--lc-text3)', dotClass: '' }
-    ];
-    return compCard('OSV Verification', 'seller scope', segs,
-      pctOf(osv.completed || 0, total), 'verified', 'var(--lc-ok)', total);
-  }
-
-  function docsCard(docs) {
-    docs = docs || {};
-    var total = docs.total || 0;
-    var segs = [
-      { label: 'Complete',   v: docs.complete   || 0, color: 'var(--lc-ok)',   dotClass: 'ok' },
-      { label: 'Partial',    v: docs.partial    || 0, color: 'var(--lc-warn)', dotClass: 'warn' },
-      { label: 'Incomplete', v: docs.incomplete || 0, color: 'var(--lc-risk)', dotClass: 'risk' },
-      { label: 'Missing',    v: docs.missing    || 0, color: 'var(--lc-text3)', dotClass: '' }
-    ];
-    return compCard('Document Completeness', 'onboarded vendors', segs,
-      pctOf(docs.complete || 0, total), 'complete', 'var(--lc-ok)', total);
-  }
-
-  // Exception vendor table (vendorRatings, aud-scoped, rating <= 2), sortable
   function sortRows(rows) {
     var k = vrSort.key, dir = vrSort.dir === 'asc' ? 1 : -1;
-    return rows.slice().sort(function (a, b) {
+    return rows.slice().sort(function(a, b) {
       var av = a[k], bv = b[k];
-      if (k === 'rating') { av = av == null ? -1 : av; bv = bv == null ? -1 : bv; return (av - bv) * dir; }
+      if (k === 'rating') {
+        av = av == null ? -1 : av; bv = bv == null ? -1 : bv;
+        return (av - bv) * dir;
+      }
       if (k === 'hasTransacted') { return ((av ? 1 : 0) - (bv ? 1 : 0)) * dir; }
       av = String(av == null ? '' : av).toLowerCase();
       bv = String(bv == null ? '' : bv).toLowerCase();
       return (av < bv ? -1 : av > bv ? 1 : 0) * dir;
     });
   }
-  function th(k, label, alignRight) {
+  function thBtn(k, label) {
     var on = vrSort.key === k;
-    var arrow = on ? (vrSort.dir === 'asc' ? '▲' : '▼') : '';
-    var aria = on ? (vrSort.dir === 'asc' ? 'ascending' : 'descending') : 'none';
-    return '<th role="columnheader" aria-sort="' + aria + '"' + (alignRight ? ' class="ar-col"' : '') + '>'
-      + '<button class="lc-vr-th' + (on ? ' on' : '') + '" onclick="window.lcVrSort(\'' + k + '\')">'
+    var arrow = on ? (vrSort.dir === 'asc' ? '&#9650;' : '&#9660;') : '';
+    return '<th><button class="vr3-th' + (on ? ' on' : '') + '" onclick="window.lcVrSort(\'' + k + '\')">'
       + esc2(label) + '<span class="ar">' + arrow + '</span></button></th>';
   }
-  function excTable(rows) {
-    var head = '<thead><tr>'
-      + '<th class="lc-vr-idxh">#</th>'
-      + th('name', 'Vendor')
-      + th('gstin', 'GSTIN')
-      + th('category', 'Category')
-      + th('onboardingStatus', 'Status')
-      + th('hasTransacted', 'Transacted')
-      + th('rating', 'Rating', true)
-      + '</tr></thead>';
-    var body = '';
-    if (!rows.length) {
-      body = '<tbody><tr><td colspan="7"><div class="lc-vr-empty">'
-        + 'No exception vendors — every rated vendor in this view scores above 2.</div></td></tr></tbody>';
-    } else {
-      var sorted = sortRows(rows), b = '';
-      sorted.forEach(function (r, i) {
-        b += '<tr>'
-          + '<td class="lc-vr-idx num">' + (i + 1) + '</td>'
-          + '<td class="lc-vr-vname">' + esc2(r.name || '—') + '</td>'
-          + '<td class="lc-vr-gst">' + esc2(r.gstin || '—') + '</td>'
-          + '<td>' + esc2(r.category || '—') + '</td>'
-          + '<td><span class="lc-chip ' + statusClass(r.onboardingStatus) + '">' + esc2(statusLabel(r.onboardingStatus)) + '</span></td>'
-          + '<td><span class="lc-chip ' + (r.hasTransacted ? 'ok' : 'flat') + '">' + (r.hasTransacted ? 'Yes' : 'No') + '</span></td>'
-          + '<td class="ar-col"><span class="lc-badge risk num">' + num1(r.rating || 0) + '</span></td>'
-          + '</tr>';
-      });
-      body = '<tbody>' + b + '</tbody>';
-    }
-    return '<div class="lc-vr-tscroll"><table class="lc-vr-tbl">' + head + body + '</table></div>';
+  function toCSV(rows) {
+    var h = ['Vendor Name','GSTIN','Category','Rating','Status','Transacted'];
+    var lines = [h.join(',')];
+    rows.forEach(function(r) {
+      lines.push([
+        '"' + String(r.name || '').replace(/"/g, '""') + '"',
+        '"' + String(r.gstin || '').replace(/"/g, '""') + '"',
+        '"' + String(r.category || '').replace(/"/g, '""') + '"',
+        r.rating != null ? num1(r.rating) : '',
+        '"' + String(statusLabel(r.onboardingStatus)).replace(/"/g, '""') + '"',
+        r.hasTransacted ? 'Yes' : 'No'
+      ].join(','));
+    });
+    return lines.join('\r\n');
   }
 
-  // ---- main render (GLOBAL reassignment — wins over the original) ------------
-  renderVendorRatingsDash = function () {
+  renderVendorRatingsDash = function() {
     var host = document.getElementById('tab-vendorratings');
     if (!host) return;
     var theme = vrTheme();
 
-    if (!_VR)          { host.innerHTML = shell(theme, skeleton()); return; }   // loading guard
-    if (!_VR.success)  { host.innerHTML = shell(theme, errorBox(_VR.error)); return; }
+    if (!_VR) {
+      host.innerHTML = shell(theme, '<div class="vr3-empty">Loading vendor ratings\u2026</div>');
+      return;
+    }
+    if (!_VR.success) {
+      host.innerHTML = shell(theme, '<div class="vr3-empty">Error: ' + esc2(_VR.error || 'Unknown') + '</div>');
+      return;
+    }
 
-    // Re-point across the loaded audiences WITHOUT refetch.
     var block  = _VR[vrAud] || _VR.combined || {};
     var rating = block.rating || {};
-    var avg    = rating.avg;                       // may be null (unrated)
-    var rated  = rating.rated || 0;
-    var total  = rating.total || 0;
+    var avg    = rating.avg;
+    var rated  = rating.rated  || 0;
+    var total  = rating.total  || 0;
     var cover  = pctOf(rated, total);
 
-    // Exceptions (score <= 2) + table rows, scoped to the selected audience.
     var vrAll   = _VR.vendorRatings || [];
-    var audRows = vrAll.filter(function (v) { return vrAud === 'combined' || v.aud === vrAud; });
-    // When an audience shows figures (rated>0) but carries no per-vendor rows of its own,
-    // the server rolls its quality up to Combined — reuse Combined rows so the Exceptions
-    // count agrees with the distribution instead of contradicting it.
-    var rollup = (audRows.length === 0 && rated > 0 && vrAud !== 'combined');
-    if (rollup) audRows = vrAll.slice();
-    var excRows = audRows.filter(function (v) { return v.rating != null && v.rating <= 2; });
-    var excCount = excRows.length;                 // KPI == table row count, always
+    var audRows = vrAll.filter(function(v) { return vrAud === 'combined' || v.aud === vrAud; });
+    if (audRows.length === 0 && rated > 0 && vrAud !== 'combined') audRows = vrAll.slice();
+    var excCount = audRows.filter(function(v) { return v.rating != null && v.rating > 0 && v.rating <= 2; }).length;
 
-    var band = avgBand(avg);
-    var audName = (vrAud === 'combined' ? 'Combined' : (vrAud === 'seller' ? 'Sellers' : 'Buyers'))
-                + (rollup ? ' · rolls up to Combined' : '');
+    // â”€â”€ KPIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    var kpisHtml = '<div class="vr3-kpis">'
+      + '<div class="vr3-kpi"><div class="vr3-kpi-lbl">Average Rating</div>'
+      + '<div class="vr3-kpi-val">' + (avg == null ? '&mdash;' : num1(avg)) + '<small>/10</small></div>'
+      + '<div class="vr3-kpi-sub">' + bandChip(avg) + '</div></div>'
 
-    var kpis = '<div class="lc-kpis">'
-      + kpi('Average Rating',
-            (avg == null ? '—' : num1(avg)) + '<small>/10</small>',
-            '<span class="lc-chip ' + band.cls + '">' + band.t + '</span>',
-            'mean score across rated vendors')
-      + kpi('Rated Vendors', nf(rated), '',
-            'of ' + nf(total) + ' onboarded (' + audName + ')')
-      + kpi('Rated Coverage', cover + '<small>%</small>',
-            '<span class="lc-chip ' + (cover >= 75 ? 'ok' : cover >= 40 ? 'warn' : 'risk') + '">' + nf(rated) + '/' + nf(total) + '</span>',
-            'vendors carrying a quality score')
-      + kpi('Exceptions', nf(excCount),
-            excCount > 0 ? '<span class="lc-chip risk">score ≤ 2</span>' : '<span class="lc-chip ok">none</span>',
-            'flagged for quality review')
+      + '<div class="vr3-kpi"><div class="vr3-kpi-lbl">Rated Vendors</div>'
+      + '<div class="vr3-kpi-val">' + nf(rated) + '</div>'
+      + '<div class="vr3-kpi-sub">of ' + nf(total) + ' onboarded</div></div>'
+
+      + '<div class="vr3-kpi"><div class="vr3-kpi-lbl">Coverage</div>'
+      + '<div class="vr3-kpi-val">' + cover + '<small>%</small></div>'
+      + '<div class="vr3-kpi-sub">' + nf(rated) + ' / ' + nf(total) + ' rated</div></div>'
+
+      + '<div class="vr3-kpi"><div class="vr3-kpi-lbl">Exceptions</div>'
+      + '<div class="vr3-kpi-val" style="color:' + (excCount > 0 ? 'var(--lc-risk)' : 'var(--lc-ok)') + '">' + nf(excCount) + '</div>'
+      + '<div class="vr3-kpi-sub">score &le; 2</div></div>'
       + '</div>';
 
-    var control = '<div class="lc-vr-ctrl">'
-      + '<div class="lc-seg" role="tablist" aria-label="Audience">'
-      + segBtn('combined', 'Combined') + segBtn('seller', 'Seller') + segBtn('buyer', 'Buyer')
+    // â”€â”€ Score Distribution â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    var dist = rating.dist || [0,0,0,0,0];
+    var distMax = Math.max.apply(null, [1].concat(dist));
+    var distSum = dist.reduce(function(s,v) { return s + (v||0); }, 0);
+    var bandLabels = ['0&ndash;2','2&ndash;4','4&ndash;6','6&ndash;8','8&ndash;10'];
+    var bandColors = ['var(--lc-risk)','var(--lc-warn)','var(--lc-warn)','var(--lc-ok)','var(--lc-ok)'];
+    var distHtml = '<div class="vr3-bars">';
+    for (var i = 4; i >= 0; i--) {
+      var cnt = dist[i] || 0;
+      var w = Math.round(cnt / distMax * 100);
+      distHtml += '<div class="vr3-bar">'
+        + '<span class="vr3-bar-lbl">' + bandLabels[i] + '</span>'
+        + '<div class="vr3-bar-track"><div class="vr3-bar-fill" style="width:' + w + '%;background:' + bandColors[i] + '"></div></div>'
+        + '<span class="vr3-bar-val">' + nf(cnt) + '</span>'
+        + '</div>';
+    }
+    distHtml += '</div>';
+
+    // â”€â”€ Avg by Category â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    var catMap = {};
+    audRows.forEach(function(v) {
+      var c = String(v.category || 'Other').toLowerCase();
+      if (!catMap[c]) catMap[c] = { label: v.category || 'Other', sum: 0, n: 0, total: 0 };
+      catMap[c].total++;
+      if (v.rating != null && v.rating > 0) { catMap[c].sum += v.rating; catMap[c].n++; }
+    });
+    var catKeys = Object.keys(catMap).sort(function(a,b) { return catMap[b].n - catMap[a].n; });
+    var catTblHtml = '<table class="vr3-cattbl"><thead><tr>'
+      + '<th>Category</th><th style="text-align:right">Avg</th><th style="text-align:right">Rated</th>'
+      + '</tr></thead><tbody>';
+    if (!catKeys.length) {
+      catTblHtml += '<tr><td colspan="3" style="text-align:center;padding:12px;color:var(--lc-text3)">No data</td></tr>';
+    } else {
+      catKeys.forEach(function(k) {
+        var c = catMap[k];
+        var a = c.n > 0 ? (Math.round(c.sum / c.n * 10) / 10).toFixed(1) : '&mdash;';
+        var aColor = c.n > 0 ? scoreColor(c.sum / c.n) : 'var(--lc-text3)';
+        catTblHtml += '<tr>'
+          + '<td>' + esc2(c.label) + '</td>'
+          + '<td style="text-align:right;font-weight:600;color:' + aColor + '">' + a + '</td>'
+          + '<td style="text-align:right;color:var(--lc-text3)">' + nf(c.n) + '</td>'
+          + '</tr>';
+      });
+    }
+    catTblHtml += '</tbody></table>';
+
+    // â”€â”€ Rating Status donut â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    var good = 0, fair = 0, poor = 0;
+    audRows.forEach(function(v) {
+      if (v.rating == null || v.rating === 0) return;
+      if (v.rating >= 6) good++;
+      else if (v.rating >= 4) fair++;
+      else poor++;
+    });
+    var ratedCt  = good + fair + poor;
+    var goodPct  = pctOf(good, ratedCt);
+    var mainClr  = ratedCt > 0
+      ? (goodPct >= 60 ? 'var(--lc-ok)' : goodPct >= 30 ? 'var(--lc-warn)' : 'var(--lc-risk)')
+      : 'var(--lc-subtle)';
+    var donutHtml = '<div class="vr3-donut-wrap">'
+      + '<div class="vr3-donut">' + donutSvg(goodPct, mainClr)
+      + '<div class="vr3-donut-ctr"><b>' + goodPct + '<span style="font-size:14px">%</span></b><span>Good</span></div></div>'
+      + '<div class="vr3-donut-leg">'
+      + '<div class="vr3-dl-row"><span class="vr3-dl-dot" style="background:var(--lc-ok)"></span><span class="vr3-dl-lbl">Good (&ge;6)</span><span class="vr3-dl-val">' + nf(good) + '</span></div>'
+      + '<div class="vr3-dl-row"><span class="vr3-dl-dot" style="background:var(--lc-warn)"></span><span class="vr3-dl-lbl">Fair (4&ndash;6)</span><span class="vr3-dl-val">' + nf(fair) + '</span></div>'
+      + '<div class="vr3-dl-row"><span class="vr3-dl-dot" style="background:var(--lc-risk)"></span><span class="vr3-dl-lbl">Poor (&lt;4)</span><span class="vr3-dl-val">' + nf(poor) + '</span></div>'
+      + '</div></div>';
+
+    // â”€â”€ Vendor Records â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    var q = vr3Q.toLowerCase ? vr3Q.toLowerCase().trim() : '';
+    var filtered = audRows.filter(function(v) {
+      if (vr3Cat && String(v.category || '').toLowerCase() !== vr3Cat) return false;
+      if (vr3Stat && v.onboardingStatus !== vr3Stat) return false;
+      if (q) {
+        var nm = String(v.name || '').toLowerCase();
+        var gs = String(v.gstin || '').toLowerCase();
+        if (nm.indexOf(q) < 0 && gs.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    var sorted = sortRows(filtered);
+    var pages = Math.max(1, Math.ceil(sorted.length / PAGE_SZ));
+    if (vr3Page > pages) vr3Page = pages;
+    var pageRows = sorted.slice((vr3Page - 1) * PAGE_SZ, vr3Page * PAGE_SZ);
+
+    var allCats = [], seenCats = {};
+    audRows.forEach(function(v) {
+      var c = String(v.category || '').toLowerCase();
+      if (c && !seenCats[c]) { seenCats[c] = 1; allCats.push({ val: c, lbl: v.category || c }); }
+    });
+    allCats.sort(function(a,b) { return a.lbl < b.lbl ? -1 : 1; });
+    var catOpts = '<option value="">All Categories</option>';
+    allCats.forEach(function(c) {
+      catOpts += '<option value="' + esc2(c.val) + '"' + (vr3Cat === c.val ? ' selected' : '') + '>' + esc2(c.lbl) + '</option>';
+    });
+
+    var statMap = {}, statOpts = '<option value="">All Statuses</option>';
+    audRows.forEach(function(v) { if (v.onboardingStatus) statMap[v.onboardingStatus] = 1; });
+    Object.keys(statMap).sort().forEach(function(s) {
+      statOpts += '<option value="' + esc2(s) + '"' + (vr3Stat === s ? ' selected' : '') + '>' + esc2(statusLabel(s)) + '</option>';
+    });
+
+    var tblHead = '<thead><tr>'
+      + thBtn('name','Vendor')
+      + '<th><span class="vr3-th">GSTIN</span></th>'
+      + thBtn('category','Category')
+      + thBtn('rating','Rating')
+      + thBtn('onboardingStatus','Status')
+      + thBtn('hasTransacted','Transacted')
+      + '</tr></thead>';
+
+    var tblBody = '<tbody>';
+    if (!pageRows.length) {
+      tblBody += '<tr><td colspan="6"><div class="vr3-empty">No vendors match the current filters.</div></td></tr>';
+    } else {
+      pageRows.forEach(function(r) {
+        var rc = r.rating != null && r.rating > 0 ? scoreColor(r.rating) : 'var(--lc-text3)';
+        var rStr = r.rating != null && r.rating > 0
+          ? '<span style="font-weight:600;color:' + rc + '">' + num1(r.rating) + '/10</span>'
+          : '<span style="color:var(--lc-text3)">&mdash;</span>';
+        tblBody += '<tr>'
+          + '<td class="vr3-vname">' + esc2(r.name || '&mdash;') + '</td>'
+          + '<td class="vr3-gst">' + esc2(r.gstin || '&mdash;') + '</td>'
+          + '<td>' + esc2(r.category || '&mdash;') + '</td>'
+          + '<td>' + rStr + '</td>'
+          + '<td><span class="lc-chip ' + statusCls(r.onboardingStatus) + '">' + esc2(statusLabel(r.onboardingStatus)) + '</span></td>'
+          + '<td><span class="lc-chip ' + (r.hasTransacted ? 'ok' : 'flat') + '">' + (r.hasTransacted ? 'Yes' : 'No') + '</span></td>'
+          + '</tr>';
+      });
+    }
+    tblBody += '</tbody>';
+
+    var from = (vr3Page - 1) * PAGE_SZ + 1;
+    var to   = Math.min(vr3Page * PAGE_SZ, sorted.length);
+    var pagerHtml = '<div class="vr3-pager">'
+      + '<span class="vr3-pager-info">Showing ' + from + '&ndash;' + to + ' of ' + nf(sorted.length) + ' vendors</span>'
+      + '<div class="vr3-pager-btns">'
+      + '<button class="vr3-pager-btn" ' + (vr3Page <= 1 ? 'disabled' : 'onclick="window.vr3GoPage(' + (vr3Page - 1) + ')"') + '>\u2190 Prev</button>'
+      + '<button class="vr3-pager-btn" ' + (vr3Page >= pages ? 'disabled' : 'onclick="window.vr3GoPage(' + (vr3Page + 1) + ')"') + '>Next \u2192</button>'
+      + '</div></div>';
+
+    var main = ''
+      + '<div class="vr3-hdr">'
+      + '<div><div class="vr3-bc"><a onclick="switchView(\'onboarding\')" style="cursor:pointer">Central Onboarding</a>'
+      + ' &rsaquo; <a>Marketplace</a> &rsaquo; Vendor Ratings</div>'
+      + '<div class="vr3-title">Vendor Ratings Overview</div></div>'
+      + '<div class="vr3-seg">' + segBtn('combined','Combined') + segBtn('seller','Sellers') + segBtn('buyer','Buyers') + '</div>'
       + '</div>'
-      + '<span class="lc-note">Client-side view — figures re-point across the loaded audiences with no refetch.</span>'
+      + kpisHtml
+      + '<div class="vr3-mid">'
+      + '<div class="vr3-card"><div class="vr3-cardh">Score Distribution <span>' + nf(distSum) + ' rated</span></div>' + distHtml + '</div>'
+      + '<div class="vr3-card"><div class="vr3-cardh">Average by Category</div>' + catTblHtml + '</div>'
+      + '<div class="vr3-card"><div class="vr3-cardh">Rating Status</div>' + donutHtml + '</div>'
+      + '</div>'
+      + '<div class="vr3-card">'
+      + '<div class="vr3-rec-hdr">'
+      + '<div class="vr3-rec-title">Vendor Records <span style="font-size:12px;color:var(--lc-text3);font-weight:400">(' + nf(filtered.length) + ')</span></div>'
+      + '<div class="vr3-search"><input type="text" placeholder="Search name or GSTIN\u2026" value="' + esc2(vr3Q) + '" oninput="window.vr3Search(this.value)"></div>'
+      + '<select class="vr3-select" onchange="window.vr3SetCat(this.value)">' + catOpts + '</select>'
+      + '<select class="vr3-select" onchange="window.vr3SetStat(this.value)">' + statOpts + '</select>'
+      + '<button class="vr3-btn" onclick="window.vr3Export()">Export CSV</button>'
+      + '</div>'
+      + '<div class="vr3-tscroll"><table class="vr3-tbl">' + tblHead + tblBody + '</table></div>'
+      + pagerHtml
       + '</div>';
-
-    var tableCard = '<div class="lc-card">'
-      + '<div class="lc-pad" style="padding-bottom:12px"><div class="lc-vr-cardh">Exception Vendors '
-      + '<span>rating ≤ 2 · ' + nf(excRows.length) + ' listed' + (rollup ? ' · from Combined' : '') + '</span></div></div>'
-      + excTable(excRows)
-      + '</div>';
-
-    var main = '<div class="lc-sech"><h2>Vendor Quality <span class="pr">(Ratings)</span></h2>'
-      + '<span class="sub">' + audName + ' · ' + nf(rated) + ' of ' + nf(total) + ' rated</span></div>'
-      + control
-      + kpis
-      + distCard(rating)
-      + '<div class="lc-vr-grid2">' + osvCard(block.osv) + docsCard(block.docs) + '</div>'
-      + tableCard;
 
     host.innerHTML = shell(theme, main);
   };
 
-  // ---- interaction handlers (client-side, no refetch) -----------------------
-  window.lcVrAud = function (a) {
+  window.lcVrAud = function(a) {
     if (a !== 'combined' && a !== 'seller' && a !== 'buyer') return;
-    vrAud = a;
-    renderVendorRatingsDash();
+    vrAud = a; vr3Page = 1; renderVendorRatingsDash();
   };
-  window.lcVrSort = function (k) {
+  window.lcVrSort = function(k) {
     if (vrSort.key === k) vrSort.dir = vrSort.dir === 'asc' ? 'desc' : 'asc';
     else { vrSort.key = k; vrSort.dir = 'asc'; }
     renderVendorRatingsDash();
   };
+  window.vr3GoPage  = function(p) { vr3Page = p; renderVendorRatingsDash(); };
+  window.vr3Search  = function(v) {
+    if (vr3Timer) clearTimeout(vr3Timer);
+    vr3Timer = setTimeout(function() { vr3Q = v; vr3Page = 1; renderVendorRatingsDash(); }, 220);
+  };
+  window.vr3SetCat  = function(v) { vr3Cat  = v; vr3Page = 1; renderVendorRatingsDash(); };
+  window.vr3SetStat = function(v) { vr3Stat = v; vr3Page = 1; renderVendorRatingsDash(); };
+  window.vr3Export  = function() {
+    if (!_VR || !_VR.success) return;
+    var all = _VR.vendorRatings || [];
+    var rows = all.filter(function(v) { return vrAud === 'combined' || v.aud === vrAud; });
+    if (rows.length === 0) rows = all.slice();
+    var q = vr3Q.toLowerCase ? vr3Q.toLowerCase().trim() : '';
+    rows = rows.filter(function(v) {
+      if (vr3Cat && String(v.category || '').toLowerCase() !== vr3Cat) return false;
+      if (vr3Stat && v.onboardingStatus !== vr3Stat) return false;
+      if (q) { var nm = String(v.name||'').toLowerCase(), gs = String(v.gstin||'').toLowerCase(); if (nm.indexOf(q) < 0 && gs.indexOf(q) < 0) return false; }
+      return true;
+    });
+    var csv  = toCSV(rows);
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url; a.download = 'vendor-ratings.csv';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  };
 })();
 </script>
-
 <script id="lc-theme-ctl">
 /* Shared LC platform — theme controller + keyboard activation + on-brand skeleton seams. */
 function _lcSync(){
