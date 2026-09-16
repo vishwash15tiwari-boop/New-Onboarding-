@@ -7056,6 +7056,9 @@ function mmClickNode(id) {
     }
     _mmAnimateReveal = true; mmPaint(); return;
   }
+  if (node.t === 'Vendor Ratings')  { switchView('vendorratings'); return; }
+  if (node.t === 'OSV Status')      { switchView('osv'); return; }
+  if (node.t === 'Existing vs New') { switchView('existingnew'); return; }
   if (node.expand === 'inline-panel') {
     var modOpen = mmModActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
     mmFunnelActive = false; mmGeoActive = false; _geo.region = null; _geo.state = null;
@@ -12726,6 +12729,8 @@ function snClickModule(nodeId) {
     return;
   }
 
+  if (_n && _n.t === 'Vendor Ratings')  { switchView('vendorratings'); return; }
+  if (_n && _n.t === 'OSV Status')      { switchView('osv'); return; }
   if (_n && _n.t === 'Existing vs New') { switchView('existingnew'); return; }
   if (typeof mmClickNode === 'function') mmClickNode(nodeId);
   buildSideNav();
