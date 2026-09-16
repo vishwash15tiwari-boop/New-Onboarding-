@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -4497,6 +4497,9 @@ body.view-ov #ov-screen{display:block}
   <!-- ── VIEW: VENDOR RATINGS ── -->
   <div id="tab-vendorratings" style="display:none"></div>
 
+  <!-- ── VIEW: EXISTING VS NEW ── -->
+  <div id="tab-existingnew" style="display:none"></div>
+
   </div><!-- /dash-content -->
 
 </div><!-- /main -->
@@ -4952,13 +4955,15 @@ function updateViewChrome() {
   var isOsv     = currentView === 'osv';
   var isTxn     = currentView === 'transactions';
   var isVR      = currentView === 'vendorratings';
-  var isDash    = !isGst && !isTxndist && !isOsv && !isTxn && !isVR;
+  var isEVN     = currentView === 'existingnew';
+  var isDash    = !isGst && !isTxndist && !isOsv && !isTxn && !isVR && !isEVN;
   var ov   = document.getElementById('tab-overview');
   var gt   = document.getElementById('tab-gst');
   var td   = document.getElementById('tab-txndist');
   var osv  = document.getElementById('tab-osv');
   var txn  = document.getElementById('tab-transactions');
   var vrd  = document.getElementById('tab-vendorratings');
+  var evn  = document.getElementById('tab-existingnew');
   var pc   = document.getElementById('onb-period-controls');
 
   var vt = document.getElementById('view-title');
@@ -4969,11 +4974,13 @@ function updateViewChrome() {
   if (osv) osv.style.display = isOsv     ? 'block' : 'none';
   if (txn) txn.style.display = isTxn     ? 'block' : 'none';
   if (vrd) vrd.style.display = isVR      ? 'block' : 'none';
+  if (evn) evn.style.display = isEVN     ? 'block' : 'none';
   if (pc)  pc.style.display  = isDash    ? 'inline-flex' : 'none';
   if (tb)  tb.style.display  = 'none';
 
   var titleMap = { gst:'GST Payables', txndist:'Transaction Distribution', osv:'OSV Status',
-                   transactions:'Marketplace Transactions', vendorratings:'Vendor Ratings' };
+                   transactions:'Marketplace Transactions', vendorratings:'Vendor Ratings',
+                   existingnew:'Existing vs New' };
   if (vt) vt.textContent = titleMap[currentView] || 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
   setAura(isGst ? 'gst' : (activeVertKey || 'OMP'));
@@ -4995,8 +5002,20 @@ function switchAudience(a) {
 
 // Switch to the GST Payables view (paint cached data instantly, then refresh).
 function switchView(view) {
-  if (view !== 'gst' && view !== 'txndist' && view !== 'osv' && view !== 'transactions' && view !== 'vendorratings') {
+  if (view !== 'gst' && view !== 'txndist' && view !== 'osv' && view !== 'transactions' && view !== 'vendorratings' && view !== 'existingnew') {
     switchAudience(currentAudience); return;
+  }
+  if (view === 'existingnew') {
+    if (currentView === 'existingnew') return;
+    currentView = 'existingnew';
+    snActiveKey = null;
+    if (selectedVert) closeVertDetail();
+    document.body.style.overflow = '';
+    updateViewChrome();
+    renderVNav();
+    _ovnEnsureAud('buyer');
+    renderEVNDash();
+    return;
   }
   // ── Transactions module ──
   if (view === 'transactions') {
@@ -12496,6 +12515,7 @@ function buildSideNav() {
   var isOSV  = currentView === 'osv';
   var isTXN2 = currentView === 'transactions';
   var isVR   = currentView === 'vendorratings';
+  var isEVN  = currentView === 'existingnew';
   var isOvw  = currentView === 'onboarding';
   // Overview = no vertical selected and on the onboarding main view
   var ovwActive = !snVertModKey && isOvw;
@@ -12610,7 +12630,7 @@ function buildSideNav() {
 
       html += '<div class="sn-sep" style="margin:6px 0 4px 4px"></div>';
       html += '<div class="sn-sect" style="padding-left:4px">Tools</div>';
-      html += _snStandaloneBtns(isGST, isTXN, isOSV, isTXN2, isVR);
+      html += _snStandaloneBtns(isGST, isTXN, isOSV, isTXN2, isVR, isEVN);
 
       html += '</div>'; // .sn-vert-expand
     }
@@ -12624,7 +12644,7 @@ function buildSideNav() {
 }
 
 // Shared tool buttons — neutral icon style.
-function _snStandaloneBtns(isGST, isTXN, isOSV, isTXN2, isVR) {
+function _snStandaloneBtns(isGST, isTXN, isOSV, isTXN2, isVR, isEVN) {
   function _btn(active, view, ic, icStyle, label) {
     return '<button class="sn-gst' + (active ? ' sn-active' : '') + '" style="margin-top:2px" onclick="switchView(\'' + view + '\')"'
       + (active ? ' aria-current="page"' : '') + '>'
@@ -12635,7 +12655,8 @@ function _snStandaloneBtns(isGST, isTXN, isOSV, isTXN2, isVR) {
     + _btn(isTXN,     'txndist',       '⇄',  'font-size:11px',       'Txn Distribution')
     + _btn(isTXN2,    'transactions',  '⊞',  'font-size:11px',       'Marketplace Txn')
     + _btn(isVR,      'vendorratings', '★',  'font-size:11px',       'Vendor Ratings')
-    + _btn(isOSV,     'osv',           '✓',  'font-size:11px',       'OSV Status');
+    + _btn(isOSV,     'osv',           '&#10003;','font-size:11px',  'OSV Status')
+    + _btn(isEVN,     'existingnew',   '&#9711;', 'font-size:11px',  'Existing vs New');
 }
 
 // Shows or hides the mind-map column grid (#mm-nav).
@@ -12728,6 +12749,7 @@ function snClickModule(nodeId) {
     return;
   }
 
+  if (_n && _n.t === 'Existing vs New') { switchView('existingnew'); return; }
   if (typeof mmClickNode === 'function') mmClickNode(nodeId);
   buildSideNav();
 }
@@ -12842,6 +12864,7 @@ function spBuildItems(query) {
     { ic:'⊞', title:'Marketplace Transactions', sub:'Marketplace seller & buyer transaction records', action:function(){switchView('transactions')}, badge:'View' },
     { ic:'★', title:'Vendor Ratings', sub:'Seller quality scores and rating distribution', action:function(){switchView('vendorratings')}, badge:'View' },
     { ic:'✓', title:'OSV Status', sub:'Consent and verification status across sellers', action:function(){switchView('osv')}, badge:'View' },
+    { ic:'&#9711;', title:'Existing vs New', sub:'Existing versus new seller and buyer breakdown', action:function(){switchView('existingnew')}, badge:'View' },
   ];
   // Add verticals from config
   var cfgList = (typeof getVertCfg === 'function') ? getVertCfg() : [];
@@ -19285,7 +19308,355 @@ document.addEventListener('DOMContentLoaded', function() {
   } catch(e) {}
 })();
 </script>
-<script id="lc-theme-ctl">
+<style id="evn-css">
+.lc .evn-pg{display:flex;flex-direction:column;gap:20px;padding:22px 24px 32px;max-width:1320px;margin:0 auto}
+.lc .evn-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.lc .evn-title{font-size:18px;font-weight:700;color:var(--lc-text);letter-spacing:-.02em}
+.lc .evn-bc{font-size:12px;color:var(--lc-text3);margin-bottom:4px}
+.lc .evn-seg{display:flex;background:var(--lc-subtle);border-radius:8px;padding:3px;gap:2px}
+.lc .evn-seg button{padding:6px 14px;border:0;border-radius:6px;font-size:13px;cursor:pointer;color:var(--lc-text2);background:transparent;transition:background .15s,color .15s}
+.lc .evn-seg button.on{background:var(--lc-card);color:var(--lc-text);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.lc .evn-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.lc .evn-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:16px 18px}
+.lc .evn-kpi-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--lc-text3);margin-bottom:6px}
+.lc .evn-kpi-val{font-size:28px;font-weight:700;color:var(--lc-text);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.lc .evn-kpi-sub{font-size:12px;color:var(--lc-text3);margin-top:4px}
+.lc .evn-mid{display:grid;grid-template-columns:1fr 1.6fr;gap:16px}
+.lc .evn-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:18px}
+.lc .evn-card-ttl{font-size:13px;font-weight:600;color:var(--lc-text);margin-bottom:14px}
+.lc .evn-donut-wrap{display:flex;align-items:center;gap:20px;justify-content:center}
+.lc .evn-donut-leg{display:flex;flex-direction:column;gap:8px}
+.lc .evn-leg-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--lc-text2)}
+.lc .evn-leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.lc .evn-leg-val{font-weight:600;color:var(--lc-text);margin-left:4px}
+.lc .evn-cattbl{width:100%;border-collapse:collapse;font-size:13px}
+.lc .evn-cattbl th{text-align:left;padding:6px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--lc-text3);border-bottom:1px solid var(--lc-border)}
+.lc .evn-cattbl td{padding:8px 10px;border-bottom:1px solid var(--lc-subtle);color:var(--lc-text)}
+.lc .evn-cattbl tr:last-child td{border-bottom:none}
+.lc .evn-cattbl .num{text-align:right;font-variant-numeric:tabular-nums}
+.lc .evn-cattbl .new-chip{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:var(--lc-accent);color:#fff}
+.lc .evn-rec{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:18px}
+.lc .evn-rec-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.lc .evn-rec-ttl{font-size:13px;font-weight:600;color:var(--lc-text)}
+.lc .evn-rec-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lc .evn-search{padding:6px 10px;border:1px solid var(--lc-border);border-radius:8px;font-size:13px;background:var(--lc-subtle);color:var(--lc-text);width:200px;outline:none}
+.lc .evn-search:focus{border-color:var(--lc-accent)}
+.lc select.evn-flt{padding:6px 8px;border:1px solid var(--lc-border);border-radius:8px;font-size:13px;background:var(--lc-subtle);color:var(--lc-text);cursor:pointer;outline:none}
+.lc .evn-btn{padding:6px 12px;border:1px solid var(--lc-border);border-radius:8px;font-size:12px;font-weight:600;background:var(--lc-subtle);color:var(--lc-text2);cursor:pointer}
+.lc .evn-btn:hover{background:var(--lc-border)}
+.lc .evn-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.lc .evn-tbl th{text-align:left;padding:8px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--lc-text3);border-bottom:1px solid var(--lc-border);white-space:nowrap;cursor:pointer}
+.lc .evn-tbl td{padding:9px 10px;border-bottom:1px solid var(--lc-subtle);color:var(--lc-text);vertical-align:middle}
+.lc .evn-tbl tr:last-child td{border-bottom:none}
+.lc .evn-tbl tr:hover td{background:var(--lc-subtle)}
+.lc .evn-chip{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
+.lc .evn-chip.new{background:var(--lc-accent);color:#fff}
+.lc .evn-chip.existing{background:var(--lc-subtle);color:var(--lc-text2);border:1px solid var(--lc-border)}
+.lc .evn-pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;font-size:13px;color:var(--lc-text3);flex-wrap:wrap}
+.lc .evn-pager-btns{display:flex;gap:4px}
+.lc .evn-pager-btn{padding:4px 10px;border:1px solid var(--lc-border);border-radius:6px;font-size:12px;background:var(--lc-subtle);color:var(--lc-text2);cursor:pointer}
+.lc .evn-pager-btn.on{background:var(--lc-accent);color:#fff;border-color:var(--lc-accent)}
+.lc .evn-pager-btn:disabled{opacity:.4;cursor:default}
+.lc .evn-empty{padding:32px;text-align:center;color:var(--lc-text3);font-size:13px}
+@media(max-width:900px){.lc .evn-mid{grid-template-columns:1fr}.lc .evn-kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.lc .evn-kpis{grid-template-columns:1fr}}
+</style>
+<script id="evn-js">
+(function() {
+  var evnScope = 'seller';
+  var evnPage  = 1;
+  var evnCat   = '';
+  var evnStat  = '';
+  var evnQ     = '';
+  var evnTimer = null;
+  var evnSortK = 'name';
+  var evnSortD = 'asc';
+  var PAGE_SZ  = 20;
+  var CUTOFF   = new Date(2026, 3, 1);
+
+  function nf(n) { return (n == null || isNaN(n)) ? '0' : Number(n).toLocaleString(); }
+  function esc2(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function pct(a, b) { return b ? Math.round(a / b * 100) : 0; }
+
+  function getRows() {
+    var sellers = (typeof vertRows !== 'undefined' && vertRows) ? vertRows : [];
+    var buyers  = (typeof _ovnRows !== 'undefined' && _ovnRows && _ovnRows.buyer) ? _ovnRows.buyer : [];
+    if (evnScope === 'seller') {
+      return sellers.map(function(r) { var o = {}; for (var k in r) { o[k] = r[k]; } o._src = 'seller'; return o; });
+    }
+    if (evnScope === 'buyer') {
+      return buyers.map(function(r) { var o = {}; for (var k in r) { o[k] = r[k]; } o._src = 'buyer'; return o; });
+    }
+    var s = sellers.map(function(r) { var o = {}; for (var k in r) { o[k] = r[k]; } o._src = 'seller'; return o; });
+    var b = buyers.map(function(r)  { var o = {}; for (var k in r) { o[k] = r[k]; } o._src = 'buyer';  return o; });
+    return s.concat(b);
+  }
+
+  function rowIsNew(r) {
+    var d = (typeof parseDMY === 'function') ? parseDMY(r.onbDate || r.date || '') : null;
+    return d ? (d >= CUTOFF) : false;
+  }
+
+  function donutSvg(pctNew, colorNew, colorExist) {
+    var sz   = 120;
+    var r    = 44;
+    var cx   = sz / 2;
+    var cy   = sz / 2;
+    var circ = 2 * Math.PI * r;
+    var arcN = (Math.min(100, Math.max(0, pctNew)) / 100) * circ;
+    var arcE = circ - arcN;
+    var q    = circ / 4;
+    var parts = '';
+    if (arcE > 0.01) {
+      parts += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none"'
+        + ' stroke="' + colorExist + '" stroke-width="16"'
+        + ' stroke-dasharray="' + arcE.toFixed(2) + ' ' + arcN.toFixed(2) + '"'
+        + ' stroke-dashoffset="' + q.toFixed(2) + '"/>';
+    }
+    if (arcN > 0.01) {
+      parts += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none"'
+        + ' stroke="' + colorNew + '" stroke-width="16"'
+        + ' stroke-dasharray="' + arcN.toFixed(2) + ' ' + arcE.toFixed(2) + '"'
+        + ' stroke-dashoffset="' + (q - arcE).toFixed(2) + '"/>';
+    }
+    if (!parts) {
+      parts = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="var(--lc-border)" stroke-width="16"/>';
+    }
+    return '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 ' + sz + ' ' + sz + '">' + parts + '</svg>';
+  }
+
+  function segBtn(k, label) {
+    return '<button class="' + (evnScope === k ? 'on' : '') + '" onclick="evnSetScope(\'' + k + '\')">' + label + '</button>';
+  }
+
+  function catBreakdown(rows) {
+    var cats = {};
+    rows.forEach(function(r) {
+      var c = r.category || 'Unknown';
+      if (!cats[c]) cats[c] = { total: 0, existing: 0, newCnt: 0 };
+      cats[c].total++;
+      if (rowIsNew(r)) { cats[c].newCnt++; } else { cats[c].existing++; }
+    });
+    var list = [];
+    for (var k in cats) { list.push({ name: k, total: cats[k].total, existing: cats[k].existing, newCnt: cats[k].newCnt }); }
+    list.sort(function(a, b) { return b.total - a.total; });
+    return list;
+  }
+
+  function sortRows(rows) {
+    return rows.slice().sort(function(a, b) {
+      var va = a[evnSortK] || '';
+      var vb = b[evnSortK] || '';
+      var cmp = 0;
+      if (typeof va === 'number' && typeof vb === 'number') {
+        cmp = va - vb;
+      } else {
+        va = String(va).toLowerCase();
+        vb = String(vb).toLowerCase();
+        cmp = va < vb ? -1 : va > vb ? 1 : 0;
+      }
+      return evnSortD === 'asc' ? cmp : -cmp;
+    });
+  }
+
+  function thBtn(k, label) {
+    var arrow = evnSortK === k ? (evnSortD === 'asc' ? ' &#9650;' : ' &#9660;') : '';
+    return '<th onclick="evnSort(\'' + k + '\')">' + label + arrow + '</th>';
+  }
+
+  function toCSV(rows) {
+    var hdr = ['Name','Category','State','Status','Onb Date','Type','TAT','Transacted'];
+    var lines = [hdr.join(',')];
+    rows.forEach(function(r) {
+      lines.push([
+        '"' + String(r.name     || '').replace(/"/g,'""') + '"',
+        '"' + String(r.category || '').replace(/"/g,'""') + '"',
+        '"' + String(r.state    || '').replace(/"/g,'""') + '"',
+        '"' + String(r.status   || '').replace(/"/g,'""') + '"',
+        '"' + String(r.onbDate  || '').replace(/"/g,'""') + '"',
+        rowIsNew(r) ? 'New' : 'Existing',
+        String(r.tat != null ? r.tat : ''),
+        r.hasTransacted ? 'Yes' : 'No'
+      ].join(','));
+    });
+    return lines.join('\n');
+  }
+
+  renderEVNDash = function() {
+    var wrap = document.getElementById('tab-existingnew');
+    if (!wrap) return;
+
+    var allRows  = getRows();
+    var newRows  = allRows.filter(rowIsNew);
+    var existRows = allRows.filter(function(r) { return !rowIsNew(r); });
+    var total    = allRows.length;
+    var newCnt   = newRows.length;
+    var existCnt = existRows.length;
+    var newPct   = pct(newCnt, total);
+
+    var accent  = getComputedStyle(document.documentElement).getPropertyValue('--lc-accent').trim() || '#0071e3';
+    var borderC = getComputedStyle(document.documentElement).getPropertyValue('--lc-border').trim() || '#d2d2d7';
+
+    var scopeLabel = evnScope === 'seller' ? 'Sellers' : evnScope === 'buyer' ? 'Buyers' : 'Combined';
+
+    var kpiHtml = '<div class="evn-kpis">'
+      + '<div class="evn-kpi"><div class="evn-kpi-lbl">Total</div><div class="evn-kpi-val">' + nf(total) + '</div><div class="evn-kpi-sub">' + scopeLabel + '</div></div>'
+      + '<div class="evn-kpi"><div class="evn-kpi-lbl">Existing</div><div class="evn-kpi-val">' + nf(existCnt) + '</div><div class="evn-kpi-sub">Before Apr 2026</div></div>'
+      + '<div class="evn-kpi"><div class="evn-kpi-lbl">New</div><div class="evn-kpi-val">' + nf(newCnt) + '</div><div class="evn-kpi-sub">Apr 2026 onwards</div></div>'
+      + '<div class="evn-kpi"><div class="evn-kpi-lbl">New %</div><div class="evn-kpi-val">' + newPct + '%</div><div class="evn-kpi-sub">Share of total</div></div>'
+      + '</div>';
+
+    var donut = donutSvg(newPct, accent, borderC);
+    var donutHtml = '<div class="evn-card"><div class="evn-card-ttl">Existing vs New Split</div>'
+      + '<div class="evn-donut-wrap">'
+      + '<div style="position:relative;display:inline-block">' + donut
+      + '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">'
+      + '<div style="font-size:20px;font-weight:700;color:var(--lc-text)">' + newPct + '%</div>'
+      + '<div style="font-size:11px;color:var(--lc-text3)">New</div>'
+      + '</div></div>'
+      + '<div class="evn-donut-leg">'
+      + '<div class="evn-leg-item"><span class="evn-leg-dot" style="background:' + accent + '"></span>New<span class="evn-leg-val">' + nf(newCnt) + '</span></div>'
+      + '<div class="evn-leg-item"><span class="evn-leg-dot" style="background:' + borderC + '"></span>Existing<span class="evn-leg-val">' + nf(existCnt) + '</span></div>'
+      + '</div></div></div>';
+
+    var cats = catBreakdown(allRows);
+    var catTbl = '<table class="evn-cattbl"><thead><tr><th>Category</th><th class="num">Existing</th><th class="num">New</th><th class="num">Total</th></tr></thead><tbody>';
+    if (cats.length) {
+      cats.slice(0, 10).forEach(function(c) {
+        catTbl += '<tr><td>' + esc2(c.name) + '</td>'
+          + '<td class="num">' + nf(c.existing) + '</td>'
+          + '<td class="num"><span class="new-chip">' + nf(c.newCnt) + '</span></td>'
+          + '<td class="num">' + nf(c.total) + '</td></tr>';
+      });
+    } else {
+      catTbl += '<tr><td colspan="4" style="text-align:center;color:var(--lc-text3);padding:20px">No data</td></tr>';
+    }
+    catTbl += '</tbody></table>';
+    var catHtml = '<div class="evn-card"><div class="evn-card-ttl">Category Breakdown</div><div style="overflow-x:auto">' + catTbl + '</div></div>';
+
+    var filtered = allRows.filter(function(r) {
+      var qOk = !evnQ || (r.name||'').toLowerCase().indexOf(evnQ) !== -1 || (r.category||'').toLowerCase().indexOf(evnQ) !== -1 || (r.state||'').toLowerCase().indexOf(evnQ) !== -1;
+      var cOk = !evnCat  || (r.category||'') === evnCat;
+      var sOk = !evnStat || (r.status||'')   === evnStat;
+      return qOk && cOk && sOk;
+    });
+    var sorted    = sortRows(filtered);
+    var pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SZ));
+    if (evnPage > pageCount) evnPage = pageCount;
+    var pageRows  = sorted.slice((evnPage - 1) * PAGE_SZ, evnPage * PAGE_SZ);
+
+    var allCats = {}, allStats = {};
+    allRows.forEach(function(r) {
+      if (r.category) allCats[r.category] = 1;
+      if (r.status)   allStats[r.status]   = 1;
+    });
+    var catOpts  = '<option value="">All Categories</option>';
+    Object.keys(allCats).sort().forEach(function(c) {
+      catOpts += '<option value="' + esc2(c) + '"' + (evnCat === c ? ' selected' : '') + '>' + esc2(c) + '</option>';
+    });
+    var statOpts = '<option value="">All Statuses</option>';
+    Object.keys(allStats).sort().forEach(function(s) {
+      statOpts += '<option value="' + esc2(s) + '"' + (evnStat === s ? ' selected' : '') + '>' + esc2(s) + '</option>';
+    });
+
+    var recHd = '<div class="evn-rec-hd">'
+      + '<div class="evn-rec-ttl">Vendor Records <span style="font-size:12px;font-weight:400;color:var(--lc-text3)">(' + nf(filtered.length) + ')</span></div>'
+      + '<div class="evn-rec-acts">'
+      + '<input class="evn-search" type="text" placeholder="Search name, category, state..." value="' + esc2(evnQ) + '" oninput="evnSearch(this.value)">'
+      + '<select class="evn-flt" onchange="evnSetCat(this.value)">' + catOpts + '</select>'
+      + '<select class="evn-flt" onchange="evnSetStat(this.value)">' + statOpts + '</select>'
+      + '<button class="evn-btn" onclick="evnExport()">&#8595; Export</button>'
+      + '</div></div>';
+
+    var tbl = '<div style="overflow-x:auto"><table class="evn-tbl"><thead><tr>'
+      + thBtn('name',     'Name')
+      + thBtn('category', 'Category')
+      + thBtn('state',    'State')
+      + thBtn('status',   'Status')
+      + thBtn('onbDate',  'Onb Date')
+      + '<th>Type</th>'
+      + thBtn('tat',      'TAT')
+      + '</tr></thead><tbody>';
+    if (pageRows.length) {
+      pageRows.forEach(function(r) {
+        var chip = rowIsNew(r)
+          ? '<span class="evn-chip new">New</span>'
+          : '<span class="evn-chip existing">Existing</span>';
+        tbl += '<tr>'
+          + '<td>' + esc2(r.name     || '-') + '</td>'
+          + '<td>' + esc2(r.category || '-') + '</td>'
+          + '<td>' + esc2(r.state    || '-') + '</td>'
+          + '<td>' + esc2(r.status   || '-') + '</td>'
+          + '<td>' + esc2(r.onbDate  || '-') + '</td>'
+          + '<td>' + chip + '</td>'
+          + '<td>' + (r.tat != null ? r.tat : '-') + '</td>'
+          + '</tr>';
+      });
+    } else {
+      tbl += '<tr><td colspan="7" class="evn-empty">No records match the current filters.</td></tr>';
+    }
+    tbl += '</tbody></table></div>';
+
+    var pager = '<div class="evn-pager">'
+      + '<span>' + nf((evnPage - 1) * PAGE_SZ + 1) + '&#8211;' + nf(Math.min(evnPage * PAGE_SZ, filtered.length)) + ' of ' + nf(filtered.length) + '</span>'
+      + '<div class="evn-pager-btns">';
+    pager += '<button class="evn-pager-btn" onclick="evnGoPage(' + (evnPage - 1) + ')"' + (evnPage <= 1 ? ' disabled' : '') + '>&#8592; Prev</button>';
+    var pStart = Math.max(1, evnPage - 2);
+    var pEnd   = Math.min(pageCount, pStart + 4);
+    for (var pi = pStart; pi <= pEnd; pi++) {
+      pager += '<button class="evn-pager-btn' + (pi === evnPage ? ' on' : '') + '" onclick="evnGoPage(' + pi + ')">' + pi + '</button>';
+    }
+    pager += '<button class="evn-pager-btn" onclick="evnGoPage(' + (evnPage + 1) + ')"' + (evnPage >= pageCount ? ' disabled' : '') + '>Next &#8594;</button>';
+    pager += '</div></div>';
+
+    wrap.innerHTML = '<div class="lc evn-pg">'
+      + '<div class="evn-hdr">'
+      + '<div><div class="evn-bc">Central Onboarding &#8250; Existing vs New</div><div class="evn-title">Existing vs New</div></div>'
+      + '<div class="evn-seg">' + segBtn('seller','Sellers') + segBtn('buyer','Buyers') + segBtn('combined','Combined') + '</div>'
+      + '</div>'
+      + kpiHtml
+      + '<div class="evn-mid">' + donutHtml + catHtml + '</div>'
+      + '<div class="evn-rec">' + recHd + tbl + pager + '</div>'
+      + '</div>';
+  };
+
+  (function() {
+    var root = document.documentElement;
+    if (typeof MutationObserver === 'undefined') return;
+    var obs = new MutationObserver(function() {
+      var tab = document.getElementById('tab-existingnew');
+      if (tab && tab.style.display !== 'none') renderEVNDash();
+    });
+    obs.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  })();
+
+  window.evnSetScope = function(s) { evnScope = s; evnPage = 1; renderEVNDash(); };
+  window.evnGoPage   = function(p) { evnPage  = p; renderEVNDash(); };
+  window.evnSearch   = function(v) {
+    clearTimeout(evnTimer);
+    evnTimer = setTimeout(function() { evnQ = v.toLowerCase().trim(); evnPage = 1; renderEVNDash(); }, 220);
+  };
+  window.evnSetCat   = function(v) { evnCat  = v; evnPage = 1; renderEVNDash(); };
+  window.evnSetStat  = function(v) { evnStat = v; evnPage = 1; renderEVNDash(); };
+  window.evnSort     = function(k) {
+    if (evnSortK === k) { evnSortD = evnSortD === 'asc' ? 'desc' : 'asc'; } else { evnSortK = k; evnSortD = 'asc'; }
+    renderEVNDash();
+  };
+  window.evnExport   = function() {
+    var rows = getRows();
+    var csv  = toCSV(rows);
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'existing-vs-new.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+})();
+</script><script id="lc-theme-ctl">
 /* Shared LC platform — theme controller + keyboard activation + on-brand skeleton seams. */
 function _lcSync(){
   var t; try{ t=localStorage.getItem('rk-lc-theme')||'light'; }catch(e){ t='light'; }
