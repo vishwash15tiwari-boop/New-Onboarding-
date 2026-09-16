@@ -7721,8 +7721,9 @@ function _geoAgg(cats) {
       if (region !== 'All' && IN_STATES[id].region !== region) return;
       var cat = String(r.category || '').trim().toLowerCase();
       if (filt && cat !== filt) return;   // category filter (chained from Volume/Funnel)
-      var b = by[id] || (by[id] = { id:id, total:0, seller:0, buyer:0, cats:{} });
+      var b = by[id] || (by[id] = { id:id, total:0, seller:0, buyer:0, sellerTxn:0, buyerTxn:0, cats:{} });
       b.total++; b[aud]++;
+      if (r.hasTransacted) b[aud + 'Txn']++;
       var ckey = known[cat] ? cat : (hasOther ? 'other' : cat);
       var cc = b.cats[ckey] || (b.cats[ckey] = { seller:0, buyer:0 });
       cc[aud]++;
@@ -7963,7 +7964,7 @@ function mmRenderGeo() {
     var nC   = geoCats.length;
     var grid = nC
       ? 'grid-template-columns:minmax(0,1fr) repeat(' + nC + ',minmax(40px,1fr)) 56px'
-      : 'grid-template-columns:1fr 80px';
+      : 'grid-template-columns:1fr 80px 80px';
     var gStyle = ' style="' + grid + '"';
     var rowStyle = function(i) {
       var anim = motionOK() ? 'animation-delay:' + (i * 45) + 'ms;' : '';
@@ -7975,7 +7976,9 @@ function mmRenderGeo() {
         cells = geoCats.map(function(c){ return '<span class="mg-row-n">' + fmt(_geoCatN(d, c, aud)) + '</span>'; }).join('')
               + '<span class="mg-row-n mg-total">' + fmt(audN(id)) + '</span>';
       } else {
-        cells = '<span class="mg-row-n mg-total">' + fmt(audN(id)) + '</span>';
+        var txnCnt = (by[id] && by[id][aud + 'Txn']) || 0;
+        cells = '<span class="mg-row-n mg-total">' + fmt(audN(id)) + '</span>'
+              + '<span class="mg-row-n" style="color:var(--txt3)">' + fmt(txnCnt) + '</span>';
       }
       return '<button class="mg-row" data-geo="' + id + '"' + rowStyle(i)
         + ' onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
@@ -7992,7 +7995,8 @@ function mmRenderGeo() {
         + '<span class="mg-row-n">Total</span></div>';
     } else {
       head = '<div class="mg-legend-hd"' + gStyle + '><span class="mg-row-nm">State</span>'
-        + '<span class="mg-row-n">' + audLabel + '</span></div>';
+        + '<span class="mg-row-n">' + audLabel + '</span>'
+        + '<span class="mg-row-n">Transacted</span></div>';
     }
     legend = '<div class="mg-legend' + (nC ? ' mg-legend-wide' : '') + '">'
       + head
