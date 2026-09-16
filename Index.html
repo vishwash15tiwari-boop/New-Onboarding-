@@ -4166,17 +4166,18 @@ body.view-ov #ov-screen{display:block}
 <style id="lc-css">
 /* ===== Living Circularity — scoped overview design system (Phase 1) ===== */
 .lc{
-  --lc-canvas:#F4F5F7; --lc-card:#FFFFFF; --lc-subtle:#F4F4F5;
-  --lc-border:#EAEAEA; --lc-border2:#DEDEDE;
-  --lc-text:#171717; --lc-text2:#5C5C5C; --lc-text3:#6B6B6B;
+  --lc-canvas:#F6F5F4; --lc-card:#FFFFFF; --lc-subtle:#FAFAF9;
+  --lc-border:#E7E4DF; --lc-border2:#D6D2CB;
+  --lc-text:#1D1D1F; --lc-text2:#5D5B54; --lc-text3:#726F6A;
   --lc-accent:#005DFF; --lc-accent-rgb:0,93,255; --lc-accent-weak:rgba(0,93,255,.08);
-  --lc-ok:#15803D; --lc-ok-weak:rgba(21,128,61,.12);
-  --lc-warn:#B45309; --lc-warn-weak:rgba(180,83,9,.12);
-  --lc-risk:#C81E1E; --lc-risk-weak:rgba(200,30,30,.12);
-  --lc-ring-track:#ECECEE; --lc-shadow:0 1px 2px rgba(0,0,0,.04); --lc-seg-on:#FFFFFF;
+  --lc-ok:#067A52; --lc-ok-weak:rgba(6,122,82,.12);
+  --lc-warn:#B25000; --lc-warn-weak:rgba(178,80,0,.12);
+  --lc-risk:#D70015; --lc-risk-weak:rgba(215,0,21,.12);
+  --lc-ring-track:#E7E4DF; --lc-shadow:0 1px 2px rgba(15,15,15,.06); --lc-seg-on:#FFFFFF;
+  --lc-purple:#8460D4; --lc-purple-bg:#F1ECFB; --lc-purple-weak:rgba(132,96,212,.1);
   background:var(--lc-canvas); color:var(--lc-text);
   font-family:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  font-size:14px; line-height:1.4; min-height:100vh; -webkit-font-smoothing:antialiased;
+  font-size:13.5px; line-height:1.4; -webkit-font-smoothing:antialiased;
 }
 .lc[data-theme="dark"]{
   --lc-canvas:#0A0A0B; --lc-card:#141416; --lc-subtle:#1C1C1F;
@@ -18464,8 +18465,8 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .vr3-kpi-lbl{font-size:11.5px;font-weight:500;color:var(--lc-text3);margin-bottom:7px}
 .lc .vr3-kpi-val{font-size:26px;font-weight:800;color:var(--lc-text);line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-bottom:5px}
 .lc .vr3-kpi-sub{font-size:11.5px;color:var(--lc-text3);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.lc .vr3-tag-up{color:#16A34A;font-weight:700;background:#DCFCE7;padding:1px 6px;border-radius:4px;font-size:11px}
-.lc .vr3-tag-dn{color:#DC2626;font-weight:700;background:#FEE2E2;padding:1px 6px;border-radius:4px;font-size:11px}
+.lc .vr3-tag-up{color:#067A52;font-weight:700;background:#E3F8F1;padding:1px 6px;border-radius:4px;font-size:11px}
+.lc .vr3-tag-dn{color:#D70015;font-weight:700;background:#FDECEB;padding:1px 6px;border-radius:4px;font-size:11px}
 .lc .vr3-row1{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .lc .vr3-row2{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .lc .vr3-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:20px;box-shadow:var(--lc-shadow)}
@@ -18495,10 +18496,10 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .vr3-tbl tr:last-child td{border-bottom:none}
 .lc .vr3-tbl tr:hover td{background:var(--lc-subtle)}
 .lc .vr3-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap}
-.lc .vr3-chip.excellent{background:#DCFCE7;color:#16A34A}
-.lc .vr3-chip.good{background:#DBEAFE;color:#2563EB}
-.lc .vr3-chip.ni{background:#FEF3C7;color:#D97706}
-.lc .vr3-chip.exception{background:#FEE2E2;color:#DC2626}
+.lc .vr3-chip.excellent{background:#E3F8F1;color:#067A52}
+.lc .vr3-chip.good{background:#E6EFFF;color:#024C8A}
+.lc .vr3-chip.ni{background:#FFF4E5;color:#B25000}
+.lc .vr3-chip.exception{background:#FDECEB;color:#D70015}
 .lc .vr3-chip.notrated{background:var(--lc-subtle);color:var(--lc-text3);border:1px solid var(--lc-border)}
 .lc .vr3-chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
 .lc .vr3-pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;font-size:12.5px;color:var(--lc-text3);flex-wrap:wrap}
@@ -18514,8 +18515,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <script id="lc-vendorratings-js">
 (function(){
   var _vrAud='seller',_vrPage=1,_vrPS=10,_vrCat='',_vrStat='',_vrQ='',_vrSortK='name',_vrSortD=1,_vrTrendN=6;
-  var CAT_CLR={'Plastic':'#3B82F6','Metal':'#8B5CF6','E-Waste':'#06B6D4','Battery':'#10B981','Tyres':'#F59E0B','Paper':'#EC4899','Others':'#6366F1'};
-  function cc(cat){return CAT_CLR[cat]||'#6366F1';}
+  var CAT_CLR={'Plastic':'#005DFF','Metal':'#1DC797','E-Waste':'#8460D4','Battery':'#FF9500','Tyres':'#D70015','Paper':'#024C8A','Others':'#8E8E93'};
+  function cc(cat){return CAT_CLR[cat]||'#8E8E93';}
   var IcoStar='<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
   var IcoUsers='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
   var IcoAlert='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
@@ -18580,7 +18581,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var rated=rows.filter(function(v){return v.rating>0&&v.rating!=null;}).length;
     var exc=rows.filter(function(v){return v.rating>0&&v.rating<=2;}).length;
     var total=rows.length,notRated=total-rated;
-    var items=[{lbl:'Rated',val:rated-exc,col:'#3B82F6'},{lbl:'Not Rated',val:notRated,col:'#E5E7EB'},{lbl:'Exception',val:exc,col:'#DC2626'}];
+    var items=[{lbl:'Rated',val:rated-exc,col:'#005DFF'},{lbl:'Not Rated',val:notRated,col:'#E7E4DF'},{lbl:'Exception',val:exc,col:'#D70015'}];
     var cx=60,cy=60,R=44,r=28;
     var svg='<svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">';
     var tot=items.reduce(function(a,b){return a+b.val;},0)||1;
@@ -18648,7 +18649,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function buildRatingQuality(rows){
-    var q=[{lbl:'Excellent',rng:'Score 8–10',col:'#15803D',bg:'#F0FDF4',ico:'★',cnt:0},{lbl:'Good',rng:'Score 6–8',col:'#2563EB',bg:'#EFF6FF',ico:'●',cnt:0},{lbl:'Needs Improvement',rng:'Score 2–6',col:'#D97706',bg:'#FFFBEB',ico:'▲',cnt:0},{lbl:'Exception',rng:'Score 0–2',col:'#DC2626',bg:'#FEF2F2',ico:'✕',cnt:0}];
+    var q=[{lbl:'Excellent',rng:'Score 8–10',col:'#067A52',bg:'#E3F8F1',ico:'★',cnt:0},{lbl:'Good',rng:'Score 6–8',col:'#024C8A',bg:'#E6EFFF',ico:'●',cnt:0},{lbl:'Needs Improvement',rng:'Score 2–6',col:'#B25000',bg:'#FFF4E5',ico:'▲',cnt:0},{lbl:'Exception',rng:'Score 0–2',col:'#D70015',bg:'#FDECEB',ico:'✕',cnt:0}];
     rows.forEach(function(v){var r=v.rating;if(!r&&r!==0)return;if(r>=8)q[0].cnt++;else if(r>=6)q[1].cnt++;else if(r>2)q[2].cnt++;else q[3].cnt++;});
     var h='<div class="vr3-qual-grid">';
     q.forEach(function(qc){h+='<div class="vr3-qual-card" style="border-top:3px solid '+qc.col+';background:'+qc.bg+'"><div class="vr3-qual-ico" style="color:'+qc.col+'">'+qc.ico+'</div><div class="vr3-qual-val" style="color:'+qc.col+'">'+qc.cnt+'</div><div class="vr3-qual-lbl">'+qc.lbl+'</div><div class="vr3-qual-rng">'+qc.rng+'</div></div>';});
@@ -18663,7 +18664,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(!keys.length)return '<div class="vr3-empty">No data</div>';
     keys.forEach(function(c){
       var d=cats[c],avg=d.rated?d.sum/d.rated:0;
-      h+='<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cc(c)+';margin-right:6px;vertical-align:middle"></span>'+c+'</td><td><b>'+fmt1(avg)+'</b></td><td>'+d.rated+'</td><td style="color:'+(d.exc?'#DC2626':'#16A34A')+'"><b>'+d.exc+'</b></td></tr>';
+      h+='<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cc(c)+';margin-right:6px;vertical-align:middle"></span>'+c+'</td><td><b>'+fmt1(avg)+'</b></td><td>'+d.rated+'</td><td style="color:'+(d.exc?'#D70015':'#067A52')+'"><b>'+d.exc+'</b></td></tr>';
     });
     return h+'</tbody></table></div>';
   }
@@ -18738,10 +18739,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var trendSel='<select class="vr3-card-sel" onchange="window.vr3TrendN(this.value)"><option value="6"'+(_vrTrendN===6?' selected':'')+'>Last 6 Months</option><option value="9"'+(_vrTrendN===9?' selected':'')+'>Last 9 Months</option><option value="12"'+(_vrTrendN===12?' selected':'')+'>Last 12 Months</option></select>';
     var audSel='<select class="vr3-card-sel" onchange="window.lcVrAud(this.value)"><option value="seller"'+(_vrAud==='seller'?' selected':'')+'>Sellers</option><option value="buyer"'+(_vrAud==='buyer'?' selected':'')+'>Buyers</option></select>';
     var kpiH='<div class="vr3-kpis">';
-    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoStar,'#EFF6FF','#3B82F6')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Average Seller Score</div><div class="vr3-kpi-val">'+fmt1(avg)+' <span style="font-size:14px;font-weight:500;color:var(--lc-text3)">/ 10</span></div><div class="vr3-kpi-sub">'+(pctUp!==null&&pctUp!==0?(pctUp>0?'<span class="vr3-tag-up">&#9650; '+Math.abs(pctUp)+'%</span>':'<span class="vr3-tag-dn">&#9660; '+Math.abs(pctUp)+'%</span>'):'')+''+(prevAvg?'<span>vs '+fmt1(prevAvg)+' prev</span>':'<span>No prior data</span>')+'</div></div></div>';
-    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoUsers,'#F0FDF4','#16A34A')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Sellers Rated</div><div class="vr3-kpi-val">'+rated+'</div><div class="vr3-kpi-sub"><span>'+pct(rated,total)+'% of '+total+' total</span></div></div></div>';
-    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoAlert,'#FEF2F2','#DC2626')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Exceptions</div><div class="vr3-kpi-val">'+exc+'</div><div class="vr3-kpi-sub"><span>'+pct(exc,rated)+'% of rated vendors</span></div></div></div>';
-    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoPie,'#F5F3FF','#8B5CF6')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Coverage</div><div class="vr3-kpi-val">'+pct(rated,total)+'<span style="font-size:14px;font-weight:500;color:var(--lc-text3)">%</span></div><div class="vr3-kpi-sub"><span>'+rated+' rated of '+total+'</span></div></div></div>';
+    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoStar,'#E6EFFF','#005DFF')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Average Seller Score</div><div class="vr3-kpi-val">'+fmt1(avg)+' <span style="font-size:14px;font-weight:500;color:var(--lc-text3)">/ 10</span></div><div class="vr3-kpi-sub">'+(pctUp!==null&&pctUp!==0?(pctUp>0?'<span class="vr3-tag-up">&#9650; '+Math.abs(pctUp)+'%</span>':'<span class="vr3-tag-dn">&#9660; '+Math.abs(pctUp)+'%</span>'):'')+''+(prevAvg?'<span>vs '+fmt1(prevAvg)+' prev</span>':'<span>No prior data</span>')+'</div></div></div>';
+    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoUsers,'#E3F8F1','#067A52')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Sellers Rated</div><div class="vr3-kpi-val">'+rated+'</div><div class="vr3-kpi-sub"><span>'+pct(rated,total)+'% of '+total+' total</span></div></div></div>';
+    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoAlert,'#FDECEB','#D70015')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Exceptions</div><div class="vr3-kpi-val">'+exc+'</div><div class="vr3-kpi-sub"><span>'+pct(exc,rated)+'% of rated vendors</span></div></div></div>';
+    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoPie,'#F1ECFB','#8460D4')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Coverage</div><div class="vr3-kpi-val">'+pct(rated,total)+'<span style="font-size:14px;font-weight:500;color:var(--lc-text3)">%</span></div><div class="vr3-kpi-sub"><span>'+rated+' rated of '+total+'</span></div></div></div>';
     kpiH+='</div>';
     var row1='<div class="vr3-row1">';
     row1+='<div class="vr3-card"><div class="vr3-card-hdr"><span class="vr3-card-ttl">Score Distribution</span>'+audSel+'</div>'+buildScoreDist(rows)+'</div>';
@@ -18786,8 +18787,8 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .osv3-kpi-lbl{font-size:11.5px;font-weight:500;color:var(--lc-text3);margin-bottom:7px}
 .lc .osv3-kpi-val{font-size:26px;font-weight:800;color:var(--lc-text);line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-bottom:5px}
 .lc .osv3-kpi-sub{font-size:11.5px;color:var(--lc-text3);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.lc .osv3-tag-up{color:#16A34A;font-weight:700;background:#DCFCE7;padding:1px 6px;border-radius:4px;font-size:11px}
-.lc .osv3-tag-dn{color:#DC2626;font-weight:700;background:#FEE2E2;padding:1px 6px;border-radius:4px;font-size:11px}
+.lc .osv3-tag-up{color:#067A52;font-weight:700;background:#E3F8F1;padding:1px 6px;border-radius:4px;font-size:11px}
+.lc .osv3-tag-dn{color:#D70015;font-weight:700;background:#FDECEB;padding:1px 6px;border-radius:4px;font-size:11px}
 .lc .osv3-row1{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .lc .osv3-row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .lc .osv3-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:20px;box-shadow:var(--lc-shadow)}
@@ -18810,9 +18811,9 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .osv3-tbl tr:last-child td{border-bottom:none}
 .lc .osv3-tbl tr:hover td{background:var(--lc-subtle)}
 .lc .osv3-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap}
-.lc .osv3-chip.completed{background:#DCFCE7;color:#16A34A}
-.lc .osv3-chip.inprogress{background:#FEF3C7;color:#D97706}
-.lc .osv3-chip.notinit{background:#FEE2E2;color:#DC2626}
+.lc .osv3-chip.completed{background:#E3F8F1;color:#067A52}
+.lc .osv3-chip.inprogress{background:#FFF4E5;color:#B25000}
+.lc .osv3-chip.notinit{background:#F2F2F7;color:#636366}
 .lc .osv3-chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
 .lc .osv3-pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;font-size:12.5px;color:var(--lc-text3);flex-wrap:wrap}
 .lc .osv3-pager-btns{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
@@ -18827,8 +18828,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <script id="osv3-js">
 (function(){
   var _osvPage=1,_osvPS=10,_osvCat='',_osvStat='',_osvQ='',_osvSortK='name',_osvSortD=1,_osvTrendN=6;
-  var CAT_CLR={'Plastic':'#3B82F6','Metal':'#8B5CF6','E-Waste':'#06B6D4','Battery':'#10B981','Tyres':'#F59E0B','Paper':'#EC4899','Others':'#6366F1'};
-  function cc(cat){return CAT_CLR[cat]||'#6366F1';}
+  var CAT_CLR={'Plastic':'#005DFF','Metal':'#1DC797','E-Waste':'#8460D4','Battery':'#FF9500','Tyres':'#D70015','Paper':'#024C8A','Others':'#8E8E93'};
+  function cc(cat){return CAT_CLR[cat]||'#8E8E93';}
   var IcoShield='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
   var IcoClock='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
   var IcoX='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
@@ -18843,7 +18844,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildStatusDonut(sl){
     var comp=0,inprog=0,notinit=0;
     sl.forEach(function(r){var s=r.osvStatus;if(s==='verified')comp++;else if(s==='in_progress'||s==='consent_obtained')inprog++;else notinit++;});
-    var items=[{lbl:'Completed',val:comp,col:'#16A34A'},{lbl:'In Progress',val:inprog,col:'#D97706'},{lbl:'Not Initiated',val:notinit,col:'#DC2626'}];
+    var items=[{lbl:'Completed',val:comp,col:'#1DC797'},{lbl:'In Progress',val:inprog,col:'#FF9500'},{lbl:'Not Initiated',val:notinit,col:'#8E8E93'}];
     var cx=60,cy=60,R=44,r=28,total=sl.length||1;
     var svg='<svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">';
     var tot=items.reduce(function(a,b){return a+b.val;},0)||1,angle=-Math.PI/2;
@@ -18890,7 +18891,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(!keys.length)return '<div class="osv3-empty">No trend data</div>';
     var pts=keys.map(function(k){var v=byMonth[k];return{k:k,comp:v.comp||0,inprog:v.inprog||0,notinit:v.notinit||0,tot:(v.comp||0)+(v.inprog||0)+(v.notinit||0)};});
     var maxV=pts.reduce(function(m,p){return Math.max(m,p.tot);},0)||1;
-    var W=260,H=120,PL=20,PR=10,PT=18,PB=24,cols=['#16A34A','#D97706','#DC2626'];
+    var W=260,H=120,PL=20,PR=10,PT=18,PB=24,cols=['#1DC797','#FF9500','#8E8E93'];
     var bw=Math.max(22,Math.floor((W-PL-PR)/pts.length)),bg=Math.floor(bw*0.58),bOff=Math.floor((bw-bg)/2);
     var svg='<svg viewBox="0 0 '+W+' '+(H+PT+PB)+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">';
     svg+='<circle cx="'+(PL+4)+'" cy="'+(PT-8)+'" r="4" fill="'+cols[0]+'"/><text x="'+(PL+11)+'" y="'+(PT-4)+'" fill="#5C5C5C" font-size="9">Completed</text>';
@@ -19025,10 +19026,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var notinit=sl.length-comp-inprog,total=sl.length;
     var trendSel='<select class="osv3-card-sel" onchange="window.osvTrendN(this.value)"><option value="6"'+(_osvTrendN===6?' selected':'')+'>Last 6 Months</option><option value="9"'+(_osvTrendN===9?' selected':'')+'>Last 9 Months</option><option value="12"'+(_osvTrendN===12?' selected':'')+'>Last 12 Months</option></select>';
     var kpiH='<div class="osv3-kpis">';
-    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoShield,'#F0FDF4','#16A34A')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">Total Sellers</div><div class="osv3-kpi-val">'+total+'</div><div class="osv3-kpi-sub">In Marketplace vertical</div></div></div>';
-    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoCheck,'#F0FDF4','#16A34A')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">OSV Completed</div><div class="osv3-kpi-val">'+comp+'</div><div class="osv3-kpi-sub">'+pct(comp,total)+'% completion rate</div></div></div>';
-    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoClock,'#FFFBEB','#D97706')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">In Progress</div><div class="osv3-kpi-val">'+inprog+'</div><div class="osv3-kpi-sub">'+pct(inprog,total)+'% of total</div></div></div>';
-    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoX,'#FEF2F2','#DC2626')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">Not Initiated</div><div class="osv3-kpi-val">'+notinit+'</div><div class="osv3-kpi-sub">'+pct(notinit,total)+'% of total</div></div></div>';
+    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoShield,'#E3F8F1','#067A52')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">Total Sellers</div><div class="osv3-kpi-val">'+total+'</div><div class="osv3-kpi-sub">In Marketplace vertical</div></div></div>';
+    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoCheck,'#E3F8F1','#067A52')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">OSV Completed</div><div class="osv3-kpi-val">'+comp+'</div><div class="osv3-kpi-sub">'+pct(comp,total)+'% completion rate</div></div></div>';
+    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoClock,'#FFF4E5','#B25000')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">In Progress</div><div class="osv3-kpi-val">'+inprog+'</div><div class="osv3-kpi-sub">'+pct(inprog,total)+'% of total</div></div></div>';
+    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoX,'#F2F2F7','#636366')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">Not Initiated</div><div class="osv3-kpi-val">'+notinit+'</div><div class="osv3-kpi-sub">'+pct(notinit,total)+'% of total</div></div></div>';
     kpiH+='</div>';
     var row1='<div class="osv3-row1">';
     row1+='<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">OSV Status Distribution</span></div>'+buildStatusDonut(sl)+'</div>';
@@ -19064,8 +19065,8 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .evn-scope{display:flex;background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:8px;padding:3px;gap:2px;flex-shrink:0}
 .lc .evn-scope button{padding:6px 14px;border:0;border-radius:6px;background:transparent;color:var(--lc-text2);font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap}
 .lc .evn-scope button.on{background:var(--lc-card);color:var(--lc-text);font-weight:700;box-shadow:var(--lc-shadow)}
-.lc .evn-banner{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1D4ED8;font-weight:500}
-.lc[data-theme="dark"] .evn-banner{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.3);color:#93C5FD}
+.lc .evn-banner{background:#E6EFFF;border:1px solid rgba(0,93,255,.25);border-radius:8px;padding:10px 14px;font-size:12px;color:#024C8A;font-weight:500}
+.lc[data-theme="dark"] .evn-banner{background:rgba(0,93,255,.12);border-color:rgba(0,93,255,.3);color:rgba(0,93,255,.8)}
 .lc .evn-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .lc .evn-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:18px 20px;display:flex;align-items:flex-start;gap:14px;box-shadow:var(--lc-shadow)}
 .lc .evn-ico{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -19073,8 +19074,8 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .evn-kpi-lbl{font-size:11.5px;font-weight:500;color:var(--lc-text3);margin-bottom:7px}
 .lc .evn-kpi-val{font-size:26px;font-weight:800;color:var(--lc-text);line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-bottom:5px}
 .lc .evn-kpi-sub{font-size:11.5px;color:var(--lc-text3);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.lc .evn-tag-up{color:#16A34A;font-weight:700;background:#DCFCE7;padding:1px 6px;border-radius:4px;font-size:11px}
-.lc .evn-tag-dn{color:#DC2626;font-weight:700;background:#FEE2E2;padding:1px 6px;border-radius:4px;font-size:11px}
+.lc .evn-tag-up{color:#067A52;font-weight:700;background:#E3F8F1;padding:1px 6px;border-radius:4px;font-size:11px}
+.lc .evn-tag-dn{color:#D70015;font-weight:700;background:#FDECEB;padding:1px 6px;border-radius:4px;font-size:11px}
 .lc .evn-row1{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .lc .evn-row2{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .lc .evn-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:20px;box-shadow:var(--lc-shadow)}
@@ -19096,7 +19097,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .evn-tbl td{padding:10px 12px;border-bottom:1px solid var(--lc-subtle);color:var(--lc-text);vertical-align:middle}
 .lc .evn-tbl tr:last-child td{border-bottom:none}
 .lc .evn-tbl tr:hover td{background:var(--lc-subtle)}
-.lc .evn-cls-new{color:#2563EB;font-weight:600}
+.lc .evn-cls-new{color:#005DFF;font-weight:600}
 .lc .evn-cls-ex{color:var(--lc-text2);font-weight:500}
 .lc .evn-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap}
 .lc .evn-chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
@@ -19114,8 +19115,8 @@ document.addEventListener('DOMContentLoaded', function() {
 (function(){
   var _evnScope='combined',_evnPage=1,_evnPS=10,_evnCat='',_evnQ='',_evnSortK='name',_evnSortD=1,_evnTrendN=6;
   var CUTOFF=new Date(2026,3,1);
-  var CAT_CLR={'Plastic':'#3B82F6','Metal':'#8B5CF6','E-Waste':'#06B6D4','Battery':'#10B981','Tyres':'#F59E0B','Paper':'#EC4899','Others':'#6366F1'};
-  function cc(cat){return CAT_CLR[cat]||'#6366F1';}
+  var CAT_CLR={'Plastic':'#005DFF','Metal':'#1DC797','E-Waste':'#8460D4','Battery':'#FF9500','Tyres':'#D70015','Paper':'#024C8A','Others':'#8E8E93'};
+  function cc(cat){return CAT_CLR[cat]||'#8E8E93';}
   var IcoTrend='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>';
   var IcoUsers='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
   var IcoClock='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
@@ -19172,7 +19173,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function buildENDonut(allRows){
     var newV=allRows.filter(rowIsNew).length,exV=allRows.length-newV,total=allRows.length||1;
-    var items=[{lbl:'Existing',val:exV,col:'#7C3AED'},{lbl:'New',val:newV,col:'#3B82F6'}];
+    var items=[{lbl:'Existing',val:exV,col:'#8460D4'},{lbl:'New',val:newV,col:'#005DFF'}];
     var cx=60,cy=60,R=44,r=28;
     var svg='<svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">';
     var angle=-Math.PI/2;
@@ -19351,10 +19352,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var trendSel='<select class="evn-card-sel" onchange="window.evnTrendN(this.value)"><option value="6"'+(_evnTrendN===6?' selected':'')+'>Last 6 Months</option><option value="9"'+(_evnTrendN===9?' selected':'')+'>Last 9 Months</option><option value="12"'+(_evnTrendN===12?' selected':'')+'>Last 12 Months</option></select>';
     var scopeH='<div class="evn-scope"><button onclick="window.evnScope(\'combined\')" class="'+(_evnScope==='combined'?'on':'')+'">Combined</button><button onclick="window.evnScope(\'sellers\')" class="'+(_evnScope==='sellers'?'on':'')+'">Sellers</button><button onclick="window.evnScope(\'buyers\')" class="'+(_evnScope==='buyers'?'on':'')+'">Buyers</button></div>';
     var kpiH='<div class="evn-kpis">';
-    kpiH+='<div class="evn-kpi">'+icoWrap(IcoTrend,'#EFF6FF','#3B82F6')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Total Onboarded</div><div class="evn-kpi-val">'+allRows.length+'</div><div class="evn-kpi-sub">All vendors in scope</div></div></div>';
-    kpiH+='<div class="evn-kpi">'+icoWrap(IcoUsers,'#F5F3FF','#7C3AED')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Existing Vendors</div><div class="evn-kpi-val">'+exRows.length+'</div><div class="evn-kpi-sub">'+pct(exRows.length,allRows.length)+'% of total</div></div></div>';
-    kpiH+='<div class="evn-kpi">'+icoWrap(IcoStar,'#DBEAFE','#2563EB')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">New Vendors</div><div class="evn-kpi-val">'+newRows.length+'</div><div class="evn-kpi-sub">'+pct(newRows.length,allRows.length)+'% of total</div></div></div>';
-    kpiH+='<div class="evn-kpi">'+icoWrap(IcoClock,'#FFFBEB','#D97706')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Avg TAT (New)</div><div class="evn-kpi-val">'+(avgNewTat!==null?fmt1(avgNewTat):'--')+'<span style="font-size:14px;font-weight:500;color:var(--lc-text3)"> days</span></div><div class="evn-kpi-sub">'+(avgExTat!==null?'vs '+fmt1(avgExTat)+' days (Existing)':'No TAT data')+'</div></div></div>';
+    kpiH+='<div class="evn-kpi">'+icoWrap(IcoTrend,'#E6EFFF','#005DFF')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Total Onboarded</div><div class="evn-kpi-val">'+allRows.length+'</div><div class="evn-kpi-sub">All vendors in scope</div></div></div>';
+    kpiH+='<div class="evn-kpi">'+icoWrap(IcoUsers,'#F1ECFB','#8460D4')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Existing Vendors</div><div class="evn-kpi-val">'+exRows.length+'</div><div class="evn-kpi-sub">'+pct(exRows.length,allRows.length)+'% of total</div></div></div>';
+    kpiH+='<div class="evn-kpi">'+icoWrap(IcoStar,'#E6EFFF','#005DFF')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">New Vendors</div><div class="evn-kpi-val">'+newRows.length+'</div><div class="evn-kpi-sub">'+pct(newRows.length,allRows.length)+'% of total</div></div></div>';
+    kpiH+='<div class="evn-kpi">'+icoWrap(IcoClock,'#FFF4E5','#B25000')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Avg TAT (New)</div><div class="evn-kpi-val">'+(avgNewTat!==null?fmt1(avgNewTat):'--')+'<span style="font-size:14px;font-weight:500;color:var(--lc-text3)"> days</span></div><div class="evn-kpi-sub">'+(avgExTat!==null?'vs '+fmt1(avgExTat)+' days (Existing)':'No TAT data')+'</div></div></div>';
     kpiH+='</div>';
     var row1='<div class="evn-row1">';
     row1+='<div class="evn-card"><div class="evn-card-hdr"><span class="evn-card-ttl">Onboarding Trend</span>'+trendSel+'</div>'+buildOBTrend(allRows,_evnTrendN)+'</div>';
