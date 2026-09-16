@@ -18881,6 +18881,410 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 })();
 </script>
+<style id="osv3-css">
+/* ===== OSV Status v3 -- single-screen dashboard ===== */
+.lc .osv3-pg{display:flex;flex-direction:column;gap:20px;padding:22px 24px 32px;max-width:1320px;margin:0 auto}
+.lc .osv3-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.lc .osv3-bc{font-size:12px;color:var(--lc-text3);margin-bottom:4px}
+.lc .osv3-bc a{color:var(--lc-text3);cursor:pointer}
+.lc .osv3-title{font-size:18px;font-weight:700;color:var(--lc-text);letter-spacing:-.02em}
+.lc .osv3-perbtns{display:flex;gap:4px}
+.lc .osv3-perbtn{padding:5px 12px;border:1px solid var(--lc-border);border-radius:7px;background:var(--lc-card);font-size:12px;cursor:pointer;color:var(--lc-text2);font-family:inherit;font-weight:500}
+.lc .osv3-perbtn.on{background:var(--lc-accent);color:#fff;border-color:var(--lc-accent)}
+.lc .osv3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.lc .osv3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.lc .osv3-kpi-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--lc-text3)}
+.lc .osv3-kpi-val{font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--lc-text);font-variant-numeric:tabular-nums;line-height:1}
+.lc .osv3-kpi-sub{font-size:11.5px;color:var(--lc-text3)}
+.lc .osv3-mid{display:grid;grid-template-columns:1fr 1.5fr;gap:16px}
+.lc .osv3-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:18px}
+.lc .osv3-cardh{font-size:13px;font-weight:600;color:var(--lc-text);margin-bottom:14px}
+.lc .osv3-cardh span{font-size:11.5px;font-weight:400;color:var(--lc-text3);margin-left:6px}
+.lc .osv3-donut-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.lc .osv3-donut{position:relative;width:120px;height:120px;flex-shrink:0}
+.lc .osv3-donut svg{display:block}
+.lc .osv3-donut-ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.lc .osv3-donut-ctr b{font-size:20px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.lc .osv3-donut-ctr span{font-size:10px;color:var(--lc-text3);font-weight:500;margin-top:2px}
+.lc .osv3-donut-leg{display:flex;flex-direction:column;gap:6px;flex:1}
+.lc .osv3-dl-row{display:flex;align-items:center;gap:7px;font-size:12px}
+.lc .osv3-dl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.lc .osv3-dl-lbl{flex:1;color:var(--lc-text2)}
+.lc .osv3-dl-cnt{font-weight:600;font-variant-numeric:tabular-nums;color:var(--lc-text);min-width:36px;text-align:right}
+.lc .osv3-dl-pct{font-size:11px;color:var(--lc-text3);min-width:36px;text-align:right}
+.lc .osv3-rate-wrap{margin-top:14px}
+.lc .osv3-rate-lbl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}
+.lc .osv3-rate-track{background:var(--lc-subtle);border-radius:6px;height:10px;overflow:hidden}
+.lc .osv3-rate-fill{height:100%;border-radius:6px;background:var(--lc-ok);transition:width .3s}
+.lc .osv3-cattbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.lc .osv3-cattbl th{text-align:left;padding:5px 8px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--lc-text3);border-bottom:1px solid var(--lc-border)}
+.lc .osv3-cattbl th.ar{text-align:right}
+.lc .osv3-cattbl td{padding:8px 8px;border-bottom:1px solid var(--lc-border);color:var(--lc-text)}
+.lc .osv3-cattbl tr:last-child td{border-bottom:0}
+.lc .osv3-cattbl td.ar{text-align:right;font-variant-numeric:tabular-nums}
+.lc .osv3-rec-hdr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.lc .osv3-rec-title{font-size:14px;font-weight:700;color:var(--lc-text);flex:1}
+.lc .osv3-search{display:flex;align-items:center;gap:6px;background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:8px;padding:6px 10px;min-width:200px}
+.lc .osv3-search input{background:transparent;border:0;outline:none;font-size:12.5px;color:var(--lc-text);font-family:inherit;width:100%}
+.lc .osv3-select{background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:8px;padding:6px 10px;font-size:12.5px;color:var(--lc-text);font-family:inherit;cursor:pointer;outline:none}
+.lc .osv3-btn{padding:6px 14px;background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:8px;font-size:12.5px;color:var(--lc-text);font-family:inherit;cursor:pointer;font-weight:500}
+.lc .osv3-btn:hover{background:var(--lc-accent);color:#fff;border-color:var(--lc-accent)}
+.lc .osv3-tscroll{overflow-x:auto}
+.lc .osv3-tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:720px}
+.lc .osv3-tbl thead th{position:sticky;top:0;z-index:1;background:var(--lc-subtle);text-align:left;padding:0;border-bottom:1px solid var(--lc-border);white-space:nowrap}
+.lc .osv3-th{width:100%;display:inline-flex;align-items:center;gap:5px;background:transparent;border:0;color:var(--lc-text2);font-family:inherit;font-size:11.5px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;padding:9px 12px;cursor:pointer}
+.lc .osv3-th.on{color:var(--lc-accent)}
+.lc .osv3-th .ar{font-size:8px;line-height:1}
+.lc .osv3-tbl tbody td{padding:9px 12px;border-bottom:1px solid var(--lc-border);color:var(--lc-text);vertical-align:middle}
+.lc .osv3-tbl tbody tr:hover{background:var(--lc-subtle)}
+.lc .osv3-tbl tbody tr:last-child td{border-bottom:0}
+.lc .osv3-vname{font-weight:600}
+.lc .osv3-gst{color:var(--lc-text2);font-size:11.5px;font-variant-numeric:tabular-nums}
+.lc .osv3-empty{padding:30px 20px;text-align:center;color:var(--lc-text3);font-size:12.5px}
+.lc .osv3-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;flex-wrap:wrap}
+.lc .osv3-pager-info{font-size:12px;color:var(--lc-text3)}
+.lc .osv3-pager-btns{display:flex;gap:6px}
+.lc .osv3-pager-btn{padding:5px 12px;border:1px solid var(--lc-border);border-radius:7px;background:var(--lc-card);font-size:12px;cursor:pointer;color:var(--lc-text);font-family:inherit}
+.lc .osv3-pager-btn:disabled{opacity:.4;cursor:not-allowed}
+.lc .osv3-pager-btn:not(:disabled):hover{background:var(--lc-accent);color:#fff;border-color:var(--lc-accent)}
+@media(max-width:900px){.lc .osv3-mid{grid-template-columns:1fr}.lc .osv3-kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.lc .osv3-kpis{grid-template-columns:1fr}}
+</style>
+<script id="osv3-js">
+/* OSV Status v3 -- single-screen overview. Overrides renderOSVDash. */
+(function () {
+  var osv3Page  = 1;
+  var osv3Cat   = '';
+  var osv3Stat  = '';
+  var osv3Q     = '';
+  var osv3Timer = null;
+  var osv3Sort  = { key: 'name', dir: 'asc' };
+  var PAGE_SZ   = 20;
+
+  function nf(v)    { return (v == null ? 0 : v).toLocaleString('en-IN'); }
+  function num1(v)  { return v == null ? '0.0' : (Math.round(v * 10) / 10).toFixed(1); }
+  function pct(a,b) { return b > 0 ? Math.round(a / b * 100) : 0; }
+  function esc2(s)  {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function vrTheme() {
+    try { return localStorage.getItem('rk-lc-theme') || 'light'; } catch(e) { return 'light'; }
+  }
+  function shell(theme, content) {
+    return '<div class="lc" data-theme="' + theme + '"><div class="osv3-pg">' + content + '</div></div>';
+  }
+
+  function osvStatusLabel(s) {
+    if (!s) return 'Not Initiated';
+    var m = { verified:'Completed', in_progress:'In Progress', not_initiated:'Not Initiated',
+              consent_obtained:'Consent Obtained' };
+    return m[s] || s.replace(/_/g,' ');
+  }
+  function osvStatusCls(s) {
+    if (!s || s === 'not_initiated') return 'flat';
+    if (s === 'verified')            return 'ok';
+    if (s === 'in_progress')         return 'warn';
+    return 'flat';
+  }
+
+  function donutMulti(segs, size) {
+    size = size || 120;
+    var r = (size / 2) - 10;
+    var circ = 2 * Math.PI * r;
+    var total = 0;
+    segs.forEach(function(s) { total += s.v || 0; });
+    if (total === 0) {
+      return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">'
+        + '<circle cx="' + (size/2) + '" cy="' + (size/2) + '" r="' + r + '" fill="none" stroke="var(--lc-subtle)" stroke-width="12"/>'
+        + '</svg>';
+    }
+    var cx = size / 2, cy = size / 2;
+    var svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">'
+      + '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="var(--lc-subtle)" stroke-width="12"/>';
+    var offset = 0;
+    segs.forEach(function(s) {
+      var v = s.v || 0;
+      if (v === 0) return;
+      var dash = (v / total) * circ;
+      var gap  = circ - dash;
+      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none"'
+        + ' stroke="' + s.color + '" stroke-width="12"'
+        + ' stroke-dasharray="' + dash.toFixed(2) + ' ' + gap.toFixed(2) + '"'
+        + ' stroke-dashoffset="' + (-(offset / total) * circ).toFixed(2) + '"'
+        + ' transform="rotate(-90 ' + cx + ' ' + cy + ')"/>';
+      offset += v;
+    });
+    svg += '</svg>';
+    return svg;
+  }
+
+  function thBtn(k, label) {
+    var on = osv3Sort.key === k;
+    var arrow = on ? (osv3Sort.dir === 'asc' ? '&#9650;' : '&#9660;') : '';
+    return '<th><button class="osv3-th' + (on ? ' on' : '') + '" onclick="window.osv3Sort(\'' + k + '\')">'
+      + esc2(label) + '<span class="ar">' + arrow + '</span></button></th>';
+  }
+
+  function sortRows(rows) {
+    var k = osv3Sort.key, dir = osv3Sort.dir === 'asc' ? 1 : -1;
+    return rows.slice().sort(function(a, b) {
+      var av = a[k], bv = b[k];
+      if (k === 'score') { av = av == null ? -1 : av; bv = bv == null ? -1 : bv; return (av - bv) * dir; }
+      av = String(av == null ? '' : av).toLowerCase();
+      bv = String(bv == null ? '' : bv).toLowerCase();
+      return (av < bv ? -1 : av > bv ? 1 : 0) * dir;
+    });
+  }
+
+  function toCSV(rows) {
+    var h = ['Vendor Name','GSTIN','Category','OSV Status','Score','KYC Status','Assigned To'];
+    var lines = [h.join(',')];
+    rows.forEach(function(r) {
+      lines.push([
+        '"' + String(r.name||'').replace(/"/g,'""') + '"',
+        '"' + String(r.gstin||'').replace(/"/g,'""') + '"',
+        '"' + String(r.category||'').replace(/"/g,'""') + '"',
+        '"' + osvStatusLabel(r.osvStatus) + '"',
+        r.score != null ? num1(r.score) : '',
+        '"' + String(r.kycStatus||'').replace(/"/g,'""') + '"',
+        '"' + String(r.assignedTo||'').replace(/"/g,'""') + '"'
+      ].join(','));
+    });
+    return lines.join('\r\n');
+  }
+
+  renderOSVDash = function() {
+    var host = document.getElementById('tab-osv');
+    if (!host) return;
+    var theme = vrTheme();
+
+    if (!_OSV) {
+      host.innerHTML = shell(theme, '<div class="osv3-empty">Loading OSV data\u2026</div>');
+      return;
+    }
+    if (!_OSV.success) {
+      host.innerHTML = shell(theme, '<div class="osv3-empty">Error: ' + esc2(_OSV.error || 'Unknown') + '</div>');
+      return;
+    }
+
+    var jn = _OSV.journey    || {};
+    var sd = _OSV.statusDist || {};
+    var sl = _OSV.sellerList || [];
+
+    var eligible   = jn.eligible  || 0;
+    var completed  = sd.completed  || jn.completed || 0;
+    var inProgress = sd.inProgress || 0;
+    var notInit    = sd.eligibleNotInitiated || 0;
+    var compRate   = pct(completed, eligible);
+
+    // â”€â”€ Period buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    var perBtns = '<div class="osv3-perbtns">'
+      + [['Today','Today'],['MTD','MTD'],['YTD','YTD'],['All','All Time']].map(function(p) {
+        return '<button class="osv3-perbtn' + (currentPeriod === p[0] ? ' on' : '') + '" onclick="onPeriodSelect(\'' + p[0] + '\')">' + p[1] + '</button>';
+      }).join('')
+      + '</div>';
+
+    // â”€â”€ KPIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    var kpisHtml = '<div class="osv3-kpis">'
+      + '<div class="osv3-kpi"><div class="osv3-kpi-lbl">OSV Eligible</div><div class="osv3-kpi-val">' + nf(eligible) + '</div><div class="osv3-kpi-sub">completed a transaction</div></div>'
+      + '<div class="osv3-kpi"><div class="osv3-kpi-lbl">Completed</div><div class="osv3-kpi-val" style="color:var(--lc-ok)">' + nf(completed) + '</div><div class="osv3-kpi-sub">OSV verified</div></div>'
+      + '<div class="osv3-kpi"><div class="osv3-kpi-lbl">In Progress</div><div class="osv3-kpi-val" style="color:var(--lc-warn)">' + nf(inProgress) + '</div><div class="osv3-kpi-sub">verification active</div></div>'
+      + '<div class="osv3-kpi"><div class="osv3-kpi-lbl">Not Initiated</div><div class="osv3-kpi-val" style="color:var(--lc-text3)">' + nf(notInit) + '</div><div class="osv3-kpi-sub">eligible but pending</div></div>'
+      + '</div>';
+
+    // â”€â”€ Status Donut + Completion Rate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    var notElig = sd.notEligible || 0;
+    var statTotal = sd.total || (completed + inProgress + notInit + notElig) || 1;
+    var segs = [
+      { v: completed,  color: 'var(--lc-ok)' },
+      { v: inProgress, color: 'var(--lc-warn)' },
+      { v: notInit,    color: 'var(--lc-text3)' },
+      { v: notElig,    color: 'var(--lc-subtle)' }
+    ];
+    var donutHtml = '<div class="osv3-donut-wrap">'
+      + '<div class="osv3-donut">' + donutMulti(segs)
+      + '<div class="osv3-donut-ctr"><b>' + compRate + '<span style="font-size:12px">%</span></b><span>Complete</span></div></div>'
+      + '<div class="osv3-donut-leg">'
+      + '<div class="osv3-dl-row"><span class="osv3-dl-dot" style="background:var(--lc-ok)"></span><span class="osv3-dl-lbl">Completed</span><span class="osv3-dl-cnt">' + nf(completed) + '</span><span class="osv3-dl-pct">' + pct(completed,statTotal) + '%</span></div>'
+      + '<div class="osv3-dl-row"><span class="osv3-dl-dot" style="background:var(--lc-warn)"></span><span class="osv3-dl-lbl">In Progress</span><span class="osv3-dl-cnt">' + nf(inProgress) + '</span><span class="osv3-dl-pct">' + pct(inProgress,statTotal) + '%</span></div>'
+      + '<div class="osv3-dl-row"><span class="osv3-dl-dot" style="background:var(--lc-text3)"></span><span class="osv3-dl-lbl">Not Initiated</span><span class="osv3-dl-cnt">' + nf(notInit) + '</span><span class="osv3-dl-pct">' + pct(notInit,statTotal) + '%</span></div>'
+      + '<div class="osv3-dl-row"><span class="osv3-dl-dot" style="background:var(--lc-subtle)"></span><span class="osv3-dl-lbl">Not Eligible</span><span class="osv3-dl-cnt">' + nf(notElig) + '</span><span class="osv3-dl-pct">' + pct(notElig,statTotal) + '%</span></div>'
+      + '</div></div>'
+      + '<div class="osv3-rate-wrap">'
+      + '<div class="osv3-rate-lbl"><span style="color:var(--lc-text2);font-weight:600">Completion Rate</span><span style="font-weight:700;color:var(--lc-ok)">' + compRate + '%</span></div>'
+      + '<div class="osv3-rate-track"><div class="osv3-rate-fill" style="width:' + compRate + '%"></div></div>'
+      + '<div style="font-size:11.5px;color:var(--lc-text3);margin-top:6px">' + nf(completed) + ' of ' + nf(eligible) + ' eligible sellers</div>'
+      + '</div>';
+
+    // â”€â”€ OSV by Category â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    var catMap = {};
+    sl.forEach(function(r) {
+      var c = String(r.category || 'Other').toLowerCase();
+      if (!catMap[c]) catMap[c] = { label: r.category || 'Other', total: 0, comp: 0, inp: 0 };
+      catMap[c].total++;
+      if (r.osvStatus === 'verified')    catMap[c].comp++;
+      if (r.osvStatus === 'in_progress') catMap[c].inp++;
+    });
+    var catKeys = Object.keys(catMap).sort(function(a,b) { return catMap[b].total - catMap[a].total; });
+    var catTblHtml = '<table class="osv3-cattbl"><thead><tr>'
+      + '<th>Category</th><th class="ar">Total</th><th class="ar">Completed</th><th class="ar">In Progress</th><th class="ar">Rate</th>'
+      + '</tr></thead><tbody>';
+    if (!catKeys.length) {
+      catTblHtml += '<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--lc-text3)">No data</td></tr>';
+    } else {
+      catKeys.forEach(function(k) {
+        var c = catMap[k];
+        var r = pct(c.comp, c.total);
+        catTblHtml += '<tr>'
+          + '<td>' + esc2(c.label) + '</td>'
+          + '<td class="ar">' + nf(c.total) + '</td>'
+          + '<td class="ar" style="color:var(--lc-ok)">' + nf(c.comp) + '</td>'
+          + '<td class="ar" style="color:var(--lc-warn)">' + nf(c.inp) + '</td>'
+          + '<td class="ar"><span class="lc-chip ' + (r >= 60 ? 'ok' : r >= 30 ? 'warn' : 'flat') + '">' + r + '%</span></td>'
+          + '</tr>';
+      });
+    }
+    catTblHtml += '</tbody></table>';
+
+    // â”€â”€ Records â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    var q = osv3Q.toLowerCase ? osv3Q.toLowerCase().trim() : '';
+    var filtered = sl.filter(function(r) {
+      if (osv3Cat && String(r.category || '').toLowerCase() !== osv3Cat) return false;
+      if (osv3Stat && (r.osvStatus || 'not_initiated') !== osv3Stat) return false;
+      if (q) {
+        var nm = String(r.name || '').toLowerCase();
+        var gs = String(r.gstin || '').toLowerCase();
+        if (nm.indexOf(q) < 0 && gs.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    var sorted = sortRows(filtered);
+    var pages = Math.max(1, Math.ceil(sorted.length / PAGE_SZ));
+    if (osv3Page > pages) osv3Page = pages;
+    var pageRows = sorted.slice((osv3Page - 1) * PAGE_SZ, osv3Page * PAGE_SZ);
+
+    var allCats = [], seenCats = {};
+    sl.forEach(function(r) {
+      var c = String(r.category || '').toLowerCase();
+      if (c && !seenCats[c]) { seenCats[c] = 1; allCats.push({ val: c, lbl: r.category || c }); }
+    });
+    allCats.sort(function(a,b) { return a.lbl < b.lbl ? -1 : 1; });
+    var catOpts = '<option value="">All Categories</option>';
+    allCats.forEach(function(c) {
+      catOpts += '<option value="' + esc2(c.val) + '"' + (osv3Cat === c.val ? ' selected' : '') + '>' + esc2(c.lbl) + '</option>';
+    });
+
+    var statOpts = '<option value="">All Statuses</option>'
+      + ['verified','in_progress','not_initiated','consent_obtained'].map(function(s) {
+        return '<option value="' + s + '"' + (osv3Stat === s ? ' selected' : '') + '>' + osvStatusLabel(s) + '</option>';
+      }).join('');
+
+    var tblHead = '<thead><tr>'
+      + thBtn('name','Vendor')
+      + '<th><span class="osv3-th">GSTIN</span></th>'
+      + thBtn('category','Category')
+      + thBtn('osvStatus','OSV Status')
+      + thBtn('score','Score')
+      + '<th><span class="osv3-th">KYC Status</span></th>'
+      + '<th><span class="osv3-th">Assigned To</span></th>'
+      + '</tr></thead>';
+
+    var tblBody = '<tbody>';
+    if (!pageRows.length) {
+      tblBody += '<tr><td colspan="7"><div class="osv3-empty">No vendors match the current filters.</div></td></tr>';
+    } else {
+      pageRows.forEach(function(r) {
+        tblBody += '<tr>'
+          + '<td class="osv3-vname">' + esc2(r.name || '&mdash;') + '</td>'
+          + '<td class="osv3-gst">' + esc2(r.gstin || '&mdash;') + '</td>'
+          + '<td>' + esc2(r.category || '&mdash;') + '</td>'
+          + '<td><span class="lc-chip ' + osvStatusCls(r.osvStatus) + '">' + osvStatusLabel(r.osvStatus) + '</span></td>'
+          + '<td style="font-variant-numeric:tabular-nums">' + (r.score != null ? num1(r.score) + '/10' : '<span style="color:var(--lc-text3)">&mdash;</span>') + '</td>'
+          + '<td>' + esc2(r.kycStatus || '&mdash;') + '</td>'
+          + '<td>' + esc2(r.assignedTo || '&mdash;') + '</td>'
+          + '</tr>';
+      });
+    }
+    tblBody += '</tbody>';
+
+    var from = (osv3Page - 1) * PAGE_SZ + 1;
+    var to   = Math.min(osv3Page * PAGE_SZ, sorted.length);
+    var pagerHtml = '<div class="osv3-pager">'
+      + '<span class="osv3-pager-info">Showing ' + from + '&ndash;' + to + ' of ' + nf(sorted.length) + ' vendors</span>'
+      + '<div class="osv3-pager-btns">'
+      + '<button class="osv3-pager-btn" ' + (osv3Page <= 1 ? 'disabled' : 'onclick="window.osv3GoPage(' + (osv3Page - 1) + ')"') + '>\u2190 Prev</button>'
+      + '<button class="osv3-pager-btn" ' + (osv3Page >= pages ? 'disabled' : 'onclick="window.osv3GoPage(' + (osv3Page + 1) + ')"') + '>Next \u2192</button>'
+      + '</div></div>';
+
+    var main = ''
+      + '<div class="osv3-hdr">'
+      + '<div><div class="osv3-bc"><a onclick="switchView(\'onboarding\')" style="cursor:pointer">Central Onboarding</a> &rsaquo; <a>Marketplace</a> &rsaquo; OSV Status</div>'
+      + '<div class="osv3-title">OSV Status Overview</div></div>'
+      + perBtns
+      + '</div>'
+      + kpisHtml
+      + '<div class="osv3-mid">'
+      + '<div class="osv3-card"><div class="osv3-cardh">Status Breakdown <span>' + nf(statTotal) + ' sellers</span></div>' + donutHtml + '</div>'
+      + '<div class="osv3-card"><div class="osv3-cardh">OSV by Category</div>' + catTblHtml + '</div>'
+      + '</div>'
+      + '<div class="osv3-card">'
+      + '<div class="osv3-rec-hdr">'
+      + '<div class="osv3-rec-title">OSV Records <span style="font-size:12px;color:var(--lc-text3);font-weight:400">(' + nf(filtered.length) + ')</span></div>'
+      + '<div class="osv3-search"><input type="text" placeholder="Search name or GSTIN\u2026" value="' + esc2(osv3Q) + '" oninput="window.osv3Search(this.value)"></div>'
+      + '<select class="osv3-select" onchange="window.osv3SetCat(this.value)">' + catOpts + '</select>'
+      + '<select class="osv3-select" onchange="window.osv3SetStat(this.value)">' + statOpts + '</select>'
+      + '<button class="osv3-btn" onclick="window.osv3Export()">Export CSV</button>'
+      + '</div>'
+      + '<div class="osv3-tscroll"><table class="osv3-tbl">' + tblHead + tblBody + '</table></div>'
+      + pagerHtml
+      + '</div>';
+
+    host.innerHTML = shell(theme, main);
+  };
+
+  window.osv3GoPage  = function(p) { osv3Page = p; renderOSVDash(); };
+  window.osv3Search  = function(v) {
+    if (osv3Timer) clearTimeout(osv3Timer);
+    osv3Timer = setTimeout(function() { osv3Q = v; osv3Page = 1; renderOSVDash(); }, 220);
+  };
+  window.osv3SetCat  = function(v) { osv3Cat  = v; osv3Page = 1; renderOSVDash(); };
+  window.osv3SetStat = function(v) { osv3Stat = v; osv3Page = 1; renderOSVDash(); };
+  window.osv3Sort    = function(k) {
+    if (osv3Sort.key === k) osv3Sort.dir = osv3Sort.dir === 'asc' ? 'desc' : 'asc';
+    else { osv3Sort.key = k; osv3Sort.dir = 'asc'; }
+    renderOSVDash();
+  };
+  window.osv3Export  = function() {
+    if (!_OSV || !_OSV.success) return;
+    var sl   = _OSV.sellerList || [];
+    var q    = osv3Q.toLowerCase ? osv3Q.toLowerCase().trim() : '';
+    var rows = sl.filter(function(r) {
+      if (osv3Cat && String(r.category || '').toLowerCase() !== osv3Cat) return false;
+      if (osv3Stat && (r.osvStatus || 'not_initiated') !== osv3Stat) return false;
+      if (q) { var nm = String(r.name||'').toLowerCase(), gs = String(r.gstin||'').toLowerCase(); if (nm.indexOf(q) < 0 && gs.indexOf(q) < 0) return false; }
+      return true;
+    });
+    var csv  = toCSV(rows);
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url; a.download = 'osv-records.csv';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  };
+  /* Also observe the osv tab for the LC theme sync */
+  try {
+    var _osvMo = new MutationObserver(function() {
+      var els = document.querySelectorAll('.lc'); for (var i = 0; i < els.length; i++) {
+        try { var t = localStorage.getItem('rk-lc-theme') || 'light'; els[i].setAttribute('data-theme', t); } catch(e) {}
+      }
+    });
+    var osvTab = document.getElementById('tab-osv');
+    if (osvTab) _osvMo.observe(osvTab, { childList: true });
+  } catch(e) {}
+})();
+</script>
 <script id="lc-theme-ctl">
 /* Shared LC platform — theme controller + keyboard activation + on-brand skeleton seams. */
 function _lcSync(){
