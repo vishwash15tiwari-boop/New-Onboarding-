@@ -4400,7 +4400,7 @@ body.view-ov #ov-screen{display:block}
             </div>
           </div>
           <div id="ov-bar-chart">
-            <div class="sk" style="height:120px;border-radius:var(--r2)"></div>
+            <div class="sk" style="height:200px;border-radius:var(--r2)"></div>
           </div>
         </div>
         <div class="ov-donut-card">
@@ -16298,7 +16298,7 @@ function renderOvBarChart(monthly) {
   var el = document.getElementById('ov-bar-chart');
   if (!el) return;
   if (!monthly || !monthly.length) {
-    el.innerHTML = '<div class="sk" style="height:120px;border-radius:var(--r2)"></div>';
+    el.innerHTML = '<div class="sk" style="height:200px;border-radius:var(--r2)"></div>';
     return;
   }
   var sel  = document.getElementById('ov-months-sel');
@@ -16306,7 +16306,7 @@ function renderOvBarChart(monthly) {
   var data = monthly.slice(-nM);
   var modeEl = document.getElementById('ov-chart-mode');
   var mode   = modeEl ? modeEl.value : 'aud';
-  var CHART_H = 100;
+  var CHART_H = 200;
   var moNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   function _mkLabel(monthStr) {
