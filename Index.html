@@ -16128,11 +16128,12 @@ function renderOvDonut() {
     return;
   }
 
+  var _d = MF_DEFS || {};
   var segs = [
-    { label:'Onboarded', val:st.comp,  color:'#1DC797' },
-    { label:'In Review',  val:st.inRev, color:'#FF9500' },
-    { label:'Draft',      val:st.draft, color:'#8460D4' },
-    { label:'Rejected',   val:st.rej,   color:'#FF3B30' },
+    { label:'Onboarded', val:st.comp,  color:'#1DC797', def:_d.onboarded || '' },
+    { label:'In Review',  val:st.inRev, color:'#FF9500', def:_d.review    || '' },
+    { label:'Draft',      val:st.draft, color:'#8460D4', def:_d.draft     || '' },
+    { label:'Rejected',   val:st.rej,   color:'#FF3B30', def:_d.rejected  || '' },
   ].filter(function(s){ return s.val > 0; });
 
   window._ovDonutSegs  = segs;
@@ -16173,7 +16174,11 @@ function renderOvDonut() {
       + ' onmouseenter="ovDonutHover(' + i + ')" onmouseleave="ovDonutLeave()">'
       + '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
       + '<div class="ov-dl-dot" style="background:' + s.color + '"></div>'
-      + '<span class="ov-dl-name">' + s.label + '</span>'
+      + '<span class="ov-dl-name"'
+      + (s.def ? ' data-def="' + s.def.replace(/"/g, '&quot;') + '"'
+               + ' onmouseenter="ovDonutNameTip(this)" onmouseleave="ovDonutNameLeave()"'
+               + ' style="cursor:default"' : '')
+      + '>' + s.label + '</span>'
       + '</div>'
       + '<div style="display:flex;align-items:baseline;gap:8px">'
       + '<span class="ov-dl-count">' + fmt(s.val) + '</span>'
@@ -16249,6 +16254,27 @@ function ovDonutLeave() {
     var nameEl = r.querySelector('.ov-dl-name');
     if (nameEl) nameEl.style.color = '';
   });
+}
+
+function ovDonutNameTip(el) {
+  var def = el.getAttribute('data-def');
+  if (!def) return;
+  var tip = document.getElementById('ov-tooltip');
+  if (!tip) return;
+  tip.innerHTML = '<div style="max-width:220px;white-space:normal">' + esc(def) + '</div>';
+  tip.style.display = 'block';
+  var r = el.getBoundingClientRect();
+  var th = tip.offsetHeight, tw = tip.offsetWidth;
+  var x = r.left, y = r.top - th - 6;
+  if (y < 8) y = r.bottom + 6;
+  if (x + tw + 8 > window.innerWidth) x = window.innerWidth - tw - 8;
+  if (x < 8) x = 8;
+  tip.style.left = x + 'px';
+  tip.style.top  = y + 'px';
+}
+function ovDonutNameLeave() {
+  var tip = document.getElementById('ov-tooltip');
+  if (tip) tip.style.display = 'none';
 }
 
 function renderOvVerts() {
