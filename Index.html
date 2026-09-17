@@ -19116,7 +19116,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .evn-kpi-body{flex:1;min-width:0}
 .lc .evn-kpi-lbl{font-size:12.5px;font-weight:500;color:var(--lc-text2);margin-bottom:7px}
 .lc .evn-kpi-val{font-size:31px;font-weight:600;color:var(--lc-text);line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-bottom:5px}
-.lc .evn-kpi-sub{font-size:11.5px;color:var(--lc-text3);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.lc .evn-kpi-sub{font-size:11.5px;color:var(--lc-text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lc .evn-tag-up{color:var(--lc-ok);font-weight:700;background:var(--lc-ok-weak);padding:1px 6px;border-radius:4px;font-size:11px}
 .lc .evn-tag-dn{color:var(--lc-risk);font-weight:700;background:var(--lc-risk-weak);padding:1px 6px;border-radius:4px;font-size:11px}
 .lc .evn-row1{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
@@ -19175,12 +19175,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   function getTAT(r){
     var t=parseFloat(r.tat);
-    if(!isNaN(t)&&t>=0)return t;
+    if(!isNaN(t)&&t>0)return t;
     var d0=r.createdDate?parseDMY(r.createdDate):null;
     var d1=r.onbDate?parseDMY(r.onbDate):null;
     if(!d0||!d1)return null;
     var days=Math.round((d1-d0)/86400000);
-    return days>=0?days:null;
+    return days>0?days:null;
   }
 
   function getAllRows(){
