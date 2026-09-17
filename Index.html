@@ -4362,7 +4362,7 @@ body.view-ov #ov-screen{display:block}
 
   <!-- ── Overview screen — shown when no vertical is selected ── -->
   <div id="ov-screen" role="region" aria-label="Central Onboarding Overview">
-    <div id="lc-monitor-root">
+    <div class="ov-wrap">
 
       <!-- Page intro + period controls -->
       <div class="ov-page-hdr">
@@ -16721,9 +16721,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   function _lcPeriodLabel(){ var m={All:'all-time',Today:'today',MTD:'month-to-date',YTD:'year-to-date',Custom:'custom range'}; return m[currentPeriod]||currentPeriod; }
   window._lcPeriodLabel=_lcPeriodLabel;
-
-  // Wire renderOvScreen to the LC monitor renderer (replaces legacy ov-* containers).
-  renderOvScreen = function(){ if(window._lcRenderMonitor) window._lcRenderMonitor(); };
 
   // Override monthly loader so the trend refreshes the whole LC overview.
   loadOverviewMonthly = function(){
