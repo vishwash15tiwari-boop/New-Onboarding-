@@ -18738,7 +18738,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var exc=ratedRows.filter(function(v){return v.rating<=2;}).length;
     var pctUp=(prevAvg&&avg)?Math.round((avg-prevAvg)/prevAvg*100):null;
     var trendSel='<select class="vr3-card-sel" onchange="window.vr3TrendN(this.value)"><option value="6"'+(_vrTrendN===6?' selected':'')+'>Last 6 Months</option><option value="9"'+(_vrTrendN===9?' selected':'')+'>Last 9 Months</option><option value="12"'+(_vrTrendN===12?' selected':'')+'>Last 12 Months</option></select>';
-    var audSel='<select class="vr3-card-sel" onchange="window.lcVrAud(this.value)"><option value="seller"'+(_vrAud==='seller'?' selected':'')+'>Sellers</option><option value="buyer"'+(_vrAud==='buyer'?' selected':'')+'>Buyers</option></select>';
+    var audSel='';
     var kpiH='<div class="vr3-kpis">';
     kpiH+='<div class="vr3-kpi">'+icoWrap(IcoStar,'#E6EFFF','#005DFF')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Average Seller Score</div><div class="vr3-kpi-val">'+fmt1(avg)+' <span style="font-size:14px;font-weight:500;color:var(--lc-text3)">/ 10</span></div><div class="vr3-kpi-sub">'+(pctUp!==null&&pctUp!==0?(pctUp>0?'<span class="vr3-tag-up">&#9650; '+Math.abs(pctUp)+'%</span>':'<span class="vr3-tag-dn">&#9660; '+Math.abs(pctUp)+'%</span>'):'')+''+(prevAvg?'<span>vs '+fmt1(prevAvg)+' prev</span>':'<span>No prior data</span>')+'</div></div></div>';
     kpiH+='<div class="vr3-kpi">'+icoWrap(IcoUsers,'#E3F8F1','#067A52')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Sellers Rated</div><div class="vr3-kpi-val">'+rated+'</div><div class="vr3-kpi-sub"><span>'+pct(rated,total)+'% of '+total+' total</span></div></div></div>';
@@ -18760,7 +18760,7 @@ document.addEventListener('DOMContentLoaded', function() {
       +kpiH+row1+row2+buildRecords()+'</div>';
   }
 
-  window.lcVrAud=function(v){_vrAud=v;_vrPage=1;render();};
+  window.lcVrAud=function(v){/* sellers only — buyers are not rated */};
   window.lcVrSort=function(k){if(_vrSortK===k)_vrSortD*=-1;else{_vrSortK=k;_vrSortD=1;}_vrPage=1;render();};
   window.vr3GoPage=function(p){_vrPage=p;render();};
   window.vr3Search=function(q){_vrQ=q;_vrPage=1;render();};
