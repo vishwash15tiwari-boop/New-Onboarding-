@@ -4309,9 +4309,9 @@ body.view-ov #ov-screen{display:block}
 
 <!-- Loading -->
 <div id="loading-overlay">
-  <div class="load-wordmark">Dashboard</div>
+  <div class="load-wordmark">Central Onboarding</div>
   <div class="load-track"><div class="load-fill"></div></div>
-  <div class="loading-txt">Loading Data…</div>
+  <div class="loading-txt">Recykal · Connecting to data…</div>
 </div>
 
 <!-- Header -->
@@ -4362,7 +4362,7 @@ body.view-ov #ov-screen{display:block}
 
   <!-- ── Overview screen — shown when no vertical is selected ── -->
   <div id="ov-screen" role="region" aria-label="Central Onboarding Overview">
-    <div class="ov-wrap">
+    <div id="lc-monitor-root">
 
       <!-- Page intro + period controls -->
       <div class="ov-page-hdr">
@@ -16571,8 +16571,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var grid='';for(var g=0;g<=4;g++){var gv=yMax*g/4,yy=y(gv);grid+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+yy.toFixed(1)+'" y2="'+yy.toFixed(1)+'" stroke="var(--lc-border)"/><text x="'+(padL-5)+'" y="'+(yy-2).toFixed(1)+'" font-size="9.5" fill="var(--lc-text3)" text-anchor="end" font-family="Poppins">'+Math.round(gv)+'</text>';}
     var bars=data.map(function(d,i){
       var x=padL+step*i+(step-bw)/2, out='';
-      if(lcTrend==='stack'){ var base=0; keys.slice().forEach(function(k){ var val=(d.verts||{})[k]||0; if(val<=0) return; var h=val/yMax*plotH; var yy=padT+plotH-((base+val)/yMax)*plotH; out+='<rect x="'+x.toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" fill="'+lcColor(k)+'"/>'; base+=val; });
-      } else { var v=mval(d),h=v/yMax*plotH; out='<rect x="'+x.toFixed(1)+'" y="'+y(v).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="2.5" fill="'+(i===data.length-1?'var(--lc-text3)':'rgba(var(--lc-accent-rgb),.85)')+'"/>'; }
+      if(lcTrend==='stack'){ var base=0; keys.slice().forEach(function(k){ var val=(d.verts||{})[k]||0; if(val<=0) return; var h=val/yMax*plotH; var yy=padT+plotH-((base+val)/yMax)*plotH; out+='<rect x="'+x.toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" style="fill:'+lcColor(k)+'"/>'; base+=val; });
+      } else { var v=mval(d),h=v/yMax*plotH; out='<rect x="'+x.toFixed(1)+'" y="'+y(v).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="2.5" style="fill:'+(i===data.length-1?'var(--lc-text3)':'rgba(var(--lc-accent-rgb),.85)')+'"/>'; }
       out+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(H-9)+'" font-size="9" fill="var(--lc-text3)" text-anchor="middle" font-family="Poppins">'+lcTrendLabel(d.month)+'</text>';
       return out;
     }).join('');
@@ -16621,7 +16621,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // hero ring (composition of onboarded by vertical)
     var totalOnb=port.comp, acc=0, ringSegs='';
     verts.forEach(function(v){ if(v.comp<=0) return; var sweep=v.comp/(totalOnb||1)*360; var a0=acc+1.1, a1=acc+sweep-1.1; acc+=sweep;
-      if(a1>a0) ringSegs+='<path d="'+lcArc(60,60,50,34,a0,a1)+'" fill="'+v.color+'"/>'; });
+      if(a1>a0) ringSegs+='<path d="'+lcArc(60,60,50,34,a0,a1)+'" style="fill:'+v.color+'"/>'; });
     var ring='<div class="lc-ringwrap"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="42" fill="none" stroke="var(--lc-ring-track)" stroke-width="16"/>'+ringSegs+'</svg>'
       +'<div class="lc-ringctr"><div class="lbl">Total onboarded</div><div class="big num">'+(totalOnb?nfmt(totalOnb):'—')+'</div><div class="scope">'+esc2(_lcPeriodLabel())+' · '+(lcAud==='all'?'all sides':lcAud+'-side')+'</div></div></div>';
 
@@ -16695,6 +16695,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   function _lcPeriodLabel(){ var m={All:'all-time',Today:'today',MTD:'month-to-date',YTD:'year-to-date',Custom:'custom range'}; return m[currentPeriod]||currentPeriod; }
   window._lcPeriodLabel=_lcPeriodLabel;
+
+  // Wire renderOvScreen to the LC monitor renderer (replaces legacy ov-* containers).
+  renderOvScreen = function(){ if(window._lcRenderMonitor) window._lcRenderMonitor(); };
 
   // Override monthly loader so the trend refreshes the whole LC overview.
   loadOverviewMonthly = function(){
