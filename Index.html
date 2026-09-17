@@ -19165,7 +19165,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function fmt1(n){return(n===null||n===undefined)?'--':parseFloat(n).toFixed(1);}
   function dedup(arr){var seen={},out=[];for(var i=0;i<arr.length;i++){if(!seen[arr[i]]){seen[arr[i]]=1;out.push(arr[i]);}}return out;}
 
-  function rowIsNew(r){var d=parseDMY(r.createdDate||r.onbDate||r.onboardingDate||r.created||'');return d&&d>=CUTOFF;}
+  function rowIsNew(r){var d=r.onbDate?parseDMY(r.onbDate):null;return !!(d&&d>=CUTOFF);}
 
   function getAllRows(){
     var rows=[];
@@ -19183,7 +19183,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildOBTrend(allRows,nMonths){
     var n=nMonths||6,byMonth={};
     allRows.forEach(function(r){
-      var d=parseDMY(r.createdDate||r.onbDate||r.onboardingDate||r.created||'');
+      var d=r.onbDate?parseDMY(r.onbDate):null;
       if(!d)return;
       var mm=d.getMonth()+1,key=d.getFullYear()+'-'+(mm<10?'0':'')+mm;
       if(!byMonth[key])byMonth[key]={existing:0,newv:0};
@@ -19361,7 +19361,7 @@ document.addEventListener('DOMContentLoaded', function() {
         h+='<td>'+(r._aud||'Seller')+'</td>';
         h+='<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cc(r.category||'')+';margin-right:5px;vertical-align:middle"></span>'+(r.category||'--')+'</td>';
         h+='<td>'+(r.state||'--')+'</td>';
-        h+='<td style="color:var(--lc-text3)">'+(r.createdDate||r.onbDate||r.onboardingDate||r.created||'--')+'</td>';
+        h+='<td style="color:var(--lc-text3)">'+(r.onbDate||'--')+'</td>';
         h+='<td>'+clsTxt+'</td>';
         h+='<td style="font-variant-numeric:tabular-nums"><b>'+(r.tat?fmt1(r.tat):'--')+'</b></td>';
         h+='<td>'+(r.status||'--')+'</td></tr>';
