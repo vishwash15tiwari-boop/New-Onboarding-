@@ -18535,12 +18535,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function buildScoreDist(rows){
-    var sr=(_VR&&_VR.seller&&_VR.seller.rating)||{};
-    var dist=sr.dist||[0,0,0,0,0];
-    if(dist.reduce(function(a,b){return a+b;},0)===0&&rows.length){
-      dist=[0,0,0,0,0];
-      rows.forEach(function(v){var r=v.rating;if(!r)return;var idx=Math.min(Math.floor(r/2),4);dist[idx]++;});
-    }
+    var dist=[0,0,0,0,0];
+    rows.forEach(function(v){var r=v.rating;if(!r||r<=0)return;var idx=Math.min(Math.floor(r/2),4);dist[idx]++;});
     var labels=['0–2','2–4','4–6','6–8','8–10'];
     var maxV=Math.max.apply(null,dist)||1;
     var W=260,H=130,PL=24,PR=10,PT=16,PB=28;
@@ -18650,7 +18646,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function buildRatingQuality(rows){
     var q=[{lbl:'Excellent',rng:'Score 8–10',col:'#067A52',bg:'#E3F8F1',ico:'★',cnt:0},{lbl:'Good',rng:'Score 6–8',col:'#024C8A',bg:'#E6EFFF',ico:'●',cnt:0},{lbl:'Needs Improvement',rng:'Score 2–6',col:'#B25000',bg:'#FFF4E5',ico:'▲',cnt:0},{lbl:'Exception',rng:'Score 0–2',col:'#D70015',bg:'#FDECEB',ico:'✕',cnt:0}];
-    rows.forEach(function(v){var r=v.rating;if(!r&&r!==0)return;if(r>=8)q[0].cnt++;else if(r>=6)q[1].cnt++;else if(r>2)q[2].cnt++;else q[3].cnt++;});
+    rows.forEach(function(v){var r=v.rating;if(!r||r<=0)return;if(r>=8)q[0].cnt++;else if(r>=6)q[1].cnt++;else if(r>2)q[2].cnt++;else q[3].cnt++;});
     var h='<div class="vr3-qual-grid">';
     q.forEach(function(qc){h+='<div class="vr3-qual-card" style="border-top:3px solid '+qc.col+';background:'+qc.bg+'"><div class="vr3-qual-ico" style="color:'+qc.col+'">'+qc.ico+'</div><div class="vr3-qual-val" style="color:'+qc.col+'">'+qc.cnt+'</div><div class="vr3-qual-lbl">'+qc.lbl+'</div><div class="vr3-qual-rng">'+qc.rng+'</div></div>';});
     return h+'</div>';
@@ -18734,7 +18730,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if(!el||!_VR||!_VR.vendorRatings)return;
     var rows=audRows(_vrAud);
     var sr=(_VR.seller&&_VR.seller.rating)||{};
-    var avg=sr.avg||0,rated=sr.rated||0,total=sr.total||0,exc=sr.exceptions||0,prevAvg=sr.prevAvg||0;
+    var prevAvg=sr.prevAvg||0;
+    var ratedRows=rows.filter(function(v){return v.rating>0&&v.rating!=null;});
+    var avg=ratedRows.length?ratedRows.reduce(function(s,v){return s+v.rating;},0)/ratedRows.length:0;
+    var rated=ratedRows.length,total=rows.length;
+    var exc=ratedRows.filter(function(v){return v.rating<=2;}).length;
     var pctUp=(prevAvg&&avg)?Math.round((avg-prevAvg)/prevAvg*100):null;
     var trendSel='<select class="vr3-card-sel" onchange="window.vr3TrendN(this.value)"><option value="6"'+(_vrTrendN===6?' selected':'')+'>Last 6 Months</option><option value="9"'+(_vrTrendN===9?' selected':'')+'>Last 9 Months</option><option value="12"'+(_vrTrendN===12?' selected':'')+'>Last 12 Months</option></select>';
     var audSel='<select class="vr3-card-sel" onchange="window.lcVrAud(this.value)"><option value="seller"'+(_vrAud==='seller'?' selected':'')+'>Sellers</option><option value="buyer"'+(_vrAud==='buyer'?' selected':'')+'>Buyers</option></select>';
