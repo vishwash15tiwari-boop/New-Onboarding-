@@ -19178,7 +19178,10 @@ document.addEventListener('DOMContentLoaded', function() {
 <script id="evn-js">
 (function(){
   var _evnScope='combined',_evnPage=1,_evnPS=10,_evnCat='',_evnQ='',_evnSortK='name',_evnSortD=1,_evnTrendN=6,_evnDrillType=null;
-  var CUTOFF=new Date(2026,3,1);
+  // CUTOFF date removed — classification now uses r.isOldVendor from the backend.
+  // Backend definition (Code.gs buildDashboard): "Existing" = OMP vendor whose name
+  // appears as COMPLETED in any non-OMP vertical (cross-vertical name match).
+  // "New" = vendor new to the Recykal ecosystem, first onboarding via OMP.
   var CAT_CLR={'Plastic':'#005DFF','Metal':'#1DC797','E-Waste':'#8460D4','Battery':'#FF9500','Tyres':'#D70015','Paper':'#024C8A','Others':'#8E8E93'};
   function cc(cat){return CAT_CLR[cat]||'#8E8E93';}
   var IcoTrend='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>';
@@ -19191,8 +19194,11 @@ document.addEventListener('DOMContentLoaded', function() {
   function dedup(arr){var seen={},out=[];for(var i=0;i<arr.length;i++){if(!seen[arr[i]]){seen[arr[i]]=1;out.push(arr[i]);}}return out;}
 
   function rowIsNew(r){
-    var d=r.onbDate?parseDMY(r.onbDate):null;
-    return d?(d>=CUTOFF):false;
+    // Uses r.isOldVendor set by the backend (Code.gs buildDashboard + getVerticalRows).
+    // isOldVendor=true  → vendor already completed onboarding in another Recykal vertical → "Existing"
+    // isOldVendor=false → brand-new to Recykal ecosystem, first onboarding via OMP → "New"
+    // Default false (undefined) → treat as New so in-progress rows don't bloat Existing count.
+    return !r.isOldVendor;
   }
   function getTAT(r){
     var t=parseFloat(r.tat);
@@ -19512,7 +19518,8 @@ document.addEventListener('DOMContentLoaded', function() {
   function render(){
     var el=document.getElementById('tab-existingnew');
     if(!el)return;
-    if((_evnScope==='combined'||_evnScope==='buyers')&&_ovnRows&&_ovnRows.buyer===null){skeletonEVN();return;}
+    // Use == null (loose) to catch both null (in-flight sentinel) and undefined (post-reload reset).
+    if((_evnScope==='combined'||_evnScope==='buyers')&&(!_ovnRows||_ovnRows.buyer==null)){skeletonEVN();return;}
     var allRows=getAllRows();
     var doneRows=allRows.filter(function(r){return (r.status||'').toUpperCase()==='COMPLETED';});
     var newRows=doneRows.filter(rowIsNew),exRows=doneRows.filter(function(r){return !rowIsNew(r);});
@@ -19523,8 +19530,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var scopeH='<div class="evn-scope"><button onclick="window.evnScope(\'combined\')" class="'+(_evnScope==='combined'?'on':'')+'">Combined</button><button onclick="window.evnScope(\'sellers\')" class="'+(_evnScope==='sellers'?'on':'')+'">Sellers</button><button onclick="window.evnScope(\'buyers\')" class="'+(_evnScope==='buyers'?'on':'')+'">Buyers</button></div>';
     var kpiH='<div class="evn-kpis">';
     kpiH+='<div class="evn-kpi'+(_evnDrillType==='all'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'all\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#005DFF,#34C7FF)"></div>'+icoWrap(IcoTrend,'rgba(0,93,255,.1)','var(--lc-accent)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Total Onboarded</div><div class="evn-kpi-val">'+doneRows.length+'</div><div class="evn-kpi-sub">Completed vendors</div></div></div>';
-    kpiH+='<div class="evn-kpi'+(_evnDrillType==='existing'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'existing\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#8460D4,#B07BF5)"></div>'+icoWrap(IcoUsers,'rgba(132,96,212,.1)','var(--lc-purple)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Existing Vendors</div><div class="evn-kpi-val">'+exRows.length+'</div><div class="evn-kpi-sub">Before 1 Apr 2026</div></div></div>';
-    kpiH+='<div class="evn-kpi'+(_evnDrillType==='new'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'new\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#005DFF,#1DC797)"></div>'+icoWrap(IcoStar,'rgba(0,93,255,.1)','var(--lc-accent)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">New Vendors</div><div class="evn-kpi-val">'+newRows.length+'</div><div class="evn-kpi-sub">From 1 Apr 2026</div></div></div>';
+    kpiH+='<div class="evn-kpi'+(_evnDrillType==='existing'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'existing\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#8460D4,#B07BF5)"></div>'+icoWrap(IcoUsers,'rgba(132,96,212,.1)','var(--lc-purple)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Existing Vendors</div><div class="evn-kpi-val">'+exRows.length+'</div><div class="evn-kpi-sub">In other Recykal verticals</div></div></div>';
+    kpiH+='<div class="evn-kpi'+(_evnDrillType==='new'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'new\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#005DFF,#1DC797)"></div>'+icoWrap(IcoStar,'rgba(0,93,255,.1)','var(--lc-accent)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">New Vendors</div><div class="evn-kpi-val">'+newRows.length+'</div><div class="evn-kpi-sub">New to Recykal ecosystem</div></div></div>';
     var tatVal=avgNewTat!==null?'<span style="font-size:34px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums">'+fmt1(avgNewTat)+'</span><span style="font-size:14px;font-weight:500;color:var(--lc-text3)"> d</span>':'<span style="color:var(--lc-text3)">--</span>';
     kpiH+='<div class="evn-kpi'+(_evnDrillType==='tat'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'tat\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#FF9500,#FFCC00)"></div>'+icoWrap(IcoClock,'rgba(255,149,0,.1)','#FF9500')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Avg TAT — New</div><div class="evn-kpi-val" style="font-size:inherit">'+tatVal+'</div><div class="evn-kpi-sub">'+(avgExTat!==null?'Existing avg: '+fmt1(avgExTat)+' d':'TAT analysis')+'</div></div></div>';
     kpiH+='</div>';
