@@ -5052,8 +5052,7 @@ function switchView(view) {
     document.body.style.overflow = '';
     updateViewChrome();
     renderVNav();
-    // renderVendorRatingsSkeleton already guards on _VR internally.
-    renderVendorRatingsSkeleton();
+    if (!_VR) renderVendorRatingsSkeleton();
     loadVendorRatingsData();
     return;
   }
@@ -12669,13 +12668,11 @@ function _snMmNav(show) {
 
 // Level 1: reset to Overview — restore the mind-map columns.
 function snGoOverview() {
-  if (currentView !== 'onboarding') switchView('onboarding');
   snActiveKey   = null;
   snVertModKey  = null;
   snModActive   = null;
   snSubActive   = null;
   activeVertKey = null;
-  buildSideNav();
   showOverview();
 }
 
@@ -15872,25 +15869,16 @@ function ovCardTap(e, key) {
 // Switch to the overview landing screen (animated).
 function showOverview() {
   closeRecordsSheet();
-  var doNav = function() {
-    document.body.classList.add('view-ov');
-    renderOvScreen();
-    buildSideNav();
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  };
+  currentView = 'onboarding';
+  // Reveal overview screen immediately — data is always pre-loaded, so rendering is instant.
+  // A lightweight CSS fade-in replaces the old 230ms full-screen whiteout.
+  document.body.classList.add('view-ov');
   document.documentElement.setAttribute('data-nav', 'exit');
-  if ('startViewTransition' in document) {
-    document.startViewTransition(doNav);
-  } else {
-    var tr = _ovTrans();
-    tr.classList.add('ov-fading');
-    setTimeout(function() {
-      doNav();
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() { tr.classList.remove('ov-fading'); });
-      });
-    }, 230);
-  }
+  renderOvScreen();
+  buildSideNav();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  var ov = document.getElementById('ov-screen');
+  if (ov) { ov.style.animation = 'none'; ov.offsetHeight; ov.style.animation = '_lcViewFadeIn 0.2s ease both'; }
 }
 
 // Leave the overview and enter the detailed dashboard (animated).
@@ -18841,12 +18829,17 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .osv3-ttl{font-size:20px;font-weight:700;color:var(--lc-text);letter-spacing:-.02em;line-height:1.2}
 .lc .osv3-sub{font-size:12.5px;color:var(--lc-text3);margin-top:3px}
 .lc .osv3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.lc .osv3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--r);padding:18px 20px;display:flex;align-items:flex-start;gap:14px;box-shadow:var(--lc-shadow);transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring)}
-.lc .osv3-kpi:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
-.lc .osv3-ico{width:44px;height:44px;border-radius:var(--r2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.lc .osv3-kpi-body{flex:1;min-width:0}
-.lc .osv3-kpi-lbl{font-size:12.5px;font-weight:500;color:var(--lc-text2);margin-bottom:7px}
-.lc .osv3-kpi-val{font-size:31px;font-weight:600;color:var(--lc-text);line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-bottom:5px}
+.lc .osv3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--r);padding:22px 20px 18px;display:flex;align-items:flex-start;gap:14px;box-shadow:var(--lc-shadow);transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring);position:relative;overflow:hidden}
+.lc .osv3-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
+.lc .osv3-kpis .osv3-kpi:nth-child(1)::before{background:linear-gradient(90deg,#049769,#1DC797)}
+.lc .osv3-kpis .osv3-kpi:nth-child(2)::before{background:linear-gradient(90deg,#049769,#1DC797)}
+.lc .osv3-kpis .osv3-kpi:nth-child(3)::before{background:linear-gradient(90deg,#FF9500,#FFB040)}
+.lc .osv3-kpis .osv3-kpi:nth-child(4)::before{background:linear-gradient(90deg,#8E8E93,#AEAEB2)}
+.lc .osv3-kpi:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.lc .osv3-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.lc .osv3-kpi-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.lc .osv3-kpi-lbl{font-size:11px;font-weight:600;color:var(--lc-text3);text-transform:uppercase;letter-spacing:.06em}
+.lc .osv3-kpi-val{font-size:36px;font-weight:800;color:var(--lc-text);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
 .lc .osv3-kpi-sub{font-size:11.5px;color:var(--lc-text3);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .lc .osv3-tag-up{color:var(--lc-ok);font-weight:700;background:var(--lc-ok-weak);padding:1px 6px;border-radius:4px;font-size:11px}
 .lc .osv3-tag-dn{color:var(--lc-risk);font-weight:700;background:var(--lc-risk-weak);padding:1px 6px;border-radius:4px;font-size:11px}
@@ -18854,11 +18847,11 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .osv3-row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .lc .osv3-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--r);padding:20px;box-shadow:var(--lc-shadow)}
 .lc .osv3-card-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px}
-.lc .osv3-card-ttl{font-size:13px;font-weight:700;color:var(--lc-text)}
+.lc .osv3-card-ttl{font-size:11px;font-weight:700;color:var(--lc-text2);text-transform:uppercase;letter-spacing:.07em}
 .lc .osv3-card-sel{background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--lc-text2);cursor:pointer;font-family:inherit;outline:none}
 .lc .osv3-rec{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--r);padding:20px;box-shadow:var(--lc-shadow)}
 .lc .osv3-rec-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.lc .osv3-rec-ttl{font-size:13px;font-weight:700;color:var(--lc-text)}
+.lc .osv3-rec-ttl{font-size:11px;font-weight:700;color:var(--lc-text2);text-transform:uppercase;letter-spacing:.07em}
 .lc .osv3-rec-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .lc .osv3-search{padding:7px 10px;border:1px solid var(--lc-border);border-radius:8px;font-size:12.5px;background:var(--lc-subtle);color:var(--lc-text);width:220px;outline:none;font-family:inherit}
 .lc .osv3-search:focus{border-color:var(--lc-accent)}
