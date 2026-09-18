@@ -5015,7 +5015,6 @@ function switchView(view) {
     switchAudience(currentAudience); return;
   }
   if (view === 'existingnew') {
-    if (currentView === 'existingnew') return;
     currentView = 'existingnew';
     snActiveKey = null;
     if (selectedVert) closeVertDetail();
@@ -12745,9 +12744,9 @@ function snClickModule(nodeId) {
     return;
   }
 
-  if (_n && _n.t === 'Vendor Ratings')  { switchView('vendorratings'); return; }
-  if (_n && _n.t === 'OSV Status')      { switchView('osv'); return; }
-  if (_n && _n.t === 'Existing vs New') { switchView('existingnew'); return; }
+  if (_n && _n.t === 'Vendor Ratings')  { switchView('vendorratings'); buildSideNav(); return; }
+  if (_n && _n.t === 'OSV Status')      { switchView('osv');           buildSideNav(); return; }
+  if (_n && _n.t === 'Existing vs New') { switchView('existingnew');   buildSideNav(); return; }
   // Panel modules (Breakup, Onboarded Details, Geographic Split, etc.) render into
   // #tab-overview via mmPaint(). If a special view was active, #tab-overview has
   // display:none — reset to dashboard state so the canvas is visible before mmPaint runs.
@@ -15874,16 +15873,26 @@ function ovCardTap(e, key) {
 function showOverview() {
   closeRecordsSheet();
   currentView = 'onboarding';
-  updateViewChrome();
-  // Reveal overview screen immediately — data is always pre-loaded, so rendering is instant.
-  // A lightweight CSS fade-in replaces the old 230ms full-screen whiteout.
-  document.body.classList.add('view-ov');
+  var doNav = function() {
+    updateViewChrome();
+    document.body.classList.add('view-ov');
+    renderOvScreen();
+    buildSideNav();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
   document.documentElement.setAttribute('data-nav', 'exit');
-  renderOvScreen();
-  buildSideNav();
-  window.scrollTo({ top: 0, behavior: 'instant' });
-  var ov = document.getElementById('ov-screen');
-  if (ov) { ov.style.animation = 'none'; ov.offsetHeight; ov.style.animation = '_lcViewFadeIn 0.2s ease both'; }
+  if ('startViewTransition' in document) {
+    document.startViewTransition(doNav);
+  } else {
+    var tr = _ovTrans();
+    tr.classList.add('ov-fading');
+    setTimeout(function() {
+      doNav();
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { tr.classList.remove('ov-fading'); });
+      });
+    }, 230);
+  }
 }
 
 // Leave the overview and enter the detailed dashboard (animated).
@@ -18501,10 +18510,10 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style id="lc-vendorratings-css">
-.lc .vr3-pg{max-width:1360px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:22px;padding:24px 24px 32px}
+.lc .vr3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:20px;padding:24px 28px 36px}
 .lc .vr3-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.lc .vr3-ttl{font-size:22px;font-weight:800;color:var(--lc-text);letter-spacing:-.03em;line-height:1.2}
-.lc .vr3-sub{font-size:12px;color:var(--lc-text3);margin-top:4px}
+.lc .vr3-ttl{font-size:19px;font-weight:700;color:var(--lc-text);letter-spacing:-.025em;line-height:1.2}
+.lc .vr3-sub{font-size:12px;color:var(--lc-text3);margin-top:2px}
 .lc .vr3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 .lc .vr3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:14px;padding:20px 20px 18px;display:flex;align-items:flex-start;gap:14px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden}
 .lc .vr3-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
@@ -18516,7 +18525,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .vr3-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
 .lc .vr3-kpi-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .lc .vr3-kpi-lbl{font-size:11px;font-weight:600;color:var(--lc-text3);text-transform:uppercase;letter-spacing:.06em}
-.lc .vr3-kpi-val{font-size:36px;font-weight:800;color:var(--lc-text);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.lc .vr3-kpi-val{font-size:34px;font-weight:800;color:var(--lc-text);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
 .lc .vr3-kpi-sub{font-size:11.5px;color:var(--lc-text3);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .lc .vr3-tag-up{color:var(--lc-ok);font-weight:700;background:var(--lc-ok-weak);padding:1px 6px;border-radius:4px;font-size:11px}
 .lc .vr3-tag-dn{color:var(--lc-risk);font-weight:700;background:var(--lc-risk-weak);padding:1px 6px;border-radius:4px;font-size:11px}
@@ -18532,7 +18541,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .vr3-qual-val{font-size:32px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-bottom:4px}
 .lc .vr3-qual-lbl{font-size:11px;font-weight:700;color:var(--lc-text);margin-bottom:2px}
 .lc .vr3-qual-rng{font-size:10.5px;color:var(--lc-text3);letter-spacing:.02em}
-.lc .vr3-rec{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--r);padding:20px;box-shadow:var(--lc-shadow)}
+.lc .vr3-rec{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)}
 .lc .vr3-rec-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .lc .vr3-rec-ttl{font-size:13px;font-weight:700;color:var(--lc-text)}
 .lc .vr3-rec-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -18829,32 +18838,32 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style id="osv3-css">
-.lc .osv3-pg{max-width:1360px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:22px;padding:24px 24px 32px}
+.lc .osv3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:20px;padding:24px 28px 36px}
 .lc .osv3-page-hdr{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
-.lc .osv3-ttl{font-size:20px;font-weight:700;color:var(--lc-text);letter-spacing:-.02em;line-height:1.2}
-.lc .osv3-sub{font-size:12.5px;color:var(--lc-text3);margin-top:3px}
+.lc .osv3-ttl{font-size:19px;font-weight:700;color:var(--lc-text);letter-spacing:-.025em;line-height:1.2}
+.lc .osv3-sub{font-size:12px;color:var(--lc-text3);margin-top:2px}
 .lc .osv3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.lc .osv3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--r);padding:22px 20px 18px;display:flex;align-items:flex-start;gap:14px;box-shadow:var(--lc-shadow);transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring);position:relative;overflow:hidden}
+.lc .osv3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:14px;padding:22px 20px 18px;display:flex;align-items:flex-start;gap:14px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden}
 .lc .osv3-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
 .lc .osv3-kpis .osv3-kpi:nth-child(1)::before{background:linear-gradient(90deg,#049769,#1DC797)}
 .lc .osv3-kpis .osv3-kpi:nth-child(2)::before{background:linear-gradient(90deg,#049769,#1DC797)}
 .lc .osv3-kpis .osv3-kpi:nth-child(3)::before{background:linear-gradient(90deg,#FF9500,#FFB040)}
 .lc .osv3-kpis .osv3-kpi:nth-child(4)::before{background:linear-gradient(90deg,#8E8E93,#AEAEB2)}
-.lc .osv3-kpi:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.lc .osv3-kpi:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);transform:translateY(-2px)}
 .lc .osv3-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
 .lc .osv3-kpi-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .lc .osv3-kpi-lbl{font-size:11px;font-weight:600;color:var(--lc-text3);text-transform:uppercase;letter-spacing:.06em}
-.lc .osv3-kpi-val{font-size:36px;font-weight:800;color:var(--lc-text);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.lc .osv3-kpi-val{font-size:34px;font-weight:800;color:var(--lc-text);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
 .lc .osv3-kpi-sub{font-size:11.5px;color:var(--lc-text3);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .lc .osv3-tag-up{color:var(--lc-ok);font-weight:700;background:var(--lc-ok-weak);padding:1px 6px;border-radius:4px;font-size:11px}
 .lc .osv3-tag-dn{color:var(--lc-risk);font-weight:700;background:var(--lc-risk-weak);padding:1px 6px;border-radius:4px;font-size:11px}
 .lc .osv3-row1{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .lc .osv3-row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.lc .osv3-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--r);padding:20px;box-shadow:var(--lc-shadow)}
+.lc .osv3-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)}
 .lc .osv3-card-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px}
 .lc .osv3-card-ttl{font-size:11px;font-weight:700;color:var(--lc-text2);text-transform:uppercase;letter-spacing:.07em}
 .lc .osv3-card-sel{background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--lc-text2);cursor:pointer;font-family:inherit;outline:none}
-.lc .osv3-rec{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--r);padding:20px;box-shadow:var(--lc-shadow)}
+.lc .osv3-rec{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)}
 .lc .osv3-rec-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .lc .osv3-rec-ttl{font-size:11px;font-weight:700;color:var(--lc-text2);text-transform:uppercase;letter-spacing:.07em}
 .lc .osv3-rec-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -19095,15 +19104,13 @@ document.addEventListener('DOMContentLoaded', function() {
     row1+='<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">Monthly OSV Trend</span>'+trendSel+'</div>'+buildOsvTrend(sl,_osvTrendN)+'</div>';
     row1+='<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">Completion Rate</span></div>'+buildCompletionRate(sl)+'</div>';
     row1+='</div>';
-    var row2='<div class="osv3-row2" style="display:block">';
-    row2+='<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">Category Breakdown</span></div>'+buildCatTable(sl)+'</div>';
-    row2+='</div>';
-    var row3='<div class="osv3-row2" style="display:block">';
-    row3+='<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">State-wise Distribution</span></div>'+buildStateStackedBars(sl)+'</div>';
-    row3+='</div>';
+    var row2='<div class="osv3-row2">'
+      +'<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">Category Breakdown</span></div>'+buildCatTable(sl)+'</div>'
+      +'<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">State-wise Distribution</span></div>'+buildStateStackedBars(sl)+'</div>'
+      +'</div>';
     el.innerHTML='<div class="lc osv3-pg">'
       +'<div class="osv3-page-hdr"><div><div class="osv3-ttl">OSV Status</div><div class="osv3-sub">Occupational Safety Verification overview for Marketplace sellers</div></div></div>'
-      +kpiH+row1+row2+row3+buildRecords(sl)+'</div>';
+      +kpiH+row1+row2+buildRecords(sl)+'</div>';
   }
 
   window.osv3Sort=function(k){if(_osvSortK===k)_osvSortD*=-1;else{_osvSortK=k;_osvSortD=1;}_osvPage=1;render();};
