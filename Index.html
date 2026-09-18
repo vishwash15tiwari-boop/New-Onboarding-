@@ -19203,6 +19203,12 @@ document.addEventListener('DOMContentLoaded', function() {
   function getTAT(r){
     var t=parseFloat(r.tat);
     if(!isNaN(t)&&t>0)return t;
+    // Prefer backend workflow dates (tatStart/tatEnd) — the backend picks the best
+    // start point (review → onboarded or level1 → onboarded), which is more accurate
+    // than createdDate that starts counting from initial system registration.
+    var ts=(r.tatStart&&r.tatStart!=='—')?parseDMY(r.tatStart):null;
+    var te=(r.tatEnd&&r.tatEnd!=='—')?parseDMY(r.tatEnd):null;
+    if(ts&&te){var wd=Math.round((te-ts)/86400000);return wd>0?wd:null;}
     var d0=r.createdDate?parseDMY(r.createdDate):null;
     var d1=r.onbDate?parseDMY(r.onbDate):null;
     if(!d0||!d1)return null;
@@ -19533,7 +19539,8 @@ document.addEventListener('DOMContentLoaded', function() {
     kpiH+='<div class="evn-kpi'+(_evnDrillType==='existing'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'existing\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#8460D4,#B07BF5)"></div>'+icoWrap(IcoUsers,'rgba(132,96,212,.1)','var(--lc-purple)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Existing Vendors</div><div class="evn-kpi-val">'+exRows.length+'</div><div class="evn-kpi-sub">In other Recykal verticals</div></div></div>';
     kpiH+='<div class="evn-kpi'+(_evnDrillType==='new'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'new\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#005DFF,#1DC797)"></div>'+icoWrap(IcoStar,'rgba(0,93,255,.1)','var(--lc-accent)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">New Vendors</div><div class="evn-kpi-val">'+newRows.length+'</div><div class="evn-kpi-sub">New to Recykal ecosystem</div></div></div>';
     var tatVal=avgNewTat!==null?'<span style="font-size:34px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums">'+fmt1(avgNewTat)+'</span><span style="font-size:14px;font-weight:500;color:var(--lc-text3)"> d</span>':'<span style="color:var(--lc-text3)">--</span>';
-    kpiH+='<div class="evn-kpi'+(_evnDrillType==='tat'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'tat\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#FF9500,#FFCC00)"></div>'+icoWrap(IcoClock,'rgba(255,149,0,.1)','#FF9500')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Avg TAT — New</div><div class="evn-kpi-val" style="font-size:inherit">'+tatVal+'</div><div class="evn-kpi-sub">'+(avgExTat!==null?'Existing avg: '+fmt1(avgExTat)+' d':'TAT analysis')+'</div></div></div>';
+    var tatSub=exRows.length?(avgExTat!==null?'Existing avg: '+fmt1(avgExTat)+' d':'Existing: no TAT data'):'All vendors new to Recykal';
+    kpiH+='<div class="evn-kpi'+(_evnDrillType==='tat'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'tat\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#FF9500,#FFCC00)"></div>'+icoWrap(IcoClock,'rgba(255,149,0,.1)','#FF9500')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Avg TAT — New</div><div class="evn-kpi-val" style="font-size:inherit">'+tatVal+'</div><div class="evn-kpi-sub">'+tatSub+'</div></div></div>';
     kpiH+='</div>';
     var row1='<div class="evn-row1">';
     row1+='<div class="evn-card"><div class="evn-card-hdr"><span class="evn-card-ttl">Onboarding Trend</span>'+trendSel+'</div>'+buildOBTrend(doneRows,_evnTrendN)+'</div>';
