@@ -4950,6 +4950,14 @@ function loadData(silent) {
 
 // ── View chrome (Sellers · Buyers · GST Payables) ────────────────
 // Shows/hides the right panels + controls and syncs the tab active states.
+// Show a tab with a smooth fade-in; forces reflow so animation fires every switch.
+function _showTabFade(el) {
+  if (!el) return;
+  el.style.animation = 'none';
+  el.style.display = 'block';
+  el.offsetHeight; // trigger reflow so the animation reset takes effect
+  el.style.animation = '_lcViewFadeIn 0.18s ease both';
+}
 function updateViewChrome() {
   var isGst     = currentView === 'gst';
   var isTxndist = currentView === 'txndist';
@@ -4970,12 +4978,12 @@ function updateViewChrome() {
   var vt = document.getElementById('view-title');
   var tb = document.getElementById('vert-tabs-bar');
   if (ov)  ov.style.display  = isDash ? '' : 'none';
-  if (gt)  gt.style.display  = isGst     ? 'block' : 'none';
-  if (td)  td.style.display  = isTxndist ? 'block' : 'none';
-  if (osv) osv.style.display = isOsv     ? 'block' : 'none';
-  if (txn) txn.style.display = isTxn     ? 'block' : 'none';
-  if (vrd) vrd.style.display = isVR      ? 'block' : 'none';
-  if (evn) evn.style.display = isEVN     ? 'block' : 'none';
+  if (gt)  { if (isGst)     _showTabFade(gt);  else gt.style.display  = 'none'; }
+  if (td)  { if (isTxndist) _showTabFade(td);  else td.style.display  = 'none'; }
+  if (osv) { if (isOsv)     _showTabFade(osv); else osv.style.display = 'none'; }
+  if (txn) { if (isTxn)     _showTabFade(txn); else txn.style.display = 'none'; }
+  if (vrd) { if (isVR)      _showTabFade(vrd); else vrd.style.display = 'none'; }
+  if (evn) { if (isEVN)     _showTabFade(evn); else evn.style.display = 'none'; }
   if (pc)  pc.style.display  = isDash    ? 'inline-flex' : 'none';
   if (tb)  tb.style.display  = 'none';
 
@@ -5014,7 +5022,9 @@ function switchView(view) {
     document.body.style.overflow = '';
     updateViewChrome();
     renderVNav();
-    if (typeof renderEVNSkeleton === 'function') renderEVNSkeleton();
+    // Skip skeleton when buyer data is already in memory — direct render is instant.
+    var _evnBuyerReady = _ovnRows && _ovnRows.buyer != null;
+    if (!_evnBuyerReady && typeof renderEVNSkeleton === 'function') renderEVNSkeleton();
     _ovnEnsureAud('buyer');
     renderEVNDash();
     return;
@@ -5028,7 +5038,8 @@ function switchView(view) {
     document.body.style.overflow = '';
     updateViewChrome();
     renderVNav();
-    renderTransactionSkeleton();
+    // Skip skeleton when module data is already cached.
+    if (!_TXN_MOD) renderTransactionSkeleton();
     loadTransactionData();
     return;
   }
@@ -5041,6 +5052,7 @@ function switchView(view) {
     document.body.style.overflow = '';
     updateViewChrome();
     renderVNav();
+    // renderVendorRatingsSkeleton already guards on _VR internally.
     renderVendorRatingsSkeleton();
     loadVendorRatingsData();
     return;
@@ -5054,7 +5066,8 @@ function switchView(view) {
     document.body.style.overflow = '';
     updateViewChrome();
     renderVNav();
-    renderOSVSkeleton();
+    // Skip skeleton when OSV data is already cached.
+    if (!_OSV) renderOSVSkeleton();
     loadOSVData();
     return;
   }
@@ -12487,10 +12500,17 @@ var _scrollSpyObs = null;  // IntersectionObserver instance for scroll spy
 // Sub-items shown under each module when it is active (Level 3).
 // Keys map to anchor IDs injected into the panel by mmRenderModPanel.
 var SN_MODULE_SUBS = {};
+// State key — skip the innerHTML rebuild when nothing visible has changed.
+var _snLastKey = '';
 
 function buildSideNav() {
   var nav = document.getElementById('side-nav');
   if (!nav) return;
+  var _k = [currentView, snActiveKey||'', snVertModKey||'', snModActive||'', snSubActive||'',
+             (typeof mmGeoActive!=='undefined'&&mmGeoActive)?'g1':'g0',
+             (typeof _geo!=='undefined'?(_geo.region||'')+','+(_geo.state||''):'')].join('§');
+  if (_k === _snLastKey) return;
+  _snLastKey = _k;
 
   var cfgList = getVertCfg();
   var isGST  = currentView === 'gst';
@@ -19107,6 +19127,8 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style id="evn-css">
+/* ── Smooth view-switch fade-in (used by all module tabs) ── */
+@keyframes _lcViewFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 /* ── Page shell ── */
 .lc .evn-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:20px;padding:24px 28px 36px}
 .lc .evn-page-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px}
