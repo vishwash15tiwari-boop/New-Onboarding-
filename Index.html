@@ -12748,6 +12748,10 @@ function snClickModule(nodeId) {
   if (_n && _n.t === 'Vendor Ratings')  { switchView('vendorratings'); return; }
   if (_n && _n.t === 'OSV Status')      { switchView('osv'); return; }
   if (_n && _n.t === 'Existing vs New') { switchView('existingnew'); return; }
+  // Panel modules (Breakup, Onboarded Details, Geographic Split, etc.) render into
+  // #tab-overview via mmPaint(). If a special view was active, #tab-overview has
+  // display:none — reset to dashboard state so the canvas is visible before mmPaint runs.
+  if (currentView !== 'onboarding') { currentView = 'onboarding'; updateViewChrome(); }
   if (typeof mmClickNode === 'function') mmClickNode(nodeId);
   buildSideNav();
 }
