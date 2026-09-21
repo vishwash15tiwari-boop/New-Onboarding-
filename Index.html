@@ -7072,9 +7072,9 @@ function mmClickNode(id) {
     }
     _mmAnimateReveal = true; mmPaint(); return;
   }
-  if (node.t === 'Vendor Ratings')  { switchView('vendorratings'); return; }
-  if (node.t === 'OSV Status')      { switchView('osv'); return; }
-  if (node.t === 'Existing vs New') { switchView('existingnew'); return; }
+  if (node.t === 'Vendor Ratings')  { document.body.classList.remove('view-ov'); switchView('vendorratings'); return; }
+  if (node.t === 'OSV Status')      { document.body.classList.remove('view-ov'); switchView('osv'); return; }
+  if (node.t === 'Existing vs New') { document.body.classList.remove('view-ov'); switchView('existingnew'); return; }
   if (node.expand === 'inline-panel') {
     var modOpen = mmModActive && mmPath.length && mmPath[mmPath.length - 1] === node._id;
     mmFunnelActive = false; mmGeoActive = false; _geo.region = null; _geo.state = null;
@@ -15877,6 +15877,10 @@ function showOverview() {
   closeRecordsSheet();
   currentView = 'onboarding';
   var doNav = function() {
+    // Guard: if the user navigated elsewhere while the View Transition was
+    // pending (e.g. clicked a sidebar module), skip this stale callback so we
+    // don't re-add view-ov and blank the active module view.
+    if (currentView !== 'onboarding') return;
     updateViewChrome();
     document.body.classList.add('view-ov');
     renderOvScreen();
