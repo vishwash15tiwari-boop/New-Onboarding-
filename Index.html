@@ -4179,6 +4179,10 @@ body.view-ov #ov-screen{display:block}
   --lc-risk:#D70015; --lc-risk-weak:rgba(215,0,21,.12);
   --lc-ring-track:#E7E4DF; --lc-shadow:var(--shadow-card); --lc-seg-on:#FFFFFF;
   --lc-purple:#8460D4; --lc-purple-bg:#F1ECFB; --lc-purple-weak:rgba(132,96,212,.1);
+  /* One dashboard gutter: the gap between cards in a row, the gap between rows,
+     and the page's side padding all resolve from this, so a module's spacing
+     rhythm is set in one place instead of per-card margins. */
+  --lc-gutter:var(--sp-5,20px); --lc-pad-bottom:var(--sp-7,32px);
   background:var(--lc-canvas); color:var(--lc-text);
   font-family:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   font-size:13.5px; line-height:1.4; -webkit-font-smoothing:antialiased;
@@ -16844,7 +16848,12 @@ document.addEventListener('DOMContentLoaded', function() {
   loadOverviewMonthly = function(){
     if(typeof google==='undefined'||!google.script||!google.script.run){ return; }
     google.script.run.withSuccessHandler(function(raw){
-      try{ var d=JSON.parse(raw); if(d&&d.success&&d.monthly){ window._ovMonthlyData=d.monthly; renderOvScreen(); } }
+      try{ var d=JSON.parse(raw); if(d&&d.success&&d.monthly){ window._ovMonthlyData=d.monthly; renderOvScreen();
+        // The Vertical Overview charts the same series, so refresh it too when the
+        // data lands while a vertical is open — otherwise its chart stays a skeleton.
+        if(currentView==='vertoverview'&&_vovKey&&typeof renderVertOverview==='function'){
+          try{ renderVertOverview(_vovKey); }catch(e){}
+        } } }
       catch(e){ console.warn('getOverviewStats parse error',e); }
     }).withFailureHandler(function(err){ console.warn('getOverviewStats failed',err); }).getOverviewStats();
   };
@@ -18611,11 +18620,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <style id="lc-vendorratings-css">
 /* ── Compact layout: full analytics on one screen, records toggled separately ── */
-.lc .vr3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px;padding:16px 20px 28px}
+/* Row gaps, grid gaps and side padding all come from --lc-gutter, so the outer
+   margin is the same step as the gaps between cards. */
+.lc .vr3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
 .lc .vr3-page-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .lc .vr3-ttl{font-size:15px;font-weight:700;color:var(--lc-text);letter-spacing:-.025em;line-height:1.2}
 .lc .vr3-sub{font-size:11px;color:var(--lc-text3);margin-top:1px}
-.lc .vr3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.lc .vr3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--lc-gutter)}
 .lc .vr3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:12px 14px 10px;display:flex;align-items:flex-start;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden}
 .lc .vr3-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .lc .vr3-kpis .vr3-kpi:nth-child(1)::before{background:linear-gradient(90deg,#005DFF,#34C7FF)}
@@ -18630,8 +18641,8 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .vr3-kpi-sub{font-size:11px;color:var(--lc-text3);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .lc .vr3-tag-up{color:var(--lc-ok);font-weight:700;background:var(--lc-ok-weak);padding:1px 6px;border-radius:4px;font-size:11px}
 .lc .vr3-tag-dn{color:var(--lc-risk);font-weight:700;background:var(--lc-risk-weak);padding:1px 6px;border-radius:4px;font-size:11px}
-.lc .vr3-row1{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.lc .vr3-row2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.lc .vr3-row1{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--lc-gutter)}
+.lc .vr3-row2{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--lc-gutter)}
 .lc .vr3-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)}
 .lc .vr3-card-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .lc .vr3-card-ttl{font-size:10.5px;font-weight:700;color:var(--lc-text2);text-transform:uppercase;letter-spacing:.07em}
@@ -18963,7 +18974,9 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style id="osv3-css">
-.lc .osv3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px;padding:16px 20px 28px}
+/* Same gutter system as Vendor Ratings: one token drives the row gaps, the grid
+   gaps and the side padding. */
+.lc .osv3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
 .lc .osv3-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .lc .osv3-hdr-l{display:flex;flex-direction:column;gap:4px}
 .lc .osv3-ttl{font-size:20px;font-weight:700;color:var(--lc-text);letter-spacing:-.025em;line-height:1.2}
@@ -18971,8 +18984,8 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .osv3-period{display:flex;background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:9px;padding:3px;gap:2px;flex-shrink:0}
 .lc .osv3-period button{padding:5px 13px;border:0;border-radius:7px;background:transparent;color:var(--lc-text3);font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;transition:all .15s}
 .lc .osv3-period button.on{background:var(--lc-card);color:var(--lc-text);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.lc .osv3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.lc .osv3-row1{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.lc .osv3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--lc-gutter)}
+.lc .osv3-row1{display:grid;grid-template-columns:1fr 1fr;gap:var(--lc-gutter)}
 .lc .osv3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:14px;padding:20px 20px 16px;display:flex;flex-direction:column;gap:0;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden}
 .lc .osv3-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .lc .osv3-kpis .osv3-kpi:nth-child(1)::before{background:var(--lc-ok,#1DC797)}
@@ -19018,11 +19031,10 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .osv3-pager-btn:disabled{opacity:.4;cursor:default}
 .lc .osv3-empty{padding:40px;text-align:center;color:var(--lc-text3);font-size:13px}
 /* Journey funnel */
-.lc .osv3-journey{display:flex;align-items:stretch;gap:0}
+.lc .osv3-journey{display:flex;align-items:stretch;gap:var(--sp-1,4px)}
 .lc .osv3-jstage{flex:1;border:1px solid var(--lc-border);background:var(--lc-card);padding:16px 14px 14px;position:relative;min-width:0}
 .lc .osv3-jstage:first-child{border-radius:10px 0 0 10px}
 .lc .osv3-jstage:last-child{border-radius:0 10px 10px 0}
-.lc .osv3-jstage+.osv3-jstage{border-left:0}
 .lc .osv3-jarr{display:flex;align-items:center;flex-shrink:0;color:var(--lc-border);margin:0 -1px;z-index:1;pointer-events:none}
 .lc .osv3-jlbl{font-size:10.5px;font-weight:600;color:var(--lc-text3);margin-bottom:6px;line-height:1.3}
 .lc .osv3-jnum{font-size:28px;font-weight:800;color:var(--lc-text);line-height:1;font-variant-numeric:tabular-nums}
@@ -20072,48 +20084,25 @@ function _vovShell(vertName) {
     + '</div>';
 }
 
-// ── Monthly series for one vertical, in the same shape as _ovMonthlyData ───
-// getOverviewStats only exposes per-vertical monthly totals (verts[key]) with no
-// seller/buyer split, so the audience breakdown is counted from the vertical's
-// own rows. The audience filter zeroes the excluded side here rather than in the
-// chart, so renderOvBarChart stays a shared component.
+// ── Monthly series for one vertical ────────────────────────────────────────
+// Reads the producer's own per-vertical, per-audience counts (vertsS/vertsB from
+// getOverviewStats) rather than re-deriving them from loaded rows. Counting rows
+// here drifted from the portfolio chart: it dropped cases whose onboarded date was
+// blank (the producer falls back to createdDate) and it dated buyers by onbDate,
+// which for buyers is a last-touched timestamp that piles earlier onboardings into
+// the current month. Sharing the producer's series keeps a vertical's bars equal to
+// its slice of the Global Overview's bars.
 function _vovMonthlySeries(key) {
-  var aud     = _vovAud || 'all';
-  var selRows = Array.isArray(vertRows) ? vertRows : [];
-  var buyAll  = (_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : [];
-  var buyRows = buyAll.filter(function(r){
-    return !r.vertical || r.vertical === key || r.vertKey === key || r.vert === key;
+  var aud = _vovAud || 'all';
+  return (window._ovMonthlyData || []).map(function(d) {
+    var s = (d.vertsS || {})[key] || 0;
+    var b = (d.vertsB || {})[key] || 0;
+    return {
+      month:   d.month,
+      sellers: aud === 'buyer'  ? 0 : s,
+      buyers:  aud === 'seller' ? 0 : b
+    };
   });
-  return _vovMonthlyBuckets(
-    aud === 'buyer'  ? [] : selRows,
-    aud === 'seller' ? [] : buyRows,
-    _vovNMonths || 6
-  );
-}
-
-// Counts onboarded cases only (status COMPLETED, dated by onbDate) — the same
-// definition the rest of the dashboard uses for "onboarded".
-function _vovMonthlyBuckets(sellerRows, buyerRows, n) {
-  var now = new Date();
-  var buckets = [], bMap = {};
-  for (var i = n - 1; i >= 0; i--) {
-    var d  = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    var mk = d.getFullYear() + '-' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1);
-    var b  = { month: mk, sellers: 0, buyers: 0 };
-    buckets.push(b); bMap[mk] = b;
-  }
-  function tally(rows, field) {
-    (rows || []).forEach(function(r){
-      if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
-      var pd = (typeof parseDMY === 'function') ? parseDMY(r.onbDate || '') : null;
-      if (!pd) return;
-      var mk = pd.getFullYear() + '-' + (pd.getMonth() < 9 ? '0' : '') + (pd.getMonth() + 1);
-      if (bMap[mk]) bMap[mk][field]++;
-    });
-  }
-  tally(sellerRows, 'sellers');
-  tally(buyerRows,  'buyers');
-  return buckets;
 }
 
 // ── Escape helper ──────────────────────────────────────────────────────────

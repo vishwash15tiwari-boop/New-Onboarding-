@@ -4518,7 +4518,7 @@ function getOSVDashboardData() {
 // Returns monthly onboarding counts (calendar months, last 12) for sellers and buyers.
 // Used exclusively by the Central Onboarding Overview bar chart.
 function getOverviewStats() {
-  var CACHE_KEY = 'overview_v2';  // bumped: now counts onboarded (COMPLETED) cases by onboardedDate
+  var CACHE_KEY = 'overview_v4';  // bumped: per-vertical audience split + true onboarded date
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
   if (hit) return hit;
@@ -4537,35 +4537,43 @@ function getOverviewStats() {
       months.push({ key: d.getFullYear() + '-' + (d.getMonth() + 1), year: d.getFullYear(), month: d.getMonth() + 1 });
     }
     var buckets = {};
-    months.forEach(function(m) { buckets[m.key] = { sellers: 0, buyers: 0, verts: {} }; });
+    months.forEach(function(m) {
+      buckets[m.key] = { sellers: 0, buyers: 0, verts: {}, vertsS: {}, vertsB: {} };
+    });
+
+    // The month a case was onboarded in. tatEndDate is the date the TAT was measured
+    // to — _be (buyer final approval) or the detail tab's completion date — and is the
+    // only trustworthy completion date for buyers: their sheet has no onboarded_date,
+    // so onboardedDate falls back to onboarding_updated_date, a last-touched timestamp
+    // that drifts into the current month every time a record is edited. Preferring it
+    // keeps a vendor in the month they were actually approved. See _assignTat_.
+    function onbMonthDate(r) {
+      return r.tatEndDate || r.onboardedDate || r.createdDate;
+    }
 
     // Count only COMPLETED (onboarded) cases, bucketed by the date they were onboarded.
-    sRows.forEach(function(r) {
-      if (r.status !== 'COMPLETED') return;
-      var dt = r.onboardedDate || r.createdDate;
-      if (!(dt instanceof Date) || isNaN(dt)) return;
-      var k = dt.getFullYear() + '-' + (dt.getMonth() + 1);
-      if (buckets[k]) {
-        buckets[k].sellers++;
+    // vertsS/vertsB carry the same counts split by audience so a single vertical can be
+    // charted with the seller/buyer breakdown the portfolio chart shows.
+    function tally(rows, audKey, vertMap) {
+      rows.forEach(function(r) {
+        if (r.status !== 'COMPLETED') return;
+        var dt = onbMonthDate(r);
+        if (!(dt instanceof Date) || isNaN(dt)) return;
+        var k = dt.getFullYear() + '-' + (dt.getMonth() + 1);
+        if (!buckets[k]) return;
+        buckets[k][audKey]++;
         var v = r.vertical || 'Others';
-        buckets[k].verts[v] = (buckets[k].verts[v] || 0) + 1;
-      }
-    });
-    bRows.forEach(function(r) {
-      if (r.status !== 'COMPLETED') return;
-      var dt = r.onboardedDate || r.createdDate;
-      if (!(dt instanceof Date) || isNaN(dt)) return;
-      var k = dt.getFullYear() + '-' + (dt.getMonth() + 1);
-      if (buckets[k]) {
-        buckets[k].buyers++;
-        var v = r.vertical || 'Others';
-        buckets[k].verts[v] = (buckets[k].verts[v] || 0) + 1;
-      }
-    });
+        buckets[k].verts[v]   = (buckets[k].verts[v]   || 0) + 1;
+        buckets[k][vertMap][v] = (buckets[k][vertMap][v] || 0) + 1;
+      });
+    }
+    tally(sRows, 'sellers', 'vertsS');
+    tally(bRows, 'buyers',  'vertsB');
 
     var monthly = months.map(function(m) {
       var b = buckets[m.key];
-      return { month: m.key, sellers: b.sellers, buyers: b.buyers, verts: b.verts };
+      return { month: m.key, sellers: b.sellers, buyers: b.buyers,
+               verts: b.verts, vertsS: b.vertsS, vertsB: b.vertsB };
     });
 
     var out = JSON.stringify({ success: true, monthly: monthly });
