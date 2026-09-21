@@ -3534,6 +3534,115 @@ body.mm-sn-drill{overflow:hidden}
 @media(prefers-reduced-motion:reduce){.mfp,.mfp.open{transform:none}.mfp{transition:opacity .12s linear}.mfp-act:active{transform:none}}
 
 /* ── Inline Geographic Split — India map ── */
+/* ============================================================================
+   Geographic Split — presentation only. Every figure still comes from _geoAgg()
+   and IN_STATES[id].region, which already classify North / South; nothing here
+   aggregates or re-maps. Prefixed .gs-* so it cannot leak into the mind-map.
+   ========================================================================== */
+#mm-geo .gs{display:flex;flex-direction:column;gap:14px;width:100%;min-width:0}
+
+/* header */
+#mm-geo .gs-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+#mm-geo .gs-ttl{font-size:21px;font-weight:700;letter-spacing:-.03em;color:var(--txt);line-height:1.15}
+#mm-geo .gs-sub{font-size:12px;color:var(--txt3);margin-top:3px}
+#mm-geo .gs-aud{display:flex;gap:6px;flex-shrink:0}
+#mm-geo .gs-audbtn{display:flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--txt2);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s}
+#mm-geo .gs-audbtn i{width:8px;height:8px;border-radius:50%;background:currentColor;display:block}
+#mm-geo .gs-audbtn.on{background:#005DFF;border-color:#005DFF;color:#fff}
+#mm-geo .gs-audbtn.on.buyer{background:#1DC797;border-color:#1DC797}
+
+/* top card strip: categories + regional KPIs */
+#mm-geo .gs-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px}
+#mm-geo .gs-cat{display:flex;align-items:center;gap:11px;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--card);cursor:pointer;font-family:inherit;text-align:left;transition:all .15s;min-width:0}
+#mm-geo .gs-cat:hover{border-color:#9ec0ff}
+#mm-geo .gs-cat.on{border-color:#005DFF;background:rgba(0,93,255,.05);box-shadow:0 0 0 1px #005DFF inset}
+#mm-geo .gs-cat-ic{width:38px;height:38px;border-radius:10px;background:rgba(0,93,255,.1);color:#005DFF;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#mm-geo .gs-cat.on .gs-cat-ic{background:#005DFF;color:#fff}
+#mm-geo .gs-cat-b{min-width:0;flex:1;display:block}
+#mm-geo .gs-cat-v,#mm-geo .gs-cat-n,#mm-geo .gs-cat-sb{display:block}
+#mm-geo .gs-cat-v{font-size:21px;font-weight:700;color:var(--txt);line-height:1;font-variant-numeric:tabular-nums}
+#mm-geo .gs-cat-n{font-size:11.5px;color:var(--txt2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mm-geo .gs-cat-sb{font-size:10.5px;color:var(--txt3);margin-top:2px}
+#mm-geo .gs-reg{padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--card);cursor:pointer;font-family:inherit;text-align:left;transition:all .15s;min-width:0}
+#mm-geo .gs-reg.on{border-color:#005DFF;background:rgba(0,93,255,.05);box-shadow:0 0 0 1px #005DFF inset}
+#mm-geo .gs-reg-v{font-size:21px;font-weight:700;color:var(--txt);line-height:1;font-variant-numeric:tabular-nums}
+#mm-geo .gs-reg-n{font-size:11.5px;color:var(--txt2);margin-top:3px}
+#mm-geo .gs-reg-sb{font-size:10.5px;color:var(--txt3);margin-top:2px}
+
+/* 3-column body */
+#mm-geo .gs-body{display:grid;grid-template-columns:1.35fr .82fr 1fr;gap:12px;align-items:start;min-width:0}
+#mm-geo .gs-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+#mm-geo .gs-card{border:1px solid var(--border);border-radius:12px;background:var(--card);padding:14px 16px;min-width:0}
+#mm-geo .gs-card-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px}
+#mm-geo .gs-card-t{font-size:13.5px;font-weight:600;color:var(--txt);letter-spacing:-.01em}
+#mm-geo .gs-card-t small{font-weight:600;color:#005DFF}
+
+/* map */
+#mm-geo .gs-mapwrap{position:relative;width:100%;overflow:hidden;border-radius:10px}
+#mm-geo .gs-mapwrap .mg-svg{width:100%;height:auto;display:block;transition:transform .25s ease;transform-origin:center center}
+#mm-geo .gs-zoom{position:absolute;right:10px;bottom:46px;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--card);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+#mm-geo .gs-zoom button{width:30px;height:30px;border:0;background:var(--card);color:var(--txt2);font-size:17px;line-height:1;cursor:pointer;font-family:inherit}
+#mm-geo .gs-zoom button+button{border-top:1px solid var(--border)}
+#mm-geo .gs-zoom button:hover{background:var(--bg2)}
+#mm-geo .gs-reset{position:absolute;right:10px;bottom:10px;display:flex;align-items:center;gap:5px;padding:6px 11px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--txt2);font-size:11.5px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+#mm-geo .gs-reset:hover{background:var(--bg2)}
+#mm-geo .gs-scale{display:flex;align-items:center;gap:9px;margin-top:9px;font-size:10.5px;color:var(--txt3);flex-wrap:wrap}
+#mm-geo .gs-scale span{display:flex;align-items:center;gap:4px}
+#mm-geo .gs-scale i{width:11px;height:11px;border-radius:3px;display:block;border:1px solid var(--border)}
+#mm-geo .gs-tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px 11px;box-shadow:0 4px 16px rgba(0,0,0,.14);font-size:11.5px;min-width:126px;z-index:6;display:none}
+#mm-geo .gs-tip b{display:block;font-size:12.5px;color:var(--txt);margin-bottom:5px}
+#mm-geo .gs-tip div{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--txt2);line-height:1.7}
+#mm-geo .gs-tip div span{display:flex;align-items:center;gap:5px}
+#mm-geo .gs-tip i{width:7px;height:7px;border-radius:50%;display:block}
+
+/* donut + bars */
+#mm-geo .gs-dn{display:flex;align-items:center;gap:14px}
+#mm-geo .gs-dn-leg{display:flex;flex-direction:column;gap:9px;flex:1;min-width:0;font-size:12px}
+#mm-geo .gs-dn-leg>div{display:flex;align-items:center;gap:7px}
+#mm-geo .gs-dn-leg i{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+#mm-geo .gs-dn-leg b{color:var(--txt);font-weight:600}
+#mm-geo .gs-dn-leg em{font-style:normal;color:var(--txt3);font-size:11px}
+#mm-geo .gs-bars{display:flex;align-items:flex-end;justify-content:space-around;gap:16px;height:118px}
+#mm-geo .gs-bgrp{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0}
+#mm-geo .gs-bset{display:flex;align-items:flex-end;gap:7px;height:96px}
+#mm-geo .gs-bar{width:24px;border-radius:4px 4px 0 0;min-height:3px;position:relative;transition:height .4s ease}
+#mm-geo .gs-bar b{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:10.5px;font-weight:700;color:var(--txt)}
+#mm-geo .gs-bl{font-size:11px;color:var(--txt3);margin-top:7px}
+#mm-geo .gs-mini{display:flex;gap:13px;font-size:11px;color:var(--txt2)}
+#mm-geo .gs-mini span{display:flex;align-items:center;gap:5px}
+#mm-geo .gs-mini i{width:8px;height:8px;border-radius:2px;display:block}
+
+/* insights */
+#mm-geo .gs-ins{display:flex;flex-direction:column;gap:9px}
+#mm-geo .gs-ins div{display:flex;gap:8px;font-size:11.5px;color:var(--txt2);line-height:1.5}
+#mm-geo .gs-ins svg{width:13px;height:13px;flex-shrink:0;margin-top:2px;color:#005DFF}
+#mm-geo .gs-ins b{color:var(--txt);font-weight:600}
+
+/* state table */
+#mm-geo .gs-search{display:flex;align-items:center;gap:7px;border:1px solid var(--border);border-radius:9px;padding:7px 11px;margin-bottom:10px;background:var(--bg2)}
+#mm-geo .gs-search input{flex:1;border:0;background:transparent;outline:none;font-size:12px;color:var(--txt);font-family:inherit;min-width:0}
+#mm-geo .gs-search svg{width:13px;height:13px;color:var(--txt3);flex-shrink:0}
+#mm-geo .gs-exp{display:flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--txt2);font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
+#mm-geo .gs-exp:hover{background:var(--border)}
+#mm-geo .gs-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+#mm-geo .gs-tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--txt3);text-align:left;padding:6px 7px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+#mm-geo .gs-tbl th.num,#mm-geo .gs-tbl td.num{text-align:right}
+#mm-geo .gs-tbl td{padding:7px;border-bottom:1px solid var(--bg2);color:var(--txt);white-space:nowrap;font-variant-numeric:tabular-nums}
+#mm-geo .gs-tbl tbody tr:last-child td{border-bottom:0}
+#mm-geo .gs-tbl tbody tr{cursor:pointer}
+#mm-geo .gs-tbl tbody tr:hover td{background:var(--bg2)}
+#mm-geo .gs-tbl tbody tr.sel td{background:rgba(0,93,255,.07)}
+#mm-geo .gs-rdot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+#mm-geo .gs-rtag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:var(--bg2);color:var(--txt2)}
+#mm-geo .gs-pg{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;font-size:11px;color:var(--txt3);flex-wrap:wrap}
+#mm-geo .gs-pgb{display:flex;gap:4px}
+#mm-geo .gs-pgb button{min-width:26px;height:26px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--txt2);font-size:11.5px;cursor:pointer;font-family:inherit;padding:0 6px}
+#mm-geo .gs-pgb button.on{background:#005DFF;border-color:#005DFF;color:#fff;font-weight:600}
+#mm-geo .gs-pgb button:disabled{opacity:.4;cursor:default}
+#mm-geo .gs-none{padding:26px 0;text-align:center;color:var(--txt3);font-size:12px}
+
+@media(max-width:1280px){#mm-geo .gs-body{grid-template-columns:1.2fr 1fr}#mm-geo .gs-col.gs-col3{grid-column:1/-1}}
+@media(max-width:900px){#mm-geo .gs-body{grid-template-columns:1fr}#mm-geo .gs-col.gs-col3{grid-column:auto}}
 :root{--mg-base:#e9ecf2}
 #mm-geo{overflow:hidden;max-height:0;opacity:0;transition:max-height .5s cubic-bezier(.4,0,.2,1),opacity .3s ease;margin:0}
 #mm-geo.mg-open{max-height:1200px;opacity:1;margin:0 0 28px}
@@ -7945,6 +8054,272 @@ function mmGeoStatePopup(id, anchor) {
   _popShow(anchor, { html: html, cls: 'mfp-geo' });
 }
 
+/* ==========================================================================
+   Geographic Split — presentation builders.
+   These only compose markup. Every number comes from _geoAgg() (the existing
+   aggregation) and every region comes from IN_STATES[id].region, which already
+   carries the same North/South split as the backend's stateToRegion_ /
+   SOUTH_STATES. No aggregation, no state-to-region mapping and no filtering
+   logic is reimplemented here.
+   ========================================================================== */
+var GS_SELLER = '#005DFF', GS_BUYER = '#1DC797';
+var GS_NORTH  = '#005DFF', GS_SOUTH = '#8460D4';
+var _gsQ = '', _gsPage = 1, _gsSort = 'total', _gsDir = -1, _gsZoom = 1;
+var GS_PSIZE = 12;
+
+/* Roll the per-state buckets up to North / South. IN_STATES carries the region. */
+function _gsRegions(by) {
+  var out = { North:{ seller:0, buyer:0, total:0, states:0 },
+              South:{ seller:0, buyer:0, total:0, states:0 } };
+  Object.keys(by || {}).forEach(function(id) {
+    var st = IN_STATES[id]; if (!st) return;
+    var r = out[st.region]; if (!r) return;
+    var b = by[id];
+    r.seller += b.seller || 0;
+    r.buyer  += b.buyer  || 0;
+    r.total  += (b.seller || 0) + (b.buyer || 0);
+    if ((b.seller || 0) + (b.buyer || 0) > 0) r.states++;
+  });
+  return out;
+}
+
+/* Rows for the state table, already scoped by the active region filter. */
+function _gsRows(by) {
+  var reg = _geo.region;
+  return Object.keys(by || {}).map(function(id) {
+    var st = IN_STATES[id], b = by[id];
+    return { id:id, name:st ? st.name : id, region:st ? st.region : '',
+             seller:b.seller || 0, buyer:b.buyer || 0, total:(b.seller || 0) + (b.buyer || 0) };
+  }).filter(function(r) {
+    if (!r.total) return false;
+    if (reg && reg !== 'All' && r.region !== reg) return false;
+    if (_gsQ && r.name.toLowerCase().indexOf(_gsQ.toLowerCase()) < 0) return false;
+    return true;
+  }).sort(function(a, b) {
+    var k = _gsSort;
+    if (k === 'name' || k === 'region') return _gsDir * String(a[k]).localeCompare(String(b[k]));
+    return _gsDir * (a[k] - b[k]);
+  });
+}
+
+function _gsDonut(parts, total, label) {
+  var R = 46, r = 31, cx = 56, cy = 56;
+  var sum = parts.reduce(function (a, p) { return a + p.val; }, 0);
+  var s = '<svg viewBox="0 0 112 112" style="width:112px;height:112px;flex-shrink:0">'
+    + '<circle cx="' + cx + '" cy="' + cy + '" r="' + ((R + r) / 2) + '" fill="none" stroke="var(--bg2)" stroke-width="' + (R - r) + '"/>';
+  if (sum > 0) {
+    var ang = -Math.PI / 2;
+    parts.forEach(function (p) {
+      var sw = p.val / sum * 2 * Math.PI;
+      if (sw < 0.001) { ang += sw; return; }
+      var x1 = cx + R * Math.cos(ang), y1 = cy + R * Math.sin(ang);
+      var x2 = cx + R * Math.cos(ang + sw), y2 = cy + R * Math.sin(ang + sw);
+      var i1 = cx + r * Math.cos(ang), j1 = cy + r * Math.sin(ang);
+      var i2 = cx + r * Math.cos(ang + sw), j2 = cy + r * Math.sin(ang + sw);
+      var lg = sw > Math.PI ? 1 : 0;
+      s += '<path d="M' + x1.toFixed(1) + ',' + y1.toFixed(1)
+         + ' A' + R + ',' + R + ' 0 ' + lg + ',1 ' + x2.toFixed(1) + ',' + y2.toFixed(1)
+         + ' L' + i2.toFixed(1) + ',' + j2.toFixed(1)
+         + ' A' + r + ',' + r + ' 0 ' + lg + ',0 ' + i1.toFixed(1) + ',' + j1.toFixed(1)
+         + ' Z" fill="' + p.col + '"><title>' + esc(p.lbl) + ': ' + fmt(p.val) + '</title></path>';
+      ang += sw;
+    });
+  }
+  s += '<text x="' + cx + '" y="' + (cy - 1) + '" text-anchor="middle" font-size="21" font-weight="700" style="fill:var(--txt)">' + fmt(total) + '</text>'
+     + '<text x="' + cx + '" y="' + (cy + 15) + '" text-anchor="middle" font-size="9.5" style="fill:var(--txt3)">' + esc(label) + '</text></svg>';
+  return s;
+}
+
+/* Category Overview — the selected audience split North vs South. */
+function _gsCatOverview(by, aud, audLabel) {
+  var R = _gsRegions(by);
+  var n = R.North[aud], s = R.South[aud], tot = n + s;
+  var pc = function (v) { return tot > 0 ? Math.round(v / tot * 100) : 0; };
+  var leg = [['North', n, GS_NORTH], ['South', s, GS_SOUTH]].map(function (p) {
+    return '<div><i style="background:' + p[2] + '"></i><b>' + p[0] + '</b>'
+      + '<span style="margin-left:auto;text-align:right"><b>' + fmt(p[1]) + '</b> <em>(' + pc(p[1]) + '%)</em></span></div>';
+  }).join('');
+  return '<div class="gs-card"><div class="gs-card-hd"><div class="gs-card-t">Category Overview</div></div>'
+    + '<div class="gs-dn">'
+    + _gsDonut([{ lbl:'North', val:n, col:GS_NORTH }, { lbl:'South', val:s, col:GS_SOUTH }], tot, audLabel)
+    + '<div class="gs-dn-leg">' + leg + '</div></div></div>';
+}
+
+/* Sellers vs Buyers — grouped bars, North beside South. */
+function _gsSvB(by) {
+  var R = _gsRegions(by);
+  var max = Math.max(R.North.seller, R.North.buyer, R.South.seller, R.South.buyer, 1);
+  var grp = ['North', 'South'].map(function (k) {
+    var d = R[k];
+    var bar = function (v, c) {
+      return '<div class="gs-bar" style="height:' + Math.max(3, Math.round(v / max * 90)) + 'px;background:' + c + '">'
+        + (v > 0 ? '<b>' + fmt(v) + '</b>' : '') + '</div>';
+    };
+    return '<div class="gs-bgrp"><div class="gs-bset">' + bar(d.seller, GS_SELLER) + bar(d.buyer, GS_BUYER)
+      + '</div><div class="gs-bl">' + k + '</div></div>';
+  }).join('');
+  return '<div class="gs-card"><div class="gs-card-hd"><div class="gs-card-t">Sellers vs Buyers</div>'
+    + '<div class="gs-mini"><span><i style="background:' + GS_SELLER + '"></i>Sellers</span>'
+    + '<span><i style="background:' + GS_BUYER + '"></i>Buyers</span></div></div>'
+    + '<div class="gs-bars">' + grp + '</div></div>';
+}
+
+/* Key Insights — derived from the filtered data, never hardcoded. */
+function _gsInsights(by, aud, audLabel) {
+  var R = _gsRegions(by), rows = _gsRows(by);
+  var pin = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+  var out = [];
+  var totAud = R.North[aud] + R.South[aud];
+  if (totAud > 0) {
+    var lead = R.North[aud] >= R.South[aud] ? 'North' : 'South';
+    var lv = R[lead][aud];
+    out.push('<b>' + lead + '</b> accounts for <b>' + Math.round(lv / totAud * 100) + '%</b> of ' + audLabel.toLowerCase() + '.');
+  }
+  var topS = rows.slice().sort(function (a, b) { return b.seller - a.seller; })[0];
+  if (topS && topS.seller > 0) out.push('<b>' + esc(topS.name) + '</b> has the highest seller count (<b>' + fmt(topS.seller) + '</b>).');
+  var topB = rows.slice().sort(function (a, b) { return b.buyer - a.buyer; })[0];
+  if (topB && topB.buyer > 0) out.push('<b>' + esc(topB.name) + '</b> has the highest buyer count (<b>' + fmt(topB.buyer) + '</b>).');
+  var nT = R.North.total, sT = R.South.total, gT = nT + sT;
+  if (gT > 0) {
+    var conc = nT >= sT ? 'North' : 'South';
+    out.push('Distribution is concentrated in <b>' + conc + '</b> (<b>' + Math.round(Math.max(nT, sT) / gT * 100) + '%</b> of all vendors).');
+  }
+  out.push('Mapped across <b>' + fmt(rows.length) + '</b> state' + (rows.length === 1 ? '' : 's') + '.');
+  return '<div class="gs-card"><div class="gs-card-hd"><div class="gs-card-t">Key Insights</div></div>'
+    + '<div class="gs-ins">' + out.map(function (t) { return '<div>' + pin + '<span>' + t + '</span></div>'; }).join('') + '</div></div>';
+}
+
+/* State-wise distribution — search, sort, export, pagination. */
+function _gsTable(by) {
+  var rows = _gsRows(by);
+  var pages = Math.max(1, Math.ceil(rows.length / GS_PSIZE));
+  if (_gsPage > pages) _gsPage = pages;
+  var slice = rows.slice((_gsPage - 1) * GS_PSIZE, _gsPage * GS_PSIZE);
+  var caret = function (k) { return _gsSort === k ? (_gsDir < 0 ? ' ▾' : ' ▴') : ''; };
+  var body = slice.length ? slice.map(function (r, i) {
+    return '<tr class="' + (_geo.state === r.id ? 'sel' : '') + '" onclick="mmGeoStateClick(\'' + r.id + '\',event)">'
+      + '<td style="color:var(--txt3)">' + ((_gsPage - 1) * GS_PSIZE + i + 1) + '</td>'
+      + '<td><i class="gs-rdot" style="background:' + (r.region === 'South' ? GS_SOUTH : GS_NORTH) + '"></i>' + esc(r.name) + '</td>'
+      + '<td class="num">' + fmt(r.seller) + '</td><td class="num">' + fmt(r.buyer) + '</td>'
+      + '<td class="num"><b>' + fmt(r.total) + '</b></td>'
+      + '<td><span class="gs-rtag">' + esc(r.region) + '</span></td></tr>';
+  }).join('') : '<tr><td colspan="6"><div class="gs-none">No states match this filter.</div></td></tr>';
+
+  var btns = '';
+  for (var p = 1; p <= pages; p++) {
+    if (pages <= 7 || p === 1 || p === pages || Math.abs(p - _gsPage) <= 1) {
+      btns += '<button class="' + (p === _gsPage ? 'on' : '') + '" onclick="gsPage(' + p + ')">' + p + '</button>';
+    } else if (Math.abs(p - _gsPage) === 2) { btns += '<span style="padding:0 3px">…</span>'; }
+  }
+  var from = rows.length ? (_gsPage - 1) * GS_PSIZE + 1 : 0;
+  return '<div class="gs-card gs-col3"><div class="gs-card-hd"><div class="gs-card-t">State-wise Distribution</div>'
+    + '<button class="gs-exp" onclick="gsExport()">↓ Export</button></div>'
+    + '<div class="gs-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>'
+    + '<input type="text" placeholder="Search state..." value="' + esc(_gsQ) + '" oninput="gsSearch(this.value)"></div>'
+    + '<table class="gs-tbl"><thead><tr>'
+    + '<th style="width:22px">#</th>'
+    + '<th onclick="gsSort(\'name\')">State' + caret('name') + '</th>'
+    + '<th class="num" onclick="gsSort(\'seller\')">Sellers' + caret('seller') + '</th>'
+    + '<th class="num" onclick="gsSort(\'buyer\')">Buyers' + caret('buyer') + '</th>'
+    + '<th class="num" onclick="gsSort(\'total\')">Total' + caret('total') + '</th>'
+    + '<th onclick="gsSort(\'region\')">Region' + caret('region') + '</th>'
+    + '</tr></thead><tbody>' + body + '</tbody></table>'
+    + '<div class="gs-pg"><span>Showing ' + from + '–' + Math.min(_gsPage * GS_PSIZE, rows.length) + ' of ' + rows.length + ' states</span>'
+    + '<div class="gs-pgb"><button onclick="gsPage(' + (_gsPage - 1) + ')"' + (_gsPage <= 1 ? ' disabled' : '') + '>‹</button>'
+    + btns + '<button onclick="gsPage(' + (_gsPage + 1) + ')"' + (_gsPage >= pages ? ' disabled' : '') + '>›</button></div></div></div>';
+}
+
+/* Category cards + North/South region cards. Categories stay data-driven. */
+function _gsStrip(by) {
+  var R = _gsRegions(by);
+  var cats = (typeof _geoCats === 'function') ? _geoCats() : [];
+  var k = _geo.key || activeVertKey || _mmVert;
+  var vs = (DS && DS.verticals || {})[k] || {};
+  var vb = (DB && DB.verticals || {})[k] || {};
+  var box = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>';
+  var h = '<div class="gs-strip">';
+  cats.forEach(function (cat) {
+    var lo = String(cat).toLowerCase();
+    var label = (typeof CAT_SHORT !== 'undefined' && CAT_SHORT[lo]) || (cat.charAt(0).toUpperCase() + cat.slice(1));
+    var vsC = (vs.categories || []).filter(function (c) { return String(c.category || '').toLowerCase() === lo; })[0] || {};
+    var vbC = (vb.categories || []).filter(function (c) { return String(c.category || '').toLowerCase() === lo; })[0] || {};
+    var sv = (vsC.completed || vsC.total || 0), bv = (vbC.completed || vbC.total || 0);
+    var on = (_geo.cat || '') === lo;
+    h += '<button class="gs-cat' + (on ? ' on' : '') + '" onclick="mmGeoSetCat(\'' + lo + '\')">'
+      + '<span class="gs-cat-ic">' + box + '</span><span class="gs-cat-b">'
+      + '<span class="gs-cat-v">' + fmt(sv + bv) + '</span>'
+      + '<span class="gs-cat-n">' + esc(label) + '</span>'
+      + '<span class="gs-cat-sb">' + fmt(sv) + ' S · ' + fmt(bv) + ' B</span></span></button>';
+  });
+  ['North', 'South'].forEach(function (rg) {
+    var d = R[rg], on = _geo.region === rg;
+    h += '<button class="gs-reg' + (on ? ' on' : '') + '" onclick="gsRegion(\'' + rg + '\')">'
+      + '<div class="gs-reg-v">' + fmt(d.total) + '</div>'
+      + '<div class="gs-reg-n">' + rg + ' Region</div>'
+      + '<div class="gs-reg-sb">' + fmt(d.seller) + ' sellers · ' + fmt(d.buyer) + ' buyers</div></button>';
+  });
+  return h + '</div>';
+}
+
+/* ── Presentation-only controls ──────────────────────────────────────────── */
+function gsSearch(q) {
+  _gsQ = q || ''; _gsPage = 1;
+  var host = document.getElementById('mm-geo');
+  var card = host && host.querySelector('.gs-col3');
+  if (!card) { mmRenderGeo(); return; }
+  // Re-render just the table so the input keeps focus and the caret position.
+  var tmp = document.createElement('div');
+  tmp.innerHTML = _gsTable(_geoAgg(_geo.cat ? [] : _geoCats()));
+  var fresh = tmp.firstChild, input = card.querySelector('input');
+  var pos = input ? input.selectionStart : null;
+  card.innerHTML = fresh.innerHTML;
+  var ni = card.querySelector('input');
+  if (ni) { ni.focus(); if (pos != null) { try { ni.setSelectionRange(pos, pos); } catch (e) {} } }
+}
+function gsSort(k) { if (_gsSort === k) _gsDir *= -1; else { _gsSort = k; _gsDir = (k === 'name' || k === 'region') ? 1 : -1; } _gsPage = 1; mmRenderGeo(); }
+function gsPage(p) { if (p < 1) return; _gsPage = p; mmRenderGeo(); }
+function gsRegion(r) { _geo.region = (_geo.region === r) ? 'All' : r; _geo.state = null; _gsPage = 1; mmRenderGeo(); }
+function gsZoom(d) {
+  _gsZoom = Math.min(3, Math.max(1, _gsZoom + d));
+  var svg = document.querySelector('#mm-geo .gs-mapwrap .mg-svg');
+  if (svg) svg.style.transform = 'scale(' + _gsZoom + ')';
+}
+function gsReset() {
+  _gsZoom = 1; _geo.state = null; _geo.region = 'All'; _gsQ = ''; _gsPage = 1;
+  mmRenderGeo();
+}
+function gsExport() {
+  var rows = _gsRows(_geoAgg(_geo.cat ? [] : _geoCats()));
+  var csv = 'State,Sellers,Buyers,Total,Region\n';
+  rows.forEach(function (r) {
+    csv += '"' + String(r.name).replace(/"/g, '""') + '",' + r.seller + ',' + r.buyer + ',' + r.total + ',' + r.region + '\n';
+  });
+  try {
+    var a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'geographic-split.csv'; a.click();
+  } catch (e) {}
+}
+/* Tooltip follows the pointer over the map; contents come from the same buckets. */
+function gsTip(id, evt, on) {
+  var tip = document.getElementById('gs-tip');
+  if (!tip) return;
+  if (!on || !id || !IN_STATES[id]) { tip.style.display = 'none'; return; }
+  var by = _geoLblData || {}, b = by[id] || { seller:0, buyer:0 };
+  var cat = _geo.cat ? ((typeof CAT_SHORT !== 'undefined' && CAT_SHORT[_geo.cat]) || _geo.cat) : 'All categories';
+  tip.innerHTML = '<b>' + esc(IN_STATES[id].name) + '</b>'
+    + '<div><span><i style="background:' + GS_SELLER + '"></i>Sellers</span><b>' + fmt(b.seller || 0) + '</b></div>'
+    + '<div><span><i style="background:' + GS_BUYER + '"></i>Buyers</span><b>' + fmt(b.buyer || 0) + '</b></div>'
+    + '<div style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px"><span>' + esc(cat) + '</span>'
+    + '<span class="gs-rtag">' + esc(IN_STATES[id].region) + '</span></div>';
+  tip.style.display = 'block';
+  var wrap = tip.parentNode.getBoundingClientRect();
+  var x = (evt && evt.clientX ? evt.clientX : wrap.left) - wrap.left + 14;
+  var y = (evt && evt.clientY ? evt.clientY : wrap.top) - wrap.top + 14;
+  tip.style.left = Math.min(x, wrap.width - 150) + 'px';
+  tip.style.top  = Math.min(y, wrap.height - 110) + 'px';
+}
+
 function mmRenderGeo() {
   var panel = document.getElementById('mm-geo'); if (!panel) return;
   if (!mmGeoActive || !_geo.region) { panel.className = 'mg'; panel.innerHTML = ''; return; }
@@ -7990,7 +8365,7 @@ function mmRenderGeo() {
       fill = 'var(--mg-base)'; op = '1'; stroke = 'var(--card)'; sw = '1';   // no data → light grey tile
     }
     var canClick = d && d.total > 0;   // any records → clickable for the detail panel
-    var handlers = ' data-geo="' + id + '" onmouseover="mmGeoHover(\'' + id + '\',true)" onmouseout="mmGeoHover(\'' + id + '\',false)"'
+    var handlers = ' data-geo="' + id + '" onmouseover="mmGeoHover(\'' + id + '\',true);gsTip(\'' + id + '\',event,true)" onmousemove="gsTip(\'' + id + '\',event,true)" onmouseout="mmGeoHover(\'' + id + '\',false);gsTip(null,event,false)"'
       + (canClick ? ' onclick="mmGeoStateClick(\'' + id + '\',event)" style="cursor:pointer"' : '');
     return '<path class="' + cls + '" d="' + st.d + '" fill="' + fill + '" fill-opacity="' + op
       + '" stroke="' + stroke + '" stroke-width="' + sw + '"' + handlers + '><title>' + esc(st.name)
@@ -8093,9 +8468,43 @@ function mmRenderGeo() {
     }
   }
 
-  panel.innerHTML = '<div class="mg-eye"><span>All India · ' + esc(selCat) + ' · ' + (aud === 'buyer' ? 'buyer' : 'seller') + ' distribution</span>' + audToggle + '</div>'
-    + catSwitcher
-    + '<div class="mg-grid">' + mapPanel + legend + '</div>';
+  // ── Reference layout: header · category + North/South strip · 3-column body.
+  // mapPanel and the audience/category controls are the existing ones; only the
+  // composition around them is new. Every figure still comes from `by`.
+  var _gsMap = '<div class="gs-card"><div class="gs-card-hd">'
+    + '<div class="gs-card-t">' + audLabel + ' Distribution <small>(' + esc(selCat) + ')</small></div></div>'
+    + '<div class="gs-mapwrap">'
+    +   '<svg viewBox="0 0 1000 1100" class="mg-svg" aria-label="India map, ' + audLabel + ' distribution">' + paths + '</svg>'
+    +   '<div class="gs-tip" id="gs-tip"></div>'
+    +   '<div class="gs-zoom"><button type="button" onclick="gsZoom(0.4)" aria-label="Zoom in">+</button>'
+    +     '<button type="button" onclick="gsZoom(-0.4)" aria-label="Zoom out">−</button></div>'
+    +   '<button type="button" class="gs-reset" onclick="gsReset()">↻ Reset</button>'
+    + '</div>'
+    + '<div class="gs-scale"><span style="margin-right:2px">No. of ' + audLabel.toLowerCase() + '</span>'
+    +   '<span><i style="background:var(--mg-base)"></i>0</span>'
+    +   '<span><i style="background:' + fillColor + ';opacity:.28"></i>Low</span>'
+    +   '<span><i style="background:' + fillColor + ';opacity:.5"></i>Medium</span>'
+    +   '<span><i style="background:' + fillColor + ';opacity:.72"></i>High</span>'
+    +   '<span style="margin-left:auto"><i style="background:' + GS_NORTH + '"></i>North</span>'
+    +   '<span><i style="background:' + GS_SOUTH + '"></i>South</span></div>'
+    + '</div>';
+
+  var _gsHead = '<div class="gs-hd"><div>'
+    + '<div class="gs-ttl">Geographic Split</div>'
+    + '<div class="gs-sub">Seller &amp; Buyer distribution across India for ' + esc(selCat) + '.</div></div>'
+    + '<div class="gs-aud">'
+    +   '<button class="gs-audbtn' + (aud === 'seller' ? ' on' : '') + '" onclick="mmGeoSetAud(\'seller\')"><i></i>Sellers</button>'
+    +   '<button class="gs-audbtn buyer' + (aud === 'buyer' ? ' on' : '') + '" onclick="mmGeoSetAud(\'buyer\')"><i></i>Buyers</button>'
+    + '</div></div>';
+
+  panel.innerHTML = '<div class="gs">'
+    + _gsHead
+    + _gsStrip(by)
+    + '<div class="gs-body">'
+    +   '<div class="gs-col">' + _gsMap + '</div>'
+    +   '<div class="gs-col">' + _gsCatOverview(by, aud, audLabel) + _gsSvB(by) + _gsInsights(by, aud, audLabel) + '</div>'
+    +   '<div class="gs-col gs-col3">' + _gsTable(by) + '</div>'
+    + '</div></div>';
   panel.className = 'mg mg-open';
 
   // Populate the in-map state detail overlay for the current hover / locked selection.
