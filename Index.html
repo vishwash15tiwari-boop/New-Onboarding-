@@ -18456,8 +18456,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var avgOrders = h.avgOrders || 0, avgGmv = h.avgGmv || 0;
     var activeTxn = h.activeTxn != null ? h.activeTxn : transacted;
 
-    var engTot = transacted + nonTxn;
-    var engPct = engTot > 0 ? Math.round(transacted / engTot * 100) : 0;
+    // "% engaged" and First-Txn Conversion are the same ratio (transacted ÷
+    // onboarded), so reuse the producer's figure rather than rebuilding it from
+    // (transacted + nonTxn): `transacted` counts every status while nonTxn and
+    // onboarded count only COMPLETED rows, so the sum-of-parts denominator made
+    // the two KPI cards disagree.
+    var engPct = firstTxnPct;
+    var engBar = Math.max(0, Math.min(100, engPct));
 
     // ---- KPI row ----------------------------------------------------------
     var kpis = '<div class="lc-kpis">'
@@ -18471,7 +18476,7 @@ document.addEventListener('DOMContentLoaded', function() {
       +   '<div class="row"><div class="val num">' + nf(transacted) + '</div>'
       +     '<span class="lc-chip ' + (engPct >= 50 ? 'ok' : engPct >= 25 ? 'warn' : 'risk') + '">' + engPct + '% engaged</span></div>'
       +   '<div class="lc-txn-mini" role="img" aria-label="' + nf(transacted) + ' transacted versus ' + nf(nonTxn) + ' not yet transacted">'
-      +     '<i class="a" style="width:' + engPct + '%"></i><i class="b" style="width:' + (100 - engPct) + '%"></i></div>'
+      +     '<i class="a" style="width:' + engBar + '%"></i><i class="b" style="width:' + (100 - engBar) + '%"></i></div>'
       +   '<div class="ctx">vs ' + nf(nonTxn) + ' onboarded, not yet transacting</div></div>'
       // 3 · First-transaction conversion
       + '<div class="lc-card lc-kpi"><div class="lbl">First-Txn Conversion</div>'
