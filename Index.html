@@ -19153,18 +19153,22 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildJourney(jn){
     var stages=[
       {lbl:'Onboarded',val:jn.onboarded||0,base:null,col:C_BLUE},
-      {lbl:'Eligible for OSV',val:jn.eligible||0,base:jn.onboarded||1,col:C_OK},
-      {lbl:'OSV Initiated',val:jn.initiated||0,base:jn.eligible||1,col:C_WARN},
-      {lbl:'OSV Completed',val:jn.completed||0,base:jn.initiated||1,col:C_OK},
-      {lbl:'Post-OSV Updated',val:jn.scoreUpdated||0,base:jn.completed||1,col:C_PURPLE}
+      {lbl:'Eligible for OSV',val:jn.eligible||0,base:jn.onboarded||0,col:C_OK},
+      {lbl:'OSV Initiated',val:jn.initiated||0,base:jn.eligible||0,col:C_WARN},
+      {lbl:'OSV Completed',val:jn.completed||0,base:jn.initiated||0,col:C_OK},
+      {lbl:'Post-OSV Updated',val:jn.scoreUpdated||0,base:jn.completed||0,col:C_PURPLE}
     ];
+    // base is the previous stage's real count. It used to fall back to 1 to dodge a
+    // divide-by-zero, which turned "53 initiated out of 0 eligible" into 5300%.
+    // An empty previous stage has no conversion rate, so show a dash instead.
     var h='<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">Verification Journey</span></div><div class="osv3-journey">';
     stages.forEach(function(st,i){
       if(i>0)h+='<div class="osv3-jarr"><svg viewBox="0 0 12 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="24"><polyline points="2,6 10,12 2,18"/></svg></div>';
-      var p=st.base!==null?pct(st.val,st.base):100;
+      var p=(st.base===null||st.base<=0)?null:pct(st.val,st.base);
+      var barW=st.base===null?100:(p===null?0:Math.min(100,p));
       h+='<div class="osv3-jstage"><div class="osv3-jlbl">'+st.lbl+'</div><div class="osv3-jnum">'+st.val+'</div>'
-        +(st.base!==null?'<div class="osv3-jpct">'+p+'% from prev</div>':'')
-        +'<div class="osv3-jbar"><div class="osv3-jbar-f" style="width:'+(st.base!==null?p:100)+'%;background:'+st.col+'"></div></div></div>';
+        +(st.base!==null?'<div class="osv3-jpct">'+(p===null?'&mdash;':p+'% from prev')+'</div>':'')
+        +'<div class="osv3-jbar"><div class="osv3-jbar-f" style="width:'+barW+'%;background:'+st.col+'"></div></div></div>';
     });
     return h+'</div></div>';
   }
@@ -19173,11 +19177,16 @@ document.addEventListener('DOMContentLoaded', function() {
     var comp=jn.completed||0,inprog=sd.inProgress||0;
     var consent_only=Math.max(0,(jn.consentObtained||0)-(jn.initiated||0));
     var notstart=sd.eligibleNotInitiated||0;
-    var total=jn.eligible||1;
     var segs=[{lbl:'Completed',val:comp,col:C_OK},{lbl:'In Progress',val:inprog,col:C_WARN},{lbl:'Pending (Consent)',val:consent_only,col:C_PURPLE},{lbl:'Not Started',val:notstart,col:C_GRAY}];
+    // The segments ARE the eligible population split by status, so the ring, the
+    // centre figure and the legend percentages all read from their sum. Using
+    // jn.eligible here instead made the legend divide by a different number than
+    // the arcs were drawn from, and by 1 whenever eligible was 0 — which is how
+    // 31 completed rendered as 3100%.
+    var total=segs.reduce(function(a,b){return a+b.val;},0);
     var cx=70,cy=70,R=54,rr=34;
     var svg='<svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" style="width:140px;height:140px;flex-shrink:0">';
-    var tot=segs.reduce(function(a,b){return a+b.val;},0)||1;
+    var tot=total||1;
     var ang=-Math.PI/2;
     segs.forEach(function(s){
       var sw=s.val/tot*2*Math.PI;if(sw<0.001){ang+=sw;return;}
@@ -19187,7 +19196,7 @@ document.addEventListener('DOMContentLoaded', function() {
       svg+='<path d="M'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+R+','+R+' 0 '+lg+',1 '+x2.toFixed(1)+','+y2.toFixed(1)+' L'+ix2.toFixed(1)+','+iy2.toFixed(1)+' A'+rr+','+rr+' 0 '+lg+',0 '+ix1.toFixed(1)+','+iy1.toFixed(1)+' Z" fill="'+s.col+'"/>';
       ang+=sw;
     });
-    svg+='<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-size="19" font-weight="800" style="fill:var(--lc-text)">'+jn.eligible+'</text>';
+    svg+='<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-size="19" font-weight="800" style="fill:var(--lc-text)">'+total+'</text>';
     svg+='<text x="'+cx+'" y="'+(cy+10)+'" text-anchor="middle" font-size="9.5" style="fill:var(--lc-text3)">Eligible</text>';
     svg+='</svg>';
     var leg='<div class="osv3-don-leg">';
@@ -19200,12 +19209,20 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function buildTrend(trend){
-    var maxV=Math.max(1,trend.reduce(function(a,t){return Math.max(a,t.completed,t.scoreUpdated);},0));
+    var peak=trend.reduce(function(a,t){return Math.max(a,t.completed,t.scoreUpdated);},0);
+    var maxV=Math.max(1,peak);
     var h='<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">OSV Completion Trend</span>'
       +'<select class="osv3-card-sel" onchange="osvTrendN3(this.value)">'
       +'<option value="6"'+(_osvTrendN===6?' selected':'')+'>Last 6 Months</option>'
       +'<option value="12"'+(_osvTrendN===12?' selected':'')+'>Last 12 Months</option>'
-      +'</select></div><div class="osv3-chart-area">';
+      +'</select></div>';
+    // Every month zero means no OSV record carries a date, not a flat trend. Drawing
+    // bars at the 2% floor made that look like real data sitting at zero.
+    if(peak<=0){
+      return h+'<div class="osv3-empty" style="padding:38px 0;text-align:center;color:var(--lc-text3);font-size:12.5px">'
+        +'No dated OSV completions in this period.</div></div>';
+    }
+    h+='<div class="osv3-chart-area">';
     trend.forEach(function(m){
       var h1=maxV>0?Math.max(2,m.completed/maxV*100):2;
       var h2=maxV>0?Math.max(2,m.scoreUpdated/maxV*100):2;

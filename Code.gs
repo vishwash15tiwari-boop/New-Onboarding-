@@ -4097,7 +4097,7 @@ function debugDocs() {
 // ═══════════════════════════════════════════════════════════════
 function getOSVDashboardData() {
   try {
-  var CACHE_KEY = 'osv_dash_v7';
+  var CACHE_KEY = 'osv_dash_v8';  // bumped: eligibility now unions the OSV pipeline
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -4180,7 +4180,8 @@ function getOSVDashboardData() {
       if (vsScr < 0 && vsDen < 0) vsScr = VS_COLS.denominator;
       var vsAsg  = vfc_(['assigned_user','assigned_to','assignee','owner','sales_poc','poc',
                          'account_manager','rm','kam','executive','agent']);
-      var vsUpd  = vfc_(['last_updated','last_updated_date','updated_at','updated_date',
+      var vsUpd  = vfc_(['last_updated','last_updated_date','last_updated_at','updated_at',
+                         'updated_date','modified_at','last_modified','last_modified_date',
                          'osv_date','osv_updated_date','consent_date','status_date']);
       // New columns: KYC Status / OSV Sent / Third Party / Pre-OSV Score
       var vsKyc      = vfc_(['kyc_status','kyc','kyc_verification_status','kyc_state',
@@ -4239,6 +4240,11 @@ function getOSVDashboardData() {
         // OSV Sent — treat any non-empty date/flag as sent
         var osvSentRaw = vsOsvSent >= 0 ? String(row[vsOsvSent] || '').trim() : '';
         var osvSent = osvSentRaw !== '' && osvSentRaw !== '-' && osvSentRaw !== '—' && osvSentRaw !== 'N/A';
+        // The OSV-sent column is often a date (osv_sent_date / osv_initiation_date).
+        // Keep it when it parses: it is the only other dated OSV milestone, and the
+        // completion trend needs a fallback when the sheet carries no updated date.
+        var _osd = (vsOsvSent >= 0) ? parseDate(row[vsOsvSent]) : null;
+        var osvSentDate = _osd ? fmtDate(_osd) : '';
 
         // Third Party Verification
         var tpvRaw = vsThirdPty >= 0 ? String(row[vsThirdPty] || '').trim() : '';
@@ -4255,7 +4261,7 @@ function getOSVDashboardData() {
           osvStatus: osvSt, score: score, preScore: preScore,
           category: cat,
           assignedTo: vsAsg >= 0 ? String(row[vsAsg] || '').trim().slice(0, 60) : '',
-          updatedDate: upd, hasTransaction: sel.hasTransaction,
+          updatedDate: upd, osvSentDate: osvSentDate, hasTransaction: sel.hasTransaction,
           kycStatus: kycSt, osvSent: osvSent, thirdParty: thirdParty
         });
       });
@@ -4265,21 +4271,33 @@ function getOSVDashboardData() {
   // ── 3. Journey stage counts ──────────────────────────────────
   var onbCount  = onboardedSellers.length;
   var txnCount  = onboardedSellers.filter(function(s) { return s.hasTransaction; }).length;
-  var eligCount = txnCount;   // OSV eligible = has qualifying completed transaction
 
   var consentCnt = 0, initCnt = 0, cmpCnt = 0, scoreCnt = 0;
-  var inScoreSheet = {};
+  var inScoreSheet = {}, inPipeline = {};
   osvRecords.forEach(function(r) {
     inScoreSheet[r.id] = true;
     if (r.osvStatus === 'verified') {
-      consentCnt++; initCnt++; cmpCnt++;
+      consentCnt++; initCnt++; cmpCnt++; inPipeline[r.id] = true;
       if (r.score !== null) scoreCnt++;
     } else if (r.osvStatus === 'in_progress') {
-      consentCnt++; initCnt++;
+      consentCnt++; initCnt++; inPipeline[r.id] = true;
     } else if (r.osvStatus === 'consent_obtained') {
-      consentCnt++;
+      consentCnt++; inPipeline[r.id] = true;
     }
   });
+
+  // Eligibility is read from the seller feed's hasTransaction flag, but every OSV
+  // stage below is counted from the score sheet. Where a vendor reached OSV without
+  // a transaction recorded against them the funnel inverted — 0 eligible feeding 53
+  // initiated. Having reached any OSV stage is itself evidence the vendor qualified,
+  // so eligibility is the union of the two, which also keeps each stage <= the one
+  // before it.
+  var onbIds = {};
+  onboardedSellers.forEach(function(s) { onbIds[s.id] = true; });
+  var eligCount = onboardedSellers.filter(function(s) {
+    return s.hasTransaction || inPipeline[s.id];
+  }).length;
+  Object.keys(inPipeline).forEach(function(id) { if (!onbIds[id]) eligCount++; });
 
   // ── 4. Status distribution ──────────────────────────────────
   var eniCnt = 0;
@@ -4331,6 +4349,7 @@ function getOSVDashboardData() {
       category:       r ? r.category        : s.category,
       assignedTo:     r ? r.assignedTo      : '',
       updatedDate:    r ? r.updatedDate     : '',
+      osvSentDate:    r ? (r.osvSentDate || '') : '',
       hasTransaction: s.hasTransaction,
       kycStatus:      r ? (r.kycStatus  || '') : '',
       osvSent:        r ? (r.osvSent    || false) : false,
@@ -4432,8 +4451,13 @@ function getOSVDashboardData() {
   trendMonths.forEach(function(m) { trendMap[m.key] = m; });
   fullSellerList.forEach(function(s) {
     if (s.osvStatus !== 'verified') return;
-    if (!s.updatedDate || s.updatedDate === '—') return;
-    var parts = String(s.updatedDate).split('/');
+    // Fall back to the OSV-sent date: sheets that never populate an updated-date
+    // column otherwise produce a trend of all zeros, which rendered as a row of
+    // flat bars rather than as "no data".
+    var td = s.updatedDate;
+    if (!td || td === '—') td = s.osvSentDate;
+    if (!td || td === '—') return;
+    var parts = String(td).split('/');
     if (parts.length === 3) {
       var yy = parseInt(parts[2], 10), mm = parseInt(parts[1], 10) - 1;
       if (!isNaN(yy) && !isNaN(mm)) {
