@@ -18926,15 +18926,16 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style id="osv3-css">
-.lc .osv3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:20px;padding:24px 28px 36px}
-.lc .osv3-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.lc .osv3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px;padding:16px 20px 28px}
+.lc .osv3-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .lc .osv3-hdr-l{display:flex;flex-direction:column;gap:4px}
 .lc .osv3-ttl{font-size:20px;font-weight:700;color:var(--lc-text);letter-spacing:-.025em;line-height:1.2}
 .lc .osv3-sub{font-size:12.5px;color:var(--lc-text3);margin-top:3px}
 .lc .osv3-period{display:flex;background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:9px;padding:3px;gap:2px;flex-shrink:0}
 .lc .osv3-period button{padding:5px 13px;border:0;border-radius:7px;background:transparent;color:var(--lc-text3);font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;transition:all .15s}
 .lc .osv3-period button.on{background:var(--lc-card);color:var(--lc-text);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.lc .osv3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.lc .osv3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.lc .osv3-row1{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .lc .osv3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:14px;padding:20px 20px 16px;display:flex;flex-direction:column;gap:0;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden}
 .lc .osv3-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .lc .osv3-kpis .osv3-kpi:nth-child(1)::before{background:var(--lc-ok,#1DC797)}
@@ -19017,7 +19018,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .osv3-cov-bar{height:5px;background:var(--lc-border);border-radius:3px;overflow:hidden;margin-top:3px;width:64px}
 .lc .osv3-cov-fill{height:100%;border-radius:3px}
 @media(max-width:1100px){.lc .osv3-kpis{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:820px){.lc .osv3-kpis{grid-template-columns:repeat(2,1fr)}.lc .osv3-journey{flex-wrap:wrap}}
+@media(max-width:820px){.lc .osv3-kpis{grid-template-columns:repeat(2,1fr)}.lc .osv3-journey{flex-wrap:wrap}.lc .osv3-row1{grid-template-columns:1fr}}
 </style>
 
 <script id="osv3-js">
@@ -19276,7 +19277,7 @@ document.addEventListener('DOMContentLoaded', function() {
     h+=buildHeader();
     h+=buildKPIs(dispJn,dispPo);
     h+=buildJourney(dispJn);
-    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
+    h+='<div class="osv3-row1">';
     h+=buildStatusPanel(dispJn,dispSd);
     h+=buildTrend(trend);
     h+='</div>';
