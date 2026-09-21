@@ -6560,25 +6560,11 @@ function _mmVertModules(key) {
       .map(function(r){ return { region:r.region, s:r.total||0, b:0 }; });
   }
   if (regs.length) {
-    // Geographic Split is now business-vertical specific: clicking it reveals the
-    // vertical's own onboarding categories (Metal / Plastic / …), and picking one
-    // opens the India map scoped to that category. Categories are data-driven from
-    // catOnb so every vertical shows only its applicable set — nothing hard-coded.
-    var geoCatCards = catOnb.filter(function(x){ return (x.s + x.b) > 0; })
-      .map(function(x){
-        return { t:_catLabel(x.cat), geoCat:_mmGeoSeg(x.cat), kind:'module', tone:'t-blue', ic:MM_IC.pin,
-                 v:fmt(x.s + x.b), s:_mmSB(x.s, x.b) };
-      });
-    if (geoCatCards.length) {
-      // Category-wise breakdown only — one independent card per category (Metal /
-      // Plastic / …). No aggregate "All Categories" card by design.
-      mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module',
-        eye:'Choose a category', children:geoCatCards });
-    } else {
-      // Fallback for a vertical with no category breakdown — open the map directly.
-      mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module', geoModule:true,
-        eye:'Onboarded distribution' });
-    }
+    // Geographic Split opens straight onto the full map screen. It used to expand a
+    // column of category cards first, but the screen now carries those cards itself,
+    // so the extra step only put the same choice one click further away.
+    mods.push({ t:'Geographic Split', ic:MM_IC.pin, tone:'t-blue', kind:'module', geoModule:true,
+      eye:'Onboarded distribution' });
   }
 
   // 4 — Transactions (Sellers + Buyers combined; GMV remains seller-side only).
@@ -7159,6 +7145,14 @@ function mmClickNode(id) {
       mmPath = _mmPathIds(node);
       mmGeoActive = true; _geo.state = null; _geo.hover = null; _geoAnimate = true;
       mmGeoOpen('All');
+      // Land on a category so the screen opens scoped rather than empty-handed; the
+      // in-page category cards switch from there. Runs after mmGeoOpen because that
+      // sets _geo.key, which _geoCats() reads. Data-driven, so a vertical with no
+      // categories simply opens unscoped.
+      if (!_geo.cat) {
+        var _gc = (typeof _geoCats === 'function') ? _geoCats() : [];
+        _geo.cat = _gc.length ? String(_gc[0]).toLowerCase() : null;
+      }
     }
     _mmAnimateReveal = true; mmPaint(); return;
   }
