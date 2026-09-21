@@ -4086,6 +4086,7 @@ body.view-ov #ov-screen{display:block}
 /* Page intro */
 .ov-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px}
 .ov-eyebrow{font-size:13px;font-weight:700;letter-spacing:.18em;color:var(--blue);text-transform:uppercase;margin-bottom:0}
+.ov-bc{font-size:11.5px;font-weight:500;color:var(--txt3);letter-spacing:0;text-transform:none;margin-top:4px}
 .ov-sub{display:none}
 .ov-period-row{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;align-self:flex-end}
 
@@ -16021,13 +16022,21 @@ function _ovFYSeries() {
 }
 
 // Current-period aggregate KPIs from DS/DB.
-function _ovKpis() {
-  var cfg = getVertCfg();
+// Vertical keys in scope: one vertical when `scope` names it, otherwise all.
+// This is the single filter that separates the Global Overview from a Vertical
+// Overview — both levels share every aggregator and renderer below.
+function _ovScopeKeys(scope) {
+  if (scope) return [scope];
+  return getVertCfg().map(function(vc) { return vc.key; });
+}
+
+function _ovKpis(scope) {
+  var keys = _ovScopeKeys(scope);
   var total = 0, comp = 0, tatSum = 0, tatN = 0;
   [DS, DB].forEach(function(src) {
     if (!src || !src.verticals) return;
-    cfg.forEach(function(vc) {
-      var vd = src.verticals[vc.key] || {};
+    keys.forEach(function(k) {
+      var vd = src.verticals[k] || {};
       total  += vd.total     || 0;
       comp   += vd.completed || 0;
       if (vd.avgTAT != null && (vd.tatCount || 0) > 0) {
@@ -16044,21 +16053,23 @@ function _ovKpis() {
   };
 }
 
-// Status distribution (completed / in review / draft / rejected) across all verticals.
-function _ovStatus() {
-  var cfg = getVertCfg();
-  var comp = 0, inRev = 0, draft = 0, rej = 0;
+// Status distribution (completed / in review / draft / rejected) for the scope.
+function _ovStatus(scope) {
+  var keys = _ovScopeKeys(scope);
+  var comp = 0, inRev = 0, draft = 0, rej = 0, total = 0;
   [DS, DB].forEach(function(src) {
     if (!src || !src.verticals) return;
-    cfg.forEach(function(vc) {
-      var vd = src.verticals[vc.key] || {};
+    keys.forEach(function(k) {
+      var vd = src.verticals[k] || {};
       comp  += vd.completed || 0;
       inRev += vd.inReview  || 0;
       draft += vd.draft     || 0;
       rej   += vd.rejected  || 0;
+      total += vd.total     || 0;
     });
   });
-  return { comp: comp, inRev: inRev, draft: draft, rej: rej, total: comp + inRev + draft + rej };
+  return { comp: comp, inRev: inRev, draft: draft, rej: rej,
+    total: Math.max(total, comp + inRev + draft + rej) };
 }
 
 // Format a percentage delta for display.
@@ -16090,11 +16101,36 @@ function _ovVertSVG(key) {
 
 // Update the overview period chip active state (no re-render of the whole row).
 function renderOvQFChips() {
-  document.querySelectorAll('#ov-qf-chips .qf-chip').forEach(function(btn) {
+  // Class-based so the Global and Vertical Overview period rows stay in sync
+  // from one call — both mount the same control set.
+  document.querySelectorAll('.ov-qf-chips .qf-chip').forEach(function(btn) {
     btn.classList.toggle('active', btn.dataset.qf === currentPeriod);
   });
-  var sel = document.getElementById('ov-top-period');
-  if (sel) sel.value = currentPeriod;
+  document.querySelectorAll('.ov-period-sel').forEach(function(sel) {
+    sel.value = currentPeriod;
+  });
+}
+
+// Shared period-control markup for both Overview levels. `idPrefix` keeps the
+// two mounts' ids distinct; the classes drive styling and syncing.
+function _ovPeriodRowHtml(idPrefix) {
+  var fyOpts = ((D && D.fiscalYears) || []).map(function(fy) {
+    return '<option value="' + fy + '">' + fy + '</option>';
+  }).join('');
+  return '<div class="qf-chips ov-qf-chips" id="' + idPrefix + '-qf-chips" style="background:var(--seg-track)">'
+    + '<button class="qf-chip" data-qf="Today" onclick="onPeriodSelect(\'Today\')">Today</button>'
+    + '<button class="qf-chip" data-qf="MTD"   onclick="onPeriodSelect(\'MTD\')">For the Month</button>'
+    + '<button class="qf-chip" data-qf="YTD"   onclick="onPeriodSelect(\'YTD\')">YTD</button>'
+    + '<button class="qf-chip" data-qf="All"   onclick="onPeriodSelect(\'All\')">All</button>'
+    + '</div>'
+    + '<select class="filter-select ov-period-sel" id="' + idPrefix + '-top-period" style="min-width:108px" onchange="onPeriodSelect(this.value)">'
+    + '<option value="All">All Time</option>'
+    + '<option value="Today">Today</option>'
+    + '<option value="MTD">MTD</option>'
+    + '<option value="YTD">YTD</option>'
+    + fyOpts
+    + '<option value="Custom">Custom Range</option>'
+    + '</select>';
 }
 
 // Master render function — called on DOMContentLoaded and after every loadData().
@@ -16104,24 +16140,7 @@ function renderOvScreen() {
   // ── Period controls (rendered once, then only chips/select synced) ──
   var prow = document.getElementById('ov-period-row');
   if (prow && !document.getElementById('ov-qf-chips')) {
-    var fyOpts = ((D && D.fiscalYears) || []).map(function(fy) {
-      return '<option value="' + fy + '">' + fy + '</option>';
-    }).join('');
-    prow.innerHTML =
-      '<div class="qf-chips" id="ov-qf-chips" style="background:var(--seg-track)">'
-      + '<button class="qf-chip" data-qf="Today" onclick="onPeriodSelect(\'Today\')">Today</button>'
-      + '<button class="qf-chip" data-qf="MTD"   onclick="onPeriodSelect(\'MTD\')">For the Month</button>'
-      + '<button class="qf-chip" data-qf="YTD"   onclick="onPeriodSelect(\'YTD\')">YTD</button>'
-      + '<button class="qf-chip" data-qf="All"   onclick="onPeriodSelect(\'All\')">All</button>'
-      + '</div>'
-      + '<select class="filter-select" id="ov-top-period" style="min-width:108px" onchange="onPeriodSelect(this.value)">'
-      + '<option value="All">All Time</option>'
-      + '<option value="Today">Today</option>'
-      + '<option value="MTD">MTD</option>'
-      + '<option value="YTD">YTD</option>'
-      + fyOpts
-      + '<option value="Custom">Custom Range</option>'
-      + '</select>';
+    prow.innerHTML = _ovPeriodRowHtml('ov');
   } else if (prow) {
     // FY options may now be available — repopulate quietly
     var sel = document.getElementById('ov-top-period');
@@ -16163,9 +16182,12 @@ function renderOvScreen() {
   if (window._ovMonthlyData) renderOvBarChart(window._ovMonthlyData);
 }
 
-function _buildOvKpiCards() {
-  var kpis = _ovKpis();
-  var fySeries = _ovFYSeries();
+function _buildOvKpiCards(scope) {
+  var kpis = _ovKpis(scope);
+  // _ovFYSeries aggregates every vertical, so its deltas describe the portfolio,
+  // not one vertical. Omit them when scoped rather than attach a portfolio trend
+  // to a vertical's figures.
+  var fySeries = scope ? [] : _ovFYSeries();
   var curr = fySeries[0], prev = fySeries[1];
   var fyLabel = (curr && prev) ? 'vs. ' + prev.fy : 'vs. last FY';
 
@@ -16202,14 +16224,14 @@ function _buildOvKpiCards() {
        + card('#8460D4', 'rgba(132,96,212,.08)', icClock, 'Average TAT',       tatVal,   dTAT);
 }
 
-function renderOvDonut() {
-  var el = document.getElementById('ov-donut');
+function renderOvDonut(scope, elId) {
+  var el = document.getElementById(elId || 'ov-donut');
   if (!el) return;
   if (!(DS || DB)) {
     el.innerHTML = '<div class="sk" style="height:140px;border-radius:var(--r2)"></div>';
     return;
   }
-  var st = _ovStatus();
+  var st = _ovStatus(scope);
   if (!st.total) {
     el.innerHTML = '<div style="text-align:center;padding:48px 0;color:var(--txt3);font-size:13px">No data available</div>';
     return;
@@ -16223,8 +16245,12 @@ function renderOvDonut() {
     { label:'Rejected',   val:st.rej,   color:'#FF3B30', def:_d.rejected  || '' },
   ].filter(function(s){ return s.val > 0; });
 
+  // Global and Vertical Overview both mount this component, so the hover state
+  // is keyed to whichever one rendered last and its internals use classes, not
+  // ids — duplicate ids across the two mounts would collide on getElementById.
   window._ovDonutSegs  = segs;
   window._ovDonutTotal = st.total;
+  window._ovDonutRoot  = el;
 
   var CX = 60, CY = 60, R_OUT = 50, R_IN = 34;
   var GAP = segs.length > 1 ? 2.5 : 0;
@@ -16277,17 +16303,17 @@ function renderOvDonut() {
   el.innerHTML =
     '<div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-4)">'
     + '<div style="position:relative;width:120px;height:120px;flex-shrink:0">'
-    + '<svg id="ov-donut-svg" viewBox="0 0 120 120" style="width:120px;height:120px;overflow:visible">'
+    + '<svg class="ov-donut-svg" viewBox="0 0 120 120" style="width:120px;height:120px;overflow:visible">'
     + '<circle cx="' + CX + '" cy="' + CY + '" r="' + ((R_OUT + R_IN) / 2).toFixed(1) + '"'
     + ' fill="none" stroke="var(--bg2)" stroke-width="' + (R_OUT - R_IN) + '"/>'
     + paths
     + '</svg>'
-    + '<div id="ov-donut-ctr" style="position:absolute;inset:0;display:flex;flex-direction:column;'
+    + '<div class="ov-donut-ctr" style="position:absolute;inset:0;display:flex;flex-direction:column;'
     + 'align-items:center;justify-content:center;pointer-events:none">'
-    + '<div id="ov-donut-cval" style="font-size:19px;font-weight:800;letter-spacing:-.5px;'
+    + '<div class="ov-donut-cval" style="font-size:19px;font-weight:800;letter-spacing:-.5px;'
     + 'color:var(--txt);line-height:1;transition:color .15s"'
     + ' data-count="' + st.total + '" data-count-id="ov_health_tot">' + fmt(st.total) + '</div>'
-    + '<div id="ov-donut-clbl" style="font-size:8px;color:var(--txt2);font-weight:500;'
+    + '<div class="ov-donut-clbl" style="font-size:8px;color:var(--txt2);font-weight:500;'
     + 'margin-top:3px;text-align:center;line-height:1.35;transition:color .15s">Total<br>Cases</div>'
     + '</div>'
     + '</div>'
@@ -16303,19 +16329,20 @@ function ovDonutHover(idx) {
   var s = segs[idx];
   if (!s) return;
   var pct = total > 0 ? Math.round(s.val / total * 100) : 0;
+  var root = window._ovDonutRoot || document;
 
-  var cval = document.getElementById('ov-donut-cval');
-  var clbl = document.getElementById('ov-donut-clbl');
+  var cval = root.querySelector('.ov-donut-cval');
+  var clbl = root.querySelector('.ov-donut-clbl');
   if (cval) { cval.textContent = fmt(s.val); cval.style.color = s.color; }
   if (clbl) { clbl.innerHTML = s.label + '<br>' + pct + '%'; clbl.style.color = s.color; }
 
-  var svg = document.getElementById('ov-donut-svg');
+  var svg = root.querySelector('.ov-donut-svg');
   if (svg) svg.querySelectorAll('path').forEach(function(p, i) {
     p.style.opacity   = (i === idx) ? '1'         : '0.2';
     p.style.transform = (i === idx) ? 'scale(1.07)' : 'scale(1)';
   });
 
-  document.querySelectorAll('.ov-dl-row').forEach(function(r) {
+  root.querySelectorAll('.ov-dl-row').forEach(function(r) {
     var active = parseInt(r.dataset.lidx, 10) === idx;
     r.style.background = active ? 'var(--bg2)' : '';
     var nameEl = r.querySelector('.ov-dl-name');
@@ -16325,18 +16352,19 @@ function ovDonutHover(idx) {
 
 function ovDonutLeave() {
   var total = window._ovDonutTotal || 0;
-  var cval  = document.getElementById('ov-donut-cval');
-  var clbl  = document.getElementById('ov-donut-clbl');
+  var root  = window._ovDonutRoot || document;
+  var cval  = root.querySelector('.ov-donut-cval');
+  var clbl  = root.querySelector('.ov-donut-clbl');
   if (cval) { cval.textContent = fmt(total); cval.style.color = ''; }
   if (clbl) { clbl.innerHTML = 'Total<br>Cases'; clbl.style.color = ''; }
 
-  var svg = document.getElementById('ov-donut-svg');
+  var svg = root.querySelector('.ov-donut-svg');
   if (svg) svg.querySelectorAll('path').forEach(function(p) {
     p.style.opacity   = '1';
     p.style.transform = 'scale(1)';
   });
 
-  document.querySelectorAll('.ov-dl-row').forEach(function(r) {
+  root.querySelectorAll('.ov-dl-row').forEach(function(r) {
     r.style.background = '';
     var nameEl = r.querySelector('.ov-dl-name');
     if (nameEl) nameEl.style.color = '';
@@ -16409,17 +16437,20 @@ var _OV_BAR_VERT_COLORS = {
   OMP:                '#005DFF',
 };
 
-function renderOvBarChart(monthly) {
-  var el = document.getElementById('ov-bar-chart');
+// opts lets a second mount (the Vertical Overview) reuse this chart with its own
+// container and controls: { elId, monthsSelId, modeSelId }.
+function renderOvBarChart(monthly, opts) {
+  opts = opts || {};
+  var el = document.getElementById(opts.elId || 'ov-bar-chart');
   if (!el) return;
   if (!monthly || !monthly.length) {
     el.innerHTML = '<div class="sk" style="height:200px;border-radius:var(--r2)"></div>';
     return;
   }
-  var sel  = document.getElementById('ov-months-sel');
+  var sel  = document.getElementById(opts.monthsSelId || 'ov-months-sel');
   var nM   = sel ? (parseInt(sel.value, 10) || 6) : 6;
   var data = monthly.slice(-nM);
-  var modeEl = document.getElementById('ov-chart-mode');
+  var modeEl = document.getElementById(opts.modeSelId || 'ov-chart-mode');
   var mode   = modeEl ? modeEl.value : 'aud';
   var CHART_H = 200;
   var moNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -19932,46 +19963,6 @@ try{ if(typeof renderTxnDistSkeleton==='function'){ renderTxnDistSkeleton=functi
 <!-- ══════════════════════════════════════════════════════════════════════════
      VERTICAL OVERVIEW  (VOV) — styles
      ════════════════════════════════════════════════════════════════════════ -->
-<style id="vov-css">
-.lc .vov-pg{display:flex;flex-direction:column;gap:16px;padding:20px 24px;min-height:100%;box-sizing:border-box}
-.lc .vov-hdr{display:flex;align-items:center;gap:12px}
-.lc .vov-hdr-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.lc .vov-hdr-info{display:flex;flex-direction:column;gap:2px}
-.lc .vov-hdr-name{font-size:20px;font-weight:700;color:var(--lc-text)}
-.lc .vov-hdr-bc{font-size:12px;color:var(--lc-text-2,#6b7280)}
-.lc .vov-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.lc .vov-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;gap:4px}
-.lc .vov-kpi-lbl{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--lc-text-2,#6b7280)}
-.lc .vov-kpi-val{font-size:28px;font-weight:800;color:var(--lc-text);line-height:1}
-.lc .vov-kpi-sub{font-size:12px;color:var(--lc-text-2,#6b7280);margin-top:2px}
-.lc .vov-main{display:grid;grid-template-columns:1fr 320px;gap:16px}
-.lc .vov-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;overflow:hidden}
-.lc .vov-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--lc-border)}
-.lc .vov-card-ttl{font-size:13px;font-weight:700;color:var(--lc-text)}
-.lc .vov-card-body{padding:14px 18px}
-.lc .vov-segs{display:flex;gap:4px}
-.lc .vov-seg-btn{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;border:1px solid var(--lc-border);background:transparent;color:var(--lc-text-2,#6b7280);cursor:pointer;transition:all .15s}
-.lc .vov-seg-btn.vov-active{background:var(--lc-accent,#4f46e5);border-color:var(--lc-accent,#4f46e5);color:#fff}
-.lc .vov-bar-wrap{display:flex;align-items:stretch;gap:4px;height:120px;padding-top:8px}
-.lc .vov-bar-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;flex:1;min-width:0}
-.lc .vov-bar-fill-wrap{flex:1;position:relative;width:100%;min-height:0}
-.lc .vov-bar-fill{position:absolute;left:0;right:0;bottom:0;border-radius:4px 4px 0 0;min-height:2px;transition:height .3s}
-.lc .vov-bar-mon{font-size:9px;color:var(--lc-text-2,#6b7280);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.lc .vov-bar-val{font-size:10px;font-weight:700;color:var(--lc-text-2,#6b7280)}
-.lc .vov-dl{display:flex;flex-direction:column;gap:8px}
-.lc .vov-dl-row{display:flex;align-items:center;gap:8px;padding:2px 0}
-.lc .vov-dl-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.lc .vov-dl-name{font-size:13px;color:var(--lc-text);flex:1}
-.lc .vov-dl-count{font-size:13px;font-weight:700;color:var(--lc-text)}
-.lc .vov-dl-pct{font-size:11px;color:var(--lc-text-2,#6b7280);min-width:34px;text-align:right}
-.lc .vov-dl-bar-wrap{height:3px;background:var(--lc-border);border-radius:2px;margin:-4px 0 4px}
-.lc .vov-dl-bar-fill{height:100%;border-radius:2px;transition:width .4s}
-.lc .vov-explore-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;margin:12px 18px 18px;border:1px dashed var(--lc-border);border-radius:10px;font-size:12px;font-weight:600;color:var(--lc-text-2,#6b7280);cursor:pointer;background:transparent;transition:all .15s;width:calc(100% - 36px);box-sizing:border-box}
-.lc .vov-explore-btn:hover{border-color:var(--lc-accent,#4f46e5);color:var(--lc-accent,#4f46e5)}
-.lc .vov-hdr-ctls{display:flex;gap:8px}
-@media(max-width:940px){.lc .vov-main{grid-template-columns:1fr}.lc .vov-kpis{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.lc .vov-kpis{grid-template-columns:1fr}.lc .vov-pg{padding:14px}}
-</style>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
      VERTICAL OVERVIEW  (VOV) — logic
@@ -19999,6 +19990,10 @@ function switchVertOverview(key) {
 }
 
 // ── Main render ────────────────────────────────────────────────────────────
+// The Vertical Overview IS the Global Overview at a narrower scope. It mounts the
+// same shell, the same KPI cards, the same monthly bar chart and the same health
+// donut, passing the vertical key as the scope so only the dataset differs.
+// Conceptually: OverviewDashboard(scope = null) vs VerticalOverview(scope = key).
 function renderVertOverview(key) {
   var el = document.getElementById('tab-vertoverview');
   if (!el) return;
@@ -20007,194 +20002,118 @@ function renderVertOverview(key) {
   var vcfg = null;
   try { (getVertCfg() || []).forEach(function(v){ if (v.key === key) vcfg = v; }); } catch(e){}
   var vertName = vcfg ? (vcfg.name || key) : key;
-  var vc = (typeof VERT_COLORS !== 'undefined' && VERT_COLORS[key])
-    ? VERT_COLORS[key] : { c:'#4f46e5', ink:'#fff', soft:'#ede9fe' };
-  var accentC = vc.c || '#4f46e5';
-  var softC   = vc.soft || '#ede9fe';
 
-  var kpis    = _vovKpis(key);
-  var st      = _vovStatus(key);
+  el.innerHTML = _vovShell(vertName);
+
+  var prow = document.getElementById('vov-period-row');
+  if (prow) prow.innerHTML = _ovPeriodRowHtml('vov');
+  renderOvQFChips();
+
+  var kpiEl = document.getElementById('vov-kpi-row');
+  if (kpiEl && (DS || DB)) {
+    kpiEl.innerHTML = _buildOvKpiCards(key);
+    animateCounters(kpiEl);
+  }
+
+  renderOvDonut(key, 'vov-donut');
+  renderOvBarChart(_vovMonthlySeries(key), {
+    elId:        'vov-bar-chart',
+    monthsSelId: 'vov-months-sel',
+    modeSelId:   'vov-chart-mode'
+  });
+
+  if (typeof _lcSync === 'function') _lcSync();
+}
+
+// ── Shell: same composition as the Global Overview (#ov-screen) ────────────
+function _vovShell(vertName) {
+  var nm  = _vovEsc(vertName);
+  var aud = _vovAud || 'all';
+  var nM  = _vovNMonths || 6;
+  var audOpts = [['all','Sellers / Buyers'],['seller','Sellers only'],['buyer','Buyers only']]
+    .map(function(o){ return '<option value="' + o[0] + '"' + (aud === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
+  var monOpts = [6,9,12]
+    .map(function(n){ return '<option value="' + n + '"' + (nM === n ? ' selected' : '') + '>Last ' + n + ' Months</option>'; }).join('');
+
+  return '<div class="ov-wrap">'
+    + '<div class="ov-page-hdr">'
+    +   '<div>'
+    +     '<div class="ov-eyebrow">' + nm + ' Overview</div>'
+    +     '<div class="ov-bc">Central Onboarding &rsaquo; ' + nm + ' &rsaquo; Overview</div>'
+    +     '<p class="ov-sub">Executive view of onboarding performance for ' + nm + '.</p>'
+    +   '</div>'
+    +   '<div class="ov-period-row" id="vov-period-row"></div>'
+    + '</div>'
+    + '<div class="ov-kpi-row" id="vov-kpi-row">'
+    +   '<div class="ov-kpi sk" style="min-height:112px"></div>'
+    +   '<div class="ov-kpi sk" style="min-height:112px"></div>'
+    +   '<div class="ov-kpi sk" style="min-height:112px"></div>'
+    + '</div>'
+    + '<div class="ov-analytics-row">'
+    +   '<div class="ov-chart-card">'
+    +     '<div class="ov-card-hdr">'
+    +       '<div>'
+    +         '<div class="ov-card-title">Monthly Onboarding</div>'
+    +         '<div class="ov-card-sub">Seller and buyer onboarding in ' + nm + '.</div>'
+    +       '</div>'
+    +       '<div style="display:flex;gap:var(--sp-2);align-items:center">'
+    +         '<select class="ov-chart-sel" id="vov-chart-mode" onchange="vovSetAud(this.value)">' + audOpts + '</select>'
+    +         '<select class="ov-chart-sel" id="vov-months-sel" onchange="vovSetMonths(this.value)">' + monOpts + '</select>'
+    +       '</div>'
+    +     '</div>'
+    +     '<div id="vov-bar-chart"><div class="sk" style="height:200px;border-radius:var(--r2)"></div></div>'
+    +   '</div>'
+    +   '<div class="ov-donut-card">'
+    +     '<div class="ov-card-title" style="margin-bottom:4px">Onboarding Health</div>'
+    +     '<div class="ov-card-sub">Current status of ' + nm + ' onboardings.</div>'
+    +     '<div id="vov-donut"><div class="sk" style="height:140px;border-radius:var(--r2)"></div></div>'
+    +   '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+// ── Monthly series for one vertical, in the same shape as _ovMonthlyData ───
+// getOverviewStats only exposes per-vertical monthly totals (verts[key]) with no
+// seller/buyer split, so the audience breakdown is counted from the vertical's
+// own rows. The audience filter zeroes the excluded side here rather than in the
+// chart, so renderOvBarChart stays a shared component.
+function _vovMonthlySeries(key) {
+  var aud     = _vovAud || 'all';
   var selRows = Array.isArray(vertRows) ? vertRows : [];
   var buyAll  = (_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : [];
-  // Filter buyer rows to this vertical using whichever field is present
   var buyRows = buyAll.filter(function(r){
     return !r.vertical || r.vertical === key || r.vertKey === key || r.vert === key;
   });
-  var aud = _vovAud || 'all';
-  var chartRows = aud === 'seller' ? selRows : aud === 'buyer' ? buyRows : selRows.concat(buyRows);
-  var nM = _vovNMonths || 6;
-  var months = _vovMonthlyRows(chartRows, nM);
-  var maxBar = 0;
-  months.forEach(function(m){ if (m.count > maxBar) maxBar = m.count; });
-
-  el.innerHTML = _vovBuild(vertName, vc, accentC, softC, kpis, st, months, maxBar);
-  if (typeof _lcSync === 'function') _lcSync();
-  if (typeof animateCounters === 'function') animateCounters(el);
+  return _vovMonthlyBuckets(
+    aud === 'buyer'  ? [] : selRows,
+    aud === 'seller' ? [] : buyRows,
+    _vovNMonths || 6
+  );
 }
 
-// ── KPI aggregation for one vertical ──────────────────────────────────────
-function _vovKpis(key) {
-  var total = 0, comp = 0, tatSum = 0, tatN = 0;
-  [DS, DB].forEach(function(src){
-    if (!src || !src.verticals) return;
-    var vd = src.verticals[key] || {};
-    total  += vd.total     || 0;
-    comp   += vd.completed || 0;
-    if (vd.avgTAT != null && (vd.tatCount || 0) > 0) {
-      tatSum += vd.avgTAT * vd.tatCount;
-      tatN   += vd.tatCount;
-    }
-  });
-  return { total:total, comp:comp,
-    compRate: total > 0 ? Math.round(comp / total * 100) : 0,
-    avgTAT:   tatN  > 0 ? Math.round(tatSum / tatN * 10) / 10 : null };
-}
-
-// ── Health status for one vertical ────────────────────────────────────────
-function _vovStatus(key) {
-  var comp = 0, inRev = 0, draft = 0, rej = 0, total = 0;
-  [DS, DB].forEach(function(src){
-    if (!src || !src.verticals) return;
-    var vd = src.verticals[key] || {};
-    comp  += vd.completed || 0;
-    inRev += vd.inReview  || 0;
-    draft += vd.draft     || 0;
-    rej   += vd.rejected  || 0;
-    total += vd.total     || 0;
-  });
-  // Denominator matches the portfolio screen (stMax = port.total); fall back to the
-  // status sum when `total` is absent so percentages never collapse to 0%.
-  return { comp:comp, inRev:inRev, draft:draft, rej:rej,
-    total: Math.max(total, comp + inRev + draft + rej) };
-}
-
-// ── Monthly buckets from rows ──────────────────────────────────────────────
-function _vovMonthlyRows(rows, n) {
+// Counts onboarded cases only (status COMPLETED, dated by onbDate) — the same
+// definition the rest of the dashboard uses for "onboarded".
+function _vovMonthlyBuckets(sellerRows, buyerRows, n) {
   var now = new Date();
-  var MONS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var buckets = [];
+  var buckets = [], bMap = {};
   for (var i = n - 1; i >= 0; i--) {
-    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    var d  = new Date(now.getFullYear(), now.getMonth() - i, 1);
     var mk = d.getFullYear() + '-' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1);
-    buckets.push({ key:mk, label: MONS[d.getMonth()] + ' \'' + String(d.getFullYear()).slice(2), count:0 });
+    var b  = { month: mk, sellers: 0, buyers: 0 };
+    buckets.push(b); bMap[mk] = b;
   }
-  var bMap = {};
-  buckets.forEach(function(b){ bMap[b.key] = b; });
-  rows.forEach(function(r){
-    if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
-    var pd = (typeof parseDMY === 'function') ? parseDMY(r.onbDate || '') : null;
-    if (!pd) return;
-    var mk2 = pd.getFullYear() + '-' + (pd.getMonth() < 9 ? '0' : '') + (pd.getMonth() + 1);
-    if (bMap[mk2]) bMap[mk2].count++;
-  });
+  function tally(rows, field) {
+    (rows || []).forEach(function(r){
+      if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
+      var pd = (typeof parseDMY === 'function') ? parseDMY(r.onbDate || '') : null;
+      if (!pd) return;
+      var mk = pd.getFullYear() + '-' + (pd.getMonth() < 9 ? '0' : '') + (pd.getMonth() + 1);
+      if (bMap[mk]) bMap[mk][field]++;
+    });
+  }
+  tally(sellerRows, 'sellers');
+  tally(buyerRows,  'buyers');
   return buckets;
-}
-
-// ── HTML builder ───────────────────────────────────────────────────────────
-function _vovBuild(vertName, vc, accentC, softC, kpis, st, months, maxBar) {
-  var h = '<div class="lc vov-pg">';
-
-  // Header
-  h += '<div class="vov-hdr">'
-    + '<div class="vov-hdr-ic" style="background:' + softC + ';color:' + accentC + '">📊</div>'
-    + '<div class="vov-hdr-info">'
-    + '<div class="vov-hdr-name">' + _vovEsc(vertName) + ' Overview</div>'
-    + '<div class="vov-hdr-bc">Central Onboarding › ' + _vovEsc(vertName) + ' › Overview</div>'
-    + '</div></div>';
-
-  // KPI cards
-  var tatText = kpis.avgTAT != null ? kpis.avgTAT + ' days' : '—';
-  var nf = function(n){ return Number(n || 0).toLocaleString(); };
-  h += '<div class="vov-kpis">'
-    + _vovKpiCard('Total Onboarded',  nf(kpis.comp),       'Sellers & buyers combined', accentC)
-    + _vovKpiCard('Completion Rate',  kpis.compRate + '%', nf(kpis.comp) + ' of ' + nf(kpis.total) + ' cases', accentC)
-    + _vovKpiCard('Average TAT',      tatText,             'Days from submit to onboard', accentC)
-    + '</div>';
-
-  // Main row: chart + health
-  h += '<div class="vov-main">';
-
-  // Monthly chart card
-  var nM = _vovNMonths || 6;
-  var aud = _vovAud || 'all';
-  var audBtns = [['all','All'],['seller','Seller'],['buyer','Buyer']].map(function(p){
-    return '<button class="vov-seg-btn' + (aud === p[0] ? ' vov-active' : '')
-      + '" onclick="vovSetAud(\'' + p[0] + '\')">' + p[1] + '</button>';
-  }).join('');
-  var monBtns = [3,6,12].map(function(n){
-    return '<button class="vov-seg-btn' + (nM === n ? ' vov-active' : '')
-      + '" onclick="vovSetMonths(' + n + ')">Last ' + n + 'M</button>';
-  }).join('');
-
-  h += '<div class="vov-card">'
-    + '<div class="vov-card-hdr"><span class="vov-card-ttl">Monthly Onboarding</span>'
-    + '<div class="vov-hdr-ctls"><div class="vov-segs">' + audBtns + '</div><div class="vov-segs">' + monBtns + '</div></div>'
-    + '</div><div class="vov-card-body">';
-
-  if (months.length && maxBar > 0) {
-    h += '<div class="vov-bar-wrap">';
-    months.forEach(function(m){
-      var pct = Math.round(m.count / maxBar * 100);
-      h += '<div class="vov-bar-col">'
-        + (m.count ? '<div class="vov-bar-val">' + m.count + '</div>' : '<div class="vov-bar-val" style="opacity:0">0</div>')
-        + '<div class="vov-bar-fill-wrap">'
-        + '<div class="vov-bar-fill" style="height:' + pct + '%;background:' + accentC + '44;border-top:2px solid ' + accentC + '"></div>'
-        + '</div><div class="vov-bar-mon">' + _vovEsc(m.label) + '</div></div>';
-    });
-    h += '</div>';
-  } else {
-    h += '<div class="vov-bar-wrap">';
-    months.forEach(function(m){
-      h += '<div class="vov-bar-col"><div class="vov-bar-val" style="opacity:0">0</div>'
-        + '<div class="vov-bar-fill-wrap"><div class="vov-bar-fill" style="height:2px;background:var(--lc-border)"></div></div>'
-        + '<div class="vov-bar-mon">' + _vovEsc(m.label) + '</div></div>';
-    });
-    h += '</div>';
-  }
-  h += '</div></div>'; // card-body / chart card
-
-  // Health card
-  var DL = [
-    { key:'comp',  label:'Onboarded', color:'#10b981' },
-    { key:'inRev', label:'In Review', color:'#f59e0b' },
-    { key:'draft', label:'Draft',     color:'#6b7280' },
-    { key:'rej',   label:'Rejected',  color:'#ef4444' },
-  ];
-  var tot = st.total || 1;
-  h += '<div class="vov-card">'
-    + '<div class="vov-card-hdr"><span class="vov-card-ttl">Onboarding Health</span></div>'
-    + '<div class="vov-card-body"><div class="vov-dl">';
-  DL.forEach(function(cfg){
-    var cnt = st[cfg.key] || 0;
-    var pct = Math.round(cnt / tot * 100);
-    var tipTxt = '';
-    try { tipTxt = (typeof MF_DEFS !== 'undefined' && MF_DEFS[cfg.label]) ? MF_DEFS[cfg.label] : ''; } catch(e){}
-    h += '<div class="vov-dl-row"'
-      + (tipTxt ? ' onmouseenter="vovHealthTip(this,\'' + _vovEsc(tipTxt.replace(/'/g,'&apos;')) + '\')" onmouseleave="vovHealthTipHide()"' : '')
-      + '>'
-      + '<div class="vov-dl-dot" style="background:' + cfg.color + '"></div>'
-      + '<div class="vov-dl-name">' + _vovEsc(cfg.label) + '</div>'
-      + '<div class="vov-dl-count">' + cnt.toLocaleString() + '</div>'
-      + '<div class="vov-dl-pct">' + pct + '%</div>'
-      + '</div>'
-      + '<div class="vov-dl-bar-wrap"><div class="vov-dl-bar-fill" style="width:' + pct + '%;background:' + cfg.color + '"></div></div>';
-  });
-  h += '</div></div>';
-  h += '<button class="vov-explore-btn" onclick="vovExploreModules()">Explore Modules →</button>';
-  h += '</div>'; // health card
-
-  h += '</div>'; // vov-main
-  h += '</div>'; // vov-pg
-  return h;
-}
-
-// ── KPI card helper ────────────────────────────────────────────────────────
-function _vovKpiCard(lbl, val, sub) {
-  return '<div class="vov-kpi">'
-    + '<div class="vov-kpi-lbl">' + _vovEsc(lbl) + '</div>'
-    + '<div class="vov-kpi-val">' + _vovEsc(String(val)) + '</div>'
-    + '<div class="vov-kpi-sub">' + _vovEsc(sub) + '</div>'
-    + '</div>';
 }
 
 // ── Escape helper ──────────────────────────────────────────────────────────
@@ -20208,36 +20127,8 @@ window.vovSetAud = function(a) {
   if (_vovKey && currentView === 'vertoverview') renderVertOverview(_vovKey);
 };
 window.vovSetMonths = function(n) {
-  _vovNMonths = n;
+  _vovNMonths = parseInt(n, 10) || 6;
   if (_vovKey && currentView === 'vertoverview') renderVertOverview(_vovKey);
-};
-window.vovHealthTip = function(el, tip) {
-  if (!tip) return;
-  var t = document.getElementById('ov-tooltip');
-  if (!t) return;
-  t.textContent = tip;
-  t.style.display = 'block';
-  var r = el.getBoundingClientRect();
-  t.style.left = (r.left + window.scrollX) + 'px';
-  t.style.top  = (r.top  + window.scrollY - t.offsetHeight - 8) + 'px';
-};
-window.vovHealthTipHide = function() {
-  var t = document.getElementById('ov-tooltip');
-  if (t) t.style.display = 'none';
-};
-window.vovExploreModules = function() {
-  // Click the first non-muted module button in the sidebar
-  var first = document.querySelector('.sn-vert-expand .sn-mod:not(.sn-muted):not(.vov-active)');
-  if (first) { first.click(); return; }
-  // Fallback: go to onboarding view with current vertical
-  if (_vovKey && typeof selectVertTab === 'function') {
-    if (currentView !== 'onboarding') {
-      currentView = 'onboarding';
-      snModActive = null;
-      updateViewChrome();
-    }
-    selectVertTab(_vovKey);
-  }
 };
 </script>
 </body>
