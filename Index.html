@@ -4980,6 +4980,11 @@ function updateViewChrome() {
 
   var vt = document.getElementById('view-title');
   var tb = document.getElementById('vert-tabs-bar');
+  // Remove view-ov BEFORE showing any tab: _showTabFade starts a CSS animation from
+  // opacity:0, and browsers suspend animations inside display:none containers.
+  // body.view-ov causes #dash-content to be display:none!important, so the fade
+  // must start while dash-content is already visible.
+  if (!isDash) document.body.classList.remove('view-ov');
   if (ov)  ov.style.display  = isDash ? '' : 'none';
   if (gt)  { if (isGst)     _showTabFade(gt);  else gt.style.display  = 'none'; }
   if (td)  { if (isTxndist) _showTabFade(td);  else td.style.display  = 'none'; }
@@ -4995,9 +5000,6 @@ function updateViewChrome() {
                    existingnew:'Existing vs New' };
   if (vt) vt.textContent = titleMap[currentView] || 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
-  // Remove the overview-screen class whenever we switch to any dedicated module
-  // view — view-ov must only exist while the overview landing is showing.
-  if (!isDash) document.body.classList.remove('view-ov');
   setAura(isGst ? 'gst' : (activeVertKey || 'OMP'));
   renderVertCtxHdr((isDash) ? activeVertKey : null);
   if (isDash) positionVertThumb(false);
@@ -5034,7 +5036,9 @@ function switchView(view) {
     var _evnBuyerReady = _ovnRows && _ovnRows.buyer != null;
     if (!_evnBuyerReady && typeof renderEVNSkeleton === 'function') renderEVNSkeleton();
     _ovnEnsureAud('buyer');
-    renderEVNDash();
+    if (typeof renderEVNDash === 'function') {
+      try { renderEVNDash(); } catch(e) { console.error('renderEVNDash', e); }
+    }
     return;
   }
   // ── Transactions module ──
