@@ -5021,6 +5021,9 @@ function switchView(view) {
     document.body.style.overflow = '';
     updateViewChrome();
     renderVNav();
+    // If buyer was marked in-flight (null sentinel) but no fetch started — e.g. because
+    // activeVertKey was null at that moment — reset so _ovnEnsureAud can retry.
+    if (_ovnRows && _ovnRows.buyer === null) _ovnRows.buyer = undefined;
     // Skip skeleton when buyer data is already in memory — direct render is instant.
     var _evnBuyerReady = _ovnRows && _ovnRows.buyer != null;
     if (!_evnBuyerReady && typeof renderEVNSkeleton === 'function') renderEVNSkeleton();
@@ -9529,8 +9532,8 @@ function _kvnLoadAud(aud) {
 function _ovnEnsureAud(aud) {
   if (_ovnRows[aud] !== undefined) return; // already loaded or in-flight
   _ovnRows[aud] = null; // mark as in-flight
-  var key = activeVertKey || selectedVert;
-  if (!key) return;
+  var key = activeVertKey || selectedVert || (typeof snVertModKey !== 'undefined' ? snVertModKey : null);
+  if (!key) { _ovnRows[aud] = undefined; return; } // reset sentinel so caller can retry
   var f = { audience: aud, period: currentPeriod };
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
   var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
