@@ -20522,14 +20522,14 @@ document.addEventListener('DOMContentLoaded', function() {
     allRows.forEach(function(r){
       var d=r.onbDate?parseDMY(r.onbDate):null;
       if(!d)return;
-      var mm=d.getMonth()+1,key=d.getFullYear()+’-’+(mm<10?’0’:’’)+mm;
+      var mm=d.getMonth()+1,key=d.getFullYear()+'-'+(mm<10?'0':'')+mm;
       if(!byMonth[key])byMonth[key]={existing:0,newv:0};
       if(rowIsNew(r))byMonth[key].newv++;else byMonth[key].existing++;
     });
     var keys=Object.keys(byMonth).sort();
-    if(!keys.length)return ‘<div class="evn-empty">No trend data</div>’;
-    var MONTHS=[‘Jan’,’Feb’,’Mar’,’Apr’,’May’,’Jun’,’Jul’,’Aug’,’Sep’,’Oct’,’Nov’,’Dec’];
-    var pts=keys.map(function(k){var parts=k.split(‘-’);return{label:MONTHS[parseInt(parts[1],10)-1]+’ \’’+parts[0].slice(2),existing:byMonth[k].existing,newv:byMonth[k].newv};});
+    if(!keys.length)return '<div class="evn-empty">No trend data</div>';
+    var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var pts=keys.map(function(k){var parts=k.split('-');return{label:MONTHS[parseInt(parts[1],10)-1]+' \''+parts[0].slice(2),existing:byMonth[k].existing,newv:byMonth[k].newv};});
     var maxE=pts.reduce(function(m,p){return Math.max(m,p.existing);},0);
     var maxN=pts.reduce(function(m,p){return Math.max(m,p.newv);},0);
     var maxV=Math.max(maxE,maxN,1);
@@ -20539,55 +20539,55 @@ document.addEventListener('DOMContentLoaded', function() {
     function yOf(v){return PT+iH-v/maxV*iH;}
     function mkPath(vals,close){
       var ps=vals.map(function(v,i){return[xOf(i),yOf(v)];});
-      if(!ps.length)return’’;
-      if(ps.length===1)return’M’+ps[0][0].toFixed(1)+’,’+ps[0][1].toFixed(1);
-      var d=’M’+ps[0][0].toFixed(1)+’,’+ps[0][1].toFixed(1);
+      if(!ps.length)return'';
+      if(ps.length===1)return'M'+ps[0][0].toFixed(1)+','+ps[0][1].toFixed(1);
+      var d='M'+ps[0][0].toFixed(1)+','+ps[0][1].toFixed(1);
       for(var i=0;i<ps.length-1;i++){
         var p0=ps[i>0?i-1:0],p1=ps[i],p2=ps[i+1],p3=ps[i<ps.length-2?i+2:i+1];
         var cp1x=(p1[0]+(p2[0]-p0[0])/6).toFixed(1),cp1y=(p1[1]+(p2[1]-p0[1])/6).toFixed(1);
         var cp2x=(p2[0]-(p3[0]-p1[0])/6).toFixed(1),cp2y=(p2[1]-(p3[1]-p1[1])/6).toFixed(1);
-        d+=’ C’+cp1x+’,’+cp1y+’ ‘+cp2x+’,’+cp2y+’ ‘+p2[0].toFixed(1)+’,’+p2[1].toFixed(1);
+        d+=' C'+cp1x+','+cp1y+' '+cp2x+','+cp2y+' '+p2[0].toFixed(1)+','+p2[1].toFixed(1);
       }
-      if(close)d+=’ L’+(PL+iW).toFixed(1)+’,’+(PT+iH)+’ L’+PL+’,’+(PT+iH)+’ Z’;
+      if(close)d+=' L'+(PL+iW).toFixed(1)+','+(PT+iH)+' L'+PL+','+(PT+iH)+' Z';
       return d;
     }
     var exVals=pts.map(function(p){return p.existing;}),nwVals=pts.map(function(p){return p.newv;});
-    var svg=’<svg viewBox="0 0 ‘+W+’ ‘+(H+PT+PB)+’" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">’;
-    svg+=’<defs>’;
-    svg+=’<linearGradient id="evn-gex2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(132,96,212,0.55)"/><stop offset="100%" stop-color="rgba(132,96,212,0.05)"/></linearGradient>’;
-    svg+=’<linearGradient id="evn-gnw2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,93,255,0.5)"/><stop offset="100%" stop-color="rgba(0,93,255,0.05)"/></linearGradient>’;
-    svg+=’</defs>’;
-    svg+=’<line x1="’+PL+’" y1="’+(PT+iH)+’" x2="’+(PL+iW)+’" y2="’+(PT+iH)+’" stroke="var(--lc-divider)" stroke-width="1"/>’;
+    var svg='<svg viewBox="0 0 '+W+' '+(H+PT+PB)+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">';
+    svg+='<defs>';
+    svg+='<linearGradient id="evn-gex2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(132,96,212,0.55)"/><stop offset="100%" stop-color="rgba(132,96,212,0.05)"/></linearGradient>';
+    svg+='<linearGradient id="evn-gnw2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,93,255,0.5)"/><stop offset="100%" stop-color="rgba(0,93,255,0.05)"/></linearGradient>';
+    svg+='</defs>';
+    svg+='<line x1="'+PL+'" y1="'+(PT+iH)+'" x2="'+(PL+iW)+'" y2="'+(PT+iH)+'" stroke="var(--lc-divider)" stroke-width="1"/>';
     // New curve behind
     if(maxN>0){
-      svg+=’<path d="’+mkPath(nwVals,true)+’" fill="url(#evn-gnw2)"/>’;
-      svg+=’<path d="’+mkPath(nwVals,false)+’" fill="none" stroke="#005DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>’;
+      svg+='<path d="'+mkPath(nwVals,true)+'" fill="url(#evn-gnw2)"/>';
+      svg+='<path d="'+mkPath(nwVals,false)+'" fill="none" stroke="#005DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
     }
     // Existing curve on top (semi-transparent overlap)
     if(maxE>0){
-      svg+=’<path d="’+mkPath(exVals,true)+’" fill="url(#evn-gex2)"/>’;
-      svg+=’<path d="’+mkPath(exVals,false)+’" fill="none" stroke="#8460D4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>’;
+      svg+='<path d="'+mkPath(exVals,true)+'" fill="url(#evn-gex2)"/>';
+      svg+='<path d="'+mkPath(exVals,false)+'" fill="none" stroke="#8460D4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
     }
-    // Direct inline labels at each curve’s peak
+    // Direct inline labels at each curve's peak
     if(maxN>0){
       var ni=nwVals.indexOf(maxN),nx=xOf(ni),ny=yOf(maxN)-8;
-      var na=ni<n*0.2?’start’:ni>n*0.8?’end’:’middle’;
-      svg+=’<text x="’+nx.toFixed(1)+’" y="’+ny.toFixed(1)+’" text-anchor="’+na+’" fill="#005DFF" font-size="9.5" font-weight="700" font-family="inherit">New</text>’;
+      var na=ni<n*0.2?'start':ni>n*0.8?'end':'middle';
+      svg+='<text x="'+nx.toFixed(1)+'" y="'+ny.toFixed(1)+'" text-anchor="'+na+'" fill="#005DFF" font-size="9.5" font-weight="700" font-family="inherit">New</text>';
     }
     if(maxE>0){
       var ei=exVals.indexOf(maxE),ex2=xOf(ei),ey=yOf(maxE)-8;
-      var ea=ei<n*0.2?’start’:ei>n*0.8?’end’:’middle’;
+      var ea=ei<n*0.2?'start':ei>n*0.8?'end':'middle';
       // nudge label up if too close to New label
       if(maxE>0&&maxN>0&&Math.abs(xOf(nwVals.indexOf(maxN))-ex2)<30)ey-=13;
-      svg+=’<text x="’+ex2.toFixed(1)+’" y="’+ey.toFixed(1)+’" text-anchor="’+ea+’" fill="#8460D4" font-size="9.5" font-weight="700" font-family="inherit">Existing</text>’;
+      svg+='<text x="'+ex2.toFixed(1)+'" y="'+ey.toFixed(1)+'" text-anchor="'+ea+'" fill="#8460D4" font-size="9.5" font-weight="700" font-family="inherit">Existing</text>';
     }
     // X-axis month labels — sparse to avoid crowding
     pts.forEach(function(p,i){
       if(n<=6||(i===0)||(i===n-1)||(n<=12&&i%2===0)||(n>12&&i%3===0)){
-        svg+=’<text x="’+xOf(i).toFixed(1)+’" y="’+(PT+iH+18)+’" text-anchor="middle" fill="var(--lc-text3)" font-size="8" font-family="inherit">’+p.label+’</text>’;
+        svg+='<text x="'+xOf(i).toFixed(1)+'" y="'+(PT+iH+18)+'" text-anchor="middle" fill="var(--lc-text3)" font-size="8" font-family="inherit">'+p.label+'</text>';
       }
     });
-    svg+=’</svg>’;
+    svg+='</svg>';
     return svg;
   }
 
