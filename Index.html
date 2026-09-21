@@ -9539,7 +9539,10 @@ function _ovnEnsureAud(aud) {
   if (_ovnRows[aud] !== undefined) return; // already loaded or in-flight
   _ovnRows[aud] = null; // mark as in-flight
   var key = activeVertKey || selectedVert || (typeof snVertModKey !== 'undefined' ? snVertModKey : null);
-  if (!key) { _ovnRows[aud] = undefined; return; } // reset sentinel so caller can retry
+  // On the overview screen, activeVertKey is null. Fall back to the first configured
+  // vertical (OMP/Marketplace) so EVN can still load buyer data.
+  if (!key) { var _cfg0 = getVertCfg(); key = _cfg0.length ? _cfg0[0].key : null; }
+  if (!key) { _ovnRows[aud] = undefined; return; } // no verticals configured — retry later
   var f = { audience: aud, period: currentPeriod };
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
   var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
