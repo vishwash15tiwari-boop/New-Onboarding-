@@ -7145,14 +7145,7 @@ function mmClickNode(id) {
       mmPath = _mmPathIds(node);
       mmGeoActive = true; _geo.state = null; _geo.hover = null; _geoAnimate = true;
       mmGeoOpen('All');
-      // Land on a category so the screen opens scoped rather than empty-handed; the
-      // in-page category cards switch from there. Runs after mmGeoOpen because that
-      // sets _geo.key, which _geoCats() reads. Data-driven, so a vertical with no
-      // categories simply opens unscoped.
-      if (!_geo.cat) {
-        var _gc = (typeof _geoCats === 'function') ? _geoCats() : [];
-        _geo.cat = _gc.length ? String(_gc[0]).toLowerCase() : null;
-      }
+      _geoSeedCat();
     }
     _mmAnimateReveal = true; mmPaint(); return;
   }
@@ -7793,6 +7786,18 @@ function _geoStateId(raw) {
 }
 
 // Open the panel for a region; ensure both audiences' rows are loaded.
+// Land the Geographic Split screen on a category so it opens scoped rather than
+// empty-handed; the in-page category cards switch from there. Call AFTER
+// mmGeoOpen, which sets _geo.key — the key _geoCats() reads. Also reseeds when
+// the held category does not exist in this vertical, which otherwise left the
+// map blank after switching verticals. Lowercased to match _geoAgg's filter.
+function _geoSeedCat() {
+  if (typeof _geoCats !== 'function') return;
+  var cats = _geoCats().map(function(c) { return String(c).toLowerCase(); });
+  if (!cats.length) { _geo.cat = null; return; }
+  if (!_geo.cat || cats.indexOf(_geo.cat) < 0) _geo.cat = cats[0];
+}
+
 function mmGeoOpen(region) {
   var key = (typeof activeVertKey !== 'undefined' && activeVertKey) || selectedVert;
   var pKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
@@ -13193,6 +13198,11 @@ function snClickModule(nodeId) {
 
   // Geographic Split: bypass column navigation — directly activate geo panel.
   if (_isGeoParent || _isGeoModule) {
+    // The geo panel lives inside #tab-overview, which a special view (Vendor
+    // Ratings, OSV, the vertical Overview, …) leaves display:none. Without this
+    // reset the map painted into a hidden container, so the module looked dead
+    // until the user visited a panel module and came back.
+    if (currentView !== 'onboarding') { currentView = 'onboarding'; updateViewChrome(); }
     mmFunnelActive = false; mmModActive = false;
     if (_isGeoParent) {
       var firstCat = _n.children[0];
@@ -13200,10 +13210,12 @@ function snClickModule(nodeId) {
       _geo.cat = (firstCat.geoCat === '__all__') ? null : firstCat.geoCat;
     } else {
       mmPath = typeof _mmPathIds === 'function' ? _mmPathIds(_n) : mmPath;
-      _geo.cat = null;
     }
     mmGeoActive = true; _geo.state = null; _geo.hover = null; _geoAnimate = true;
     if (typeof mmGeoOpen === 'function') mmGeoOpen('All');
+    // Seed the category the same way the mind-map path does, after mmGeoOpen has
+    // set _geo.key — the key _geoCats() reads — so the screen opens scoped.
+    if (_isGeoModule) _geoSeedCat();
     buildSideNav();
     if (typeof mmPaint === 'function') mmPaint();
     return;
