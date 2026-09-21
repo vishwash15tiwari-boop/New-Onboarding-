@@ -3277,9 +3277,10 @@ body.view-gst #mm-crumbs{display:none}
 /* Sidebar vertical-drill mode: hide the columns grid; panel takes full width */
 .mmworkspace.sn-drill .mmnav{display:none!important}
 .mmworkspace.sn-drill{gap:0}
-/* position:fixed takes mmdetail out of document flow so #dash-content's padding
-   (12px top + 56px bottom = 68px) no longer creates a page-level scrollbar. */
-.mmworkspace.sn-drill.has-panel .mmdetail{position:fixed;top:56px;left:0;right:0;overflow-x:hidden;overflow-y:auto;display:flex;flex-direction:column;height:calc(100vh - 56px);max-height:none;z-index:10}
+.mmworkspace.sn-drill.has-panel .mmdetail{flex-basis:100%;max-width:100%;overflow-x:hidden;overflow-y:auto;display:flex;flex-direction:column;height:calc(100vh - 56px);max-height:none;top:56px}
+/* In sn-drill the page overflows by ~68–100px (dash-content padding + section-title).
+   Suppress page scroll; inner .mmdetail overflow-y:auto still scrolls normally. */
+body.mm-sn-drill{overflow:hidden}
 .mmworkspace.sn-drill #mm-modpanel.mp-open{flex:1;display:flex;flex-direction:column;overflow:visible}
 .mmworkspace.sn-drill .mp-body{flex:1;display:flex;flex-direction:column;overflow:visible}
 .mmworkspace.sn-drill .mp-matrix{flex:1;margin-top:8px;align-content:start}
@@ -12671,6 +12672,7 @@ function _snMmNav(show) {
   if (el) el.style.display = show ? '' : 'none';
   var ws = document.getElementById('mm-workspace');
   if (ws) ws.classList.toggle('sn-drill', !show);
+  document.body.classList.toggle('mm-sn-drill', !show);
 }
 
 // Level 1: reset to Overview — restore the mind-map columns.
