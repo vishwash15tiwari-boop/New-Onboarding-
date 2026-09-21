@@ -5227,6 +5227,7 @@ function renderAll() {
     try { renderEVNDash(); } catch(e) { console.error('renderEVNDash', e); }
   }
   if (currentView === 'vertoverview' && typeof renderVertOverview === 'function') {
+    if (typeof _ovnEnsureAud === 'function' && _vovKey) _ovnEnsureAud('buyer');
     try { renderVertOverview(_vovKey); } catch(e) { console.error('renderVertOverview', e); }
   }
 }
