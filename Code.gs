@@ -4097,7 +4097,7 @@ function debugDocs() {
 // ═══════════════════════════════════════════════════════════════
 function getOSVDashboardData() {
   try {
-  var CACHE_KEY = 'osv_dash_v6';
+  var CACHE_KEY = 'osv_dash_v7';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -4419,6 +4419,57 @@ function getOSVDashboardData() {
     if (s.osvStatus !== 'not_initiated') txnAndInitiated.withOsv++;
   });
 
+  // Monthly trend (last 6 calendar months)
+  var nowT = new Date();
+  var trendMonths = [];
+  for (var mi = 5; mi >= 0; mi--) {
+    var td = new Date(nowT.getFullYear(), nowT.getMonth() - mi, 1);
+    var tKey = td.getFullYear() + '-' + (td.getMonth() + 1);
+    var monthAbbr = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][td.getMonth()];
+    trendMonths.push({ key: tKey, label: monthAbbr, completed: 0, scoreUpdated: 0 });
+  }
+  var trendMap = {};
+  trendMonths.forEach(function(m) { trendMap[m.key] = m; });
+  fullSellerList.forEach(function(s) {
+    if (s.osvStatus !== 'verified') return;
+    if (!s.updatedDate || s.updatedDate === '—') return;
+    var parts = String(s.updatedDate).split('/');
+    if (parts.length === 3) {
+      var yy = parseInt(parts[2], 10), mm = parseInt(parts[1], 10) - 1;
+      if (!isNaN(yy) && !isNaN(mm)) {
+        var tKey2 = yy + '-' + (mm + 1);
+        if (trendMap[tKey2]) {
+          trendMap[tKey2].completed++;
+          if (s.score !== null) trendMap[tKey2].scoreUpdated++;
+        }
+      }
+    }
+  });
+  var monthlyTrend = trendMonths.map(function(m) {
+    return { month: m.key, label: m.label, completed: m.completed, scoreUpdated: m.scoreUpdated };
+  });
+
+  // Category performance
+  var catMapP = {};
+  fullSellerList.forEach(function(s) {
+    if (!s.hasTransaction) return;
+    var cat = (s.category || '').trim() || 'Others';
+    if (!catMapP[cat]) catMapP[cat] = { category: cat, eligible: 0, completed: 0, scored: 0, scoreSum: 0 };
+    catMapP[cat].eligible++;
+    if (s.osvStatus === 'verified') {
+      catMapP[cat].completed++;
+      if (s.score !== null) { catMapP[cat].scored++; catMapP[cat].scoreSum += s.score; }
+    }
+  });
+  var categoryPerf = Object.keys(catMapP).map(function(k) {
+    var c = catMapP[k];
+    return {
+      category: c.category, eligible: c.eligible, completed: c.completed, scored: c.scored,
+      coverage: c.completed > 0 ? Math.round(c.scored / c.completed * 100) : 0,
+      avgScore: c.scored > 0 ? Math.round(c.scoreSum / c.scored * 10) / 10 : null
+    };
+  }).sort(function(a, b) { return b.eligible - a.eligible; });
+
   var result = {
     success: true,
     lastUpdated: new Date().toISOString(),
@@ -4446,6 +4497,8 @@ function getOSVDashboardData() {
     impact: impact,
     txnAndInitiated: txnAndInitiated,
     scoreDist: { plastic: fMat_(mats.Plastic), metal: fMat_(mats.Metal) },
+    monthlyTrend: monthlyTrend,
+    categoryPerf: categoryPerf,
     sellerList: fullSellerList
   };
   var out = JSON.stringify(result);
