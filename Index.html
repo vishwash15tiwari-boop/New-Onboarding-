@@ -4992,6 +4992,9 @@ function updateViewChrome() {
                    existingnew:'Existing vs New' };
   if (vt) vt.textContent = titleMap[currentView] || 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
+  // Remove the overview-screen class whenever we switch to any dedicated module
+  // view — view-ov must only exist while the overview landing is showing.
+  if (!isDash) document.body.classList.remove('view-ov');
   setAura(isGst ? 'gst' : (activeVertKey || 'OMP'));
   renderVertCtxHdr((isDash) ? activeVertKey : null);
   if (isDash) positionVertThumb(false);
