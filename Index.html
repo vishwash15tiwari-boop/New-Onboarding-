@@ -18934,6 +18934,41 @@ document.addEventListener('DOMContentLoaded', function() {
 @media(max-width:1100px){.lc .osv3-row1{grid-template-columns:1fr 1fr}.lc .osv3-row2{grid-template-columns:1fr}}
 @media(max-width:820px){.lc .osv3-kpis{grid-template-columns:repeat(2,1fr)}.lc .osv3-row1{grid-template-columns:1fr}}
 </style>
+<style id="osv4-css">
+/* ── OSV4 reference-match additions ── */
+.lc .osv4-journey{display:flex;align-items:stretch;gap:0}
+.lc .osv4-stage{flex:1;border:1px solid var(--lc-border);border-radius:0;padding:14px 12px;position:relative;min-width:0;cursor:pointer;transition:background .15s}
+.lc .osv4-stage:first-child{border-radius:10px 0 0 10px}
+.lc .osv4-stage:last-child{border-radius:0 10px 10px 0}
+.lc .osv4-stage:hover{filter:brightness(.96)}
+.lc .osv4-stage-lbl{font-size:10.5px;font-weight:600;color:var(--lc-text3);margin-bottom:5px;line-height:1.3}
+.lc .osv4-stage-num{font-size:26px;font-weight:800;color:var(--lc-text);line-height:1;font-variant-numeric:tabular-nums}
+.lc .osv4-stage-pct{font-size:11px;font-weight:600;color:var(--lc-text3);margin-top:3px}
+.lc .osv4-arr{display:flex;align-items:center;flex-shrink:0;color:var(--lc-border);margin:0 -1px;z-index:1}
+.lc .osv4-prog{height:5px;background:var(--lc-border);border-radius:3px;overflow:hidden;margin-top:8px}
+.lc .osv4-prog-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.lc .osv4-donwrap{display:flex;align-items:center;gap:16px}
+.lc .osv4-leg{display:flex;flex-direction:column;gap:9px;flex:1;min-width:0}
+.lc .osv4-leg-row{display:flex;align-items:center;gap:7px;font-size:12px}
+.lc .osv4-leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.lc .osv4-leg-name{flex:1;color:var(--lc-text2);font-weight:500}
+.lc .osv4-leg-val{font-weight:700;color:var(--lc-text);font-variant-numeric:tabular-nums}
+.lc .osv4-leg-pct{color:var(--lc-text3);font-size:10.5px}
+.lc .osv4-cat-tbl{width:100%;border-collapse:collapse}
+.lc .osv4-cat-tbl th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--lc-text3);border-bottom:1px solid var(--lc-border);text-align:left;padding:8px 12px;white-space:nowrap}
+.lc .osv4-cat-tbl td{border-bottom:1px solid var(--lc-subtle);color:var(--lc-text);padding:9px 12px;font-size:12px;vertical-align:middle}
+.lc .osv4-cat-tbl tr:last-child td{border-bottom:none}
+.lc .osv4-cat-tbl tbody tr:hover td{background:var(--lc-subtle)}
+.lc .osv4-rec-tbl{width:100%;border-collapse:collapse}
+.lc .osv4-rec-tbl th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--lc-text3);border-bottom:1px solid var(--lc-border);text-align:left;padding:8px 12px;cursor:pointer;user-select:none;white-space:nowrap}
+.lc .osv4-rec-tbl td{border-bottom:1px solid var(--lc-subtle);color:var(--lc-text);padding:10px 12px;font-size:12.5px;vertical-align:middle}
+.lc .osv4-rec-tbl tr:last-child td{border-bottom:none}
+.lc .osv4-rec-tbl tbody tr{cursor:pointer;transition:background .1s}
+.lc .osv4-rec-tbl tbody tr:hover td{background:rgba(0,93,255,.025)}
+.lc .osv4-acts-btn{background:none;border:none;cursor:pointer;color:var(--lc-text3);font-size:17px;line-height:1;padding:2px 5px;border-radius:4px;font-family:inherit;letter-spacing:1px}
+.lc .osv4-acts-btn:hover{background:var(--lc-border);color:var(--lc-text)}
+@media(max-width:1000px){.lc .osv4-journey{flex-wrap:wrap}}
+</style>
 
 <script id="osv3-js">
 (function(){
@@ -19127,34 +19162,295 @@ document.addEventListener('DOMContentLoaded', function() {
     return h+'</div>';
   }
 
+  /* ── OSV4 helper: grouped-bar trend ── */
+  function buildOsvTrend4(sl,n){
+    var byM={};
+    sl.forEach(function(r){
+      var raw=r.osvCompletedOn||r.completedOn||'';
+      var d=parseDMY(raw);
+      if(!d&&raw){var pts=raw.split(' ');if(pts.length===3){var mo={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};var mi=mo[pts[1]];if(mi!==undefined)d=new Date(parseInt(pts[2]),mi,parseInt(pts[0]));}}
+      if(!d)return;
+      var mm=d.getMonth()+1,key=d.getFullYear()+'-'+(mm<10?'0':'')+mm;
+      if(!byM[key])byM[key]={comp:0,upd:0};
+      if(r.osvStatus==='verified'){byM[key].comp++;if(r.score||r.updatedDate)byM[key].upd++;}
+    });
+    var keys=Object.keys(byM).sort().slice(-n);
+    if(!keys.length)return '<div class="osv3-empty" style="padding:40px 0">No trend data available yet.</div>';
+    var pts=keys.map(function(k){return{k:k,comp:byM[k].comp,upd:byM[k].upd};});
+    var maxV=pts.reduce(function(m,p){return Math.max(m,p.comp,p.upd);},1);
+    var MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var H=110;
+    var h='<div style="display:flex;align-items:flex-end;gap:6px;height:'+(H+28)+'px;padding-bottom:0;overflow:hidden">';
+    pts.forEach(function(p){
+      var cH=Math.max(4,Math.round(p.comp/maxV*(H-16)));
+      var uH=Math.max(p.upd?4:0,Math.round(p.upd/maxV*(H-16)));
+      var mName=MN[parseInt(p.k.split('-')[1],10)-1];
+      h+='<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0">';
+      if(p.comp>0)h+='<div style="font-size:9px;font-weight:700;color:var(--lc-text);margin-bottom:3px">'+p.comp+'</div>';
+      else h+='<div style="height:16px"></div>';
+      h+='<div style="display:flex;align-items:flex-end;gap:3px;height:'+H+'px">';
+      h+='<div style="width:16px;background:#1DC797;border-radius:3px 3px 0 0;height:'+cH+'px" title="Completed: '+p.comp+'"></div>';
+      h+='<div style="width:16px;background:var(--lc-accent);border-radius:3px 3px 0 0;height:'+uH+'px" title="Updated: '+p.upd+'"></div>';
+      h+='</div>';
+      h+='<div style="font-size:10px;color:var(--lc-text3);margin-top:5px">'+mName+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+    return h;
+  }
+
+  /* ── OSV4 helper: category performance table ── */
+  function buildCatTable4(sl){
+    var cats={};var CAT_CLR={Plastic:'#005DFF',Metal:'#1DC797','E-Waste':'#8460D4',Battery:'#FF9500',Tyres:'#D70015',Paper:'#024C8A',Others:'#8E8E93'};
+    sl.forEach(function(r){
+      var c=r.category||'Others';
+      if(!cats[c])cats[c]={eligible:0,comp:0,scored:0,sum:0};
+      if(r.hasTransaction||r.osvStatus==='verified'||r.osvStatus==='in_progress'||r.osvStatus==='consent_obtained')cats[c].eligible++;
+      if(r.osvStatus==='verified'){cats[c].comp++;if(r.score){cats[c].scored++;cats[c].sum+=parseFloat(r.score||0);}}
+    });
+    var keys=Object.keys(cats).sort();
+    if(!keys.length)return '<div class="osv3-empty">No category data.</div>';
+    var h='<table class="osv4-cat-tbl"><thead><tr><th>Category</th><th>Eligible</th><th>Completed</th><th>Score Coverage</th><th>Avg Score</th></tr></thead><tbody>';
+    keys.forEach(function(c){
+      var d=cats[c];
+      var covPct=d.comp?Math.round(d.scored/d.comp*100):null;
+      var avg=d.scored?(d.sum/d.scored).toFixed(1):null;
+      var col=CAT_CLR[c]||'#8E8E93';
+      h+='<tr>';
+      h+='<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+col+';margin-right:7px;vertical-align:middle"></span><b>'+c+'</b></td>';
+      h+='<td>'+d.eligible+'</td>';
+      h+='<td style="color:var(--lc-ok);font-weight:600">'+d.comp+'</td>';
+      h+='<td>'+(covPct!==null?covPct+'%':'<span style="color:var(--lc-text3)">—</span>')+'</td>';
+      h+='<td style="font-weight:600">'+(avg!==null?avg:'<span style="color:var(--lc-text3)">—</span>')+'</td>';
+      h+='</tr>';
+    });
+    h+='</tbody></table>';
+    return h;
+  }
+
+  /* ── OSV4 helper: recent verifications ── */
+  function buildRecentOSV(sl){
+    var done=sl.filter(function(r){return r.osvStatus==='verified';});
+    done.sort(function(a,b){return(b.osvCompletedOn||b.completedOn||'').localeCompare(a.osvCompletedOn||a.completedOn||'');});
+    var recent=done.slice(0,5);
+    var CAT_CLR={Plastic:'#005DFF',Metal:'#1DC797','E-Waste':'#8460D4',Battery:'#FF9500',Tyres:'#D70015',Paper:'#024C8A',Others:'#8E8E93'};
+    var h='<div class="osv3-rec">';
+    h+='<div class="osv3-rec-hd"><span style="font-size:13px;font-weight:700;color:var(--lc-text)">Recent OSV Verifications</span>';
+    h+='<a style="font-size:12px;font-weight:700;color:var(--lc-accent);text-decoration:none;cursor:pointer" onclick="window.osv3GoPage(1)">View All →</a></div>';
+    if(!recent.length){h+='<div class="osv3-empty">No completed verifications yet.</div>';}
+    else{
+      h+='<div class="osv3-tbl-wrap"><table class="osv4-rec-tbl"><thead><tr><th>#</th><th>Vendor Name</th><th>Category</th><th>OSV Date</th><th>Score</th><th>Status</th><th>Updated On</th><th>Actions</th></tr></thead><tbody>';
+      recent.forEach(function(r,i){
+        var nm=r.name||r.sellerName||'—';
+        var cat=r.category||'—';
+        var col=CAT_CLR[cat]||'#8E8E93';
+        var osvD=r.osvCompletedOn||r.completedOn||'—';
+        var score=r.score?parseFloat(r.score).toFixed(1):'—';
+        var upd=r.updatedDate||r.osvCompletedOn||'—';
+        h+='<tr>';
+        h+='<td style="color:var(--lc-text3);font-size:12px">'+(i+1)+'</td>';
+        h+='<td><b>'+nm+'</b></td>';
+        h+='<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+col+';margin-right:6px;vertical-align:middle"></span>'+cat+'</td>';
+        h+='<td style="color:var(--lc-text2)">'+osvD+'</td>';
+        h+='<td style="font-weight:700;font-size:13px">'+score+'</td>';
+        h+='<td><span class="osv3-chip completed">Completed</span></td>';
+        h+='<td style="color:var(--lc-text2)">'+upd+'</td>';
+        h+='<td><button class="osv4-acts-btn" title="Actions">···</button></td>';
+        h+='</tr>';
+      });
+      h+='</tbody></table></div>';
+    }
+    h+='</div>';
+    return h;
+  }
+
+  /* ── Main render ── */
   function render(){
     var el=document.getElementById('tab-osv');
     if(!el||!_OSV)return;
     var sl=_OSV.sellerList||[];
-    var comp=sl.filter(function(r){return r.osvStatus==='verified';}).length;
-    var inprog=sl.filter(function(r){return r.osvStatus==='in_progress'||r.osvStatus==='consent_obtained';}).length;
-    var notinit=sl.length-comp-inprog,total=sl.length;
-    var trendSel='<select class="osv3-card-sel" onchange="window.osvTrendN(this.value)"><option value="6"'+(_osvTrendN===6?' selected':'')+'>Last 6 Months</option><option value="9"'+(_osvTrendN===9?' selected':'')+'>Last 9 Months</option><option value="12"'+(_osvTrendN===12?' selected':'')+'>Last 12 Months</option></select>';
-    var kpiH='<div class="osv3-kpis">';
-    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoShield,'var(--lc-ok-weak)','var(--lc-ok)')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">Total Sellers</div><div class="osv3-kpi-val">'+total+'</div><div class="osv3-kpi-sub">In Marketplace vertical</div></div></div>';
-    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoCheck,'var(--lc-ok-weak)','var(--lc-ok)')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">OSV Completed</div><div class="osv3-kpi-val">'+comp+'</div><div class="osv3-kpi-sub">'+pct(comp,total)+'% completion rate</div></div></div>';
-    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoClock,'var(--lc-warn-weak)','var(--lc-warn)')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">In Progress</div><div class="osv3-kpi-val">'+inprog+'</div><div class="osv3-kpi-sub">'+pct(inprog,total)+'% of total</div></div></div>';
-    kpiH+='<div class="osv3-kpi">'+icoWrap(IcoX,'var(--lc-subtle)','var(--lc-text3)')+'<div class="osv3-kpi-body"><div class="osv3-kpi-lbl">Not Initiated</div><div class="osv3-kpi-val">'+notinit+'</div><div class="osv3-kpi-sub">'+pct(notinit,total)+'% of total</div></div></div>';
-    kpiH+='</div>';
-    var row1='<div class="osv3-row1">';
-    row1+='<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">OSV Status Distribution</span></div>'+buildStatusDonut(sl)+'</div>';
-    row1+='<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">Monthly OSV Trend</span>'+trendSel+'</div>'+buildOsvTrend(sl,_osvTrendN)+'</div>';
-    row1+='<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">Completion Rate</span></div>'+buildCompletionRate(sl)+'</div>';
-    row1+='</div>';
-    var row2='<div class="osv3-row2">'
-      +'<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">Category Breakdown</span></div>'+buildCatTable(sl)+'</div>'
-      +'<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">State-wise Distribution</span></div>'+buildStateStackedBars(sl)+'</div>'
-      +'</div>';
-    el.innerHTML='<div class="lc osv3-pg">'
-      +'<div class="osv3-page-hdr"><div><div class="osv3-ttl">OSV Status</div><div class="osv3-sub">Occupational Safety Verification overview for Marketplace sellers</div></div></div>'
-      +kpiH+row1+row2+buildRecords(sl)+'</div>';
+    var jrn=_OSV.journey||{};
+    var pOSV=_OSV.postOSV||{};
+
+    /* Journey counts */
+    var jOn=jrn.onboarded||0;
+    var jEl=jrn.completedTxn||jrn.eligible||0;
+    var jIn=jrn.initiated||0;
+    var jCo=jrn.completed||0;
+    var jUp=jrn.scoreUpdated||0;
+    if(!jOn&&sl.length){
+      jOn=sl.length;
+      jEl=sl.filter(function(r){return r.hasTransaction;}).length;
+      jIn=sl.filter(function(r){return r.osvStatus==='verified'||r.osvStatus==='in_progress'||r.osvStatus==='consent_obtained';}).length;
+      jCo=sl.filter(function(r){return r.osvStatus==='verified';}).length;
+      jUp=sl.filter(function(r){return r.osvStatus==='verified'&&(r.score||r.updatedDate);}).length;
+    }
+
+    /* Status distribution */
+    var sCo=sl.filter(function(r){return r.osvStatus==='verified';}).length;
+    var sIn=sl.filter(function(r){return r.osvStatus==='in_progress'||r.osvStatus==='consent_obtained';}).length;
+    var sPe=sl.filter(function(r){return r.osvStatus!=='verified'&&r.osvStatus!=='in_progress'&&r.osvStatus!=='consent_obtained'&&r.hasTransaction;}).length;
+    var sNS=sl.filter(function(r){return!r.hasTransaction;}).length;
+    var sTot=sCo+sIn+sPe+sNS||1;
+
+    /* KPIs */
+    var vEl=jrn.eligible||0;
+    var vRate=vEl?Math.round(jCo/vEl*100):null;
+    var recPct=jCo?Math.round(jUp/jCo*100):0;
+    var scoredN=pOSV.scoredSellers||sl.filter(function(r){return r.osvStatus==='verified'&&r.score;}).length;
+    var covPct=jCo?Math.round(scoredN/jCo*100):0;
+    var avgS=null;
+    if(pOSV.avgScore){avgS=parseFloat(pOSV.avgScore).toFixed(1);}
+    else{var sc=sl.filter(function(r){return r.osvStatus==='verified'&&r.score;});if(sc.length)avgS=(sc.reduce(function(a,r){return a+parseFloat(r.score||0);},0)/sc.length).toFixed(1);}
+    var scoreImp=parseFloat(pOSV.scoreImprovement||0);
+
+    var now=new Date();
+    var hh=now.getHours(),mn=now.getMinutes();
+    var ts=(hh>12?hh-12:hh||12)+':'+(mn<10?'0':'')+mn+' '+(hh<12?'am':'pm');
+    var PROG=function(val,col){return '<div class="osv4-prog"><div class="osv4-prog-fill" style="width:'+val+'%;background:'+col+'"></div></div>';};
+    var i='display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid var(--lc-border);font-size:9px;color:var(--lc-text3);cursor:help;vertical-align:middle;margin-left:3px';
+
+    /* ── Build HTML ── */
+    var h='<div class="lc osv3-pg" style="gap:16px;padding:20px 24px 32px">';
+
+    /* Page header */
+    h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">';
+    h+='<div style="display:flex;align-items:center;gap:12px">';
+    h+='<div style="width:42px;height:42px;border-radius:10px;background:rgba(0,93,255,.1);color:var(--lc-accent);display:flex;align-items:center;justify-content:center">'+IcoShield+'</div>';
+    h+='<div><div style="font-size:20px;font-weight:700;color:var(--lc-text);letter-spacing:-.025em">OSV Performance</div>';
+    h+='<div style="font-size:12px;color:var(--lc-text3);margin-top:2px">Track On-Site Verification performance and coverage across all vendors.</div></div></div>';
+    h+='<div style="display:flex;align-items:center;gap:10px">';
+    h+='<div style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--lc-ok)"><span style="width:7px;height:7px;border-radius:50%;background:var(--lc-ok);display:inline-block"></span>Live · Updated '+ts+'</div>';
+    h+='<button onclick="window.osv3Refresh()" style="display:flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid var(--lc-border);border-radius:8px;background:var(--lc-subtle);color:var(--lc-text2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">&#8635; Refresh</button>';
+    h+='</div></div>';
+
+    /* KPI cards */
+    h+='<div class="osv3-kpis">';
+
+    /* KPI 1 – Verification Rate */
+    h+='<div class="osv3-kpi">'+icoWrap('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>','rgba(0,93,255,.1)','var(--lc-accent)')+'<div class="osv3-kpi-body">';
+    h+='<div class="osv3-kpi-lbl">Verification Rate <span title="% of eligible vendors who completed OSV" style="'+i+'">i</span></div>';
+    h+='<div class="osv3-kpi-val">'+(vRate!==null?vRate+'<span style="font-size:18px;font-weight:500;color:var(--lc-text3)">%</span>':'—')+'</div>';
+    h+='<div class="osv3-kpi-sub">'+jCo+' completed of '+vEl+' eligible</div>';
+    h+=PROG(vRate||0,'var(--lc-accent)');
+    h+='<div style="font-size:11px;color:var(--lc-text3);margin-top:5px">'+(vEl===0?'No eligible vendors yet':vRate===100?'All eligible vendors verified':(vEl-jCo)+' pending')+'</div>';
+    h+='</div></div>';
+
+    /* KPI 2 – Post-OSV Records Updated */
+    h+='<div class="osv3-kpi">'+icoWrap('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="23 11 17 17 14 14"/></svg>','var(--lc-ok-weak)','var(--lc-ok)')+'<div class="osv3-kpi-body">';
+    h+='<div class="osv3-kpi-lbl">Post-OSV Records Updated <span title="Records updated after OSV completion" style="'+i+'">i</span></div>';
+    h+='<div class="osv3-kpi-val">'+jUp+'</div>';
+    h+='<div class="osv3-kpi-sub">of '+jCo+' completed ('+recPct+'%)</div>';
+    h+=PROG(recPct,'var(--lc-ok)');
+    h+='<div style="font-size:11px;color:var(--lc-ok);margin-top:5px;font-weight:500">'+(recPct===100?'All records updated':jUp+' of '+jCo+' updated')+'</div>';
+    h+='</div></div>';
+
+    /* KPI 3 – Avg Post-OSV Score */
+    h+='<div class="osv3-kpi">'+icoWrap('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>','rgba(255,149,0,.12)','#FF9500')+'<div class="osv3-kpi-body">';
+    h+='<div class="osv3-kpi-lbl">Avg Post-OSV Score</div>';
+    if(avgS!==null){
+      h+='<div class="osv3-kpi-val">'+avgS+'<span style="font-size:16px;font-weight:500;color:var(--lc-text3)">/10</span>';
+      if(scoreImp!==0)h+='<span class="'+(scoreImp>0?'osv3-tag-up':'osv3-tag-dn')+'" style="font-size:12px;margin-left:8px">'+(scoreImp>0?'▲ +':'▼ ')+Math.abs(scoreImp).toFixed(1)+'</span>';
+      h+='</div><div class="osv3-kpi-sub">vs previous period avg</div>';
+    }else{h+='<div class="osv3-kpi-val">—</div><div class="osv3-kpi-sub">No score data available</div>';}
+    h+='</div></div>';
+
+    /* KPI 4 – Score Coverage */
+    h+='<div class="osv3-kpi">'+icoWrap(IcoCheck,'rgba(142,142,147,.12)','#8E8E93')+'<div class="osv3-kpi-body">';
+    h+='<div class="osv3-kpi-lbl">Score Coverage <span title="% of completed OSV vendors with a score" style="'+i+'">i</span></div>';
+    h+='<div class="osv3-kpi-val">'+covPct+'<span style="font-size:18px;font-weight:500;color:var(--lc-text3)">%</span></div>';
+    h+='<div class="osv3-kpi-sub">'+scoredN+' scored of '+jCo+' completed</div>';
+    h+=PROG(covPct,'#8E8E93');
+    h+='<div style="font-size:11px;color:var(--lc-text3);margin-top:5px">'+(covPct===100?'All completed records have scores':(jCo-scoredN)+' pending scores')+'</div>';
+    h+='</div></div>';
+
+    h+='</div>'; /* end kpis */
+
+    /* ── Journey + Status Donut (2-col) ── */
+    h+='<div style="display:grid;grid-template-columns:1fr 300px;gap:16px">';
+
+    /* Journey card */
+    h+='<div class="osv3-card">';
+    h+='<div class="osv3-card-hdr" style="margin-bottom:6px"><span class="osv3-card-ttl" style="font-size:13px;font-weight:700;color:var(--lc-text)">Onboarding – Verification Journey</span></div>';
+    h+='<div style="font-size:11.5px;color:var(--lc-text3);margin-bottom:14px">OSV can begin only after a qualifying transaction. Each step shows conversion from the previous stage.</div>';
+    var stages=[
+      {lbl:'Onboarded',val:jOn,prev:null,bg:'var(--lc-subtle)',bc:'var(--lc-border)',nc:'var(--lc-text)'},
+      {lbl:'Eligible for OSV',val:jEl,prev:jOn,bg:'rgba(0,93,255,.06)',bc:'rgba(0,93,255,.15)',nc:'var(--lc-accent)'},
+      {lbl:'OSV Initiated',val:jIn,prev:jEl,bg:'rgba(0,93,255,.08)',bc:'rgba(0,93,255,.18)',nc:'var(--lc-accent)'},
+      {lbl:'OSV Completed',val:jCo,prev:jIn,bg:'rgba(0,93,255,.06)',bc:'rgba(0,93,255,.15)',nc:'var(--lc-accent)'},
+      {lbl:'Post-OSV Updated',val:jUp,prev:jCo,bg:'rgba(29,199,151,.08)',bc:'rgba(29,199,151,.2)',nc:'var(--lc-ok)'}
+    ];
+    h+='<div class="osv4-journey">';
+    stages.forEach(function(s,idx){
+      if(idx>0)h+='<div class="osv4-arr"><svg viewBox="0 0 14 40" width="14" height="40"><polyline points="0,0 12,20 0,40" fill="none" stroke="var(--lc-border)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+      var cp=s.prev&&s.prev>0?parseFloat(s.val/s.prev*100).toFixed(1):null;
+      h+='<div class="osv4-stage" style="background:'+s.bg+';border-color:'+s.bc+'">';
+      h+='<div class="osv4-stage-lbl">'+s.lbl+'</div>';
+      h+='<div class="osv4-stage-num" style="color:'+s.nc+'">'+s.val+'</div>';
+      if(cp!==null)h+='<div class="osv4-stage-pct">('+cp+'%)</div>';
+      h+='</div>';
+    });
+    h+='</div></div>'; /* end journey card */
+
+    /* Status donut card */
+    h+='<div class="osv3-card">';
+    h+='<div class="osv3-card-hdr" style="margin-bottom:14px"><span class="osv3-card-ttl" style="font-size:12.5px;font-weight:700;color:var(--lc-text)">Verification Status</span><select class="osv3-card-sel"><option>All Vendors</option></select></div>';
+    var sdData=[{lbl:'Completed',val:sCo,col:'#1DC797'},{lbl:'In Progress',val:sIn,col:'#FF9500'},{lbl:'Pending',val:sPe,col:'#FF9F0A'},{lbl:'Not Started',val:sNS,col:'#D70015'}];
+    var dr=44,dcx=64,dcy=64,din=28;
+    var dSVG='<svg viewBox="0 0 128 128" style="width:120px;height:120px;flex-shrink:0">';
+    dSVG+='<circle cx="'+dcx+'" cy="'+dcy+'" r="'+dr+'" fill="none" stroke="var(--lc-border)" stroke-width="14"/>';
+    var dAng=-Math.PI/2;
+    sdData.forEach(function(d){
+      var sw=d.val/sTot*2*Math.PI;if(sw<.001){dAng+=sw;return;}
+      var x1=dcx+dr*Math.cos(dAng),y1=dcy+dr*Math.sin(dAng);
+      var x2=dcx+dr*Math.cos(dAng+sw),y2=dcy+dr*Math.sin(dAng+sw);
+      var ix1=dcx+din*Math.cos(dAng),iy1=dcy+din*Math.sin(dAng);
+      var ix2=dcx+din*Math.cos(dAng+sw),iy2=dcy+din*Math.sin(dAng+sw);
+      var lg=sw>Math.PI?1:0;
+      dSVG+='<path d="M'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+dr+','+dr+' 0 '+lg+',1 '+x2.toFixed(1)+','+y2.toFixed(1)+' L'+ix2.toFixed(1)+','+iy2.toFixed(1)+' A'+din+','+din+' 0 '+lg+',0 '+ix1.toFixed(1)+','+iy1.toFixed(1)+' Z" fill="'+d.col+'"/>';
+      dAng+=sw;
+    });
+    dSVG+='<text x="'+dcx+'" y="'+(dcy-4)+'" text-anchor="middle" style="fill:var(--lc-text)" font-size="19" font-weight="800">'+(sCo+sIn+sPe+sNS)+'</text>';
+    dSVG+='<text x="'+dcx+'" y="'+(dcy+11)+'" text-anchor="middle" style="fill:var(--lc-text3)" font-size="9">Total</text>';
+    dSVG+='</svg>';
+    h+='<div class="osv4-donwrap">'+dSVG+'<div class="osv4-leg">';
+    sdData.forEach(function(d){
+      h+='<div class="osv4-leg-row"><div class="osv4-leg-dot" style="background:'+d.col+'"></div><span class="osv4-leg-name">'+d.lbl+'</span><span class="osv4-leg-val">'+d.val+'</span><span class="osv4-leg-pct">('+Math.round(d.val/sTot*100)+'%)</span></div>';
+    });
+    h+='</div></div></div>'; /* end donut + status card */
+
+    h+='</div>'; /* end journey+status grid */
+
+    /* ── Trend + Category (2-col) ── */
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
+
+    /* Trend card */
+    h+='<div class="osv3-card">';
+    h+='<div class="osv3-card-hdr" style="margin-bottom:10px"><span class="osv3-card-ttl" style="font-size:12.5px;font-weight:700;color:var(--lc-text)">OSV Completion Trend</span>';
+    h+='<select class="osv3-card-sel" onchange="window.osvTrendN(this.value)"><option value="6"'+(_osvTrendN===6?' selected':'')+'>Last 6 Months</option><option value="9"'+(_osvTrendN===9?' selected':'')+'>Last 9 Months</option><option value="12"'+(_osvTrendN===12?' selected':'')+'>Last 12 Months</option></select></div>';
+    h+='<div style="display:flex;gap:14px;margin-bottom:10px;font-size:11px">';
+    h+='<div style="display:flex;align-items:center;gap:5px;color:var(--lc-text2)"><div style="width:10px;height:10px;border-radius:2px;background:#1DC797"></div>OSV Completed</div>';
+    h+='<div style="display:flex;align-items:center;gap:5px;color:var(--lc-text2)"><div style="width:10px;height:10px;border-radius:2px;background:var(--lc-accent)"></div>Post-OSV Updated</div>';
+    h+='</div>';
+    h+=buildOsvTrend4(sl,_osvTrendN);
+    h+='</div>'; /* end trend card */
+
+    /* Category table */
+    h+='<div class="osv3-card">';
+    h+='<div class="osv3-card-hdr" style="margin-bottom:12px"><span class="osv3-card-ttl" style="font-size:12.5px;font-weight:700;color:var(--lc-text)">Category-wise OSV Performance</span></div>';
+    h+=buildCatTable4(sl);
+    h+='</div>'; /* end category card */
+
+    h+='</div>'; /* end trend+category grid */
+
+    /* Recent verifications */
+    h+=buildRecentOSV(sl);
+
+    h+='</div>'; /* end osv3-pg */
+    el.innerHTML=h;
   }
 
+  window.osv3Refresh=function(){_OSV=null;loadOSVData();};
   window.osv3Sort=function(k){if(_osvSortK===k)_osvSortD*=-1;else{_osvSortK=k;_osvSortD=1;}_osvPage=1;render();};
   window.osv3GoPage=function(p){_osvPage=p;render();};
   window.osv3Search=function(q){_osvQ=q;_osvPage=1;render();};
