@@ -18842,12 +18842,20 @@ document.addEventListener('DOMContentLoaded', function() {
       +kpiH+row1+row2
       +'<div id="vr3-rec-section" style="display:none">'+buildRecords()+'</div>'
       +'</div>';
+    // Restore open state that survived the re-render (sort/filter/page changes).
+    if(window._vr3RecOpen){
+      var sec=document.getElementById('vr3-rec-section');
+      var btn=el.querySelector('.vr3-view-rec');
+      if(sec)sec.style.display='';
+      if(btn)btn.textContent='✕ Close Records';
+    }
   }
 
   window.vr3ToggleRec=function(btn){
     var sec=document.getElementById('vr3-rec-section');
     if(!sec)return;
     var open=sec.style.display!=='none';
+    window._vr3RecOpen=!open;
     sec.style.display=open?'none':'';
     if(btn)btn.textContent=open?'☰ Vendor Records':'✕ Close Records';
     if(!open)sec.scrollIntoView({behavior:'smooth',block:'nearest'});
