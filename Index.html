@@ -11511,7 +11511,7 @@ function _enrichTat(rows) {
   if (!Array.isArray(rows)) return rows;
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i];
-    if (r.tat != null && r.tat !== '' && r.tat !== '—') continue;
+    if (r.tat != null && r.tat !== 0 && r.tat !== '' && r.tat !== '—') continue;
     if (r.status !== 'COMPLETED') continue;
     var d0 = parseDMY(r.createdDate), d1 = parseDMY(r.onbDate);
     if (d0 && d1 && d1 >= d0) {
