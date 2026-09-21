@@ -19947,10 +19947,10 @@ try{ if(typeof renderTxnDistSkeleton==='function'){ renderTxnDistSkeleton=functi
 .lc .vov-segs{display:flex;gap:4px}
 .lc .vov-seg-btn{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;border:1px solid var(--lc-border);background:transparent;color:var(--lc-text-2,#6b7280);cursor:pointer;transition:all .15s}
 .lc .vov-seg-btn.vov-active{background:var(--lc-accent,#4f46e5);border-color:var(--lc-accent,#4f46e5);color:#fff}
-.lc .vov-bar-wrap{display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:8px}
-.lc .vov-bar-col{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:0}
-.lc .vov-bar-fill-wrap{flex:1;display:flex;align-items:flex-end;width:100%}
-.lc .vov-bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:2px;transition:height .3s}
+.lc .vov-bar-wrap{display:flex;align-items:stretch;gap:4px;height:120px;padding-top:8px}
+.lc .vov-bar-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;flex:1;min-width:0}
+.lc .vov-bar-fill-wrap{flex:1;position:relative;width:100%;min-height:0}
+.lc .vov-bar-fill{position:absolute;left:0;right:0;bottom:0;border-radius:4px 4px 0 0;min-height:2px;transition:height .3s}
 .lc .vov-bar-mon{font-size:9px;color:var(--lc-text-2,#6b7280);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .lc .vov-bar-val{font-size:10px;font-weight:700;color:var(--lc-text-2,#6b7280)}
 .lc .vov-dl{display:flex;flex-direction:column;gap:8px}
@@ -20047,7 +20047,7 @@ function _vovKpis(key) {
 
 // ── Health status for one vertical ────────────────────────────────────────
 function _vovStatus(key) {
-  var comp = 0, inRev = 0, draft = 0, rej = 0;
+  var comp = 0, inRev = 0, draft = 0, rej = 0, total = 0;
   [DS, DB].forEach(function(src){
     if (!src || !src.verticals) return;
     var vd = src.verticals[key] || {};
@@ -20055,8 +20055,12 @@ function _vovStatus(key) {
     inRev += vd.inReview  || 0;
     draft += vd.draft     || 0;
     rej   += vd.rejected  || 0;
+    total += vd.total     || 0;
   });
-  return { comp:comp, inRev:inRev, draft:draft, rej:rej, total:comp+inRev+draft+rej };
+  // Denominator matches the portfolio screen (stMax = port.total); fall back to the
+  // status sum when `total` is absent so percentages never collapse to 0%.
+  return { comp:comp, inRev:inRev, draft:draft, rej:rej,
+    total: Math.max(total, comp + inRev + draft + rej) };
 }
 
 // ── Monthly buckets from rows ──────────────────────────────────────────────
@@ -20072,8 +20076,8 @@ function _vovMonthlyRows(rows, n) {
   var bMap = {};
   buckets.forEach(function(b){ bMap[b.key] = b; });
   rows.forEach(function(r){
-    var ds = r.onbDate || r.onboardedDate || r.createdDate || '';
-    var pd = (typeof parseDMY === 'function') ? parseDMY(ds) : null;
+    if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
+    var pd = (typeof parseDMY === 'function') ? parseDMY(r.onbDate || '') : null;
     if (!pd) return;
     var mk2 = pd.getFullYear() + '-' + (pd.getMonth() < 9 ? '0' : '') + (pd.getMonth() + 1);
     if (bMap[mk2]) bMap[mk2].count++;
@@ -20095,9 +20099,10 @@ function _vovBuild(vertName, vc, accentC, softC, kpis, st, months, maxBar) {
 
   // KPI cards
   var tatText = kpis.avgTAT != null ? kpis.avgTAT + ' days' : '—';
+  var nf = function(n){ return Number(n || 0).toLocaleString(); };
   h += '<div class="vov-kpis">'
-    + _vovKpiCard('Total Onboarded',  kpis.total,          'Sellers & buyers combined', accentC)
-    + _vovKpiCard('Completion Rate',  kpis.compRate + '%', kpis.comp + ' completed',    accentC)
+    + _vovKpiCard('Total Onboarded',  nf(kpis.comp),       'Sellers & buyers combined', accentC)
+    + _vovKpiCard('Completion Rate',  kpis.compRate + '%', nf(kpis.comp) + ' of ' + nf(kpis.total) + ' cases', accentC)
     + _vovKpiCard('Average TAT',      tatText,             'Days from submit to onboard', accentC)
     + '</div>';
 
