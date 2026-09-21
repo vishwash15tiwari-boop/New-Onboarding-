@@ -4504,6 +4504,9 @@ body.view-ov #ov-screen{display:block}
   <!-- ── VIEW: EXISTING VS NEW ── -->
   <div id="tab-existingnew" style="display:none"></div>
 
+  <!-- ── VIEW: VERTICAL OVERVIEW ── -->
+  <div id="tab-vertoverview" style="display:none"></div>
+
   </div><!-- /dash-content -->
 
 </div><!-- /main -->
@@ -4968,7 +4971,8 @@ function updateViewChrome() {
   var isTxn     = currentView === 'transactions';
   var isVR      = currentView === 'vendorratings';
   var isEVN     = currentView === 'existingnew';
-  var isDash    = !isGst && !isTxndist && !isOsv && !isTxn && !isVR && !isEVN;
+  var isVOV     = currentView === 'vertoverview';
+  var isDash    = !isGst && !isTxndist && !isOsv && !isTxn && !isVR && !isEVN && !isVOV;
   var ov   = document.getElementById('tab-overview');
   var gt   = document.getElementById('tab-gst');
   var td   = document.getElementById('tab-txndist');
@@ -4976,6 +4980,7 @@ function updateViewChrome() {
   var txn  = document.getElementById('tab-transactions');
   var vrd  = document.getElementById('tab-vendorratings');
   var evn  = document.getElementById('tab-existingnew');
+  var vov  = document.getElementById('tab-vertoverview');
   var pc   = document.getElementById('onb-period-controls');
 
   var vt = document.getElementById('view-title');
@@ -4992,12 +4997,13 @@ function updateViewChrome() {
   if (txn) { if (isTxn)     _showTabFade(txn); else txn.style.display = 'none'; }
   if (vrd) { if (isVR)      _showTabFade(vrd); else vrd.style.display = 'none'; }
   if (evn) { if (isEVN)     _showTabFade(evn); else evn.style.display = 'none'; }
+  if (vov) { if (isVOV)     _showTabFade(vov); else vov.style.display = 'none'; }
   if (pc)  pc.style.display  = isDash    ? 'inline-flex' : 'none';
   if (tb)  tb.style.display  = 'none';
 
   var titleMap = { gst:'GST Payables', txndist:'Transaction Distribution', osv:'OSV Status',
                    transactions:'Marketplace Transactions', vendorratings:'Vendor Ratings',
-                   existingnew:'Existing vs New' };
+                   existingnew:'Existing vs New', vertoverview:'Overview' };
   if (vt) vt.textContent = titleMap[currentView] || 'Business Verticals';
   document.body.classList.toggle('view-gst', isGst);
   setAura(isGst ? 'gst' : (activeVertKey || 'OMP'));
@@ -5019,7 +5025,7 @@ function switchAudience(a) {
 
 // Switch to the GST Payables view (paint cached data instantly, then refresh).
 function switchView(view) {
-  if (view !== 'gst' && view !== 'txndist' && view !== 'osv' && view !== 'transactions' && view !== 'vendorratings' && view !== 'existingnew') {
+  if (view !== 'gst' && view !== 'txndist' && view !== 'osv' && view !== 'transactions' && view !== 'vendorratings' && view !== 'existingnew' && view !== 'vertoverview') {
     switchAudience(currentAudience); return;
   }
   if (view === 'existingnew') {
@@ -5220,6 +5226,9 @@ function renderAll() {
   if (currentView === 'existingnew' && typeof renderEVNDash === 'function') {
     try { renderEVNDash(); } catch(e) { console.error('renderEVNDash', e); }
   }
+  if (currentView === 'vertoverview' && typeof renderVertOverview === 'function') {
+    try { renderVertOverview(_vovKey); } catch(e) { console.error('renderVertOverview', e); }
+  }
 }
 
 function renderLastUpdated() {
@@ -5350,6 +5359,9 @@ var qualityLoading = false;
 var VD_MAX_RENDER = 200;   // rows rendered at once in the detail table
 var KB_MAX_PER_COL = 50;   // cards rendered per Kanban column
 var vdView = 'board';      // records view in the detail panel: 'board' | 'table'
+var _vovKey     = null;    // which vertical is shown in the Vertical Overview
+var _vovAud     = 'all';   // 'all' | 'seller' | 'buyer'
+var _vovNMonths = 6;       // number of months for the monthly bar chart
 
 // ── Module Records overlay state ──────────────────────────────────────────
 var _mrCtx      = null;   // { module, label, vertLabel, preStatus, forceSeller, cfg }
@@ -9574,6 +9586,9 @@ function _ovnEnsureAud(aud) {
       openTxnAudModal('buyer');
     }
     if (a === 'buyer' && currentView === 'existingnew') renderEVNDash();
+    if (a === 'buyer' && currentView === 'vertoverview' && typeof renderVertOverview === 'function') {
+      try { renderVertOverview(_vovKey); } catch(e) {}
+    }
   }
   try {
     var sv = JSON.parse(localStorage.getItem(lsVKey) || 'null');
@@ -11185,6 +11200,9 @@ function loadVertRows(key) {
       if (currentView === 'existingnew' && typeof renderEVNDash === 'function') {
         try { renderEVNDash(); } catch(e) {}
       }
+      if (currentView === 'vertoverview' && typeof renderVertOverview === 'function') {
+        try { renderVertOverview(_vovKey); } catch(e) {}
+      }
       // Silently warm the cache for the next vertical tab (2 s delay avoids contention)
       setTimeout(function() { _prefetchNextVert(key); }, 2000);
     })
@@ -12603,11 +12621,23 @@ function buildSideNav() {
         } else {
           _bc += '<span class="sn-bc-seg sn-bc-cur">' + esc(_bcName || snModActive) + '</span>';
         }
+      } else if (currentView === 'vertoverview') {
+        _bc += '<button class="sn-bc-seg sn-bc-link" onclick="switchVertOverview(\'' + esc(cfg.key) + '\')" aria-label="' + esc(cfg.name || cfg.key) + '">' + esc(cfg.name || cfg.key) + '</button>'
+          + '<span class="sn-bc-div">›</span>'
+          + '<span class="sn-bc-seg sn-bc-cur">Overview</span>';
       } else {
         _bc += '<span class="sn-bc-seg sn-bc-cur">' + esc(cfg.name || cfg.key) + '</span>';
       }
       _bc += '</div>';
       html += _bc;
+
+      // Overview button — always the first item under an expanded vertical
+      var _isOvActive = currentView === 'vertoverview' && _vovKey === cfg.key;
+      html += '<button class="sn-mod t-ink' + (_isOvActive ? ' sn-active' : '') + '"'
+        + ' onclick="switchVertOverview(\'' + esc(cfg.key) + '\')"'
+        + (_isOvActive ? ' aria-current="true"' : '')
+        + '><span class="sn-mod-ic" aria-hidden="true">📊</span>'
+        + '<span class="sn-mod-body"><span class="sn-mod-lbl">Overview</span></span></button>';
 
       html += '<div class="sn-sect" style="padding-top:4px;padding-left:4px">Modules</div>';
 
@@ -12698,18 +12728,21 @@ function snGoOverview() {
   showOverview();
 }
 
-// Level 1 → Level 2: click a vertical → hide columns, enter drill-down.
+// Level 1 → Level 2: click a vertical → hide columns, enter vertical overview.
 function snSelectVert(key) {
-  if (currentView !== 'onboarding') switchView('onboarding');
   snActiveKey   = key;
   snVertModKey  = key;
   snModActive   = null;
   snSubActive   = null;
   _snMmNav(false);                                      // hide columns immediately
-  // Load vertical data + rebuild tree without navigating the columns grid.
-  if (typeof selectVertTab === 'function') selectVertTab(key);
   if (typeof mmPath !== 'undefined') mmPath = ['root'];
-  buildSideNav();
+  if (typeof switchVertOverview === 'function') {
+    switchVertOverview(key);
+  } else {
+    if (currentView !== 'onboarding') switchView('onboarding');
+    if (typeof selectVertTab === 'function') selectVertTab(key);
+    buildSideNav();
+  }
 }
 
 // Back from Level 2 → Level 1 — restore mind-map columns.
@@ -19873,7 +19906,7 @@ window.lcToggleTheme = function(){
 /* Re-apply theme + toggle glyph/aria whenever any LC view re-renders, so state stays correct after a data refresh. */
 try{
   var _lcmo=new MutationObserver(function(){ _lcSync(); });
-  ['ov-screen','tab-gst','tab-osv','tab-txndist','tab-transactions','tab-vendorratings','tab-existingnew'].forEach(function(id){ var el=document.getElementById(id); if(el) _lcmo.observe(el,{childList:true}); });
+  ['ov-screen','tab-gst','tab-osv','tab-txndist','tab-transactions','tab-vendorratings','tab-existingnew','tab-vertoverview'].forEach(function(id){ var el=document.getElementById(id); if(el) _lcmo.observe(el,{childList:true}); });
 }catch(e){}
 /* Keyboard activation for LC role=button cards (Enter/Space) — one handler covers every view. */
 document.addEventListener('keydown', function(e){
@@ -19887,6 +19920,313 @@ document.addEventListener('keydown', function(e){
 /* Keep cold-load / retry skeletons on-brand (each LC render paints an LC skeleton when its global is null). */
 try{ if(typeof renderGSTSkeleton==='function'){ renderGSTSkeleton=function(){ try{ if(typeof renderGST==='function') renderGST(); }catch(e){} }; } }catch(e){}
 try{ if(typeof renderTxnDistSkeleton==='function'){ renderTxnDistSkeleton=function(){ try{ if(typeof renderTxnDist==='function') renderTxnDist(); }catch(e){} }; } }catch(e){}
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     VERTICAL OVERVIEW  (VOV) — styles
+     ════════════════════════════════════════════════════════════════════════ -->
+<style id="vov-css">
+.lc .vov-pg{display:flex;flex-direction:column;gap:16px;padding:20px 24px;min-height:100%;box-sizing:border-box}
+.lc .vov-hdr{display:flex;align-items:center;gap:12px}
+.lc .vov-hdr-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.lc .vov-hdr-info{display:flex;flex-direction:column;gap:2px}
+.lc .vov-hdr-name{font-size:20px;font-weight:700;color:var(--lc-text)}
+.lc .vov-hdr-bc{font-size:12px;color:var(--lc-text-2,#6b7280)}
+.lc .vov-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.lc .vov-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;gap:4px}
+.lc .vov-kpi-lbl{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--lc-text-2,#6b7280)}
+.lc .vov-kpi-val{font-size:28px;font-weight:800;color:var(--lc-text);line-height:1}
+.lc .vov-kpi-sub{font-size:12px;color:var(--lc-text-2,#6b7280);margin-top:2px}
+.lc .vov-main{display:grid;grid-template-columns:1fr 320px;gap:16px}
+.lc .vov-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;overflow:hidden}
+.lc .vov-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--lc-border)}
+.lc .vov-card-ttl{font-size:13px;font-weight:700;color:var(--lc-text)}
+.lc .vov-card-body{padding:14px 18px}
+.lc .vov-segs{display:flex;gap:4px}
+.lc .vov-seg-btn{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;border:1px solid var(--lc-border);background:transparent;color:var(--lc-text-2,#6b7280);cursor:pointer;transition:all .15s}
+.lc .vov-seg-btn.vov-active{background:var(--lc-accent,#4f46e5);border-color:var(--lc-accent,#4f46e5);color:#fff}
+.lc .vov-bar-wrap{display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:8px}
+.lc .vov-bar-col{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:0}
+.lc .vov-bar-fill-wrap{flex:1;display:flex;align-items:flex-end;width:100%}
+.lc .vov-bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:2px;transition:height .3s}
+.lc .vov-bar-mon{font-size:9px;color:var(--lc-text-2,#6b7280);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.lc .vov-bar-val{font-size:10px;font-weight:700;color:var(--lc-text-2,#6b7280)}
+.lc .vov-dl{display:flex;flex-direction:column;gap:8px}
+.lc .vov-dl-row{display:flex;align-items:center;gap:8px;padding:2px 0}
+.lc .vov-dl-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.lc .vov-dl-name{font-size:13px;color:var(--lc-text);flex:1}
+.lc .vov-dl-count{font-size:13px;font-weight:700;color:var(--lc-text)}
+.lc .vov-dl-pct{font-size:11px;color:var(--lc-text-2,#6b7280);min-width:34px;text-align:right}
+.lc .vov-dl-bar-wrap{height:3px;background:var(--lc-border);border-radius:2px;margin:-4px 0 4px}
+.lc .vov-dl-bar-fill{height:100%;border-radius:2px;transition:width .4s}
+.lc .vov-explore-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;margin:12px 18px 18px;border:1px dashed var(--lc-border);border-radius:10px;font-size:12px;font-weight:600;color:var(--lc-text-2,#6b7280);cursor:pointer;background:transparent;transition:all .15s;width:calc(100% - 36px);box-sizing:border-box}
+.lc .vov-explore-btn:hover{border-color:var(--lc-accent,#4f46e5);color:var(--lc-accent,#4f46e5)}
+.lc .vov-hdr-ctls{display:flex;gap:8px}
+@media(max-width:940px){.lc .vov-main{grid-template-columns:1fr}.lc .vov-kpis{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.lc .vov-kpis{grid-template-columns:1fr}.lc .vov-pg{padding:14px}}
+</style>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     VERTICAL OVERVIEW  (VOV) — logic
+     ════════════════════════════════════════════════════════════════════════ -->
+<script id="vov-js">
+// ── VOV entry point ────────────────────────────────────────────────────────
+function switchVertOverview(key) {
+  _vovKey      = key || activeVertKey || snActiveKey;
+  _vovAud      = 'all';
+  if (!_vovKey) return;
+  currentView  = 'vertoverview';
+  snActiveKey  = _vovKey;
+  snVertModKey = _vovKey;
+  snModActive  = null;
+  snSubActive  = null;
+  document.body.style.overflow = '';
+  updateViewChrome();
+  if (typeof renderVNav === 'function') renderVNav();
+  // Trigger seller rows for this vertical (used in monthly chart)
+  if (typeof selectVertTab === 'function') selectVertTab(_vovKey);
+  // Ensure buyer rows are loaded (re-renders again when they arrive via _ovnAfter)
+  if (_ovnRows && _ovnRows.buyer === null) _ovnRows.buyer = undefined;
+  if (typeof _ovnEnsureAud === 'function') _ovnEnsureAud('buyer');
+  renderVertOverview(_vovKey);
+}
+
+// ── Main render ────────────────────────────────────────────────────────────
+function renderVertOverview(key) {
+  var el = document.getElementById('tab-vertoverview');
+  if (!el) return;
+  if (!key) { el.innerHTML = ''; return; }
+
+  var vcfg = null;
+  try { (getVertCfg() || []).forEach(function(v){ if (v.key === key) vcfg = v; }); } catch(e){}
+  var vertName = vcfg ? (vcfg.name || key) : key;
+  var vc = (typeof VERT_COLORS !== 'undefined' && VERT_COLORS[key])
+    ? VERT_COLORS[key] : { c:'#4f46e5', ink:'#fff', soft:'#ede9fe' };
+  var accentC = vc.c || '#4f46e5';
+  var softC   = vc.soft || '#ede9fe';
+
+  var kpis    = _vovKpis(key);
+  var st      = _vovStatus(key);
+  var selRows = Array.isArray(vertRows) ? vertRows : [];
+  var buyAll  = (_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : [];
+  // Filter buyer rows to this vertical using whichever field is present
+  var buyRows = buyAll.filter(function(r){
+    return !r.vertical || r.vertical === key || r.vertKey === key || r.vert === key;
+  });
+  var aud = _vovAud || 'all';
+  var chartRows = aud === 'seller' ? selRows : aud === 'buyer' ? buyRows : selRows.concat(buyRows);
+  var nM = _vovNMonths || 6;
+  var months = _vovMonthlyRows(chartRows, nM);
+  var maxBar = 0;
+  months.forEach(function(m){ if (m.count > maxBar) maxBar = m.count; });
+
+  el.innerHTML = _vovBuild(vertName, vc, accentC, softC, kpis, st, months, maxBar);
+  if (typeof _lcSync === 'function') _lcSync();
+  if (typeof animateCounters === 'function') animateCounters(el);
+}
+
+// ── KPI aggregation for one vertical ──────────────────────────────────────
+function _vovKpis(key) {
+  var total = 0, comp = 0, tatSum = 0, tatN = 0;
+  [DS, DB].forEach(function(src){
+    if (!src || !src.verticals) return;
+    var vd = src.verticals[key] || {};
+    total  += vd.total     || 0;
+    comp   += vd.completed || 0;
+    if (vd.avgTAT != null && (vd.tatCount || 0) > 0) {
+      tatSum += vd.avgTAT * vd.tatCount;
+      tatN   += vd.tatCount;
+    }
+  });
+  return { total:total, comp:comp,
+    compRate: total > 0 ? Math.round(comp / total * 100) : 0,
+    avgTAT:   tatN  > 0 ? Math.round(tatSum / tatN * 10) / 10 : null };
+}
+
+// ── Health status for one vertical ────────────────────────────────────────
+function _vovStatus(key) {
+  var comp = 0, inRev = 0, draft = 0, rej = 0;
+  [DS, DB].forEach(function(src){
+    if (!src || !src.verticals) return;
+    var vd = src.verticals[key] || {};
+    comp  += vd.completed || 0;
+    inRev += vd.inReview  || 0;
+    draft += vd.draft     || 0;
+    rej   += vd.rejected  || 0;
+  });
+  return { comp:comp, inRev:inRev, draft:draft, rej:rej, total:comp+inRev+draft+rej };
+}
+
+// ── Monthly buckets from rows ──────────────────────────────────────────────
+function _vovMonthlyRows(rows, n) {
+  var now = new Date();
+  var MONS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var buckets = [];
+  for (var i = n - 1; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    var mk = d.getFullYear() + '-' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1);
+    buckets.push({ key:mk, label: MONS[d.getMonth()] + ' \'' + String(d.getFullYear()).slice(2), count:0 });
+  }
+  var bMap = {};
+  buckets.forEach(function(b){ bMap[b.key] = b; });
+  rows.forEach(function(r){
+    var ds = r.onbDate || r.onboardedDate || r.createdDate || '';
+    var pd = (typeof parseDMY === 'function') ? parseDMY(ds) : null;
+    if (!pd) return;
+    var mk2 = pd.getFullYear() + '-' + (pd.getMonth() < 9 ? '0' : '') + (pd.getMonth() + 1);
+    if (bMap[mk2]) bMap[mk2].count++;
+  });
+  return buckets;
+}
+
+// ── HTML builder ───────────────────────────────────────────────────────────
+function _vovBuild(vertName, vc, accentC, softC, kpis, st, months, maxBar) {
+  var h = '<div class="lc vov-pg">';
+
+  // Header
+  h += '<div class="vov-hdr">'
+    + '<div class="vov-hdr-ic" style="background:' + softC + ';color:' + accentC + '">📊</div>'
+    + '<div class="vov-hdr-info">'
+    + '<div class="vov-hdr-name">' + _vovEsc(vertName) + ' Overview</div>'
+    + '<div class="vov-hdr-bc">Central Onboarding › ' + _vovEsc(vertName) + ' › Overview</div>'
+    + '</div></div>';
+
+  // KPI cards
+  var tatText = kpis.avgTAT != null ? kpis.avgTAT + ' days' : '—';
+  h += '<div class="vov-kpis">'
+    + _vovKpiCard('Total Onboarded',  kpis.total,          'Sellers & buyers combined', accentC)
+    + _vovKpiCard('Completion Rate',  kpis.compRate + '%', kpis.comp + ' completed',    accentC)
+    + _vovKpiCard('Average TAT',      tatText,             'Days from submit to onboard', accentC)
+    + '</div>';
+
+  // Main row: chart + health
+  h += '<div class="vov-main">';
+
+  // Monthly chart card
+  var nM = _vovNMonths || 6;
+  var aud = _vovAud || 'all';
+  var audBtns = [['all','All'],['seller','Seller'],['buyer','Buyer']].map(function(p){
+    return '<button class="vov-seg-btn' + (aud === p[0] ? ' vov-active' : '')
+      + '" onclick="vovSetAud(\'' + p[0] + '\')">' + p[1] + '</button>';
+  }).join('');
+  var monBtns = [3,6,12].map(function(n){
+    return '<button class="vov-seg-btn' + (nM === n ? ' vov-active' : '')
+      + '" onclick="vovSetMonths(' + n + ')">Last ' + n + 'M</button>';
+  }).join('');
+
+  h += '<div class="vov-card">'
+    + '<div class="vov-card-hdr"><span class="vov-card-ttl">Monthly Onboarding</span>'
+    + '<div class="vov-hdr-ctls"><div class="vov-segs">' + audBtns + '</div><div class="vov-segs">' + monBtns + '</div></div>'
+    + '</div><div class="vov-card-body">';
+
+  if (months.length && maxBar > 0) {
+    h += '<div class="vov-bar-wrap">';
+    months.forEach(function(m){
+      var pct = Math.round(m.count / maxBar * 100);
+      h += '<div class="vov-bar-col">'
+        + (m.count ? '<div class="vov-bar-val">' + m.count + '</div>' : '<div class="vov-bar-val" style="opacity:0">0</div>')
+        + '<div class="vov-bar-fill-wrap">'
+        + '<div class="vov-bar-fill" style="height:' + pct + '%;background:' + accentC + '44;border-top:2px solid ' + accentC + '"></div>'
+        + '</div><div class="vov-bar-mon">' + _vovEsc(m.label) + '</div></div>';
+    });
+    h += '</div>';
+  } else {
+    h += '<div class="vov-bar-wrap">';
+    months.forEach(function(m){
+      h += '<div class="vov-bar-col"><div class="vov-bar-val" style="opacity:0">0</div>'
+        + '<div class="vov-bar-fill-wrap"><div class="vov-bar-fill" style="height:2px;background:var(--lc-border)"></div></div>'
+        + '<div class="vov-bar-mon">' + _vovEsc(m.label) + '</div></div>';
+    });
+    h += '</div>';
+  }
+  h += '</div></div>'; // card-body / chart card
+
+  // Health card
+  var DL = [
+    { key:'comp',  label:'Onboarded', color:'#10b981' },
+    { key:'inRev', label:'In Review', color:'#f59e0b' },
+    { key:'draft', label:'Draft',     color:'#6b7280' },
+    { key:'rej',   label:'Rejected',  color:'#ef4444' },
+  ];
+  var tot = st.total || 1;
+  h += '<div class="vov-card">'
+    + '<div class="vov-card-hdr"><span class="vov-card-ttl">Onboarding Health</span></div>'
+    + '<div class="vov-card-body"><div class="vov-dl">';
+  DL.forEach(function(cfg){
+    var cnt = st[cfg.key] || 0;
+    var pct = Math.round(cnt / tot * 100);
+    var tipTxt = '';
+    try { tipTxt = (typeof MF_DEFS !== 'undefined' && MF_DEFS[cfg.label]) ? MF_DEFS[cfg.label] : ''; } catch(e){}
+    h += '<div class="vov-dl-row"'
+      + (tipTxt ? ' onmouseenter="vovHealthTip(this,\'' + _vovEsc(tipTxt.replace(/'/g,'&apos;')) + '\')" onmouseleave="vovHealthTipHide()"' : '')
+      + '>'
+      + '<div class="vov-dl-dot" style="background:' + cfg.color + '"></div>'
+      + '<div class="vov-dl-name">' + _vovEsc(cfg.label) + '</div>'
+      + '<div class="vov-dl-count">' + cnt.toLocaleString() + '</div>'
+      + '<div class="vov-dl-pct">' + pct + '%</div>'
+      + '</div>'
+      + '<div class="vov-dl-bar-wrap"><div class="vov-dl-bar-fill" style="width:' + pct + '%;background:' + cfg.color + '"></div></div>';
+  });
+  h += '</div></div>';
+  h += '<button class="vov-explore-btn" onclick="vovExploreModules()">Explore Modules →</button>';
+  h += '</div>'; // health card
+
+  h += '</div>'; // vov-main
+  h += '</div>'; // vov-pg
+  return h;
+}
+
+// ── KPI card helper ────────────────────────────────────────────────────────
+function _vovKpiCard(lbl, val, sub) {
+  return '<div class="vov-kpi">'
+    + '<div class="vov-kpi-lbl">' + _vovEsc(lbl) + '</div>'
+    + '<div class="vov-kpi-val">' + _vovEsc(String(val)) + '</div>'
+    + '<div class="vov-kpi-sub">' + _vovEsc(sub) + '</div>'
+    + '</div>';
+}
+
+// ── Escape helper ──────────────────────────────────────────────────────────
+function _vovEsc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Window-level callbacks (referenced from inline onclick) ────────────────
+window.vovSetAud = function(a) {
+  _vovAud = a;
+  if (_vovKey && currentView === 'vertoverview') renderVertOverview(_vovKey);
+};
+window.vovSetMonths = function(n) {
+  _vovNMonths = n;
+  if (_vovKey && currentView === 'vertoverview') renderVertOverview(_vovKey);
+};
+window.vovHealthTip = function(el, tip) {
+  if (!tip) return;
+  var t = document.getElementById('ov-tooltip');
+  if (!t) return;
+  t.textContent = tip;
+  t.style.display = 'block';
+  var r = el.getBoundingClientRect();
+  t.style.left = (r.left + window.scrollX) + 'px';
+  t.style.top  = (r.top  + window.scrollY - t.offsetHeight - 8) + 'px';
+};
+window.vovHealthTipHide = function() {
+  var t = document.getElementById('ov-tooltip');
+  if (t) t.style.display = 'none';
+};
+window.vovExploreModules = function() {
+  // Click the first non-muted module button in the sidebar
+  var first = document.querySelector('.sn-vert-expand .sn-mod:not(.sn-muted):not(.vov-active)');
+  if (first) { first.click(); return; }
+  // Fallback: go to onboarding view with current vertical
+  if (_vovKey && typeof selectVertTab === 'function') {
+    if (currentView !== 'onboarding') {
+      currentView = 'onboarding';
+      snModActive = null;
+      updateViewChrome();
+    }
+    selectVertTab(_vovKey);
+  }
+};
 </script>
 </body>
 </html>
