@@ -19765,7 +19765,7 @@ window.lcToggleTheme = function(){
 /* Re-apply theme + toggle glyph/aria whenever any LC view re-renders, so state stays correct after a data refresh. */
 try{
   var _lcmo=new MutationObserver(function(){ _lcSync(); });
-  ['ov-screen','tab-gst','tab-osv','tab-txndist','tab-transactions','tab-vendorratings'].forEach(function(id){ var el=document.getElementById(id); if(el) _lcmo.observe(el,{childList:true}); });
+  ['ov-screen','tab-gst','tab-osv','tab-txndist','tab-transactions','tab-vendorratings','tab-existingnew'].forEach(function(id){ var el=document.getElementById(id); if(el) _lcmo.observe(el,{childList:true}); });
 }catch(e){}
 /* Keyboard activation for LC role=button cards (Enter/Space) — one handler covers every view. */
 document.addEventListener('keydown', function(e){
