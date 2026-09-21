@@ -18258,362 +18258,533 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <style id="lc-transactions-css">
 /* ============================================================================
- * Marketplace Transactions — view-specific styles. Every selector scoped under
- * .lc and namespaced .lc-txn-* so nothing leaks. Colours come only from the
- * lc-css tokens; status hues are reserved for status, accent for structure.
- * ========================================================================== */
+   Transactions — Marketplace module. Every selector is scoped under .lc and
+   prefixed .txm-* so nothing leaks into other views. Colours come only from LC
+   tokens, so light/dark and the brand palette are inherited, never redefined.
+   ========================================================================== */
+.lc.txm-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
 
-/* sub-header: period control + summary caption */
-.lc .lc-txn-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.lc .lc-txn-plab{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--lc-text2)}
-.lc .lc-txn-psel{min-width:140px}
-.lc .lc-txn-seg{margin-left:0}
+/* header */
+.lc .txm-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.lc .txm-bc{font-size:11.5px;color:var(--lc-text3);margin-bottom:6px}
+.lc .txm-bc b{font-weight:600;color:var(--lc-text2)}
+.lc .txm-ttlrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.lc .txm-ttl{font-size:26px;font-weight:700;letter-spacing:-.03em;color:var(--lc-text);line-height:1.1}
+.lc .txm-sub{font-size:12.5px;color:var(--lc-text3);margin-top:5px}
+.lc .txm-aud{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:9px;padding:6px 10px;font-size:13px;font-weight:600;color:var(--lc-text2);cursor:pointer;font-family:inherit;outline:none}
+.lc .txm-hdr-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lc .txm-seg{display:flex;background:var(--lc-subtle);border:1px solid var(--lc-border);border-radius:10px;padding:3px;gap:2px}
+.lc .txm-seg button{padding:7px 15px;border:0;border-radius:8px;background:transparent;color:var(--lc-text3);font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;transition:all .15s}
+.lc .txm-seg button.on{background:var(--lc-card);color:var(--lc-text);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.09)}
+.lc .txm-exp{display:flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--lc-border);border-radius:10px;background:var(--lc-card);color:var(--lc-text2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.lc .txm-exp:hover{background:var(--lc-subtle)}
 
-/* KPI 2 · transacted vs non-transacted mini split bar */
-.lc .lc-txn-mini{display:flex;height:6px;border-radius:5px;overflow:hidden;background:var(--lc-subtle);margin-top:2px}
-.lc .lc-txn-mini > i{display:block;height:100%}
-.lc .lc-txn-mini > i.a{background:var(--lc-accent)}
-.lc .lc-txn-mini > i.b{background:transparent}
+/* KPI row */
+.lc .txm-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--lc-gutter)}
+.lc .txm-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:14px;padding:20px 22px;display:flex;align-items:center;gap:16px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.lc .txm-kpi-ico{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lc .txm-kpi-body{flex:1;min-width:0}
+.lc .txm-kpi-val{font-size:30px;font-weight:700;letter-spacing:-.03em;color:var(--lc-text);line-height:1;font-variant-numeric:tabular-nums}
+.lc .txm-kpi-lbl{font-size:12.5px;color:var(--lc-text2);margin-top:5px}
+.lc .txm-kpi-dlt{font-size:11.5px;font-weight:600;margin-top:8px;display:flex;align-items:center;gap:5px}
+.lc .txm-kpi-dlt em{color:var(--lc-text3);font-weight:400;font-style:normal}
+.lc .txm-kpi-sep{border-left:1px solid var(--lc-border);padding-left:18px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.lc .txm-spark{display:flex;align-items:flex-end;gap:3px;height:32px}
+.lc .txm-spark i{width:6px;border-radius:2px 2px 0 0;background:var(--lc-ok);display:block}
 
-/* percentage suffix inside a bar value */
-.lc .lc-txn-pct{color:var(--lc-text3);font-weight:500;font-size:11.5px;margin-left:2px}
+/* split status bar */
+.lc .txm-split{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:14px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.lc .txm-splitbar{display:flex;height:46px;border-radius:10px;overflow:hidden;background:var(--lc-subtle)}
+.lc .txm-splitbar i{display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:600;color:#fff;font-style:normal;white-space:nowrap;overflow:hidden;transition:width .45s ease}
+.lc .txm-lgd{display:flex;gap:18px;margin-top:12px;font-size:12px;color:var(--lc-text2)}
+.lc .txm-lgd span{display:flex;align-items:center;gap:6px}
+.lc .txm-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 
-/* card header shared by the two-column cards */
-.lc .lc-txn-cardhd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px}
-.lc .lc-txn-cardhd h3{margin:0;font-size:14px;font-weight:600;letter-spacing:-.01em;color:var(--lc-text)}
+/* generic card */
+.lc .txm-card{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:14px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.05);min-width:0}
+.lc .txm-card-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.lc .txm-card-ttl{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;color:var(--lc-text);letter-spacing:-.01em}
+.lc .txm-card-ttl svg{width:17px;height:17px;color:var(--lc-text3);flex-shrink:0}
+.lc .txm-link{font-size:12.5px;font-weight:600;color:var(--lc-accent);cursor:pointer;text-decoration:none;white-space:nowrap}
+.lc .txm-link:hover{text-decoration:underline}
 
-/* seller vs buyer comparison table */
-.lc .lc-txn-scroll{overflow-x:auto}
-.lc .lc-txn-cmp{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
-.lc .lc-txn-cmp th,.lc .lc-txn-cmp td{padding:9px 10px;text-align:right;white-space:nowrap}
-.lc .lc-txn-cmp thead th{font-size:11px;font-weight:600;color:var(--lc-text3);text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--lc-border)}
-.lc .lc-txn-cmp thead th:first-child,.lc .lc-txn-cmp tbody th{text-align:left}
-.lc .lc-txn-cmp tbody th{font-weight:500;color:var(--lc-text2);display:flex;flex-direction:column;gap:1px}
-.lc .lc-txn-cmp tbody td{color:var(--lc-text);font-weight:500}
-.lc .lc-txn-cmp tbody tr + tr th,.lc .lc-txn-cmp tbody tr + tr td{border-top:1px solid var(--lc-border)}
-.lc .lc-txn-cmp .lc-txn-tot{font-weight:600}
-.lc .lc-txn-rn{font-size:10px;font-weight:400;color:var(--lc-text3);text-transform:none;letter-spacing:0}
+/* donut cards */
+.lc .txm-row3{display:grid;grid-template-columns:1fr 1fr 1.55fr;gap:var(--lc-gutter)}
+.lc .txm-dn{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.lc .txm-dn-l{min-width:0}
+.lc .txm-dn-val{font-size:34px;font-weight:700;letter-spacing:-.03em;color:var(--lc-text);line-height:1;font-variant-numeric:tabular-nums}
+.lc .txm-dn-cap{font-size:12px;color:var(--lc-text3);margin-top:5px}
+.lc .txm-dn-leg{display:flex;flex-direction:column;gap:7px;margin-top:16px;font-size:12.5px;color:var(--lc-text2)}
+.lc .txm-dn-leg span{display:flex;align-items:center;gap:7px}
+.lc .txm-dn-leg b{font-weight:600;color:var(--lc-text)}
 
-/* transaction-health tiles */
-.lc .lc-txn-health{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--lc-border);border:1px solid var(--lc-border);border-radius:8px;overflow:hidden}
-.lc .lc-txn-htile{background:var(--lc-card);padding:13px 14px;display:flex;flex-direction:column;gap:3px}
-.lc .lc-txn-htile .hv{font-size:20px;font-weight:600;letter-spacing:-.01em;color:var(--lc-text)}
-.lc .lc-txn-htile .hl{font-size:11.5px;font-weight:500;color:var(--lc-text2)}
-.lc .lc-txn-htile .hs{font-size:10.5px;color:var(--lc-text3);font-weight:500}
+/* ageing */
+.lc .txm-age-tot{text-align:right;flex-shrink:0}
+.lc .txm-age-tot .t{font-size:11.5px;color:var(--lc-text3)}
+.lc .txm-age-tot .v{font-size:26px;font-weight:700;color:var(--lc-text);line-height:1.1;font-variant-numeric:tabular-nums}
+.lc .txm-age{display:flex;align-items:stretch;justify-content:space-around;gap:14px;height:150px;padding-top:6px}
+.lc .txm-age-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;min-width:0}
+.lc .txm-age-v{font-size:15px;font-weight:700;color:var(--lc-text);margin-bottom:6px;font-variant-numeric:tabular-nums}
+.lc .txm-age-bar{width:100%;max-width:74px;border-radius:5px 5px 0 0;background:var(--lc-warn-weak);border-top:2px solid var(--lc-warn);min-height:3px;transition:height .45s ease}
+.lc .txm-age-l{font-size:11.5px;color:var(--lc-text3);text-align:center;margin-top:8px;line-height:1.3}
 
-/* empty chart state */
-.lc .lc-txn-empty{padding:40px 12px;text-align:center;color:var(--lc-text3);font-size:12.5px;font-weight:500}
+/* GMV + trend */
+.lc .txm-row4{display:grid;grid-template-columns:1fr 1.15fr;gap:var(--lc-gutter)}
+.lc .txm-gmv{display:flex;align-items:center;gap:0}
+.lc .txm-gmv-ico{width:44px;height:44px;border-radius:11px;background:var(--lc-accent-weak);color:var(--lc-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:16px}
+.lc .txm-gmv-i{flex:1;min-width:0;padding:0 16px;border-left:1px solid var(--lc-border)}
+.lc .txm-gmv-i.first{border-left:0;padding-left:0}
+.lc .txm-gmv-v{font-size:21px;font-weight:700;letter-spacing:-.02em;color:var(--lc-text);line-height:1.15;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:7px}
+.lc .txm-gmv-l{font-size:11.5px;color:var(--lc-text3);margin-top:4px}
+.lc .txm-trend{width:100%;height:auto;display:block;overflow:visible}
 
-/* footer */
-.lc .lc-txn-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:4px}
-.lc .lc-txn-vd{background:var(--lc-accent);color:#fff;border:0;border-radius:8px;font-size:12.5px;font-weight:600;padding:8px 16px;white-space:nowrap}
-.lc .lc-txn-vd:hover{filter:brightness(1.06)}
+/* tables */
+.lc .txm-row5{display:grid;grid-template-columns:1fr 1fr;gap:var(--lc-gutter)}
+.lc .txm-tblwrap{overflow-x:auto}
+.lc .txm-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.lc .txm-tbl th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--lc-text3);text-align:left;padding:8px 10px;border-bottom:1px solid var(--lc-border);white-space:nowrap}
+.lc .txm-tbl td{padding:10px;border-bottom:1px solid var(--lc-subtle);color:var(--lc-text);vertical-align:middle;white-space:nowrap}
+.lc .txm-tbl tbody tr:last-child td{border-bottom:0}
+.lc .txm-tbl tbody tr:hover td{background:var(--lc-subtle)}
+.lc .txm-tbl .num{text-align:right;font-variant-numeric:tabular-nums}
+.lc .txm-idx{color:var(--lc-text3);width:22px}
+.lc .txm-nm{font-weight:600;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.lc .txm-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;background:var(--lc-risk-weak);color:var(--lc-risk)}
+.lc .txm-cat{display:inline-flex;align-items:center;gap:6px}
+.lc .txm-empty{padding:34px 0;text-align:center;color:var(--lc-text3);font-size:12.5px}
 
-@media(max-width:760px){
-  .lc .lc-txn-health{grid-template-columns:repeat(2,1fr)}
-}
-@media(max-width:620px){
-  .lc .lc-txn-head{align-items:stretch}
-  .lc .lc-txn-foot{flex-direction:column;align-items:stretch}
-  .lc .lc-txn-vd{width:100%}
-}
+@media(max-width:1180px){.lc .txm-row3{grid-template-columns:1fr 1fr}.lc .txm-row4,.lc .txm-row5{grid-template-columns:1fr}}
+@media(max-width:820px){.lc .txm-kpis{grid-template-columns:1fr}.lc .txm-row3{grid-template-columns:1fr}.lc .txm-hdr{flex-direction:column}}
 </style>
 <script id="lc-transactions-js">
-/* ============================================================================
- * LIVING CIRCULARITY — Marketplace Transactions view (scoped override)
- * Reassigns the GLOBAL render hook `renderTransactionDash`. Appended AFTER the
- * main script, so this plain reassignment wins. Reads the preserved global
- * `_TXN_MOD` (= getTransactionModuleData) and reuses the preserved period
- * handler `onPeriodSelect` (backend re-fetch). No fetch/loader code is touched.
- * ========================================================================== */
+/* ==========================================================================
+   Transactions — Marketplace module renderer.
+   Reassigns the GLOBAL hook `renderTransactionDash`. Appended AFTER the main
+   script, so this bare global assignment wins.
+
+   PRESERVES (never touched):
+     - Data global : _TXN_MOD  (= JSON.parse of getTransactionModuleData)
+     - Loader      : loadTransactionData()  (+ _txnModLoading guard)
+     - Period      : currentPeriod / onPeriodSelect() / customStart / customEnd
+   REPLACES:
+     - The render body only. Every figure below is read from _TXN_MOD; nothing
+       is recalculated from raw rows here.
+   ======================================================================== */
 (function () {
   'use strict';
 
-  // ---- persisted theme (exact contract helper) ----------------------------
-  function lcTheme() { try { return localStorage.getItem('rk-lc-theme') || 'light'; } catch (e) { return 'light'; } }
+  var AUD = 'both';   // 'both' | 'seller' | 'buyer'
 
-  // ---- safe reuse of the app's real helpers, with local fallbacks ---------
+  function nf(n) {
+    try { return (typeof fmt === 'function') ? fmt(n) : Number(n || 0).toLocaleString('en-IN'); }
+    catch (e) { return String(n || 0); }
+  }
   function esc2(s) {
-    if (typeof esc === 'function') return esc(s);
-    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
-    });
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
-  function nf(v) { v = Math.round(v || 0); return (typeof fmt === 'function') ? fmt(v) : v.toLocaleString('en-IN'); }
-  function trimNum(x) { return x.toFixed(2).replace(/\.?0+$/, ''); }
-  // Indian ₹ in Cr / L / raw — sensibly.
+  // Indian-crore formatting, matching the rest of the dashboard.
   function rup(v) {
-    v = Math.round(v || 0); var a = Math.abs(v);
-    if (a >= 1e7) return '₹' + trimNum(v / 1e7) + ' Cr';
-    if (a >= 1e5) return '₹' + trimNum(v / 1e5) + ' L';
-    return '₹' + nf(v);
+    v = Number(v || 0);
+    if (v >= 1e7)  return '&#8377;' + (v / 1e7).toFixed(2) + ' Cr';
+    if (v >= 1e5)  return '&#8377;' + (v / 1e5).toFixed(2) + ' L';
+    return '&#8377;' + Math.round(v).toLocaleString('en-IN');
   }
-  function pctOf(a, b) { return b > 0 ? Math.round((a / b) * 100) : 0; }
-  function rep(html, n) { var o = ''; for (var i = 0; i < n; i++) o += html; return o; }
-  var MO = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  function mlabel(k) { var p = String(k || '').split('-'); return (MO[+p[1] || 0] || '') + " '" + (p[0] || '').slice(2); }
-  function niceTop(v) {
-    if (!(v > 0)) return 1;
-    var mag = Math.pow(10, Math.floor(Math.log10(v))), f = v / mag;
-    var nf2 = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
-    return nf2 * mag;
+  function pctOf(a, b) { return b > 0 ? Math.round(a / b * 100) : 0; }
+
+  var CAT_COL = { plastic: 'var(--lc-accent)', metal: 'var(--lc-ok)' };
+  function catCol(c) { return CAT_COL[String(c || '').toLowerCase()] || 'var(--lc-purple)'; }
+
+  var IC = {
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    coin:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M9 9.5h4.5a2.5 2.5 0 0 1 0 5H9"/></svg>',
+    info:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
+    down:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+  };
+
+  /* ── Scope the payload to the selected audience ────────────────────────── */
+  // One filtered dataset feeds every section below, so the KPIs, split bar,
+  // donuts, ageing, GMV, trend and both tables can never disagree.
+  function scope(d) {
+    var s = d.seller || {}, b = d.buyer || {};
+    var sAg = s.agingNonTxn || {}, bAg = b.agingNonTxn || {};
+    var sg = s.gmv || {}, bg = b.gmv || {};
+    var sNon = (sAg.lt30 || 0) + (sAg.d30_60 || 0) + (sAg.gt60 || 0);
+    var bNon = (bAg.lt30 || 0) + (bAg.d30_60 || 0) + (bAg.gt60 || 0);
+    var pick = function (both, sv, bv) { return AUD === 'seller' ? sv : AUD === 'buyer' ? bv : both; };
+
+    var txn   = pick((s.total || 0) + (b.total || 0), s.total || 0, b.total || 0);
+    var non   = pick(sNon + bNon, sNon, bNon);
+    // Total Vendors is the transacted + non-transacted union rather than the onboarded
+    // count, so the KPI row, the split bar and its percentages always reconcile. The
+    // producer counts transacted rows at any status but non-transacted only at
+    // COMPLETED, so sellerTotal + buyerTotal does not reliably equal their sum.
+    var total = txn + non;
+
+    var ag = {
+      lt30:   pick((sAg.lt30 || 0) + (bAg.lt30 || 0), sAg.lt30 || 0, bAg.lt30 || 0),
+      d30_60: pick((sAg.d30_60 || 0) + (bAg.d30_60 || 0), sAg.d30_60 || 0, bAg.d30_60 || 0),
+      gt60:   pick((sAg.gt60 || 0) + (bAg.gt60 || 0), sAg.gt60 || 0, bAg.gt60 || 0)
+    };
+    var gmv = {
+      total:   pick(sg.total || 0, sg.total || 0, bg.total || 0),
+      metal:   pick(sg.metal || 0, sg.metal || 0, bg.metal || 0),
+      plastic: pick(sg.plastic || 0, sg.plastic || 0, bg.plastic || 0)
+    };
+    if (AUD === 'both') {
+      gmv = { total: (d.gmv || {}).total || 0, metal: (d.gmv || {}).metal || 0, plastic: (d.gmv || {}).plastic || 0 };
+    }
+    var rowsOf = function (list) {
+      list = list || [];
+      if (AUD === 'seller') return list.filter(function (v) { return v.type === 'Seller'; });
+      if (AUD === 'buyer')  return list.filter(function (v) { return v.type === 'Buyer'; });
+      return list;
+    };
+    var trend = (d.trend || []).map(function (t) {
+      return {
+        month: t.month,
+        transacted:    pick(t.transacted || 0,    t.tS || 0, t.tB || 0),
+        nonTransacted: pick(t.nonTransacted || 0, t.nS || 0, t.nB || 0)
+      };
+    });
+    return {
+      txn: txn, non: non, total: total, ag: ag, gmv: gmv, trend: trend,
+      seller: s, buyer: b, sNon: sNon, bNon: bNon,
+      topT: rowsOf(d.topTransacted), topN: rowsOf(d.topNonTransacted)
+    };
   }
 
-  // ---- view-local UI state (persists across re-renders via the closure) ----
-  var CHART = 'gmv'; // 'gmv' | 'txn'
-  window.lcTxnChart = function (m) { CHART = m; if (typeof renderTransactionDash === 'function') renderTransactionDash(); };
-
-  // ---- chrome ------------------------------------------------------------
-  function topBar() {
-    return '<header class="lc-top">'
-      + '<span class="lc-brand"><span class="lc-mark"></span>Marketplace <span class="pr">/ Transactions</span></span>'
-      + '<span class="lc-sp"></span>'
-      + '<span class="lc-fresh"><span class="lc-live"></span>Live data</span>'
-      + '<button class="lc-ico" type="button" aria-label="Toggle light or dark theme" '
-      +   'onclick="window.lcToggleTheme&&window.lcToggleTheme();typeof renderTransactionDash===\'function\'&&renderTransactionDash()">☀</button>'
-      + '</header>';
+  /* ── Donut (seller / buyer category split) ─────────────────────────────── */
+  function donut(total, parts) {
+    var R = 42, r = 28, cx = 48, cy = 48;
+    var sum = parts.reduce(function (a, p) { return a + p.val; }, 0);
+    var svg = '<svg viewBox="0 0 96 96" style="width:96px;height:96px;flex-shrink:0">'
+      + '<circle cx="' + cx + '" cy="' + cy + '" r="' + ((R + r) / 2) + '" fill="none" stroke="var(--lc-subtle)" stroke-width="' + (R - r) + '"/>';
+    if (sum > 0) {
+      var ang = -Math.PI / 2;
+      parts.forEach(function (p) {
+        var sw = p.val / sum * 2 * Math.PI;
+        if (sw < 0.001) { ang += sw; return; }
+        var x1 = cx + R * Math.cos(ang), y1 = cy + R * Math.sin(ang);
+        var x2 = cx + R * Math.cos(ang + sw), y2 = cy + R * Math.sin(ang + sw);
+        var i1 = cx + r * Math.cos(ang), j1 = cy + r * Math.sin(ang);
+        var i2 = cx + r * Math.cos(ang + sw), j2 = cy + r * Math.sin(ang + sw);
+        var lg = sw > Math.PI ? 1 : 0;
+        svg += '<path d="M' + x1.toFixed(1) + ',' + y1.toFixed(1)
+            + ' A' + R + ',' + R + ' 0 ' + lg + ',1 ' + x2.toFixed(1) + ',' + y2.toFixed(1)
+            + ' L' + i2.toFixed(1) + ',' + j2.toFixed(1)
+            + ' A' + r + ',' + r + ' 0 ' + lg + ',0 ' + i1.toFixed(1) + ',' + j1.toFixed(1)
+            + ' Z" fill="' + p.col + '"><title>' + esc2(p.lbl) + ': ' + nf(p.val) + '</title></path>';
+        ang += sw;
+      });
+    }
+    svg += '<text x="' + cx + '" y="' + (cy + 5) + '" text-anchor="middle" font-size="19" font-weight="700" style="fill:var(--lc-text)">' + nf(total) + '</text>';
+    return svg + '</svg>';
   }
 
-  // Period control — reuses the PRESERVED global onPeriodSelect (=> backend
-  // re-fetch of getTransactionModuleData via loadTransactionData, since
-  // onPeriodSelect nulls _TXN_MOD and re-invokes the loader on this view).
-  function periodSelect() {
-    var opts = [['All', 'All Time'], ['Today', 'Today'], ['MTD', 'MTD'], ['YTD', 'YTD']];
-    try { (((typeof D !== 'undefined') && D && D.fiscalYears) || []).forEach(function (fy) { opts.push([fy, String(fy).replace(/^FY/, 'FY ')]); }); } catch (e) {}
-    var cp = (typeof currentPeriod !== 'undefined') ? currentPeriod : 'All';
-    if (!opts.some(function (o) { return o[0] === cp; })) opts.unshift([cp, cp === 'Custom' ? 'Custom range' : String(cp)]);
-    return '<label class="lc-txn-plab">Period'
-      + '<select class="lc-selp lc-txn-psel" aria-label="Reporting period" '
-      +   'onchange="typeof onPeriodSelect===\'function\'&&onPeriodSelect(this.value)">'
-      + opts.map(function (o) { return '<option value="' + esc2(o[0]) + '"' + (o[0] === cp ? ' selected' : '') + '>' + esc2(o[1]) + '</option>'; }).join('')
-      + '</select></label>';
+  function sbCard(title, total, cap, parts) {
+    var leg = parts.map(function (p) {
+      return '<span><i class="txm-dot" style="background:' + p.col + '"></i><b>' + nf(p.val) + '</b> ' + esc2(p.lbl) + '</span>';
+    }).join('');
+    return '<div class="txm-card">'
+      + '<div class="txm-card-hd"><div class="txm-card-ttl">' + IC.users + esc2(title) + '</div></div>'
+      + '<div class="txm-dn"><div class="txm-dn-l">'
+      +   '<div class="txm-dn-val">' + nf(total) + '</div>'
+      +   '<div class="txm-dn-cap">' + esc2(cap) + '</div>'
+      +   '<div class="txm-dn-leg">' + leg + '</div>'
+      + '</div>' + donut(total, parts) + '</div></div>';
   }
 
-  // ---- skeleton + error (never throw) -------------------------------------
-  function shell(inner) { return '<div class="lc" data-theme="' + lcTheme() + '">' + topBar() + inner + '</div>'; }
-
-  function skeleton() {
-    var kpi = '<div class="lc-card lc-pad"><div class="lc-skb" style="height:13px;width:52%"></div>'
-      + '<div class="lc-skb" style="height:30px;width:70%;margin-top:14px"></div>'
-      + '<div class="lc-skb" style="height:11px;width:60%;margin-top:14px"></div></div>';
-    return shell('<div class="lc-main">'
-      + '<div class="lc-kpis">' + rep(kpi, 4) + '</div>'
-      + '<div class="lc-card lc-pad"><div class="lc-skb" style="height:248px"></div></div>'
-      + '<div class="lc-two"><div class="lc-card lc-pad"><div class="lc-skb" style="height:170px"></div></div>'
-      + '<div class="lc-card lc-pad"><div class="lc-skb" style="height:170px"></div></div></div>'
-      + '</div>');
+  /* ── Ageing (non-transacted) ───────────────────────────────────────────── */
+  function ageCard(ag) {
+    var bars = [
+      { lbl: '0 - 30<br>days',  v: ag.lt30 || 0 },
+      { lbl: '31 - 60<br>days', v: ag.d30_60 || 0 },
+      { lbl: '60+ days',        v: ag.gt60 || 0 }
+    ];
+    var tot = bars.reduce(function (a, b) { return a + b.v; }, 0);
+    var max = Math.max.apply(null, bars.map(function (b) { return b.v; }).concat([1]));
+    var cols = bars.map(function (b) {
+      // Height in px against the fixed 150px track, so the bar cannot collapse
+      // the way a percentage against an auto-height flex parent would.
+      var h = Math.max(3, Math.round(b.v / max * 96));
+      return '<div class="txm-age-col">'
+        + '<div class="txm-age-v">' + nf(b.v) + '</div>'
+        + '<div class="txm-age-bar" style="height:' + h + 'px"></div>'
+        + '<div class="txm-age-l">' + b.lbl + '</div></div>';
+    }).join('');
+    return '<div class="txm-card">'
+      + '<div class="txm-card-hd"><div class="txm-card-ttl">Ageing (Non-Transacted)'
+      +   '<span title="Days since onboarding for vendors that have not transacted">' + IC.info + '</span></div>'
+      +   '<div class="txm-age-tot"><div class="t">Total Non-Transacted</div><div class="v">' + nf(tot) + '</div></div></div>'
+      + '<div class="txm-age">' + cols + '</div></div>';
   }
 
-  function errorCard(msg) {
-    return shell('<div class="lc-main"><div class="lc-card lc-pad">'
-      + '<div class="lc-sech"><h2>Transactions</h2></div>'
-      + '<div class="lc-note" style="color:var(--lc-risk)">Could not load transaction data: ' + esc2(msg || 'Unknown error') + '</div>'
-      + '</div></div>');
-  }
+  /* ── Transaction trend (two lines) ─────────────────────────────────────── */
+  function trendCard(trend) {
+    var data = (trend || []).slice(-9);
+    if (!data.length) {
+      return '<div class="txm-card"><div class="txm-card-hd"><div class="txm-card-ttl">Transaction Trend</div></div>'
+        + '<div class="txm-empty">No transaction activity in this period.</div></div>';
+    }
+    var W = 620, H = 190, padL = 34, padR = 12, padT = 14, padB = 30;
+    var cW = W - padL - padR, cH = H - padT - padB;
+    var peak = data.reduce(function (a, d) { return Math.max(a, d.transacted, d.nonTransacted); }, 0);
+    var mag = Math.pow(10, Math.max(0, Math.floor(Math.log(Math.max(peak, 1)) / Math.LN10)));
+    var yMax = Math.max(mag, Math.ceil(Math.max(peak, 1) / mag) * mag);
+    var step = data.length > 1 ? cW / (data.length - 1) : 0;
+    var X = function (i) { return padL + step * i; };
+    var Y = function (v) { return padT + cH - (v / yMax) * cH; };
+    var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var lbl = function (m) {
+      var p = String(m || '').split('-'), n = parseInt(p[1], 10);
+      return (n >= 1 && n <= 12) ? MON[n - 1] : m;
+    };
 
-  // ---- monthly chart (hand-rolled inline SVG, token-coloured) -------------
-  function monthlyChart(md) {
-    if (!md || !md.length) return '<div class="lc-txn-empty">No transaction activity in the selected period.</div>';
-    var isG = CHART === 'gmv';
-    var n = md.length;
-    var slot = Math.max(40, Math.min(72, Math.floor(600 / n)));
-    var padL = 54, padR = 16, padT = 18, padB = 34;
-    var W = padL + padR + n * slot, H = 250, cW = W - padL - padR, cH = H - padT - padB;
-    var vals = md.map(function (m) { return isG ? (m.gmv || 0) : ((m.sellers || 0) + (m.buyers || 0)); });
-    var maxV = Math.max.apply(null, vals.concat([1]));
-    var top = isG ? niceTop(maxV) : Math.max(4, Math.ceil(maxV / 4) * 4);
-    var barW = Math.min(34, Math.floor(slot * 0.58));
-    var s = '';
-
-    // gridlines + left axis labels
-    for (var t = 0; t <= 4; t++) {
-      var yv = top * t / 4, yy = padT + cH - (yv / top) * cH;
-      s += '<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + yy.toFixed(1) + '" stroke="var(--lc-border)" stroke-width="1"' + (t === 0 ? '' : ' opacity=".55"') + '/>';
-      s += '<text x="' + (padL - 8) + '" y="' + (yy + 3).toFixed(1) + '" text-anchor="end" font-size="9.5" fill="var(--lc-text3)">' + (isG ? rup(yv) : nf(yv)) + '</text>';
+    var g = '';
+    for (var t = 0; t <= 3; t++) {
+      var gv = yMax * t / 3, gy = Y(gv);
+      g += '<line x1="' + padL + '" y1="' + gy.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + gy.toFixed(1) + '" stroke="var(--lc-border)" stroke-width="1"/>'
+        + '<text x="' + (padL - 7) + '" y="' + (gy + 3.5).toFixed(1) + '" text-anchor="end" font-size="9.5" style="fill:var(--lc-text3)">' + Math.round(gv) + '</text>';
     }
 
-    // bars
-    md.forEach(function (m, i) {
-      var cx = padL + i * slot + slot / 2, bx = cx - barW / 2;
-      if (isG) {
-        var v = m.gmv || 0, bh = Math.max(v > 0 ? 2 : 0, (v / top) * cH), by = padT + cH - bh;
-        s += '<rect x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + barW + '" height="' + bh.toFixed(1) + '" rx="3" fill="var(--lc-accent)"><title>' + esc2(mlabel(m.month)) + ' · ' + rup(v) + '</title></rect>';
-      } else {
-        var sv = m.sellers || 0, bv = m.buyers || 0, tot = sv + bv;
-        var totH = Math.max(tot > 0 ? 2 : 0, (tot / top) * cH);
-        var sH = tot > 0 ? (sv / tot) * totH : 0, bH = totH - sH;
-        var topY = padT + cH - totH;
-        s += '<rect x="' + bx.toFixed(1) + '" y="' + topY.toFixed(1) + '" width="' + barW + '" height="' + bH.toFixed(1) + '" rx="3" fill="rgba(var(--lc-accent-rgb),.42)"/>';
-        s += '<rect x="' + bx.toFixed(1) + '" y="' + (topY + bH).toFixed(1) + '" width="' + barW + '" height="' + sH.toFixed(1) + '" fill="var(--lc-accent)"/>';
-        s += '<rect x="' + bx.toFixed(1) + '" y="' + topY.toFixed(1) + '" width="' + barW + '" height="' + totH.toFixed(1) + '" rx="3" fill="transparent"><title>' + esc2(mlabel(m.month)) + ' · ' + nf(sv) + ' sellers, ' + nf(bv) + ' buyers</title></rect>';
-      }
-      s += '<text x="' + cx.toFixed(1) + '" y="' + (padT + cH + 15) + '" text-anchor="middle" font-size="9.5" fill="var(--lc-text3)">' + esc2(mlabel(m.month)) + '</text>';
-    });
+    function series(key, col, fill) {
+      var pts = data.map(function (d, i) { return X(i).toFixed(1) + ',' + Y(d[key]).toFixed(1); });
+      var area = 'M' + padL + ',' + Y(0).toFixed(1) + ' L' + pts.join(' L')
+               + ' L' + X(data.length - 1).toFixed(1) + ',' + Y(0).toFixed(1) + ' Z';
+      var out = '<path d="' + area + '" fill="' + fill + '"/>'
+              + '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+      data.forEach(function (d, i) {
+        out += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(d[key]).toFixed(1) + '" r="3" fill="' + col + '">'
+            + '<title>' + lbl(d.month) + ' · ' + (key === 'transacted' ? 'Transacted' : 'Non-Transacted') + ': ' + nf(d[key]) + '</title></circle>';
+      });
+      return out;
+    }
 
-    var legend = isG
-      ? '<div class="lc-legend"><span><i style="background:var(--lc-accent)"></i>Monthly GMV (₹)</span></div>'
-      : '<div class="lc-legend"><span><i style="background:var(--lc-accent)"></i>Sellers</span><span><i style="background:rgba(var(--lc-accent-rgb),.42)"></i>Buyers</span></div>';
+    var xl = data.map(function (d, i) {
+      return '<text x="' + X(i).toFixed(1) + '" y="' + (H - 9) + '" text-anchor="middle" font-size="9.5" style="fill:var(--lc-text3)">' + lbl(d.month) + '</text>';
+    }).join('');
 
-    return '<div class="lc-chartscroll"><svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" '
-      + 'aria-label="Monthly ' + (isG ? 'GMV' : 'transacting vendors') + ' bar chart">' + s + '</svg></div>' + legend;
+    return '<div class="txm-card">'
+      + '<div class="txm-card-hd"><div class="txm-card-ttl">Transaction Trend</div>'
+      +   '<div class="txm-lgd" style="margin:0">'
+      +     '<span><i class="txm-dot" style="background:var(--lc-ok)"></i>Transacted</span>'
+      +     '<span><i class="txm-dot" style="background:var(--lc-warn)"></i>Non-Transacted</span>'
+      +   '</div></div>'
+      + '<svg class="txm-trend" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Monthly transacted and non-transacted vendors">'
+      +   g
+      +   series('nonTransacted', 'var(--lc-warn)', 'rgba(178,80,0,.10)')
+      +   series('transacted',    'var(--lc-ok)',   'rgba(6,122,82,.10)')
+      +   xl
+      + '</svg></div>';
   }
 
-  // ---- labeled horizontal bars (reuses .lc-bars/.lc-bar) ------------------
-  function bar(name, valHtml, widthPct, color) {
-    return '<div class="lc-bar"><div class="bn">' + name + '</div>'
-      + '<div class="bt"><i style="width:' + Math.max(0, Math.min(100, widthPct)).toFixed(1) + '%;background:' + color + '"></i></div>'
-      + '<div class="bv">' + valHtml + '</div></div>';
+  /* ── Vendor tables ─────────────────────────────────────────────────────── */
+  function tableCard(title, rows, cols, viewAllFn) {
+    var head = cols.map(function (c) {
+      return '<th' + (c.num ? ' class="num"' : '') + '>' + esc2(c.lbl) + '</th>';
+    }).join('');
+    var body = rows.length
+      ? rows.map(function (r, i) {
+          return '<tr>' + cols.map(function (c) {
+            return '<td' + (c.num ? ' class="num"' : '') + (c.cls ? ' class="' + c.cls + '"' : '') + '>' + c.get(r, i) + '</td>';
+          }).join('') + '</tr>';
+        }).join('')
+      : '<tr><td colspan="' + cols.length + '"><div class="txm-empty">No vendors to show.</div></td></tr>';
+    return '<div class="txm-card">'
+      + '<div class="txm-card-hd"><div class="txm-card-ttl">' + esc2(title) + '</div>'
+      +   '<a class="txm-link" onclick="' + viewAllFn + '">View all &rarr;</a></div>'
+      + '<div class="txm-tblwrap"><table class="txm-tbl"><thead><tr>' + head + '</tr></thead>'
+      + '<tbody>' + body + '</tbody></table></div></div>';
   }
 
-  // ---- MAIN RENDER --------------------------------------------------------
+  function catCell(r) {
+    return '<span class="txm-cat"><i class="txm-dot" style="background:' + catCol(r.category) + '"></i>' + esc2(r.category || '—') + '</span>';
+  }
+
+  /* ── Main render ───────────────────────────────────────────────────────── */
   function render() {
     var host = document.getElementById('tab-transactions');
     if (!host) return;
-    if (typeof _TXN_MOD === 'undefined' || !_TXN_MOD) { host.innerHTML = skeleton(); return; }
-    if (!_TXN_MOD.success) { host.innerHTML = errorCard(_TXN_MOD.error); return; }
+    if (typeof _TXN_MOD === 'undefined' || !_TXN_MOD) {
+      if (typeof renderTransactionSkeleton === 'function') renderTransactionSkeleton();
+      return;
+    }
+    if (!_TXN_MOD.success) {
+      host.innerHTML = '<div class="lc txm-pg"><div class="txm-card"><div class="txm-empty">'
+        + 'Could not load transaction data: ' + esc2(_TXN_MOD.error || 'Unknown error') + '</div></div></div>';
+      return;
+    }
 
-    var d = _TXN_MOD;
-    var s = d.seller || {}, b = d.buyer || {};
-    var g = d.gmv || {}, h = d.health || {};
-    var sAg = s.agingNonTxn || {}, bAg = b.agingNonTxn || {}, ag = d.agingNonTxn || {};
-    var md = d.monthData || [];
+    var d = _TXN_MOD, v = scope(d);
+    var txnPct = pctOf(v.txn, v.total), nonPct = v.total > 0 ? 100 - txnPct : 0;
+    var per = (typeof currentPeriod !== 'undefined') ? currentPeriod : 'All';
 
-    // ---- core figures (all from the real producer, no invented deltas) ----
-    var sOnb = d.sellerTotal || 0, bOnb = d.buyerTotal || 0, onb = sOnb + bOnb;
-    var sTx = s.total || 0, bTx = b.total || 0;
-    var transacted = d.total != null ? d.total : (sTx + bTx);
-    var nonTxn = d.nonTransacted != null ? d.nonTransacted : (h.noTxn || 0);
-    var sNon = (sAg.lt30 || 0) + (sAg.d30_60 || 0) + (sAg.gt60 || 0);
-    var bNon = (bAg.lt30 || 0) + (bAg.d30_60 || 0) + (bAg.gt60 || 0);
-    var agLt30 = ag.lt30 || 0, ag3060 = ag.d30_60 || 0, agGt60 = ag.gt60 || 0;
+    var h = '<div class="lc txm-pg">';
 
-    var gTotal = g.total || 0, gMetal = g.metal || 0, gPlastic = g.plastic || 0;
-    var pPct = pctOf(gPlastic, gTotal), mPct = pctOf(gMetal, gTotal);
+    /* header */
+    var perBtns = [['Today','Today'],['MTD','For the Month'],['YTD','YTD'],['All','All Time']].map(function (p) {
+      return '<button type="button" class="' + (per === p[0] ? 'on' : '') + '" onclick="onPeriodSelect(\'' + p[0] + '\')">' + p[1] + '</button>';
+    }).join('');
+    var audOpts = [['both','Sellers & Buyers'],['seller','Sellers'],['buyer','Buyers']].map(function (o) {
+      return '<option value="' + o[0] + '"' + (AUD === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+    }).join('');
+    h += '<div class="txm-hdr"><div>'
+      + '<div class="txm-bc">Central Onboarding &rsaquo; <b>Marketplace</b> &rsaquo; Transactions</div>'
+      + '<div class="txm-ttlrow"><div class="txm-ttl">Transactions</div>'
+      +   '<select class="txm-aud" onchange="window.txmSetAud(this.value)">' + audOpts + '</select></div>'
+      + '<div class="txm-sub">Track transacted and non-transacted vendors, ageing and GMV across categories.</div>'
+      + '</div><div class="txm-hdr-r">'
+      + '<div class="txm-seg">' + perBtns + '</div>'
+      + '<button class="txm-exp" onclick="window.txmExport()">' + IC.down + ' Export</button>'
+      + '</div></div>';
 
-    var firstTxnPct = Math.round(h.firstTxnPct || 0);
-    var repeatRate = Math.round(h.repeatRate || 0);
-    var newRate = Math.round(h.newTxnRate || 0);
-    var avgOrders = h.avgOrders || 0, avgGmv = h.avgGmv || 0;
-    var activeTxn = h.activeTxn != null ? h.activeTxn : transacted;
-
-    // "% engaged" and First-Txn Conversion are the same ratio (transacted ÷
-    // onboarded), so reuse the producer's figure rather than rebuilding it from
-    // (transacted + nonTxn): `transacted` counts every status while nonTxn and
-    // onboarded count only COMPLETED rows, so the sum-of-parts denominator made
-    // the two KPI cards disagree.
-    var engPct = firstTxnPct;
-    var engBar = Math.max(0, Math.min(100, engPct));
-
-    // ---- KPI row ----------------------------------------------------------
-    var kpis = '<div class="lc-kpis">'
-      // 1 · Total GMV
-      + '<div class="lc-card lc-kpi"><div class="lbl">Total GMV</div>'
-      +   '<div class="row"><div class="val num">' + rup(gTotal) + '</div>'
-      +     (pPct >= mPct ? '<span class="lc-chip flat">Plastic-led</span>' : '<span class="lc-chip flat">Metal-led</span>') + '</div>'
-      +   '<div class="ctx">' + rup(gMetal) + ' metal · ' + rup(gPlastic) + ' plastic</div></div>'
-      // 2 · Transacted vs Non-transacted
-      + '<div class="lc-card lc-kpi"><div class="lbl">Transacted Vendors</div>'
-      +   '<div class="row"><div class="val num">' + nf(transacted) + '</div>'
-      +     '<span class="lc-chip ' + (engPct >= 50 ? 'ok' : engPct >= 25 ? 'warn' : 'risk') + '">' + engPct + '% engaged</span></div>'
-      +   '<div class="lc-txn-mini" role="img" aria-label="' + nf(transacted) + ' transacted versus ' + nf(nonTxn) + ' not yet transacted">'
-      +     '<i class="a" style="width:' + engBar + '%"></i><i class="b" style="width:' + (100 - engBar) + '%"></i></div>'
-      +   '<div class="ctx">vs ' + nf(nonTxn) + ' onboarded, not yet transacting</div></div>'
-      // 3 · First-transaction conversion
-      + '<div class="lc-card lc-kpi"><div class="lbl">First-Txn Conversion</div>'
-      +   '<div class="row"><div class="val num">' + firstTxnPct + '<small>%</small></div></div>'
-      +   '<div class="ctx">' + nf(transacted) + ' transacted of ' + nf(onb) + ' onboarded</div></div>'
-      // 4 · Repeat rate (+ avg orders)
-      + '<div class="lc-card lc-kpi"><div class="lbl">Repeat Transaction Rate</div>'
-      +   '<div class="row"><div class="val num">' + repeatRate + '<small>%</small></div>'
-      +     '<span class="lc-chip flat">' + nf(avgOrders) + ' avg orders</span></div>'
-      +   '<div class="ctx">' + newRate + '% single-order · ' + rup(avgGmv) + ' avg GMV / seller</div></div>'
+    /* KPI row */
+    var spark = v.trend.slice(-7).map(function (t) {
+      var mx = v.trend.reduce(function (a, x) { return Math.max(a, x.transacted); }, 1);
+      return '<i style="height:' + Math.max(4, Math.round((t.transacted / mx) * 32)) + 'px"></i>';
+    }).join('');
+    h += '<div class="txm-kpis">'
+      + '<div class="txm-kpi"><div class="txm-kpi-ico" style="background:var(--lc-ok-weak);color:var(--lc-ok)">' + IC.users + '</div>'
+      +   '<div class="txm-kpi-body"><div class="txm-kpi-val">' + nf(v.txn) + '</div>'
+      +   '<div class="txm-kpi-lbl">Transacted (Unique)</div>'
+      +   '<div class="txm-kpi-dlt" style="color:var(--lc-ok)">' + txnPct + '% <em>of all vendors</em></div></div></div>'
+      + '<div class="txm-kpi"><div class="txm-kpi-ico" style="background:var(--lc-warn-weak);color:var(--lc-warn)">' + IC.users + '</div>'
+      +   '<div class="txm-kpi-body"><div class="txm-kpi-val">' + nf(v.non) + '</div>'
+      +   '<div class="txm-kpi-lbl">Non-Transacted (Unique)</div>'
+      +   '<div class="txm-kpi-dlt" style="color:var(--lc-warn)">' + nonPct + '% <em>of all vendors</em></div></div></div>'
+      + '<div class="txm-kpi"><div class="txm-kpi-ico" style="background:var(--lc-accent-weak);color:var(--lc-accent)">' + IC.coin + '</div>'
+      +   '<div class="txm-kpi-body"><div class="txm-kpi-val">' + nf(v.total) + '</div>'
+      +   '<div class="txm-kpi-lbl">Total Vendors</div></div>'
+      +   '<div class="txm-kpi-sep"><div class="txm-spark">' + spark + '</div>'
+      +     '<div><div style="font-size:13px;font-weight:700;color:var(--lc-ok)">' + txnPct + '%</div>'
+      +     '<div style="font-size:10.5px;color:var(--lc-text3)">engaged</div></div></div></div>'
       + '</div>';
 
-    // ---- monthly chart section -------------------------------------------
-    var chartSec = '<section>'
-      + '<div class="lc-sech"><h2>Monthly Activity <span class="pr">/ ' + (CHART === 'gmv' ? 'GMV' : 'transactions') + '</span></h2>'
-      +   '<span class="sub"><span class="lc-seg lc-txn-seg" role="group" aria-label="Chart metric">'
-      +     '<button type="button" class="' + (CHART === 'gmv' ? 'on' : '') + '" aria-pressed="' + (CHART === 'gmv') + '" onclick="lcTxnChart(\'gmv\')">GMV</button>'
-      +     '<button type="button" class="' + (CHART === 'txn' ? 'on' : '') + '" aria-pressed="' + (CHART === 'txn') + '" onclick="lcTxnChart(\'txn\')">Transactions</button>'
-      +   '</span></span></div>'
-      + '<div class="lc-card lc-pad">' + monthlyChart(md) + '</div></section>';
+    /* split status bar */
+    h += '<div class="txm-split"><div class="txm-splitbar">'
+      + '<i style="width:' + txnPct + '%;background:var(--lc-ok)">' + (txnPct >= 12 ? 'Transacted - ' + nf(v.txn) + ' (' + txnPct + '%)' : '') + '</i>'
+      + '<i style="width:' + nonPct + '%;background:var(--lc-warn)">' + (nonPct >= 12 ? 'Non-Transacted - ' + nf(v.non) + ' (' + nonPct + '%)' : '') + '</i>'
+      + '</div><div class="txm-lgd">'
+      + '<span><i class="txm-dot" style="background:var(--lc-ok)"></i>Transacted</span>'
+      + '<span><i class="txm-dot" style="background:var(--lc-warn)"></i>Non-Transacted</span>'
+      + '</div></div>';
 
-    // ---- material split (lc-bars) + seller/buyer summary (lc-two) ---------
-    var matBars = '<div class="lc-bars">'
-      + bar('Plastic', rup(gPlastic) + ' <span class="lc-txn-pct">' + pPct + '%</span>', gTotal > 0 ? gPlastic / gTotal * 100 : 0, 'var(--lc-accent)')
-      + bar('Metal', rup(gMetal) + ' <span class="lc-txn-pct">' + mPct + '%</span>', gTotal > 0 ? gMetal / gTotal * 100 : 0, 'rgba(var(--lc-accent-rgb),.42)')
-      + '</div>'
-      + '<div class="lc-legend"><span><i style="background:var(--lc-accent)"></i>Plastic</span>'
-      +   '<span><i style="background:rgba(var(--lc-accent-rgb),.42)"></i>Metal</span></div>';
+    /* sellers | buyers | ageing */
+    var s = v.seller, b = v.buyer;
+    var sParts = [{ lbl: 'Plastic', val: s.plastic || 0, col: catCol('plastic') }, { lbl: 'Metal', val: s.metal || 0, col: catCol('metal') }];
+    var bParts = [{ lbl: 'Plastic', val: b.plastic || 0, col: catCol('plastic') }, { lbl: 'Metal', val: b.metal || 0, col: catCol('metal') }];
+    h += '<div class="txm-row3">';
+    if (AUD !== 'buyer')  h += sbCard('Sellers', s.total || 0, 'Transacted sellers', sParts);
+    if (AUD !== 'seller') h += sbCard('Buyers',  b.total || 0, 'Transacted buyers',  bParts);
+    h += ageCard(v.ag) + '</div>';
 
-    var cmpRow = function (label, sv, bv, tv, note) {
-      return '<tr><th scope="row">' + label + (note ? '<span class="lc-txn-rn">' + note + '</span>' : '') + '</th>'
-        + '<td class="num">' + sv + '</td><td class="num">' + bv + '</td><td class="num lc-txn-tot">' + tv + '</td></tr>';
-    };
-    var cmp = '<table class="lc-txn-cmp"><thead><tr><th scope="col">Metric</th>'
-      + '<th scope="col">Seller</th><th scope="col">Buyer</th><th scope="col">Total</th></tr></thead><tbody>'
-      + cmpRow('Onboarded', nf(sOnb), nf(bOnb), nf(onb), '')
-      + cmpRow('Transacted', nf(sTx), nf(bTx), nf(transacted), '')
-      + cmpRow('Conversion', pctOf(sTx, sOnb) + '%', pctOf(bTx, bOnb) + '%', firstTxnPct + '%', 'transacted ÷ onboarded')
-      + cmpRow('Not transacted', nf(sNon), nf(bNon), nf(nonTxn), '')
-      + cmpRow('GMV', rup(s.gmv ? s.gmv.total : 0), rup(b.gmv ? b.gmv.total : 0), rup(gTotal), '')
-      + '</tbody></table>';
+    /* GMV | trend */
+    h += '<div class="txm-row4"><div class="txm-card">'
+      + '<div class="txm-card-hd"><div class="txm-card-ttl">' + IC.users + 'GMV Overview</div></div>'
+      + '<div class="txm-gmv"><div class="txm-gmv-ico">' + IC.coin + '</div>'
+      +   '<div class="txm-gmv-i first"><div class="txm-gmv-v">' + rup(v.gmv.total) + '</div><div class="txm-gmv-l">Total GMV</div></div>'
+      +   '<div class="txm-gmv-i"><div class="txm-gmv-v"><i class="txm-dot" style="background:var(--lc-ok)"></i>' + rup(v.gmv.metal) + '</div><div class="txm-gmv-l">GMV - Metal</div></div>'
+      +   '<div class="txm-gmv-i"><div class="txm-gmv-v"><i class="txm-dot" style="background:var(--lc-accent)"></i>' + rup(v.gmv.plastic) + '</div><div class="txm-gmv-l">GMV - Plastic</div></div>'
+      + '</div></div>'
+      + trendCard(v.trend) + '</div>';
 
-    var twoA = '<div class="lc-two">'
-      + '<div class="lc-card lc-pad"><div class="lc-txn-cardhd"><h3>Material-wise GMV</h3>'
-      +   '<span class="lc-note">Total ' + rup(gTotal) + '</span></div>' + matBars + '</div>'
-      + '<div class="lc-card lc-pad"><div class="lc-txn-cardhd"><h3>Seller vs Buyer</h3>'
-      +   '<span class="lc-note">Marketplace-wide</span></div>'
-      +   '<div class="lc-txn-scroll">' + cmp + '</div></div>'
-      + '</div>';
+    /* tables */
+    h += '<div class="txm-row5">'
+      + tableCard('Top Transacted Vendors', v.topT.slice(0, 5), [
+          { lbl: '#',            get: function (r, i) { return '<span class="txm-idx">' + (i + 1) + '</span>'; } },
+          { lbl: 'Vendor Name',  get: function (r) { return '<div class="txm-nm">' + esc2(r.name || '—') + '</div>'; } },
+          { lbl: 'Type',         get: function (r) { return esc2(r.type || ''); } },
+          { lbl: 'Category',     get: catCell },
+          { lbl: 'GMV',          num: true, get: function (r) { return rup(r.gmv); } },
+          { lbl: 'Transactions', num: true, get: function (r) { return nf(r.txns); } }
+        ], 'window.txmViewAll(\'transacted\')')
+      + tableCard('Top Non-Transacted Vendors', v.topN.slice(0, 5), [
+          { lbl: '#',             get: function (r, i) { return '<span class="txm-idx">' + (i + 1) + '</span>'; } },
+          { lbl: 'Vendor Name',   get: function (r) { return '<div class="txm-nm">' + esc2(r.name || '—') + '</div>'; } },
+          { lbl: 'Type',          get: function (r) { return esc2(r.type || ''); } },
+          { lbl: 'Category',      get: catCell },
+          { lbl: 'Ageing (Days)', num: true, get: function (r) { return r.ageDays == null ? '—' : nf(r.ageDays); } },
+          { lbl: 'Status',        get: function () { return '<span class="txm-badge">Non-Transacted</span>'; } }
+        ], 'window.txmViewAll(\'nontransacted\')');
+    h += '</div>';
 
-    // ---- ageing of non-transacted (lc-bars, status-coloured) + health -----
-    var maxAge = Math.max(agLt30, ag3060, agGt60, 1);
-    var ageBars = '<div class="lc-bars">'
-      + bar('0–30 days', nf(agLt30), agLt30 / maxAge * 100, 'var(--lc-text3)')
-      + bar('31–60 days', nf(ag3060), ag3060 / maxAge * 100, 'var(--lc-warn)')
-      + bar('60+ days', nf(agGt60), agGt60 / maxAge * 100, 'var(--lc-risk)')
-      + '</div>'
-      + '<div class="lc-legend"><span><i style="background:var(--lc-text3)"></i>Recent</span>'
-      +   '<span><i style="background:var(--lc-warn)"></i>Ageing</span>'
-      +   '<span><i style="background:var(--lc-risk)"></i>Stale</span></div>';
-
-    var htile = function (lbl, val, sub) {
-      return '<div class="lc-txn-htile"><div class="hv num">' + val + '</div><div class="hl">' + lbl + '</div>'
-        + (sub ? '<div class="hs">' + sub + '</div>' : '') + '</div>';
-    };
-    var health = '<div class="lc-txn-health">'
-      + htile('First-txn conversion', firstTxnPct + '%', 'of onboarded')
-      + htile('Repeat rate', repeatRate + '%', 'sellers, >1 order')
-      + htile('New-txn rate', newRate + '%', 'sellers, single order')
-      + htile('Avg orders / seller', nf(avgOrders), 'transacting sellers')
-      + htile('Avg GMV / seller', rup(avgGmv), 'transacting sellers')
-      + htile('Active vendors', nf(activeTxn), 'with a transaction')
-      + '</div>';
-
-    var twoB = '<div class="lc-two">'
-      + '<div class="lc-card lc-pad"><div class="lc-txn-cardhd"><h3>Ageing · Non-transacted</h3>'
-      +   (agGt60 > 0 ? '<span class="lc-badge risk">' + nf(agGt60) + ' over 60 days</span>' : '<span class="lc-note">' + nf(nonTxn) + ' total</span>') + '</div>'
-      +   ageBars
-      +   '<div class="lc-note" style="margin-top:12px">Onboarded vendors with no transaction yet, by time since onboarding.</div></div>'
-      + '<div class="lc-card lc-pad"><div class="lc-txn-cardhd"><h3>Transaction Health</h3>'
-      +   '<span class="lc-note">Seller-transaction basis</span></div>' + health + '</div>'
-      + '</div>';
-
-    // ---- footer: methodology + preserved records interaction --------------
-    var foot = '<div class="lc-txn-foot">'
-      + '<span class="lc-note">Figures reflect the selected period; the period control triggers a live backend re-fetch.</span>'
-      + '<button type="button" class="lc-txn-vd" onclick="typeof openModRecords===\'function\'&&openModRecords(\'transacted\')">View detailed records →</button>'
-      + '</div>';
-
-    var subhead = '<div class="lc-txn-head">' + periodSelect() + '<span class="lc-sp"></span>'
-      + '<span class="lc-note">' + nf(transacted) + ' transacted · ' + rup(gTotal) + ' GMV</span></div>';
-
-    host.innerHTML = shell('<div class="lc-main">'
-      + subhead + kpis + chartSec + twoA + twoB + foot + '</div>');
+    host.innerHTML = h + '</div>';
+    if (typeof _lcSync === 'function') _lcSync();
   }
 
-  // Reassign the GLOBAL hook (wins because appended after the main script).
+  /* ── Window callbacks (referenced from inline handlers) ────────────────── */
+  window.txmSetAud = function (a) { AUD = a; render(); };
+
+  window.txmViewAll = function (which) {
+    var d = _TXN_MOD;
+    if (!d || !d.success) return;
+    var list = which === 'transacted' ? (d.topTransacted || []) : (d.topNonTransacted || []);
+    if (AUD === 'seller') list = list.filter(function (r) { return r.type === 'Seller'; });
+    if (AUD === 'buyer')  list = list.filter(function (r) { return r.type === 'Buyer'; });
+    if (typeof openTxnListModal === 'function') { openTxnListModal(which, list); return; }
+    // No shared list modal in this build — expand the table in place instead of
+    // opening a second shell, which the module must not do.
+    window.txmExpanded = which;
+    var rows = list.map(function (r, i) {
+      return '<tr><td class="txm-idx">' + (i + 1) + '</td><td class="txm-nm">' + esc2(r.name) + '</td>'
+        + '<td>' + esc2(r.type) + '</td><td>' + catCell(r) + '</td>'
+        + (which === 'transacted'
+            ? '<td class="num">' + rup(r.gmv) + '</td><td class="num">' + nf(r.txns) + '</td>'
+            : '<td class="num">' + (r.ageDays == null ? '—' : nf(r.ageDays)) + '</td><td><span class="txm-badge">Non-Transacted</span></td>')
+        + '</tr>';
+    }).join('');
+    var head = which === 'transacted'
+      ? '<th>#</th><th>Vendor Name</th><th>Type</th><th>Category</th><th class="num">GMV</th><th class="num">Transactions</th>'
+      : '<th>#</th><th>Vendor Name</th><th>Type</th><th>Category</th><th class="num">Ageing (Days)</th><th>Status</th>';
+    var host = document.getElementById('tab-transactions');
+    var pg = host && host.querySelector('.txm-pg');
+    if (!pg) return;
+    var box = document.createElement('div');
+    box.className = 'txm-card';
+    box.innerHTML = '<div class="txm-card-hd"><div class="txm-card-ttl">'
+      + (which === 'transacted' ? 'All Transacted Vendors' : 'All Non-Transacted Vendors')
+      + ' (' + list.length + ')</div><a class="txm-link" onclick="this.closest(\'.txm-card\').remove()">Close</a></div>'
+      + '<div class="txm-tblwrap"><table class="txm-tbl"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+    pg.appendChild(box);
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  window.txmExport = function () {
+    var d = _TXN_MOD;
+    if (!d || !d.success) return;
+    var v = scope(d);
+    var lines = ['Section,Metric,Value'];
+    lines.push('KPI,Transacted (Unique),' + v.txn);
+    lines.push('KPI,Non-Transacted (Unique),' + v.non);
+    lines.push('KPI,Total Vendors,' + v.total);
+    lines.push('Ageing,0-30 days,' + (v.ag.lt30 || 0));
+    lines.push('Ageing,31-60 days,' + (v.ag.d30_60 || 0));
+    lines.push('Ageing,60+ days,' + (v.ag.gt60 || 0));
+    lines.push('GMV,Total,' + v.gmv.total);
+    lines.push('GMV,Metal,' + v.gmv.metal);
+    lines.push('GMV,Plastic,' + v.gmv.plastic);
+    lines.push('');
+    lines.push('Top Transacted Vendors');
+    lines.push('#,Vendor Name,Type,Category,GMV,Transactions');
+    v.topT.forEach(function (r, i) {
+      lines.push([i + 1, '"' + String(r.name).replace(/"/g, '""') + '"', r.type, r.category, r.gmv, r.txns].join(','));
+    });
+    lines.push('');
+    lines.push('Top Non-Transacted Vendors');
+    lines.push('#,Vendor Name,Type,Category,Ageing (Days),Status');
+    v.topN.forEach(function (r, i) {
+      lines.push([i + 1, '"' + String(r.name).replace(/"/g, '""') + '"', r.type, r.category, (r.ageDays == null ? '' : r.ageDays), 'Non-Transacted'].join(','));
+    });
+    try {
+      var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'transactions.csv'; a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    } catch (e) {}
+  };
+
   renderTransactionDash = render;
 })();
 </script>
@@ -18622,7 +18793,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ── Compact layout: full analytics on one screen, records toggled separately ── */
 /* Row gaps, grid gaps and side padding all come from --lc-gutter, so the outer
    margin is the same step as the gaps between cards. */
-.lc .vr3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
+.lc.vr3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
 .lc .vr3-page-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .lc .vr3-ttl{font-size:15px;font-weight:700;color:var(--lc-text);letter-spacing:-.025em;line-height:1.2}
 .lc .vr3-sub{font-size:11px;color:var(--lc-text3);margin-top:1px}
@@ -18976,7 +19147,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <style id="osv3-css">
 /* Same gutter system as Vendor Ratings: one token drives the row gaps, the grid
    gaps and the side padding. */
-.lc .osv3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
+.lc.osv3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
 .lc .osv3-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .lc .osv3-hdr-l{display:flex;flex-direction:column;gap:4px}
 .lc .osv3-ttl{font-size:20px;font-weight:700;color:var(--lc-text);letter-spacing:-.025em;line-height:1.2}
@@ -19385,7 +19556,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ── Smooth view-switch fade-in (used by all module tabs) ── */
 @keyframes _lcViewFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 /* ── Page shell ── */
-.lc .evn-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:20px;padding:24px 28px 36px}
+.lc.evn-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:20px;padding:24px 28px 36px}
 .lc .evn-page-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px}
 .lc .evn-ttl{font-size:19px;font-weight:700;color:var(--lc-text);letter-spacing:-.025em;line-height:1.2}
 .lc .evn-sub{font-size:12px;color:var(--lc-text3);margin-top:2px;letter-spacing:0}

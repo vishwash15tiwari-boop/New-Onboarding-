@@ -729,7 +729,7 @@ function getTransactionModuleData(filtersJson) {
   try {
     var f    = filtersJson ? JSON.parse(filtersJson) : {};
     var catF = (f.category || 'all').toLowerCase();
-    var cKey = 'txn_mod_v2_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF]);
+    var cKey = 'txn_mod_v3_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF]);
     var cache = CacheService.getScriptCache();
     var hit   = cache.get(cKey);
     if (hit) return hit;
@@ -809,6 +809,54 @@ function getTransactionModuleData(filtersJson) {
     var sNonTAging  = aging(sNonT);
     var bNonTAging  = aging(bNonT);
 
+    // ── Vendor lists + combined trend for the Transactions module ────────────
+    // Ranking, ageing, GMV and category all reuse the values already normalized
+    // above; nothing is recomputed from raw rows here.
+    function vRow(r, type) {
+      return {
+        name:     String(r.name || '').slice(0, 60),
+        type:     type,
+        category: r.category || '',
+        gmv:      r.txnValue || 0,
+        txns:     r.txnCount || r.totalOrders || 0,
+        ageDays:  r.onboardedDate ? Math.floor((now - r.onboardedDate) / 86400000) : null,
+        state:    r.state || ''
+      };
+    }
+    var topTransacted = sTxn.map(function(r) { return vRow(r, 'Seller'); })
+      .concat(bTxn.map(function(r) { return vRow(r, 'Buyer'); }))
+      .sort(function(a, b) { return (b.gmv - a.gmv) || (b.txns - a.txns); })
+      .slice(0, 25);
+    var topNonTransacted = sNonT.map(function(r) { return vRow(r, 'Seller'); })
+      .concat(bNonT.map(function(r) { return vRow(r, 'Buyer'); }))
+      .filter(function(v) { return v.ageDays !== null; })
+      .sort(function(a, b) { return b.ageDays - a.ageDays; })
+      .slice(0, 25);
+
+    // Trend over the last 12 calendar months. Transacted vendors are placed in the
+    // month they transacted; non-transacted vendors have no transaction date, so
+    // they are placed in the month they were onboarded — the month from which they
+    // have been sitting idle.
+    var trendMonths = [], trendMap = {};
+    for (var tm = 11; tm >= 0; tm--) {
+      var td = new Date(now.getFullYear(), now.getMonth() - tm, 1);
+      var tk = td.getFullYear() + '-' + String(td.getMonth() + 1).padStart(2, '0');
+      var tb = { month: tk, transacted: 0, nonTransacted: 0, tS: 0, tB: 0, nS: 0, nB: 0 };
+      trendMonths.push(tb); trendMap[tk] = tb;
+    }
+    function trendAdd(rows, field, subField, dateKey) {
+      rows.forEach(function(r) {
+        var dt = r[dateKey];
+        if (!(dt instanceof Date) || isNaN(dt)) return;
+        var k = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0');
+        if (trendMap[k]) { trendMap[k][field]++; trendMap[k][subField]++; }
+      });
+    }
+    trendAdd(sTxn,  'transacted',    'tS', 'txnDate');
+    trendAdd(bTxn,  'transacted',    'tB', 'txnDate');
+    trendAdd(sNonT, 'nonTransacted', 'nS', 'onboardedDate');
+    trendAdd(bNonT, 'nonTransacted', 'nB', 'onboardedDate');
+
     var result = {
       success: true,
       total: totalTxn,
@@ -847,6 +895,8 @@ function getTransactionModuleData(filtersJson) {
         return { month:m, sellers:sMm[m]||0, buyers:bMm[m]||0, gmv:gmvMm[m]||0 };
       }),
       sellerTotal: sOnb, buyerTotal: bOnb,
+      topTransacted: topTransacted, topNonTransacted: topNonTransacted,
+      trend: trendMonths,
     };
     var out = JSON.stringify(result);
     try { cache.put(cKey, out, 300); } catch(e) {}
