@@ -5213,6 +5213,9 @@ function renderAll() {
   renderLastUpdated();
   renderOverview();
   try { renderOvScreen(); } catch(e) { console.error('renderOvScreen', e); }
+  if (currentView === 'existingnew' && typeof renderEVNDash === 'function') {
+    try { renderEVNDash(); } catch(e) { console.error('renderEVNDash', e); }
+  }
 }
 
 function renderLastUpdated() {
@@ -11175,6 +11178,9 @@ function loadVertRows(key) {
       }
       renderVertDetail();   // always re-render — never leave the panel stuck on the spinner
       _mrRefreshFromVertRows();   // keep an open drill-down in step with the new rows
+      if (currentView === 'existingnew' && typeof renderEVNDash === 'function') {
+        try { renderEVNDash(); } catch(e) {}
+      }
       // Silently warm the cache for the next vertical tab (2 s delay avoids contention)
       setTimeout(function() { _prefetchNextVert(key); }, 2000);
     })
@@ -12760,6 +12766,9 @@ function snClickModule(nodeId) {
   if (_n && _n.t === 'Vendor Ratings')  { switchView('vendorratings'); buildSideNav(); return; }
   if (_n && _n.t === 'OSV Status')      { switchView('osv');           buildSideNav(); return; }
   if (_n && _n.t === 'Existing vs New') { switchView('existingnew');   buildSideNav(); return; }
+  // If the node isn't in the tree at all (e.g. data not yet loaded), don't wipe a special
+  // view. Panel-module fallthrough below only makes sense when the node IS known.
+  if (!_n) { buildSideNav(); return; }
   // Panel modules (Breakup, Onboarded Details, Geographic Split, etc.) render into
   // #tab-overview via mmPaint(). If a special view was active, #tab-overview has
   // display:none — reset to dashboard state so the canvas is visible before mmPaint runs.
