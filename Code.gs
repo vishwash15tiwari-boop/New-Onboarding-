@@ -3221,14 +3221,25 @@ function getQualityData() {
       // column is on the 0-100 scale (→ divide by 10); otherwise it is already 0-10 (→ use
       // as-is). This makes the code robust to both "Score" (0-100) and "Denominator" (0-10)
       // column naming conventions without relying on header guessing.
-      var _qScIdx = vsDenom >= 0 ? vsDenom : (vsScore >= 0 ? vsScore : VS_COLS.denominator);
-      var _qScMax = 0;
-      for (var _qsi = 0; _qsi < vsd.rows.length; _qsi++) {
-        var _qsv = parseFloat(vsd.rows[_qsi][_qScIdx]);
-        if (!isNaN(_qsv) && _qsv > _qScMax) _qScMax = _qsv;
-      }
-      var _qScDiv = (_qScMax > 10) ? 10 : 1;
-      Logger.log('Vendor Score (quality): col ' + colLetter_(_qScIdx) + ' ("' + (vsh[_qScIdx] || '') + '") max=' + _qScMax + ' divisor=' + _qScDiv);
+      // A row is read from Denominator when it has one and from Score otherwise, so the
+      // scale must be detected PER COLUMN. Detecting it from Denominator and applying it
+      // to Score silently discarded almost every rating: Denominator is populated on ~1 of
+      // 210 rows so its max is <= 10, giving divisor 1, which left Score rows on their
+      // 0-100 scale where the `sv <= 10` guard below rejected them as unrated.
+      var _qScDivFor = function(colIdx) {
+        if (colIdx < 0) return 1;
+        var mx = 0;
+        for (var i = 0; i < vsd.rows.length; i++) {
+          var v = parseFloat(vsd.rows[i][colIdx]);
+          if (!isNaN(v) && v > mx) mx = v;
+        }
+        return (mx > 10) ? 10 : 1;
+      };
+      var _qDivDenom = _qScDivFor(vsDenom);
+      var _qDivScore = _qScDivFor(vsScore);
+      Logger.log('Vendor Score (quality): denom col ' + (vsDenom >= 0 ? colLetter_(vsDenom) : '-')
+        + ' div=' + _qDivDenom + '; score col ' + (vsScore >= 0 ? colLetter_(vsScore) : '-')
+        + ' div=' + _qDivScore);
 
       // GSTIN is a case-insensitive identifier; normalise (upper-case, strip spaces &
       // punctuation) on both sides so a formatting drift in the sheet can't break the join.
@@ -3253,8 +3264,8 @@ function getQualityData() {
         // A blank cell is unrated (NaN); a literal 0 is a real score (0-2 band).
         var rawDenom = vsDenom >= 0 ? parseFloat(row[vsDenom]) : NaN;
         var rawScore = vsScore >= 0 ? parseFloat(row[vsScore]) : NaN;
-        var sv = !isNaN(rawDenom) ? rawDenom / _qScDiv
-               : !isNaN(rawScore) ? rawScore / _qScDiv
+        var sv = !isNaN(rawDenom) ? rawDenom / _qDivDenom
+               : !isNaN(rawScore) ? rawScore / _qDivScore
                : NaN;
         if (!isNaN(sv) && sv >= 0 && sv <= 10) {
           var band = Math.min(4, Math.max(0, Math.floor(sv / 2)));
@@ -3271,6 +3282,16 @@ function getQualityData() {
             onboardingStatus: omp.onboardingStatus,
             category:         omp.category,
             aud:              aud,
+            // The date the score sheet was last updated for this vendor. The frontend
+            // reads `lastRated` for the Seller Rating Trend, the month filter and the
+            // LAST RATED column; it was never emitted, so the trend rendered "No trend
+            // data" and the column always showed a dash. Same column the OSV producer
+            // uses, formatted the same way.
+            lastRated:        (function() {
+                                if (vsUpd < 0) return '';
+                                var _d = parseDate(row[vsUpd]);
+                                return _d ? fmtDate(_d) : '';
+                              }()),
             hasTransacted:    omp.hasTransacted || false
           });
         }
@@ -3340,7 +3361,7 @@ function getQualityData() {
         // Score
         var rawD2 = vsDenom >= 0 ? parseFloat(row[vsDenom]) : NaN;
         var rawS2 = vsScore >= 0 ? parseFloat(row[vsScore]) : NaN;
-        var sv2 = !isNaN(rawD2) ? rawD2 / _qScDiv : !isNaN(rawS2) ? rawS2 / _qScDiv : NaN;
+        var sv2 = !isNaN(rawD2) ? rawD2 / _qDivDenom : !isNaN(rawS2) ? rawS2 / _qDivScore : NaN;
         if (!isNaN(sv2) && sv2 === 0) {
           // Score of exactly 0 is treated as an exception (anomalous evaluation, not
           // a missing score). Kept separate from both "rated" and "unrated" so the
@@ -4244,14 +4265,22 @@ function getOSVDashboardData() {
       var vsPreScr   = vfc_(['pre_osv_score','score_before_osv','initial_score','baseline_score',
                              'pre_score','score_pre','previous_score','old_score','score_before',
                              'pre_verification_score','pre_audit_score']);
-      // Auto-detect scale — same logic as getQualityData.
-      var _osvScIdx = vsDen >= 0 ? vsDen : (vsScr >= 0 ? vsScr : VS_COLS.denominator);
-      var _osvScMax = 0;
-      for (var _oi = 0; _oi < vsd.rows.length; _oi++) {
-        var _ov = parseFloat(vsd.rows[_oi][_osvScIdx]);
-        if (!isNaN(_ov) && _ov > _osvScMax) _osvScMax = _ov;
-      }
-      var _osvDiv = (_osvScMax > 10) ? 10 : 1;
+      // Per-column scale detection — same reasoning as getQualityData: a row is read from
+      // Denominator when it has one and from Score otherwise, so one divisor sniffed from
+      // the sparse Denominator column cannot be applied to the 0-100 Score column.
+      var _osvDivFor = function(colIdx) {
+        if (colIdx < 0) return 1;
+        var mx = 0;
+        for (var i = 0; i < vsd.rows.length; i++) {
+          var v = parseFloat(vsd.rows[i][colIdx]);
+          if (!isNaN(v) && v > mx) mx = v;
+        }
+        return (mx > 10) ? 10 : 1;
+      };
+      var _osvDivDen = _osvDivFor(vsDen);
+      var _osvDivScr = _osvDivFor(vsScr);
+      // Pre-OSV score lives in its own column and can be on its own scale.
+      var _osvDivPre = _osvDivFor(vsPreScr);
 
       vsd.rows.forEach(function(row) {
         var vid = vsId >= 0 ? String(row[vsId] || '').trim() : '';
@@ -4272,7 +4301,7 @@ function getOSVDashboardData() {
         : 'not_initiated';
         var rawDen = vsDen >= 0 ? parseFloat(row[vsDen]) : NaN;
         var rawScr = vsScr >= 0 ? parseFloat(row[vsScr]) : NaN;
-        var sv     = !isNaN(rawDen) ? rawDen / _osvDiv : !isNaN(rawScr) ? rawScr / _osvDiv : NaN;
+        var sv     = !isNaN(rawDen) ? rawDen / _osvDivDen : !isNaN(rawScr) ? rawScr / _osvDivScr : NaN;
         var score  = (!isNaN(sv) && sv >= 0 && sv <= 10) ? Math.round(sv * 10) / 10 : null;
         var cat    = (vsCat >= 0 ? String(row[vsCat] || '').trim() : '') || sel.category || '';
         var upd    = '';
@@ -4304,7 +4333,7 @@ function getOSVDashboardData() {
 
         // Pre-OSV Score
         var preRaw = vsPreScr >= 0 ? parseFloat(row[vsPreScr]) : NaN;
-        var preScore = (!isNaN(preRaw) && preRaw >= 0) ? Math.round(preRaw / _osvDiv * 10) / 10 : null;
+        var preScore = (!isNaN(preRaw) && preRaw >= 0) ? Math.round(preRaw / _osvDivPre * 10) / 10 : null;
 
         osvRecords.push({
           name: sel.name || nm.slice(0, 60), id: sel.id || vid,

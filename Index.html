@@ -8329,7 +8329,11 @@ function _gsStrip(by) {
     var label = (typeof CAT_SHORT !== 'undefined' && CAT_SHORT[lo]) || (cat.charAt(0).toUpperCase() + cat.slice(1));
     var vsC = (vs.categories || []).filter(function (c) { return String(c.category || '').toLowerCase() === lo; })[0] || {};
     var vbC = (vb.categories || []).filter(function (c) { return String(c.category || '').toLowerCase() === lo; })[0] || {};
-    var sv = (vsC.completed || vsC.total || 0), bv = (vbC.completed || vbC.total || 0);
+    // The categories payload emits `onboarded`, never `completed`. Reading `completed`
+    // always fell through to `total`, which counts the whole pipeline (draft, in review,
+    // rejected), so these cards over-stated against every other figure on screen — the map,
+    // the state table and the region cards all count COMPLETED only.
+    var sv = vsC.onboarded || 0, bv = vbC.onboarded || 0;
     var on = (_geo.cat || '') === lo;
     h += '<button class="gs-cat' + (on ? ' on' : '') + '" onclick="mmGeoSetCat(\'' + lo + '\')">'
       + '<span class="gs-cat-ic">' + box + '</span><span class="gs-cat-b">'
@@ -8638,7 +8642,7 @@ function mmRenderGeo() {
         var catLabel = CAT_SHORT[catLo] || (cat.charAt(0).toUpperCase() + cat.slice(1));
         var vsC = (vs2.categories || []).filter(function(c){ return String(c.category||'').toLowerCase() === catLo; })[0] || {};
         var vbC = (vb2.categories || []).filter(function(c){ return String(c.category||'').toLowerCase() === catLo; })[0] || {};
-        var sv = (vsC.completed || vsC.total || 0), bv = (vbC.completed || vbC.total || 0);
+        var sv = vsC.onboarded || 0, bv = vbC.onboarded || 0;   // see note above: payload has no `completed`
         var total = sv + bv;
         var isOn = (_geo.cat || '') === catLo;
         swHtml += '<button type="button" role="tab" aria-selected="' + isOn + '" class="mg-catbtn' + (isOn ? ' on' : '') + '" onclick="mmGeoSetCat(\'' + catLo + '\')">'
@@ -19728,14 +19732,14 @@ document.addEventListener('DOMContentLoaded', function() {
      what makes a category click move the whole module. Score band and month scope
      only the records — feeding them back into the distribution and quality cards
      would collapse those charts to the single band that was just clicked. */
+  /* Category scopes the KPIs and the analytics cards — clicking Metal should make the
+     whole module describe Metal. Status does NOT: it selects a slice OF what those cards
+     describe, so folding it in here made a clicked KPI describe only itself. Clicking
+     Rating Coverage scoped every card to unrated vendors, and Coverage then read 0%.
+     Status narrows the records and highlights its slice in the charts instead. */
   function scopeRows(){
     var rows=audRows(_vrAud);
     if(_vrCat)rows=rows.filter(function(v){return v.category===_vrCat;});
-    if(_vrStat){
-      rows=(_vrStat==='rated')
-        ? rows.filter(function(v){return v.rating>0&&v.rating!=null;})
-        : rows.filter(function(v){return chipClass(v.rating)===_vrStat;});
-    }
     return rows;
   }
   function vrActiveCount(){
@@ -19744,6 +19748,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function filteredRows(){
     var rows=scopeRows();
+    if(_vrStat){
+      rows=(_vrStat==='rated')
+        ? rows.filter(function(v){return v.rating>0&&v.rating!=null;})
+        : rows.filter(function(v){return chipClass(v.rating)===_vrStat;});
+    }
     if(_vrScore!=='')rows=rows.filter(function(v){return vrBand(v.rating)===parseInt(_vrScore,10);});
     if(_vrMonth)rows=rows.filter(function(v){
       if(!v.lastRated)return false;
