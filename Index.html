@@ -19398,6 +19398,38 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .vr3-ttl{font-size:15px;font-weight:700;color:var(--lc-text);letter-spacing:-.025em;line-height:1.2}
 .lc .vr3-sub{font-size:11px;color:var(--lc-text3);margin-top:1px}
 .lc .vr3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--lc-gutter)}
+/* interactive cards */
+.lc .vr3-act{cursor:pointer;transition:box-shadow .15s,border-color .15s,transform .15s}
+.lc .vr3-act:hover{border-color:#9ec0ff;box-shadow:0 4px 14px rgba(0,0,0,.09)}
+.lc .vr3-act.on{border-color:var(--lc-accent);box-shadow:0 0 0 1px var(--lc-accent) inset}
+.lc .vr3-act:focus-visible{outline:2px solid var(--lc-accent);outline-offset:2px}
+.lc .vr3-hit{cursor:pointer}
+.lc .vr3-hit:hover{fill:rgba(0,93,255,.06)}
+.lc .vr3-bar{transition:fill-opacity .15s}
+.lc .vr3-bar.on{stroke:var(--lc-accent);stroke-width:1.5}
+.lc .vr3-seg{cursor:pointer;transition:opacity .15s}
+.lc .vr3-seg:hover{opacity:.82}
+.lc .vr3-seg.on{stroke:var(--lc-accent);stroke-width:2}
+.lc .vr3-qual-card{cursor:pointer;transition:box-shadow .15s,transform .15s}
+.lc .vr3-qual-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.1)}
+.lc .vr3-qual-card.on{box-shadow:0 0 0 2px var(--lc-accent) inset}
+.lc .vr3-qual-card:focus-visible{outline:2px solid var(--lc-accent);outline-offset:2px}
+.lc .vr3-crow{cursor:pointer;transition:background .12s}
+.lc .vr3-crow:hover td{background:var(--lc-subtle)}
+.lc .vr3-crow.on td{background:rgba(0,93,255,.07);font-weight:600}
+.lc .vr3-crow:focus-visible{outline:2px solid var(--lc-accent);outline-offset:-2px}
+.lc .vr3-tip{position:fixed;pointer-events:none;z-index:70;display:none;background:var(--lc-card);border:1px solid var(--lc-border);border-radius:9px;padding:9px 11px;box-shadow:0 6px 20px rgba(0,0,0,.16);font-size:11.5px;min-width:150px;max-width:230px}
+.lc .vr3-tip b.t{display:block;font-size:12.5px;color:var(--lc-text);margin-bottom:5px}
+.lc .vr3-tip div{display:flex;align-items:center;justify-content:space-between;gap:14px;color:var(--lc-text2);line-height:1.7}
+.lc .vr3-tip div b{color:var(--lc-text)}
+.lc .vr3-tip .vr3-tip-def{display:block;margin-top:5px;padding-top:5px;border-top:1px solid var(--lc-border);color:var(--lc-text3);line-height:1.45}
+.lc .vr3-tip .vr3-tip-hint{display:block;margin-top:5px;color:var(--lc-accent);font-weight:600}
+.lc .vr3-fbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:9px 12px;border:1px solid rgba(0,93,255,.25);background:rgba(0,93,255,.05);border-radius:10px;font-size:11.5px}
+.lc .vr3-fbar-l{color:var(--lc-text3);font-weight:600}
+.lc .vr3-fchip{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:20px;padding:3px 10px;color:var(--lc-text2)}
+.lc .vr3-fchip b{color:var(--lc-text)}
+.lc .vr3-fclear{margin-left:auto;background:none;border:0;color:var(--lc-accent);font-weight:700;font-size:11.5px;cursor:pointer;font-family:inherit}
+.lc .vr3-fclear:hover{text-decoration:underline}
 .lc .vr3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:12px;padding:12px 14px 10px;display:flex;align-items:flex-start;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden}
 .lc .vr3-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .lc .vr3-kpis .vr3-kpi:nth-child(1)::before{background:linear-gradient(90deg,#005DFF,#34C7FF)}
@@ -19465,6 +19497,9 @@ document.addEventListener('DOMContentLoaded', function() {
 <script id="lc-vendorratings-js">
 (function(){
   var _vrAud='seller',_vrPage=1,_vrPS=10,_vrCat='',_vrStat='',_vrQ='',_vrSortK='name',_vrSortD=1,_vrTrendN=6;
+  // Score band and month join the same shared state the other filters live in, so
+  // every card reads and writes one place rather than keeping its own selection.
+  var _vrScore='',_vrMonth='';
   var CAT_CLR={'Plastic':'#005DFF','Metal':'#1DC797','E-Waste':'#8460D4','Battery':'#FF9500','Tyres':'#D70015','Paper':'#024C8A','Others':'#8E8E93'};
   function cc(cat){return CAT_CLR[cat]||'#8E8E93';}
   var IcoStar='<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
@@ -19483,11 +19518,46 @@ document.addEventListener('DOMContentLoaded', function() {
     return vr.filter(function(v){return v.aud==='seller'||!v.aud;});
 
   }
+  /* ── Shared interaction helpers ─────────────────────────────────────────
+     Every card writes to the same _vr* filter state the records table already
+     reads, so a click in one card moves the whole module. Nothing below
+     recalculates a rating: bands come from the existing chipClass boundaries
+     and the existing score-band index, months from the same lastRated key the
+     trend is built on. */
+  function vrBand(r) { return (!r || r <= 0) ? -1 : (r <= 2 ? 0 : Math.min(Math.floor(r / 2), 4)); }
+  var VR_BAND_LBL = ['0–2', '2–4', '4–6', '6–8', '8–10'];
+
+  function vrTipEl() {
+    var el = document.getElementById('tab-vendorratings'); if (!el) return null;
+    var t = el.querySelector('.vr3-tip');
+    if (!t) { t = document.createElement('div'); t.className = 'vr3-tip'; el.appendChild(t); }
+    return t;
+  }
+  function vrHideTip() { var t = vrTipEl(); if (t) t.style.display = 'none'; }
+  function vrShowTip(html, evt) {
+    var t = vrTipEl(); if (!t) return;
+    t.innerHTML = html; t.style.display = 'block';
+    var w = t.offsetWidth || 160, hh = t.offsetHeight || 80;
+    var x = (evt && evt.clientX != null ? evt.clientX : 0) + 14;
+    var y = (evt && evt.clientY != null ? evt.clientY : 0) + 14;
+    t.style.left = Math.max(6, Math.min(x, (window.innerWidth || 0) - w - 8)) + 'px';
+    t.style.top  = Math.max(6, Math.min(y, (window.innerHeight || 0) - hh - 8)) + 'px';
+  }
+  function vrRow(a, b) { return '<div><span>' + a + '</span><b>' + b + '</b></div>'; }
+  function vrHint(active) {
+    return '<div class="vr3-tip-hint">' + (active ? 'Click to clear' : 'Click to filter') + '</div>';
+  }
+  /* Inline handler attributes for an SVG/DOM node that drives a filter. */
+  function vrHooks(fn, tipFn) {
+    return ' style="cursor:pointer" onclick="' + fn + '"'
+      + ' onmouseenter="' + tipFn + ',event,true)" onmousemove="' + tipFn + ',event,true)"'
+      + ' onmouseleave="' + tipFn + ',event,false)"';
+  }
 
   function buildScoreDist(rows){
     var dist=[0,0,0,0,0];
-    rows.forEach(function(v){var r=v.rating;if(!r||r<=0)return;var idx=r<=2?0:Math.min(Math.floor(r/2),4);dist[idx]++;});
-    var labels=['0–2','2–4','4–6','6–8','8–10'];
+    rows.forEach(function(v){var i=vrBand(v.rating);if(i>=0)dist[i]++;});
+    var labels=VR_BAND_LBL;
     var maxV=Math.max.apply(null,dist)||1;
     var W=260,H=130,PL=24,PR=10,PT=16,PB=28;
     var bw=Math.floor((W-PL-PR)/5),bg=Math.floor(bw*0.55),bOff=Math.floor((bw-bg)/2);
@@ -19495,9 +19565,13 @@ document.addEventListener('DOMContentLoaded', function() {
     for(var g=0;g<=4;g++){var gy=PT+H-Math.round(g/4*H);svg+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" style="stroke:var(--lc-border)" stroke-width="1" stroke-dasharray="3,3"/>';}
     dist.forEach(function(v,i){
       var bh=Math.round(v/maxV*H),x=PL+i*bw+bOff,y=PT+H-bh;
-      svg+='<rect x="'+x+'" y="'+y+'" width="'+bg+'" height="'+bh+'" style="fill:var(--lc-accent)" rx="4"/>';
-      if(v>0)svg+='<text x="'+(x+bg/2)+'" y="'+(y-5)+'" text-anchor="middle" style="fill:var(--lc-text)" font-size="10" font-weight="600">'+v+'</text>';
-      svg+='<text x="'+(x+bg/2)+'" y="'+(PT+H+PB-6)+'" text-anchor="middle" style="fill:var(--lc-text3)" font-size="10">'+labels[i]+'</text>';
+      var on=String(_vrScore)===String(i);
+      // Full-height hit area so a short bar is still easy to click.
+      svg+='<rect class="vr3-hit" x="'+(PL+i*bw)+'" y="'+PT+'" width="'+bw+'" height="'+H+'" fill="transparent"'
+        + vrHooks('window.vr3SetScore('+i+')','window.vr3TipBand('+i+'') + '></rect>';
+      svg+='<rect class="vr3-bar'+(on?' on':'')+'" x="'+x+'" y="'+y+'" width="'+bg+'" height="'+bh+'" style="fill:var(--lc-accent)" rx="4" pointer-events="none"/>';
+      if(v>0)svg+='<text x="'+(x+bg/2)+'" y="'+(y-5)+'" text-anchor="middle" style="fill:var(--lc-text)" font-size="10" font-weight="600" pointer-events="none">'+v+'</text>';
+      svg+='<text x="'+(x+bg/2)+'" y="'+(PT+H+PB-6)+'" text-anchor="middle" style="fill:'+(on?'var(--lc-accent)':'var(--lc-text3)')+'" font-size="10" font-weight="'+(on?'700':'400')+'" pointer-events="none">'+labels[i]+'</text>';
     });
     svg+='</svg>';
     return svg;
@@ -19515,9 +19589,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">';
     entries.forEach(function(e,i){
       var y=i*(BH+GAP),bw=Math.round(e.avg/maxA*(W-PL-PR)),col=cc(e.cat);
-      svg+='<text x="'+(PL-6)+'" y="'+(y+BH*.72)+'" text-anchor="end" style="fill:var(--lc-text2)" font-size="11">'+e.cat+'</text>';
-      svg+='<rect x="'+PL+'" y="'+y+'" width="'+(bw||2)+'" height="'+BH+'" fill="'+col+'" rx="4" opacity=".85"/>';
-      svg+='<text x="'+(PL+bw+5)+'" y="'+(y+BH*.72)+'" style="fill:var(--lc-text)" font-size="11" font-weight="600">'+fmt1(e.avg)+'</text>';
+      var on=_vrCat===e.cat, ec=String(e.cat).replace(/'/g,"\\'");
+      svg+='<rect class="vr3-hit" x="0" y="'+(y-3)+'" width="'+W+'" height="'+(BH+6)+'" fill="transparent"'
+        + vrHooks("window.vr3SetCat('"+ec+"',true)","window.vr3TipCat('"+ec+"'") + '></rect>';
+      svg+='<text x="'+(PL-6)+'" y="'+(y+BH*.72)+'" text-anchor="end" style="fill:'+(on?'var(--lc-accent)':'var(--lc-text2)')+'" font-size="11" font-weight="'+(on?'700':'400')+'" pointer-events="none">'+e.cat+'</text>';
+      svg+='<rect x="'+PL+'" y="'+y+'" width="'+(bw||2)+'" height="'+BH+'" fill="'+col+'" rx="4" opacity="'+(on?1:.85)+'" pointer-events="none"'+(on?' stroke="var(--lc-accent)" stroke-width="1.5"':'')+'/>';
+      svg+='<text x="'+(PL+bw+5)+'" y="'+(y+BH*.72)+'" style="fill:var(--lc-text)" font-size="11" font-weight="600" pointer-events="none">'+fmt1(e.avg)+'</text>';
     });
     svg+='</svg>';
     return svg;
@@ -19527,7 +19604,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var rated=rows.filter(function(v){return v.rating>0&&v.rating!=null;}).length;
     var exc=rows.filter(function(v){return v.rating>0&&v.rating<=2;}).length;
     var total=rows.length,notRated=total-rated;
-    var items=[{lbl:'Rated',val:rated-exc,col:'var(--lc-accent)'},{lbl:'Not Rated',val:notRated,col:'#C7C7CC'},{lbl:'Exception',val:exc,col:'var(--lc-risk)'}];
+    var items=[{lbl:'Rated',key:'rated',val:rated-exc,col:'var(--lc-accent)'},
+               {lbl:'Not Rated',key:'notrated',val:notRated,col:'#C7C7CC'},
+               {lbl:'Exception',key:'exception',val:exc,col:'var(--lc-risk)'}];
     var cx=60,cy=60,R=44,r=28;
     var svg='<svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">';
     var tot=items.reduce(function(a,b){return a+b.val;},0)||1;
@@ -19538,7 +19617,9 @@ document.addEventListener('DOMContentLoaded', function() {
       var x1=cx+R*Math.cos(angle),y1=cy+R*Math.sin(angle),x2=cx+R*Math.cos(angle+sweep),y2=cy+R*Math.sin(angle+sweep);
       var ix1=cx+r*Math.cos(angle),iy1=cy+r*Math.sin(angle),ix2=cx+r*Math.cos(angle+sweep),iy2=cy+r*Math.sin(angle+sweep);
       var lg=sweep>Math.PI?1:0;
-      svg+='<path d="M'+x1+','+y1+' A'+R+','+R+' 0 '+lg+',1 '+x2+','+y2+' L'+ix2+','+iy2+' A'+r+','+r+' 0 '+lg+',0 '+ix1+','+iy1+' Z" style="fill:'+it.col+'"/>';
+      var on=_vrStat===it.key;
+      svg+='<path class="vr3-seg'+(on?' on':'')+'" d="M'+x1+','+y1+' A'+R+','+R+' 0 '+lg+',1 '+x2+','+y2+' L'+ix2+','+iy2+' A'+r+','+r+' 0 '+lg+',0 '+ix1+','+iy1+' Z" style="fill:'+it.col+'"'
+        + vrHooks("window.vr3SetStat('"+it.key+"',true)","window.vr3TipStat('"+it.key+"'") + '></path>';
       angle+=sweep;
     });
     svg+='<text x="'+cx+'" y="'+(cy-5)+'" text-anchor="middle" style="fill:var(--lc-text)" font-size="16" font-weight="800">'+total+'</text>';
@@ -19546,10 +19627,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var lx=128,ly=18;
     items.forEach(function(it,i){
       var yy=ly+i*28;
-      svg+='<circle cx="'+lx+'" cy="'+yy+'" r="5" style="fill:'+it.col+'"/>';
-      svg+='<text x="'+(lx+10)+'" y="'+(yy+4)+'" style="fill:var(--lc-text2)" font-size="10.5">'+it.lbl+'</text>';
-      svg+='<text x="'+(lx+10)+'" y="'+(yy+16)+'" style="fill:var(--lc-text)" font-size="11" font-weight="700">'+it.val+'</text>';
-      svg+='<text x="'+(lx+10+String(it.val).length*7)+'" y="'+(yy+16)+'" style="fill:var(--lc-text3)" font-size="10"> ('+pct(it.val,total)+'%)</text>';
+      var on=_vrStat===it.key;
+      svg+='<rect class="vr3-hit" x="'+(lx-10)+'" y="'+(yy-11)+'" width="'+(200-lx+4)+'" height="26" rx="5" fill="'+(on?'rgba(0,93,255,.09)':'transparent')+'"'
+        + vrHooks("window.vr3SetStat('"+it.key+"',true)","window.vr3TipStat('"+it.key+"'") + '></rect>';
+      svg+='<circle cx="'+lx+'" cy="'+yy+'" r="5" style="fill:'+it.col+'" pointer-events="none"/>';
+      svg+='<text x="'+(lx+10)+'" y="'+(yy+4)+'" style="fill:'+(on?'var(--lc-accent)':'var(--lc-text2)')+'" font-size="10.5" font-weight="'+(on?'700':'400')+'" pointer-events="none">'+it.lbl+'</text>';
+      svg+='<text x="'+(lx+10)+'" y="'+(yy+16)+'" style="fill:var(--lc-text)" font-size="11" font-weight="700" pointer-events="none">'+it.val+'</text>';
+      svg+='<text x="'+(lx+10+String(it.val).length*7)+'" y="'+(yy+16)+'" style="fill:var(--lc-text3)" font-size="10" pointer-events="none"> ('+pct(it.val,total)+'%)</text>';
     });
     svg+='</svg>';
     return svg;
@@ -19568,7 +19652,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     var keys=Object.keys(byMonth).sort().slice(-n);
     if(!keys.length)return '<div class="vr3-empty">No trend data</div>';
-    var pts=keys.map(function(k){return{k:k,avg:byMonth[k].sum/byMonth[k].cnt};});
+    var pts=keys.map(function(k){return{k:k,avg:byMonth[k].sum/byMonth[k].cnt,cnt:byMonth[k].cnt};});
     var W=260,H=110,PL=28,PR=10,PT=16,PB=24;
     function yx(v){return PT+H-Math.round(v/10*H);}
     function xx(i){return PL+Math.round(i/(pts.length-1||1)*(W-PL-PR));}
@@ -19583,22 +19667,40 @@ document.addEventListener('DOMContentLoaded', function() {
       svg+='<polygon points="'+xx(0)+','+(PT+H)+' '+apts+' '+xx(pts.length-1)+','+(PT+H)+'" fill="none" style="fill:var(--lc-accent);opacity:.08"/>';
       svg+='<polyline points="'+apts+'" fill="none" style="stroke:var(--lc-accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
     }
+    var band=pts.length>1?Math.round((W-PL-PR)/(pts.length-1)):(W-PL-PR);
     pts.forEach(function(p,i){
-      var x=xx(i),y=yx(p.avg);
-      svg+='<circle cx="'+x+'" cy="'+y+'" r="4" style="fill:var(--lc-accent)" stroke="#fff" stroke-width="2"/>';
-      if(i===pts.length-1||pts.length<=6)svg+='<text x="'+x+'" y="'+(y-9)+'" text-anchor="middle" style="fill:var(--lc-text)" font-size="9.5" font-weight="600">'+fmt1(p.avg)+'</text>';
+      var x=xx(i),y=yx(p.avg),on=_vrMonth===p.k;
+      svg+='<rect class="vr3-hit" x="'+(x-band/2)+'" y="'+PT+'" width="'+band+'" height="'+H+'" fill="'+(on?'rgba(0,93,255,.07)':'transparent')+'"'
+        + vrHooks("window.vr3SetMonth('"+p.k+"')","window.vr3TipMonth('"+p.k+"'") + '></rect>';
+      svg+='<circle cx="'+x+'" cy="'+y+'" r="'+(on?6:4)+'" style="fill:var(--lc-accent)" stroke="#fff" stroke-width="2" pointer-events="none"/>';
+      if(i===pts.length-1||pts.length<=6)svg+='<text x="'+x+'" y="'+(y-9)+'" text-anchor="middle" style="fill:var(--lc-text)" font-size="9.5" font-weight="600" pointer-events="none">'+fmt1(p.avg)+'</text>';
       var parts=p.k.split('-');
-      svg+='<text x="'+x+'" y="'+(PT+H+PB-2)+'" text-anchor="middle" style="fill:var(--lc-text3)" font-size="9">'+parts[1]+'/'+parts[0].slice(2)+'</text>';
+      svg+='<text x="'+x+'" y="'+(PT+H+PB-2)+'" text-anchor="middle" style="fill:'+(on?'var(--lc-accent)':'var(--lc-text3)')+'" font-size="9" font-weight="'+(on?'700':'400')+'" pointer-events="none">'+parts[1]+'/'+parts[0].slice(2)+'</text>';
     });
     svg+='</svg>';
     return svg;
   }
 
   function buildRatingQuality(rows){
-    var q=[{lbl:'Excellent',rng:'Score 8–10',col:'var(--lc-ok)',bg:'var(--lc-ok-weak)',ico:'★',cnt:0},{lbl:'Good',rng:'Score 6–8',col:'var(--lc-accent)',bg:'var(--lc-accent-weak)',ico:'●',cnt:0},{lbl:'Needs Improvement',rng:'Score >2–6',col:'var(--lc-warn)',bg:'var(--lc-warn-weak)',ico:'▲',cnt:0},{lbl:'Exception',rng:'Score 0–2',col:'var(--lc-risk)',bg:'var(--lc-risk-weak)',ico:'✕',cnt:0}];
-    rows.forEach(function(v){var r=v.rating;if(!r||r<=0)return;if(r>=8)q[0].cnt++;else if(r>=6)q[1].cnt++;else if(r>2)q[2].cnt++;else q[3].cnt++;});
+    /* Bands are the existing chipClass boundaries, so a tile filters to exactly
+       the rows the records table labels with that chip. */
+    var q=[{lbl:'Excellent',key:'excellent',rng:'Score 8–10',col:'var(--lc-ok)',bg:'var(--lc-ok-weak)',ico:'★',cnt:0},
+           {lbl:'Good',key:'good',rng:'Score 6–8',col:'var(--lc-accent)',bg:'var(--lc-accent-weak)',ico:'●',cnt:0},
+           {lbl:'Needs Improvement',key:'ni',rng:'Score >2–6',col:'var(--lc-warn)',bg:'var(--lc-warn-weak)',ico:'▲',cnt:0},
+           {lbl:'Exception',key:'exception',rng:'Score 0–2',col:'var(--lc-risk)',bg:'var(--lc-risk-weak)',ico:'✕',cnt:0}];
+    var idx={excellent:0,good:1,ni:2,exception:3};
+    rows.forEach(function(v){var c=chipClass(v.rating);if(idx[c]!==undefined)q[idx[c]].cnt++;});
     var h='<div class="vr3-qual-grid">';
-    q.forEach(function(qc){h+='<div class="vr3-qual-card" style="border-top:3px solid '+qc.col+';background:'+qc.bg+'"><div class="vr3-qual-ico" style="color:'+qc.col+'">'+qc.ico+'</div><div class="vr3-qual-val" style="color:'+qc.col+'">'+qc.cnt+'</div><div class="vr3-qual-lbl">'+qc.lbl+'</div><div class="vr3-qual-rng">'+qc.rng+'</div></div>';});
+    q.forEach(function(qc){
+      var on=_vrStat===qc.key;
+      h+='<div class="vr3-qual-card'+(on?' on':'')+'" role="button" tabindex="0" style="border-top:3px solid '+qc.col+';background:'+qc.bg+'"'
+        + ' onclick="window.vr3SetStat(\''+qc.key+'\',true)"'
+        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();window.vr3SetStat(\''+qc.key+'\',true)}"'
+        + ' onmouseenter="window.vr3TipStat(\''+qc.key+'\',event,true)" onmousemove="window.vr3TipStat(\''+qc.key+'\',event,true)"'
+        + ' onmouseleave="window.vr3TipStat(\''+qc.key+'\',event,false)">'
+        + '<div class="vr3-qual-ico" style="color:'+qc.col+'">'+qc.ico+'</div><div class="vr3-qual-val" style="color:'+qc.col+'">'+qc.cnt+'</div>'
+        + '<div class="vr3-qual-lbl">'+qc.lbl+'</div><div class="vr3-qual-rng">'+qc.rng+'</div></div>';
+    });
     return h+'</div>';
   }
 
@@ -19610,15 +19712,45 @@ document.addEventListener('DOMContentLoaded', function() {
     if(!keys.length)return '<div class="vr3-empty">No data</div>';
     keys.forEach(function(c){
       var d=cats[c],avg=d.rated?d.sum/d.rated:0;
-      h+='<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cc(c)+';margin-right:6px;vertical-align:middle"></span>'+c+'</td><td><b>'+fmt1(avg)+'</b></td><td>'+d.rated+'</td><td style="color:'+(d.exc?'var(--lc-risk)':'var(--lc-ok)')+'"><b>'+d.exc+'</b></td></tr>';
+      var on=_vrCat===c, ec=String(c).replace(/'/g,"\\'");
+      h+='<tr class="vr3-crow'+(on?' on':'')+'" role="button" tabindex="0"'
+        + ' onclick="window.vr3SetCat(\''+ec+'\',true)"'
+        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();window.vr3SetCat(\''+ec+'\',true)}"'
+        + ' onmouseenter="window.vr3TipCat(\''+ec+'\',event,true)" onmousemove="window.vr3TipCat(\''+ec+'\',event,true)"'
+        + ' onmouseleave="window.vr3TipCat(\''+ec+'\',event,false)">'
+        + '<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cc(c)+';margin-right:6px;vertical-align:middle"></span>'+c+'</td>'
+        + '<td><b>'+fmt1(avg)+'</b></td><td>'+d.rated+'</td>'
+        + '<td style="color:'+(d.exc?'var(--lc-risk)':'var(--lc-ok)')+'"><b>'+d.exc+'</b></td></tr>';
     });
     return h+'</tbody></table></div>';
   }
-
-  function filteredRows(){
+  /* Category and status scope the analytics cards as well as the records, which is
+     what makes a category click move the whole module. Score band and month scope
+     only the records — feeding them back into the distribution and quality cards
+     would collapse those charts to the single band that was just clicked. */
+  function scopeRows(){
     var rows=audRows(_vrAud);
     if(_vrCat)rows=rows.filter(function(v){return v.category===_vrCat;});
-    if(_vrStat)rows=rows.filter(function(v){return chipClass(v.rating)===_vrStat;});
+    if(_vrStat){
+      rows=(_vrStat==='rated')
+        ? rows.filter(function(v){return v.rating>0&&v.rating!=null;})
+        : rows.filter(function(v){return chipClass(v.rating)===_vrStat;});
+    }
+    return rows;
+  }
+  function vrActiveCount(){
+    return (_vrCat?1:0)+(_vrStat?1:0)+(_vrScore!==''?1:0)+(_vrMonth?1:0)+(_vrQ?1:0);
+  }
+
+  function filteredRows(){
+    var rows=scopeRows();
+    if(_vrScore!=='')rows=rows.filter(function(v){return vrBand(v.rating)===parseInt(_vrScore,10);});
+    if(_vrMonth)rows=rows.filter(function(v){
+      if(!v.lastRated)return false;
+      var d=parseDMY(v.lastRated);if(!d)return false;
+      var mm=d.getMonth()+1;
+      return (d.getFullYear()+'-'+(mm<10?'0':'')+mm)===_vrMonth;
+    });
     if(_vrQ)rows=rows.filter(function(v){return(v.name||'').toLowerCase().indexOf(_vrQ.toLowerCase())>-1;});
     return rows.slice().sort(function(a,b){
       var av=a[_vrSortK]||'',bv=b[_vrSortK]||'';
@@ -19675,10 +19807,38 @@ document.addEventListener('DOMContentLoaded', function() {
     return h+'</div>';
   }
 
+  /* Opening tag for a KPI card: clickable, keyboard reachable, and marked active
+     while the status it drills into is the one currently filtering. */
+  function vrKpiOpen(tip, stat){
+    var on=_vrStat===stat;
+    return '<div class="vr3-kpi vr3-act'+(on?' on':'')+'" role="button" tabindex="0"'
+      + ' onclick="window.vr3SetStat(\''+stat+'\',true)"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();window.vr3SetStat(\''+stat+'\',true)}"'
+      + ' onmouseenter="window.vr3TipKpi(\''+tip+'\',event,true)" onmousemove="window.vr3TipKpi(\''+tip+'\',event,true)"'
+      + ' onmouseleave="window.vr3TipKpi(\''+tip+'\',event,false)">';
+  }
+  /* One line naming every active filter, with a single clear. */
+  function vrFilterBar(){
+    if(!vrActiveCount())return '';
+    var LBL={rated:'Rated',notrated:'Not Rated',exception:'Exception',ni:'Needs Improvement',good:'Good',excellent:'Excellent'};
+    var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var chips=[];
+    if(_vrCat)chips.push('Category: <b>'+_vrCat+'</b>');
+    if(_vrStat)chips.push('Status: <b>'+(LBL[_vrStat]||_vrStat)+'</b>');
+    if(_vrScore!=='')chips.push('Score: <b>'+VR_BAND_LBL[parseInt(_vrScore,10)]+'</b>');
+    if(_vrMonth){var p=_vrMonth.split('-');chips.push('Month: <b>'+MON[parseInt(p[1],10)-1]+" '"+p[0].slice(2)+'</b>');}
+    if(_vrQ)chips.push('Search: <b>'+_vrQ+'</b>');
+    return '<div class="vr3-fbar"><span class="vr3-fbar-l">Filtered by</span>'
+      + chips.map(function(c){return '<span class="vr3-fchip">'+c+'</span>';}).join('')
+      + '<button class="vr3-fclear" onclick="window.vr3ClearFilters()">Clear all</button></div>';
+  }
+
   function render(){
     var el=document.getElementById('tab-vendorratings');
     if(!el||!_VR||!_VR.vendorRatings)return;
-    var rows=audRows(_vrAud);
+    // Cards read the scoped set, so a category or status click moves the whole
+    // module rather than only the records table.
+    var rows=scopeRows();
     var sr=(_VR.seller&&_VR.seller.rating)||{};
     var prevAvg=sr.prevAvg||0;
     var ratedRows=rows.filter(function(v){return v.rating>0&&v.rating!=null;});
@@ -19689,11 +19849,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var trendSel='<select class="vr3-card-sel" onchange="window.vr3TrendN(this.value)"><option value="6"'+(_vrTrendN===6?' selected':'')+'>Last 6 Months</option><option value="9"'+(_vrTrendN===9?' selected':'')+'>Last 9 Months</option><option value="12"'+(_vrTrendN===12?' selected':'')+'>Last 12 Months</option></select>';
 
     var kpiH='<div class="vr3-kpis">';
-    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoStar,'var(--lc-accent-weak)','var(--lc-accent)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Average Seller Score</div><div class="vr3-kpi-val">'+fmt1(avg)+' <span style="font-size:14px;font-weight:500;color:var(--lc-text3)">/ 10</span></div><div class="vr3-kpi-sub">'+(pctUp!==null&&pctUp!==0?(pctUp>0?'<span class="vr3-tag-up">&#9650; '+Math.abs(pctUp)+'%</span>':'<span class="vr3-tag-dn">&#9660; '+Math.abs(pctUp)+'%</span>'):'')+''+(prevAvg?'<span>vs '+fmt1(prevAvg)+' prev</span>':'<span>No prior data</span>')+'</div></div></div>';
-    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoUsers,'var(--lc-ok-weak)','var(--lc-ok)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Sellers Rated</div><div class="vr3-kpi-val">'+rated+'</div><div class="vr3-kpi-sub"><span>'+pct(rated,total)+'% of '+total+' total</span></div></div></div>';
-    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoAlert,'var(--lc-risk-weak)','var(--lc-risk)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Exceptions</div><div class="vr3-kpi-val">'+exc+'</div><div class="vr3-kpi-sub"><span>'+pct(exc,rated)+'% of rated vendors</span></div></div></div>';
-    kpiH+='<div class="vr3-kpi">'+icoWrap(IcoPie,'var(--lc-purple-bg)','var(--lc-purple)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Coverage</div><div class="vr3-kpi-val">'+pct(rated,total)+'<span style="font-size:14px;font-weight:500;color:var(--lc-text3)">%</span></div><div class="vr3-kpi-sub"><span>'+rated+' rated of '+total+'</span></div></div></div>';
-    kpiH+='</div>';
+    kpiH+=vrKpiOpen("avg","rated")+icoWrap(IcoStar,'var(--lc-accent-weak)','var(--lc-accent)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Average Seller Score</div><div class="vr3-kpi-val">'+fmt1(avg)+' <span style="font-size:14px;font-weight:500;color:var(--lc-text3)">/ 10</span></div><div class="vr3-kpi-sub">'+(pctUp!==null&&pctUp!==0?(pctUp>0?'<span class="vr3-tag-up">&#9650; '+Math.abs(pctUp)+'%</span>':'<span class="vr3-tag-dn">&#9660; '+Math.abs(pctUp)+'%</span>'):'')+''+(prevAvg?'<span>vs '+fmt1(prevAvg)+' prev</span>':'<span>No prior data</span>')+'</div></div></div>';
+    kpiH+=vrKpiOpen("rated","rated")+icoWrap(IcoUsers,'var(--lc-ok-weak)','var(--lc-ok)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Sellers Rated</div><div class="vr3-kpi-val">'+rated+'</div><div class="vr3-kpi-sub"><span>'+pct(rated,total)+'% of '+total+' total</span></div></div></div>';
+    kpiH+=vrKpiOpen("exc","exception")+icoWrap(IcoAlert,'var(--lc-risk-weak)','var(--lc-risk)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Exceptions</div><div class="vr3-kpi-val">'+exc+'</div><div class="vr3-kpi-sub"><span>'+pct(exc,rated)+'% of rated vendors</span></div></div></div>';
+    kpiH+=vrKpiOpen("cov","notrated")+icoWrap(IcoPie,'var(--lc-purple-bg)','var(--lc-purple)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Coverage</div><div class="vr3-kpi-val">'+pct(rated,total)+'<span style="font-size:14px;font-weight:500;color:var(--lc-text3)">%</span></div><div class="vr3-kpi-sub"><span>'+rated+' rated of '+total+'</span></div></div></div>';
+    kpiH+='</div>'+vrFilterBar();
     var row1='<div class="vr3-row1">';
     row1+='<div class="vr3-card"><div class="vr3-card-hdr"><span class="vr3-card-ttl">Score Distribution</span></div>'+buildScoreDist(rows)+'</div>';
     row1+='<div class="vr3-card"><div class="vr3-card-hdr"><span class="vr3-card-ttl">Avg Score by Category</span></div>'+buildCatAvgScore(rows)+'</div>';
@@ -19730,10 +19890,90 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   window.lcVrSort=function(k){if(_vrSortK===k)_vrSortD*=-1;else{_vrSortK=k;_vrSortD=1;}_vrPage=1;render();};
+  /* ── Filter setters. `toggle` lets a card clear its own active selection. ── */
+  window.vr3SetScore=function(i){_vrScore=(String(_vrScore)===String(i))?'':i;_vrPage=1;vrHideTip();render();};
+  window.vr3SetMonth=function(k){_vrMonth=(_vrMonth===k)?'':k;_vrPage=1;vrHideTip();render();};
+  window.vr3ClearFilters=function(){_vrCat='';_vrStat='';_vrScore='';_vrMonth='';_vrQ='';_vrPage=1;vrHideTip();render();};
+
+  /* ── Hover tooltips. Counts come from the same scope the cards render. ── */
+  window.vr3TipBand=function(i,evt,on){
+    if(!on){vrHideTip();return;}
+    var rows=scopeRows(),n=0;
+    rows.forEach(function(v){if(vrBand(v.rating)===i)n++;});
+    var rated=rows.filter(function(v){return v.rating>0;}).length;
+    vrShowTip('<b class="t">Score Range '+VR_BAND_LBL[i]+'</b>'
+      +vrRow('Vendors',fmt(n))+vrRow('Share of rated',pct(n,rated)+'%')
+      +vrHint(String(_vrScore)===String(i)),evt);
+  };
+  window.vr3TipCat=function(c,evt,on){
+    if(!on){vrHideTip();return;}
+    var rows=audRows(_vrAud).filter(function(v){return (v.category||'Others')===c;});
+    var rated=rows.filter(function(v){return v.rating>0;});
+    var avg=rated.length?rated.reduce(function(s,v){return s+v.rating;},0)/rated.length:null;
+    var exc=rated.filter(function(v){return v.rating<=2;}).length;
+    vrShowTip('<b class="t">'+c+'</b>'
+      +vrRow('Average Score',avg===null?'—':fmt1(avg))
+      +vrRow('Rated Vendors',fmt(rated.length))
+      +vrRow('Exceptions',fmt(exc))
+      +vrHint(_vrCat===c),evt);
+  };
+  window.vr3TipStat=function(k,evt,on){
+    if(!on){vrHideTip();return;}
+    var base=audRows(_vrAud);
+    if(_vrCat)base=base.filter(function(v){return v.category===_vrCat;});
+    var n=(k==='rated')?base.filter(function(v){return v.rating>0;}).length
+                       :base.filter(function(v){return chipClass(v.rating)===k;}).length;
+    var DEF={rated:'Vendors with a post-OSV score on record.',
+             notrated:'Vendors with no score recorded yet.',
+             exception:'Scored 0–2 — flagged for review.',
+             ni:'Scored above 2 and below 6.',
+             good:'Scored 6 to below 8.',
+             excellent:'Scored 8 to 10.'};
+    var LBL={rated:'Rated',notrated:'Not Rated',exception:'Exception',ni:'Needs Improvement',good:'Good',excellent:'Excellent'};
+    vrShowTip('<b class="t">'+(LBL[k]||k)+'</b>'
+      +vrRow('Vendors',fmt(n))+vrRow('Share',pct(n,base.length)+'%')
+      +'<div class="vr3-tip-def">'+(DEF[k]||'')+'</div>'
+      +vrHint(_vrStat===k),evt);
+  };
+  window.vr3TipMonth=function(k,evt,on){
+    if(!on){vrHideTip();return;}
+    var rows=scopeRows().filter(function(v){
+      if(!v.rating||!v.lastRated)return false;
+      var d=parseDMY(v.lastRated);if(!d)return false;
+      var mm=d.getMonth()+1;
+      return (d.getFullYear()+'-'+(mm<10?'0':'')+mm)===k;
+    });
+    var avg=rows.length?rows.reduce(function(s,v){return s+v.rating;},0)/rows.length:null;
+    var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var p=k.split('-'),lbl=MON[parseInt(p[1],10)-1]+" '"+p[0].slice(2);
+    vrShowTip('<b class="t">'+lbl+'</b>'
+      +vrRow('Average Seller Score',avg===null?'—':fmt1(avg))
+      +vrRow('Rated Vendors',fmt(rows.length))
+      +vrHint(_vrMonth===k),evt);
+  };
+  window.vr3TipKpi=function(which,evt,on){
+    if(!on){vrHideTip();return;}
+    var rows=scopeRows();
+    var rated=rows.filter(function(v){return v.rating>0;});
+    var avg=rated.length?rated.reduce(function(s,v){return s+v.rating;},0)/rated.length:null;
+    var exc=rated.filter(function(v){return v.rating<=2;}).length;
+    var T={
+      avg:['Average Seller Score',vrRow('Average',avg===null?'—':fmt1(avg)+' / 10')+vrRow('Rated Vendors',fmt(rated.length))
+           +'<div class="vr3-tip-def">Mean post-OSV score across rated vendors.</div>',_vrStat==='rated'],
+      rated:['Sellers Rated',vrRow('Rated',fmt(rated.length))+vrRow('Coverage',pct(rated.length,rows.length)+'%')
+           +'<div class="vr3-tip-def">Vendors with a score on record.</div>',_vrStat==='rated'],
+      exc:['Rating Exceptions',vrRow('Exceptions',fmt(exc))+vrRow('Share of rated',pct(exc,rated.length)+'%')
+           +'<div class="vr3-tip-def">Scored 0–2 — flagged for review.</div>',_vrStat==='exception'],
+      cov:['Rating Coverage',vrRow('Rated',fmt(rated.length))+vrRow('Total',fmt(rows.length))
+           +vrRow('Coverage',pct(rated.length,rows.length)+'%')
+           +'<div class="vr3-tip-def">Rated vendors as a share of all in scope.</div>',_vrStat==='notrated']
+    }[which];
+    if(T)vrShowTip('<b class="t">'+T[0]+'</b>'+T[1]+vrHint(T[2]),evt);
+  };
   window.vr3GoPage=function(p){_vrPage=p;render();};
   window.vr3Search=function(q){_vrQ=q;_vrPage=1;render();};
-  window.vr3SetCat=function(c){_vrCat=c;_vrPage=1;render();};
-  window.vr3SetStat=function(s){_vrStat=s;_vrPage=1;render();};
+  window.vr3SetCat=function(c,toggle){_vrCat=(toggle&&_vrCat===c)?'':c;_vrPage=1;vrHideTip();render();};
+  window.vr3SetStat=function(s,toggle){_vrStat=(toggle&&_vrStat===s)?'':s;_vrPage=1;vrHideTip();render();};
   window.vr3TrendN=function(n){_vrTrendN=parseInt(n,10);render();};
   window.vr3Export=function(){
     var rows=filteredRows(),csv='Vendor Name,Category,Audience,Last Rated,Rating\n';
