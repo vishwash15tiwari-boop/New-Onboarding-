@@ -19171,7 +19171,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .txm-tbl tbody tr:hover td{background:var(--lc-subtle)}
 .lc .txm-tbl .num{text-align:right;font-variant-numeric:tabular-nums}
 .lc .txm-idx{color:var(--lc-text3);width:22px}
-.lc .txm-nm{font-weight:600;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.lc .txm-nm{font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis}
 .lc .txm-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;background:var(--lc-risk-weak);color:var(--lc-risk)}
 .lc .txm-cat{display:inline-flex;align-items:center;gap:6px}
 .lc .txm-empty{padding:34px 0;text-align:center;color:var(--lc-text3);font-size:12.5px}
@@ -19531,15 +19531,14 @@ document.addEventListener('DOMContentLoaded', function() {
           { lbl: 'Type',         get: function (r) { return esc2(r.type || ''); } },
           { lbl: 'Category',     get: catCell },
           { lbl: 'GMV',          num: true, get: function (r) { return rup(r.gmv); } },
-          { lbl: 'Transactions', num: true, get: function (r) { return nf(r.txns); } }
+          { lbl: 'Txns',         num: true, get: function (r) { return nf(r.txns); } }
         ], 'window.txmViewAll(\'transacted\')')
       + tableCard('Top Non-Transacted Vendors', v.topN.slice(0, 5), [
           { lbl: '#',             get: function (r, i) { return '<span class="txm-idx">' + (i + 1) + '</span>'; } },
           { lbl: 'Vendor Name',   get: function (r) { return '<div class="txm-nm">' + esc2(r.name || '—') + '</div>'; } },
           { lbl: 'Type',          get: function (r) { return esc2(r.type || ''); } },
           { lbl: 'Category',      get: catCell },
-          { lbl: 'Ageing (Days)', num: true, get: function (r) { return r.ageDays == null ? '—' : nf(r.ageDays); } },
-          { lbl: 'Status',        get: function () { return '<span class="txm-badge">Non-Transacted</span>'; } }
+          { lbl: 'Ageing',       num: true, get: function (r) { return r.ageDays == null ? '—' : nf(r.ageDays); } }
         ], 'window.txmViewAll(\'nontransacted\')');
     h += '</div>';
 
@@ -19565,12 +19564,12 @@ document.addEventListener('DOMContentLoaded', function() {
         + '<td>' + esc2(r.type) + '</td><td>' + catCell(r) + '</td>'
         + (which === 'transacted'
             ? '<td class="num">' + rup(r.gmv) + '</td><td class="num">' + nf(r.txns) + '</td>'
-            : '<td class="num">' + (r.ageDays == null ? '—' : nf(r.ageDays)) + '</td><td><span class="txm-badge">Non-Transacted</span></td>')
+            : '<td class="num">' + (r.ageDays == null ? '&mdash;' : nf(r.ageDays)) + '</td>')
         + '</tr>';
     }).join('');
     var head = which === 'transacted'
-      ? '<th>#</th><th>Vendor Name</th><th>Type</th><th>Category</th><th class="num">GMV</th><th class="num">Transactions</th>'
-      : '<th>#</th><th>Vendor Name</th><th>Type</th><th>Category</th><th class="num">Ageing (Days)</th><th>Status</th>';
+      ? '<th>#</th><th>Vendor Name</th><th>Type</th><th>Category</th><th class="num">GMV</th><th class="num">Txns</th>'
+      : '<th>#</th><th>Vendor Name</th><th>Type</th><th>Category</th><th class="num">Ageing</th>';
     var host = document.getElementById('tab-transactions');
     var pg = host && host.querySelector('.txm-pg');
     if (!pg) return;
@@ -19827,7 +19826,11 @@ document.addEventListener('DOMContentLoaded', function() {
       var on=_vrCat===e.cat, ec=String(e.cat).replace(/'/g,"\\'");
       svg+='<rect class="vr3-hit" x="0" y="'+(y-3)+'" width="'+W+'" height="'+(BH+6)+'" fill="transparent"'
         + vrHooks("window.vr3SetCat('"+ec+"',true)","window.vr3TipCat('"+ec+"'") + '></rect>';
-      svg+='<text x="'+(PL-6)+'" y="'+(y+BH*.72)+'" text-anchor="end" style="fill:'+(on?'var(--lc-accent)':'var(--lc-text2)')+'" font-size="11" font-weight="'+(on?'700':'400')+'" pointer-events="none">'+e.cat+'</text>';
+      // End-anchored SVG text grows leftwards and neither wraps nor truncates,
+      // so a real category name ran off the left of the viewBox and out of the
+      // card. ~70px of label room at 11px is about 12 characters.
+      var catLbl=String(e.cat).length>12?String(e.cat).slice(0,11)+'…':String(e.cat);
+      svg+='<text x="'+(PL-6)+'" y="'+(y+BH*.72)+'" text-anchor="end" style="fill:'+(on?'var(--lc-accent)':'var(--lc-text2)')+'" font-size="11" font-weight="'+(on?'700':'400')+'" pointer-events="none"><title>'+esc(e.cat)+'</title>'+esc(catLbl)+'</text>';
       svg+='<rect x="'+PL+'" y="'+y+'" width="'+(bw||2)+'" height="'+BH+'" fill="'+col+'" rx="4" opacity="'+(on?1:.85)+'" pointer-events="none"'+(on?' stroke="var(--lc-accent)" stroke-width="1.5"':'')+'/>';
       svg+='<text x="'+(PL+bw+5)+'" y="'+(y+BH*.72)+'" style="fill:var(--lc-text)" font-size="11" font-weight="600" pointer-events="none">'+fmt1(e.avg)+'</text>';
     });
@@ -19843,7 +19846,7 @@ document.addEventListener('DOMContentLoaded', function() {
                {lbl:'Not Rated',key:'notrated',val:notRated,col:'#C7C7CC'},
                {lbl:'Exception',key:'exception',val:exc,col:'var(--lc-risk)'}];
     var cx=60,cy=60,R=44,r=28;
-    var svg='<svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">';
+    var svg='<svg viewBox="0 0 200 128" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">';
     var tot=items.reduce(function(a,b){return a+b.val;},0)||1;
     var angle=-Math.PI/2;
     items.forEach(function(it){
@@ -19859,16 +19862,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     svg+='<text x="'+cx+'" y="'+(cy-5)+'" text-anchor="middle" style="fill:var(--lc-text)" font-size="16" font-weight="800">'+total+'</text>';
     svg+='<text x="'+cx+'" y="'+(cy+11)+'" text-anchor="middle" style="fill:var(--lc-text3)" font-size="9">Total</text>';
-    var lx=128,ly=18;
+    // 30px rows with the label and figure a clear step apart. At 28px, with the
+    // figure only 12px below its label, the two text boxes touched.
+    var lx=128,ly=16;
     items.forEach(function(it,i){
-      var yy=ly+i*28;
+      var yy=ly+i*30;
       var on=_vrStat===it.key;
       svg+='<rect class="vr3-hit" x="'+(lx-10)+'" y="'+(yy-11)+'" width="'+(200-lx+4)+'" height="26" rx="5" fill="'+(on?'rgba(15,122,79,.09)':'transparent')+'"'
         + vrHooks("window.vr3SetStat('"+it.key+"',true)","window.vr3TipStat('"+it.key+"'") + '></rect>';
       svg+='<circle cx="'+lx+'" cy="'+yy+'" r="5" style="fill:'+it.col+'" pointer-events="none"/>';
       svg+='<text x="'+(lx+10)+'" y="'+(yy+4)+'" style="fill:'+(on?'var(--lc-accent)':'var(--lc-text2)')+'" font-size="10.5" font-weight="'+(on?'700':'400')+'" pointer-events="none">'+it.lbl+'</text>';
-      svg+='<text x="'+(lx+10)+'" y="'+(yy+16)+'" style="fill:var(--lc-text)" font-size="11" font-weight="700" pointer-events="none">'+it.val+'</text>';
-      svg+='<text x="'+(lx+10+String(it.val).length*7)+'" y="'+(yy+16)+'" style="fill:var(--lc-text3)" font-size="10" pointer-events="none"> ('+pct(it.val,total)+'%)</text>';
+      // Share rides on the figure as a tspan. It used to be a separate <text>
+      // placed 7px per digit along, which ran into the figure the moment the
+      // count reached three digits.
+      svg+='<text x="'+(lx+10)+'" y="'+(yy+18)+'" style="fill:var(--lc-text)" font-size="11" font-weight="700" pointer-events="none">'+it.val
+        +'<tspan style="fill:var(--lc-text3)" font-size="10" font-weight="400" dx="4">('+pct(it.val,total)+'%)</tspan></text>';
     });
     svg+='</svg>';
     return svg;
@@ -20888,21 +20896,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Direct inline labels at each curve's peak
     if(maxN>0){
-      var ni=nwVals.indexOf(maxN),nx=xOf(ni),ny=yOf(maxN)-8;
+      var ni=nwVals.indexOf(maxN),nx=xOf(ni),ny=Math.max(9,yOf(maxN)-8);
       var na=ni<n*0.2?'start':ni>n*0.8?'end':'middle';
       svg+='<text x="'+nx.toFixed(1)+'" y="'+ny.toFixed(1)+'" text-anchor="'+na+'" fill="#0F7A4F" font-size="9.5" font-weight="700" font-family="inherit">New</text>';
     }
     if(maxE>0){
-      var ei=exVals.indexOf(maxE),ex2=xOf(ei),ey=yOf(maxE)-8;
+      var ei=exVals.indexOf(maxE),ex2=xOf(ei),ey=Math.max(9,yOf(maxE)-8);
       var ea=ei<n*0.2?'start':ei>n*0.8?'end':'middle';
       // nudge label up if too close to New label
       if(maxE>0&&maxN>0&&Math.abs(xOf(nwVals.indexOf(maxN))-ex2)<30)ey-=13;
+      ey=Math.max(9,ey);   // never let a peak label ride off the top of the viewBox
       svg+='<text x="'+ex2.toFixed(1)+'" y="'+ey.toFixed(1)+'" text-anchor="'+ea+'" fill="#8460D4" font-size="9.5" font-weight="700" font-family="inherit">Existing</text>';
     }
-    // X-axis month labels — sparse to avoid crowding
+    // X-axis month labels — sparse to avoid crowding. The end labels anchor to
+    // the plot edge rather than centring on it: a centred first label starts at
+    // x=PL-halfWidth, which is outside the viewBox, and came out clipped.
     pts.forEach(function(p,i){
       if(n<=6||(i===0)||(i===n-1)||(n<=12&&i%2===0)||(n>12&&i%3===0)){
-        svg+='<text x="'+xOf(i).toFixed(1)+'" y="'+(PT+iH+18)+'" text-anchor="middle" fill="var(--lc-text3)" font-size="8" font-family="inherit">'+p.label+'</text>';
+        var anc=(i===0&&n>1)?'start':(i===n-1&&n>1)?'end':'middle';
+        svg+='<text x="'+xOf(i).toFixed(1)+'" y="'+(PT+iH+18)+'" text-anchor="'+anc+'" fill="var(--lc-text3)" font-size="8" font-family="inherit">'+p.label+'</text>';
       }
     });
     svg+='</svg>';
@@ -20937,8 +20949,12 @@ document.addEventListener('DOMContentLoaded', function() {
       var yy=ly+i*42;
       svg+='<rect x="'+lx+'" y="'+(yy-6)+'" width="9" height="9" rx="2.5" fill="'+it.col+'"/>';
       svg+='<text x="'+(lx+13)+'" y="'+yy+'" fill="var(--lc-text3)" font-size="9.5" font-family="inherit">'+it.lbl+'</text>';
-      svg+='<text x="'+(lx+13)+'" y="'+(yy+15)+'" fill="var(--lc-text)" font-size="14" font-weight="700" font-family="inherit" letter-spacing="-0.5">'+it.val+'</text>';
-      svg+='<text x="'+(lx+13+String(it.val).length*8)+'" y="'+(yy+15)+'" fill="var(--lc-text3)" font-size="9.5" font-family="inherit"> '+pct(it.val,total)+'%</text>';
+      // Value and share in one <text> so the share follows the value's real
+      // width. It used to be a separate <text> positioned at 8px per digit,
+      // which only lined up when both values happened to have the same digit
+      // count and overlapped the moment they did not.
+      svg+='<text x="'+(lx+13)+'" y="'+(yy+15)+'" fill="var(--lc-text)" font-size="14" font-weight="700" font-family="inherit" letter-spacing="-0.5">'+it.val
+        +'<tspan fill="var(--lc-text3)" font-size="9.5" font-weight="400" letter-spacing="0" dx="5">'+pct(it.val,total)+'%</tspan></text>';
     });
     svg+='</svg>';
     // Category breakdown
@@ -20948,19 +20964,27 @@ document.addEventListener('DOMContentLoaded', function() {
     for(var ck in cats){if(cats.hasOwnProperty(ck))cEntries.push({cat:ck,ex:cats[ck].ex,nw:cats[ck].nw,tot:cats[ck].ex+cats[ck].nw});}
     cEntries.sort(function(a,b){return b.tot-a.tot;});
     if(cEntries.length){
+      // Three aligned columns — label, proportional track, value pair — matching
+      // the State-wise rows. The bars were sized in pixels off a 110px constant,
+      // so they neither scaled with the card nor ended anywhere consistent, and
+      // each value sat immediately after its own bar, giving a ragged right edge
+      // with nothing saying which colour was Existing and which was New.
       var maxC=cEntries[0].tot||1;
-      svg+='<div style="border-top:1px solid var(--lc-divider);padding-top:8px;margin-top:4px;display:flex;flex-direction:column;gap:5px">';
+      svg+='<div style="border-top:1px solid var(--lc-divider);padding-top:9px;margin-top:6px;display:flex;flex-direction:column;gap:7px">';
       cEntries.slice(0,4).forEach(function(e){
-        var exW=Math.round(e.ex/maxC*110),nwW=Math.round(e.nw/maxC*110);
-        var lbl=e.cat.length>7?e.cat.slice(0,6)+'…':e.cat;
-        svg+='<div style="display:flex;align-items:center;gap:6px">';
-        svg+='<span style="font-size:9px;font-weight:600;color:var(--lc-text3);width:42px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+lbl+'</span>';
-        svg+='<div style="flex:1;display:flex;flex-direction:column;gap:2px">';
-        svg+='<div style="display:flex;align-items:center;gap:3px"><div style="width:'+exW+'px;height:5px;border-radius:3px;background:#8460D4;flex-shrink:0"></div><span style="font-size:8.5px;font-weight:600;color:#8460D4">'+e.ex+'</span></div>';
-        svg+='<div style="display:flex;align-items:center;gap:3px"><div style="width:'+nwW+'px;height:5px;border-radius:3px;background:#0F7A4F;flex-shrink:0"></div><span style="font-size:8.5px;font-weight:600;color:#0F7A4F">'+e.nw+'</span></div>';
+        var exW=Math.round(e.ex/maxC*100),nwW=Math.round(e.nw/maxC*100);
+        svg+='<div style="display:flex;align-items:center;gap:8px">';
+        svg+='<span style="font-size:9.5px;font-weight:600;color:var(--lc-text2);flex:0 0 58px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+esc(e.cat)+'">'+esc(e.cat)+'</span>';
+        svg+='<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">';
+        svg+='<div style="height:5px;border-radius:3px;background:var(--lc-subtle);overflow:hidden"><div style="width:'+exW+'%;height:100%;border-radius:3px;background:#8460D4"></div></div>';
+        svg+='<div style="height:5px;border-radius:3px;background:var(--lc-subtle);overflow:hidden"><div style="width:'+nwW+'%;height:100%;border-radius:3px;background:#0F7A4F"></div></div>';
+        svg+='</div>';
+        svg+='<div style="flex:0 0 26px;display:flex;flex-direction:column;gap:3px;font-size:9px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;line-height:5px">';
+        svg+='<span style="color:#8460D4">'+(e.ex||'—')+'</span><span style="color:#0F7A4F">'+(e.nw||'—')+'</span>';
         svg+='</div></div>';
       });
       svg+='</div>';
+      svg+='<div class="evn-legend" style="margin-top:9px"><div class="evn-legend-item"><div class="evn-legend-dot" style="background:#8460D4"></div>Existing</div><div class="evn-legend-item"><div class="evn-legend-dot" style="background:#0F7A4F"></div>New</div></div>';
     }
     return svg;
   }
@@ -20994,8 +21018,13 @@ document.addEventListener('DOMContentLoaded', function() {
     entries.sort(function(a,b){return b.tot-a.tot;});
     var total=entries.reduce(function(s,e){return s+e.tot;},0)||1;
     if(!entries.length)return '<div class="evn-empty">No data</div>';
-    var cx=65,cy=65,R=52,ri=32,W=240,H=130;
-    var svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">';
+    // Donut in SVG, legend in HTML beside it. The legend used to be SVG <text>
+    // at a fixed x with the value right-anchored at the viewBox edge: SVG text
+    // neither wraps nor truncates, so a real category name like "Institutional
+    // Business" ran straight through its own value and out past the card edge.
+    var cx=65,cy=65,R=52,ri=32,W=130,H=130;
+    var svg='<div style="display:flex;align-items:center;gap:14px;min-width:0">'
+      + '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="flex:0 0 116px;width:116px;height:116px;display:block">';
     var angle=-Math.PI/2;
     entries.forEach(function(e){
       if(!e.tot)return;
@@ -21009,15 +21038,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     svg+='<text x="'+cx+'" y="'+(cy-5)+'" text-anchor="middle" fill="var(--lc-text)" font-size="18" font-weight="700" font-family="inherit">'+total+'</text>';
     svg+='<text x="'+cx+'" y="'+(cy+11)+'" text-anchor="middle" fill="var(--lc-text3)" font-size="9.5" font-family="inherit">vendors</text>';
-    var lx=138,ly=10;
-    entries.slice(0,5).forEach(function(e,i){
-      var yy=ly+i*25;
-      svg+='<rect x="'+lx+'" y="'+yy+'" width="9" height="9" rx="2.5" fill="'+cc(e.cat)+'"/>';
-      svg+='<text x="'+(lx+14)+'" y="'+(yy+8)+'" fill="var(--lc-text)" font-size="10.5" font-weight="600" font-family="inherit">'+e.cat+'</text>';
-      var pctStr=Math.round(e.tot/total*100)+'%';
-      svg+='<text x="'+(W-4)+'" y="'+(yy+8)+'" text-anchor="end" fill="var(--lc-text3)" font-size="10" font-family="inherit">'+e.tot+' · '+pctStr+'</text>';
-    });
     svg+='</svg>';
+    // Name column flexes and ellipses; the value column never gives up its room,
+    // so the figure stays readable however long the category is called.
+    svg+='<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:9px">';
+    entries.slice(0,5).forEach(function(e){
+      var pctStr=Math.round(e.tot/total*100)+'%';
+      svg+='<div style="display:flex;align-items:center;gap:7px;min-width:0">'
+        + '<span style="width:9px;height:9px;border-radius:2.5px;background:'+cc(e.cat)+';flex-shrink:0"></span>'
+        + '<span style="flex:1;min-width:0;font-size:10.5px;font-weight:600;color:var(--lc-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+esc(e.cat)+'">'+esc(e.cat)+'</span>'
+        + '<span style="flex:0 0 auto;font-size:10px;color:var(--lc-text3);font-variant-numeric:tabular-nums;white-space:nowrap">'+e.tot+' &middot; '+pctStr+'</span>'
+        + '</div>';
+    });
+    svg+='</div></div>';
     return svg;
   }
 
@@ -21040,10 +21073,13 @@ document.addEventListener('DOMContentLoaded', function() {
       if(exW>0)h+='<div style="width:'+exW+'%;background:#8460D4;border-radius:2px 0 0 2px"></div>';
       if(nwW>0)h+='<div style="width:'+nwW+'%;background:#0F7A4F;border-radius:'+(exW?'0 2px 2px 0':'2px')+'"></div>';
       h+='</div></div>';
-      h+='<div style="flex-shrink:0;display:flex;gap:4px;align-items:center">';
-      if(e.existing)h+='<span style="font-size:9px;font-weight:700;color:#8460D4;font-variant-numeric:tabular-nums">'+e.existing+'</span>';
-      if(e.existing&&e.newv)h+='<span style="font-size:8px;color:var(--lc-text3)">·</span>';
-      if(e.newv)h+='<span style="font-size:9px;font-weight:700;color:#0F7A4F;font-variant-numeric:tabular-nums">'+e.newv+'</span>';
+      // Two fixed-width columns, not a variable-width run. The numbers used to
+      // size themselves, so the flex:1 bar track above shrank by a different
+      // amount on every row and no two bars ended at the same point.
+      h+='<div style="flex:0 0 52px;display:flex;align-items:center;gap:4px;font-size:9px;font-weight:700;font-variant-numeric:tabular-nums">';
+      h+='<span style="flex:1;text-align:right;color:'+(e.existing?'#8460D4':'var(--lc-text3)')+'">'+(e.existing||'—')+'</span>';
+      h+='<span style="font-size:8px;color:var(--lc-text3);font-weight:400">·</span>';
+      h+='<span style="flex:1;text-align:right;color:'+(e.newv?'#0F7A4F':'var(--lc-text3)')+'">'+(e.newv||'—')+'</span>';
       h+='</div>';
       h+='</div>';
     });
@@ -21053,52 +21089,87 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function buildTATComparison(rows){
+    /* Built as aligned HTML rows rather than hand-placed SVG coordinates, for
+       two reasons the screenshot showed plainly. A category was only listed when
+       at least one of its vendors carried a measurable TAT, so Metal vanished
+       entirely and the card read as a one-row chart with a lot of empty space
+       instead of "Metal has no TAT data". And the legend printed "New" with no
+       value beside it whenever that series was empty, which looks like a broken
+       chart rather than an absent sample. Every category with vendors is listed
+       now, each series states its sample, and an empty one says so. */
     var cats={},allExT=[],allNwT=[];
-    rows.forEach(function(r){var t=getTAT(r);if(t===null||t<0)return;var c=r.category||'Others';if(!cats[c])cats[c]={exSum:0,exN:0,newSum:0,newN:0};if(rowIsNew(r)){cats[c].newSum+=t;cats[c].newN++;allNwT.push(t);}else{cats[c].exSum+=t;cats[c].exN++;allExT.push(t);}});
+    rows.forEach(function(r){
+      var c=r.category||'Others';
+      if(!cats[c])cats[c]={exSum:0,exN:0,newSum:0,newN:0,vendors:0};
+      cats[c].vendors++;
+      var t=getTAT(r); if(t===null||t<0)return;
+      if(rowIsNew(r)){cats[c].newSum+=t;cats[c].newN++;allNwT.push(t);}
+      else{cats[c].exSum+=t;cats[c].exN++;allExT.push(t);}
+    });
     var entries=[];
-    for(var k in cats){if(cats.hasOwnProperty(k)){var v=cats[k];if(v.exN||v.newN)entries.push({cat:k,exAvg:v.exN?Math.round(v.exSum/v.exN):null,newAvg:v.newN?Math.round(v.newSum/v.newN):null,exN:v.exN,newN:v.newN});}}
-    entries.sort(function(a,b){return Math.max(b.exAvg||0,b.newAvg||0)-Math.max(a.exAvg||0,a.newAvg||0);});
-    if(!entries.length)return '<div class="evn-empty">No TAT data available</div>';
+    for(var k in cats){if(cats.hasOwnProperty(k)){var v=cats[k];
+      entries.push({cat:k,vendors:v.vendors,
+        exAvg:v.exN?Math.round(v.exSum/v.exN):null,newAvg:v.newN?Math.round(v.newSum/v.newN):null,
+        exN:v.exN,newN:v.newN});}}
+    if(!entries.length)return '<div class="evn-empty">No vendors in scope</div>';
+    entries.sort(function(a,b){return b.vendors-a.vendors;});
+    entries=entries.slice(0,5);
+
     var ovEx=allExT.length?Math.round(allExT.reduce(function(s,v){return s+v;},0)/allExT.length):null;
     var ovNw=allNwT.length?Math.round(allNwT.reduce(function(s,v){return s+v;},0)/allNwT.length):null;
-    var maxT=entries.reduce(function(m,e){return Math.max(m,e.exAvg||0,e.newAvg||0);},0)||10;
-    var W=270,PL=58,PR=62,PT=30,ROW=36,barW=W-PL-PR;
-    var H=PT+entries.length*ROW+8;
-    var svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">';
-    // Header with overall averages
-    svg+='<circle cx="'+PL+'" cy="11" r="3.5" fill="#8460D4"/>';
-    svg+='<text x="'+(PL+8)+'" y="15" fill="var(--lc-text3)" font-size="9" font-family="inherit">Existing'+(ovEx!==null?' — ':'')+'</text>';
-    if(ovEx!==null)svg+='<text x="'+(PL+57)+'" y="15" fill="#8460D4" font-size="9" font-weight="700" font-family="inherit">'+ovEx+'d avg</text>';
-    svg+='<circle cx="'+(PL+112)+'" cy="11" r="3.5" fill="#0F7A4F"/>';
-    svg+='<text x="'+(PL+120)+'" y="15" fill="var(--lc-text3)" font-size="9" font-family="inherit">New'+(ovNw!==null?' — ':'')+'</text>';
-    if(ovNw!==null)svg+='<text x="'+(PL+138)+'" y="15" fill="#0F7A4F" font-size="9" font-weight="700" font-family="inherit">'+ovNw+'d avg</text>';
-    entries.forEach(function(e,i){
-      var y0=PT+i*ROW,y1=y0+7,y2=y0+23;
-      var lbl=e.cat.length>9?e.cat.slice(0,8)+'…':e.cat;
-      svg+='<text x="'+(PL-6)+'" y="'+(y0+ROW/2)+'" text-anchor="end" fill="var(--lc-text3)" font-size="9.5" font-family="inherit">'+lbl+'</text>';
-      if(e.exAvg!==null){
-        var ex=Math.min(PL+Math.round(e.exAvg/maxT*barW),PL+barW);
-        svg+='<line x1="'+PL+'" y1="'+y1+'" x2="'+ex+'" y2="'+y1+'" stroke="#8460D4" stroke-width="2.5" stroke-linecap="round"/>';
-        svg+='<circle cx="'+ex+'" cy="'+y1+'" r="5" fill="#8460D4"/>';
-        svg+='<text x="'+(ex+9)+'" y="'+(y1+4)+'" fill="var(--lc-text)" font-size="9" font-weight="700" font-family="inherit">'+e.exAvg+'d<tspan fill="var(--lc-text3)" font-size="8" font-weight="400"> ('+e.exN+')</tspan></text>';
-      }
-      if(e.newAvg!==null){
-        var nw=Math.min(PL+Math.round(e.newAvg/maxT*barW),PL+barW);
-        svg+='<line x1="'+PL+'" y1="'+y2+'" x2="'+nw+'" y2="'+y2+'" stroke="#0F7A4F" stroke-width="2.5" stroke-linecap="round"/>';
-        svg+='<circle cx="'+nw+'" cy="'+y2+'" r="5" fill="#0F7A4F"/>';
-        svg+='<text x="'+(nw+9)+'" y="'+(y2+4)+'" fill="var(--lc-text)" font-size="9" font-weight="700" font-family="inherit">'+e.newAvg+'d<tspan fill="var(--lc-text3)" font-size="8" font-weight="400"> ('+e.newN+')</tspan></text>';
-      }
+    if(ovEx===null&&ovNw===null)
+      return '<div class="evn-empty">No vendor in scope carries a measurable turnaround yet</div>';
+    var maxT=entries.reduce(function(m,e){return Math.max(m,e.exAvg||0,e.newAvg||0);},0)||1;
+
+    // Legend states each side's overall average, or that it has no sample.
+    function legItem(col,lbl,ov,n){
+      return '<div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--lc-text3)">'
+        + '<span style="width:8px;height:8px;border-radius:2px;background:'+col+';flex-shrink:0'+(ov===null?';opacity:.35':'')+'"></span>'
+        + lbl + ' &mdash; '
+        + (ov===null ? '<span style="color:var(--lc-text3)">no data</span>'
+                     : '<b style="color:'+col+';font-weight:700">'+ov+'d avg</b>'
+                       +'<span style="color:var(--lc-text3)"> (n='+n+')</span>')
+        + '</div>';
+    }
+    var h='<div style="display:flex;flex-wrap:wrap;gap:6px 16px;margin-bottom:10px">'
+        + legItem('#8460D4','Existing',ovEx,allExT.length)
+        + legItem('#0F7A4F','New',ovNw,allNwT.length)
+        + '</div>';
+
+    // One row per category: fixed label column, shared proportional track, fixed
+    // value column — so every bar starts and ends on the same two gridlines.
+    function series(col,avg,n){
+      if(avg===null)
+        return '<div style="display:flex;align-items:center;gap:6px;height:9px">'
+          + '<div style="flex:1;min-width:0;height:5px;border-radius:3px;background:var(--lc-subtle)"></div>'
+          + '<span style="flex:0 0 46px;text-align:right;font-size:9px;color:var(--lc-text3);font-variant-numeric:tabular-nums">no data</span></div>';
+      return '<div style="display:flex;align-items:center;gap:6px;height:9px">'
+        + '<div style="flex:1;min-width:0;height:5px;border-radius:3px;background:var(--lc-subtle);overflow:hidden">'
+        +   '<div style="width:'+Math.max(2,Math.round(avg/maxT*100))+'%;height:100%;border-radius:3px;background:'+col+'"></div></div>'
+        + '<span style="flex:0 0 46px;text-align:right;font-size:9px;font-weight:700;color:var(--lc-text);font-variant-numeric:tabular-nums">'
+        +   avg+'d<span style="color:var(--lc-text3);font-weight:400"> ('+n+')</span></span></div>';
+    }
+    h+='<div style="display:flex;flex-direction:column;gap:9px">';
+    entries.forEach(function(e){
+      h+='<div style="display:flex;align-items:center;gap:8px">'
+        + '<span style="flex:0 0 58px;font-size:9.5px;font-weight:600;color:var(--lc-text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+esc(e.cat)+' · '+e.vendors+' vendors">'+esc(e.cat)+'</span>'
+        + '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">'
+        +   series('#8460D4',e.exAvg,e.exN) + series('#0F7A4F',e.newAvg,e.newN)
+        + '</div></div>';
     });
-    svg+='</svg>';
-    // Auto-generated insight
+    h+='</div>';
+
+    // The insight names the absent side rather than quietly describing only one.
     var insight='';
     if(ovEx!==null&&ovNw!==null){
       var d=Math.abs(ovNw-ovEx);
-      insight=ovNw>ovEx?'New vendors take '+d+'d longer to onboard than Existing':'Existing vendors take '+d+'d longer to onboard than New';
-    }else if(ovNw!==null){insight='New vendors average '+ovNw+' days from registration to completion';}
-    else if(ovEx!==null){insight='Existing vendors average '+ovEx+' days from registration to completion';}
-    if(insight)svg+='<div style="background:var(--lc-subtle);border-radius:7px;padding:7px 10px;margin-top:6px;font-size:10px;font-weight:500;color:var(--lc-text2);line-height:1.45">'+insight+'</div>';
-    return svg;
+      insight=d===0 ? 'Existing and New vendors onboard in the same '+ovEx+' days on average'
+        : (ovNw>ovEx ? 'New vendors take '+d+'d longer to onboard than Existing'
+                     : 'Existing vendors take '+d+'d longer to onboard than New');
+    }else if(ovNw!==null){insight='New vendors average '+ovNw+' days from registration to completion. No Existing vendor in scope carries a measurable turnaround, so there is nothing to compare against yet.';}
+    else {insight='Existing vendors average '+ovEx+' days from registration to completion. No New vendor in scope carries a measurable turnaround, so there is nothing to compare against yet.';}
+    h+='<div style="background:var(--lc-subtle);border-radius:7px;padding:8px 10px;margin-top:10px;font-size:10px;font-weight:500;color:var(--lc-text2);line-height:1.5">'+insight+'</div>';
+    return h;
   }
 
   function buildTxnActivity(doneRows){
@@ -21121,8 +21192,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var svg='<svg viewBox="0 0 '+W+' 108" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">';
     svg+=mkRing(66,cy,'#8460D4',exRate,'Existing',exTxn,exRows.length);
     svg+=mkRing(194,cy,'#0F7A4F',newRate,'New',newTxn,newRows.length);
-    svg+='<text x="'+W/2+'" y="100" text-anchor="middle" fill="var(--lc-text3)" font-size="8.5" font-family="inherit">% who transacted post-onboarding</text>';
     svg+='</svg>';
+    // The caption sits in its own HTML line rather than a hand-placed <text> at
+    // y=100: the ring labels land at y=101, so the two were drawn on top of each
+    // other and both came out clipped.
+    svg+='<div style="text-align:center;font-size:10px;color:var(--lc-text3);margin-top:2px">% who transacted post-onboarding</div>';
     // Story-telling insight
     var parts=[],insight='';
     var untxnEx=exRows.length-exTxn,untxnNw=newRows.length-newTxn;
@@ -21248,9 +21322,14 @@ document.addEventListener('DOMContentLoaded', function() {
     kpiH+='<div class="evn-kpi'+(_evnDrillType==='all'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'all\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#0F7A4F,#3FB489)"></div>'+icoWrap(IcoTrend,'rgba(15,122,79,.1)','var(--lc-accent)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Total Onboarded</div><div class="evn-kpi-val">'+doneRows.length+'</div><div class="evn-kpi-sub">Completed vendors</div></div></div>';
     kpiH+='<div class="evn-kpi'+(_evnDrillType==='existing'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'existing\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#8460D4,#B07BF5)"></div>'+icoWrap(IcoUsers,'rgba(132,96,212,.1)','var(--lc-purple)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Existing Vendors</div><div class="evn-kpi-val">'+exRows.length+'</div><div class="evn-kpi-sub">In other Recykal verticals</div></div></div>';
     kpiH+='<div class="evn-kpi'+(_evnDrillType==='new'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'new\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#0F7A4F,#1DC797)"></div>'+icoWrap(IcoStar,'rgba(15,122,79,.1)','var(--lc-accent)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">New Vendors</div><div class="evn-kpi-val">'+newRows.length+'</div><div class="evn-kpi-sub">New to Recykal ecosystem</div></div></div>';
-    var tatVal=avgNewTat!==null?'<span style="font-size:34px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums">'+fmt1(avgNewTat)+'</span><span style="font-size:14px;font-weight:500;color:var(--lc-text3)"> d</span>':'<span style="color:var(--lc-text3)">--</span>';
+    // The figure takes its size from .evn-kpi-val (var(--kpi-size), 27px) like
+    // every other KPI. It used to hardcode 34px inside a val div set to
+    // font-size:inherit, which both broke the shared type scale and gave the
+    // span a 34px line box that overlapped the label above and the caption
+    // below by 3px each.
+    var tatVal=avgNewTat!==null?fmt1(avgNewTat)+'<span style="font-size:14px;font-weight:500;letter-spacing:0;color:var(--lc-text3)"> d</span>':'<span style="color:var(--lc-text3)">&mdash;</span>';
     var tatSub=exRows.length?(avgExTat!==null?'Existing avg: '+fmt1(avgExTat)+' d':'Existing: no TAT data'):'All vendors new to Recykal';
-    kpiH+='<div class="evn-kpi'+(_evnDrillType==='tat'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'tat\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#FF9500,#FFCC00)"></div>'+icoWrap(IcoClock,'rgba(255,149,0,.1)','#FF9500')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Avg TAT — New</div><div class="evn-kpi-val" style="font-size:inherit">'+tatVal+'</div><div class="evn-kpi-sub">'+tatSub+'</div></div></div>';
+    kpiH+='<div class="evn-kpi'+(_evnDrillType==='tat'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'tat\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#FF9500,#FFCC00)"></div>'+icoWrap(IcoClock,'rgba(255,149,0,.1)','#FF9500')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Avg TAT — New</div><div class="evn-kpi-val">'+tatVal+'</div><div class="evn-kpi-sub">'+tatSub+'</div></div></div>';
     kpiH+='</div>';
     var row1='<div class="evn-row1">';
     row1+='<div class="evn-card"><div class="evn-card-hdr"><span class="evn-card-ttl">Onboarding Trend</span></div>'+buildOBTrend(doneRows)+'</div>';
