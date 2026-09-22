@@ -3207,7 +3207,7 @@ function getQualityData() {
   Object.keys(ompNameSellers).forEach(function(n) { ompNameMap[n] = ompNameSellers[n]; });
 
   function mkR()  { return { ws: 0, rated: 0, total: 0, dist: [0,0,0,0,0], exceptions: 0 }; }
-  function mkO()  { return { completed: 0, pending: 0, failed: 0, notInitiated: 0, total: 0 }; }
+  function mkO()  { return { completed: 0, pending: 0, failed: 0, stopped: 0, notInitiated: 0, total: 0 }; }
   function mkD()  { return { complete: 0, partial: 0, incomplete: 0, missing: 0, total: 0 }; }
   function mkAcc(){ return { r: mkR(), o: mkO(), d: mkD() }; }
   var acc = { seller: mkAcc(), buyer: mkAcc(), combined: mkAcc() };
@@ -3247,7 +3247,10 @@ function getQualityData() {
     } else if (vsd.rows.length) {
       var vsh   = vsd.headers;
       var vsGst = qualityFindCol_(vsh, ['gstin','gst_number','gst_no','gstin_number','gst']);
-      var vsId  = qualityFindCol_(vsh, ['seller_id','buyer_id','id','vendor_id','vendorid','entity_id']);
+      // 'vendor_reference_no' is this workbook's own id column (OMP_0001…). Without it
+      // the join fell back to GSTIN alone and the Vendor ID cell rendered blank.
+      var vsId  = qualityFindCol_(vsh, ['seller_id','buyer_id','id','vendor_id','vendorid','entity_id',
+                                        'vendor_reference_no','vendor_ref_no','vendor_reference']);
       var vsNm  = qualityFindCol_(vsh, ['seller_name','name','vendor_name','business_name','company_name']);
       // Optional enrichment for the OSV records table. Absent columns simply leave
       // the corresponding cell blank rather than blocking the row.
@@ -3255,9 +3258,13 @@ function getQualityData() {
       var vsBv  = qualityFindCol_(vsh, ['business_vertical','vertical','biz_vertical']);
       var vsAsg = qualityFindCol_(vsh, ['assigned_user','assigned_to','assignee','owner','sales_poc','poc',
                                         'account_manager','relationship_manager','rm','kam','executive','agent']);
+      // 'system_updated' / 'system_rating_updated' / 'osv_completion_date' are what this
+      // workbook actually calls its recency columns; none of the generic names appear in
+      // it, so Last Updated rendered blank on every row.
       var vsUpd = qualityFindCol_(vsh, ['last_updated','last_updated_date','last_updated_at','updated_at',
                                         'updated_date','modified_at','last_modified','last_modified_date',
-                                        'osv_date','osv_updated_date','consent_date','status_date']);
+                                        'osv_date','osv_updated_date','consent_date','status_date',
+                                        'system_updated','system_rating_updated','osv_completion_date']);
 
       // The join keys (gstin / id) are resolved by header NAME, but the score and OSV
       // were read by fixed POSITION (col H / col N). If the Vendor Score sheet's columns
@@ -3277,6 +3284,9 @@ function getQualityData() {
       var vsOsv = qualityFindCol_(vsh, ['osv_status','osv','on_site_verification','onsite_verification',
         'osv_state','osv_consent_status','consent_status','verification_status','osv_verification_status']);
       if (vsOsv < 0) vsOsv = VS_COLS.osvStatus;
+      // The scores tab carries no owner and no milestone dates; the tracker tab in the
+      // same workbook does. Indexed by GSTIN to fill Assigned User / Last Updated.
+      var osvTrk = qualityOsvTrackerIndex_(CONFIG.VENDOR_SCORE_SHEET_ID);
 
       // Auto-detect scale: pre-scan the active score column. If any value exceeds 10 the
       // column is on the 0-100 scale (→ divide by 10); otherwise it is already 0-10 (→ use
@@ -3357,8 +3367,12 @@ function getQualityData() {
           });
         }
 
-        // — OSV Status (column N; three-way: verified / in-progress / not-initiated) —
-        // Sellers only, matching how OSV is scoped everywhere else in the dashboard.
+        // — OSV Status (column N) — Sellers only, matching how OSV is scoped everywhere
+        // else in the dashboard. 'STOPPED' is called out explicitly: a halted
+        // verification was started and then abandoned, which is not the same as one that
+        // was never begun, and leaving it to the default silently filed it under
+        // not-initiated. Any value still not listed here falls to not_initiated, so run
+        // debugVendorScoreSheet() after the sheet gains a new status word.
         if (aud === 'seller') {
           var osRaw = String(row[vsOsv] || '').trim();
           var osUp  = osRaw.toUpperCase().replace(/\s+/g, '_');
@@ -3373,6 +3387,10 @@ function getQualityData() {
                || osUp === 'INITIATED' || osUp === 'ONGOING' || osUp === 'PROCESSING'
                || osUp === 'SCHEDULED' || osUp === 'VISIT_SCHEDULED' || osUp === 'PARTIAL')
               ? 'in_progress'
+            : (osUp === 'STOPPED' || osUp === 'HALTED' || osUp === 'ON_HOLD' || osUp === 'HOLD'
+               || osUp === 'PAUSED' || osUp === 'SUSPENDED' || osUp === 'ABORTED'
+               || osUp === 'CANCELLED' || osUp === 'CANCELED' || osUp === 'TERMINATED')
+              ? 'stopped'
             : 'not_initiated';
           if (osvStatus === 'verified') {
             acc['seller'].o.completed   += 1;
@@ -3380,6 +3398,9 @@ function getQualityData() {
           } else if (osvStatus === 'in_progress' || osvStatus === 'consent_obtained') {
             acc['seller'].o.pending   += 1;
             acc['combined'].o.pending += 1;
+          } else if (osvStatus === 'stopped') {
+            acc['seller'].o.stopped   += 1;
+            acc['combined'].o.stopped += 1;
           }
           vendorOSV.push({
             id:               (omp.id || vid).slice(0, 30),
@@ -3392,11 +3413,23 @@ function getQualityData() {
             // back to the score sheet's own columns when the join carries neither.
             category:         omp.category || (vsCat >= 0 ? String(row[vsCat] || '').trim().slice(0, 60) : ''),
             vertical:         omp.bizVertical || (vsBv >= 0 ? String(row[vsBv] || '').trim().slice(0, 40) : ''),
-            assignedTo:       vsAsg >= 0 ? String(row[vsAsg] || '').trim().slice(0, 60) : '',
+            // Owner and recency fall back to the tracker tab, which is the only place
+            // this workbook records them. '' not '—', so exports stay clean.
+            assignedTo:       (function() {
+                                if (vsAsg >= 0) {
+                                  var a = String(row[vsAsg] || '').trim();
+                                  if (a) return a.slice(0, 60);
+                                }
+                                var tk = osvTrk[gst.toUpperCase()];
+                                return (tk && tk.poc) ? tk.poc : '';
+                              }()),
             updatedDate:      (function() {
-                                if (vsUpd < 0) return '';
-                                var _d = parseDate(row[vsUpd]);
-                                return _d ? fmtDate(_d) : '';   // '' not '—', so exports stay clean
+                                if (vsUpd >= 0) {
+                                  var _d = parseDate(row[vsUpd]);
+                                  if (_d) return fmtDate(_d);
+                                }
+                                var tk = osvTrk[gst.toUpperCase()];
+                                return tk ? (tk.completed || tk.initiated || '') : '';
                               }()),
             aud:              'seller'
           });
@@ -3616,13 +3649,15 @@ function getQualityData() {
   var _osvDenomSeller = _vsSheetTotal > 0 ? _vsSheetTotal : ompTotal;
   ['seller', 'combined'].forEach(function(t) {
     acc[t].o.total        = _osvDenomSeller;
-    acc[t].o.notInitiated = Math.max(0, _osvDenomSeller - acc[t].o.completed - acc[t].o.pending);
+    // Stopped is subtracted out too, otherwise a halted verification lands back in the
+    // not-initiated remainder — the exact conflation this state was split out to end.
+    acc[t].o.notInitiated = Math.max(0, _osvDenomSeller - acc[t].o.completed - acc[t].o.pending - acc[t].o.stopped);
     acc[t].o.failed       = 0;
   });
 
   // ── Finalize accumulators → output shape ─────────────────────
   function fR(r) { return { avg: r.rated>0?Math.round(r.ws/r.rated*10)/10:null, total:r.total, rated:r.rated, dist:r.dist, exceptions:r.exceptions||0 }; }
-  function fO(o) { return { completed:o.completed, pending:o.pending, failed:o.failed, notInitiated:o.notInitiated, total:o.total }; }
+  function fO(o) { return { completed:o.completed, pending:o.pending, failed:o.failed, stopped:o.stopped, notInitiated:o.notInitiated, total:o.total }; }
   function fD(d) { return { complete:d.complete, partial:d.partial, incomplete:d.incomplete, missing:d.missing, total:d.total }; }
   function fA(a) { return { rating:fR(a.r), osv:fO(a.o), docs:fD(a.d) }; }
 
@@ -3883,6 +3918,61 @@ function qualityReadExternalSheet_(sheetId, tabName) {
   }
 }
 
+// The Vendor Score workbook also carries a dedicated OSV tracker tab holding the two
+// milestone dates and the internal owner (POC) that the scores tab has no columns for,
+// which is why the OSV records table showed a blank Assigned User and Last Updated for
+// every row. This indexes that tab by GSTIN so those cells can be filled.
+//
+// The tab is located by HEADER SIGNATURE, not by name or position: the workbook has
+// several unrelated tabs, their order is not guaranteed, and a positional read would
+// silently land on the wrong sheet — the same failure the fixed-column read of the
+// scores tab was already burned by. A tab qualifies only if it carries a GSTIN, an OSV
+// status, an owner AND at least one milestone date; the scores tab has no owner column,
+// so it can never match itself. No matching tab simply yields {}, and the table keeps
+// showing dashes exactly as before.
+//
+// Status is deliberately NOT taken from here. The tracker disagrees with the scores tab
+// (it reports far fewer not-initiated), and the scores tab is the status of record.
+function qualityOsvTrackerIndex_(sheetId) {
+  var out = {};
+  if (!sheetId) return out;
+  try {
+    var sheets = SpreadsheetApp.openById(sheetId).getSheets();
+    for (var s = 0; s < sheets.length; s++) {
+      var sh = sheets[s];
+      var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+      if (lastRow < 2 || lastCol < 1) continue;
+      // Probe the header row alone before pulling the body: most tabs in this workbook
+      // are unrelated and reading each one in full to reject it is wasted quota.
+      var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+        return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      });
+      var cG = qualityFindCol_(hdr, ['gstin', 'gst_no', 'gst_number', 'gstin_number']);
+      var cS = qualityFindCol_(hdr, ['osv_status']);
+      var cP = qualityFindCol_(hdr, ['poc', 'assigned_user', 'assigned_to', 'owner', 'assignee']);
+      var cI = qualityFindCol_(hdr, ['initiated_date', 'initiation_date', 'sent_for_osv_date']);
+      var cC = qualityFindCol_(hdr, ['completed_date', 'completion_date', 'osv_completion_date']);
+      if (cG < 0 || cS < 0 || cP < 0 || (cI < 0 && cC < 0)) continue;
+      var vals = sh.getRange(1, 1, lastRow, lastCol).getValues();
+      for (var i = 1; i < vals.length; i++) {
+        var g = String(vals[i][cG] || '').trim().toUpperCase();
+        if (!g) continue;
+        var di = cI >= 0 ? parseDate(vals[i][cI]) : null;
+        var dc = cC >= 0 ? parseDate(vals[i][cC]) : null;
+        out[g] = {
+          poc:       cP >= 0 ? String(vals[i][cP] || '').trim().slice(0, 60) : '',
+          initiated: di ? fmtDate(di) : '',
+          completed: dc ? fmtDate(dc) : '',
+        };
+      }
+      Logger.log('OSV tracker tab: "' + sh.getName() + '" — indexed ' + Object.keys(out).length + ' GSTINs');
+      return out;   // first tab matching the signature wins
+    }
+    Logger.log('OSV tracker tab: no tab matched the signature — Assigned User / Last Updated stay blank.');
+  } catch (e) { Logger.log('OSV tracker lookup failed: ' + e.message); }
+  return out;
+}
+
 // 0-based column index → spreadsheet column letter (7 → "H", 13 → "N").
 function colLetter_(i) {
   var s = '', n = i + 1;
@@ -3972,7 +4062,7 @@ function debugVendorScoreSheet() {
   // ── 4. OSV Status column — value distribution ──────────────────
   Logger.log('\n── OSV Status Column: ' + colLetter_(osvC) + ' ──');
   var osvDist = {};
-  var osvVerified = 0, osvPending = 0, osvNone = 0;
+  var osvVerified = 0, osvPending = 0, osvNone = 0, osvStopped = 0;
   d.rows.forEach(function(r) {
     var nm = nmC >= 0 ? String(r[nmC] || '').trim() : '';
     if (!nm) return;
@@ -3981,10 +4071,12 @@ function debugVendorScoreSheet() {
     osvDist[raw || '(blank)'] = (osvDist[raw || '(blank)'] || 0) + 1;
     if (up==='CONSENT_ACCEPTED'||up==='YES'||up==='Y'||up==='TRUE'||up==='DONE'||up==='COMPLETED'||up==='VERIFIED'||up==='POSITIVE') osvVerified++;
     else if (up==='CONSENT_PENDING'||up==='PENDING'||up==='IN_PROGRESS'||up==='INITIATED'||up==='ONGOING'||up==='PROCESSING'||up==='SCHEDULED'||up==='VISIT_SCHEDULED'||up==='PARTIAL') osvPending++;
+    else if (up==='STOPPED'||up==='HALTED'||up==='ON_HOLD'||up==='HOLD'||up==='PAUSED'||up==='SUSPENDED'||up==='ABORTED'||up==='CANCELLED'||up==='CANCELED'||up==='TERMINATED') osvStopped++;
     else osvNone++;
   });
   Logger.log('  Distinct values in sheet: ' + JSON.stringify(osvDist).slice(0, 800));
-  Logger.log('  Classified → Verified: ' + osvVerified + '  In-Progress: ' + osvPending + '  Not-Initiated: ' + osvNone);
+  Logger.log('  Classified → Verified: ' + osvVerified + '  In-Progress: ' + osvPending
+           + '  Stopped: ' + osvStopped + '  Not-Initiated: ' + osvNone);
   Logger.log('  ⚠ Any "Unclassified" values will fall to Not-Initiated — check distinct values above.');
 
   // ── 5. Named row count (total denominator) ─────────────────────
@@ -4314,15 +4406,20 @@ function getOSVDashboardData() {
                          'account_manager','rm','kam','executive','agent']);
       var vsUpd  = vfc_(['last_updated','last_updated_date','last_updated_at','updated_at',
                          'updated_date','modified_at','last_modified','last_modified_date',
-                         'osv_date','osv_updated_date','consent_date','status_date']);
+                         'osv_date','osv_updated_date','consent_date','status_date',
+                         'system_updated','system_rating_updated','osv_completion_date']);
       // New columns: KYC Status / OSV Sent / Third Party / Pre-OSV Score
       var vsKyc      = vfc_(['kyc_status','kyc','kyc_verification_status','kyc_state',
                              'kyc_verification','kyc_completed','kyc_done','kyc_result']);
+      // 'sent_for_osv_date' and 'thirdparty_name' (the hyphen in "Third-Party Name" is
+      // stripped by header normalisation) are what this workbook actually uses; without
+      // them the OSV-sent flag and the third-party column were dead on every row.
       var vsOsvSent  = vfc_(['osv_sent','osv_sent_date','osv_initiation_date','osv_initiated_date',
                              'consent_sent','consent_sent_date','osv_dispatch_date','osv_invite_date',
-                             'osv_invite_sent','verification_sent_date']);
+                             'osv_invite_sent','verification_sent_date','sent_for_osv_date']);
       var vsThirdPty = vfc_(['third_party','third_party_verification','tpv','third_party_status',
-                             '3rd_party','third_party_verified','tpv_status','third_party_check']);
+                             '3rd_party','third_party_verified','tpv_status','third_party_check',
+                             'thirdparty_name','third_party_name']);
       var vsPreScr   = vfc_(['pre_osv_score','score_before_osv','initial_score','baseline_score',
                              'pre_score','score_pre','previous_score','old_score','score_before',
                              'pre_verification_score','pre_audit_score']);
@@ -4342,6 +4439,8 @@ function getOSVDashboardData() {
       var _osvDivScr = _osvDivFor(vsScr);
       // Pre-OSV score lives in its own column and can be on its own scale.
       var _osvDivPre = _osvDivFor(vsPreScr);
+      // Owner + milestone dates come from the tracker tab; the scores tab has neither.
+      var osvTrk = qualityOsvTrackerIndex_(CONFIG.VENDOR_SCORE_SHEET_ID);
 
       vsd.rows.forEach(function(row) {
         var vid = vsId >= 0 ? String(row[vsId] || '').trim() : '';
@@ -4359,22 +4458,31 @@ function getOSVDashboardData() {
            osUp==='SCHEDULED'||osUp==='VISIT_SCHEDULED'||osUp==='PARTIAL')          ? 'in_progress'
         : (osUp==='CONSENT_OBTAINED'||osUp==='CONSENT_RECEIVED'||osUp==='CONSENT_GIVEN'||
            osUp==='CONSENTED'||osUp==='CONSENT_YES')                                 ? 'consent_obtained'
+        : (osUp==='STOPPED'||osUp==='HALTED'||osUp==='ON_HOLD'||osUp==='HOLD'||
+           osUp==='PAUSED'||osUp==='SUSPENDED'||osUp==='ABORTED'||
+           osUp==='CANCELLED'||osUp==='CANCELED'||osUp==='TERMINATED')               ? 'stopped'
         : 'not_initiated';
         var rawDen = vsDen >= 0 ? parseFloat(row[vsDen]) : NaN;
         var rawScr = vsScr >= 0 ? parseFloat(row[vsScr]) : NaN;
         var sv     = !isNaN(rawDen) ? rawDen / _osvDivDen : !isNaN(rawScr) ? rawScr / _osvDivScr : NaN;
         var score  = (!isNaN(sv) && sv >= 0 && sv <= 10) ? Math.round(sv * 10) / 10 : null;
         var cat    = (vsCat >= 0 ? String(row[vsCat] || '').trim() : '') || sel.category || '';
+        var _trk   = osvTrk[sel.gstin] || null;
         var upd    = '';
         if (vsUpd >= 0) { var _pd = parseDate(row[vsUpd]); upd = _pd ? fmtDate(_pd) : ''; }
+        if (!upd && _trk) upd = _trk.completed || _trk.initiated || '';
 
         // KYC Status
         var kycRaw = vsKyc >= 0 ? String(row[vsKyc] || '').trim() : '';
         var kycUp  = kycRaw.toUpperCase().replace(/\s+/g,'_');
+        // RECEIVED counts as pending, not not-started: the document has arrived but has
+        // not been verified yet. NOT_RECEIVED is an exact-match miss here and correctly
+        // falls through to not_started.
         var kycSt  = (kycUp==='COMPLETED'||kycUp==='DONE'||kycUp==='YES'||kycUp==='Y'||
                       kycUp==='TRUE'||kycUp==='VERIFIED'||kycUp==='APPROVED') ? 'completed'
                    : (kycUp==='PENDING'||kycUp==='IN_PROGRESS'||kycUp==='PROCESSING'||
-                      kycUp==='ONGOING'||kycUp==='INITIATED'||kycUp==='UNDER_REVIEW') ? 'pending'
+                      kycUp==='ONGOING'||kycUp==='INITIATED'||kycUp==='UNDER_REVIEW'||
+                      kycUp==='RECEIVED') ? 'pending'
                    : (kycRaw ? 'not_started' : '');
 
         // OSV Sent — treat any non-empty date/flag as sent
@@ -4400,7 +4508,10 @@ function getOSVDashboardData() {
           name: sel.name || nm.slice(0, 60), id: sel.id || vid,
           osvStatus: osvSt, score: score, preScore: preScore,
           category: cat,
-          assignedTo: vsAsg >= 0 ? String(row[vsAsg] || '').trim().slice(0, 60) : '',
+          assignedTo: (function() {
+            if (vsAsg >= 0) { var a = String(row[vsAsg] || '').trim(); if (a) return a.slice(0, 60); }
+            return _trk && _trk.poc ? _trk.poc : '';
+          }()),
           updatedDate: upd, osvSentDate: osvSentDate, hasTransaction: sel.hasTransaction,
           kycStatus: kycSt, osvSent: osvSent, thirdParty: thirdParty
         });
@@ -4419,7 +4530,11 @@ function getOSVDashboardData() {
     if (r.osvStatus === 'verified') {
       consentCnt++; initCnt++; cmpCnt++; inPipeline[r.id] = true;
       if (r.score !== null) scoreCnt++;
-    } else if (r.osvStatus === 'in_progress') {
+    } else if (r.osvStatus === 'in_progress' || r.osvStatus === 'stopped') {
+      // A stopped verification was consented to and initiated before it was halted, so
+      // it belongs in the funnel up to Initiated — just never reaches Completed. Leaving
+      // it out entirely would drop it from both the funnel and the not-initiated count,
+      // and the stage totals would no longer reconcile against the vendor count.
       consentCnt++; initCnt++; inPipeline[r.id] = true;
     } else if (r.osvStatus === 'consent_obtained') {
       consentCnt++; inPipeline[r.id] = true;
@@ -4446,6 +4561,7 @@ function getOSVDashboardData() {
     if (s.hasTransaction && !inScoreSheet[s.id]) eniCnt++;
   });
   var inProgCnt  = osvRecords.filter(function(r) { return r.osvStatus === 'in_progress'; }).length;
+  var stoppedCnt = osvRecords.filter(function(r) { return r.osvStatus === 'stopped'; }).length;
   var notEligCnt = Math.max(0, onbCount - txnCount);
 
   // ── 5. Score distribution by material ───────────────────────
@@ -4567,14 +4683,15 @@ function getOSVDashboardData() {
 
   // Transacted sellers with OSV data
   var txnAndInitiated = {
-    total: 0, withOsv: 0, verified: 0, inProgress: 0, notInitiated: 0
+    total: 0, withOsv: 0, verified: 0, inProgress: 0, stopped: 0, notInitiated: 0
   };
   fullSellerList.forEach(function(s) {
     if (!s.hasTransaction) return;
     txnAndInitiated.total++;
-    if (s.osvStatus === 'verified')      txnAndInitiated.verified++;
+    if (s.osvStatus === 'verified')         txnAndInitiated.verified++;
     else if (s.osvStatus === 'in_progress') txnAndInitiated.inProgress++;
-    else                                 txnAndInitiated.notInitiated++;
+    else if (s.osvStatus === 'stopped')     txnAndInitiated.stopped++;
+    else                                    txnAndInitiated.notInitiated++;
     if (s.osvStatus !== 'not_initiated') txnAndInitiated.withOsv++;
   });
 
@@ -4644,7 +4761,8 @@ function getOSVDashboardData() {
     },
     statusDist: {
       notEligible: notEligCnt, eligibleNotInitiated: eniCnt,
-      inProgress:  inProgCnt,  completed: cmpCnt, total: onbCount
+      inProgress:  inProgCnt,  stopped: stoppedCnt,
+      completed:   cmpCnt,     total: onbCount
     },
     postOSV: {
       avgScore: avgScore, scoredSellers: scoredSellers,

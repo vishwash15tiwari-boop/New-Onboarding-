@@ -2077,7 +2077,8 @@ body.view-gst #vert-tabs-bar{display:none}
 .osv-sect-hd{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-3);margin-bottom:14px;flex-wrap:wrap}
 .osv-sect-title{font-size:13.5px;font-weight:750;color:var(--txt);display:flex;align-items:center;gap:7px}
 .osv-sect-sub{font-size:11px;color:var(--txt3)}
-.osv-status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-3)}
+.osv-status-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-3)}
+@media(max-width:1100px){.osv-status-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:520px){.osv-status-grid{grid-template-columns:repeat(2,1fr)}}
 .osv-sc{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:3px;cursor:pointer;transition:box-shadow .15s,transform .12s}
 .osv-sc:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-1px)}
@@ -2091,6 +2092,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .osv-sc.sc-blue    .osv-sc-ic{background:#E3F3EA}.osv-sc.sc-blue    .osv-sc-ic svg{color:#0A4430}.osv-sc.sc-blue    .osv-sc-n{color:#0A4430}.osv-sc.sc-blue    .osv-sc-pct{background:#E3F3EA;color:#0A4430}
 .osv-sc.sc-amber   .osv-sc-ic{background:#FFF4E5}.osv-sc.sc-amber   .osv-sc-ic svg{color:#B25000}.osv-sc.sc-amber   .osv-sc-n{color:#B25000}.osv-sc.sc-amber   .osv-sc-pct{background:#FFF4E5;color:#B25000}
 .osv-sc.sc-green   .osv-sc-ic{background:#E3F8F1}.osv-sc.sc-green   .osv-sc-ic svg{color:#049769}.osv-sc.sc-green   .osv-sc-n{color:#049769}.osv-sc.sc-green   .osv-sc-pct{background:#E3F8F1;color:#049769}
+.osv-sc.sc-red     .osv-sc-ic{background:var(--st-rejected-bg)}.osv-sc.sc-red     .osv-sc-ic svg{color:var(--st-rejected-tx)}.osv-sc.sc-red     .osv-sc-n{color:var(--st-rejected-tx)}.osv-sc.sc-red     .osv-sc-pct{background:var(--st-rejected-bg);color:var(--st-rejected-tx)}
 /* Post-OSV Score panel */
 .osv-score-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:var(--sp-4)}
 .osv-score-main{display:flex;align-items:center;gap:16px}
@@ -2160,6 +2162,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .osv-st-badge.b-in_progress{background:#FFF4E5;color:#B25000}
 .osv-st-badge.b-consent_obtained{background:#E3F3EA;color:#0A4430}
 .osv-st-badge.b-not_initiated{background:#f3f4f6;color:#6E6E73}
+.osv-st-badge.b-stopped{background:var(--st-rejected-bg);color:var(--st-rejected-tx)}
 .osv-st-badge.b-eligible{background:#E3F3EA;color:#8460D4}
 .osv-st-badge.b-not_eligible{background:#f3f4f6;color:#6E6E73}
 /* ── Vertical context hero — lives inside the hero row ── */
@@ -5834,8 +5837,11 @@ var _snTatInlineCat    = 'All';
 var _snTatInlineType   = 'All';
 
 // status key → display label, used by the table, filters and export alike
-var OSV_LABELS = { verified:'Done', in_progress:'In Progress', not_initiated:'Not Initiated' };
-var OSV_ORDER  = ['verified', 'in_progress', 'not_initiated'];
+// 'stopped' is a real value in the Vendor Score sheet (OSV Status = "Stopped"): a
+// verification that was started and then halted. It is kept distinct from
+// not-initiated, which never began.
+var OSV_LABELS = { verified:'Done', in_progress:'In Progress', stopped:'Stopped', not_initiated:'Not Initiated' };
+var OSV_ORDER  = ['verified', 'in_progress', 'stopped', 'not_initiated'];
 
 var MR_MOD_CFG = {
   onboarded:  { label:'Onboarded (Details)',      preStatus:'COMPLETED' },
@@ -6940,11 +6946,13 @@ function _mmVertModules(key) {
 
   // 6 — OSV Status (OMP quality feed — inline panel)
   if (q && q.osv && q.osv.total) {
-    // Three-way consent split: Done (accepted) · In Progress (pending/mid-verification)
-    // · Not Initiated (never started). The server classifies each vendor; showing all
-    // three means the tiles reconcile to the onboarded total.
+    // Consent split: Done (accepted) · In Progress (pending/mid-verification) · Stopped
+    // (started then halted, shown only when the feed reports any) · Not Initiated (never
+    // started). The server classifies each vendor, and every state is shown so the tiles
+    // reconcile to the onboarded total.
     var osvVer   = q.osv.completed    || 0;
     var osvIP    = q.osv.pending      || 0;
+    var osvStop  = q.osv.stopped      || 0;
     var osvNI    = q.osv.notInitiated || 0;
     var osvOTot  = q.osv.total        || 0;
     var osvPctV  = osvOTot > 0 ? Math.round(osvVer / osvOTot * 100) : 0;
@@ -6964,17 +6972,20 @@ function _mmVertModules(key) {
     // Transaction-gated lifecycle numbers
     var ompOnboarded  = vs.completed || 0;   // total OMP sellers with COMPLETED status
     var notInSheet    = Math.max(0, ompOnboarded - osvOTot);
-    var consentStart  = osvIP + osvVer;
+    // A stopped verification was consented to and started before it was halted, so it
+    // counts toward Consent Started — matching the OSV screen's funnel.
+    var consentStart  = osvIP + osvVer + osvStop;
     var lifePct       = function(n) { return ompOnboarded > 0 ? Math.round(n / ompOnboarded * 100) : 0; };
-    // Segmented progress bar (Completed/In-Progress/Not-Initiated)
-    var osvBarH = (osvVer + osvIP + osvNI > 0)
+    // Segmented progress bar (Completed/In-Progress/Stopped/Not-Initiated)
+    var osvBarH = (osvVer + osvIP + osvStop + osvNI > 0)
       ? '<div class="km-prog">'
-        + (osvVer ? '<div class="km-prog-seg" style="flex:' + osvVer + ';background:#049769"></div>' : '')
-        + (osvIP  ? '<div class="km-prog-seg" style="flex:' + osvIP  + ';background:#FF9500"></div>' : '')
-        + (osvNI  ? '<div class="km-prog-seg" style="flex:' + osvNI  + ';background:#8460D4"></div>' : '')
+        + (osvVer  ? '<div class="km-prog-seg" style="flex:' + osvVer  + ';background:#049769"></div>' : '')
+        + (osvIP   ? '<div class="km-prog-seg" style="flex:' + osvIP   + ';background:#FF9500"></div>' : '')
+        + (osvStop ? '<div class="km-prog-seg" style="flex:' + osvStop + ';background:#D70015"></div>' : '')
+        + (osvNI   ? '<div class="km-prog-seg" style="flex:' + osvNI   + ';background:#8460D4"></div>' : '')
         + '</div>' : '';
     // Build OSV extra section — cached so repeated tree rebuilds skip the string work
-    var _oCKey = 'o2:' + osvVer + ':' + osvIP + ':' + osvNI + ':' + osvOTot + ':' + ompOnboarded;
+    var _oCKey = 'o2:' + osvVer + ':' + osvIP + ':' + osvStop + ':' + osvNI + ':' + osvOTot + ':' + ompOnboarded;
     var osvExtra;
     if (_mmExtraCache.hasOwnProperty(_oCKey)) {
       osvExtra = _mmExtraCache[_oCKey];
@@ -6994,9 +7005,12 @@ function _mmVertModules(key) {
         + lifeStep('Consent Started', consentStart, lifePct(consentStart), '#FF9500', false)
         + lifeStep('Completed', osvVer, lifePct(osvVer), '#049769', true)
         + '</div>';
-      var statusGrid = '<div class="km-sg" style="grid-template-columns:repeat(3,1fr);margin-top:8px">'
+      var statusGrid = '<div class="km-sg" style="grid-template-columns:repeat(' + (osvStop > 0 ? 4 : 3) + ',1fr);margin-top:8px">'
         + mkOsvTile('verified',      osvVer, '#049769', 'Completed')
         + mkOsvTile('in_progress',   osvIP,  '#FF9500', 'In Progress')
+        // Only shown when the sheet actually reports halted verifications, so the tile
+        // row does not carry a permanent zero for feeds that never use the status.
+        + (osvStop > 0 ? mkOsvTile('stopped', osvStop, '#D70015', 'Stopped') : '')
         + mkOsvTile('not_initiated', osvNI,  '#8460D4', 'Not Initiated')
         + '</div>';
       osvExtra = '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
@@ -9642,9 +9656,10 @@ function openKpiModal(cardId) {
         if (sp.mode === 'osv') {
           var isV  = v.status === 'verified';
           var isIP = v.status === 'in_progress';
-          var cBg  = isV ? 'rgba(29,199,151,.15)' : isIP ? 'rgba(255,149,0,.15)' : 'var(--bg2)';
-          var cClr = isV ? '#049769'             : isIP ? '#B25000'              : 'var(--txt3)';
-          var cLbl = v.consentRaw ? esc(v.consentRaw) : (isV ? 'Yes' : isIP ? 'Pending' : 'No / Blank');
+          var isST = v.status === 'stopped';
+          var cBg  = isV ? 'rgba(29,199,151,.15)' : isIP ? 'rgba(255,149,0,.15)' : isST ? 'var(--st-rejected-bg)' : 'var(--bg2)';
+          var cClr = isV ? '#049769'             : isIP ? '#B25000'              : isST ? 'var(--st-rejected-tx)' : 'var(--txt3)';
+          var cLbl = v.consentRaw ? esc(v.consentRaw) : (isV ? 'Yes' : isIP ? 'Pending' : isST ? 'Stopped' : 'No / Blank');
           return '<div class="km-vrow" style="flex-wrap:wrap;gap:3px 6px;align-items:center">'
             + '<span class="km-vname" style="min-width:100px">' + esc(v.name || 'Unknown') + '</span>'
             + (v.gstin ? '<span class="km-vaud">' + esc(v.gstin) + '</span>' : '')
@@ -10063,12 +10078,14 @@ function openKpiModal(cardId) {
               progBar([
                 {w: o.completed    || 0, color: '#049769'},
                 {w: o.pending      || 0, color: '#FF9500'},
+                {w: o.stopped      || 0, color: '#D70015'},
                 {w: o.notInitiated || 0, color: '#8460D4'},
               ])
               + (function() {
                   return expandTileGrid([
                     {v: fmt(o.completed    || 0), l: 'Completed',     c: '#049769',      vendors: vl.filter(function(v){return v.status==='verified';}),      mode:'osv'},
                     {v: fmt(o.pending      || 0), l: 'In Progress',   c: '#FF9500',      vendors: vl.filter(function(v){return v.status==='in_progress';}),   mode:'osv'},
+                    {v: fmt(o.stopped      || 0), l: 'Stopped',       c: '#D70015',      vendors: vl.filter(function(v){return v.status==='stopped';}),       mode:'osv'},
                     {v: fmt(o.notInitiated || 0), l: 'Not Initiated', c: '#8460D4',      vendors: vl.filter(function(v){return v.status==='not_initiated';}), mode:'osv'},
                   ]);
                 })()
@@ -13853,7 +13870,7 @@ document.addEventListener('keydown', function(e) {
 // OSV records — a record-level table of every OMP-onboarded seller and its OSV
 // state, sourced from the quality feed rather than the vertical's onboarding rows.
 // `status` optionally pre-filters to one bucket ('verified' | 'in_progress' |
-// 'not_initiated'), which is what the Done / In Progress / Not Initiated tiles pass.
+// 'stopped' | 'not_initiated') — whatever the tiles pass; any key in OSV_LABELS works.
 function openOsvRecords(status) {
   var rows = (qualityData && qualityData.vendorOSV) || [];
   var key = activeVertKey || selectedVert;
@@ -14256,6 +14273,7 @@ document.addEventListener('keydown', function(e) {
 function _osvChip(status) {
   var c = status === 'verified'    ? { bg:'rgba(29,199,151,.15)',  fg:'#049769' }
         : status === 'in_progress' ? { bg:'rgba(255,149,0,.15)', fg:'#B25000' }
+        : status === 'stopped'     ? { bg:'var(--st-rejected-bg)', fg:'var(--st-rejected-tx)' }
         :                            { bg:'var(--bg2)',           fg:'var(--txt3)' };
   return '<span class="km-vbadge" style="background:' + c.bg + ';color:' + c.fg + ';font-weight:600">'
     + esc(OSV_LABELS[status] || status || '—') + '</span>';
@@ -15577,12 +15595,14 @@ function _osvStLabel(s) {
   return s === 'verified' ? 'OSV Completed'
        : s === 'in_progress' ? 'In Progress'
        : s === 'consent_obtained' ? 'Consent Obtained'
+       : s === 'stopped' ? 'Stopped'
        : 'Not Initiated';
 }
 function _osvBadgeCls(s) {
   return s === 'verified' ? 'b-verified'
        : s === 'in_progress' ? 'b-in_progress'
        : s === 'consent_obtained' ? 'b-consent_obtained'
+       : s === 'stopped' ? 'b-stopped'
        : 'b-not_initiated';
 }
 
@@ -15706,6 +15726,7 @@ function renderOSVDash() {
     { cls:'sc-neutral', ic:_osvIcBan,     n:sd.notEligible||0,          lbl:'Not Eligible',            def:'No completed transaction',                        filter:'notEligible' },
     { cls:'sc-blue',    ic:_osvIcClock,   n:sd.eligibleNotInitiated||0,  lbl:'Eligible - Not Initiated',def:'Completed transaction but OSV not started',        filter:'eligibleNotInitiated' },
     { cls:'sc-amber',   ic:_osvIcShield,  n:sd.inProgress||0,            lbl:'In Progress',             def:'OSV initiated and under verification',             filter:'inProgress' },
+    { cls:'sc-red',     ic:_osvIcBan,     n:sd.stopped||0,               lbl:'Stopped',                 def:'OSV was initiated and then halted',                filter:'stopped' },
     { cls:'sc-green',   ic:_osvIcCheck,   n:sd.completed||0,             lbl:'Completed',               def:'OSV completed',                                    filter:'completed' }
   ];
   var statusHtml = '<div class="osv-status-grid">'
@@ -16005,8 +16026,11 @@ function _osvOpenJourneyFilter(key) {
   var titles = {
     completedTxn:      { title: 'Completed Transaction',       sub: 'Sellers with at least one qualifying transaction',     fn: function(r){ return r.hasTransaction; } },
     eligible:          { title: 'OSV Eligible',                sub: 'Sellers eligible to initiate OSV',                     fn: function(r){ return r.hasTransaction; } },
-    consentObtained:   { title: 'Consent Obtained',            sub: 'Sellers who have given OSV consent',                   fn: function(r){ return r.osvStatus==='verified'||r.osvStatus==='in_progress'||r.osvStatus==='consent_obtained'; } },
-    initiated:         { title: 'OSV Initiated',               sub: 'Sellers with active OSV verification',                 fn: function(r){ return r.osvStatus==='verified'||r.osvStatus==='in_progress'; } },
+    // 'stopped' is included in both: the backend funnel counts a halted verification as
+    // consented and initiated (it reached those stages before being stopped), so these
+    // lists must match or the drill-down would not reconcile with the stage number.
+    consentObtained:   { title: 'Consent Obtained',            sub: 'Sellers who have given OSV consent',                   fn: function(r){ return r.osvStatus==='verified'||r.osvStatus==='in_progress'||r.osvStatus==='consent_obtained'||r.osvStatus==='stopped'; } },
+    initiated:         { title: 'OSV Initiated',               sub: 'Sellers with active OSV verification',                 fn: function(r){ return r.osvStatus==='verified'||r.osvStatus==='in_progress'||r.osvStatus==='stopped'; } },
     completed:         { title: 'OSV Completed',               sub: 'Sellers who have completed OSV',                       fn: function(r){ return r.osvStatus==='verified'; } },
     scoreUpdated:      { title: 'Post-OSV Score Updated',      sub: 'Sellers with post-OSV scores generated',               fn: function(r){ return r.osvStatus==='verified'&&r.score!==null; } }
   };
@@ -16022,6 +16046,7 @@ function _osvOpenStatusFilter(key) {
     notEligible:          { title: 'Not Eligible',              sub: 'Sellers with no completed qualifying transaction',     fn: function(r){ return !r.hasTransaction; } },
     eligibleNotInitiated: { title: 'Eligible - Not Initiated',  sub: 'Sellers with transactions who have not started OSV',  fn: function(r){ return r.hasTransaction&&(r.osvStatus==='not_initiated'||!r.osvStatus); } },
     inProgress:           { title: 'In Progress',               sub: 'Sellers with active OSV verification',                fn: function(r){ return r.osvStatus==='in_progress'; } },
+    stopped:              { title: 'Stopped',                   sub: 'Sellers whose OSV was initiated and then halted',     fn: function(r){ return r.osvStatus==='stopped'; } },
     completed:            { title: 'OSV Completed',             sub: 'Sellers who have completed OSV',                      fn: function(r){ return r.osvStatus==='verified'; } },
     scoredSellers:        { title: 'Scored Sellers',            sub: 'Sellers with post-OSV scores',                        fn: function(r){ return r.osvStatus==='verified'&&r.score!==null; } },
     pendingScore:         { title: 'Pending Score',             sub: 'Completed OSVs awaiting score generation',            fn: function(r){ return r.osvStatus==='verified'&&(r.score===null||r.score===undefined); } },
@@ -18182,6 +18207,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .lc-osv-pill.acc{color:var(--lc-accent);background:var(--lc-accent-weak)}
 .lc .lc-osv-pill.flat{color:var(--lc-text2);background:var(--lc-subtle)}
 .lc .lc-osv-pill.muted{color:var(--lc-text3);background:var(--lc-subtle);border:1px solid var(--lc-border)}
+.lc .lc-osv-pill.stop{color:var(--st-rejected-tx);background:var(--st-rejected-bg)}
 
 /* ---- post-OSV score distribution by material (grouped bars) ------------ */
 .lc .lc-osv-sd{display:flex;flex-direction:column;gap:12px}
@@ -18299,9 +18325,11 @@ document.addEventListener('DOMContentLoaded', function() {
    * ===================================================================== */
   function statusRank(r) {
     switch (r.osvStatus) {
-      case 'verified':         return 4;
-      case 'in_progress':      return 3;
-      case 'consent_obtained': return 2;
+      case 'verified':         return 5;
+      case 'in_progress':      return 4;
+      case 'consent_obtained': return 3;
+      // Started then halted: further along than never-started, but no longer advancing.
+      case 'stopped':          return 2;
       default:                 return r.hasTransaction ? 1 : 0; /* not_initiated */
     }
   }
@@ -18312,6 +18340,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (r.osvStatus === 'verified')         return { lbl: 'OSV Completed',    cls: 'ok' };
     if (r.osvStatus === 'in_progress')      return { lbl: 'In Progress',      cls: 'warn' };
     if (r.osvStatus === 'consent_obtained') return { lbl: 'Consent Obtained', cls: 'acc' };
+    if (r.osvStatus === 'stopped')          return { lbl: 'Stopped',          cls: 'stop' };
     return r.hasTransaction
       ? { lbl: 'Eligible · Not Started', cls: 'flat' }
       : { lbl: 'Not Eligible',           cls: 'muted' };
@@ -18323,12 +18352,13 @@ document.addEventListener('DOMContentLoaded', function() {
     return '<span class="lc-osv-muted">—</span>';
   }
   /* Table filter buckets — every seller is reachable (consent folded into
-     "In Progress") so no row is ever orphaned by the filter. */
+     "In Progress", stopped given its own bucket) so no row is ever orphaned. */
   function passFilter(r, f) {
     switch (f) {
       case 'all':                  return true;
       case 'completed':            return r.osvStatus === 'verified';
       case 'inProgress':           return r.osvStatus === 'in_progress' || r.osvStatus === 'consent_obtained';
+      case 'stopped':              return r.osvStatus === 'stopped';
       case 'eligibleNotInitiated': return !!r.hasTransaction && (r.osvStatus === 'not_initiated' || !r.osvStatus);
       case 'notEligible':          return !r.hasTransaction;
       default:                     return true;
@@ -18409,6 +18439,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var segs = [
       ['all', 'All'], ['completed', 'Completed'], ['inProgress', 'In Progress'],
+      ['stopped', 'Stopped'],
       ['eligibleNotInitiated', 'Eligible · Not Started'], ['notEligible', 'Not Eligible']
     ];
     var seg = '<div class="lc-seg" role="group" aria-label="Filter sellers by OSV status" style="flex-wrap:wrap">'
@@ -20446,18 +20477,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  function osvLabel(s){if(s==='verified')return 'Completed';if(s==='in_progress'||s==='consent_obtained')return 'In Progress';return 'Not Initiated';}
+  function osvLabel(s){if(s==='verified')return 'Completed';if(s==='in_progress'||s==='consent_obtained')return 'In Progress';if(s==='stopped')return 'Stopped';return 'Not Initiated';}
 
+  // Mirrors the backend funnel: a stopped verification reached Consent and Initiated
+  // before it was halted, so it counts toward both but never toward Completed.
   function computeJourney(sl){
-    var comp=0,inprog=0,consent=0,notinit=0,scored=0,elig=0;
+    var comp=0,inprog=0,consent=0,stopped=0,notinit=0,scored=0,elig=0;
     sl.forEach(function(s){
       if(!s.hasTransaction)return;elig++;
       if(s.osvStatus==='verified'){comp++;if(s.score!==null)scored++;}
       else if(s.osvStatus==='in_progress')inprog++;
       else if(s.osvStatus==='consent_obtained')consent++;
+      else if(s.osvStatus==='stopped')stopped++;
       else notinit++;
     });
-    return{onboarded:sl.length,eligible:elig,consentObtained:consent+inprog+comp,initiated:inprog+comp,completed:comp,scoreUpdated:scored};
+    return{onboarded:sl.length,eligible:elig,consentObtained:consent+inprog+comp+stopped,initiated:inprog+comp+stopped,completed:comp,scoreUpdated:scored};
   }
 
   function deriveTrend(sl,n){
@@ -20698,7 +20732,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // so they are only usable when no period is applied.
     var useAll=osvRange()===null;
     var dispJn=useAll?jn:computeJourney(psl);
-    var dispSd=useAll?sd:{inProgress:psl.filter(function(s){return s.osvStatus==='in_progress';}).length,eligibleNotInitiated:psl.filter(function(s){return s.hasTransaction&&(s.osvStatus==='not_initiated'||!s.osvStatus);}).length,completed:dispJn.completed,total:psl.length};
+    var dispSd=useAll?sd:{inProgress:psl.filter(function(s){return s.osvStatus==='in_progress';}).length,stopped:psl.filter(function(s){return s.osvStatus==='stopped';}).length,eligibleNotInitiated:psl.filter(function(s){return s.hasTransaction&&(s.osvStatus==='not_initiated'||!s.osvStatus);}).length,completed:dispJn.completed,total:psl.length};
     var dispPo=useAll?po:{avgScore:po.avgScore,scoredSellers:dispJn.scoreUpdated,pendingScore:null,coverage:dispJn.completed>0?pct(dispJn.scoreUpdated,dispJn.completed):0,scoreImprovement:po.scoreImprovement};
     var fsl=psl.slice();
     if(_osvCat)fsl=fsl.filter(function(r){return r.category===_osvCat;});
