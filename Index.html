@@ -781,6 +781,11 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .vd-filters .vd-search:hover{background:rgba(120,120,128,.18)}
 .vd-filters .vd-search:focus{background:var(--card);box-shadow:var(--ring)}
 #top-custom{align-items:center;gap:var(--sp-2)}
+/* Custom-range date pair. Every period surface (main header, Global Overview,
+   Vertical Overview) mounts its own .cr-box; they are shown, read and synced
+   together so the control reads the same wherever you opened it from. */
+.cr-box{align-items:center;gap:var(--sp-2)}
+.cr-box input[type=date]{min-width:132px}
 .vd-note{font-size:11.5px;color:var(--txt2);margin-top:10px}
 
 /* ── Detail records view toggle (Board / Table) ── */
@@ -4638,9 +4643,9 @@ body.view-ov #ov-screen{display:block}
       <select class="filter-select" id="top-period" onchange="onPeriodSelect(this.value)">
         <option value="All">All Time</option>
       </select>
-      <span id="top-custom" style="display:none">
-        <input type="date" class="filter-select" id="top-start" onchange="onCustomDates()">
-        <input type="date" class="filter-select" id="top-end" onchange="onCustomDates()">
+      <span id="top-custom" class="cr-box" style="display:none">
+        <input type="date" class="filter-select cr-start" id="top-start" onchange="onCustomDates(this)">
+        <input type="date" class="filter-select cr-end" id="top-end" onchange="onCustomDates(this)">
       </span>
     </span>
 
@@ -5405,21 +5410,41 @@ function renderPeriodControl() {
   }).join('');
   sel.value = currentPeriod;
   if (!sel.value) { sel.value = 'All'; currentPeriod = 'All'; }
-  var cu = document.getElementById('top-custom');
-  if (cu) cu.style.display = currentPeriod === 'Custom' ? 'inline-flex' : 'none';
-  var st = document.getElementById('top-start');
-  var en = document.getElementById('top-end');
-  if (st) st.value = customStart;
-  if (en) en.value = customEnd;
+  _crToggle();
+  _crSyncAll();
+}
+
+// ── Custom range, shared across every period surface ──────────────────────
+// The main header, the Global Overview and the Vertical Overview each mount
+// their own .cr-box date pair. These three helpers keep them interchangeable:
+// whichever one is on screen shows, reads and writes the same customStart /
+// customEnd, so picking a range never depends on which surface you used.
+
+function _crToggle() {
+  var on = currentPeriod === 'Custom';
+  document.querySelectorAll('.cr-box').forEach(function(b) {
+    b.style.display = on ? 'inline-flex' : 'none';
+  });
+}
+
+function _crSyncAll() {
+  document.querySelectorAll('.cr-start').forEach(function(i) { i.value = customStart; });
+  document.querySelectorAll('.cr-end').forEach(function(i) { i.value = customEnd; });
 }
 
 function onPeriodSelect(val) {
   currentPeriod = val;
   renderQFChips();     // immediate visual feedback (main chips)
   renderOvQFChips();   // keep overview chips in sync
-  if (val === 'Custom') { renderPeriodControl(); return; }   // wait for both dates
+  _crToggle();         // reveal / hide the date pair on every mounted surface
+  // Custom waits for both dates before it can filter anything — reveal the
+  // inputs and stop here. Previously this called renderPeriodControl(), which
+  // bails out when the main header is not on screen, so choosing Custom Range
+  // from either Overview did nothing at all.
+  if (val === 'Custom') { _crSyncAll(); return; }
   customStart = '';
   customEnd   = '';
+  _crSyncAll();
   _prefetchedAuds = {};  // period changed — re-prefetch other audience with new period
   // Invalidate the render-dedup hash so the response for the new period always
   // triggers a full re-render, even if lastUpdated happens to match the prior call.
@@ -5430,12 +5455,28 @@ function onPeriodSelect(val) {
   if (currentView === 'transactions') { renderTransactionSkeleton(); loadTransactionData(); }
 }
 
-function onCustomDates() {
-  var st = document.getElementById('top-start');
-  var en = document.getElementById('top-end');
-  customStart = st ? st.value : '';
-  customEnd   = en ? en.value : '';
-  if (customStart && customEnd) { _lastDashHash['combined'] = null; _TXN = null; _TXN_MOD = null; loadData(); }
+// `src` is the input that changed, so the values come from the pair the user
+// actually touched rather than from the main header, which may not be mounted.
+function onCustomDates(src) {
+  var box = src && src.closest ? src.closest('.cr-box') : null;
+  if (!box) box = document.querySelector('.cr-box');
+  if (box) {
+    var st = box.querySelector('.cr-start'), en = box.querySelector('.cr-end');
+    customStart = st ? st.value : '';
+    customEnd   = en ? en.value : '';
+  }
+  _crSyncAll();          // mirror onto the other surfaces
+  if (!(customStart && customEnd)) return;
+  // Guard against a reversed range — swap rather than silently returning nothing.
+  if (customStart > customEnd) { var t = customStart; customStart = customEnd; customEnd = t; _crSyncAll(); }
+  currentPeriod = 'Custom';
+  _prefetchedAuds = {};
+  _lastDashHash['combined'] = null;
+  _TXN = null; _TXN_MOD = null;
+  loadData();
+  // Match onPeriodSelect: the module views do not re-render off loadData().
+  if (currentView === 'txndist') renderTxnDist();
+  if (currentView === 'transactions') { renderTransactionSkeleton(); loadTransactionData(); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -16846,13 +16887,21 @@ function renderOvQFChips() {
   document.querySelectorAll('.ov-period-sel').forEach(function(sel) {
     sel.value = currentPeriod;
   });
+  // A period row can mount while Custom is already the active period, so the
+  // date pair has to be revealed and filled on arrival, not only on selection.
+  _crToggle();
+  _crSyncAll();
 }
 
 // Shared period-control markup for both Overview levels. `idPrefix` keeps the
 // two mounts' ids distinct; the classes drive styling and syncing.
 function _ovPeriodRowHtml(idPrefix) {
+  // data-fy marks these as the generated FY block. renderOvScreen() below tops
+  // the list up once the fiscal years arrive, and uses that marker to tell
+  // whether it has already done so — without it the whole list was appended a
+  // second time and every FY appeared twice.
   var fyOpts = ((D && D.fiscalYears) || []).map(function(fy) {
-    return '<option value="' + fy + '">' + fy + '</option>';
+    return '<option value="' + fy + '" data-fy="1">' + fy + '</option>';
   }).join('');
   return '<div class="qf-chips ov-qf-chips" id="' + idPrefix + '-qf-chips" style="background:var(--seg-track)">'
     + '<button class="qf-chip" data-qf="Today" onclick="onPeriodSelect(\'Today\')">Today</button>'
@@ -16867,7 +16916,13 @@ function _ovPeriodRowHtml(idPrefix) {
     + '<option value="YTD">YTD</option>'
     + fyOpts
     + '<option value="Custom">Custom Range</option>'
-    + '</select>';
+    + '</select>'
+    // Custom Range needs somewhere to enter the dates on this surface too;
+    // without it the option selected but nothing ever appeared to fill in.
+    + '<span class="cr-box" id="' + idPrefix + '-custom" style="display:none">'
+    +   '<input type="date" class="filter-select cr-start" aria-label="Start date" onchange="onCustomDates(this)">'
+    +   '<input type="date" class="filter-select cr-end" aria-label="End date" onchange="onCustomDates(this)">'
+    + '</span>';
 }
 
 // Master render function — called on DOMContentLoaded and after every loadData().
