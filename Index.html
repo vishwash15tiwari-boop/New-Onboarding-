@@ -3701,10 +3701,16 @@ body.mm-sn-drill{overflow:hidden}
 #mm-geo .gs-search svg{width:13px;height:13px;color:var(--txt3);flex-shrink:0}
 #mm-geo .gs-exp{display:flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--txt2);font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
 #mm-geo .gs-exp:hover{background:var(--border)}
-#mm-geo .gs-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
-#mm-geo .gs-tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--txt3);text-align:left;padding:6px 7px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
-#mm-geo .gs-tbl th.num,#mm-geo .gs-tbl td.num{text-align:right}
-#mm-geo .gs-tbl td{padding:7px;border-bottom:1px solid var(--bg2);color:var(--txt);white-space:nowrap;font-variant-numeric:tabular-nums}
+#mm-geo .gs-tblwrap{overflow-x:auto}
+#mm-geo .gs-tbl{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:fixed}
+#mm-geo .gs-tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--txt3);text-align:left;padding:6px 5px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+#mm-geo .gs-tbl th.num,#mm-geo .gs-tbl td.num{text-align:right;width:58px}
+#mm-geo .gs-tbl td{padding:7px 5px;border-bottom:1px solid var(--bg2);color:var(--txt);white-space:nowrap;font-variant-numeric:tabular-nums}
+/* The state name is the only elastic column: it takes whatever the fixed
+   numeric columns leave and ellipses, so a long name can never widen the
+   table past the card the way it used to. */
+#mm-geo .gs-tbl td.gs-st{overflow:hidden;text-overflow:ellipsis}
+#mm-geo .gs-tbl td.gs-st span{overflow:hidden;text-overflow:ellipsis}
 #mm-geo .gs-tbl tbody tr:last-child td{border-bottom:0}
 #mm-geo .gs-tbl tbody tr{cursor:pointer}
 #mm-geo .gs-tbl tbody tr:hover td{background:var(--bg2)}
@@ -8408,11 +8414,15 @@ function _gsTable(by) {
   var body = slice.length ? slice.map(function (r, i) {
     return '<tr class="' + (_geo.state === r.id ? 'sel' : '') + '" onclick="mmGeoStateClick(\'' + r.id + '\',event)">'
       + '<td style="color:var(--txt3)">' + ((_gsPage - 1) * GS_PSIZE + i + 1) + '</td>'
-      + '<td><i class="gs-rdot" style="background:' + (r.region === 'South' ? GS_SOUTH : GS_NORTH) + '"></i>' + esc(r.name) + '</td>'
+      // The dot already carries the region (gold North, green South), so the
+      // separate Region column repeated it while being the widest thing in the
+      // table — it pushed Total past the card edge with no way to scroll to it.
+      + '<td class="gs-st" title="' + esc(r.name) + ' · ' + esc(r.region) + '">'
+      +   '<i class="gs-rdot" style="background:' + (r.region === 'South' ? GS_SOUTH : GS_NORTH) + '"></i>'
+      +   '<span>' + esc(r.name) + '</span></td>'
       + '<td class="num">' + fmt(r.seller) + '</td><td class="num">' + fmt(r.buyer) + '</td>'
-      + '<td class="num"><b>' + fmt(r.total) + '</b></td>'
-      + '<td><span class="gs-rtag">' + esc(r.region) + '</span></td></tr>';
-  }).join('') : '<tr><td colspan="6"><div class="gs-none">No states match this filter.</div></td></tr>';
+      + '<td class="num"><b>' + fmt(r.total) + '</b></td></tr>';
+  }).join('') : '<tr><td colspan="5"><div class="gs-none">No states match this filter.</div></td></tr>';
 
   var btns = '';
   for (var p = 1; p <= pages; p++) {
@@ -8425,14 +8435,15 @@ function _gsTable(by) {
     + '<button class="gs-exp" onclick="gsExport()">↓ Export</button></div>'
     + '<div class="gs-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>'
     + '<input type="text" placeholder="Search state..." value="' + esc(_gsQ) + '" oninput="gsSearch(this.value)"></div>'
-    + '<table class="gs-tbl"><thead><tr>'
+    // Wrapped so a very narrow card scrolls the table rather than clipping
+    // columns off with no way to reach them.
+    + '<div class="gs-tblwrap"><table class="gs-tbl"><thead><tr>'
     + '<th style="width:22px">#</th>'
-    + '<th onclick="gsSort(\'name\')">State' + caret('name') + '</th>'
+    + '<th onclick="gsSort(\'name\')" title="Sort by state — the dot shows the region (gold North, green South)">State' + caret('name') + '</th>'
     + '<th class="num" onclick="gsSort(\'seller\')">Sellers' + caret('seller') + '</th>'
     + '<th class="num" onclick="gsSort(\'buyer\')">Buyers' + caret('buyer') + '</th>'
     + '<th class="num" onclick="gsSort(\'total\')">Total' + caret('total') + '</th>'
-    + '<th onclick="gsSort(\'region\')">Region' + caret('region') + '</th>'
-    + '</tr></thead><tbody>' + body + '</tbody></table>'
+    + '</tr></thead><tbody>' + body + '</tbody></table></div>'
     + '<div class="gs-pg"><span>Showing ' + from + '–' + Math.min(_gsPage * GS_PSIZE, rows.length) + ' of ' + rows.length + ' states</span>'
     + '<div class="gs-pgb"><button onclick="gsPage(' + (_gsPage - 1) + ')"' + (_gsPage <= 1 ? ' disabled' : '') + '>‹</button>'
     + btns + '<button onclick="gsPage(' + (_gsPage + 1) + ')"' + (_gsPage >= pages ? ' disabled' : '') + '>›</button></div></div></div>';
