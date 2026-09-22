@@ -2101,6 +2101,31 @@ function normalizeRows(raw, cfg) {
     var txnStatusPositive = ({ 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 })[txn] === 1;
     var transacted = txnStatusPositive || (txnVal !== null && txnVal > 0);
 
+    // ── Post-onboarding activation ────────────────────────────────────────
+    // Whether an onboarded vendor went on to list, and then to sell. Listings are
+    // seller-side; the buyer card carries none of these columns, so every field
+    // below degrades to null there and the funnel simply omits the listing stage.
+    var listCntRaw = gv(row, idx, 'total_listings');
+    var _lcN = (listCntRaw !== '' && listCntRaw !== null && listCntRaw !== undefined)
+      ? parseInt(String(listCntRaw).replace(/[,\s]/g, ''), 10) : NaN;
+    var totalListings = isNaN(_lcN) ? null : _lcN;
+    var firstListing  = parseDate(gv(row, idx, 'first_listing_date') || '');
+    var firstOrder    = parseDate(gv(row, idx, 'first_order_date')   || '');
+    var listStatus    = String(gv(row, idx, 'listing_activation_status') || '').trim().toUpperCase();
+    // Listed = an explicit ACTIVE status, a positive listing count, or a first
+    // listing date. Any one of the three is proof a listing went up; requiring the
+    // status column alone would miss vendors whose feed leaves it blank.
+    var hasListing = (listStatus.indexOf('ACTIVE') !== -1)
+                  || (totalListings !== null && totalListings > 0)
+                  || !!firstListing;
+    // The feed's own days_to_first_listing / days_to_first_order come through
+    // negative — measured the wrong way round — so the interval is derived from the
+    // raw dates instead, under the same 0..TAT_MAX_DAYS sanity rule TAT uses.
+    var daysToList  = (onboarded && firstListing) ? dateDiffDays(onboarded, firstListing) : null;
+    var daysToOrder = (onboarded && firstOrder)   ? dateDiffDays(onboarded, firstOrder)   : null;
+    if (daysToList  !== null && (daysToList  < 0 || daysToList  > TAT_MAX_DAYS)) daysToList  = null;
+    if (daysToOrder !== null && (daysToOrder < 0 || daysToOrder > TAT_MAX_DAYS)) daysToOrder = null;
+
     var vertical = mapToVertical(bizVert, category, cfg.audience);
     // Marketplace infra rows: before April 1 2026 → 'Marketplace' card (historical);
     // from April 1 2026 → 'InfraBusiness' (default from mapToVertical).
@@ -2120,6 +2145,12 @@ function normalizeRows(raw, cfg) {
       status:        status,
       createdDate:   created,
       onboardedDate: onboarded,
+      totalListings: totalListings,
+      hasListing:    hasListing,
+      firstListing:  firstListing,
+      firstOrder:    firstOrder,
+      daysToList:    daysToList,
+      daysToOrder:   daysToOrder,
       // gstStatus is authoritative when present.  Positive signals: AVAILABLE or ACTIVE
       // (catches "GSTIN AVAILABLE", "ACTIVE", "GST ACTIVE").  Negative qualifiers that
       // override a positive: NOT, MISSING, INACTIVE (catches "NOT AVAILABLE",
@@ -2421,6 +2452,12 @@ function vStats(data, vertKey) {
   var agingCount = 0, overdueCount = 0;
   var tats = [];
   var withinSla = 0, delayed = 0;
+  // Post-onboarding activation: how much of the onboarded cohort went on to list,
+  // and how long that took. hasListData stays false when the feed carries no
+  // listing columns at all (the buyer card), so the UI can omit the stage rather
+  // than draw a funnel that collapses to zero.
+  var listedCount = 0, hasListData = false;
+  var daysToList = [], daysToOrder = [];
 
   data.forEach(function(r) {
     var isDone = r.status === 'COMPLETED';
@@ -2442,6 +2479,15 @@ function vStats(data, vertKey) {
     if (r.onbTAT !== null) {
       tats.push(r.onbTAT);   // onboarded-only + range enforced at assignment
       if (r.onbTAT <= 7) withinSla++; else delayed++;
+    }
+
+    // Activation is measured against the onboarded cohort only: a draft with no
+    // listing has not dropped out of anything, it simply has not arrived yet.
+    if (isDone) {
+      if (r.totalListings !== null || r.hasListing) hasListData = true;
+      if (r.hasListing)             listedCount++;
+      if (r.daysToList  !== null)   daysToList.push(r.daysToList);
+      if (r.daysToOrder !== null)   daysToOrder.push(r.daysToOrder);
     }
 
     if (r.hasTxn)        hasTxnData = true;
@@ -2628,6 +2674,18 @@ function vStats(data, vertKey) {
     fyBreakdown: fyBreakdown,
     categories:  categories,
     regions:     regions,
+    // Post-onboarding activation. listed is null when the feed has no listing
+    // columns (buyers), which is how the UI decides whether to draw that stage at
+    // all rather than showing a real-looking zero.
+    activation: {
+      onboarded:   completed,
+      listed:      hasListData ? listedCount : null,
+      transacted:  transacted,
+      pctListed:     hasListData ? pct(listedCount, completed) : null,
+      pctTransacted: transacted === null ? null : pct(transacted, completed),
+      daysToList:  _numStats_(daysToList),
+      daysToOrder: _numStats_(daysToOrder)
+    },
     rowsTotal: total,
   };
 }
@@ -2765,6 +2823,24 @@ function dateDiffDays(d1, d2) {
   var b = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
   return Math.round((b - a) / 86400000);
 }
+// Count / mean / median / range for a set of day-intervals. Median is carried
+// alongside the mean because these samples are small and skewed: one vendor who
+// took four months to list drags the average far past the typical experience.
+function _numStats_(vals) {
+  if (!vals || !vals.length) return { count: 0, avg: null, median: null, min: null, max: null };
+  var s = vals.slice().sort(function(a, b) { return a - b; });
+  var mid = Math.floor(s.length / 2);
+  var med = s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  var sum = s.reduce(function(a, b) { return a + b; }, 0);
+  return {
+    count:  s.length,
+    avg:    Math.round(sum / s.length * 10) / 10,
+    median: Math.round(med * 10) / 10,
+    min:    s[0],
+    max:    s[s.length - 1]
+  };
+}
+
 function isValidGSTIN(g) { return /^[0-9A-Z]{15}$/.test(String(g || '').trim().toUpperCase()); }
 
 function normStatus(v) {
@@ -4598,19 +4674,9 @@ function getOSVDashboardData() {
   // Median as well as mean: these samples are small and a single stalled visit
   // drags the average well off what a typical vendor actually experiences.
   function _tatStats(vals, pending) {
-    if (!vals.length) return { count: 0, avg: null, median: null, min: null, max: null, pending: pending || 0 };
-    var s = vals.slice().sort(function(a, b) { return a - b; });
-    var mid = Math.floor(s.length / 2);
-    var med = s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-    var sum = s.reduce(function(a, b) { return a + b; }, 0);
-    return {
-      count:   s.length,
-      avg:     Math.round(sum / s.length * 10) / 10,
-      median:  Math.round(med * 10) / 10,
-      min:     s[0],
-      max:     s[s.length - 1],
-      pending: pending || 0
-    };
+    var st = _numStats_(vals);
+    st.pending = pending || 0;
+    return st;
   }
   var tatStats = { osv: _tatStats(osvTatVals, osvTatPending), scoring: _tatStats(scrTatVals, 0) };
 
