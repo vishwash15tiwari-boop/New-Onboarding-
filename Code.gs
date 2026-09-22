@@ -4388,6 +4388,9 @@ function getOSVDashboardData() {
 
   // ── 2. Read Vendor Score workbook (OSV status + scores + material) ──
   var osvRecords = [];
+  // Declared out here so a failed workbook read leaves them empty rather than
+  // undefined — the turnaround card then reports "no data" instead of throwing.
+  var osvTatVals = [], scrTatVals = [], osvTatPending = 0;
   try {
     var vsd = qualityReadExternalSheet_(CONFIG.VENDOR_SCORE_SHEET_ID, CONFIG.VENDOR_SCORE_TAB);
     if (!vsd.error && vsd.rows.length) {
@@ -4423,6 +4426,12 @@ function getOSVDashboardData() {
       var vsPreScr   = vfc_(['pre_osv_score','score_before_osv','initial_score','baseline_score',
                              'pre_score','score_pre','previous_score','old_score','score_before',
                              'pre_verification_score','pre_audit_score']);
+      // Turnaround columns the sheet already maintains. OSV TAT is Sent-for-OSV →
+      // OSV Completion; Scoring TAT is Scoring-Sent → Scoring-Received. Both are
+      // written as "N Days" (and OSV TAT as "Pending" while the visit is open), so
+      // they are parsed rather than read as numbers.
+      var vsOsvTat   = vfc_(['osv_tat','osv_tat_days','osv_turnaround','osv_tat_in_days']);
+      var vsScrTat   = vfc_(['scoring_tat_days','scoring_tat','score_tat','scoring_turnaround']);
       // Per-column scale detection — same reasoning as getQualityData: a row is read from
       // Denominator when it has one and from Score otherwise, so one divisor sniffed from
       // the sparse Denominator column cannot be applied to the 0-100 Score column.
@@ -4441,6 +4450,15 @@ function getOSVDashboardData() {
       var _osvDivPre = _osvDivFor(vsPreScr);
       // Owner + milestone dates come from the tracker tab; the scores tab has neither.
       var osvTrk = qualityOsvTrackerIndex_(CONFIG.VENDOR_SCORE_SHEET_ID);
+      // "8 Days" / "8" → 8.  "Pending", "", "-" → null (still open, not a zero).
+      var _tatNum = function(v) {
+        var s = String(v == null ? '' : v).trim();
+        if (!s) return null;
+        var m = /^(\d+(?:\.\d+)?)/.exec(s);
+        if (!m) return null;                       // "Pending" and friends
+        var n = parseFloat(m[1]);
+        return (isNaN(n) || n < 0 || n > 365) ? null : n;
+      };
 
       vsd.rows.forEach(function(row) {
         var vid = vsId >= 0 ? String(row[vsId] || '').trim() : '';
@@ -4467,6 +4485,18 @@ function getOSVDashboardData() {
         var sv     = !isNaN(rawDen) ? rawDen / _osvDivDen : !isNaN(rawScr) ? rawScr / _osvDivScr : NaN;
         var score  = (!isNaN(sv) && sv >= 0 && sv <= 10) ? Math.round(sv * 10) / 10 : null;
         var cat    = (vsCat >= 0 ? String(row[vsCat] || '').trim() : '') || sel.category || '';
+        // Turnaround, collected per row. A row whose OSV TAT does not parse but whose
+        // verification is under way is counted as pending rather than dropped, so the
+        // card can say how many visits are still open against those that finished.
+        if (vsOsvTat >= 0) {
+          var _ot = _tatNum(row[vsOsvTat]);
+          if (_ot !== null) osvTatVals.push(_ot);
+          else if (osvSt === 'in_progress' || osvSt === 'consent_obtained') osvTatPending++;
+        }
+        if (vsScrTat >= 0) {
+          var _st = _tatNum(row[vsScrTat]);
+          if (_st !== null) scrTatVals.push(_st);
+        }
         var _trk   = osvTrk[sel.gstin] || null;
         var upd    = '';
         if (vsUpd >= 0) { var _pd = parseDate(row[vsUpd]); upd = _pd ? fmtDate(_pd) : ''; }
@@ -4563,6 +4593,26 @@ function getOSVDashboardData() {
   var inProgCnt  = osvRecords.filter(function(r) { return r.osvStatus === 'in_progress'; }).length;
   var stoppedCnt = osvRecords.filter(function(r) { return r.osvStatus === 'stopped'; }).length;
   var notEligCnt = Math.max(0, onbCount - txnCount);
+
+  // ── 4b. Turnaround (from the sheet's own TAT columns) ────────
+  // Median as well as mean: these samples are small and a single stalled visit
+  // drags the average well off what a typical vendor actually experiences.
+  function _tatStats(vals, pending) {
+    if (!vals.length) return { count: 0, avg: null, median: null, min: null, max: null, pending: pending || 0 };
+    var s = vals.slice().sort(function(a, b) { return a - b; });
+    var mid = Math.floor(s.length / 2);
+    var med = s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+    var sum = s.reduce(function(a, b) { return a + b; }, 0);
+    return {
+      count:   s.length,
+      avg:     Math.round(sum / s.length * 10) / 10,
+      median:  Math.round(med * 10) / 10,
+      min:     s[0],
+      max:     s[s.length - 1],
+      pending: pending || 0
+    };
+  }
+  var tatStats = { osv: _tatStats(osvTatVals, osvTatPending), scoring: _tatStats(scrTatVals, 0) };
 
   // ── 5. Score distribution by material ───────────────────────
   function mkMat() { return { dist: [0,0,0,0,0], sum: 0, count: 0 }; }
@@ -4764,6 +4814,7 @@ function getOSVDashboardData() {
       inProgress:  inProgCnt,  stopped: stoppedCnt,
       completed:   cmpCnt,     total: onbCount
     },
+    turnaround: tatStats,
     postOSV: {
       avgScore: avgScore, scoredSellers: scoredSellers,
       pendingScore: pendingScore, coverage: scoreCovPct,

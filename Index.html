@@ -4449,6 +4449,7 @@ body.view-ov #ov-screen{display:block}
 .lc-vcell .cnt{font-size:19px;font-weight:600;letter-spacing:-.01em}
 .lc-vcell .st{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--lc-text3);font-weight:500}
 .lc-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.lc-kpis-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
 .lc-kpi{padding:20px 22px;display:flex;flex-direction:column;gap:7px;position:relative;overflow:hidden}
 .lc-kpi .lbl{font-size:11px;font-weight:600;color:var(--lc-text2);letter-spacing:.05em;text-transform:uppercase}
 .lc-kpi .row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
@@ -4505,7 +4506,7 @@ body.view-ov #ov-screen{display:block}
 .lc-skb{background:linear-gradient(90deg,var(--lc-subtle) 25%,var(--lc-border) 37%,var(--lc-subtle) 63%);background-size:400% 100%;animation:lcsh 1.4s ease infinite;border-radius:8px}
 @keyframes lcsh{0%{background-position:100% 0}100%{background-position:-100% 0}}
 @media(max-width:1080px){.lc-hero{grid-template-columns:1fr}.lc-kpis{grid-template-columns:repeat(2,1fr)}.lc-exc-row{grid-template-columns:repeat(2,1fr)}.lc-vgrid{grid-template-columns:repeat(2,1fr)}.lc-two{grid-template-columns:1fr}}
-@media(max-width:620px){.lc-main{padding:15px;gap:18px}.lc-top{padding:10px 14px}.lc-kpis,.lc-exc-row,.lc-vgrid{grid-template-columns:1fr}.lc-vstrip{grid-template-columns:repeat(2,1fr)}.lc-comp{grid-template-columns:1fr}.lc-ringwrap{width:200px;height:200px}.lc-fresh{display:none}}
+@media(max-width:620px){.lc-main{padding:15px;gap:18px}.lc-top{padding:10px 14px}.lc-kpis,.lc-kpis-2,.lc-exc-row,.lc-vgrid{grid-template-columns:1fr}.lc-vstrip{grid-template-columns:repeat(2,1fr)}.lc-comp{grid-template-columns:1fr}.lc-ringwrap{width:200px;height:200px}.lc-fresh{display:none}}
 @media(prefers-reduced-motion:reduce){.lc *{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
 </head>
@@ -5014,10 +5015,32 @@ function scheduleNextRefresh() {
   _refreshTimer = setTimeout(function() { refreshActive(true); }, AUTO_REFRESH_SEC * 1000);
 }
 
+// Browsers throttle (and may coalesce away) timers in a background tab, so the
+// 5-minute poll can be long overdue by the time someone switches back — they would
+// be looking at stale numbers with no indication of it. Re-check on focus and
+// refresh straight away when the scheduled time has already passed.
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden || _isFirstLoad) return;
+  if (_nextAt && Date.now() >= _nextAt) refreshActive(true);
+});
+
 // Reload whichever view is active (manual refresh button + auto-refresh timer).
+//
+// Every module keeps its payload in a module-level variable and its loader returns
+// early when that variable is set, so without an explicit force the OSV, Vendor
+// Ratings, Transactions and quality panels showed whatever was fetched the first
+// time they were opened — for the whole session, however long the tab stayed open.
+// The dashboard call still runs alongside the module fetch because the sidebar,
+// KPIs and vertical rail all read DS/DB, which only loadData refreshes.
 function refreshActive(silent) {
-  if (currentView === 'gst') loadGSTData(silent);
-  else loadData(silent);
+  if (currentView === 'gst') { loadGSTData(silent); return; }
+  loadData(silent);
+  if (currentView === 'osv')                loadOSVData(true);
+  else if (currentView === 'vendorratings') loadVendorRatingsData(true);
+  else if (currentView === 'transactions')  loadTransactionData(true);
+  // The quality feed backs the OSV/rating panels inside the vertical module view,
+  // so refresh it whenever it has already been pulled for this session.
+  if (qualityData && currentView !== 'vendorratings') loadQualityData(true);
 }
 
 // Primary: getCombinedDashboard (one call, seller + buyer together).
@@ -10499,20 +10522,25 @@ function _renderTxnDetail(wrap, data) {
   wrap.innerHTML = smry + tblSection('Seller-wise Details', sellers) + tblSection('Buyer-wise Details', buyers);
 }
 
-// ── Quality data: load once for OMP, patch into Seller + Buyer cards ─
-function loadQualityData() {
-  if (qualityData) { _patchQualitySects(); return; }
+// ── Quality data for OMP, patched into the Seller + Buyer cards ─
+// force=true re-fetches even when a payload is already in memory; that is what the
+// auto-refresh timer passes, so these panels track the backend instead of freezing
+// on whatever was loaded the first time the vertical was opened.
+function loadQualityData(force) {
+  if (qualityData && !force) { _patchQualitySects(); return; }
   if (qualityLoading) return;
+  var hadData = !!qualityData;
   qualityLoading = true;
   google.script.run
     .withSuccessHandler(function(json) {
       qualityLoading = false;
-      try { qualityData = JSON.parse(json); } catch (e) { qualityData = { success: false }; }
+      try { qualityData = JSON.parse(json); } catch (e) { if (!hadData) qualityData = { success: false }; }
       _patchQualitySects();
     })
     .withFailureHandler(function() {
       qualityLoading = false;
-      qualityData = { success: false };
+      // A failed refresh must not wipe a panel that is already showing good data.
+      if (!hadData) qualityData = { success: false };
       _patchQualitySects();
     })
     .getQualityData();
@@ -15547,12 +15575,16 @@ function renderOSVSkeleton() {
 }
 
 // Load data from backend
-function loadOSVData() {
-  if (_OSV) { renderOSVDash(); return; }
+// force=true re-fetches even when a payload is already in memory — the auto-refresh
+// timer passes it so this screen tracks the backend rather than freezing on first load.
+function loadOSVData(force) {
+  if (_OSV && !force) { renderOSVDash(); return; }
   // Same cache-first path as Vendor Ratings: getOSVDashboardData is a multi-sheet
   // join, so a repeat visit paints from the last good payload immediately and the
-  // fetch only refreshes it.
-  var seeded = _swrSeed('osv', function (p) { return p && p.success; });
+  // fetch only refreshes it. On a forced refresh there is already live data on
+  // screen, so skip the stored seed and just let the response replace it.
+  var hadData = !!_OSV;
+  var seeded  = hadData ? null : _swrSeed('osv', function (p) { return p && p.success; });
   if (seeded) { _OSV = seeded; renderOSVDash(); }
   if (_osvLoading) return;
   _osvLoading = true;
@@ -15565,13 +15597,13 @@ function loadOSVData() {
           _swrStore('osv', json);
           _OSV = d;
           if (currentView === 'osv') renderOSVDash();
-        } else if (!seeded) { _osvShowError(d.error || 'No data returned.'); }
-      } catch (e) { if (!seeded) _osvShowError('Parse error: ' + e.message); }
+        } else if (!seeded && !hadData) { _osvShowError(d.error || 'No data returned.'); }
+      } catch (e) { if (!seeded && !hadData) _osvShowError('Parse error: ' + e.message); }
     })
     .withFailureHandler(function(err) {
       _osvLoading = false;
-      // A failed refresh should not wipe a working, cached view.
-      if (seeded) return;
+      // A failed refresh should not wipe a working view, seeded or already live.
+      if (seeded || hadData) return;
       _osvShowError((err && err.message) ? err.message : 'Server error.');
     })
     .getOSVDashboardData();
@@ -16077,19 +16109,23 @@ function renderTransactionSkeleton() {
     +'</div>';
 }
 
-function loadTransactionData() {
-  if (_TXN_MOD) { renderTransactionDash(); return; }
+// force=true re-fetches even when a payload is already in memory — the auto-refresh
+// timer passes it so this screen tracks the backend rather than freezing on first load.
+function loadTransactionData(force) {
+  if (_TXN_MOD && !force) { renderTransactionDash(); return; }
   if (_txnModLoading) return;
+  var hadData = !!_TXN_MOD;
   _txnModLoading = true;
   google.script.run
     .withSuccessHandler(function(raw) {
       _txnModLoading = false;
-      try { _TXN_MOD = JSON.parse(raw); } catch(e) { _TXN_MOD = { success:false, error:'Parse error' }; }
+      try { _TXN_MOD = JSON.parse(raw); } catch(e) { if (!hadData) _TXN_MOD = { success:false, error:'Parse error' }; }
       if (currentView === 'transactions') renderTransactionDash();
     })
     .withFailureHandler(function(err) {
       _txnModLoading = false;
-      if (currentView !== 'transactions') return;
+      // A failed refresh must not replace a working view with an error.
+      if (hadData || currentView !== 'transactions') return;
       var host = document.getElementById('tab-transactions');
       if (host) host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Failed to load: ' + esc(String(err)) + '</div>';
     })
@@ -16584,11 +16620,15 @@ function _swrStore(key, raw) {
   try { localStorage.setItem(STORE_PFX + key, raw); } catch (e) {}
 }
 
-function loadVendorRatingsData() {
-  if (_VR) { renderVendorRatingsDash(); return; }
+// force=true re-fetches even when a payload is already in memory — the auto-refresh
+// timer passes it so this screen tracks the backend rather than freezing on first load.
+function loadVendorRatingsData(force) {
+  if (_VR && !force) { renderVendorRatingsDash(); return; }
   // Paint from the last good payload first — a repeat visit is then instant and
-  // the network round-trip only refreshes what is already on screen.
-  var seeded = _swrSeed('vr', function (p) { return p && p.vendorRatings; });
+  // the network round-trip only refreshes what is already on screen. A forced
+  // refresh already has live data up, so it skips the stored seed.
+  var hadData = !!_VR;
+  var seeded  = hadData ? null : _swrSeed('vr', function (p) { return p && p.vendorRatings; });
   if (seeded) { _VR = seeded; renderVendorRatingsDash(); }
   if (_vrLoading) return;
   _vrLoading = true;
@@ -16598,14 +16638,14 @@ function loadVendorRatingsData() {
       var d;
       try { d = JSON.parse(raw); } catch(e) { d = { success:false, error:'Parse error' }; }
       if (d && d.vendorRatings) _swrStore('vr', raw);
-      // Keep the seeded view rather than replacing it with an error.
-      if (seeded && !(d && d.vendorRatings)) return;
+      // Keep the working view rather than replacing it with an error.
+      if ((seeded || hadData) && !(d && d.vendorRatings)) return;
       _VR = d;
       if (currentView === 'vendorratings') renderVendorRatingsDash();
     })
     .withFailureHandler(function(err) {
       _vrLoading = false;
-      if (seeded) return;
+      if (seeded || hadData) return;
       if (currentView !== 'vendorratings') return;
       var host = document.getElementById('tab-vendorratings');
       if (host) host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Failed to load: ' + esc(String(err)) + '</div>';
@@ -18563,6 +18603,41 @@ document.addEventListener('DOMContentLoaded', function() {
       }).join('') + '</div></section>';
   }
 
+  /* Turnaround — reads the vendor score sheet's own TAT columns, which were being
+     maintained but never surfaced anywhere. OSV TAT is Sent-for-OSV → OSV Completion;
+     Scoring TAT is Scoring-Sent → Scoring-Received.
+
+     Median leads rather than the mean: these samples are small, and one stalled visit
+     drags the average well past what a typical vendor actually experiences. The range
+     is shown alongside so a wide spread is visible instead of hidden behind one number,
+     and open OSVs are counted separately — they have no elapsed figure yet and
+     averaging them in as zero would flatter the result. */
+  function buildTurnaround(tt) {
+    if (!tt) return '';
+    var o = tt.osv || {}, s = tt.scoring || {};
+    if (!o.count && !s.count) return '';   // sheet carries no TAT columns — show nothing
+    function card(lbl, st, sub, showPending) {
+      if (!st || !st.count) {
+        return '<div class="lc-card lc-kpi"><div class="lbl">' + lbl + '</div>'
+          + '<div class="row"><div class="val num">—</div></div>'
+          + '<div class="ctx">No completed records yet</div></div>';
+      }
+      var rng = st.min === st.max ? st.min + 'd' : st.min + '–' + st.max + 'd';
+      var ctx = 'avg ' + st.avg + 'd · range ' + rng + ' · ' + nf(st.count) + ' measured';
+      if (showPending && st.pending) ctx += ' · ' + nf(st.pending) + ' still open';
+      return '<div class="lc-card lc-kpi"><div class="lbl">' + lbl + '</div>'
+        + '<div class="row"><div class="val num">' + st.median + '<small> days</small></div></div>'
+        + '<div class="ctx">' + ctx + '</div>'
+        + '<div class="ctx" style="opacity:.72">' + sub + '</div></div>';
+    }
+    return '<section><div class="lc-sech"><span class="pr">(</span><h2>Turnaround</h2><span class="pr">)</span>'
+      + '<span class="sub">Median days per stage, from the vendor score sheet</span></div>'
+      + '<div class="lc-kpis-2">'
+      + card('OSV turnaround', o, 'Sent for OSV → OSV completion', true)
+      + card('Scoring turnaround', s, 'Scoring sent → scoring received', false)
+      + '</div></section>';
+  }
+
   function buildJourney(jn) {
     var stages = [
       { lbl: 'Onboarded sellers',      n: jn.onboarded || 0,      col: 'var(--lc-accent)',              note: 'Completed OMP onboarding' },
@@ -18811,6 +18886,7 @@ document.addEventListener('DOMContentLoaded', function() {
       + '<div class="lc-main">'
       +   buildKpis(jn, po)
       +   buildJourney(jn)
+      +   buildTurnaround(d.turnaround)
       +   '<section class="lc-two">' + buildStatusBars(sd, jn) + buildScoreDist(sc) + '</section>'
       +   buildPerf(po, jn)
       +   buildKyc(ks)
