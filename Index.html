@@ -5263,12 +5263,15 @@ function switchView(view) {
     document.body.style.overflow = '';
     updateViewChrome();
     renderVNav();
-    // If buyer was marked in-flight (null sentinel) but no fetch started — e.g. because
-    // activeVertKey was null at that moment — reset so _ovnEnsureAud can retry.
-    if (_ovnRows && _ovnRows.buyer === null) _ovnRows.buyer = undefined;
-    // Skip skeleton when buyer data is already in memory — direct render is instant.
-    var _evnBuyerReady = _ovnRows && _ovnRows.buyer != null;
-    if (!_evnBuyerReady && typeof renderEVNSkeleton === 'function') renderEVNSkeleton();
+    // If a side was marked in-flight (null sentinel) but no fetch started — e.g.
+    // because activeVertKey was null at that moment — reset so it can retry.
+    if (_ovnRows && _ovnRows.buyer  === null) _ovnRows.buyer  = undefined;
+    if (_ovnRows && _ovnRows.seller === null) _ovnRows.seller = undefined;
+    // Skip skeleton only when BOTH sides are in memory — EVN charts sellers and
+    // buyers together, so a direct render with one side missing reads as zero.
+    var _evnReady = _ovnRows && _ovnRows.buyer != null && _ovnRows.seller != null;
+    if (!_evnReady && typeof renderEVNSkeleton === 'function') renderEVNSkeleton();
+    _ovnEnsureAud('seller');
     _ovnEnsureAud('buyer');
     if (typeof renderEVNDash === 'function') {
       try { renderEVNDash(); } catch(e) { console.error('renderEVNDash', e); }
@@ -5414,6 +5417,19 @@ function renderPeriodControl() {
   _crSyncAll();
 }
 
+// Modules that filter client-side off data already in memory. They do not come
+// back through loadData(), so a period change has to repaint them directly.
+// OSV in particular kept its own period buttons and never moved with the
+// dashboard at all; it now reads currentPeriod and repaints from here.
+function _repaintPeriodViews() {
+  if (currentView === 'txndist') renderTxnDist();
+  if (currentView === 'transactions') { renderTransactionSkeleton(); loadTransactionData(); }
+  if (currentView === 'osv' && typeof window.osv3Repaint === 'function') window.osv3Repaint();
+  if (currentView === 'vendorratings' && typeof renderVendorRatingsDash === 'function') {
+    try { renderVendorRatingsDash(); } catch (e) {}
+  }
+}
+
 // ── Custom range, shared across every period surface ──────────────────────
 // The main header, the Global Overview and the Vertical Overview each mount
 // their own .cr-box date pair. These three helpers keep them interchangeable:
@@ -5451,8 +5467,7 @@ function onPeriodSelect(val) {
   _lastDashHash['combined'] = null;
   _TXN = null; _TXN_MOD = null;
   loadData();
-  if (currentView === 'txndist') renderTxnDist();
-  if (currentView === 'transactions') { renderTransactionSkeleton(); loadTransactionData(); }
+  _repaintPeriodViews();
 }
 
 // `src` is the input that changed, so the values come from the pair the user
@@ -5475,8 +5490,7 @@ function onCustomDates(src) {
   _TXN = null; _TXN_MOD = null;
   loadData();
   // Match onPeriodSelect: the module views do not re-render off loadData().
-  if (currentView === 'txndist') renderTxnDist();
-  if (currentView === 'transactions') { renderTransactionSkeleton(); loadTransactionData(); }
+  _repaintPeriodViews();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -6261,11 +6275,18 @@ function mmGrowRail() {
 // (an inline panel, or an existing modal / records slide-over).
 // ═══════════════════════════════════════════════════════════════
 
-// Weighted seller+buyer average (weights = completed count — TAT is only ever
-// defined for completed records, see Code.gs normalizeRows). Null when neither
-// side has a value; falls back to whichever side does when only one exists.
+// Weighted seller+buyer average. Weights are tatCount — the onboarded records
+// that actually carry a valid In Review → Onboarded turnaround — not completed
+// count. TAT is only defined for completed records, but not every completed
+// record carries a usable start date, so the two counts differ and weighting by
+// completed lets a side with sparse TAT coverage pull the blend toward its
+// figure with far more weight than its sample deserves. Code.gs exposes
+// tatCount for exactly this (see the comment on it in buildDashboard).
+// Null when neither side has a value; falls back to whichever side does.
 function _bnBlendTAT(vs, vb) {
-  var sT = vs.avgTAT, bT = vb.avgTAT, sN = vs.completed || 0, bN = vb.completed || 0;
+  var sT = vs.avgTAT, bT = vb.avgTAT;
+  var sN = (vs.tatCount != null) ? vs.tatCount : (vs.completed || 0);
+  var bN = (vb.tatCount != null) ? vb.tatCount : (vb.completed || 0);
   if (sT == null && bT == null) return null;
   if (sT == null) return bT;
   if (bT == null) return sT;
@@ -10260,13 +10281,17 @@ function _kvnLoadAud(aud) {
 // Load rows for `aud` into _ovnRows[aud] (per-audience cache for Existing/New modal).
 // Reuses the same localStorage key as _kvnLoadAud for zero-cost SWR hits.
 function _ovnEnsureAud(aud) {
-  if (_ovnRows[aud] !== undefined) return; // already loaded or in-flight
-  _ovnRows[aud] = null; // mark as in-flight
   var key = activeVertKey || selectedVert || (typeof snVertModKey !== 'undefined' ? snVertModKey : null);
   // On the overview screen, activeVertKey is null. Fall back to the first configured
   // vertical (OMP/Marketplace) so EVN can still load buyer data.
   if (!key) { var _cfg0 = getVertCfg(); key = _cfg0.length ? _cfg0[0].key : null; }
   if (!key) { _ovnRows[aud] = undefined; return; } // no verticals configured — retry later
+  // The cache is per vertical. It used to be keyed by audience alone, so rows
+  // fetched for one vertical were served for the next one opened — the early
+  // return below saw a populated slot and never refetched.
+  if (_ovnRows._key !== key) { _ovnRows = { _key: key }; }
+  if (_ovnRows[aud] !== undefined) return; // already loaded or in-flight
+  _ovnRows[aud] = null; // mark as in-flight
   var f = { audience: aud, period: currentPeriod };
   if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; }
   var myPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
@@ -10290,7 +10315,8 @@ function _ovnEnsureAud(aud) {
     if (a === 'buyer' && window._txnAudModalCtx && window._txnAudModalCtx.aud === 'buyer' && window._txnAudModalCtx.open) {
       openTxnAudModal('buyer');
     }
-    if (a === 'buyer' && currentView === 'existingnew') renderEVNDash();
+    // EVN charts both sides, so either arriving is a reason to repaint.
+    if (currentView === 'existingnew' && typeof renderEVNDash === 'function') renderEVNDash();
     if (a === 'buyer' && currentView === 'vertoverview' && typeof renderVertOverview === 'function') {
       try { renderVertOverview(_vovKey); } catch(e) {}
     }
@@ -16780,9 +16806,14 @@ function _ovFYSeries() {
         if (!fySums[f.fy]) fySums[f.fy] = { total: 0, onboarded: 0, tatSum: 0, tatN: 0 };
         fySums[f.fy].total     += f.total     || 0;
         fySums[f.fy].onboarded += f.onboarded || 0;
-        if (f.avgTAT != null && (f.onboarded || 0) > 0) {
-          fySums[f.fy].tatSum += f.avgTAT * (f.onboarded || 0);
-          fySums[f.fy].tatN   += f.onboarded || 0;
+        // Weight by tatCount — the records that actually carry a TAT — not by
+        // onboarded count. A vertical where only a handful of onboarded cases
+        // have a measurable turnaround otherwise pulls the FY average toward
+        // its figure with the full weight of its onboarded total.
+        var fN = (f.tatCount != null) ? f.tatCount : (f.onboarded || 0);
+        if (f.avgTAT != null && fN > 0) {
+          fySums[f.fy].tatSum += f.avgTAT * fN;
+          fySums[f.fy].tatN   += fN;
         }
       });
     });
@@ -20290,15 +20321,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script id="osv3-js">
 (function(){
-  var _osvPage=1,_osvPS=5,_osvCat='',_osvStat='',_osvQ='',_osvSortK='updatedDate',_osvSortD=-1,_osvPeriod='all',_osvTrendN=6;
+  var _osvPage=1,_osvPS=5,_osvCat='',_osvStat='',_osvQ='',_osvSortK='updatedDate',_osvSortD=-1,_osvTrendN=6;
   var C_OK='#1DC797',C_WARN='#FF9500',C_BLUE='#0F7A4F',C_PURPLE='#8460D4',C_GRAY='#8E8E93',C_RED='#D70015';
   var CAT_CLR={'Plastic':'#12A06B','Metal':'#D99A2B','E-Waste':C_PURPLE,'Battery':C_WARN,'Tyres':C_RED,'Paper':'#0A4430','Others':C_GRAY};
   function cc(cat){return CAT_CLR[cat]||C_GRAY;}
   function pct(n,t){return t?Math.round(n/t*100):0;}
 
-  function periodStart(p){var now=new Date(),y=now.getFullYear(),m=now.getMonth();if(p==='today'){var d=new Date(y,m,now.getDate());d.setHours(0,0,0,0);return d;}if(p==='month')return new Date(y,m,1);if(p==='ytd')return new Date(y,0,1);return null;}
   function parseDMY(s){if(!s||s==='—')return null;var p=String(s).split('/');if(p.length!==3)return null;var d=new Date(parseInt(p[2],10),parseInt(p[1],10)-1,parseInt(p[0],10));return isNaN(d.getTime())?null:d;}
-  function filterPeriod(sl,period){if(period==='all'||period==='alltime')return sl;var ps=periodStart(period);if(!ps)return sl;return sl.filter(function(s){var d=parseDMY(s.updatedDate);return d&&d>=ps;});}
+
+  /* OSV filters client-side on updatedDate, so it can honour the dashboard's own
+     period vocabulary in full — Today, MTD, YTD, any financial year, a custom
+     range. It used to carry a five-button local control that ignored the global
+     period completely, so OSV showed a different window to every other module,
+     and its "YTD" meant Jan 1 while the rest of the dashboard means Apr 1.
+     Returns {s,e} bounds (either may be null = unbounded), or null for All. */
+  function osvRange(){
+    var p=(typeof currentPeriod==='string'&&currentPeriod)?currentPeriod:'All';
+    var now=new Date(),Y=now.getFullYear(),M=now.getMonth();
+    if(p==='All')return null;
+    if(p==='Today'){var d=new Date(Y,M,now.getDate());d.setHours(0,0,0,0);return{s:d,e:null};}
+    if(p==='MTD')return{s:new Date(Y,M,1),e:null};
+    if(p==='YTD')return{s:new Date(M>=3?Y:Y-1,3,1),e:null};   // Indian FY starts 1 Apr
+    if(p==='Custom'){
+      var cs=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(customStart||''));
+      var ce=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(customEnd||''));
+      if(!cs||!ce)return null;                                 // incomplete range — show all
+      return{s:new Date(+cs[1],+cs[2]-1,+cs[3]),e:new Date(+ce[1],+ce[2]-1,+ce[3],23,59,59,999)};
+    }
+    var m=/^FY\s?(\d{2})-(\d{2})$/.exec(p);
+    if(m){var y=2000+parseInt(m[1],10);return{s:new Date(y,3,1),e:new Date(y+1,2,31,23,59,59,999)};}
+    return null;
+  }
+  function filterPeriod(sl){
+    var r=osvRange();
+    if(!r)return sl;
+    return sl.filter(function(s){
+      var d=parseDMY(s.updatedDate);
+      if(!d)return false;
+      if(r.s&&d<r.s)return false;
+      if(r.e&&d>r.e)return false;
+      return true;
+    });
+  }
 
   function osvLabel(s){if(s==='verified')return 'Completed';if(s==='in_progress'||s==='consent_obtained')return 'In Progress';return 'Not Initiated';}
 
@@ -20329,8 +20393,19 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function buildHeader(){
-    var periods=[['all','All'],['today','Today'],['month','For the Month'],['ytd','YTD'],['alltime','All Time']];
-    var btns=periods.map(function(p){return '<button onclick="osv3SetPeriod(\''+p[0]+'\')" class="'+(_osvPeriod===p[0]?'on':'')+'">'+p[1]+'</button>';}).join('');
+    // These drive the dashboard's own period state, so OSV moves with every
+    // other module instead of keeping a private window.
+    var cp=(typeof currentPeriod==='string'&&currentPeriod)?currentPeriod:'All';
+    var periods=[['All','All Time'],['Today','Today'],['MTD','For the Month'],['YTD','YTD']];
+    var btns=periods.map(function(p){return '<button onclick="onPeriodSelect(\''+p[0]+'\')" class="'+(cp===p[0]?'on':'')+'">'+p[1]+'</button>';}).join('');
+    // An FY or a custom range is chosen from the global picker, not from here —
+    // show it as a selected chip so the header never implies "All Time".
+    if(cp!=='All'&&cp!=='Today'&&cp!=='MTD'&&cp!=='YTD'){
+      var lbl=cp==='Custom'
+        ? ((customStart&&customEnd)?(customStart+' → '+customEnd):'Custom Range')
+        : cp;
+      btns+='<button class="on" title="Cleared from the period selector above" onclick="onPeriodSelect(\'All\')">'+esc(lbl)+' &times;</button>';
+    }
     return '<div class="osv3-page-hdr"><div class="osv3-hdr-l"><div class="osv3-ttl">OSV Performance</div><div class="osv3-sub">Track On-Site Verification performance and coverage across all vendors.</div></div>'
       +'<div class="osv3-period">'+btns+'</div></div>';
   }
@@ -20536,8 +20611,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var jn=d.journey||{},sd=d.statusDist||{},po=d.postOSV||{},allSl=d.sellerList||[];
     var catSet={};allSl.forEach(function(s){if(s.category)catSet[s.category]=1;});
     window._osvCats=Object.keys(catSet).sort();
-    var psl=filterPeriod(allSl,_osvPeriod);
-    var useAll=_osvPeriod==='all'||_osvPeriod==='alltime';
+    var psl=filterPeriod(allSl);
+    // The backend's pre-aggregated journey/status/post-OSV blocks are unfiltered,
+    // so they are only usable when no period is applied.
+    var useAll=osvRange()===null;
     var dispJn=useAll?jn:computeJourney(psl);
     var dispSd=useAll?sd:{inProgress:psl.filter(function(s){return s.osvStatus==='in_progress';}).length,eligibleNotInitiated:psl.filter(function(s){return s.hasTransaction&&(s.osvStatus==='not_initiated'||!s.osvStatus);}).length,completed:dispJn.completed,total:psl.length};
     var dispPo=useAll?po:{avgScore:po.avgScore,scoredSellers:dispJn.scoreUpdated,pendingScore:null,coverage:dispJn.completed>0?pct(dispJn.scoreUpdated,dispJn.completed):0,scoreImprovement:po.scoreImprovement};
@@ -20581,7 +20658,12 @@ document.addEventListener('DOMContentLoaded', function() {
       +'</div>';
   };
 
-  window.osv3SetPeriod=function(p){_osvPeriod=p;_osvPage=1;render();};
+  // Kept for any markup still bound to the old local control — route it to the
+  // dashboard's period state so there is a single source of truth.
+  window.osv3SetPeriod=function(p){var M={all:'All',alltime:'All',today:'Today',month:'MTD',ytd:'YTD'};onPeriodSelect(M[p]||p);};
+  // Called from onPeriodSelect so OSV repaints against the new window. The data
+  // is already in memory and the filtering is client-side, so this costs no fetch.
+  window.osv3Repaint=function(){_osvPage=1;try{render();}catch(e){}};
   window.osv3Refresh=function(){_OSV=null;loadOSVData();};
   window.osv3Sort=function(k){if(_osvSortK===k)_osvSortD*=-1;else{_osvSortK=k;_osvSortD=1;}_osvPage=1;render();};
   window.osv3GoPage=function(p){_osvPage=p;render();};
@@ -20712,10 +20794,17 @@ document.addEventListener('DOMContentLoaded', function() {
     return days>0?days:null;
   }
 
+  // Both sides come from _ovnRows, which is fetched per audience for one known
+  // vertical. Sellers used to read the global vertRows instead — that holds the
+  // rows for whichever audience was selected when a vertical detail was last
+  // opened, so on the Buyers audience its buyer rows were relabelled "Seller"
+  // and counted a second time alongside the real buyer list, and on the
+  // overview screen (where no vertical detail is open) it is empty, which put
+  // Existing at zero.
   function getAllRows(){
     var rows=[];
     if(_evnScope==='combined'||_evnScope==='sellers'){
-      var sl=vertRows||[];
+      var sl=(_ovnRows&&_ovnRows.seller)||[];
       for(var i=0;i<sl.length;i++){var nr={};for(var k in sl[i]){if(sl[i].hasOwnProperty(k))nr[k]=sl[i][k];}nr._aud='Seller';rows.push(nr);}
     }
     if(_evnScope==='combined'||_evnScope==='buyers'){

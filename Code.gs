@@ -2532,6 +2532,10 @@ function vStats(data, vertKey) {
       totalTxnValue: fyHasTxnVal ? fyTxnSum : null,
       withGST:       fyWithGST,
       avgTAT:        fyTats.length ? Math.round(avg(fyTats)) : null,
+      // Sample size behind avgTAT, matching the vertical- and category-level
+      // fields. The frontend rolls FYs up across verticals and must weight by
+      // the records that actually carry a TAT, not by onboarded count.
+      tatCount:      fyTats.length,
     };
   }).filter(function(f) { return f.fyStart >= 2019; })
     .sort(function(a, b) { return b.fyStart - a.fyStart; });
