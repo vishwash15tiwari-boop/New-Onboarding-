@@ -3868,11 +3868,16 @@ body.mm-sn-drill{overflow:hidden}
 .mp-leg i{width:9px;height:9px;border-radius:3px;flex-shrink:0}
 /* stat tiles */
 .mp-tiles{display:flex;flex-wrap:wrap;gap:var(--sp-3);margin-top:18px}
-.mp-tile{flex:1;min-width:104px;background:var(--bg);border:1px solid var(--border);border-radius:calc(var(--r) - 2px);padding:13px 15px}
+/* Tiles stretch to a common height, so their content has to be anchored at both
+   ends or a wrapped label pushes that tile's sub-line and divider out of step
+   with its neighbours. The label takes the slack (margin-bottom:auto), which
+   puts every sub-line and every breakdown divider on one baseline across the
+   row however the labels wrap. */
+.mp-tile{flex:1;min-width:104px;background:var(--bg);border:1px solid var(--border);border-radius:calc(var(--r) - 2px);padding:13px 15px;display:flex;flex-direction:column}
 .mp-tile.ch{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
 .mp-tile.ch:hover{border-color:var(--blue);box-shadow:0 6px 18px -10px rgba(15,122,79,.4);transform:translateY(-1px)}
 .mp-tile-v{font-size:1.5rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
-.mp-tile-l{font-size:.74rem;color:var(--txt2);margin-top:5px;display:flex;align-items:center;gap:5px}
+.mp-tile-l{font-size:.74rem;color:var(--txt2);margin-top:5px;margin-bottom:auto;display:flex;align-items:flex-start;gap:5px;line-height:1.3}
 .mp-go{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);opacity:0;transition:opacity .15s}
 .mp-tile.ch:hover .mp-go{opacity:1}
 .mp-tile-s{font-size:.72rem;color:var(--txt3);margin-top:4px}
@@ -6778,24 +6783,40 @@ function _mmVertModules(key) {
         { label:'Buyers',  v:bTxn || 0, click:"openTxnAudModal('buyer')",  tip:'View buyer transaction breakdown', breakdown:bBd }
       );
     }
+    var agTot = 0;
     if (ag) {
-      tTiles.push({ label:'Ageing · 0–30 days',  v:ag.a, tone:'good', sub:'Non-transacted',
+      // Each bucket carries its own share instead of all three repeating the
+      // word "Non-transacted", which said the same thing three times and told
+      // you nothing about the split.
+      agTot = (ag.a || 0) + (ag.c || 0) + (ag.d || 0);
+      var agSub = function(v) { return agTot ? Math.round((v || 0) / agTot * 100) + '% of aged' : 'No aged cases'; };
+      tTiles.push({ label:'Ageing · 0–30 days',  v:ag.a, tone:'good', sub:agSub(ag.a),
                     click:"openAgingRecords('a')", tip:'View the 0–30 day sellers' },
-                  { label:'Ageing · 31–60 days', v:ag.c, tone:'warn', sub:'Non-transacted',
+                  { label:'Ageing · 31–60 days', v:ag.c, tone:'warn', sub:agSub(ag.c),
                     click:"openAgingRecords('c')", tip:'View the 31–60 day sellers' },
-                  { label:'Ageing · 60+ days',   v:ag.d, tone:'crit', sub:'Non-transacted',
+                  { label:'Ageing · 60+ days',   v:ag.d, tone:'crit', sub:agSub(ag.d),
                     click:"openAgingRecords('d')", tip:'View the 60+ day sellers' });
     }
     if (gmv != null) {
       // GMV is seller-side only — buyer-side transaction value is excluded by design.
       _gmvReconcile(gmv, catGmv, 'Transactions panel · ' + key);
       var _gmvBd = catGmv.map(function(x){ return { l: x.cat, v: fmtINR(x.v), raw: true }; });
-      tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true, breakdown: _gmvBd });
-      catGmv.forEach(function(x){ tTiles.push({ label:'GMV · ' + x.cat, v:fmtINR(x.v), raw:true }); });
+      // One GMV tile, with the per-category split inside it. There used to be a
+      // further standalone tile per category as well, so every category figure
+      // was printed twice on the same row — the total tile listed Metal and
+      // Plastic, and then Metal and Plastic each got a tile repeating it.
+      tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true, sub:'Seller-side', breakdown: _gmvBd });
     }
     mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transaction activity',
       panel:{
         eye:'Transaction activity', badge:'Sellers & Buyers',
+        // Ageing can only count cases that carry an onboarded date, so the three
+        // buckets routinely add up to less than the non-transacted total sitting
+        // right above them. Saying so beats leaving the gap unexplained.
+        note: (ag && agTot < combinedNonTxn)
+          ? 'Ageing covers ' + fmt(agTot) + ' of the ' + fmt(combinedNonTxn)
+            + ' non-transacted cases — only cases with an onboarded date can be aged. GMV is seller-side.'
+          : null,
         headline: (sTxn != null || bTxn != null)
           ? { v:combinedTxn, label:'Transacted (Unique · Sellers & Buyers)', tone:'accent' }
           : { v:gmv, label:'Total GMV', raw:true, rawv:fmtINR(gmv), tone:'ink' },
