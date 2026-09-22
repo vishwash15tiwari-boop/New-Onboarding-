@@ -3281,9 +3281,12 @@ body.view-gst #mm-crumbs{display:none}
 /* In sn-drill the page overflows by ~68–100px (dash-content padding + section-title).
    Suppress page scroll; inner .mmdetail overflow-y:auto still scrolls normally. */
 body.mm-sn-drill{overflow:hidden}
-.mmworkspace.sn-drill #mm-modpanel.mp-open{flex:1;display:flex;flex-direction:column;overflow:visible}
-.mmworkspace.sn-drill .mp-body{flex:1;display:flex;flex-direction:column;overflow:visible}
-.mmworkspace.sn-drill .mp-matrix{flex:1;margin-top:8px;align-content:start}
+.mmworkspace.sn-drill #mm-modpanel.mp-open{display:flex;flex-direction:column;overflow:visible}
+/* Content-sized, not stretched: .mp-body and .mp-matrix used to take flex:1, so the
+   matrix grid absorbed every spare pixel of the drill workspace and shoved the
+   "View Detailed Records" button to the bottom of a tall card, off-screen. */
+.mmworkspace.sn-drill .mp-body{flex:0 0 auto;display:flex;flex-direction:column;overflow:visible}
+.mmworkspace.sn-drill .mp-matrix{flex:0 0 auto;margin-top:8px;align-content:start}
 /* In sn-drill mode the geo panel fills .mmdetail; .mmdetail is the single scroll container */
 .mmworkspace.sn-drill #mm-geo{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:visible;max-height:none;margin:0}
 .mmworkspace.sn-drill .mg-eye{flex-shrink:0}
