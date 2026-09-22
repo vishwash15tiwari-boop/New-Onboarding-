@@ -222,6 +222,14 @@ select,input{font-family:inherit}
 #loading-overlay{position:fixed;inset:0;background:var(--bg2);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:var(--sp-4);transition:opacity .4s var(--ease),visibility 0s linear .4s}
 #loading-overlay.hidden{opacity:0;pointer-events:none;visibility:hidden}
 #loading-overlay.hidden .load-fill{animation-play-state:paused}
+/* Recykal mark on every loading state. src is copied at runtime from the header
+   logo so the ~29KB base64 PNG is not embedded a third time. */
+.load-mark{height:34px;width:auto;display:block;margin-bottom:2px;animation:loadMarkPulse 1.6s var(--ease) infinite}
+.skel-mark{height:26px;width:auto;display:block;opacity:.55;animation:loadMarkPulse 1.6s var(--ease) infinite}
+.skel-brandrow{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+.skel-brandtxt{font-size:12px;font-weight:600;color:var(--txt3);letter-spacing:.02em}
+@keyframes loadMarkPulse{0%,100%{opacity:.5}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.load-mark,.skel-mark{animation:none;opacity:1}}
 /* Apple-style launch moment: wordmark + slim indeterminate progress */
 .load-wordmark{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--txt)}
 .load-track{width:190px;height:3px;border-radius:3px;background:rgba(120,120,128,.18);overflow:hidden}
@@ -4456,6 +4464,7 @@ body.view-ov #ov-screen{display:block}
 
 <!-- Loading -->
 <div id="loading-overlay">
+  <img id="load-mark" class="load-mark" alt="Recykal" aria-hidden="true">
   <div class="load-wordmark">Central Onboarding</div>
   <div class="load-track"><div class="load-fill"></div></div>
   <div class="loading-txt">Recykal · Connecting to data…</div>
@@ -4855,6 +4864,14 @@ var STORE_PFX = 'ebt_v13_';   // bumped: Managed Marketplace consolidated into s
 // Stale-while-revalidate: if we have a previous response in localStorage, paint
 // it immediately so the user sees real data with zero wait, then fetch fresh data
 // silently in the background. Perceived load time drops to ~0 ms on return visits.
+// Point the loading overlay's mark at the header logo, so the brand shows while
+// the first payload is still in flight without embedding the image again.
+document.addEventListener('DOMContentLoaded', function() {
+  var m = document.getElementById('load-mark');
+  var src = (document.querySelector('#header .logo-wrap img') || {}).src;
+  if (m && src) m.src = src; else if (m) m.remove();
+});
+
 document.addEventListener('DOMContentLoaded', function() {
   var restored = false;
   try {
@@ -5242,7 +5259,8 @@ function switchView(view) {
     document.body.style.overflow = '';
     updateViewChrome();
     renderVNav();
-    if (!_VR) renderVendorRatingsSkeleton();
+    // Skip the skeleton when a cached payload will paint immediately.
+    if (!_VR && !_swrCached('vr')) renderVendorRatingsSkeleton();
     loadVendorRatingsData();
     return;
   }
@@ -5255,8 +5273,8 @@ function switchView(view) {
     document.body.style.overflow = '';
     updateViewChrome();
     renderVNav();
-    // Skip skeleton when OSV data is already cached.
-    if (!_OSV) renderOSVSkeleton();
+    // Skip the skeleton when a cached payload will paint immediately.
+    if (!_OSV && !_swrCached('osv')) renderOSVSkeleton();
     loadOSVData();
     return;
   }
@@ -15342,6 +15360,7 @@ function renderOSVSkeleton() {
   if (!host) return;
   function b(h,w){return '<div class="lc-skb" style="height:'+h+'px'+(w?';width:'+w:'')+';margin-bottom:6px"></div>';}
   host.innerHTML='<div class="lc osv3-pg">'
+    +'<div class="skel-brandrow">'+brandMarkHtml()+'<span class="skel-brandtxt">Loading OSV Status&hellip;</span></div>'
     +'<div class="osv3-page-hdr"><div>'+b(20,'44%')+'<div style="margin-top:6px">'+b(12,'68%')+'</div></div></div>'
     +'<div class="osv3-kpis">'+[0,0,0,0].map(function(){return '<div class="osv3-kpi" style="flex-direction:column;gap:8px">'+b(13,'56%')+b(28,'40%')+b(11,'70%')+'</div>';}).join('')+'</div>'
     +'<div class="osv3-row1">'+[0,0,0].map(function(){return '<div class="osv3-card">'+b(13,'52%')+'<div style="margin-top:10px">'+b(160)+'</div></div>';}).join('')+'</div>'
@@ -15351,6 +15370,11 @@ function renderOSVSkeleton() {
 // Load data from backend
 function loadOSVData() {
   if (_OSV) { renderOSVDash(); return; }
+  // Same cache-first path as Vendor Ratings: getOSVDashboardData is a multi-sheet
+  // join, so a repeat visit paints from the last good payload immediately and the
+  // fetch only refreshes it.
+  var seeded = _swrSeed('osv', function (p) { return p && p.success; });
+  if (seeded) { _OSV = seeded; renderOSVDash(); }
   if (_osvLoading) return;
   _osvLoading = true;
   google.script.run
@@ -15359,13 +15383,16 @@ function loadOSVData() {
       try {
         var d = JSON.parse(json);
         if (d.success) {
+          _swrStore('osv', json);
           _OSV = d;
           if (currentView === 'osv') renderOSVDash();
-        } else { _osvShowError(d.error || 'No data returned.'); }
-      } catch (e) { _osvShowError('Parse error: ' + e.message); }
+        } else if (!seeded) { _osvShowError(d.error || 'No data returned.'); }
+      } catch (e) { if (!seeded) _osvShowError('Parse error: ' + e.message); }
     })
     .withFailureHandler(function(err) {
       _osvLoading = false;
+      // A failed refresh should not wipe a working, cached view.
+      if (seeded) return;
       _osvShowError((err && err.message) ? err.message : 'Server error.');
     })
     .getOSVDashboardData();
@@ -16319,6 +16346,7 @@ function renderVendorRatingsSkeleton() {
   if (!host) return;
   function b(h,w){return '<div class="lc-skb" style="height:'+h+'px'+(w?';width:'+w:'')+';margin-bottom:6px"></div>';}
   host.innerHTML='<div class="lc vr3-pg">'
+    +'<div class="skel-brandrow">'+brandMarkHtml()+'<span class="skel-brandtxt">Loading Vendor Ratings&hellip;</span></div>'
     +'<div class="vr3-page-hdr"><div>'+b(20,'44%')+'<div style="margin-top:6px">'+b(12,'68%')+'</div></div></div>'
     +'<div class="vr3-kpis">'+[0,0,0,0].map(function(){return '<div class="vr3-kpi" style="flex-direction:column;gap:8px">'+b(13,'56%')+b(28,'40%')+b(11,'70%')+'</div>';}).join('')+'</div>'
     +'<div class="vr3-row1">'+[0,0,0].map(function(){return '<div class="vr3-card">'+b(13,'52%')+'<div style="margin-top:10px">'+b(130)+'</div></div>';}).join('')+'</div>'
@@ -16326,18 +16354,69 @@ function renderVendorRatingsSkeleton() {
     +'</div>';
 }
 
+/* ── Brand mark for loading states ──────────────────────────────────────────
+   The logo is a ~29KB base64 PNG already embedded twice (header + mind-map
+   root). Read that one rather than embedding a third copy. */
+var _brandMarkSrc;
+function brandMarkHtml(cls) {
+  if (_brandMarkSrc === undefined) {
+    var el = document.querySelector('#header .logo-wrap img');
+    _brandMarkSrc = el ? el.getAttribute('src') : '';
+  }
+  return _brandMarkSrc
+    ? '<img class="' + (cls || 'skel-mark') + '" src="' + _brandMarkSrc + '" alt="Recykal" aria-hidden="true">'
+    : '';
+}
+
+/* ── Cache-first module loading ─────────────────────────────────────────────
+   Vendor Ratings and OSV each cost a multi-sheet join on the server, and both
+   re-fetched on every visit while showing a skeleton. GST already avoided that
+   by seeding from localStorage and revalidating in the background; this is the
+   same pattern, shared so every heavy module behaves identically.
+
+   seed()  - paint instantly from the last good payload, if there is one
+   store() - keep the fresh payload for next time
+
+   A failed refresh leaves the seeded data on screen rather than replacing a
+   working view with an error. */
+function _swrSeed(key, isValid) {
+  try {
+    var raw = localStorage.getItem(STORE_PFX + key);
+    if (!raw) return null;
+    var parsed = JSON.parse(raw);
+    return (parsed && isValid(parsed)) ? parsed : null;
+  } catch (e) { return null; }
+}
+// Cheap existence check so a view with cached data never flashes a skeleton.
+function _swrCached(key) {
+  try { return !!localStorage.getItem(STORE_PFX + key); } catch (e) { return false; }
+}
+function _swrStore(key, raw) {
+  try { localStorage.setItem(STORE_PFX + key, raw); } catch (e) {}
+}
+
 function loadVendorRatingsData() {
   if (_VR) { renderVendorRatingsDash(); return; }
+  // Paint from the last good payload first — a repeat visit is then instant and
+  // the network round-trip only refreshes what is already on screen.
+  var seeded = _swrSeed('vr', function (p) { return p && p.vendorRatings; });
+  if (seeded) { _VR = seeded; renderVendorRatingsDash(); }
   if (_vrLoading) return;
   _vrLoading = true;
   google.script.run
     .withSuccessHandler(function(raw) {
       _vrLoading = false;
-      try { _VR = JSON.parse(raw); } catch(e) { _VR = { success:false, error:'Parse error' }; }
+      var d;
+      try { d = JSON.parse(raw); } catch(e) { d = { success:false, error:'Parse error' }; }
+      if (d && d.vendorRatings) _swrStore('vr', raw);
+      // Keep the seeded view rather than replacing it with an error.
+      if (seeded && !(d && d.vendorRatings)) return;
+      _VR = d;
       if (currentView === 'vendorratings') renderVendorRatingsDash();
     })
     .withFailureHandler(function(err) {
       _vrLoading = false;
+      if (seeded) return;
       if (currentView !== 'vendorratings') return;
       var host = document.getElementById('tab-vendorratings');
       if (host) host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Failed to load: ' + esc(String(err)) + '</div>';
