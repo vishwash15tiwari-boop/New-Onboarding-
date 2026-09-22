@@ -3883,6 +3883,9 @@ body.mm-sn-drill{overflow:hidden}
 .mp-mx-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
 .mp-mx-rlbl{font-size:.84rem;font-weight:600;color:var(--txt2);padding-right:6px;white-space:nowrap}
 .mp-mx-rlbl.tot{color:var(--txt);font-weight:700}
+.mp-mx-rlbl.ch{cursor:pointer;border-radius:5px;transition:color .15s}
+.mp-mx-rlbl.ch:hover,.mp-mx-rlbl.ch:focus-visible{color:var(--blue);outline:none}
+.mp-mx-rlbl.ch:hover .mp-mx-go,.mp-mx-rlbl.ch:focus-visible .mp-mx-go{opacity:1}
 .mp-mx-cell{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 8px;text-align:center;min-width:0}
 .mp-mx-n{font-size:1.06rem;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
 .mp-mx-cell.tot{background:var(--card);border-style:dashed}
@@ -6654,8 +6657,13 @@ function _mmVertModules(key) {
   var volMatrix = catOnb.length ? {
     colColors: catOnb.map(function(x, i){ return MM_CAT_COLORS[i % MM_CAT_COLORS.length]; }),
     cols: catOnb.map(function(x){ return { label:_catLabel(x.cat), full:x.cat, seg:_mmGeoSeg(x.cat) }; }),
-    rows: [ { label:'Sellers', vals: catOnb.map(function(x){ return x.s; }) },
-            { label:'Buyers',  vals: catOnb.map(function(x){ return x.b; }) } ],
+    // The row label opens that audience's records. It carries the drill-down that
+    // used to sit on a pair of Sellers / Buyers tiles below — those repeated the
+    // totals this matrix already prints in its Total column.
+    rows: [ { label:'Sellers', vals: catOnb.map(function(x){ return x.s; }),
+              click:"openOnbAudRecords('seller')", tip:'View seller records' },
+            { label:'Buyers',  vals: catOnb.map(function(x){ return x.b; }),
+              click:"openOnbAudRecords('buyer')",  tip:'View buyer records' } ],
     chain:true
   } : null;
   // Average TAT (In Review → Onboarded) as a Sellers/Buyers × Category matrix that
@@ -6812,7 +6820,11 @@ function _mmVertModules(key) {
       headline:{ v:onb, label:'Total Onboarded', tone:'good' },
       bar: null,
       matrix: volMatrix,
-      tiles: [
+      // The matrix already prints each audience's total in its Total column, and
+      // its row labels carry the drill-down, so the Sellers / Buyers tiles would
+      // repeat the same two numbers on the same panel. They are kept only as the
+      // fallback for a vertical with no category breakdown, where no matrix renders.
+      tiles: volMatrix ? null : [
         { label:'Sellers', v:vs.completed||0, click:"openOnbAudRecords('seller')", tip:'View seller records' },
         { label:'Buyers',  v:vb.completed||0, click:"openOnbAudRecords('buyer')",  tip:'View buyer records' }
       ],
@@ -9198,7 +9210,15 @@ function mmRenderModPanel() {
       var cells = r.vals.map(function(v, ci) {
         return '<div class="mp-mx-cell"><span class="mp-mx-n" data-count="' + (+v || 0) + '">0</span></div>';
       }).join('');
-      return '<div class="mp-mx-rlbl">' + esc(r.label) + '</div>' + cells
+      // A row label opens that row's records when the caller supplies a click —
+      // the affordance the per-audience tiles used to provide.
+      var rlbl = r.click
+        ? '<div class="mp-mx-rlbl ch" role="button" tabindex="0" title="' + esc(r.tip || 'View records') + '"'
+          + ' onclick="' + r.click + '"'
+          + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + r.click + '}">'
+          + esc(r.label) + '<span class="mp-mx-go">↦</span></div>'
+        : '<div class="mp-mx-rlbl">' + esc(r.label) + '</div>';
+      return rlbl + cells
         + '<div class="mp-mx-cell tot"><span class="mp-mx-n" data-count="' + rt + '">0</span></div>';
     }).join('');
     mx += '<div class="mp-mx-rlbl tot">Total</div>'
