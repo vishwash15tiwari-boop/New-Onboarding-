@@ -3287,8 +3287,14 @@ body.mm-sn-drill{overflow:hidden}
    "View Detailed Records" button to the bottom of a tall card, off-screen. */
 .mmworkspace.sn-drill .mp-body{flex:0 0 auto;display:flex;flex-direction:column;overflow:visible}
 .mmworkspace.sn-drill .mp-matrix{flex:0 0 auto;margin-top:8px;align-content:start}
-/* In sn-drill mode the geo panel fills .mmdetail; .mmdetail is the single scroll container */
-.mmworkspace.sn-drill #mm-geo{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:visible;max-height:none;margin:0}
+/* Drill children must NOT shrink. .mmdetail is the single scroll container
+   (height:calc(100vh - 56px), overflow-y:auto), so a child that is allowed to
+   flex-shrink collapses below its own content instead of overflowing, and then
+   there is nothing for .mmdetail to scroll — the bottom of the panel was simply
+   unreachable. Content-sized children let the container scroll normally. */
+.mmworkspace.sn-drill #mm-funnel,
+.mmworkspace.sn-drill #mm-modpanel{flex:0 0 auto}
+.mmworkspace.sn-drill #mm-geo{display:flex;flex-direction:column;flex:0 0 auto;overflow:visible;max-height:none;margin:0}
 .mmworkspace.sn-drill .mg-eye{flex-shrink:0}
 .mmworkspace.sn-drill .mg-catsw{flex-shrink:0}
 .mmworkspace.sn-drill .mg-grid{flex:1;min-height:0;flex-direction:row!important;gap:var(--sp-4);align-items:stretch}
