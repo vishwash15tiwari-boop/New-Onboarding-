@@ -3552,6 +3552,13 @@ body.mm-sn-drill{overflow:hidden}
 .mf-sum-tile.mf-sum-clickable:hover{box-shadow:0 4px 14px rgba(15,122,79,.15);transform:translateY(-2px)}
 .mf-sum-tile.mf-sum-clickable:active{transform:translateY(0);box-shadow:none}
 @media(max-width:700px){.mmdetail .mf-summary{grid-template-columns:repeat(2,1fr)}}
+/* Same four tiles inside the Onboarded (Details) panel. Its own container class
+   because .mf-summary above is deliberately display:none outside .mmdetail, and
+   these must always show here; the tile classes themselves are not gated. */
+.onb-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.mf-sum-more{font-size:9px;color:var(--blue);margin-top:6px;text-align:right;font-weight:600;letter-spacing:.02em;opacity:.85}
+@media(max-width:980px){.onb-sum{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.onb-sum{grid-template-columns:1fr}}
 
 /* ── Shared detail popup shell (.mfp): a small floating card appended to <body>,
    used by the Quality KPI rows (contextual breakdown). One open/close/placement/
@@ -6729,6 +6736,40 @@ function _mmVertModules(key) {
       + covNote
       + '</div>';
   }
+  // Headline rates for this vertical — the same four the funnel's summary strip
+  // shows. Recomputed here from the same vs/vb stats rather than lifted off the
+  // funnel's render, so the two cannot drift apart if one is edited.
+  var _onbTot = _mmC(vs, vb, 'total');
+  var onbSummary = '';
+  // A rate needs a denominator. With no logged-in cases these are undefined, not
+  // 0%, so the whole strip is withheld rather than printing four honest-looking zeros.
+  if (_onbTot > 0) {
+    // Sub-1% rounds to one decimal instead of collapsing to "0%", which would read
+    // as "none rejected" when a few cases actually were.
+    var _onbPc = function(n) {
+      var p = n / _onbTot * 100;
+      return (p > 0 && p < 1) ? p.toFixed(1) : String(Math.round(p));
+    };
+    var _onbBlend = _mfBlendTATc(vs, vb);
+    var _onbTat   = (_onbBlend && _onbBlend.v != null) ? esc(_mfTatFmt(_onbBlend.v) || '—') : '—';
+    var _onbTile  = function(tone, ic, val, lbl, click) {
+      return '<div class="mf-sum-tile ts-' + tone + (click ? ' mf-sum-clickable' : '') + '"'
+        + (click ? ' onclick="' + click + '" role="button" tabindex="0"'
+                 + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + click + '}"' : '')
+        + '><div class="mf-sum-ic s-' + tone + '">' + ic + '</div>'
+        + '<div class="mf-sum-txt"><div class="mf-sum-v">' + val + '</div>'
+        + '<div class="mf-sum-lbl">' + lbl + '</div>'
+        + (click ? '<div class="mf-sum-more">Click for Details &rsaquo;</div>' : '')
+        + '</div></div>';
+    };
+    onbSummary = '<div class="onb-sum">'
+      + _onbTile('green', MM_IC.check, _onbPc(_mmC(vs, vb, 'completed')) + '%', 'Onboarding Conversion Rate')
+      + _onbTile('blue',  MM_IC.clock, _onbTat,                                 'Average Time to Onboard', 'openTatModal()')
+      + _onbTile('amber', MM_IC.draft, _onbPc(_mmC(vs, vb, 'draft')) + '%',     'Cases in Draft')
+      + _onbTile('red',   MM_IC.x,     _onbPc(_mmC(vs, vb, 'rejected')) + '%',  'Cases Rejected')
+      + '</div>';
+  }
+
   mods.push({ t:'Onboarded (Details)', ic:MM_IC.grid, tone:'t-ink', kind:'module', expand:'inline-panel',
     eye: hasCat ? 'Onboarded by category · seller / buyer' : 'Onboarded composition',
     panel:{
@@ -6740,6 +6781,7 @@ function _mmVertModules(key) {
         { label:'Sellers', v:vs.completed||0, click:"openOnbAudRecords('seller')", tip:'View seller records' },
         { label:'Buyers',  v:vb.completed||0, click:"openOnbAudRecords('buyer')",  tip:'View buyer records' }
       ],
+      rates: onbSummary,
       extra: volTatExtra,
       chain:true, records:'onboarded'
     }
@@ -9101,6 +9143,13 @@ function mmRenderModPanel() {
     }).join('') + '</div>';
   }
 
+  // Headline rate strip — anchor: sn-sec-rates. Belongs with the Summary tiles
+  // above (the same figures expressed as rates), so it shows and hides with them
+  // rather than becoming its own sub-tab. Kept as a sibling rather than nested
+  // inside #sn-sec-tile because that element IS the .mp-tiles grid — a second grid
+  // inside it would be laid out as a single cell.
+  if (P.rates) html += '<div id="sn-sec-rates">' + P.rates + '</div>';
+
   // Type × Category cross-tab — anchor: sn-sec-bar (below the summary tiles)
   if (P.matrix) {
     var M = P.matrix, nc = M.cols.length;
@@ -9165,12 +9214,13 @@ function mmRenderModPanel() {
   // Screen-switching: when a sub-tab is active, show only that section — no scrolling.
   var _modSubs = (typeof SN_MODULE_SUBS !== 'undefined' && node && node.t) ? (SN_MODULE_SUBS[node.t] || []) : [];
   if (_modSubs.length && snSubActive) {
-    var _secIds = ['sn-sec-head', 'sn-sec-tile', 'sn-sec-bar', 'sn-sec-ext', 'sn-sec-rec'];
-    // Which sections belong to which sub-tab key
+    var _secIds = ['sn-sec-head', 'sn-sec-tile', 'sn-sec-rates', 'sn-sec-bar', 'sn-sec-ext', 'sn-sec-rec'];
+    // Which sections belong to which sub-tab key. sn-sec-rates travels with
+    // sn-sec-tile: it restates those same counts as rates, so the two are one view.
     var _secMap = {
-      'head': ['sn-sec-head', 'sn-sec-tile'],
-      'bar':  ['sn-sec-tile', 'sn-sec-bar'],
-      'tile': ['sn-sec-tile'],
+      'head': ['sn-sec-head', 'sn-sec-tile', 'sn-sec-rates'],
+      'bar':  ['sn-sec-tile', 'sn-sec-rates', 'sn-sec-bar'],
+      'tile': ['sn-sec-tile', 'sn-sec-rates'],
       'ext':  ['sn-sec-ext'],
       'rec':  ['sn-sec-rec']
     };
