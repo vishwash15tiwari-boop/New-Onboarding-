@@ -19285,8 +19285,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /* sellers | buyers | ageing */
     var s = v.seller, b = v.buyer;
-    var sParts = [{ lbl: 'Plastic', val: s.plastic || 0, col: catCol('plastic') }, { lbl: 'Metal', val: s.metal || 0, col: catCol('metal') }];
-    var bParts = [{ lbl: 'Plastic', val: b.plastic || 0, col: catCol('plastic') }, { lbl: 'Metal', val: b.metal || 0, col: catCol('metal') }];
+    // The producer only breaks out metal and plastic (cntCat), but seller.total counts
+    // every transacted vendor. Anything in a third category was dropped from the legend
+    // while the ring still normalised to 100%, so the parts did not sum to the total
+    // printed in the centre. Surface the remainder rather than hide it.
+    var catParts = function (d) {
+      var p = [{ lbl: 'Plastic', val: d.plastic || 0, col: catCol('plastic') },
+               { lbl: 'Metal',   val: d.metal   || 0, col: catCol('metal') }];
+      var rest = (d.total || 0) - p[0].val - p[1].val;
+      if (rest > 0) p.push({ lbl: 'Other', val: rest, col: 'var(--lc-text3)' });
+      return p;
+    };
+    var sParts = catParts(s);
+    var bParts = catParts(b);
     h += '<div class="txm-row3">';
     if (AUD !== 'buyer')  h += sbCard('Sellers', s.total || 0, 'Transacted sellers', sParts);
     if (AUD !== 'seller') h += sbCard('Buyers',  b.total || 0, 'Transacted buyers',  bParts);
