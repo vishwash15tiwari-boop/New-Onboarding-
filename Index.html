@@ -107,6 +107,12 @@
      Geographic Split panel renders outside .lc and must share the same gutter. */
   --gutter:     var(--sp-5);   /* gap between cards, and the page's side padding */
   --pad-bottom: var(--sp-7);   /* scroll breathing room under the last card */
+  /* One content width for every screen. Without this the frames had drifted to
+     1280 / 1360 / 1400 with 36 / 24 / 20px side padding, so every card edge
+     shifted as you moved between views. Every page shell references these three
+     tokens and nothing hardcodes a width. */
+  --page-max:   1400px;
+  --gutter-sm:  var(--sp-4);   /* what --gutter narrows to on a phone (see below) */
   --card-pad-y: 14px;          /* card padding — compact enough for OSV to fit */
   --card-pad-x: 16px;
   --kpi-pad-y: 14px;           /* KPI tile padding — one figure tile, every module */
@@ -146,6 +152,14 @@
   /* ── Chart palette — ADDITIVE (Phase 3), unused until Phase 4 wires it into chart/legend rules ── */
   --chart-1:#0F7A4F; --chart-2:#1DC797; --chart-3:#8460D4; --chart-4:#FF9500; --chart-5:#8E8E93;
   --chart-grid:rgba(60,60,67,.14); --chart-label:var(--txt3);
+}
+
+/* Narrow the rhythm itself on a phone rather than per-shell. Every page frame
+   (.ov-wrap, .lc-main, and each *-pg) and every card grid reads --gutter, either
+   directly or through --lc-gutter, so one override moves them all together and
+   they cannot drift apart at small widths the way they had at large ones. */
+@media(max-width:620px){
+  :root{ --gutter: var(--gutter-sm); }
 }
 
 html{
@@ -379,7 +393,19 @@ body:not(.view-ov) .ov-back-btn{display:flex}
 #main{display:flex;flex-direction:row;align-items:flex-start;background:transparent;min-height:calc(100vh - 56px)}
 /* Base gutter — applies to the GST view; the branch views are governed by the
    body:not(.view-gst) rule further down, which outranks this. */
-#dash-content{flex:1;min-width:0;padding:12px 36px 64px;max-width:1340px;margin:0 auto}
+/* The single horizontal frame for every tab view. It used to cap at 1340px with
+   36px sides while the module shells nested inside it each declared their own
+   1400px/20px frame, so module content ended up ~56px from the edge and ~170px
+   narrower than the Overview, which sits outside this container. This now owns
+   the width and side padding; the shells inside contribute vertical rhythm only. */
+#dash-content{flex:1;min-width:0;padding:var(--gutter) var(--gutter) var(--pad-bottom);max-width:var(--page-max);margin:0 auto}
+/* Self-framing pages must not add a second horizontal frame on top of this one. */
+#dash-content .ov-wrap,
+#dash-content .lc-main,
+#dash-content .txm-pg,
+#dash-content .vr3-pg,
+#dash-content .osv3-pg,
+#dash-content .evn-pg{max-width:none;padding-left:0;padding-right:0}
 
 /* ===== Section Titles — Apple large title style ===== */
 .section-title{
@@ -3035,8 +3061,11 @@ body.view-gst #vnav .vnode:not(.vnode-gst){opacity:.55}
 
 /* Canvas: full width — the mind map carries its own lanes. */
 /* This rule outranks the base #dash-content declaration, so the real page gutter
-   lives here. Top padding trimmed to lift the filter bar toward the header. */
-body:not(.view-gst) #dash-content{max-width:1500px;margin:0 auto;padding:12px 30px 56px}
+   for every non-GST view lives here — which is why it must carry the same tokens.
+   It previously read 1500px/30px against the base rule's 1400px/20px and the
+   Overview's 1400px/20px, so the content box changed shape on almost every view
+   switch and the module shells nested inside added a further 20px on top. */
+body:not(.view-gst) #dash-content{max-width:var(--page-max);margin:0 auto;padding:var(--gutter) var(--gutter) var(--pad-bottom)}
 .jr-sec{margin-bottom:24px}
 .jr-hd{display:flex;align-items:baseline;gap:var(--sp-3);margin-bottom:13px}
 .jr-step{font-size:10px;font-weight:700;color:var(--txt3);font-variant-numeric:tabular-nums;letter-spacing:.05em}
@@ -3555,7 +3584,7 @@ body.mm-sn-drill{overflow:hidden}
 /* Same four tiles inside the Onboarded (Details) panel. Its own container class
    because .mf-summary above is deliberately display:none outside .mmdetail, and
    these must always show here; the tile classes themselves are not gated. */
-.onb-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.onb-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-3);margin-top:18px;padding-top:var(--sp-3);border-top:1px solid var(--border)}
 .mf-sum-more{font-size:9px;color:var(--blue);margin-top:6px;text-align:right;font-weight:600;letter-spacing:.02em;opacity:.85}
 @media(max-width:980px){.onb-sum{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.onb-sum{grid-template-columns:1fr}}
@@ -3928,7 +3957,7 @@ body.mm-sn-drill{overflow:hidden}
   #vnav .vnav-eyebrow,#vnav .vnav-sep{display:none}
   .vnav-tree{flex-direction:row}
   .vnode{min-width:212px;flex-shrink:0}
-  body:not(.view-gst) #dash-content{padding:18px 18px 60px}
+  body:not(.view-gst) #dash-content{padding:var(--gutter) var(--gutter) var(--pad-bottom)}
   .jr-ops,.vpipe-pair{grid-template-columns:1fr}
 }
 /* ── Transactions Module ───────────────────────────────────── */
@@ -4288,18 +4317,21 @@ body.view-ov #ov-screen{display:block}
   ::view-transition-old(root),::view-transition-new(root){animation-duration:.01ms!important}
 }
 
-.ov-wrap{max-width:1280px;margin:0 auto;padding:14px 36px 16px}
+/* Flex column so ONE token drives both axes. It previously spaced rows with
+   margin-bottom:10px while the grids inside used gap:12px, so the vertical and
+   horizontal gutters never matched. */
+.ov-wrap{max-width:var(--page-max);margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--gutter);padding:var(--gutter) var(--gutter) var(--pad-bottom)}
 
 /* Page intro */
-.ov-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+.ov-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
 .ov-eyebrow{font-size:13px;font-weight:700;letter-spacing:.18em;color:var(--blue);text-transform:uppercase;margin-bottom:0}
 .ov-bc{font-size:11.5px;font-weight:500;color:var(--txt3);letter-spacing:0;text-transform:none;margin-top:4px}
 .ov-sub{display:none}
 .ov-period-row{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;align-self:flex-end}
 
 /* Executive KPI cards */
-.ov-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:10px}
-.ov-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;box-shadow:var(--shadow-card);display:flex;flex-direction:column;position:relative;overflow:hidden;transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring)}
+.ov-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gutter)}
+.ov-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:var(--kpi-pad-y) var(--kpi-pad-x);box-shadow:var(--shadow-card);display:flex;flex-direction:column;position:relative;overflow:hidden;transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring)}
 .ov-kpi:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
 .ov-kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
 .ov-kpi-lbl{font-size:10.5px;font-weight:600;color:var(--txt2);letter-spacing:.02em}
@@ -4311,8 +4343,8 @@ body.view-ov #ov-screen{display:block}
 .ov-kpi-delta .dl{color:var(--txt3);font-weight:400;font-size:10px}
 
 /* Analytics row */
-.ov-analytics-row{display:grid;grid-template-columns:1fr 260px;gap:12px;margin-bottom:10px;align-items:stretch}
-.ov-chart-card,.ov-donut-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow-card)}
+.ov-analytics-row{display:grid;grid-template-columns:1fr 260px;gap:var(--gutter);align-items:stretch}
+.ov-chart-card,.ov-donut-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:var(--card-pad-y) var(--card-pad-x);box-shadow:var(--shadow-card)}
 .ov-donut-card{cursor:pointer;transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring);display:flex;flex-direction:column;justify-content:center}
 .ov-donut-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
 .ov-card-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
@@ -4357,7 +4389,9 @@ body.view-ov #ov-screen{display:block}
 /* Business verticals grid */
 .ov-verts-hdr{display:flex;align-items:center;margin-bottom:7px}
 .ov-verts-title{font-size:14px;font-weight:800;color:var(--txt);letter-spacing:-.1px}
-.ov-verts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+/* Same gutter as the KPI and analytics rows above it — these sat at 8px while
+   everything else on the page used 20px, so the page had two rhythms. */
+.ov-verts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gutter)}
 .ov-vert-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;box-shadow:var(--shadow-card);display:flex;align-items:flex-start;gap:var(--sp-3);width:100%;text-align:left}
 .ov-vert-icon{width:36px;height:36px;border-radius:var(--r2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .ov-vert-icon svg{width:17px;height:17px}
@@ -4372,7 +4406,7 @@ body.view-ov #ov-screen{display:block}
 
 /* Responsive */
 @media(max-width:1100px){.ov-analytics-row{grid-template-columns:1fr 260px}.ov-verts-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:820px){.ov-kpi-row{grid-template-columns:1fr}.ov-analytics-row{grid-template-columns:1fr}.ov-verts-grid{grid-template-columns:repeat(2,1fr)}.ov-wrap{padding:12px 16px 16px}.ov-page-hdr{flex-direction:column}.ov-period-row{align-self:flex-start}}
+@media(max-width:820px){.ov-kpi-row{grid-template-columns:1fr}.ov-analytics-row{grid-template-columns:1fr}.ov-verts-grid{grid-template-columns:repeat(2,1fr)}.ov-page-hdr{flex-direction:column}.ov-period-row{align-self:flex-start}}
 </style>
 <style id="lc-css">
 /* ===== Living Circularity — scoped overview design system (Phase 1) ===== */
@@ -4423,7 +4457,8 @@ body.view-ov #ov-screen{display:block}
 .lc-ico{width:34px;height:34px;display:grid;place-items:center;border-radius:8px;border:1px solid var(--lc-border);background:var(--lc-subtle);color:var(--lc-text2);font-size:15px}
 .lc-fresh{display:flex;align-items:center;gap:6px;color:var(--lc-text3);font-size:12px;white-space:nowrap}
 .lc-live{width:7px;height:7px;border-radius:50%;background:var(--lc-ok);box-shadow:0 0 0 3px var(--lc-ok-weak)}
-.lc-main{max-width:1360px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:22px}
+/* Same frame as every *-pg shell — was 1360/24/22 against their 1400/20/20. */
+.lc-main{max-width:var(--page-max);margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--gutter);padding:var(--gutter) var(--gutter) var(--pad-bottom)}
 .lc-sech{display:flex;align-items:baseline;gap:10px;margin:0 0 14px}
 .lc-sech h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em}
 .lc-sech .pr{color:var(--lc-accent);font-weight:500}
@@ -4513,7 +4548,7 @@ body.view-ov #ov-screen{display:block}
 .lc-skb{background:linear-gradient(90deg,var(--lc-subtle) 25%,var(--lc-border) 37%,var(--lc-subtle) 63%);background-size:400% 100%;animation:lcsh 1.4s ease infinite;border-radius:8px}
 @keyframes lcsh{0%{background-position:100% 0}100%{background-position:-100% 0}}
 @media(max-width:1080px){.lc-hero{grid-template-columns:1fr}.lc-kpis{grid-template-columns:repeat(2,1fr)}.lc-exc-row{grid-template-columns:repeat(2,1fr)}.lc-vgrid{grid-template-columns:repeat(2,1fr)}.lc-two{grid-template-columns:1fr}}
-@media(max-width:620px){.lc-main{padding:15px;gap:18px}.lc-top{padding:10px 14px}.lc-kpis,.lc-kpis-2,.lc-exc-row,.lc-vgrid{grid-template-columns:1fr}.lc-vstrip{grid-template-columns:repeat(2,1fr)}.lc-comp{grid-template-columns:1fr}.lc-ringwrap{width:200px;height:200px}.lc-fresh{display:none}}
+@media(max-width:620px){.lc-top{padding:10px 14px}.lc-kpis,.lc-kpis-2,.lc-exc-row,.lc-vgrid{grid-template-columns:1fr}.lc-vstrip{grid-template-columns:repeat(2,1fr)}.lc-comp{grid-template-columns:1fr}.lc-ringwrap{width:200px;height:200px}.lc-fresh{display:none}}
 @media(prefers-reduced-motion:reduce){.lc *{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
 </head>
@@ -19294,7 +19329,7 @@ document.addEventListener('DOMContentLoaded', function() {
    prefixed .txm-* so nothing leaks into other views. Colours come only from LC
    tokens, so light/dark and the brand palette are inherited, never redefined.
    ========================================================================== */
-.lc.txm-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
+.lc.txm-pg{max-width:var(--page-max);margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
 
 /* header */
 .lc .txm-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -19836,7 +19871,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ── Compact layout: full analytics on one screen, records toggled separately ── */
 /* Row gaps, grid gaps and side padding all come from --lc-gutter, so the outer
    margin is the same step as the gaps between cards. */
-.lc.vr3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
+.lc.vr3-pg{max-width:var(--page-max);margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
 .lc .vr3-page-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .lc .vr3-ttl{font-size:var(--ttl-size);font-weight:700;color:var(--lc-text);letter-spacing:var(--ttl-ls);line-height:1.2}
 .lc .vr3-sub{font-size:11px;color:var(--lc-text3);margin-top:1px}
@@ -20463,7 +20498,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <style id="osv3-css">
 /* Same gutter system as Vendor Ratings: one token drives the row gaps, the grid
    gaps and the side padding. */
-.lc.osv3-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
+.lc.osv3-pg{max-width:var(--page-max);margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
 .lc .osv3-page-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .lc .osv3-hdr-l{display:flex;flex-direction:column;gap:4px}
 .lc .osv3-ttl{font-size:var(--ttl-size);font-weight:700;color:var(--lc-text);letter-spacing:var(--ttl-ls);line-height:1.2}
@@ -20927,7 +20962,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ── Smooth view-switch fade-in (used by all module tabs) ── */
 @keyframes _lcViewFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 /* ── Page shell ── */
-.lc.evn-pg{max-width:1400px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
+.lc.evn-pg{max-width:var(--page-max);margin:0 auto;width:100%;display:flex;flex-direction:column;gap:var(--lc-gutter);padding:var(--lc-gutter) var(--lc-gutter) var(--lc-pad-bottom)}
 .lc .evn-page-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px}
 .lc .evn-ttl{font-size:var(--ttl-size);font-weight:700;color:var(--lc-text);letter-spacing:var(--ttl-ls);line-height:1.2}
 .lc .evn-sub{font-size:12px;color:var(--lc-text3);margin-top:2px;letter-spacing:0}
