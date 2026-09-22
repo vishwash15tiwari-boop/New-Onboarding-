@@ -12310,18 +12310,19 @@ function parseDMY(s) {
 function _enrichTat(rows) {
   /* Deliberately a pass-through. This used to back-fill r.tat with
      createdDate → onbDate for every COMPLETED row the backend had left without
-     a TAT. That is registration to completion, not the In Review → Onboarded
-     span every other TAT figure on the dashboard reports, and the fabricated
-     value then flowed into the Average TAT matrix and into the records table's
-     "TAT (days)" column — where the row's own Start and Onboarded cells still
-     read '—', because the backend had no window to show. A figure with no
-     auditable window behind it is worse than an honest blank.
+     a TAT. The fabricated value then flowed into the Average TAT matrix and
+     into the records table's "TAT (days)" column — where the row's own Start
+     and Onboarded cells still read '—', because the frontend had invented a
+     figure with no window behind it. That is worse than an honest blank.
 
-     Code.gs sets onbTAT at a single choke point and states that downstream
-     code needs only a null check, which is what every consumer here already
-     does: '—' renders as a dash, sorts last and is excluded from every
-     average. Kept as a no-op so the call sites read as an explicit decision
-     rather than looking like the enrichment was forgotten. */
+     Filling those rows in is now the backend's job, where the source dates
+     actually live: the display pass in _assignTat_ resolves a per-row TAT by
+     falling back past the feed-wide basis and ships the window it used, so
+     every figure shown has its own auditable Start → Onboarded behind it, and
+     the averages still read the single-basis onbTAT. Rows it genuinely cannot
+     measure keep '—', which renders as a dash, sorts last and stays out of
+     every average. Kept as a no-op so the call sites read as an explicit
+     decision rather than looking like the enrichment was forgotten. */
   return rows;
 }
 
@@ -12405,7 +12406,7 @@ function renderVdTable() {
           + '<td class="td-dim">' + esc(r.state || '—') + '</td>'
           + '<td class="td-dim td-num">' + esc(r.createdDate) + '</td>'
           + '<td class="td-dim td-num">' + esc(r.onbDate) + '</td>'
-          + '<td>' + tatChip(r.tat) + '</td>'
+          + '<td>' + tatChip(r.tat, r) + '</td>'
           + '<td>' + txnCell + '</td>'
           + '</tr>';
       }).join('')
@@ -12469,7 +12470,7 @@ function openRecModal(key) {
     +     (r.status === 'IN_REVIEW' && r.reviewDate
            ? '<div class="rm-f"><div class="rm-fl">In Review Since</div><div class="rm-fv mu">' + esc(r.reviewDate) + '</div></div>'
            : '<div class="rm-f"><div class="rm-fl">Onboarded Date</div><div class="rm-fv mu">' + esc(r.onbDate || '—') + '</div></div>')
-    +     '<div class="rm-f"><div class="rm-fl">TAT (days)</div><div class="rm-fv">' + tatChip(r.tat) + '</div></div>'
+    +     '<div class="rm-f"><div class="rm-fl">TAT (days)</div><div class="rm-fv">' + tatChip(r.tat, r) + '</div></div>'
     +   '</div>'
     + '</div>'
     + txnSec
@@ -13678,13 +13679,29 @@ function statusChip(s) {
   var cls = { COMPLETED: 'chip-completed', DRAFT: 'chip-draft', IN_REVIEW: 'chip-review', REJECTED: 'chip-rejected' };
   return '<span class="status-chip ' + (cls[s] || '') + '">' + esc(STATUS_LABELS[s] || s || '—') + '</span>';
 }
-function tatChip(t) {
+// What each TAT basis measured, for the tooltip on a row that fell back off the
+// feed-wide basis. Keys match tatBasis as set by _assignTat_ in Code.gs.
+var TAT_BASIS_LBL = {
+  review:  'In Review → Onboarded',
+  level1:  'Level 1 → Onboarded',
+  created: 'Created → Onboarded',
+  fixed:   'Created → Approved',
+};
+function tatChip(t, r) {
   // 0 is a valid TAT (same-day onboarding) — only null/undefined/'—' mean "no TAT".
   if (t === null || t === undefined || t === '' || t === '—') return '<span class="text-muted">—</span>';
   var n = parseInt(t, 10);
   if (isNaN(n)) return '<span class="text-muted">' + esc(t) + '</span>';
   var cls = n <= 2 ? 'text-green' : n <= 5 ? 'text-amber' : 'text-red';
-  return '<span class="' + cls + '">' + n + 'd</span>';
+  // A row the backend measured from an alternate start still has a real window behind
+  // it — its own TAT Start cell — but it is not in the Average TAT, which is single
+  // basis by design. Mark it rather than let the column read as if it sums to the card.
+  // tatExact is undefined on rows from a pre-v25 cache, so only an explicit false marks.
+  var mark = (r && r.tatExact === false)
+    ? '<sup class="text-muted" title="' + esc(TAT_BASIS_LBL[r.tatBasis] || 'Alternate start date')
+      + ' — not counted in Average TAT">*</sup>'
+    : '';
+  return '<span class="' + cls + '">' + n + 'd' + mark + '</span>';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -14558,7 +14575,7 @@ function _mrCellHtml(r, key) {
       // Onboarded-stage TAT window (MR_ONB_COLS): styled to match the main records table.
       case 'tatStart': return '<span class="td-dim td-num">' + esc(r.tatStart || '—') + '</span>';
       case 'onbDate':  return '<span class="td-dim td-num">' + esc(r.onbDate || '—') + '</span>';
-      case 'tat':      return tatChip(r.tat);
+      case 'tat':      return tatChip(r.tat, r);
       default:         return esc(String(r[key] || '—'));
     }
   }
@@ -14581,7 +14598,7 @@ function _mrCellHtml(r, key) {
                               + (r.id ? '<div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id) + '</div>' : '');
       case 'vendorType': return '<span class="td-dim">' + esc(r.vendorType || '—') + '</span>';
       case 'category':   return esc(r.category || '—');
-      case 'tat':        return tatChip(r.tat);
+      case 'tat':        return tatChip(r.tat, r);
       default:           return esc(String(r[key] || '—'));
     }
   }
@@ -14617,7 +14634,7 @@ function _mrCellHtml(r, key) {
     case 'gstin':       return r.hasGST ? '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>' : '<span class="gst-bad" style="font-size:10.5px">Missing</span>';
     case 'createdDate': return '<span class="td-dim td-num">' + esc(r.createdDate || '—') + '</span>';
     case 'onbDate':     return '<span class="td-dim td-num">' + esc(r.onbDate || '—') + '</span>';
-    case 'tat':         return tatChip(r.tat);
+    case 'tat':         return tatChip(r.tat, r);
     case 'txn':
       if (r.hasTransacted) return '<span class="mr-txn-chip">⚡ ' + (r.txnValue !== null ? fmtINR(r.txnValue) : 'Transacted') + '</span>';
       if (r.status === 'COMPLETED') return '<span class="mr-notxn-chip">Not yet</span>';

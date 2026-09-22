@@ -423,7 +423,7 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v24_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      if (v.length <= 100000) batchCache['vrows_v25_' + audience + '_' + vc.key + '_' + periodKey] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -513,7 +513,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v24_' + audience + '_' + vertKey + '_'
+    var cacheKey = 'vrows_v25_' + audience + '_' + vertKey + '_'
       + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -696,7 +696,7 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v24_' + aud + '_OMP_' + periodKey;
+      var cacheKey = 'vrows_v25_' + aud + '_OMP_' + periodKey;
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
@@ -1480,24 +1480,62 @@ function _assignTat_(rows, audience) {
   // the category splits can no longer disagree about which records count.
   // Tally every reason an onboarded record ends up without a TAT, so a shortfall
   // like "19 of 78 buyers" can be attributed instead of guessed at.
-  var tally = { onboarded: 0, ok: 0, noStart: 0, noEnd: 0, startAfterEnd: 0, tooLong: 0, noBasis: 0 };
+  var tally = { onboarded: 0, ok: 0, noStart: 0, noEnd: 0, startAfterEnd: 0, tooLong: 0, noBasis: 0, fallback: 0 };
   rows.forEach(function(r) {
-    if (r.status === 'COMPLETED') {
-      tally.onboarded++;
-      var end = endOf(r), start = basis ? startOf(r, basis) : null;
-      if (!basis)                        tally.noBasis++;
-      else if (!end)                     tally.noEnd++;
-      else if (!start)                   tally.noStart++;
-      else if (!inWin(r, start, basis))  tally.startAfterEnd++;
-      else {
-        var t = dateDiffDays(start, end);
-        if (t === null || t < 0)         tally.startAfterEnd++;
-        else if (t > TAT_MAX_DAYS)       tally.tooLong++;
-        // Keep the exact start/end the TAT was measured between, so the records table can
-        // show In Review → Onboarded → TAT per row and the figure is auditable, not opaque.
-        else { r.onbTAT = t; r.tatBasis = basis; r.tatStartDate = start; r.tatEndDate = end; tally.ok++; }
-      }
+    if (r.status !== 'COMPLETED') return;
+    tally.onboarded++;
+    var end = endOf(r), start = basis ? startOf(r, basis) : null;
+    if (!basis)                        tally.noBasis++;
+    else if (!end)                     tally.noEnd++;
+    else if (!start)                   tally.noStart++;
+    else if (!inWin(r, start, basis))  tally.startAfterEnd++;
+    else {
+      var t = dateDiffDays(start, end);
+      if (t === null || t < 0)         tally.startAfterEnd++;
+      else if (t > TAT_MAX_DAYS)       tally.tooLong++;
+      // Keep the exact start/end the TAT was measured between, so the records table can
+      // show In Review → Onboarded → TAT per row and the figure is auditable, not opaque.
+      else { r.onbTAT = t; r.tatBasis = basis; r.tatStartDate = start; r.tatEndDate = end; tally.ok++; }
     }
+  });
+
+  // Per-row display TAT. onbTAT above is single-basis on purpose: every average, SLA
+  // bucket and category split then measures the same window and stays comparable. The
+  // cost is that an onboarded vendor whose basis column happens to be empty carries no
+  // figure at all, which is why the records table showed "—" against vendors that
+  // plainly were onboarded.
+  //
+  // This pass fills those rows in by trying the remaining starts in priority order and
+  // recording the window it actually used. Nothing is invented: a row only gets a figure
+  // when a real start date resolves inside the window, and that start is what the row's
+  // TAT Start cell shows, so the number stays auditable against its own dates. Display
+  // only — the averages keep reading onbTAT and can never drift onto a mixed basis.
+  var order = audience === 'buyer' ? ['fixed', 'created'] : ['review', 'level1', 'created'];
+  rows.forEach(function(r) {
+    if (r.status !== 'COMPLETED') return;
+    if (r.onbTAT !== null) {
+      r.dispTAT   = r.onbTAT;        r.dispBasis = r.tatBasis;
+      r.dispStart = r.tatStartDate;  r.dispEnd   = r.tatEndDate;
+      return;
+    }
+    // Buyers are only ever measured to a real approval timestamp. onboardedDate on that
+    // feed is a last-touched date that drifts forward on any later edit, so a buyer with
+    // no approval date stays blank rather than being measured against a moving target.
+    if (audience === 'buyer' && !r._be) return;
+    var dEnd = endOf(r);
+    if (!dEnd) return;
+    for (var i = 0; i < order.length; i++) {
+      var b = order[i], s = startOf(r, b);
+      if (!s || !inWin(r, s, b)) continue;
+      var dt = dateDiffDays(s, dEnd);
+      if (dt === null || dt < 0 || dt > TAT_MAX_DAYS) continue;
+      r.dispTAT = dt; r.dispBasis = b; r.dispStart = s; r.dispEnd = dEnd;
+      tally.fallback++;
+      return;
+    }
+  });
+
+  rows.forEach(function(r) {
     delete r._l1;       // internal candidates — never reach a payload or cache
     delete r._tatEnd; delete r._bs; delete r._be;
   });
@@ -2595,16 +2633,27 @@ function vStats(data, vertKey) {
 }
 
 function vertRow(r) {
+  // dispTAT is this row's display TAT from the display pass in _assignTat_, which falls
+  // back past the feed-wide basis when that column is empty for this particular row.
+  // Reading onbTAT when it is absent keeps rows served from a cache written before that
+  // pass existed showing their old figure instead of going blank.
+  var tv = r.dispTAT != null ? r.dispTAT   : r.onbTAT;
+  var ts = r.dispTAT != null ? r.dispStart : r.tatStartDate;
+  var te = r.dispTAT != null ? r.dispEnd   : r.tatEndDate;
   return {
     id: r.id, name: r.name, category: r.category, vendorType: r.vendorType,
     status: r.status, gstin: r.gstin, hasGST: r.hasGST, state: r.state,
     createdDate: fmtDate(r.createdDate), onbDate: fmtDate(r.onboardedDate),
     reviewDate:  fmtDate(r.reviewDate),
-    // The exact window the TAT was measured across (— when the record carries no TAT), so
-    // the records table can show Start → Onboarded → TAT and the number is auditable.
-    tatStart: (r.onbTAT === null ? '—' : fmtDate(r.tatStartDate)),
-    tatEnd:   (r.onbTAT === null ? '—' : fmtDate(r.tatEndDate)),
-    tat: (r.onbTAT === null ? '—' : r.onbTAT),
+    // The exact window this row's TAT was measured across (— when the record carries no
+    // TAT), so the records table can show Start → Onboarded → TAT and the number stays
+    // auditable against its own dates. tatBasis names the window used; tatExact marks the
+    // rows sitting on the feed-wide basis, which are the ones counted in the averages.
+    tatStart: (tv == null ? '—' : fmtDate(ts)),
+    tatEnd:   (tv == null ? '—' : fmtDate(te)),
+    tat:      (tv == null ? '—' : tv),
+    tatBasis: r.dispBasis || r.tatBasis || null,
+    tatExact: r.onbTAT != null,
     hasTxn:       r.hasTxn,
     hasTransacted: r.hasTransacted,
     txnCount:     r.txnCount || 1,
