@@ -21962,6 +21962,8 @@ try{ if(typeof renderTxnDistSkeleton==='function'){ renderTxnDistSkeleton=functi
 .vov-act-sl{font-size:10px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
 .vov-act-sv{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt);margin-top:2px}
 .vov-act-sc{font-size:10.5px;color:var(--txt3);margin-top:3px}
+.vov-act-grp + .vov-act-grp{margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.vov-act-grp-t{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px}
 .vov-act-note{margin-top:13px;padding-top:11px;border-top:1px solid var(--border);font-size:11.5px;color:var(--txt3)}
 .vov-act-note b{color:var(--txt2);font-weight:700}
 @media(max-width:860px){.vov-act{grid-template-columns:1fr}}
@@ -22023,7 +22025,19 @@ function renderVertOverview(key) {
 
   var actEl = document.getElementById('vov-activation');
   if (actEl) {
-    try { actEl.innerHTML = _vovActivationHtml(key); }
+    try {
+      // Follows the chart's audience selector. On "all" both funnels are shown
+      // rather than blended: the middle stage is a listing on one side and a
+      // requisition on the other, so a combined bar would total two different things.
+      var _aud = _vovAud || 'all';
+      var _sub = function(t, h) {
+        return '<div class="vov-act-grp"><div class="vov-act-grp-t">' + t + '</div>' + h + '</div>';
+      };
+      actEl.innerHTML = _aud === 'seller' ? _vovActivationHtml(key, 'seller')
+                      : _aud === 'buyer'  ? _vovActivationHtml(key, 'buyer')
+                      : _sub('Sellers', _vovActivationHtml(key, 'seller'))
+                        + _sub('Buyers', _vovActivationHtml(key, 'buyer'));
+    }
     catch (e) { console.error('_vovActivationHtml', e); actEl.innerHTML = ''; }
   }
 
@@ -22078,7 +22092,7 @@ function _vovShell(vertName) {
     +   '<div class="ov-card-hdr">'
     +     '<div>'
     +       '<div class="ov-card-title">Post-Onboarding Activation</div>'
-    +       '<div class="ov-card-sub">Did onboarded sellers go on to list and sell? Sellers only &mdash; listings are a seller-side signal.</div>'
+    +       '<div class="ov-card-sub">Did onboarded vendors go on to trade? Sellers list, buyers raise requisitions &mdash; follows the audience selector above.</div>'
     +     '</div>'
     +   '</div>'
     +   '<div id="vov-activation"><div class="sk" style="height:120px;border-radius:var(--r2)"></div></div>'
@@ -22116,17 +22130,22 @@ function _vovMonthlySeries(key) {
 // Seller-side only. Listings do not exist on the buyer feed, so vStats returns
 // listed=null there and drawing a buyer funnel would invent a stage with no
 // source behind it.
-function _vovActivationHtml(key) {
-  var a = (DS && DS.verticals && DS.verticals[key] && DS.verticals[key].activation) || null;
-  if (!a || !a.onboarded) return '<div class="ov-card-sub">No onboarded sellers in this period.</div>';
+function _vovActivationHtml(key, aud) {
+  aud = aud === 'buyer' ? 'buyer' : 'seller';
+  var src = aud === 'buyer' ? DB : DS;
+  var a = (src && src.verticals && src.verticals[key] && src.verticals[key].activation) || null;
+  var who = aud === 'buyer' ? 'buyers' : 'sellers';
+  if (!a || !a.onboarded) return '<div class="ov-card-sub">No onboarded ' + who + ' in this period.</div>';
   if (a.listed === null && a.transacted === null) {
-    return '<div class="ov-card-sub">This feed carries no listing or transaction signal.</div>';
+    return '<div class="ov-card-sub">This feed carries no activity or transaction signal.</div>';
   }
 
   var base = a.onboarded || 1;
   var stages = [
-    { lbl: 'Onboarded',  n: a.onboarded,  c: 'var(--brand)' },
-    { lbl: 'Listed',     n: a.listed,     c: '#FF9500' },
+    { lbl: 'Onboarded', n: a.onboarded, c: 'var(--brand)' },
+    // Sellers put up a listing; buyers raise a requisition. Same step, and the
+    // feed names it differently on each side.
+    { lbl: aud === 'buyer' ? 'Requisitioned' : 'Listed', n: a.listed, c: '#FF9500' },
     { lbl: 'Transacted', n: a.transacted, c: '#049769' }
   ];
   var fn = stages.map(function(s) {
@@ -22163,10 +22182,12 @@ function _vovActivationHtml(key) {
   var note = '';
   if (a.listed !== null) {
     var dormant = Math.max(0, a.onboarded - a.listed);
+    var noun    = aud === 'buyer' ? 'buyer' : 'seller';
+    var act     = aud === 'buyer' ? 'raised a requisition' : 'listed anything';
     note = dormant > 0
-      ? '<div class="vov-act-note"><b>' + fmt(dormant) + '</b> onboarded seller'
-        + (dormant === 1 ? ' has' : 's have') + ' not listed anything yet.</div>'
-      : '<div class="vov-act-note">Every onboarded seller has at least one listing.</div>';
+      ? '<div class="vov-act-note"><b>' + fmt(dormant) + '</b> onboarded ' + noun
+        + (dormant === 1 ? ' has' : 's have') + ' not ' + act + ' yet.</div>'
+      : '<div class="vov-act-note">Every onboarded ' + noun + ' has reached this stage.</div>';
   }
 
   return '<div class="vov-act">'

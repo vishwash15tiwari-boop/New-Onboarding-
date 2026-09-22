@@ -2110,13 +2110,18 @@ function normalizeRows(raw, cfg) {
     // Whether an onboarded vendor went on to list, and then to sell. Listings are
     // seller-side; the buyer card carries none of these columns, so every field
     // below degrades to null there and the funnel simply omits the listing stage.
-    var listCntRaw = gv(row, idx, 'total_listings');
+    // Sellers list, buyers raise requisitions — the same step in each journey, under
+    // different column names. Both status columns read "<X> APPLICATION"/"<X> LISTING",
+    // so the ACTIVE test below serves both without branching.
+    var _isBuyerFeed  = cfg.audience === 'buyer';
+    var listCntRaw = gv(row, idx, _isBuyerFeed ? 'total_requisitions' : 'total_listings');
     var _lcN = (listCntRaw !== '' && listCntRaw !== null && listCntRaw !== undefined)
       ? parseInt(String(listCntRaw).replace(/[,\s]/g, ''), 10) : NaN;
     var totalListings = isNaN(_lcN) ? null : _lcN;
     var firstListing  = parseDate(gv(row, idx, 'first_listing_date') || '');
     var firstOrder    = parseDate(gv(row, idx, 'first_order_date')   || '');
-    var listStatus    = String(gv(row, idx, 'listing_activation_status') || '').trim().toUpperCase();
+    var listStatus    = String(gv(row, idx, _isBuyerFeed ? 'application_activation_status'
+                                                         : 'listing_activation_status') || '').trim().toUpperCase();
     // Listed = an explicit ACTIVE status, a positive listing count, or a first
     // listing date. Any one of the three is proof a listing went up; requiring the
     // status column alone would miss vendors whose feed leaves it blank.
