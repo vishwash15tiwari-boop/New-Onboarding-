@@ -9335,6 +9335,41 @@ function _snTatSetAud(aud) {
   _snPopulateTatInline(aud);
 }
 
+// Explains a TAT shortfall instead of letting the average of a handful of records
+// stand in for the whole cohort. The counts come from vStats.tatCoverage, which
+// records why each onboarded record could not be measured.
+//
+// 'startAfterEnd' dominating is the signature of a feed whose start date is later
+// than its onboarded date — e.g. a created date that holds the data-import time
+// rather than the real registration time. No figure can be produced from that, and
+// inventing one is how this card previously came to read 86 days for New against
+// 2 days for Existing.
+function _snTatCoverageNote(aud) {
+  var key = activeVertKey || selectedVert;
+  var src = aud === 'buyer' ? DB : DS;
+  var cov = (src && src.verticals && src.verticals[key] && src.verticals[key].tatCoverage) || null;
+  if (!cov || !cov.onboarded) return '';
+  var missing = Math.max(0, cov.onboarded - (cov.shown || 0));
+  if (!missing) return '';
+  var sk = cov.skipped || {};
+  var top = null, topN = 0;
+  Object.keys(sk).forEach(function(k){ if (sk[k] > topN) { topN = sk[k]; top = k; } });
+  var why = {
+    startAfterEnd: 'their recorded start date falls after the date they were onboarded',
+    noStart:       'the feed carries no start date for them',
+    noEnd:         'the feed carries no onboarded date for them',
+    noBasis:       'this feed carries no usable start-date column at all',
+    tooLong:       'the measured span exceeds the ' + 365 + '-day sanity limit'
+  }[top] || 'the feed does not carry a measurable window for them';
+  return '<div style="margin-top:8px;padding:9px 11px;border:1px solid var(--border);'
+    + 'border-left:3px solid var(--amber);border-radius:6px;background:var(--bg2);'
+    + 'font-size:11.5px;color:var(--txt2);line-height:1.45">'
+    + '<b>TAT measured for ' + fmt(cov.shown || 0) + ' of ' + fmt(cov.onboarded) + ' onboarded</b> — '
+    + fmt(missing) + ' excluded because ' + why + '. '
+    + 'The average below describes only the measured records.'
+    + '</div>';
+}
+
 function _snTatShell(tableHtml, shown, sourceTotal, cats, types) {
   var key = activeVertKey || selectedVert;
   var vcfg = (typeof getVertCfg === 'function') ? (getVertCfg().filter(function(c){ return c.key === key; })[0]) : null;
@@ -9370,6 +9405,7 @@ function _snTatShell(tableHtml, shown, sourceTotal, cats, types) {
     + '</div>'
     + audToggle
     + '</div>'
+    + (sourceTotal != null ? _snTatCoverageNote(_snTatInlineAud) : '')
     + filterBar
     + (tableHtml || '<div style="padding:40px 0;text-align:center;color:var(--txt3)">Loading…</div>')
     + '</div>';

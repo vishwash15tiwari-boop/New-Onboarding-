@@ -1485,14 +1485,19 @@ function _assignTat_(rows, audience) {
     if (r.status !== 'COMPLETED') return;
     tally.onboarded++;
     var end = endOf(r), start = basis ? startOf(r, basis) : null;
-    if (!basis)                        tally.noBasis++;
-    else if (!end)                     tally.noEnd++;
-    else if (!start)                   tally.noStart++;
-    else if (!inWin(r, start, basis))  tally.startAfterEnd++;
+    // The reason is stamped on the row as well as tallied, so vStats can report
+    // coverage PER VERTICAL. A TAT that is missing for most of a cohort is a fact
+    // about the feed the dashboard has to be able to state; showing the average of
+    // whatever few records survived, with no note, reads as though it described
+    // them all.
+    if (!basis)                      { tally.noBasis++;      r.tatSkip = 'noBasis'; }
+    else if (!end)                   { tally.noEnd++;        r.tatSkip = 'noEnd'; }
+    else if (!start)                 { tally.noStart++;      r.tatSkip = 'noStart'; }
+    else if (!inWin(r, start, basis)){ tally.startAfterEnd++; r.tatSkip = 'startAfterEnd'; }
     else {
       var t = dateDiffDays(start, end);
-      if (t === null || t < 0)         tally.startAfterEnd++;
-      else if (t > TAT_MAX_DAYS)       tally.tooLong++;
+      if (t === null || t < 0)       { tally.startAfterEnd++; r.tatSkip = 'startAfterEnd'; }
+      else if (t > TAT_MAX_DAYS)     { tally.tooLong++;       r.tatSkip = 'tooLong'; }
       // Keep the exact start/end the TAT was measured between, so the records table can
       // show In Review → Onboarded → TAT per row and the figure is auditable, not opaque.
       else { r.onbTAT = t; r.tatBasis = basis; r.tatStartDate = start; r.tatEndDate = end; tally.ok++; }
@@ -2458,6 +2463,10 @@ function vStats(data, vertKey) {
   // than draw a funnel that collapses to zero.
   var listedCount = 0, hasListData = false;
   var daysToList = [], daysToOrder = [];
+  // Why onboarded records carry no TAT, counted per vertical. Without this the
+  // dashboard can only show the average of the few that resolved, which reads as
+  // if it described the whole cohort.
+  var tatShown = 0, tatSkip = { noBasis:0, noEnd:0, noStart:0, startAfterEnd:0, tooLong:0 };
 
   data.forEach(function(r) {
     var isDone = r.status === 'COMPLETED';
@@ -2479,6 +2488,10 @@ function vStats(data, vertKey) {
     if (r.onbTAT !== null) {
       tats.push(r.onbTAT);   // onboarded-only + range enforced at assignment
       if (r.onbTAT <= 7) withinSla++; else delayed++;
+    }
+    if (isDone) {
+      if (r.dispTAT != null || r.onbTAT !== null) tatShown++;
+      else if (r.tatSkip && tatSkip[r.tatSkip] !== undefined) tatSkip[r.tatSkip]++;
     }
 
     // Activation is measured against the onboarded cohort only: a draft with no
@@ -2661,6 +2674,16 @@ function vStats(data, vertKey) {
       for (var _i = 0; _i < data.length; _i++) { if (data[_i].tatBasis) return data[_i].tatBasis; }
       return null;
     }()),
+    // How much of the onboarded cohort a TAT could actually be measured for, and
+    // why the rest could not be. 'startAfterEnd' dominating means the feed's start
+    // date is later than its onboarded date — the signature of a created date that
+    // holds the data-import time rather than the real registration time.
+    tatCoverage: {
+      onboarded: completed,
+      inAverage: tats.length,
+      shown:     tatShown,
+      skipped:   tatSkip
+    },
     transacted: transacted,
     pctTransacted: transacted === null ? null : pct(transacted, completed),
     totalTxnCount: hasTxnData ? txnCountSum : null,
