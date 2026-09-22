@@ -16015,7 +16015,10 @@ function loadTransactionData() {
       var host = document.getElementById('tab-transactions');
       if (host) host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Failed to load: ' + esc(String(err)) + '</div>';
     })
-    .getTransactionModuleData((function() { var f = { period: currentPeriod }; if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; } return JSON.stringify(f); }()));
+    // vertical:'OMP' is Open Marketplace — the vertical this module's title and
+    // breadcrumb both name "Marketplace". Without it the backend returned the
+    // whole portfolio under a Marketplace label.
+    .getTransactionModuleData((function() { var f = { period: currentPeriod, vertical: 'OMP' }; if (currentPeriod === 'Custom') { f.startDate = customStart; f.endDate = customEnd; } return JSON.stringify(f); }()));
 }
 
 var _txnView = 'both';
@@ -20081,15 +20084,28 @@ document.addEventListener('DOMContentLoaded', function() {
     var ratedRows=rows.filter(function(v){return v.rating>0&&v.rating!=null;});
     var avg=ratedRows.length?ratedRows.reduce(function(s,v){return s+v.rating;},0)/ratedRows.length:0;
     var rated=ratedRows.length,total=rows.length;
+    /* Rating Coverage measures how much of the Marketplace (Open Marketplace)
+       seller base carries a score, so its denominator is the seller population
+       from the Scoring & OSV Tracker — sr.total — not rows.length.
+       _VR.vendorRatings only ever holds sellers that already have a score, so
+       dividing by it asked "what share of scored sellers are scored": it read
+       ~100% by construction and printed the identical figure to the Sellers
+       Rated card beside it. The population carries no category breakdown, so
+       this card always reports the whole seller base and labels itself as such
+       when a category filter is on. Falls back to the old denominator if an
+       older backend response has no total. */
+    var covAll=audRows(_vrAud).filter(function(v){return v.rating>0&&v.rating!=null;}).length;
+    var covPop=sr.total||total;
+    var covPct=covPop>0?pct(covAll,covPop):0;
     var exc=ratedRows.filter(function(v){return v.rating<=2;}).length;
     var pctUp=(prevAvg&&avg)?Math.round((avg-prevAvg)/prevAvg*100):null;
     var trendSel='<select class="vr3-card-sel" onchange="window.vr3TrendN(this.value)"><option value="6"'+(_vrTrendN===6?' selected':'')+'>Last 6 Months</option><option value="9"'+(_vrTrendN===9?' selected':'')+'>Last 9 Months</option><option value="12"'+(_vrTrendN===12?' selected':'')+'>Last 12 Months</option></select>';
 
     var kpiH='<div class="vr3-kpis">';
     kpiH+=vrKpiOpen("avg","rated")+icoWrap(IcoStar,'var(--lc-accent-weak)','var(--lc-accent)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Average Seller Score</div><div class="vr3-kpi-val">'+fmt1(avg)+' <span style="font-size:14px;font-weight:500;color:var(--lc-text3)">/ 10</span></div><div class="vr3-kpi-sub">'+(pctUp!==null&&pctUp!==0?(pctUp>0?'<span class="vr3-tag-up">&#9650; '+Math.abs(pctUp)+'%</span>':'<span class="vr3-tag-dn">&#9660; '+Math.abs(pctUp)+'%</span>'):'')+''+(prevAvg?'<span>vs '+fmt1(prevAvg)+' prev</span>':'<span>No prior data</span>')+'</div></div></div>';
-    kpiH+=vrKpiOpen("rated","rated")+icoWrap(IcoUsers,'var(--lc-ok-weak)','var(--lc-ok)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Sellers Rated</div><div class="vr3-kpi-val">'+rated+'</div><div class="vr3-kpi-sub"><span>'+pct(rated,total)+'% of '+total+' total</span></div></div></div>';
+    kpiH+=vrKpiOpen("rated","rated")+icoWrap(IcoUsers,'var(--lc-ok-weak)','var(--lc-ok)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Sellers Rated</div><div class="vr3-kpi-val">'+rated+'</div><div class="vr3-kpi-sub"><span>'+(_vrCat?('scored in '+esc(_vrCat)):'sellers carrying a score')+'</span></div></div></div>';
     kpiH+=vrKpiOpen("exc","exception")+icoWrap(IcoAlert,'var(--lc-risk-weak)','var(--lc-risk)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Exceptions</div><div class="vr3-kpi-val">'+exc+'</div><div class="vr3-kpi-sub"><span>'+pct(exc,rated)+'% of rated vendors</span></div></div></div>';
-    kpiH+=vrKpiOpen("cov","notrated")+icoWrap(IcoPie,'var(--lc-purple-bg)','var(--lc-purple)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Coverage</div><div class="vr3-kpi-val">'+pct(rated,total)+'<span style="font-size:14px;font-weight:500;color:var(--lc-text3)">%</span></div><div class="vr3-kpi-sub"><span>'+rated+' rated of '+total+'</span></div></div></div>';
+    kpiH+=vrKpiOpen("cov","notrated")+icoWrap(IcoPie,'var(--lc-purple-bg)','var(--lc-purple)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Coverage</div><div class="vr3-kpi-val">'+covPct+'<span style="font-size:14px;font-weight:500;color:var(--lc-text3)">%</span></div><div class="vr3-kpi-sub"><span>'+fmt(covAll)+' rated of '+fmt(covPop)+' sellers'+(_vrCat?' &middot; all categories':'')+'</span></div></div></div>';
     kpiH+='</div>'+vrFilterBar();
     var row1='<div class="vr3-row1">';
     row1+='<div class="vr3-card"><div class="vr3-card-hdr"><span class="vr3-card-ttl">Score Distribution</span></div>'+buildScoreDist(rows)+'</div>';
@@ -20194,16 +20210,21 @@ document.addEventListener('DOMContentLoaded', function() {
     var rated=rows.filter(function(v){return v.rating>0;});
     var avg=rated.length?rated.reduce(function(s,v){return s+v.rating;},0)/rated.length:null;
     var exc=rated.filter(function(v){return v.rating<=2;}).length;
+    // Coverage reads the seller population, not the scored list — see the note
+    // on covPop in render(). Unscoped by category, because the population is.
+    var _srT=(_VR&&_VR.seller&&_VR.seller.rating)||{};
+    var _covAll=audRows(_vrAud).filter(function(v){return v.rating>0;}).length;
+    var _covPop=_srT.total||rows.length;
     var T={
       avg:['Average Seller Score',vrRow('Average',avg===null?'—':fmt1(avg)+' / 10')+vrRow('Rated Vendors',fmt(rated.length))
            +'<div class="vr3-tip-def">Mean post-OSV score across rated vendors.</div>',_vrStat==='rated'],
-      rated:['Sellers Rated',vrRow('Rated',fmt(rated.length))+vrRow('Coverage',pct(rated.length,rows.length)+'%')
-           +'<div class="vr3-tip-def">Vendors with a score on record.</div>',_vrStat==='rated'],
+      rated:['Sellers Rated',vrRow('Rated',fmt(rated.length))+vrRow('In scope',fmt(rows.length))
+           +'<div class="vr3-tip-def">Sellers with a score on record.</div>',_vrStat==='rated'],
       exc:['Rating Exceptions',vrRow('Exceptions',fmt(exc))+vrRow('Share of rated',pct(exc,rated.length)+'%')
            +'<div class="vr3-tip-def">Scored 0–2 — flagged for review.</div>',_vrStat==='exception'],
-      cov:['Rating Coverage',vrRow('Rated',fmt(rated.length))+vrRow('Total',fmt(rows.length))
-           +vrRow('Coverage',pct(rated.length,rows.length)+'%')
-           +'<div class="vr3-tip-def">Rated vendors as a share of all in scope.</div>',_vrStat==='notrated']
+      cov:['Rating Coverage',vrRow('Rated',fmt(_covAll))+vrRow('Seller base',fmt(_covPop))
+           +vrRow('Coverage',pct(_covAll,_covPop)+'%')
+           +'<div class="vr3-tip-def">Scored sellers as a share of the whole Marketplace seller base, from the Scoring &amp; OSV Tracker. Not scoped by category.</div>',_vrStat==='notrated']
     }[which];
     if(T)vrShowTip('<b class="t">'+T[0]+'</b>'+T[1]+vrHint(T[2]),evt);
   };

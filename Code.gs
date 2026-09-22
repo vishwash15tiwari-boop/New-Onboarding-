@@ -729,7 +729,13 @@ function getTransactionModuleData(filtersJson) {
   try {
     var f    = filtersJson ? JSON.parse(filtersJson) : {};
     var catF = (f.category || 'all').toLowerCase();
-    var cKey = 'txn_mod_v3_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF]);
+    // The module is titled "Marketplace Transactions" and its breadcrumb reads
+    // Central Onboarding › Marketplace › Transactions, but this only ever
+    // filtered by date and category — so the GMV, transacted counts and ageing
+    // it showed were the whole portfolio. 'all' keeps the old portfolio-wide
+    // behaviour available for any caller that wants it.
+    var vertF = String(f.vertical || 'OMP');
+    var cKey = 'txn_mod_v4_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, vertF]);
     var cache = CacheService.getScriptCache();
     var hit   = cache.get(cKey);
     if (hit) return hit;
@@ -738,6 +744,10 @@ function getTransactionModuleData(filtersJson) {
     var bCfg = AUDIENCE_CFG.buyer;
     var sAll = normalizeRows(readData('seller'), sCfg).filter(function(r) { return applyDateFilter(r, f); });
     var bAll = normalizeRows(readData('buyer'),  bCfg).filter(function(r) { return applyDateFilter(r, f); });
+    if (vertF !== 'all') {
+      sAll = sAll.filter(function(r) { return r.vertical === vertF; });
+      bAll = bAll.filter(function(r) { return r.vertical === vertF; });
+    }
     if (catF !== 'all') {
       sAll = sAll.filter(function(r) { return String(r.category||'').toLowerCase() === catF; });
       bAll = bAll.filter(function(r) { return String(r.category||'').toLowerCase() === catF; });
@@ -2138,28 +2148,26 @@ function normalizeRows(raw, cfg) {
     return true;
   });
 
-  // Managed Marketplace surfaces the miscellaneous Others rows that are NOT Transport
-  // or Support cases (those are logistics/service records that stay in Others only).
-  // The generic Others catch-all is date-limited to recent cases (created after
-  // 31 March 2026) so it doesn't fill with historical noise — but Transport & Support
-  // are a deliberate, tracked category, so they are kept in full and never date-
-  // dropped, guaranteeing no transporter/support record goes missing.
-  var OTHERS_CUTOFF = new Date(2026, 3, 1); // April 1 2026
+  // Managed Marketplace owns the miscellaneous Others rows that are NOT Transport
+  // or Support cases (those are logistics/service records that stay in Others).
+  //
+  // Each case gets exactly ONE vertical. This block used to emit the Managed
+  // Marketplace copy AND keep the Others original whenever the case was created
+  // on or after 1 Apr 2026, so the same onboarding case existed under two
+  // verticals: every portfolio-wide figure — Total Onboarded, GMV, the
+  // geographic splits — counted it twice, and the vertical breakdown summed to
+  // more than the portfolio total it sat under. Routing every one of them to
+  // Managed Marketplace regardless of date also removes the cliff that made a
+  // case created on 31 March behave differently from one created on 1 April.
+  //
+  // Transport & Support are a deliberate, tracked category and stay in Others in
+  // full, so no transporter or support record goes missing.
   var result = [];
   deduped.forEach(function(r) {
     if (r.vertical !== 'Others') { result.push(r); return; }
     var isTS = isTransportOrSupport_((r.category || '').toLowerCase(), (r.bizVertical || '').toLowerCase());
-    if (isTS) {
-      result.push(r);
-      return;
-    }
-    var mmRow = {};
-    for (var k in r) mmRow[k] = r[k];
-    mmRow.vertical = 'Marketplace';
-    result.push(mmRow);
-    if (!r.createdDate || r.createdDate >= OTHERS_CUTOFF) {
-      result.push(r);
-    }
+    if (!isTS) r.vertical = 'Marketplace';
+    result.push(r);
   });
 
   // Layer 3: enrich GSTIN from META_SHEET_ID for any row where format-scan
@@ -4625,7 +4633,7 @@ function getOSVDashboardData() {
 // Returns monthly onboarding counts (calendar months, last 12) for sellers and buyers.
 // Used exclusively by the Central Onboarding Overview bar chart.
 function getOverviewStats() {
-  var CACHE_KEY = 'overview_v4';  // bumped: per-vertical audience split + true onboarded date
+  var CACHE_KEY = 'overview_v5';  // bumped: one vertical per case — cross-listed Others no longer double-counted
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
   if (hit) return hit;
