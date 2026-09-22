@@ -13345,7 +13345,14 @@ function _snMmNav(show) {
   if (el) el.style.display = show ? '' : 'none';
   var ws = document.getElementById('mm-workspace');
   if (ws) ws.classList.toggle('sn-drill', !show);
-  document.body.classList.toggle('mm-sn-drill', !show);
+  // Suppress page scroll only while the mind-map drill is the surface on screen:
+  // there .mmdetail is the scroll container. The full-page module views
+  // (Vendor Ratings, OSV, Existing vs New, Transactions, the vertical Overview)
+  // render into their own tabs outside .mmdetail and have no inner scroller, so
+  // the page must stay scrollable or their lower half is unreachable. Clearing
+  // body.style.overflow in those branches could not help — this is a class rule.
+  var drillSurface = !show && (typeof currentView === 'undefined' || currentView === 'onboarding');
+  document.body.classList.toggle('mm-sn-drill', drillSurface);
 }
 
 // Level 1: reset to Overview — restore the mind-map columns.
