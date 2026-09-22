@@ -21073,14 +21073,22 @@ document.addEventListener('DOMContentLoaded', function() {
      New against 2 days for Existing. The two were never measuring the same
      thing. A record the backend could not measure now returns null and is left
      out of the average, the same rule the rest of the dashboard follows. */
+  /* 0 is a real TAT — a vendor that entered review and was onboarded the same
+     day — and the rest of the dashboard counts it: tatChip says so outright and
+     vStats averages every record where onbTAT !== null. This helper alone
+     required > 0, so it silently dropped every same-day case. Where a cohort
+     onboards same-day more often than not, that emptied the average entirely and
+     the card rendered a bare dash. Only null / undefined / '' / '—' mean "the
+     backend could not measure this"; a measured zero counts. Negatives are still
+     rejected, which is what the >= guards below do. */
   function getTAT(r){
     var t=parseFloat(r.tat);
-    if(!isNaN(t)&&t>0)return t;
+    if(!isNaN(t)&&t>=0)return t;
     // tatStart/tatEnd are the exact window the backend measured, so recomputing
     // from them is the same figure, not a substitute for it.
     var ts=(r.tatStart&&r.tatStart!=='—')?parseDMY(r.tatStart):null;
     var te=(r.tatEnd&&r.tatEnd!=='—')?parseDMY(r.tatEnd):null;
-    if(ts&&te){var wd=Math.round((te-ts)/86400000);return wd>0?wd:null;}
+    if(ts&&te){var wd=Math.round((te-ts)/86400000);return wd>=0?wd:null;}
     return null;
   }
 
@@ -21638,7 +21646,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // span a 34px line box that overlapped the label above and the caption
     // below by 3px each.
     var tatVal=avgNewTat!==null?fmt1(avgNewTat)+'<span style="font-size:14px;font-weight:500;letter-spacing:0;color:var(--lc-text3)"> d</span>':'<span style="color:var(--lc-text3)">&mdash;</span>';
-    var tatSub=exRows.length?(avgExTat!==null?'Existing avg: '+fmt1(avgExTat)+' d':'Existing: no TAT data'):'All vendors new to Recykal';
+    // When the figure is blank, the caption says WHY. A bare dash next to a working
+    // "Existing avg" reads as a broken card rather than an absence of data.
+    var tatSub;
+    if(avgNewTat===null){
+      tatSub=!newRows.length?'No new vendors in this period'
+            :'No measurable TAT for '+newRows.length+' new vendor'+(newRows.length===1?'':'s');
+    } else {
+      tatSub=exRows.length?(avgExTat!==null?'Existing avg: '+fmt1(avgExTat)+' d':'Existing: no TAT data'):'All vendors new to Recykal';
+    }
     kpiH+='<div class="evn-kpi'+(_evnDrillType==='tat'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'tat\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#FF9500,#FFCC00)"></div>'+icoWrap(IcoClock,'rgba(255,149,0,.1)','#FF9500')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Avg TAT — New</div><div class="evn-kpi-val">'+tatVal+'</div><div class="evn-kpi-sub">'+tatSub+'</div></div></div>';
     kpiH+='</div>';
     var row1='<div class="evn-row1">';
