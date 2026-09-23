@@ -4366,7 +4366,10 @@ body.view-ov #ov-screen{display:block}
 .ov-period-row{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;align-self:flex-end}
 
 /* Executive KPI cards */
-.ov-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gutter)}
+/* auto-fit, not a fixed count: the row carries three cards, or four once the feed
+   reports a vendor lifecycle and Still Active joins them. A hardcoded repeat(3)
+   squeezed the fourth into a second row on its own. */
+.ov-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:var(--gutter)}
 .ov-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:var(--kpi-pad-y) var(--kpi-pad-x);box-shadow:var(--shadow-card);display:flex;flex-direction:column;position:relative;overflow:hidden;transition:var(--t-lift)}
 .ov-kpi:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
 .ov-kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
@@ -17609,18 +17612,16 @@ function _buildOvKpiCards(scope) {
   var icUsers  = '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>';
   var icCheck  = '<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>';
   var icClock  = '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>';
+  var icPulse  = '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>';
 
-  // "Onboarded" describes how the application ended, not whether the vendor still
-  // trades. Where the feed reports a lifecycle, the share still live is shown beneath
-  // the count — on this data most completed vendors have since churned or
-  // deactivated, and the bare figure reads as a live vendor base.
+  // "Onboarded" counts how many applications completed — it does not say how many of
+  // those vendors are still trading. Where the feed reports a lifecycle, the live
+  // count gets a card of its own beside this one rather than a caption underneath:
+  // on this data most completed vendors have since churned, so a bare 328 reads as a
+  // live vendor base and tells the opposite of the true story.
   var lc = _ovLifecycle(scope);
   var totalVal = '<span data-count="' + kpis.comp + '" data-count-id="ov_total">' + fmt(kpis.comp) + '</span>'
-    + (lc && lc.known
-        ? '<span class="ov-kpi-note" title="' + esc(fmt(lc.churned) + ' churned · ' + fmt(lc.deactivated)
-            + ' deactivated · of ' + fmt(lc.known) + ' with a known lifecycle state') + '">'
-          + fmt(lc.active) + ' still active &middot; ' + Math.round(lc.active / lc.known * 100) + '%</span>'
-        : '');
+    + '<span class="ov-kpi-note">applications completed</span>';
   var compVal  = kpis.compRate + '<span style="font-size:.55em;font-weight:700;color:var(--txt2);margin-left:1px">%</span>';
   // A blank here has two very different causes, and they need telling apart: either
   // nothing could be measured, or the two audiences were measured differently and a
@@ -17638,7 +17639,25 @@ function _buildOvKpiCards(scope) {
       + '<span class="ov-kpi-note">nothing measurable yet</span>';
   }
 
+  // Retention sits beside acquisition. Tone follows the rate: a base that has mostly
+  // churned should not be rendered in the same confident green as the headline count.
+  var retCard = '';
+  if (lc && lc.known) {
+    var retPct = Math.round(lc.active / lc.known * 100);
+    var retHex = retPct >= 60 ? '#0F7A4F' : retPct >= 30 ? '#B25000' : '#D70015';
+    var retBg  = retPct >= 60 ? 'rgba(15,122,79,.08)' : retPct >= 30 ? 'rgba(255,149,0,.10)' : 'rgba(215,0,21,.08)';
+    var gone   = lc.churned + lc.deactivated;
+    var retVal = '<span data-count="' + lc.active + '" data-count-id="ov_active">' + fmt(lc.active) + '</span>'
+      + '<span style="font-size:.5em;font-weight:700;color:' + retHex + ';margin-left:5px">' + retPct + '%</span>'
+      + '<span class="ov-kpi-note" title="' + esc(fmt(lc.churned) + ' churned, ' + fmt(lc.deactivated)
+          + ' deactivated, of ' + fmt(lc.known) + ' with a recorded lifecycle state') + '">'
+      + (gone ? fmt(gone) + ' churned or deactivated' : 'all onboarded vendors still active')
+      + '</span>';
+    retCard = card(retHex, retBg, icPulse, 'Still Active', retVal, null);
+  }
+
   return card('#0F7A4F', 'rgba(15,122,79,.08)',   icUsers, 'Total Onboarded', totalVal, dTotal)
+       + retCard
        + card('#1DC797', 'rgba(29,199,151,.08)', icCheck, 'Completion Rate',   compVal,  dComp)
        + card('#8460D4', 'rgba(132,96,212,.08)', icClock, 'Average TAT',       tatVal,   dTAT);
 }
