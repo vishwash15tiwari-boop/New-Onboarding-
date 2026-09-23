@@ -9701,14 +9701,20 @@ function mmRenderModPanel() {
 
   // extra section — anchor: sn-sec-ext
   // Always create the element when the ext sub-tab is active so _snPopulateTatInline can find it.
-  if (P.extra || snSubActive === 'ext') {
-    html += '<div id="sn-sec-ext">' + (P.extra || '') + '</div>';
+  // P.extra comes in two shapes: a ready HTML string (the older callers) or an
+  // array of { title, html } sections, rendered by the block below. Only the
+  // string belongs in this anchor div — concatenating an array here stringified
+  // it to "[object Object],[object Object]" and printed that above the sections
+  // it was already rendering correctly.
+  var _extraStr = (typeof P.extra === 'string') ? P.extra : '';
+  if (_extraStr || snSubActive === 'ext') {
+    html += '<div id="sn-sec-ext">' + _extraStr + '</div>';
   }
 
   // Free-form sections a caller supplies as ready HTML, each with its own heading.
   // Sits below the tiles and above the records CTA, which is where a panel with room
   // left over has room to say more. Rendered as given — callers build it with esc().
-  if (P.extra && P.extra.length) {
+  if (Array.isArray(P.extra) && P.extra.length) {
     P.extra.forEach(function(sec) {
       if (!sec || !sec.html) return;
       html += '<div class="mp-xsec" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">'
