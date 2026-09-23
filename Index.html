@@ -22165,11 +22165,19 @@ function _vovActivationHtml(key, aud) {
       + '</div>';
   }).join('');
 
-  function stat(st, lbl) {
+  // `reached` is how many records got to the step this interval measures. Non-zero
+  // there with a zero interval count means the step happened but the feed carries
+  // no date for it — a missing column, not an absence of activity. Naming which is
+  // the difference between a blank that reads as a bug and one that informs;
+  // debugFeedColumns() then reports the column against the live feed.
+  function stat(st, lbl, reached) {
     if (!st || !st.count) {
+      var why = (reached > 0)
+        ? 'Reached by ' + fmt(reached) + ', but the feed carries no date for this step'
+        : 'No records have reached this step yet';
       return '<div class="vov-act-stat"><div class="vov-act-sl">' + lbl + '</div>'
         + '<div class="vov-act-sv" style="color:var(--txt3)">&mdash;</div>'
-        + '<div class="vov-act-sc">No dated records yet</div></div>';
+        + '<div class="vov-act-sc">' + why + '</div></div>';
     }
     var rng = st.min === st.max ? st.min + 'd' : st.min + '&ndash;' + st.max + 'd';
     return '<div class="vov-act-stat"><div class="vov-act-sl">' + lbl + '</div>'
@@ -22193,8 +22201,8 @@ function _vovActivationHtml(key, aud) {
   return '<div class="vov-act">'
     + '<div class="vov-act-fn">' + fn + '</div>'
     + '<div class="vov-act-side">'
-    +   stat(a.daysToList,  'Onboarded &rarr; first listing')
-    +   stat(a.daysToOrder, 'Onboarded &rarr; first order')
+    +   stat(a.daysToList,  'Onboarded &rarr; first ' + (aud === 'buyer' ? 'requisition' : 'listing'), a.listed)
+    +   stat(a.daysToOrder, 'Onboarded &rarr; first order', a.transacted)
     + '</div>'
     + '</div>' + note;
 }

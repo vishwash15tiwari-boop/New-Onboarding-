@@ -1555,6 +1555,61 @@ function _assignTat_(rows, audience) {
 // from a guess into a decision: pick the column whose name matches the milestone
 // and whose median TAT is plausible, then add it to the reviewDate candidates.
 // ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Run from the Apps Script editor. Answers, against the LIVE feed rather than a
+// sample: which columns each audience actually carries, and how many records
+// every derived onboarding figure can be computed for. Written because a missing
+// header is invisible at runtime — gv() returns '' for a column that is not
+// there, so a whole read-out goes blank with nothing naming the cause.
+// ─────────────────────────────────────────────────────────────
+function debugFeedColumns() {
+  ['seller', 'buyer'].forEach(function(aud) {
+    Logger.log('\n════════ ' + aud.toUpperCase() + ' FEED ════════');
+    var raw;
+    try { raw = readData(aud); } catch (e) { Logger.log('  ✗ readData failed: ' + e.message); return; }
+    var idx = buildIndex(raw.headers);
+    Logger.log('  rows: ' + raw.rows.length + '   source: ' + (raw.source || '(unknown)'));
+    Logger.log('  ── every header, as the code sees it ──');
+    Logger.log('  ' + raw.headers.map(function(h) {
+      return String(h).trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    }).join(' | '));
+
+    // Does each name the onboarding figures look for actually resolve?
+    var groups = {
+      'onboarded date':   aud === 'buyer' ? ['onboarding_updated_date'] : ['onboarded_date'],
+      'created date':     ['onboarding_created_date', 'created_date', 'created', 'created_at'],
+      'TAT start':        ['review_submission_date', 'level1', 'level1_approved_at', 'level2_approved_at'],
+      'activity count':   aud === 'buyer' ? ['total_requisitions'] : ['total_listings'],
+      'activity status':  aud === 'buyer' ? ['application_activation_status'] : ['listing_activation_status'],
+      'first activity':   aud === 'buyer' ? ['first_requisition_date'] : ['first_listing_date', 'firstlistingdate'],
+      'first order':      ['first_order_date', 'firstorderdate', 'firstshipmentdate']
+    };
+    Logger.log('  ── column resolution + fill ──');
+    Object.keys(groups).forEach(function(lbl) {
+      var hit = null;
+      groups[lbl].forEach(function(k) { if (hit === null && idx[k] !== undefined) hit = k; });
+      if (hit === null) { Logger.log('    ✗ ' + lbl + ' → NONE of [' + groups[lbl].join(', ') + '] present'); return; }
+      var filled = 0;
+      raw.rows.forEach(function(r) { var v = r[idx[hit]]; if (v !== '' && v !== null && v !== undefined) filled++; });
+      Logger.log('    ✓ ' + lbl + ' → "' + hit + '"  filled ' + filled + '/' + raw.rows.length);
+    });
+
+    // And how many records each derived figure would actually land on.
+    var rows = normalizeRows(raw, AUDIENCE_CFG[aud]);
+    var done = rows.filter(function(r) { return r.status === 'COMPLETED'; });
+    var cnt = function(f) { return done.filter(f).length; };
+    Logger.log('  ── derived, over ' + done.length + ' onboarded records ──');
+    Logger.log('    TAT (onbTAT)        : ' + cnt(function(r){ return r.onbTAT !== null; }));
+    Logger.log('    TAT shown (dispTAT) : ' + cnt(function(r){ return r.dispTAT != null; }));
+    Logger.log('    listed / requisitioned: ' + cnt(function(r){ return r.hasListing; }));
+    Logger.log('    days to first activity: ' + cnt(function(r){ return r.daysToList  !== null; }));
+    Logger.log('    days to first order   : ' + cnt(function(r){ return r.daysToOrder !== null; }));
+    var st = _lastTatStats[aud];
+    if (st) Logger.log('    TAT basis: ' + st.basis + '   skips: ' + JSON.stringify(st.tally));
+  });
+  Logger.log('\n════ END ════');
+}
+
 function debugTATColumns() {
   ['seller', 'buyer'].forEach(function(aud) {
     Logger.log('\n════════ ' + aud.toUpperCase() + ' ════════');
@@ -2113,15 +2168,28 @@ function normalizeRows(raw, cfg) {
     // Sellers list, buyers raise requisitions — the same step in each journey, under
     // different column names. Both status columns read "<X> APPLICATION"/"<X> LISTING",
     // so the ACTIVE test below serves both without branching.
+    // Resolved through firstVal_ rather than one fixed name apiece: gv() returns ''
+    // for a header it cannot find, so a single-name lookup fails silently and the
+    // whole velocity read-out goes blank with no indication which column was missing.
     var _isBuyerFeed  = cfg.audience === 'buyer';
-    var listCntRaw = gv(row, idx, _isBuyerFeed ? 'total_requisitions' : 'total_listings');
+    var listCntRaw = _isBuyerFeed
+      ? firstVal_(row, idx, ['total_requisitions', 'total_requisition', 'requisitions', 'requisition_count'])
+      : firstVal_(row, idx, ['total_listings', 'total_listing', 'listings', 'listing_count', 'no_of_listings']);
     var _lcN = (listCntRaw !== '' && listCntRaw !== null && listCntRaw !== undefined)
       ? parseInt(String(listCntRaw).replace(/[,\s]/g, ''), 10) : NaN;
     var totalListings = isNaN(_lcN) ? null : _lcN;
-    var firstListing  = parseDate(gv(row, idx, 'first_listing_date') || '');
-    var firstOrder    = parseDate(gv(row, idx, 'first_order_date')   || '');
-    var listStatus    = String(gv(row, idx, _isBuyerFeed ? 'application_activation_status'
-                                                         : 'listing_activation_status') || '').trim().toUpperCase();
+    var firstListing  = parseDate(firstVal_(row, idx, _isBuyerFeed
+      ? ['first_requisition_date', 'firstrequisitiondate', 'first_requisition']
+      : ['first_listing_date', 'firstlistingdate', 'first_listing', 'listing_date', 'first_listed_date']));
+    // firstshipmentdate is what the detail card calls the first order — the same
+    // column the transaction date already falls back to.
+    var firstOrder    = parseDate(firstVal_(row, idx,
+      ['first_order_date', 'firstorderdate', 'first_order', 'order_date',
+       'first_transaction_date', 'firstshipmentdate', 'first_shipment_date']));
+    var listStatus    = String((_isBuyerFeed
+      ? firstVal_(row, idx, ['application_activation_status', 'requisition_activation_status', 'application_status'])
+      : firstVal_(row, idx, ['listing_activation_status', 'listing_status', 'listing_activation'])) || '')
+      .trim().toUpperCase();
     // Listed = an explicit ACTIVE status, a positive listing count, or a first
     // listing date. Any one of the three is proof a listing went up; requiring the
     // status column alone would miss vendors whose feed leaves it blank.
