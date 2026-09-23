@@ -2287,6 +2287,13 @@ function normalizeRows(raw, cfg) {
       status:        status,
       createdDate:   created,
       onboardedDate: onboarded,
+      // Where the vendor stands NOW, as against `status`, which records how the
+      // onboarding application ended. A vendor is COMPLETED for good once onboarded,
+      // but current_status moves on: ONBOARDED → DEACTIVATED → CHURNED → REACTIVATED.
+      // Nothing read this column, so a churned vendor counted toward "Total Onboarded"
+      // indistinguishably from a live one.
+      currentStatus: String(firstVal_(row, idx,
+        ['current_status', 'vendor_status', 'account_status', 'lifecycle_status']) || '').trim().toUpperCase(),
       totalListings: totalListings,
       hasListing:    hasListing,
       firstListing:  firstListing,
@@ -2604,6 +2611,12 @@ function vStats(data, vertKey) {
   // dashboard can only show the average of the few that resolved, which reads as
   // if it described the whole cohort.
   var tatShown = 0, tatSkip = { noBasis:0, noEnd:0, noStart:0, startAfterEnd:0, tooLong:0 };
+  // Lifecycle of the ONBOARDED cohort. "Onboarded" says how the application ended,
+  // not whether the vendor is still trading — on this feed most completed vendors
+  // have since churned or deactivated, and counting them as a live base overstates
+  // it substantially. Tracked separately so the headline count keeps its meaning
+  // while the dashboard can also say how much of it is still active.
+  var lifeActive = 0, lifeChurned = 0, lifeDeactivated = 0, lifeOther = 0, lifeKnown = 0;
 
   data.forEach(function(r) {
     var isDone = r.status === 'COMPLETED';
@@ -2629,6 +2642,16 @@ function vStats(data, vertKey) {
     if (isDone) {
       if (r.dispTAT != null || r.onbTAT !== null) tatShown++;
       else if (r.tatSkip && tatSkip[r.tatSkip] !== undefined) tatSkip[r.tatSkip]++;
+      var _cs = r.currentStatus || '';
+      if (_cs) {
+        lifeKnown++;
+        if      (_cs.indexOf('CHURN')  !== -1) lifeChurned++;
+        else if (_cs.indexOf('DEACTIV') !== -1) lifeDeactivated++;
+        // ONBOARDED and REACTIVATED both mean the vendor is live right now.
+        else if (_cs.indexOf('ONBOARD') !== -1 || _cs.indexOf('REACTIV') !== -1
+                 || _cs.indexOf('ACTIVE') !== -1) lifeActive++;
+        else lifeOther++;
+      }
     }
 
     // Activation is measured against the onboarded cohort only: a draft with no
@@ -2821,6 +2844,16 @@ function vStats(data, vertKey) {
       shown:     tatShown,
       skipped:   tatSkip
     },
+    // How much of the onboarded cohort is still live. known === 0 means the feed
+    // carries no current_status, and the UI omits the split rather than implying
+    // every vendor is active.
+    lifecycle: {
+      known:       lifeKnown,
+      active:      lifeActive,
+      churned:     lifeChurned,
+      deactivated: lifeDeactivated,
+      other:       lifeOther
+    },
     transacted: transacted,
     pctTransacted: transacted === null ? null : pct(transacted, completed),
     totalTxnCount: hasTxnData ? txnCountSum : null,
@@ -2860,7 +2893,8 @@ function vertRow(r) {
   var te = r.dispTAT != null ? r.dispEnd   : r.tatEndDate;
   return {
     id: r.id, name: r.name, category: r.category, vendorType: r.vendorType,
-    status: r.status, gstin: r.gstin, hasGST: r.hasGST, state: r.state,
+    status: r.status, currentStatus: r.currentStatus || '',
+    gstin: r.gstin, hasGST: r.hasGST, state: r.state,
     createdDate: fmtDate(r.createdDate), onbDate: fmtDate(r.onboardedDate),
     reviewDate:  fmtDate(r.reviewDate),
     // The exact window this row's TAT was measured across (— when the record carries no

@@ -5758,6 +5758,8 @@ var MR_COLS = [
   { key:'vendorType',  label:'Vendor Type' },
   { key:'audType',     label:'Type' },
   { key:'status',      label:'Status' },
+  // Where the vendor stands now, as against how the application ended.
+  { key:'currentStatus', label:'Lifecycle' },
   { key:'state',       label:'State' },
   { key:'gstin',       label:'GSTIN' },
   { key:'createdDate', label:'Created' },
@@ -15052,6 +15054,17 @@ function _mrCellHtml(r, key) {
     case 'status':      return statusChip(r.status);
     case 'state':       return '<span class="td-dim">' + esc(r.state || '—') + '</span>';
     case 'gstin':       return r.hasGST ? '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>' : '<span class="gst-bad" style="font-size:10.5px">Missing</span>';
+    // Churned and deactivated read as warnings; still-live states stay quiet, so the
+    // eye lands on the vendors that have gone away.
+    case 'currentStatus': {
+      var _cs = (r.currentStatus || '').toUpperCase();
+      if (!_cs) return '<span class="td-dim">—</span>';
+      var _tone = _cs.indexOf('CHURN') !== -1   ? 'var(--st-rejected-tx)'
+                : _cs.indexOf('DEACTIV') !== -1 ? 'var(--amber)'
+                : 'var(--txt2)';
+      var _lbl = _cs.charAt(0) + _cs.slice(1).toLowerCase();
+      return '<span style="font-size:11px;font-weight:600;color:' + _tone + '">' + esc(_lbl) + '</span>';
+    }
     case 'createdDate': return '<span class="td-dim td-num">' + esc(r.createdDate || '—') + '</span>';
     case 'onbDate':     return '<span class="td-dim td-num">' + esc(r.onbDate || '—') + '</span>';
     case 'tat':         return tatChip(r.tat, r);
@@ -17381,6 +17394,27 @@ function _ovKpis(scope) {
   };
 }
 
+// Lifecycle of the onboarded cohort across the scope, summed over sellers and
+// buyers. Returns null when no feed in scope reports current_status, so the caller
+// shows nothing rather than implying every vendor is live.
+function _ovLifecycle(scope) {
+  var keys = _ovScopeKeys(scope);
+  var out = { known:0, active:0, churned:0, deactivated:0, other:0 };
+  [DS, DB].forEach(function(src) {
+    if (!src || !src.verticals) return;
+    keys.forEach(function(k) {
+      var lc = (src.verticals[k] || {}).lifecycle;
+      if (!lc) return;
+      out.known       += lc.known       || 0;
+      out.active      += lc.active      || 0;
+      out.churned     += lc.churned     || 0;
+      out.deactivated += lc.deactivated || 0;
+      out.other       += lc.other       || 0;
+    });
+  });
+  return out.known ? out : null;
+}
+
 // Status distribution (completed / in review / draft / rejected) for the scope.
 function _ovStatus(scope) {
   var keys = _ovScopeKeys(scope);
@@ -17555,7 +17589,17 @@ function _buildOvKpiCards(scope) {
   var icCheck  = '<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>';
   var icClock  = '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>';
 
-  var totalVal = '<span data-count="' + kpis.comp + '" data-count-id="ov_total">' + fmt(kpis.comp) + '</span>';
+  // "Onboarded" describes how the application ended, not whether the vendor still
+  // trades. Where the feed reports a lifecycle, the share still live is shown beneath
+  // the count — on this data most completed vendors have since churned or
+  // deactivated, and the bare figure reads as a live vendor base.
+  var lc = _ovLifecycle(scope);
+  var totalVal = '<span data-count="' + kpis.comp + '" data-count-id="ov_total">' + fmt(kpis.comp) + '</span>'
+    + (lc && lc.known
+        ? '<span class="ov-kpi-note" title="' + esc(fmt(lc.churned) + ' churned · ' + fmt(lc.deactivated)
+            + ' deactivated · of ' + fmt(lc.known) + ' with a known lifecycle state') + '">'
+          + fmt(lc.active) + ' still active &middot; ' + Math.round(lc.active / lc.known * 100) + '%</span>'
+        : '');
   var compVal  = kpis.compRate + '<span style="font-size:.55em;font-weight:700;color:var(--txt2);margin-left:1px">%</span>';
   // A blank here has two very different causes, and they need telling apart: either
   // nothing could be measured, or the two audiences were measured differently and a
