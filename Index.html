@@ -5891,6 +5891,17 @@ var MR_AGING_COLS = [
   { key:'gstin',    label:'GSTIN' },
 ];
 
+// Transacted vendors with documents still outstanding. Submitted/total and the
+// missing list are joined on from the quality feed by openTxnDocRecords.
+var MR_TXNDOC_COLS = [
+  { key:'name',        label:'Name', always:true },
+  { key:'vendorType',  label:'Type' },
+  { key:'category',    label:'Category' },
+  { key:'gstin',       label:'GSTIN' },
+  { key:'docsSubmitted', label:'Docs' },
+  { key:'docsMissing', label:'Missing' },
+];
+
 // TAT drill-down — the vendors behind a cell in the Average TAT matrix.
 var MR_TAT_COLS = [
   { key:'name',       label:'Name', always:true },
@@ -6632,6 +6643,43 @@ function _mmRegRows(vs, vb) {
 }
 
 // Module list for one vertical, wired to live DS/DB/quality data.
+// Document completeness of the vendors who have actually transacted — a vendor
+// trading on incomplete paperwork is the combination worth surfacing, and neither
+// figure on its own shows it.
+//
+// The doc feed and the onboarding feed are separate sources, so rows are joined by
+// id and then GSTIN, the same order the quality build uses. Vendors with no match
+// are counted as 'unknown' rather than folded into "incomplete" — an absent record
+// is not evidence of a missing document.
+//
+// Returns null when there is nothing to say: no doc feed (it is OMP-scoped), no
+// rows loaded yet, or nothing transacted.
+function _txnDocStat() {
+  var docs = (qualityData && qualityData.vendorDocs) || [];
+  if (!docs.length) return null;
+  var byId = {}, byGst = {};
+  docs.forEach(function(d) {
+    if (d.id)    byId[String(d.id)] = d;
+    if (d.gstin) byGst[String(d.gstin).toUpperCase()] = d;
+  });
+  var rows = (Array.isArray(vertRows) ? vertRows : [])
+    .concat((_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : []);
+  var txn = rows.filter(function(r) { return r.hasTransacted; });
+  if (!txn.length) return null;
+  var st = { txn: txn.length, complete: 0, partial: 0, none: 0, unknown: 0 };
+  txn.forEach(function(r) {
+    var d = (r.id && byId[String(r.id)])
+         || (r.gstin && byGst[String(r.gstin).toUpperCase()])
+         || null;
+    if (!d || !d.total) { st.unknown++; return; }
+    if      (d.submitted >= d.total) st.complete++;
+    else if (d.submitted > 0)        st.partial++;
+    else                             st.none++;
+  });
+  st.matched = st.complete + st.partial + st.none;
+  return st.matched ? st : null;
+}
+
 function _mmVertModules(key) {
   var vs = (DS && DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
@@ -6926,6 +6974,26 @@ function _mmVertModules(key) {
       // was printed twice on the same row — the total tile listed Metal and
       // Plastic, and then Metal and Plastic each got a tile repeating it.
       tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true, sub:'Seller-side', breakdown: _gmvBd });
+    }
+    // Paperwork behind the trade. Tone follows the shortfall, not the headline:
+    // a transacting vendor with documents outstanding is the exception to chase.
+    var _docSt = _txnDocStat();
+    if (_docSt) {
+      var _shortfall = _docSt.partial + _docSt.none;
+      var _bd = [];
+      if (_docSt.partial) _bd.push({ l:'Partial',  v:_docSt.partial });
+      if (_docSt.none)    _bd.push({ l:'None',     v:_docSt.none });
+      if (_docSt.unknown) _bd.push({ l:'No record', v:_docSt.unknown });
+      tTiles.push({
+        label: 'Docs complete',
+        v: _docSt.complete,
+        tone: _shortfall === 0 ? 'good' : (_docSt.none ? 'crit' : 'warn'),
+        sub: Math.round(_docSt.complete / _docSt.matched * 100) + '% of ' + fmt(_docSt.matched) + ' transacted'
+             + (_docSt.unknown ? ' · ' + fmt(_docSt.unknown) + ' unmatched' : ''),
+        breakdown: _bd,
+        click: _shortfall ? "openTxnDocRecords()" : null,
+        tip: _shortfall ? 'View transacted vendors with documents outstanding' : null
+      });
     }
     mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transaction activity',
       panel:{
@@ -12144,6 +12212,18 @@ function loadVertRows(key) {
       }
       renderVertDetail();   // always re-render — never leave the panel stuck on the spinner
       _mrRefreshFromVertRows();   // keep an open drill-down in step with the new rows
+      // The Transactions panel's Docs-complete tile is derived from these rows joined
+      // against the quality feed, so an already-open panel has to be repainted once
+      // they land or the tile never appears. Same rebuild _patchQualitySects does
+      // when the other half of that join arrives.
+      if (currentView !== 'gst' && _mmVert && mmModActive && typeof mmRenderModPanel === 'function') {
+        try {
+          _mmExtraCache = {};
+          mmTree = mmBuildTree();
+          mmAssignIds();
+          mmRenderModPanel();
+        } catch (e) { console.error('mod panel repaint', e); }
+      }
       if (currentView === 'existingnew' && typeof renderEVNDash === 'function') {
         try { renderEVNDash(); } catch(e) {}
       }
@@ -14336,6 +14416,54 @@ function openAgingRecords(bucket) {
   _mrRender();
 }
 
+// Transacted vendors whose documents are still outstanding — the actionable half
+// of the Docs-complete tile. Rows carry the doc counts joined on from the quality
+// feed so the table can show what is missing without a second lookup per cell.
+function openTxnDocRecords() {
+  var docs = (qualityData && qualityData.vendorDocs) || [];
+  if (!docs.length) return;
+  var byId = {}, byGst = {};
+  docs.forEach(function(d) {
+    if (d.id)    byId[String(d.id)] = d;
+    if (d.gstin) byGst[String(d.gstin).toUpperCase()] = d;
+  });
+  var rows = (Array.isArray(vertRows) ? vertRows : [])
+    .concat((_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : []);
+  var out = [];
+  rows.forEach(function(r) {
+    if (!r.hasTransacted) return;
+    var d = (r.id && byId[String(r.id)])
+         || (r.gstin && byGst[String(r.gstin).toUpperCase()])
+         || null;
+    if (!d || !d.total || d.submitted >= d.total) return;   // complete, or no record to judge
+    var c = {};
+    for (var k in r) if (r.hasOwnProperty(k)) c[k] = r[k];
+    c.docsSubmitted = d.submitted;
+    c.docsTotal     = d.total;
+    c.docsMissing   = (d.missingDocs || []).join(', ');
+    out.push(c);
+  });
+  var key  = activeVertKey || selectedVert;
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var vertName = (vcfg && vcfg.name) || key || '';
+  _mrCtx = {
+    module: 'txndoc', txnDoc: true, vertName: vertName,
+    label: 'Transacted · Documents Outstanding',
+    vertLabel: vertName, preStatus: null, forceSeller: false,
+    cfg: { label: 'Transacted · Documents Outstanding' }
+  };
+  _mrRows = out;
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  _mrColVis = {};
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+}
+
 function openModRecords(module) {
   if (module === 'osv') return openOsvRecords(null);
   var cfg = MR_MOD_CFG[module];
@@ -14451,6 +14579,7 @@ function _mrColSet() {
                                    : _mrCtx.stageKey === 'onboarded' ? MR_ONB_COLS
                                    : MR_STAGE_COLS;
   if (_mrCtx && _mrCtx.aging) return MR_AGING_COLS;
+  if (_mrCtx && _mrCtx.txnDoc) return MR_TXNDOC_COLS;
   if (_mrCtx && _mrCtx.tat) return MR_TAT_COLS;
   if (_mrCtx && _mrCtx.rating) return MR_RATING_COLS;
   return (_mrCtx && _mrCtx.osv) ? MR_OSV_COLS : MR_COLS;
@@ -14589,6 +14718,9 @@ function _mrRenderFilters() {
 
 function _mrPreFilter(r) {
   if (!_mrCtx) return true;
+  // openTxnDocRecords already selected the rows (transacted, documents outstanding)
+  // and joined the doc counts onto them, so there is nothing further to gate on.
+  if (_mrCtx.txnDoc) return true;
   if (_mrCtx.stage) {
     // Stage cards count every record at that status across both audiences, so the
     // only gate here is the status the stage represents ("Logged In" has none).
@@ -14765,6 +14897,29 @@ function _mrCellHtml(r, key) {
       case 'onbDate':  return '<span class="td-dim td-num">' + esc(r.onbDate || '—') + '</span>';
       case 'tat':      return tatChip(r.tat, r);
       default:         return esc(String(r[key] || '—'));
+    }
+  }
+  if (_mrCtx && _mrCtx.txnDoc) {
+    switch (key) {
+      case 'name':     return '<strong>' + esc(r.name || '—') + '</strong>'
+                            + (r.id ? '<div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id) + '</div>' : '');
+      case 'vendorType': return '<span class="td-dim">' + esc(r.vendorType || '—') + '</span>';
+      case 'category': return esc(r.category || '—');
+      case 'gstin':    return r.gstin ? '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>'
+                                      : '<span class="td-dim">—</span>';
+      // Submitted against required, so "3 / 11" reads as a shortfall on its own
+      // without the reader having to remember how many documents are expected.
+      case 'docsSubmitted': {
+        var _s = r.docsSubmitted, _t = r.docsTotal;
+        if (_s == null || !_t) return '<span class="td-dim">—</span>';
+        return '<span style="font-weight:700;font-variant-numeric:tabular-nums;color:'
+          + (_s === 0 ? 'var(--st-rejected-tx)' : 'var(--amber)') + '">' + _s
+          + '<span style="color:var(--txt3);font-weight:600"> / ' + _t + '</span></span>';
+      }
+      case 'docsMissing': return r.docsMissing
+        ? '<span style="font-size:11px;color:var(--txt2)">' + esc(r.docsMissing) + '</span>'
+        : '<span class="td-dim">—</span>';
+      default: return esc(String(r[key] || '—'));
     }
   }
   if (_mrCtx && _mrCtx.aging) {
