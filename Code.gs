@@ -1724,6 +1724,21 @@ function debugFeedColumns() {
     Logger.log('    TAT (onbTAT)        : ' + cnt(function(r){ return r.onbTAT !== null; }));
     Logger.log('    TAT shown (dispTAT) : ' + cnt(function(r){ return r.dispTAT != null; }));
     Logger.log('    listed / requisitioned: ' + cnt(function(r){ return r.hasListing; }));
+    // Where sellers got their listing data from. The feed readData() serves carries
+    // no listing columns, so this is a cross-tab join and it is the only place its
+    // health is visible: a tab of 0 rows, or 0 matches, means "Listed" reads
+    // "not tracked" again and the join key is what needs looking at.
+    if (aud === 'seller') {
+      var _sal = sellerActivityLookup_();
+      Logger.log('    activity tab: ' + (_sal.tab
+        ? '"' + _sal.tab + '" · ' + _sal.rows + ' rows'
+        : '(NOT FOUND — no tab carries total_listings / first_listing_date)'));
+      if (_sal.rows) {
+        Logger.log('    joined to activity: ' + cnt(function(r){
+          return r.totalListings !== null || r.hasListing;
+        }) + '  (by seller_id → GSTIN → name)');
+      }
+    }
     Logger.log('    days to first activity: ' + cnt(function(r){ return r.daysToList  !== null; }));
     Logger.log('    days to first order   : ' + cnt(function(r){ return r.daysToOrder !== null; }));
     var st = _lastTatStats[aud];
@@ -2048,8 +2063,77 @@ function debugBuyerTatCols() {
 }
 
 // Map each sheet row to the common record shape the dashboard renders from.
+// ─────────────────────────────────────────────────────────────
+// Seller post-onboarding activity (listings / orders), keyed by id, GSTIN and
+// normalised name.
+//
+// The tab readData() serves for sellers carries the onboarding workflow — created,
+// review, level1..level4, onboarded_date — and NO listing columns at all. Listings
+// come from a different Metabase card synced into its own tab (total_listings,
+// first_listing_date, listing_activation_status, total_orders, first_order_date).
+// No alias list could ever have found them, which is why "Listed" read "not tracked"
+// while the buyer equivalent worked: the buyer feed happens to carry its own
+// total_requisitions.
+//
+// The tab is found by HEADER SIGNATURE rather than by name, the same approach
+// qualityOsvTrackerIndex_ uses, so a renamed or reordered sync does not silently
+// break it. Cached for the execution: this walks every sheet's header row once.
+// ─────────────────────────────────────────────────────────────
+var _sellerActivityCache = null;
+function sellerActivityLookup_() {
+  if (_sellerActivityCache) return _sellerActivityCache;
+  var out = { byId: {}, byGst: {}, byName: {}, rows: 0, tab: '' };
+  try {
+    var ss = CONFIG.META_SHEET_ID ? SpreadsheetApp.openById(CONFIG.META_SHEET_ID)
+                                  : SpreadsheetApp.getActiveSpreadsheet();
+    var sheets = ss.getSheets();
+    for (var s = 0; s < sheets.length; s++) {
+      var sh = sheets[s];
+      if (sh.getLastRow() < 2 || sh.getLastColumn() < 5) continue;
+      var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function(h) {
+        return String(h || '').trim().toLowerCase().replace(/\s+/g, '_');
+      });
+      // Signature: the listing columns themselves. Only the activity card has them.
+      if (hdr.indexOf('total_listings') === -1 && hdr.indexOf('first_listing_date') === -1) continue;
+      var hi = buildIndex(hdr);
+      var vals = sh.getDataRange().getValues();
+      for (var r = 1; r < vals.length; r++) {
+        var row = vals[r];
+        var rec = {
+          totalListings: firstVal_(row, hi, ['total_listings', 'total_listing', 'listings']),
+          firstListing:  firstVal_(row, hi, ['first_listing_date', 'first_listing']),
+          listStatus:    firstVal_(row, hi, ['listing_activation_status', 'listing_status']),
+          totalOrders:   firstVal_(row, hi, ['total_orders', 'orders']),
+          firstOrder:    firstVal_(row, hi, ['first_order_date', 'first_order'])
+        };
+        var id  = String(firstVal_(row, hi, ['seller_id', 'id', 'vendor_id']) || '').trim();
+        var gst = String(firstVal_(row, hi, ['gstin', 'gstin_number', 'gst_no']) || '').trim().toUpperCase();
+        var nm  = _qNormName_(firstVal_(row, hi, ['seller_name', 'business_name', 'name']));
+        if (id)  out.byId[id]   = rec;
+        if (gst) out.byGst[gst] = rec;
+        if (nm)  out.byName[nm] = rec;
+        out.rows++;
+      }
+      out.tab = sh.getName();
+      break;
+    }
+  } catch (e) {
+    Logger.log('sellerActivityLookup_: ' + (e && e.message));
+  }
+  _sellerActivityCache = out;
+  return out;
+}
+
 function normalizeRows(raw, cfg) {
   var idx = buildIndex(raw.headers);
+
+  // Sellers only, and only when this feed carries no listing columns of its own —
+  // where it does, its own values win and no cross-tab join happens.
+  var _saNeed = cfg.audience !== 'buyer'
+             && idx['total_listings'] === undefined
+             && idx['first_listing_date'] === undefined;
+  var _sa = _saNeed ? sellerActivityLookup_() : null;
+  if (_sa && !_sa.rows) _sa = null;
 
   // A dedicated TAT end column, resolved once for the feed. cfg.onbCol is the
   // onboarded date used for counts, but for buyers that is onboarding_updated_date —
@@ -2296,23 +2380,35 @@ function normalizeRows(raw, cfg) {
     // for a header it cannot find, so a single-name lookup fails silently and the
     // whole velocity read-out goes blank with no indication which column was missing.
     var _isBuyerFeed  = cfg.audience === 'buyer';
+    // Activity record for this seller from the separate activity tab, matched by id,
+    // then GSTIN, then normalised name — the same ladder the quality joins use. Null
+    // for buyers and for any feed that carries its own listing columns.
+    var _act = null;
+    if (_sa) {
+      var _aid = String(firstVal_(row, idx, ['seller_id', 'id', 'vendor_id']) || '').trim();
+      var _ags = String(firstVal_(row, idx, ['gstin_number', 'gstin', 'gst_no']) || '').trim().toUpperCase();
+      var _anm = _qNormName_(firstVal_(row, idx, ['business_name', 'seller_name', 'name']));
+      _act = (_aid && _sa.byId[_aid]) || (_ags && _sa.byGst[_ags]) || (_anm && _sa.byName[_anm]) || null;
+    }
     var listCntRaw = _isBuyerFeed
       ? firstVal_(row, idx, ['total_requisitions', 'total_requisition', 'requisitions', 'requisition_count'])
-      : firstVal_(row, idx, ['total_listings', 'total_listing', 'listings', 'listing_count', 'no_of_listings']);
+      : (_act ? _act.totalListings
+              : firstVal_(row, idx, ['total_listings', 'total_listing', 'listings', 'listing_count', 'no_of_listings']));
     var _lcN = (listCntRaw !== '' && listCntRaw !== null && listCntRaw !== undefined)
       ? parseInt(String(listCntRaw).replace(/[,\s]/g, ''), 10) : NaN;
     var totalListings = isNaN(_lcN) ? null : _lcN;
-    var firstListing  = parseDate(firstVal_(row, idx, _isBuyerFeed
-      ? ['first_requisition_date', 'firstrequisitiondate', 'first_requisition']
-      : ['first_listing_date', 'firstlistingdate', 'first_listing', 'listing_date', 'first_listed_date']));
+    var firstListing  = (_act && _act.firstListing) ? parseDate(_act.firstListing)
+      : parseDate(firstVal_(row, idx, _isBuyerFeed
+        ? ['first_requisition_date', 'firstrequisitiondate', 'first_requisition']
+        : ['first_listing_date', 'firstlistingdate', 'first_listing', 'listing_date', 'first_listed_date']));
     // firstshipmentdate is what the detail card calls the first order — the same
     // column the transaction date already falls back to.
     var firstOrder    = parseDate(firstVal_(row, idx,
       ['first_order_date', 'firstorderdate', 'first_order', 'order_date',
        'first_transaction_date', 'firstshipmentdate', 'first_shipment_date']));
-    var listStatus    = String((_isBuyerFeed
+    var listStatus    = String((_act ? _act.listStatus : (_isBuyerFeed
       ? firstVal_(row, idx, ['application_activation_status', 'requisition_activation_status', 'application_status'])
-      : firstVal_(row, idx, ['listing_activation_status', 'listing_status', 'listing_activation'])) || '')
+      : firstVal_(row, idx, ['listing_activation_status', 'listing_status', 'listing_activation']))) || '')
       .trim().toUpperCase();
     // Listed = an explicit ACTIVE status, a positive listing count, or a first
     // listing date. Any one of the three is proof a listing went up; requiring the
