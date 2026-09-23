@@ -3351,7 +3351,7 @@ body.view-gst #mm-crumbs{display:none}
 .mmworkspace.has-panel .mmnav{flex:1 1 auto}
 .mmworkspace.has-panel .mmdetail{flex:1 1 auto;flex-basis:clamp(520px,54%,900px);opacity:1;
   position:sticky;top:12px;max-height:calc(100vh - 26px);overflow-y:auto;overflow-x:hidden;
-  scrollbar-width:thin}
+  padding-bottom:var(--pad-bottom);scrollbar-width:thin}
 
 /* Sidebar vertical-drill mode: hide the columns grid; panel takes full width */
 .mmworkspace.sn-drill .mmnav{display:none!important}
@@ -3372,7 +3372,12 @@ body.mm-sn-drill{overflow:hidden}
    there is nothing for .mmdetail to scroll — the bottom of the panel was simply
    unreachable. Content-sized children let the container scroll normally. */
 .mmworkspace.sn-drill #mm-funnel,
+.mmworkspace.sn-drill #mm-geo,
 .mmworkspace.sn-drill #mm-modpanel{flex:0 0 auto}
+/* The scroll container needs room under its last child, or the final card sits
+   flush against the viewport edge and reads as though it has been cut off even
+   once it is fully scrollable. */
+.mmworkspace.sn-drill.has-panel .mmdetail{padding-bottom:var(--pad-bottom)}
 .mmworkspace.sn-drill #mm-geo{display:flex;flex-direction:column;flex:0 0 auto;overflow:visible;max-height:none;margin:0}
 .mmworkspace.sn-drill .mg-eye{flex-shrink:0}
 .mmworkspace.sn-drill .mg-catsw{flex-shrink:0}
@@ -3445,9 +3450,18 @@ body.mm-sn-drill{overflow:hidden}
   .mmdetail .mg-grid{flex-direction:row;flex-wrap:wrap}
 }
 
-/* ── Inline Funnel Panel ── */
+/* ── Inline Funnel Panel ──
+   The open state carries NO max-height. These three inline panels (funnel, geo,
+   module) each animate open from max-height:0, and each used to stop at a fixed
+   cap — 900px, 1200px, 900px. Their height depends on how many stages, regions or
+   category rows a vertical has, so anything past the cap was cut off, and because
+   the base rule is overflow:hidden there was not even a scrollbar to reveal it:
+   the content was simply unreachable.
+   Open now means "grow to fit, let the page scroll", which is what the cap was a
+   stand-in for. The opacity fade is kept; the height no longer animates, which is
+   a fair trade for content you can actually get to. */
 #mm-funnel{overflow:hidden;max-height:0;opacity:0;transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .3s ease;margin:0}
-#mm-funnel.mf-open{max-height:900px;opacity:1;margin:0 0 28px}
+#mm-funnel.mf-open{max-height:none;overflow:visible;opacity:1;margin:0 0 28px}
 .mf-flow{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:thin}
 .mf-card{flex:1;min-width:148px;max-width:210px;background:var(--card);border:2px solid var(--border);border-radius:var(--r);padding:20px 16px 16px;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .18s;position:relative;opacity:0;transform:translateY(14px);will-change:transform,opacity}
 .mf-card.mf-in{opacity:1;transform:none;transition:opacity .35s ease,transform .35s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s}
@@ -3769,7 +3783,7 @@ body.mm-sn-drill{overflow:hidden}
 @media(max-width:900px){#mm-geo .gs-body{grid-template-columns:1fr}#mm-geo .gs-col.gs-col3{grid-column:auto}}
 :root{--mg-base:#e9ecf2}
 #mm-geo{overflow:hidden;max-height:0;opacity:0;transition:max-height .5s cubic-bezier(.4,0,.2,1),opacity .3s ease;margin:0}
-#mm-geo.mg-open{max-height:1200px;opacity:1;margin:0 0 28px}
+#mm-geo.mg-open{max-height:none;overflow:visible;opacity:1;margin:0 0 28px}
 .mg-eye{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);padding:0 2px 10px;display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
 .mg-catchip{display:inline-flex;align-items:center;gap:var(--sp-2);font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);background:var(--accent-soft);border:1px solid rgba(15,122,79,.25);border-radius:999px;padding:4px 10px;cursor:pointer;transition:background .15s}
 .mg-catchip:hover{background:rgba(15,122,79,.14)}
@@ -3872,7 +3886,7 @@ body.mm-sn-drill{overflow:hidden}
 
 /* ── Generic inline module panel (Volume / Transactions / Ratings / OSV / Existing) ── */
 #mm-modpanel{overflow:hidden;max-height:0;opacity:0;transition:max-height .5s cubic-bezier(.4,0,.2,1),opacity .3s ease;margin:0}
-#mm-modpanel.mp-open{max-height:900px;opacity:1;margin:0 0 28px}
+#mm-modpanel.mp-open{max-height:none;overflow:visible;opacity:1;margin:0 0 28px}
 .mp-eye{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);padding:0 2px 10px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .mp-badge{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--blue);background:var(--accent-soft);border:1px solid rgba(15,122,79,.22);border-radius:999px;padding:3px 9px}
 .mp-note{font-size:.72rem;color:var(--txt3);background:var(--accent-soft);border:1px solid var(--border);border-radius:6px;padding:7px 12px;margin-bottom:10px;line-height:1.5}
