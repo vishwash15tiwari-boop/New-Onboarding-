@@ -3560,9 +3560,10 @@ body.mm-sn-drill{overflow:hidden}
 .mfsep-pct{font-size:.72rem;color:var(--txt3);margin-left:60px;line-height:1.4;display:none}
 .mmdetail .mfsep-pct{display:block}
 .mfsep-pct-num{font-size:.88rem;font-weight:800;color:var(--txt2);margin-right:4px}
-/* Bottom summary tiles — only in detail mode */
-.mf-summary{display:none}
-.mmdetail .mf-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 2px 4px;border-top:1px solid var(--border);margin-top:8px}
+/* Tile styling for the conversion / time-to-onboard / draft / rejected strip. The
+   strip itself lives in Onboarded (Details) under .onb-sum below; the .mf-summary
+   container it used to sit in at the foot of the Breakup funnel is gone, since the
+   same four figures already appear in that panel. */
 .mf-sum-tile{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;align-items:flex-start;gap:var(--sp-3)}
 .mf-sum-ic{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mf-sum-ic svg{width:13px;height:13px}
@@ -3580,10 +3581,7 @@ body.mm-sn-drill{overflow:hidden}
 .mf-sum-tile.mf-sum-clickable{cursor:pointer;transition:box-shadow .15s,transform .15s}
 .mf-sum-tile.mf-sum-clickable:hover{box-shadow:0 4px 14px rgba(15,122,79,.15);transform:translateY(-2px)}
 .mf-sum-tile.mf-sum-clickable:active{transform:translateY(0);box-shadow:none}
-@media(max-width:700px){.mmdetail .mf-summary{grid-template-columns:repeat(2,1fr)}}
-/* Same four tiles inside the Onboarded (Details) panel. Its own container class
-   because .mf-summary above is deliberately display:none outside .mmdetail, and
-   these must always show here; the tile classes themselves are not gated. */
+/* The four tiles inside the Onboarded (Details) panel. */
 .onb-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-3);margin-top:18px;padding-top:var(--sp-3);border-top:1px solid var(--border)}
 .mf-sum-more{font-size:9px;color:var(--blue);margin-top:6px;text-align:right;font-weight:600;letter-spacing:.02em;opacity:.85}
 @media(max-width:980px){.onb-sum{grid-template-columns:repeat(2,1fr)}}
@@ -3665,8 +3663,12 @@ body.mm-sn-drill{overflow:hidden}
 #mm-geo .gs-reg-sb{font-size:10.5px;color:var(--txt3);margin-top:2px}
 
 /* 3-column body */
-#mm-geo .gs-body{display:grid;grid-template-columns:1.35fr .82fr 1fr;gap:var(--gutter);align-items:start;min-width:0}
+/* stretch, not start: with align-items:start each column sized to its own content
+   and the three cards ended at three different heights. The last card in a column
+   absorbs the slack so every column closes on the same bottom edge. */
+#mm-geo .gs-body{display:grid;grid-template-columns:1.35fr .82fr 1fr;gap:var(--gutter);align-items:stretch;min-width:0}
 #mm-geo .gs-col{display:flex;flex-direction:column;gap:var(--gutter);min-width:0}
+#mm-geo .gs-col > .gs-card:last-child{flex:1 1 auto}
 #mm-geo .gs-card{border:1px solid var(--border);border-radius:var(--card-radius);box-shadow:var(--card-shadow);background:var(--card);padding:var(--card-pad-y) var(--card-pad-x);min-width:0}
 #mm-geo .gs-card-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px}
 #mm-geo .gs-card-t{font-size:var(--card-ttl-size);font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:var(--card-ttl-ls)}
@@ -8033,25 +8035,9 @@ function mmRenderFunnel() {
   });
   html += '</div>';
 
-  // Bottom summary tiles — only rendered in detail/full-page mode (CSS hides them in compact mode).
-  var compTot = _mmC(vs, vb, 'completed'), draftTot = _mmC(vs, vb, 'draft'), rejTot = _mmC(vs, vb, 'rejected');
-  var convPct = Math.round(compTot / grandTotal * 100);
-  var draftPct = Math.round(draftTot / grandTotal * 100);
-  var rejPctR = rejTot / grandTotal * 100;
-  var rejPctStr = rejPctR < 1 ? rejPctR.toFixed(1) : String(Math.round(rejPctR));
-  var tatBlend = _mfBlendTATc(vs, vb);
-  var tatSumStr = (tatBlend && tatBlend.v != null) ? esc(_mfTatFmt(tatBlend.v) || '—') : '—';
-  html += '<div class="mf-summary">'
-    + '<div class="mf-sum-tile ts-green"><div class="mf-sum-ic s-green">' + MM_IC.check + '</div>'
-    + '<div class="mf-sum-txt"><div class="mf-sum-v">' + convPct + '%</div><div class="mf-sum-lbl">Onboarding Conversion Rate</div></div></div>'
-    + '<div class="mf-sum-tile ts-blue mf-sum-clickable" onclick="openTatModal()" role="button" aria-label="Average TAT detail"><div class="mf-sum-ic s-blue">' + MM_IC.clock + '</div>'
-    + '<div class="mf-sum-txt"><div class="mf-sum-v">' + tatSumStr + '</div><div class="mf-sum-lbl">Average Time to Onboard</div>'
-    + '<div style="font-size:9px;color:var(--blue);margin-top:6px;text-align:right;font-weight:600;letter-spacing:.02em;opacity:.85">Click for Details ›</div></div></div>'
-    + '<div class="mf-sum-tile ts-amber"><div class="mf-sum-ic s-amber">' + MM_IC.draft + '</div>'
-    + '<div class="mf-sum-txt"><div class="mf-sum-v">' + draftPct + '%</div><div class="mf-sum-lbl">Cases in Draft</div></div></div>'
-    + '<div class="mf-sum-tile ts-red"><div class="mf-sum-ic s-red">' + MM_IC.x + '</div>'
-    + '<div class="mf-sum-txt"><div class="mf-sum-v">' + rejPctStr + '%</div><div class="mf-sum-lbl">Cases Rejected</div></div></div>'
-    + '</div>';
+  // The conversion / time-to-onboard / draft / rejected strip that used to close this
+  // panel now lives only in Onboarded (Details), where the same four figures already
+  // appear. Showing it here as well repeated them inside one vertical's view.
 
   panel.innerHTML = html;
   panel.className = 'mf mf-open';
@@ -9433,26 +9419,38 @@ function _snPopulateTatInline(aud) {
     var cats  = Object.keys(catSet).sort();
     var types = Object.keys(typeSet).sort();
     var q = (_snTatInlineSearch || '').toLowerCase();
+    // Every onboarded vendor is listed, not only those carrying a TAT — the list
+    // otherwise showed a handful of rows for a vertical with hundreds onboarded,
+    // and there was no way to see which ones were unmeasured.
     var filtered = rows.filter(function(r) {
       if (r.status !== 'COMPLETED') return false;
-      if (r.tat === null || r.tat === undefined || r.tat === '' || r.tat === '—' || isNaN(parseInt(r.tat, 10))) return false;
       if (q && (r.name || '').toLowerCase().indexOf(q) < 0 && (r.vendorType || '').toLowerCase().indexOf(q) < 0) return false;
       if (_snTatInlineCat  !== 'All' && r.category   !== _snTatInlineCat)  return false;
       if (_snTatInlineType !== 'All' && r.vendorType  !== _snTatInlineType) return false;
       return true;
     });
+    // Slowest first, with the unmeasured rows collected at the end rather than
+    // salted through the list as if they were zero-day turnarounds.
     filtered = filtered.slice().sort(function(a, b) {
-      return (parseInt(b.tat, 10) || 0) - (parseInt(a.tat, 10) || 0);
+      var an = parseInt(a.tat, 10), bn = parseInt(b.tat, 10);
+      var aBad = isNaN(an), bBad = isNaN(bn);
+      if (aBad !== bBad) return aBad ? 1 : -1;
+      if (aBad) return String(a.name || '').localeCompare(String(b.name || ''));
+      return bn - an;
     });
     var trs = filtered.length ? filtered.map(function(r) {
       var n = parseInt(r.tat, 10);
-      var col = n <= 7 ? 'var(--green,#1DC797)' : n <= 21 ? 'var(--amber,#FF9500)' : 'var(--red,#FF3B30)';
+      var cell = isNaN(n)
+        ? '<span style="color:var(--txt3)">&mdash;</span>'
+        : '<span style="color:' + (n <= 7 ? 'var(--green,#1DC797)' : n <= 21 ? 'var(--amber,#FF9500)' : 'var(--red,#FF3B30)')
+          + ';font-weight:700;font-variant-numeric:tabular-nums">' + n
+          + '<small style="font-size:.65em;font-weight:600;color:var(--txt3);margin-left:1px">d</small></span>';
       return '<tr>'
         + '<td><strong>' + esc(r.name || '—') + '</strong>'
         + (r.id ? '<div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id) + '</div>' : '') + '</td>'
         + '<td class="td-dim">' + esc(r.vendorType || '—') + '</td>'
         + '<td>' + esc(r.category || '—') + '</td>'
-        + '<td style="color:' + col + ';font-weight:700;font-variant-numeric:tabular-nums">' + n + '<small style="font-size:.65em;font-weight:600;color:var(--txt3);margin-left:1px">d</small></td>'
+        + '<td>' + cell + '</td>'
         + '</tr>';
     }).join('') : '<tr><td colspan="4" style="padding:40px;text-align:center;color:var(--txt3)">No records match.</td></tr>';
     var table = '<table class="mr-tbl" style="width:100%">'
@@ -14601,10 +14599,13 @@ function _mrPreFilter(r) {
     return _mmAgingBucket(r) === _mrCtx.agingBucket;
   }
   if (_mrCtx.tat) {
-    // Only onboarded vendors that actually carry a TAT — the same set the matrix
-    // averaged, so the row count matches the n= on the cell that was clicked.
+    // EVERY onboarded vendor, not only those carrying a TAT. Restricting this to
+    // measurable rows made the list look like the vertical had seven onboarded
+    // sellers instead of 336, and gave no way to see who was missing a TAT or to
+    // export them. Rows with no TAT render a dash and sort last; the average and
+    // median in the footer are still taken over the measurable rows alone, and the
+    // footer states how many of the total those are.
     if (r.status !== 'COMPLETED') return false;
-    if (r.tat === null || r.tat === undefined || r.tat === '—' || isNaN(parseInt(r.tat, 10))) return false;
     if (_mrCtx.tatCat && r.category !== _mrCtx.tatCat) return false;
     return true;
   }
@@ -14922,9 +14923,15 @@ function _mrRenderTable() {
     if (isTatV && total) {
       var tv = allFiltered.map(function(r) { return parseInt(r.tat, 10); })
                           .filter(function(x) { return !isNaN(x); });
+      // The list now holds every onboarded vendor, so the footer has to say how
+      // many of them the average actually covers — otherwise a figure drawn from a
+      // handful of rows reads as describing all of them.
       if (tv.length) {
         footExtra = ' · avg ' + Math.round(tv.reduce(function(a, b) { return a + b; }, 0) / tv.length) + 'd'
-                  + ' · median ' + tv.slice().sort(function(a, b) { return a - b; })[Math.floor(tv.length / 2)] + 'd';
+                  + ' · median ' + tv.slice().sort(function(a, b) { return a - b; })[Math.floor(tv.length / 2)] + 'd'
+                  + ' · from ' + fmt(tv.length) + ' of ' + fmt(total) + ' with a measurable TAT';
+      } else {
+        footExtra = ' · no measurable TAT in this set';
       }
     }
     if (isOsvV && total) {
