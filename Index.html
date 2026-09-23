@@ -9425,6 +9425,19 @@ function _snTatSetAud(aud) {
 // rather than the real registration time. No figure can be produced from that, and
 // inventing one is how this card previously came to read 86 days for New against
 // 2 days for Existing.
+// A figure tile that opens a filtered list. Keyboard-operable because it is a
+// control, not a read-out — the two were indistinguishable before except by
+// cursor:pointer, which a keyboard user never sees.
+function _osvSgCell(filterKey, n, label) {
+  var act = '_osvOpenStatusFilter(\'' + filterKey + '\')';
+  return '<div class="osv-sg-cell" role="button" tabindex="0"'
+    + ' aria-label="' + esc(label + ': ' + n) + '" style="cursor:pointer"'
+    + ' onclick="' + act + '"'
+    + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + act + '}">'
+    + '<div class="osv-sg-n">' + fmt(n) + '</div>'
+    + '<div class="osv-sg-lbl">' + esc(label) + '</div></div>';
+}
+
 function _snTatCoverageNote(aud) {
   var key = activeVertKey || selectedVert;
   var src = aud === 'buyer' ? DB : DS;
@@ -13287,13 +13300,23 @@ function gstAgingSection() {
   var fyCards;
   if (src) {
     fyCards = src.slice().reverse().map(function(r) {
-      return '<div class="gp-fy-card' + (gpYear === r.fy ? ' active' : '') + '" onclick="gpSetYear(\'' + r.fy + '\')" title="Filter to ' + esc(fyFull(r.fy)) + '">'
+      return '<div class="gp-fy-card' + (gpYear === r.fy ? ' active' : '') + '"'
+        + ' role="button" tabindex="0" aria-pressed="' + (gpYear === r.fy ? 'true' : 'false') + '"'
+        + ' onclick="gpSetYear(\'' + r.fy + '\')"'
+        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();gpSetYear(\'' + r.fy + '\')}"'
+        + ' title="Filter to ' + esc(fyFull(r.fy)) + '">'
         + '<div class="gp-fy-label">' + esc(fyFull(r.fy)) + '</div>'
         + '<div style="border-top:1.5px solid var(--gp-border);margin:7px 0 8px"></div>'
         + '<div class="gp-fy-breakdown">'
-        +   '<div class="gp-fy-brow gp-fy-drill" onclick="gpFyDrillModal(\'' + r.fy + '\',\'gst\',event)" title="View vendor breakdown"><span class="gp-fy-blbl">GST Balance</span>'
+        +   '<div class="gp-fy-brow gp-fy-drill" role="button" tabindex="0"'
+        +     ' onclick="gpFyDrillModal(\'' + r.fy + '\',\'gst\',event)"'
+        +     ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();gpFyDrillModal(\'' + r.fy + '\',\'gst\',event)}"'
+        +     ' title="View vendor breakdown"><span class="gp-fy-blbl">GST Balance</span>'
         +     '<span class="gp-fy-bamt" style="color:var(--gp-ink)">' + fmtRupee(r.gst) + '</span></div>'
-        +   '<div class="gp-fy-brow gp-fy-drill" onclick="gpFyDrillModal(\'' + r.fy + '\',\'material\',event)" title="View vendor breakdown"><span class="gp-fy-blbl">Material Balance</span>'
+        +   '<div class="gp-fy-brow gp-fy-drill" role="button" tabindex="0"'
+        +     ' onclick="gpFyDrillModal(\'' + r.fy + '\',\'material\',event)"'
+        +     ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();gpFyDrillModal(\'' + r.fy + '\',\'material\',event)}"'
+        +     ' title="View vendor breakdown"><span class="gp-fy-blbl">Material Balance</span>'
         +     '<span class="gp-fy-bamt" style="color:var(--gp-ink)">' + fmtRupee(r.material) + '</span></div>'
         +   '<div class="gp-fy-brow gp-fy-drill" style="margin-top:4px;padding-top:5px;border-top:1px solid var(--gp-border)" onclick="gpFyDrillModal(\'' + r.fy + '\',\'total\',event)" title="View vendor breakdown"><span class="gp-fy-blbl" style="color:var(--gp-ink);font-weight:700">Total Balance</span>'
         +     '<span class="gp-fy-bamt" style="color:var(--gp-ink);font-size:12px;font-weight:800">' + fmtRupee(r.total) + '</span></div>'
@@ -16119,7 +16142,13 @@ function renderOSVDash() {
   var statusHtml = '<div class="osv-status-grid">'
     + statusCards.map(function(c) {
       var pct = _osvPct(c.n, statTotal);
-      return '<div class="osv-sc ' + c.cls + '" onclick="_osvOpenStatusFilter(\'' + c.filter + '\')">'
+      // These cards filter the whole module, so they are controls and have to be
+      // reachable and operable from the keyboard, not just the mouse.
+      var _act = '_osvOpenStatusFilter(\'' + c.filter + '\')';
+      return '<div class="osv-sc ' + c.cls + '" role="button" tabindex="0"'
+        + ' aria-label="' + esc(c.lbl + ': ' + c.n) + '"'
+        + ' onclick="' + _act + '"'
+        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + _act + '}">'
         + '<div class="osv-sc-ic">' + c.ic + '</div>'
         + '<div class="osv-sc-n">' + fmt(c.n) + '</div>'
         + '<div class="osv-sc-lbl">' + c.lbl + '</div>'
@@ -16149,8 +16178,8 @@ function renderOSVDash() {
     + improvHtml
     + '</div></div>'
     + '<div class="osv-score-grid">'
-    + '<div class="osv-sg-cell" onclick="_osvOpenStatusFilter(\'scoredSellers\')" style="cursor:pointer"><div class="osv-sg-n">' + fmt(po.scoredSellers||0) + '</div><div class="osv-sg-lbl">Scored Sellers</div></div>'
-    + '<div class="osv-sg-cell" onclick="_osvOpenStatusFilter(\'pendingScore\')" style="cursor:pointer"><div class="osv-sg-n">' + fmt(po.pendingScore||0) + '</div><div class="osv-sg-lbl">Pending Score</div></div>'
+    + _osvSgCell('scoredSellers', po.scoredSellers || 0, 'Scored Sellers')
+    + _osvSgCell('pendingScore',  po.pendingScore  || 0, 'Pending Score')
     + '<div class="osv-sg-cell"><div class="osv-sg-n">' + covPct + '</div><div class="osv-sg-lbl">Score Coverage</div></div>'
     + '</div>'
     + '<div class="osv-score-period">'
