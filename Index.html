@@ -21999,6 +21999,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .evn-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--lc-gutter)}
 .lc .evn-kpi{position:relative;overflow:hidden;background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--card-radius);padding:var(--kpi-pad-y) var(--kpi-pad-x);display:flex;align-items:flex-start;gap:14px;box-shadow:var(--card-shadow);transition:var(--t-lift);cursor:pointer;user-select:none}
 .lc .evn-kpi:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);transform:translateY(-2px)}
+.lc .evn-kpi:focus-visible,.lc .evn-hit:focus-visible{outline:2px solid var(--lc-accent);outline-offset:2px}
 .lc .evn-kpi.evn-kpi-on{border-color:var(--lc-accent);box-shadow:0 0 0 3px rgba(15,122,79,.1),0 6px 20px rgba(15,122,79,.08);transform:translateY(-2px)}
 .lc .evn-kpi-stripe{position:absolute;top:0;left:0;right:0;height:4px}
 .lc .evn-ico{width:var(--kpi-ico);height:var(--kpi-ico);border-radius:var(--kpi-ico-r);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
@@ -22122,7 +22123,11 @@ document.addEventListener('DOMContentLoaded', function() {
   function evnRow(a,b){return '<div><span>'+a+'</span><b>'+b+'</b></div>';}
   function evnHint(active){return '<div class="evn-tip-hint">'+(active?'Click to clear':'Click to filter')+'</div>';}
   function evnHooks(fn,tipFn){
-    return ' style="cursor:pointer" onclick="'+fn+'"'
+    /* These are controls, so they are reachable by keyboard as well as by mouse.
+       Everything wired through here was previously click-only: not focusable, not
+       announced as interactive, and impossible to operate without a pointer. */
+    return ' style="cursor:pointer" role="button" tabindex="0" onclick="'+fn+'"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+fn+'}"'
       + ' onmouseenter="'+tipFn+',event,true)" onmousemove="'+tipFn+',event,true)"'
       + ' onmouseleave="'+tipFn+',event,false)"';
   }
@@ -22753,9 +22758,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var avgExTat=exTatRows.length?exTatRows.reduce(function(s,r){return s+getTAT(r);},0)/exTatRows.length:null;
     var scopeH='<div class="evn-scope"><button onclick="window.evnScope(\'combined\')" class="'+(_evnScope==='combined'?'on':'')+'">Combined</button><button onclick="window.evnScope(\'sellers\')" class="'+(_evnScope==='sellers'?'on':'')+'">Sellers</button><button onclick="window.evnScope(\'buyers\')" class="'+(_evnScope==='buyers'?'on':'')+'">Buyers</button></div>';
     var kpiH='<div class="evn-kpis">';
-    kpiH+='<div class="evn-kpi'+(_evnDrillType==='all'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'all\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#0F7A4F,#3FB489)"></div>'+icoWrap(IcoTrend,'rgba(15,122,79,.1)','var(--lc-accent)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Total Onboarded</div><div class="evn-kpi-val">'+doneRows.length+'</div><div class="evn-kpi-sub">Completed vendors</div></div></div>';
-    kpiH+='<div class="evn-kpi'+(_evnDrillType==='existing'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'existing\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#8460D4,#B07BF5)"></div>'+icoWrap(IcoUsers,'rgba(132,96,212,.1)','var(--lc-purple)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Existing Vendors</div><div class="evn-kpi-val">'+exRows.length+'</div><div class="evn-kpi-sub">In other Recykal verticals</div></div></div>';
-    kpiH+='<div class="evn-kpi'+(_evnDrillType==='new'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'new\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#0F7A4F,#1DC797)"></div>'+icoWrap(IcoStar,'rgba(15,122,79,.1)','var(--lc-accent)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">New Vendors</div><div class="evn-kpi-val">'+newRows.length+'</div><div class="evn-kpi-sub">New to Recykal ecosystem</div></div></div>';
+    kpiH+='<div class="evn-kpi'+(_evnDrillType==='all'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'all\')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();window.evnDrill(\'all\')}"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#0F7A4F,#3FB489)"></div>'+icoWrap(IcoTrend,'rgba(15,122,79,.1)','var(--lc-accent)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Total Onboarded</div><div class="evn-kpi-val">'+doneRows.length+'</div><div class="evn-kpi-sub">Completed vendors</div></div></div>';
+    kpiH+='<div class="evn-kpi'+(_evnDrillType==='existing'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'existing\')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();window.evnDrill(\'existing\')}"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#8460D4,#B07BF5)"></div>'+icoWrap(IcoUsers,'rgba(132,96,212,.1)','var(--lc-purple)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Existing Vendors</div><div class="evn-kpi-val">'+exRows.length+'</div><div class="evn-kpi-sub">In other Recykal verticals</div></div></div>';
+    kpiH+='<div class="evn-kpi'+(_evnDrillType==='new'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'new\')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();window.evnDrill(\'new\')}"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#0F7A4F,#1DC797)"></div>'+icoWrap(IcoStar,'rgba(15,122,79,.1)','var(--lc-accent)')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">New Vendors</div><div class="evn-kpi-val">'+newRows.length+'</div><div class="evn-kpi-sub">New to Recykal ecosystem</div></div></div>';
     // The figure takes its size from .evn-kpi-val (var(--kpi-size), 27px) like
     // every other KPI. It used to hardcode 34px inside a val div set to
     // font-size:inherit, which both broke the shared type scale and gave the
@@ -22771,7 +22776,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       tatSub=exRows.length?(avgExTat!==null?'Existing avg: '+fmt1(avgExTat)+' d':'Existing: no TAT data'):'All vendors new to Recykal';
     }
-    kpiH+='<div class="evn-kpi'+(_evnDrillType==='tat'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'tat\')" role="button" tabindex="0"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#FF9500,#FFCC00)"></div>'+icoWrap(IcoClock,'rgba(255,149,0,.1)','#FF9500')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Avg TAT — New</div><div class="evn-kpi-val">'+tatVal+'</div><div class="evn-kpi-sub">'+tatSub+'</div></div></div>';
+    kpiH+='<div class="evn-kpi'+(_evnDrillType==='tat'?' evn-kpi-on':'')+'" onclick="window.evnDrill(\'tat\')" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();window.evnDrill(\'tat\')}"><div class="evn-kpi-stripe" style="background:linear-gradient(90deg,#FF9500,#FFCC00)"></div>'+icoWrap(IcoClock,'rgba(255,149,0,.1)','#FF9500')+'<div class="evn-kpi-body"><div class="evn-kpi-lbl">Avg TAT — New</div><div class="evn-kpi-val">'+tatVal+'</div><div class="evn-kpi-sub">'+tatSub+'</div></div></div>';
     kpiH+='</div>';
     var row1='<div class="evn-row1">';
     row1+='<div class="evn-card"><div class="evn-card-hdr"><span class="evn-card-ttl">Onboarding Trend</span></div>'+buildOBTrend(doneRows)+'</div>';
@@ -22797,10 +22802,28 @@ document.addEventListener('DOMContentLoaded', function() {
         clears it, and every one repaints the whole module. ─────────────── */
   // toggle=true for a card click (second click clears); the records-table
   // <select> calls this without it, where assignment is what you want.
-  window.evnSetCat=function(c,toggle){_evnCat=(toggle&&_evnCat===c)?'':c;_evnPage=1;evnHideTip();render();};
-  window.evnSetState=function(s){_evnState=(_evnState===s)?'':s;_evnPage=1;evnHideTip();render();};
-  window.evnSetSeg=function(k){_evnSeg=(_evnSeg===k)?'':k;_evnPage=1;evnHideTip();render();};
-  window.evnSetMonth=function(m){_evnMonth=(_evnMonth===m)?'':m;_evnPage=1;evnHideTip();render();};
+  /* A chart click filters the module, but the records table only renders while a
+        drill is open — so clicking a segment repainted every card and left the page
+        showing "Segment: Existing" with no rows anywhere to show for it. Applying a
+        filter now opens the records list as well, already scoped by that filter,
+        which is the detail the click is promising. Clearing a filter leaves the list
+        open; Close and the KPI cards still control it explicitly. */
+  function evnOpenRecords(pref){
+    if(pref){_evnDrillType=pref;return;}
+    if(!_evnDrillType)_evnDrillType='all';
+  }
+  function evnRevealRecords(){
+    setTimeout(function(){
+      var el=document.querySelector('.lc .evn-rec');
+      if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});
+    },60);
+  }
+  window.evnSetCat=function(c,toggle){_evnCat=(toggle&&_evnCat===c)?'':c;_evnPage=1;evnHideTip();if(_evnCat)evnOpenRecords();render();if(_evnCat)evnRevealRecords();};
+  window.evnSetState=function(s){_evnState=(_evnState===s)?'':s;_evnPage=1;evnHideTip();if(_evnState)evnOpenRecords();render();if(_evnState)evnRevealRecords();};
+  /* Segment aligns the drill with itself: filtering to New while an "Existing" drill
+     was open would scope existing rows down to new ones and list nothing at all. */
+  window.evnSetSeg=function(k){_evnSeg=(_evnSeg===k)?'':k;_evnPage=1;evnHideTip();if(_evnSeg)evnOpenRecords(_evnSeg);render();if(_evnSeg)evnRevealRecords();};
+  window.evnSetMonth=function(m){_evnMonth=(_evnMonth===m)?'':m;_evnPage=1;evnHideTip();if(_evnMonth)evnOpenRecords();render();if(_evnMonth)evnRevealRecords();};
   window.evnClearFilters=function(){_evnCat='';_evnState='';_evnSeg='';_evnMonth='';_evnPage=1;evnHideTip();render();};
 
   /* ── Hover context. Each tooltip answers "what is this, and what happens
