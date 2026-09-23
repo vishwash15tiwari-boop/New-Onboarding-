@@ -10023,12 +10023,15 @@ function openKpiModal(cardId) {
           vr += '<span class="km-vbadge" style="background:' + ac + '20;color:' + ac + '">' + (v.aud === 'seller' ? 'S' : 'B') + '</span>';
         }
         if (sp.mode === 'docs') {
-          var docPct_ = v.total > 0 ? Math.round(v.submitted / v.total * 100) : 0;
-          vr += '<span class="km-vaud" style="font-weight:600;color:var(--txt)">' + docPct_ + '%'
-            + '<span style="font-weight:400;color:var(--txt3);font-size:9.5px;margin-left:3px">(' + (v.submitted || 0) + '/' + (v.total || 0) + ')</span>'
+          // Mandatory set, not every column in the feed, so this agrees with the
+          // Compliant Onboarding strip and the Docs column.
+          var _dc = docCompleteness(v);
+          vr += '<span class="km-vaud" style="font-weight:600;color:var(--txt)">' + _dc.pct + '%'
+            + '<span style="font-weight:400;color:var(--txt3);font-size:9.5px;margin-left:3px">(' + _dc.submitted + '/' + _dc.total + ')</span>'
             + '</span>';
-          if (v.missingDocs && v.missingDocs.length > 0) {
-            vr += '<span class="km-vmissing">Missing: ' + esc(v.missingDocs.join(' · ')) + '</span>';
+          if (_dc.pending.length > 0) {
+            vr += '<span class="km-vmissing">Missing: '
+                + esc(_dc.pending.map(function(p) { return p.label; }).join(' · ')) + '</span>';
           }
         }
         vr += '</div>';
@@ -10464,16 +10467,19 @@ function openKpiModal(cardId) {
                 {w: dComb.missing    || 0, color: '#FF3B30'},
               ])
               + (function() {
+                  // Every list here is filtered on the mandatory set, so clicking a
+                  // tile returns the same vendors its count was built from.
+                  var _dcOf = function(v) { return docCompleteness(v); };
                   var vd = (qd.vendorDocs || []).slice().sort(function(a, b) {
-                    var pa = a.total > 0 ? a.submitted / a.total : -1;
-                    var pb = b.total > 0 ? b.submitted / b.total : -1;
-                    return pb - pa;
+                    var ca = _dcOf(a), cb = _dcOf(b);
+                    return (cb.total > 0 ? cb.submitted / cb.total : -1)
+                         - (ca.total > 0 ? ca.submitted / ca.total : -1);
                   });
                   return expandTileGrid([
-                    {v: fmt(dComb.complete   || 0), l: 'Complete',   c: '#1DC797', vendors: vd.filter(function(v){return v.submitted===v.total&&v.total>0;})},
-                    {v: fmt(dComb.partial    || 0), l: 'Partial',    c: '#FF9500',    vendors: vd.filter(function(v){return v.submitted>0&&v.submitted<v.total;}), mode:'docs'},
-                    {v: fmt(dComb.incomplete || 0), l: 'Incomplete', c: '#8460D4',     vendors: vd.filter(function(v){return v.submitted===0&&v.total>0;}),          mode:'docs'},
-                    {v: fmt(dComb.missing    || 0), l: 'Missing',    c: '#FF3B30',  vendors: vd.filter(function(v){return v.total===0;})},
+                    {v: fmt(dComb.complete   || 0), l: 'Complete',   c: '#1DC797', vendors: vd.filter(function(v){var c=_dcOf(v);return c.total>0&&c.submitted===c.total;})},
+                    {v: fmt(dComb.partial    || 0), l: 'Partial',    c: '#FF9500', vendors: vd.filter(function(v){var c=_dcOf(v);return c.submitted>0&&c.submitted<c.total;}), mode:'docs'},
+                    {v: fmt(dComb.incomplete || 0), l: 'Incomplete', c: '#8460D4', vendors: vd.filter(function(v){var c=_dcOf(v);return c.total>0&&c.submitted===0;}),        mode:'docs'},
+                    {v: fmt(dComb.missing    || 0), l: 'Missing',    c: '#FF3B30', vendors: vd.filter(function(v){return _dcOf(v).total===0;})},
                   ]);
                 })()
             );
@@ -10948,9 +10954,29 @@ function _patchQualityKpiCards() {
 // from here. null / empty = treat EVERY document on the record as mandatory.
 //   Buyers: GST Certificate, Entity PAN, PWM Certificate.
 //   Sellers: full checklist until an official Seller list is provided.
-var MANDATORY_DOCS = {
-  seller: null,
-  buyer:  ['gst_certificate', 'entity_pan', 'pwm_certificate'],
+// The mandatory checklist, mirroring DOC_MANDATORY in Code.gs. Each entry is ONE
+// requirement, and a requirement with two keys is satisfied by EITHER column —
+// premises by a rental agreement or an electricity bill, PAN by the owner's or the
+// entity's. Neither is "both".
+//
+// seller was null, which fell through to "every document in this record's list" and
+// made the Docs column read 10/11 or 3/12 — a denominator that varied per row with
+// how many columns happened to resolve, against a rule that only names six.
+var MANDATORY_DOC_GROUPS = {
+  seller: [
+    { label: 'GST Certificate',                     keys: ['gst_certificate'] },
+    { label: 'Rental Agreement / Electricity Bill', keys: ['proof_of_premises', 'electricity_bill'] },
+    { label: 'PAN',                                 keys: ['owner_pan', 'entity_pan'] },
+    { label: 'Aadhaar',                             keys: ['aadhaar'] },
+    { label: 'Cancelled Cheque',                    keys: ['cancelled_cheque'] },
+    { label: 'MSME Certificate',                    keys: ['msme_certificate'] }
+  ],
+  // Buyer compliance stays as it was — it is suppressed in the UI regardless.
+  buyer: [
+    { label: 'GST Certificate', keys: ['gst_certificate'] },
+    { label: 'Entity PAN',      keys: ['entity_pan'] },
+    { label: 'PWM Certificate', keys: ['pwm_certificate'] }
+  ],
 };
 
 // Canonical display labels by document key — used for pending/mandatory docs
@@ -10984,25 +11010,43 @@ function prettyDocLabel(key) {
 
 // Mandatory document keys applicable to an entity (its audience's list, or all
 // documents on the record when no explicit list is configured).
-function mandatoryDocKeys(aud, docList) {
-  var cfg = MANDATORY_DOCS[aud];
-  if (cfg && cfg.length) return cfg.slice();
-  return (docList || []).map(function(d) { return d.key; });
+function mandatoryDocGroups(aud) {
+  return MANDATORY_DOC_GROUPS[aud] || MANDATORY_DOC_GROUPS.seller;
+}
+// Flat key list for the mandatory set — used to mark rows in the checklist modal.
+function mandatoryDocKeys(aud) {
+  var out = [];
+  mandatoryDocGroups(aud).forEach(function(g) {
+    g.keys.forEach(function(k) { if (out.indexOf(k) === -1) out.push(k); });
+  });
+  return out;
 }
 
-// Completeness for one entity, computed against its mandatory checklist.
+// Completeness for one entity, judged on the mandatory requirements only. Optional
+// documents never count against it, so six of six is complete whatever else is absent.
+//
+// A requirement whose columns are ALL absent from this record is skipped rather than
+// counted as missing: a column the feed never carried says nothing about what the
+// vendor supplied. `total` is therefore the judgeable denominator, and it is 6 when
+// the feed is complete. The backend applies the same rule in docMandatoryStatus_.
 function docCompleteness(entity) {
   var docList = entity.docs || [];
   var byKey = {};
   docList.forEach(function(d) { byKey[d.key] = d; });
-  var mand = mandatoryDocKeys(entity.aud, docList);
-  var submitted = 0, pending = [];
-  mand.forEach(function(k) {
-    var d = byKey[k];
-    if (d && d.submitted) submitted++;
-    else pending.push(d || { key: k, label: prettyDocLabel(k), submitted: false });
+  var submitted = 0, total = 0, pending = [];
+  mandatoryDocGroups(entity.aud).forEach(function(g) {
+    var judged = false, met = false;
+    g.keys.forEach(function(k) {
+      var d = byKey[k];
+      if (!d) return;
+      judged = true;
+      if (d.submitted) met = true;   // either column satisfies the requirement
+    });
+    if (!judged) return;
+    total++;
+    if (met) submitted++;
+    else pending.push({ key: g.keys[0], label: g.label, submitted: false });
   });
-  var total = mand.length;
   return { total: total, submitted: submitted, pending: pending,
            pct: total > 0 ? Math.round(submitted / total * 100) : 0 };
 }
@@ -11141,9 +11185,10 @@ function openDocModal(key) {
   var c = docCompleteness(d);
   var clr = docPctColor(c.pct);
   // Build the display list: the record's own documents PLUS any mandatory
-  // document missing from it (e.g. PWM for buyers) shown as "Not submitted",
-  // so every mandatory doc is visible. Mandatory docs sort first, then submitted.
-  var mandKeys = mandatoryDocKeys(d.aud, d.docs || []);
+  // document missing from it shown as "Not submitted", so every mandatory doc is
+  // visible. Mandatory docs sort first, then submitted. Where a requirement accepts
+  // either of two columns both are listed, so the reader can see both routes to it.
+  var mandKeys = mandatoryDocKeys(d.aud);
   var mandSet = {};
   mandKeys.forEach(function(k) { mandSet[k] = true; });
   var haveKeys = {};
