@@ -299,6 +299,13 @@ var AUDIENCE_CFG = {
 // and excluded from the Avg TAT so a few outliers don't skew it.
 var TAT_MAX_DAYS = 365;
 
+// Post-onboarding activation gets its own, far wider limit. A vendor who takes two
+// years to put up a first listing is slow, not noise — the seller feed carries real
+// values of 980 and 1628 days — whereas a 365-day onboarding TAT is a broken record.
+// Sharing TAT's limit discarded the slowest activations outright and biased the
+// median toward the quick ones. This bound only catches genuine nonsense.
+var ACTIVATION_MAX_DAYS = 1825;   // 5 years
+
 // The eight business verticals, in display order. Rows are mapped into these by
 // mapToVertical() + date-based migration in normalizeRows.
 var VERTICALS = [
@@ -2226,11 +2233,40 @@ function normalizeRows(raw, cfg) {
                   || !!firstListing;
     // The feed's own days_to_first_listing / days_to_first_order come through
     // negative — measured the wrong way round — so the interval is derived from the
-    // raw dates instead, under the same 0..TAT_MAX_DAYS sanity rule TAT uses.
+    // raw dates instead, bounded below.
     var daysToList  = (onboarded && firstListing) ? dateDiffDays(onboarded, firstListing) : null;
     var daysToOrder = (onboarded && firstOrder)   ? dateDiffDays(onboarded, firstOrder)   : null;
-    if (daysToList  !== null && (daysToList  < 0 || daysToList  > TAT_MAX_DAYS)) daysToList  = null;
-    if (daysToOrder !== null && (daysToOrder < 0 || daysToOrder > TAT_MAX_DAYS)) daysToOrder = null;
+    // Activation is bounded by ACTIVATION_MAX_DAYS, not TAT_MAX_DAYS. A vendor taking
+    // two years to put up their first listing is slow, not noise — the seller feed
+    // carries real values of 980 and 1628 days — whereas a 365-day TAT is a broken
+    // record. Sharing TAT's limit here silently discarded the slowest activations and
+    // biased the median toward the quick ones.
+    if (daysToList  !== null && (daysToList  < 0 || daysToList  > ACTIVATION_MAX_DAYS)) daysToList  = null;
+    if (daysToOrder !== null && (daysToOrder < 0 || daysToOrder > ACTIVATION_MAX_DAYS)) daysToOrder = null;
+
+    // Where the feed gives no date pair to measure between, fall back to the interval
+    // column it publishes directly. The buyer card is the case that needs this: it has
+    // days_to_first_requisition and days_to_first_order but no first_*_date to derive
+    // them from, so both cards read "reached by N, but the feed carries no date".
+    //
+    // Those columns arrive NEGATIVE — measured end-to-start — consistently across both
+    // audiences and every sample checked, so the magnitude is taken. A computed
+    // interval is still preferred where the dates exist, because it can be audited
+    // against the two dates behind it; this is only the fallback.
+    var _feedDays = function(keys) {
+      var raw = firstVal_(row, idx, keys);
+      if (raw === '' || raw === null || raw === undefined) return null;
+      var n = Math.abs(parseFloat(String(raw).replace(/[,\s]/g, '')));
+      return (!isNaN(n) && n <= ACTIVATION_MAX_DAYS) ? Math.round(n) : null;
+    };
+    if (daysToList === null) {
+      daysToList = _feedDays(_isBuyerFeed
+        ? ['days_to_first_requisition', 'days_to_first_application']
+        : ['days_to_first_listing']);
+    }
+    if (daysToOrder === null) {
+      daysToOrder = _feedDays(['days_to_first_order', 'days_to_first_transaction']);
+    }
 
     var vertical = mapToVertical(bizVert, category, cfg.audience);
     // Marketplace infra rows: before April 1 2026 → 'Marketplace' card (historical);
