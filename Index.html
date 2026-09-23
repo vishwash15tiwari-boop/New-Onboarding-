@@ -3613,10 +3613,11 @@ body.mm-sn-drill{overflow:hidden}
 .mf-sum-tile.mf-sum-clickable:hover{box-shadow:0 4px 14px rgba(15,122,79,.15);transform:translateY(-2px)}
 .mf-sum-tile.mf-sum-clickable:active{transform:translateY(0);box-shadow:none}
 /* The four tiles inside the Onboarded (Details) panel. */
-.onb-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-3);margin-top:18px;padding-top:var(--sp-3);border-top:1px solid var(--border)}
+/* auto-fit rather than a fixed count, so the strip lays out correctly whether it
+   carries four rate tiles or the three compliance ones, and reflows instead of
+   cramping as the panel narrows. */
+.onb-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--sp-3);margin-top:18px;padding-top:var(--sp-3);border-top:1px solid var(--border)}
 .mf-sum-more{font-size:9px;color:var(--blue);margin-top:6px;text-align:right;font-weight:600;letter-spacing:.02em;opacity:.85}
-@media(max-width:980px){.onb-sum{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:520px){.onb-sum{grid-template-columns:1fr}}
 
 /* ── Shared detail popup shell (.mfp): a small floating card appended to <body>,
    used by the Quality KPI rows (contextual breakdown). One open/close/placement/
@@ -6916,6 +6917,30 @@ function _mmVertModules(key) {
       + _onbTile('amber', MM_IC.draft, _onbPc(_mmC(vs, vb, 'draft')) + '%',     'Cases in Draft')
       + _onbTile('red',   MM_IC.x,     _onbPc(_mmC(vs, vb, 'rejected')) + '%',  'Cases Rejected')
       + '</div>';
+
+    // Compliant Onboarding — whether the documented process was actually followed,
+    // read from document completeness:
+    //   every required document present  → followed
+    //   some present, some missing       → an exception was taken to proceed
+    //   none present                     → not followed
+    // The backend already buckets exactly this way (complete / partial / incomplete
+    // in getQualityData), so this presents an existing aggregate rather than a new
+    // rule. Quality data is OMP-scoped, so the strip appears only where it exists.
+    var _dq = (qualityData && qualityData.seller && qualityData.seller.docs) || null;
+    if (_dq && _dq.total > 0) {
+      var _dPc = function(n) {
+        var p = (n || 0) / _dq.total * 100;
+        return (p > 0 && p < 1) ? p.toFixed(1) : String(Math.round(p));
+      };
+      onbSummary += '<div class="onb-sum onb-sum-3">'
+        + _onbTile('green', MM_IC.check, fmt(_dq.complete || 0),
+            'Process Followed &middot; ' + _dPc(_dq.complete) + '% &middot; all documents on file')
+        + _onbTile('amber', MM_IC.draft, fmt(_dq.partial || 0),
+            'Exception Taken &middot; ' + _dPc(_dq.partial) + '% &middot; onboarded with documents outstanding')
+        + _onbTile('red',   MM_IC.x,     fmt(_dq.incomplete || 0),
+            'Not Followed &middot; ' + _dPc(_dq.incomplete) + '% &middot; no documents on file')
+        + '</div>';
+    }
   }
 
   mods.push({ t:'Onboarded (Details)', ic:MM_IC.grid, tone:'t-ink', kind:'module', expand:'inline-panel',
@@ -16079,7 +16104,25 @@ function _osvDrill(title, sub, sellers, opts) {
       return '<span style="' + cls + ';padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600">' + lbl + '</span>';
     }
 
-    var thExtra = (showPre ? '<th>Pre-OSV Score</th>' : '') + (showKyc ? '<th>KYC</th>' : '') + (showSent ? '<th>OSV Sent</th>' : '') + (showTpv ? '<th>3rd Party</th>' : '');
+    // The checks behind the score. Shown whenever the feed carries any of them, so a
+    // low score can be traced to the check that caused it instead of standing alone.
+    var showParams = sellers.some(function(r){
+      var p = r.params; return p && (p.penny || p.gstr || p.itr || p.consent);
+    });
+    // Sheet wording is preserved and only coloured: "Sent", "Received" and
+    // "Not Received" are distinct states, and flattening them to pass/fail would
+    // discard the distinction this panel exists to surface.
+    function paramCell(v) {
+      if (!v) return '<td><span style="color:var(--txt3)">&mdash;</span></td>';
+      var u = String(v).toUpperCase();
+      var good = /SUCCESS|RECEIVED|DONE|YES|ACTIVE|ACCEPTED|COMPLETE/.test(u) && u.indexOf('NOT') === -1;
+      var bad  = /FAIL|REJECT|NOT_RECEIVED|NOT RECEIVED/.test(u);
+      var col  = bad ? 'var(--st-rejected-tx)' : good ? '#049769' : 'var(--amber)';
+      return '<td><span style="font-size:10.5px;font-weight:600;color:' + col + '">' + esc(v) + '</span></td>';
+    }
+
+    var thExtra = (showPre ? '<th>Pre-OSV Score</th>' : '') + (showKyc ? '<th>KYC</th>' : '') + (showSent ? '<th>OSV Sent</th>' : '') + (showTpv ? '<th>3rd Party</th>' : '')
+      + (showParams ? '<th>Penny Drop</th><th>GSTR</th><th>ITR</th><th>Consent</th>' : '');
     var rows = sellers.slice(0, 300).map(function(r) {
       var badge = '<span class="osv-st-badge ' + _osvBadgeCls(r.osvStatus) + '">' + esc(_osvStLabel(r.osvStatus)) + '</span>';
       var score  = r.score    !== null && r.score    !== undefined ? r.score    + ' / 10' : '—';
@@ -16091,7 +16134,10 @@ function _osvDrill(title, sub, sellers, opts) {
       var tdExtra = (showPre ? '<td>' + preScr + (delta ? ' <small>(' + delta + ')</small>' : '') + '</td>' : '')
         + (showKyc ? '<td>' + kycBadge(r.kycStatus) + '</td>' : '')
         + (showSent ? '<td style="text-align:center">' + (r.osvSent ? '<span style="color:#049769;font-weight:700">&#10003;</span>' : '<span style="color:#8E8E93">&#8212;</span>') + '</td>' : '')
-        + (showTpv  ? '<td style="text-align:center">' + (r.thirdParty ? '<span style="color:#8460D4;font-weight:700">&#10003;</span>' : '<span style="color:#8E8E93">&#8212;</span>') + '</td>' : '');
+        + (showTpv  ? '<td style="text-align:center">' + (r.thirdParty ? '<span style="color:#8460D4;font-weight:700">&#10003;</span>' : '<span style="color:#8E8E93">&#8212;</span>') + '</td>' : '')
+        + (showParams ? (function(){ var p = r.params || {};
+            return paramCell(p.penny) + paramCell(p.gstr) + paramCell(p.itr) + paramCell(p.consent);
+          }()) : '');
       var gstDisp = r.gstin ? '<span style="font-family:monospace;font-size:10px">' + esc(r.gstin) + '</span>' : '<span style="color:var(--txt3)">—</span>';
       return '<tr><td>' + esc(r.name || '—') + '</td><td>' + gstDisp + '</td><td>' + esc(r.category || '—') + '</td><td>' + badge + '</td><td>' + score + '</td>' + tdExtra + '<td>' + esc(r.assignedTo || '—') + '</td><td>' + esc(r.updatedDate || '—') + '</td></tr>';
     }).join('');

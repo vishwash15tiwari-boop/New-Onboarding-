@@ -4707,6 +4707,14 @@ function getOSVDashboardData() {
       var vsThirdPty = vfc_(['third_party','third_party_verification','tpv','third_party_status',
                              '3rd_party','third_party_verified','tpv_status','third_party_check',
                              'thirdparty_name','third_party_name']);
+      // The remaining checks behind a vendor's score. All four sit in the score sheet
+      // and none were read, so a low score could not be traced to the check that
+      // caused it. Header names come from the live sheet: "GSTR  (2B & 3B) Status"
+      // normalises to gstr_2b_3b_status, the double space and ampersand stripped.
+      var vsPenny  = vfc_(['penny_drop_status','penny_drop','pennydrop_status','bank_verification_status']);
+      var vsGstr   = vfc_(['gstr_2b_3b_received_status','gstr_2b_3b_status','gstr_status','gstr']);
+      var vsItr    = vfc_(['itr_received_status','itr_sent_status','itr_status','itr']);
+      var vsConsent= vfc_(['osv_consent_status','consent_status','osv_consent']);
       var vsPreScr   = vfc_(['pre_osv_score','score_before_osv','initial_score','baseline_score',
                              'pre_score','score_pre','previous_score','old_score','score_before',
                              'pre_verification_score','pre_audit_score']);
@@ -4827,7 +4835,19 @@ function getOSVDashboardData() {
             return _trk && _trk.poc ? _trk.poc : '';
           }()),
           updatedDate: upd, osvSentDate: osvSentDate, hasTransaction: sel.hasTransaction,
-          kycStatus: kycSt, osvSent: osvSent, thirdParty: thirdParty
+          kycStatus: kycSt, osvSent: osvSent, thirdParty: thirdParty,
+          // The score's component checks, kept as the sheet's own words rather than
+          // normalised into pass/fail here: "Sent", "Received", "Not Received" and
+          // "Pending" are meaningfully different states, and collapsing them would
+          // lose exactly the detail this panel exists to show.
+          params: {
+            kyc:     kycRaw || '',
+            osv:     osRaw || '',
+            penny:   vsPenny   >= 0 ? String(row[vsPenny]   || '').trim().slice(0, 30) : '',
+            gstr:    vsGstr    >= 0 ? String(row[vsGstr]    || '').trim().slice(0, 30) : '',
+            itr:     vsItr     >= 0 ? String(row[vsItr]     || '').trim().slice(0, 30) : '',
+            consent: vsConsent >= 0 ? String(row[vsConsent] || '').trim().slice(0, 30) : ''
+          }
         });
       });
     }
@@ -4933,7 +4953,8 @@ function getOSVDashboardData() {
       hasTransaction: s.hasTransaction,
       kycStatus:      r ? (r.kycStatus  || '') : '',
       osvSent:        r ? (r.osvSent    || false) : false,
-      thirdParty:     r ? (r.thirdParty || false) : false
+      thirdParty:     r ? (r.thirdParty || false) : false,
+      params:         r ? (r.params     || null)  : null
     };
   });
 
