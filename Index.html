@@ -3824,8 +3824,13 @@ body.mm-sn-drill{overflow:hidden}
 /* The state name is the only elastic column: it takes whatever the fixed
    numeric columns leave and ellipses, so a long name can never widen the
    table past the card the way it used to. */
-#mm-geo .gs-tbl td.gs-st{overflow:hidden;text-overflow:ellipsis}
-#mm-geo .gs-tbl td.gs-st span{overflow:hidden;text-overflow:ellipsis}
+/* text-overflow only applies to a block-level box, so an inline <span> ignores it
+   and simply runs past the cell — at the real column width "Arunachal Pradesh"
+   printed straight over the Sellers figure. inline-block gives it a box to clip
+   against; the max-width leaves room for the region dot beside it. */
+#mm-geo .gs-tbl td.gs-st{overflow:hidden}
+#mm-geo .gs-tbl td.gs-st > span{display:inline-block;max-width:calc(100% - 15px);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 #mm-geo .gs-tbl tbody tr:last-child td{border-bottom:0}
 #mm-geo .gs-tbl tbody tr{cursor:pointer}
 #mm-geo .gs-tbl tbody tr:hover td{background:var(--bg2)}

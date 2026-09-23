@@ -824,7 +824,7 @@ function getTransactionModuleData(filtersJson) {
     // it showed were the whole portfolio. 'all' keeps the old portfolio-wide
     // behaviour available for any caller that wants it.
     var vertF = String(f.vertical || 'OMP');
-    var cKey = 'txn_mod_v4_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, vertF]);
+    var cKey = 'txn_mod_v5_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, vertF]);
     var cache = CacheService.getScriptCache();
     var hit   = cache.get(cKey);
     if (hit) return hit;
@@ -853,11 +853,16 @@ function getTransactionModuleData(filtersJson) {
         return s + (r.txnValue || 0);
       }, 0);
     }
+    // Ageing runs from the date a vendor actually completed onboarding. Reading
+    // onboardedDate straight off a buyer row measures days since the record was
+    // last touched, which understates the wait — a buyer onboarded six months ago
+    // and edited yesterday came out as one day old.
     function aging(rows) {
       var lt30=0, d30=0, gt60=0;
       rows.forEach(function(r) {
-        if (!r.onboardedDate) return;
-        var days = Math.floor((now - r.onboardedDate) / 86400000);
+        var od = completionDate_(r);
+        if (!od) return;
+        var days = Math.floor((now - od) / 86400000);
         if (days <= 30) lt30++; else if (days <= 60) d30++; else gt60++;
       });
       return { lt30:lt30, d30_60:d30, gt60:gt60 };
@@ -918,7 +923,8 @@ function getTransactionModuleData(filtersJson) {
         category: r.category || '',
         gmv:      r.txnValue || 0,
         txns:     r.txnCount || r.totalOrders || 0,
-        ageDays:  r.onboardedDate ? Math.floor((now - r.onboardedDate) / 86400000) : null,
+        ageDays:  (function() { var od = completionDate_(r);
+                                return od ? Math.floor((now - od) / 86400000) : null; }()),
         state:    r.state || ''
       };
     }
@@ -943,18 +949,23 @@ function getTransactionModuleData(filtersJson) {
       var tb = { month: tk, transacted: 0, nonTransacted: 0, tS: 0, tB: 0, nS: 0, nB: 0 };
       trendMonths.push(tb); trendMap[tk] = tb;
     }
-    function trendAdd(rows, field, subField, dateKey) {
+    // Takes a resolver rather than a field name, so the non-transacted series can
+    // go through completionDate_ — reading onboardedDate straight off a buyer row
+    // buckets it by onboarding_updated_date, a last-touched value that moves on
+    // any later edit and drags the whole series into the current month.
+    function trendAdd(rows, field, subField, dateFn) {
       rows.forEach(function(r) {
-        var dt = r[dateKey];
+        var dt = dateFn(r);
         if (!(dt instanceof Date) || isNaN(dt)) return;
         var k = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0');
         if (trendMap[k]) { trendMap[k][field]++; trendMap[k][subField]++; }
       });
     }
-    trendAdd(sTxn,  'transacted',    'tS', 'txnDate');
-    trendAdd(bTxn,  'transacted',    'tB', 'txnDate');
-    trendAdd(sNonT, 'nonTransacted', 'nS', 'onboardedDate');
-    trendAdd(bNonT, 'nonTransacted', 'nB', 'onboardedDate');
+    var _txnDateOf = function(r) { return r.txnDate; };
+    trendAdd(sTxn,  'transacted',    'tS', _txnDateOf);
+    trendAdd(bTxn,  'transacted',    'tB', _txnDateOf);
+    trendAdd(sNonT, 'nonTransacted', 'nS', completionDate_);
+    trendAdd(bNonT, 'nonTransacted', 'nB', completionDate_);
 
     var result = {
       success: true,
@@ -2838,7 +2849,11 @@ function vStats(data, vertKey) {
     if (isDone && r.hasGST)                                       withGST++;
     if (isDone && isNew)                                           newVendors++;
     if (isDone && isOld)                                           oldVendors++;
-    if (isDone && r.onboardedDate && r.onboardedDate >= weekAgo)  completedThisWeek++;
+    // completionDate_, not onboardedDate: on the buyer feed the latter is a
+    // last-touched value, so any buyer edited in the last seven days counted as
+    // onboarded this week however long ago it actually completed.
+    var _cd = completionDate_(r);
+    if (isDone && _cd && _cd >= weekAgo)                           completedThisWeek++;
 
     // Every onboarded record that carries a measurable turnaround, whichever start date
     // it was measured from (see _tatOf_). Only completed records ever carry one, and
