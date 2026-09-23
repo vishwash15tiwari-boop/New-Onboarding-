@@ -5903,12 +5903,25 @@ var MR_TXNDOC_COLS = [
 ];
 
 // TAT drill-down — the vendors behind a cell in the Average TAT matrix.
+// tatWindow and tatSkip make an unmeasured row self-explanatory: the dates the
+// figure was taken between when there is one, and the reason when there is not.
 var MR_TAT_COLS = [
   { key:'name',       label:'Name', always:true },
   { key:'vendorType', label:'Type' },
   { key:'category',   label:'Category' },
+  { key:'tatWindow',  label:'Measured between' },
   { key:'tat',        label:'TAT (days)' },
+  { key:'tatSkip',    label:'Why no TAT' },
 ];
+
+// Per-row reasons, in the vendor's terms rather than the assigner's field names.
+var TAT_SKIP_LBL = {
+  startAfterEnd: 'Start date falls after the onboarded date',
+  noStart:       'No start date in the feed',
+  noEnd:         'No onboarded date in the feed',
+  noBasis:       'Feed carries no usable start-date column',
+  tooLong:       'Span exceeds the 365-day sanity limit'
+};
 // Detail rows per audience for the TAT drill-down, cached per vertical + period.
 var _tatRows = { key:null, pKey:null, seller:null, buyer:null, loading:{} };
 // Inline TAT panel state (Onboarded Details → TAT sub-tab)
@@ -9513,16 +9526,26 @@ function _snPopulateTatInline(aud) {
         : '<span style="color:' + (n <= 7 ? 'var(--green,#1DC797)' : n <= 21 ? 'var(--amber,#FF9500)' : 'var(--red,#FF3B30)')
           + ';font-weight:700;font-variant-numeric:tabular-nums">' + n
           + '<small style="font-size:.65em;font-weight:600;color:var(--txt3);margin-left:1px">d</small></span>';
+      // An unmeasured row states the feed defect that caused it instead of leaving
+      // the column blank, so the shortfall can be acted on per vendor.
+      var why = isNaN(n)
+        ? (r.tatSkip
+            ? '<span style="font-size:11px;color:var(--st-rejected-tx)">' + esc(TAT_SKIP_LBL[r.tatSkip] || r.tatSkip) + '</span>'
+            : '<span class="td-dim">—</span>')
+        : ((r.tatStart && r.tatStart !== '—' && r.tatEnd && r.tatEnd !== '—')
+            ? '<span class="td-dim td-num" style="font-size:11px">' + esc(r.tatStart) + ' &rarr; ' + esc(r.tatEnd) + '</span>'
+            : '<span class="td-dim">—</span>');
       return '<tr>'
         + '<td><strong>' + esc(r.name || '—') + '</strong>'
         + (r.id ? '<div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id) + '</div>' : '') + '</td>'
         + '<td class="td-dim">' + esc(r.vendorType || '—') + '</td>'
         + '<td>' + esc(r.category || '—') + '</td>'
         + '<td>' + cell + '</td>'
+        + '<td>' + why + '</td>'
         + '</tr>';
-    }).join('') : '<tr><td colspan="4" style="padding:40px;text-align:center;color:var(--txt3)">No records match.</td></tr>';
+    }).join('') : '<tr><td colspan="5" style="padding:40px;text-align:center;color:var(--txt3)">No records match.</td></tr>';
     var table = '<table class="mr-tbl" style="width:100%">'
-      + '<thead><tr><th>Name</th><th>Type</th><th>Category</th><th>TAT (Days) ↓</th></tr></thead>'
+      + '<thead><tr><th>Name</th><th>Type</th><th>Category</th><th>TAT (Days) ↓</th><th>Measured between / why not</th></tr></thead>'
       + '<tbody>' + trs + '</tbody></table>';
     s.innerHTML = _snTatShell(table, filtered.length, sourceTotal, cats, types);
   });
@@ -14941,6 +14964,21 @@ function _mrCellHtml(r, key) {
                               + (r.id ? '<div style="font-size:10.5px;color:var(--txt3)">' + esc(r.id) + '</div>' : '');
       case 'vendorType': return '<span class="td-dim">' + esc(r.vendorType || '—') + '</span>';
       case 'category':   return esc(r.category || '—');
+      // The window the figure was taken between, so a TAT can be checked against
+      // its own dates rather than taken on trust.
+      case 'tatWindow': {
+        var _a = r.tatStart, _b = r.tatEnd;
+        if (!_a || _a === '—' || !_b || _b === '—') return '<span class="td-dim">—</span>';
+        return '<span class="td-dim td-num" style="font-size:11px">' + esc(_a) + ' &rarr; ' + esc(_b) + '</span>';
+      }
+      // Why a row has no figure, in place of an unexplained dash. This is the
+      // detail that makes the shortfall actionable: it names the feed defect per
+      // vendor rather than leaving the column silently empty.
+      case 'tatSkip': {
+        if (!r.tatSkip) return '<span class="td-dim">—</span>';
+        var _w = TAT_SKIP_LBL[r.tatSkip] || r.tatSkip;
+        return '<span style="font-size:11px;color:var(--st-rejected-tx)">' + esc(_w) + '</span>';
+      }
       case 'tat':        return tatChip(r.tat, r);
       default:           return esc(String(r[key] || '—'));
     }

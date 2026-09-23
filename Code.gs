@@ -2808,6 +2808,9 @@ function vertRow(r) {
     tat:      (tv == null ? '—' : tv),
     tatBasis: r.dispBasis || r.tatBasis || null,
     tatExact: r.onbTAT != null,
+    // Why this record carries no TAT, per row, so the records table can show the
+    // reason next to the vendor instead of a bare dash. Set by _assignTat_.
+    tatSkip:  (r.dispTAT == null && r.onbTAT == null) ? (r.tatSkip || null) : null,
     hasTxn:       r.hasTxn,
     hasTransacted: r.hasTransacted,
     txnCount:     r.txnCount || 1,
