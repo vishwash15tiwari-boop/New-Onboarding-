@@ -1476,12 +1476,20 @@ function _assignTat_(rows, audience) {
   // per-record fallback is what previously inflated one category against another.
   var basis = null;
   if (audience === 'buyer') {
-    // Buyers are measured ONLY created → final approval (the 'fixed' basis, _bs → _be). The
-    // 'created' fallback is deliberately gone: buyers have no onboarded_date, so it measured
-    // to onboarding_updated_date — a last-touched timestamp that drifts forward on any later
-    // edit and inflated the figure to tens of days. A buyer with no approval timestamp is left
-    // out of the average rather than measured to a drifting date.
-    basis = n.fixed > 0 ? 'fixed' : null;
+    // Buyers prefer created → final approval (the 'fixed' basis, _bs → _be).
+    //
+    // Where that is unavailable, fall back to the workflow events on the row — the
+    // same Level 1..4 / approval timestamps tatEffStartFromRow_ resolves for sellers.
+    // Without this the buyer branch could ONLY ever use 'fixed', so a buyer feed
+    // carrying real approval dates had them collected and then discarded unused, and
+    // buyer TAT stayed permanently blank.
+    //
+    // 'created' is still deliberately excluded: buyers have no onboarded_date, so it
+    // measures to onboarding_updated_date — a last-touched timestamp that drifts
+    // forward on any later edit and inflated the figure to tens of days. A workflow
+    // timestamp is a real event; that one is not, which is why one is allowed here
+    // and the other is not.
+    basis = n.fixed > 0 ? 'fixed' : (n.review > 0 ? 'review' : null);
   }
   else if (done.length && n.review >= done.length * 0.5) basis = 'review';
   else if (n.level1  > n.review && n.level1  > 0)        basis = 'level1';
@@ -1530,7 +1538,10 @@ function _assignTat_(rows, audience) {
   // when a real start date resolves inside the window, and that start is what the row's
   // TAT Start cell shows, so the number stays auditable against its own dates. Display
   // only — the averages keep reading onbTAT and can never drift onto a mixed basis.
-  var order = audience === 'buyer' ? ['fixed', 'created'] : ['review', 'level1', 'created'];
+  // Buyers: the approval span first, then a workflow event, then the created date —
+  // 'review' ahead of 'created' because a Level-N timestamp is a recorded event and
+  // the created date is only a proxy for one.
+  var order = audience === 'buyer' ? ['fixed', 'review', 'created'] : ['review', 'level1', 'created'];
   rows.forEach(function(r) {
     if (r.status !== 'COMPLETED') return;
     if (r.onbTAT !== null) {
