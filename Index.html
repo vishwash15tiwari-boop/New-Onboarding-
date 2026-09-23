@@ -7250,7 +7250,7 @@ function _mmVertModules(key) {
     };
     onbSummary = '<div class="onb-sum">'
       + _onbTile('green', MM_IC.check, _onbPc(_mmC(vs, vb, 'completed')) + '%', 'Onboarding Conversion Rate')
-      + _onbTile('blue',  MM_IC.clock, _onbTat,                                 'Average Time to Onboard', 'openTatModal()')
+      + _onbTile('blue',  MM_IC.clock, _onbTat,                                 'Turn Around Time to Onboard', 'openTatModal()')
       + _onbTile('amber', MM_IC.draft, _onbPc(_mmC(vs, vb, 'draft')) + '%',     'Cases in Draft')
       + _onbTile('red',   MM_IC.x,     _onbPc(_mmC(vs, vb, 'rejected')) + '%',  'Cases Rejected')
       + '</div>';
@@ -18148,10 +18148,10 @@ function _buildOvKpiCards(scope) {
   // those vendors are still trading. The lifecycle split that said so has been removed
   // from this row for now; _ovLifecycle(scope) still computes it if it returns.
   var totalVal = '<span data-count="' + kpis.comp + '" data-count-id="ov_total">' + fmt(kpis.comp) + '</span>'
-    + '<span class="ov-kpi-note">applications completed</span>';
+    + '<span class="ov-kpi-note">Validated and Onboarded</span>';
   // A rate means nothing without the base it is a rate of, so the caption names it.
   var compVal  = kpis.compRate + '<span style="font-size:.55em;font-weight:700;color:var(--txt2);margin-left:1px">%</span>'
-    + '<span class="ov-kpi-note">of ' + fmt(kpis.total) + ' applications</span>';
+    + '<span class="ov-kpi-note">of ' + fmt(kpis.total) + ' Logged In Cases</span>';
   // One figure, always: the volume-weighted seller + buyer average. Where the two were
   // measured from different start dates the tooltip names them — a blank said less than
   // an approximate number did. A dash now means exactly one thing: nothing in scope
@@ -18190,11 +18190,15 @@ function _buildOvKpiCards(scope) {
     // is a caveat and stays in the tooltip. Where the scope mixes start dates
     // there is no single pair to name, so it falls back to the plain description
     // and the tooltip lists the bases.
+    // The caption names the metric in full. Which start date it was measured from
+    // moves to the tooltip: it belongs there rather than in a label that would
+    // otherwise rewrite itself as the scope's basis changes.
     var _basis = (kpis.tatBases && kpis.tatBases.length === 1)
       ? (TAT_BASIS_LBL[kpis.tatBases[0]] || '') : '';
+    if (_basis) _tatTip += '. Measured ' + _basis;
     tatVal = '<span title="' + esc(_tatTip) + '">' + kpis.avgTAT
       + '<span style="font-size:.5em;font-weight:600;color:var(--txt2);margin-left:3px">days</span></span>'
-      + '<span class="ov-kpi-note">' + esc(_basis || 'time to onboard') + '</span>';
+      + '<span class="ov-kpi-note">Turn Around Time to Onboard</span>';
   } else {
     tatVal = '<span title="No record in this scope carries a measurable turnaround.">&mdash;</span>'
       + '<span class="ov-kpi-note">nothing measurable yet</span>';
