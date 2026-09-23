@@ -3699,7 +3699,7 @@ function getQualityData() {
   // v20: document completeness is judged on the mandatory six (DOC_MANDATORY) rather
   // than on every column in the feed, and rows now carry mandMet/mandTotal/mandMissing.
   // v21: MSME Certificate is conditional on MSME registration, and rows carry msmeReg.
-  var CACHE_KEY = 'quality_data_v21';
+  var CACHE_KEY = 'quality_data_v22';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -3900,6 +3900,22 @@ function getQualityData() {
                                 var _d = parseDate(row[_c]);
                                 return _d ? fmtDate(_d) : '';
                               }()),
+            hasTransacted:    omp.hasTransacted || false
+          });
+        } else {
+          // Unrated, but still a real Marketplace seller — the score cell on its row is
+          // blank. It counted toward r.total and was then dropped, so "Not Rated" in the
+          // records table filtered a list holding only rated vendors and always came back
+          // empty. rating:null is what the frontend's chipClass() reads as Not Rated.
+          vendorRatings.push({
+            id:               omp.id   || vid.slice(0, 30),
+            name:             omp.name || nm.slice(0, 60),
+            gstin:            (omp.gstin || gst).slice(0, 20),
+            rating:           null,
+            onboardingStatus: omp.onboardingStatus,
+            category:         omp.category,
+            aud:              aud,
+            lastRated:        '',
             hasTransacted:    omp.hasTransacted || false
           });
         }
@@ -4189,6 +4205,38 @@ function getQualityData() {
   // vendor score try-catch above (which reads all named rows directly, avoiding join
   // misses). Only the buyer total still comes from the name map — the vendor score
   // sheet is seller-only, so buyers remain at zero rated.
+  // Sellers with NO row in the score sheet at all. These are the larger part of the
+  // unrated population: the else branch above only catches a row that exists with a
+  // blank score. Without them the records table can never show the unrated vendors
+  // that Rating Coverage already counts in its denominator, which is exactly the gap
+  // between "210 rated of 220 sellers" and a Not Rated filter that returns nothing.
+  // Guard built from what was actually emitted, by id AND normalised name, rather
+  // than from the map key: a vendor matched by GSTIN or id can carry a name that
+  // normalises differently from its key (names are truncated to 60 chars), and a
+  // key-only check would re-add it as a phantom second row.
+  var _vrHave = {};
+  vendorRatings.forEach(function(v) {
+    if (v.id)   _vrHave['i:' + String(v.id)] = 1;
+    if (v.name) _vrHave['n:' + _qNormName_(v.name)] = 1;
+  });
+  Object.keys(ompNameSellers).forEach(function(k) {
+    var o = ompNameSellers[k];
+    if (!o) return;
+    if (o.id   && _vrHave['i:' + String(o.id)])            return;
+    if (o.name && _vrHave['n:' + _qNormName_(o.name)])     return;
+    vendorRatings.push({
+      id:               o.id    || '',
+      name:             o.name  || '',
+      gstin:            o.gstin || '',
+      rating:           null,
+      onboardingStatus: o.onboardingStatus,
+      category:         o.category,
+      aud:              'seller',
+      lastRated:        '',
+      hasTransacted:    o.hasTransacted || false
+    });
+  });
+
   acc['buyer'].r.total    = Object.keys(ompNameBuyers).length;
   // If the vendor score sheet was unreadable (recount never ran), fall back to name-map count.
   if (!acc['seller'].r.total) acc['seller'].r.total = Object.keys(ompNameSellers).length;
