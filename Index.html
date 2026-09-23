@@ -852,15 +852,19 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .twf-rail-v{font-size:20px;font-weight:800;color:var(--txt);line-height:1.15;font-variant-numeric:tabular-nums}
 .twf-rail-p{font-size:13px;font-weight:800;flex:0 0 auto;font-variant-numeric:tabular-nums}
 .twf-row2{display:flex;flex-wrap:wrap;gap:var(--gutter);margin-top:var(--gutter)}
-.twf-card{flex:1 1 340px;border:1px solid var(--border);border-radius:var(--card-radius);background:var(--card);padding:var(--card-pad-y) var(--card-pad-x);min-width:0}
+.twf-card{flex:1 1 340px;border:1px solid var(--border);border-radius:var(--card-radius);background:var(--card);padding:var(--card-pad-y) var(--card-pad-x);min-width:0;display:flex;flex-direction:column}
 .twf-card-t{font-size:var(--card-ttl-size);font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:var(--card-ttl-ls);margin-bottom:12px}
 /* score bands */
-.twf-band{display:flex;align-items:center;gap:9px;margin-bottom:7px}
-.twf-band-l{flex:0 0 42px;font-size:11px;color:var(--txt2);text-align:right;font-variant-numeric:tabular-nums}
-.twf-band-track{flex:1;min-width:0;height:13px;background:var(--border);border-radius:3px;overflow:hidden;display:block}
-.twf-band-track span{display:block;height:100%;border-radius:3px}
-.twf-band-v{flex:0 0 30px;text-align:right;font-size:12px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
-.twf-band-p{flex:0 0 40px;text-align:right;font-size:11px;color:var(--txt3);font-variant-numeric:tabular-nums}
+/* The bands fill whatever height the card is stretched to by the taller card
+   beside them, spread evenly, instead of sitting in the top third and leaving
+   the rest of the card empty. */
+.twf-bands{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-evenly;gap:6px}
+.twf-band{display:flex;align-items:center;gap:10px}
+.twf-band-l{flex:0 0 46px;font-size:12.5px;color:var(--txt2);text-align:right;font-variant-numeric:tabular-nums}
+.twf-band-track{flex:1;min-width:0;height:16px;background:var(--border);border-radius:4px;overflow:hidden;display:block}
+.twf-band-track span{display:block;height:100%;border-radius:4px}
+.twf-band-v{flex:0 0 34px;text-align:right;font-size:13.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+.twf-band-p{flex:0 0 46px;text-align:right;font-size:12px;color:var(--txt3);font-variant-numeric:tabular-nums}
 /* improvement table */
 .twf-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
 .twf-tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt3);text-align:left;padding:5px 4px;border-bottom:1px solid var(--border);white-space:nowrap}
@@ -874,7 +878,7 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .twf-tbl .twf-nm{overflow:hidden;text-overflow:ellipsis;font-weight:600}
 .twf-tbl .twf-gap{color:#049769;font-weight:800}
 .twf-none{color:var(--txt3);padding:14px 4px!important;white-space:normal!important}
-.twf-foot{font-size:10.5px;color:var(--txt3);margin-top:9px;line-height:1.45}
+.twf-foot{font-size:11px;color:var(--txt3);margin-top:auto;padding-top:10px;line-height:1.45}
 /* Custom-range date pair. Every period surface (main header, Global Overview,
    Vertical Overview) mounts its own .cr-box; they are shown, read and synced
    together so the control reads the same wherever you opened it from. */
@@ -7058,7 +7062,8 @@ function _txnScoresHtml(sc) {
     : '<tr><td colspan="5" class="twf-none">Every scored vendor that transacted is already at or above ' + TARGET.toFixed(1) + '.</td></tr>';
 
   return '<div class="twf-row2">'
-    + '<div class="twf-card"><div class="twf-card-t">Score Spread &middot; ' + fmt(sc.rated) + ' rated vendors</div>' + bars + '</div>'
+    + '<div class="twf-card"><div class="twf-card-t">Score Spread &middot; ' + fmt(sc.rated) + ' rated vendors</div>'
+    +   '<div class="twf-bands">' + bars + '</div></div>'
     + '<div class="twf-card"><div class="twf-card-t">Top ' + imp.length + ' vendors for score improvement</div>'
     +   '<table class="twf-tbl"><thead><tr><th class="twf-i">#</th><th>Vendor Name</th><th class="twf-n">Current</th>'
     +     '<th class="twf-n">Target</th><th class="twf-n">Gap</th></tr></thead><tbody>' + impRows + '</tbody></table>'
@@ -21866,7 +21871,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'<td>'+dot+esc(cat)+'</td>'
         +'<td style="font-weight:700;font-variant-numeric:tabular-nums">'+(score!=='—'?'<span style="color:var(--lc-ok)">'+score+'</span>':score)+'</td>'
         +'<td><span class="osv3-chip '+chipCls+'">'+chipLbl+'</span></td>'
-        +'<td><button class="osv3-pager-btn" onclick="_osvDrill(\''+r.id+'\')" style="font-size:11px;padding:4px 10px">View</button></td>'
+        +'<td><button class="osv3-pager-btn" onclick="window.osv3Row(\''+esc(String(r.id||'').replace(/'/g,"\\'"))+'\')" style="font-size:11px;padding:4px 10px">View</button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';
@@ -21944,6 +21949,20 @@ document.addEventListener('DOMContentLoaded', function() {
   // is already in memory and the filtering is client-side, so this costs no fetch.
   window.osv3Repaint=function(){_osvPage=1;try{render();}catch(e){}};
   window.osv3Refresh=function(){_OSV=null;loadOSVData();};
+  /* The row's View button. It used to call _osvDrill(r.id) directly, but that
+     function's signature is (title, sub, sellers, opts) — so the seller id landed
+     in the title, sellers came through undefined, and every click opened an
+     overlay headed by a raw id reading "No records found". It never worked.
+     Passing the row as a one-item list gives the overlay what it is built for:
+     the checks behind the score — pre-OSV score, KYC, OSV sent, third-party
+     verification — none of which the table itself shows. */
+  window.osv3Row=function(id){
+    var list=(_OSV&&_OSV.sellerList)||[],s=null;
+    for(var i=0;i<list.length;i++){ if(String(list[i].id)===String(id)){ s=list[i]; break; } }
+    if(!s)return;
+    var nm=s.name||s.sellerName||'Seller';
+    _osvDrill(nm,'OSV detail'+(s.category?' · '+s.category:''),[s]);
+  };
   window.osv3Sort=function(k){if(_osvSortK===k)_osvSortD*=-1;else{_osvSortK=k;_osvSortD=1;}_osvPage=1;render();};
   window.osv3GoPage=function(p){_osvPage=p;render();};
   window.osv3Search=function(q){_osvQ=q;_osvPage=1;render();};
