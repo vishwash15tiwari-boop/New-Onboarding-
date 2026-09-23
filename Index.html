@@ -832,10 +832,19 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
    nothing to do with the viewport's, so a viewport breakpoint never fires at
    the moment the panel actually runs out of room. The rail wraps under the
    chart when the container cannot hold both, and its rows then spread out. */
-.twf-top{display:flex;flex-wrap:wrap;gap:var(--gutter);align-items:flex-start}
-.twf-chart{flex:4 1 440px;border:1px solid var(--border);border-radius:var(--card-radius);background:var(--card);padding:var(--card-pad-y) var(--card-pad-x);min-width:0}
-.twf-rail{flex:1 1 240px;min-width:0;display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px}
-.twf-rail-row{flex:1 1 214px;display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:var(--card-radius);background:var(--card);padding:10px 12px;min-width:0}
+/* align-items:stretch, so the rail is exactly as tall as the chart beside it
+   rather than running past it. */
+.twf-top{display:flex;flex-wrap:wrap;gap:var(--gutter);align-items:stretch}
+.twf-chart{flex:4 1 700px;border:1px solid var(--border);border-radius:var(--card-radius);background:var(--card);padding:var(--card-pad-y) var(--card-pad-x);min-width:0;overflow-x:auto}
+/* A scaled SVG shrinks its labels with the container — on a narrow panel the
+   axis came out at 7px. Below this width the chart stops shrinking and the card
+   scrolls instead, so the type never falls under about 10px. */
+.twf-chart svg{min-width:700px}
+/* Stretched to the chart height by .twf-top, then divided evenly across its
+   five rows — they used to stack at their natural size, so the rail ended
+   well below the chart card it sits next to. */
+.twf-rail{flex:1 1 250px;min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));grid-auto-rows:minmax(62px,1fr);gap:8px}
+.twf-rail-row{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:var(--card-radius);background:var(--card);padding:10px 14px;min-width:0}
 .twf-rail-ic{width:var(--kpi-ico);height:var(--kpi-ico);border-radius:var(--kpi-ico-r);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .twf-rail-ic svg{width:var(--kpi-ico-svg);height:var(--kpi-ico-svg)}
 .twf-rail-b{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
@@ -6866,14 +6875,21 @@ function _txnScoreStat() {
   return st;
 }
 
-// A round axis maximum at or above v — 328 gives 500, so the gridlines land on
-// readable numbers instead of the data's own awkward top.
+/* A round axis maximum at or above v, with a tick count that divides it into
+   round numbers. The steps used to be 1/2/2.5/5/10, which sent 328 all the way
+   up to 500 and left the tallest bar filling only two-thirds of the plot — a
+   third of the chart's height was empty. The finer ladder picks 400 for the
+   same figure, so the bars use 82% of it. Returns the divisor too, so the
+   gridlines land on 100s rather than on fifths of an awkward maximum. */
 function _wfNiceMax(v) {
-  if (!(v > 0)) return 1;
+  if (!(v > 0)) return { max: 1, ticks: 1 };
   var mag = Math.pow(10, Math.floor(Math.log(v) / Math.LN10));
-  var steps = [1, 2, 2.5, 5, 10];
-  for (var i = 0; i < steps.length; i++) { var m = steps[i] * mag; if (m >= v) return m; }
-  return 10 * mag;
+  var steps = [[1,2],[1.5,3],[2,4],[2.5,5],[3,3],[4,4],[5,5],[6,3],[8,4],[10,5]];
+  for (var i = 0; i < steps.length; i++) {
+    var m = steps[i][0] * mag;
+    if (m >= v) return { max: m, ticks: steps[i][1] };
+  }
+  return { max: 10 * mag, ticks: 5 };
 }
 
 /* Onboarded → Transacted as a column waterfall.
@@ -6889,9 +6905,12 @@ function _wfNiceMax(v) {
    width; there is no reflow to collide under. */
 function _txnWaterfallSvg(onb, nonTxn, txn, sTxn, bTxn) {
   if (!onb || onb <= 0) return '';
-  var W = 980, H = 430, PL = 58, PR = 16, PT = 86, PB = 62;
+  // A narrower viewBox for the same rendered width scales every mark and label
+  // up together: at 980 the labels came out under 10px on screen, which is not
+  // readable at a glance. Proportions are unchanged — only the scale factor.
+  var W = 860, H = 430, PL = 58, PR = 16, PT = 86, PB = 62;
   var iW = W - PL - PR, iH = H - PT - PB;
-  var maxY = _wfNiceMax(onb);
+  var _sc = _wfNiceMax(onb), maxY = _sc.max;
   var yOf = function(v) { return PT + iH - (v / maxY) * iH; };
   var s = sTxn || 0, b = bTxn || 0;
 
@@ -6908,13 +6927,13 @@ function _txnWaterfallSvg(onb, nonTxn, txn, sTxn, bTxn) {
   var g = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block" role="img" aria-label="Onboarded to transacted waterfall">';
 
   // gridlines + y axis
-  var ticks = 5;
+  var ticks = _sc.ticks;
   for (var t = 0; t <= ticks; t++) {
     var tv = maxY / ticks * t, ty = yOf(tv);
     g += '<line x1="' + PL + '" y1="' + ty.toFixed(1) + '" x2="' + (W - PR) + '" y2="' + ty.toFixed(1) + '" stroke="var(--border)" stroke-width="1"' + (t ? ' stroke-dasharray="3,4"' : '') + '/>';
-    g += '<text x="' + (PL - 9) + '" y="' + (ty + 3.5).toFixed(1) + '" text-anchor="end" fill="var(--txt3)" font-size="11" font-family="inherit">' + fmt(Math.round(tv)) + '</text>';
+    g += '<text x="' + (PL - 9) + '" y="' + (ty + 3.5).toFixed(1) + '" text-anchor="end" fill="var(--txt3)" font-size="13" font-family="inherit">' + fmt(Math.round(tv)) + '</text>';
   }
-  g += '<text x="16" y="' + (PT + iH / 2) + '" text-anchor="middle" fill="var(--txt3)" font-size="11" font-family="inherit" transform="rotate(-90 16 ' + (PT + iH / 2) + ')">Vendors</text>';
+  g += '<text x="16" y="' + (PT + iH / 2) + '" text-anchor="middle" fill="var(--txt3)" font-size="12.5" font-family="inherit" transform="rotate(-90 16 ' + (PT + iH / 2) + ')">Vendors</text>';
 
   // connectors first, so the bars sit over them
   for (var c = 0; c < n - 1; c++) {
@@ -6936,20 +6955,20 @@ function _txnWaterfallSvg(onb, nonTxn, txn, sTxn, bTxn) {
     // A drop that lands on the baseline has no room beneath it — its value would
     // sit on the axis labels — so those label above regardless.
     var vy = (d.above || d.from === 0) ? (yTop - 11) : (yBot + 20);
-    g += '<text x="' + cx.toFixed(1) + '" y="' + vy.toFixed(1) + '" text-anchor="middle" fill="var(--txt)" font-size="19" font-weight="800" font-family="inherit" style="font-variant-numeric:tabular-nums">' + d.val + '</text>';
-    g += '<text x="' + cx.toFixed(1) + '" y="' + (PT + iH + 26) + '" text-anchor="middle" fill="var(--txt)" font-size="12.5" font-weight="700" font-family="inherit">' + esc(d.lbl) + '</text>';
-    g += '<text x="' + cx.toFixed(1) + '" y="' + (PT + iH + 44) + '" text-anchor="middle" fill="var(--txt3)" font-size="11" font-family="inherit">' + esc(d.sub) + '</text>';
+    g += '<text x="' + cx.toFixed(1) + '" y="' + vy.toFixed(1) + '" text-anchor="middle" fill="var(--txt)" font-size="22" font-weight="800" font-family="inherit" style="font-variant-numeric:tabular-nums">' + d.val + '</text>';
+    g += '<text x="' + cx.toFixed(1) + '" y="' + (PT + iH + 26) + '" text-anchor="middle" fill="var(--txt)" font-size="14" font-weight="700" font-family="inherit">' + esc(d.lbl) + '</text>';
+    g += '<text x="' + cx.toFixed(1) + '" y="' + (PT + iH + 44) + '" text-anchor="middle" fill="var(--txt3)" font-size="12.5" font-family="inherit">' + esc(d.sub) + '</text>';
   });
 
   /* Callouts. Each sits directly over its own column and drops an arrow to that
      bar's top edge, so it can never reach across into a neighbour's space. */
   function callout(i, text, tint, ink) {
     var d = cols[i], cx = PL + i * colW + colW / 2;
-    var bw = Math.min(colW - 10, 178), bh = 46;   // two lines at 16 apart need 46
+    var bw = Math.min(colW - 10, 186), bh = 50;   // two lines of 13, 17 apart
     var by = Math.max(6, yOf(d.to) - bh - 26);
     var out = '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + by + '" width="' + bw.toFixed(1) + '" height="' + bh + '" rx="9" fill="' + tint + '"/>';
     String(text).split('|').forEach(function(ln, k) {
-      out += '<text x="' + cx.toFixed(1) + '" y="' + (by + 18 + k * 16) + '" text-anchor="middle" fill="' + ink + '" font-size="11.5" font-weight="700" font-family="inherit">' + esc(ln) + '</text>';
+      out += '<text x="' + cx.toFixed(1) + '" y="' + (by + 19 + k * 17) + '" text-anchor="middle" fill="' + ink + '" font-size="13" font-weight="700" font-family="inherit">' + esc(ln) + '</text>';
     });
     var a0 = by + bh + 2, a1 = yOf(d.to) - 7;
     if (a1 > a0 + 6) {
