@@ -845,6 +845,9 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
    well below the chart card it sits next to. */
 .twf-rail{flex:1 1 250px;min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));grid-auto-rows:minmax(62px,1fr);gap:8px}
 .twf-rail-row{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:var(--card-radius);background:var(--card);padding:10px 14px;min-width:0}
+.twf-rail-row.twf-rail-ch{cursor:pointer;transition:var(--t-lift);user-select:none}
+.twf-rail-row.twf-rail-ch:hover{border-color:var(--txt3);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px)}
+.twf-rail-row.twf-rail-ch:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .twf-rail-ic{width:var(--kpi-ico);height:var(--kpi-ico);border-radius:var(--kpi-ico-r);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .twf-rail-ic svg{width:var(--kpi-ico-svg);height:var(--kpi-ico-svg)}
 .twf-rail-b{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
@@ -6996,14 +6999,20 @@ function _txnWfRailHtml(onb, nonTxn, txn, sTxn, bTxn) {
   if (!onb || onb <= 0) return '';
   var s = sTxn || 0, b = bTxn || 0;
   var rows = [
-    { l:'Total Onboarded',       v:onb,    p:100,                                 col:'#0A4430', bg:'rgba(10,68,48,.09)',   ic:MM_IC.users || '' },
-    { l:'Not Transacted',        v:nonTxn, p:Math.round(nonTxn/onb*100),          col:'#B25000', bg:'rgba(178,80,0,.10)',   ic:MM_IC.x || '' },
-    { l:'Transacted',            v:txn,    p:Math.round(txn/onb*100),             col:'#049769', bg:'rgba(4,151,105,.11)',  ic:MM_IC.check || '' },
-    { l:'Sellers (of transacted)',v:s,     p:txn?Math.round(s/txn*100):0,         col:'#0B7A5C', bg:'rgba(29,199,151,.13)', ic:MM_IC.rupee || '' },
-    { l:'Buyers (of transacted)', v:b,     p:txn?Math.round(b/txn*100):0,         col:'#6B47C4', bg:'rgba(132,96,212,.13)', ic:MM_IC.rupee || '' }
+    { k:'onboarded', l:'Total Onboarded',       v:onb,    p:100,                                 col:'#0A4430', bg:'rgba(10,68,48,.09)',   ic:MM_IC.users || '' },
+    { k:'nontxn',    l:'Not Transacted',        v:nonTxn, p:Math.round(nonTxn/onb*100),          col:'#B25000', bg:'rgba(178,80,0,.10)',   ic:MM_IC.x || '' },
+    { k:'txn',       l:'Transacted',            v:txn,    p:Math.round(txn/onb*100),             col:'#049769', bg:'rgba(4,151,105,.11)',  ic:MM_IC.check || '' },
+    { k:'txnseller', l:'Sellers (of transacted)',v:s,     p:txn?Math.round(s/txn*100):0,         col:'#0B7A5C', bg:'rgba(29,199,151,.13)', ic:MM_IC.rupee || '' },
+    { k:'txnbuyer',  l:'Buyers (of transacted)', v:b,     p:txn?Math.round(b/txn*100):0,         col:'#6B47C4', bg:'rgba(132,96,212,.13)', ic:MM_IC.rupee || '' }
   ];
+  /* The rail states the counts; each row opens the vendors behind its own figure.
+     "213 never transacted" is only actionable once you can see which 213. */
   return '<div class="twf-rail">' + rows.map(function(r) {
-    return '<div class="twf-rail-row">'
+    var act = "openTxnRailRecords('" + r.k + "')";
+    return '<div class="twf-rail-row twf-rail-ch" role="button" tabindex="0"'
+      + ' title="' + esc('View the ' + fmt(r.v) + ' \u00b7 ' + r.l) + '"'
+      + ' onclick="' + act + '"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + act + '}">'
       + '<span class="twf-rail-ic" style="background:' + r.bg + ';color:' + r.col + '">' + (r.ic || '') + '</span>'
       + '<span class="twf-rail-b"><span class="twf-rail-l">' + esc(r.l) + '</span>'
       +   '<span class="twf-rail-v">' + fmt(r.v) + '</span></span>'
@@ -14971,6 +14980,69 @@ function openTatRecords(aud, cat) {
 // Sellers in one ageing bucket. Rows come from vertRows — the same array the tile
 // counts were computed from — and are filtered with the same _mmAgingBucket
 // predicate, so the row count always equals the number on the card.
+/* The five reading-rail figures, each opening the rows behind it. Ratings and OSV
+   are joined on with the same lookups the Transacted view uses, so a vendor reads
+   identically whichever table you reach it from. */
+var TXN_RAIL_DEFS = {
+  onboarded: { label: 'Total Onboarded',              aud: null,     txn: null  },
+  nontxn:    { label: 'Vendors not Transacted',       aud: null,     txn: false },
+  txn:       { label: 'Transacted Vendors',           aud: null,     txn: true  },
+  txnseller: { label: 'Transacted \u00b7 Sellers',    aud: 'seller', txn: true  },
+  txnbuyer:  { label: 'Transacted \u00b7 Buyers',     aud: 'buyer',  txn: true  }
+};
+function openTxnRailRecords(which) {
+  var def = TXN_RAIL_DEFS[which];
+  if (!def) return;
+  var key  = activeVertKey || selectedVert;
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var vertName = (vcfg && vcfg.name) || key || '';
+
+  var _qd = (typeof qualityData !== 'undefined') ? qualityData : null;
+  var ratingLkp = {}, osvLkp = {};
+  if (_qd && _qd.vendorRatings) (_qd.vendorRatings || []).forEach(function(v) { if (v.id) ratingLkp[v.id] = v.rating; });
+  if (_qd && _qd.vendorOSV)     (_qd.vendorOSV     || []).forEach(function(v) { if (v.id) osvLkp[v.id]    = v.status; });
+
+  // Same COMPLETED-only basis the rail counts on, so the table length matches the
+  // number that was clicked rather than quietly including drafts.
+  function take(src, audLabel) {
+    if (!Array.isArray(src)) return [];
+    return src.filter(function(r) {
+      if (String(r.status || '').toUpperCase() !== 'COMPLETED') return false;
+      if (def.txn === true  && !r.hasTransacted) return false;
+      if (def.txn === false &&  r.hasTransacted) return false;
+      return true;
+    }).map(function(r) {
+      var c = {};
+      for (var k in r) if (r.hasOwnProperty(k)) c[k] = r[k];
+      c.audType   = audLabel;
+      c.rating    = ratingLkp[r.id] !== undefined ? ratingLkp[r.id] : null;
+      c.osvStatus = osvLkp[r.id] || 'not_initiated';
+      return c;
+    });
+  }
+  var rows = [];
+  if (def.aud !== 'buyer')  rows = rows.concat(take(vertRows, 'Seller'));
+  if (def.aud !== 'seller') rows = rows.concat(take((_ovnRows && _ovnRows.buyer) || [], 'Buyer'));
+
+  _mrCtx = {
+    module: 'txnrail', vertName: vertName, label: def.label,
+    vertLabel: vertName, preStatus: 'COMPLETED', forceSeller: false,
+    cfg: { label: def.label }
+  };
+  _mrRows = rows;
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  // true means HIDDEN. A single-audience view has a constant Type column, so it
+  // carries no information and is dropped rather than repeating "Seller" 67 times.
+  _mrColVis = def.aud ? { audType: true } : {};
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+}
+
 function openAgingRecords(bucket) {
   if (!AGING_LABELS[bucket]) return;
   var key  = activeVertKey || selectedVert;
