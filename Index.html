@@ -18126,10 +18126,12 @@ function _buildOvKpiCards(scope) {
         + ' onboarded vendors carry no measurable turnaround'
         + (_reasons.length ? ' — ' + _reasons.join('; ') : '');
     }
-    tatVal = kpis.avgTAT + '<span style="font-size:.5em;font-weight:600;color:var(--txt2);margin-left:3px">days</span>'
-      + (kpis.tatCount ? '<span class="ov-kpi-note" title="' + esc(_tatTip) + '">'
-          + 'across ' + fmt(kpis.tatCount)
-          + (_onb ? ' of ' + fmt(_onb) + ' onboarded' : ' measured') + '</span>' : '');
+    // The coverage line ("across N of M onboarded") is deliberately not printed
+    // under the figure — it read as a caveat on a number that does not need one.
+    // The same detail, with the per-reason breakdown, stays on the card's own
+    // tooltip, which is where the basis belongs.
+    tatVal = '<span title="' + esc(_tatTip) + '">' + kpis.avgTAT
+      + '<span style="font-size:.5em;font-weight:600;color:var(--txt2);margin-left:3px">days</span></span>';
   } else {
     tatVal = '<span title="No record in this scope carries a measurable turnaround.">&mdash;</span>'
       + '<span class="ov-kpi-note">nothing measurable yet</span>';

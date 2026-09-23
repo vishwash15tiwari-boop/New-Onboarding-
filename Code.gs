@@ -1663,6 +1663,15 @@ function _assignTat_(rows, audience) {
   });
 
   rows.forEach(function(r) {
+    // Keep the buyer's real approval timestamp before the internals go. It is the
+    // only true completion date that feed carries — onboardedDate there is
+    // onboarding_updated_date, a last-touched value that moves forward on any
+    // later edit — and it has to survive independently of whether a TAT could be
+    // measured. tatEndDate is only set when a TAT passed every sanity check, so
+    // bucketing a month by it alone dropped every buyer whose TAT did not resolve
+    // onto the last-touched date instead, which piles them all into whichever
+    // month the records were last edited.
+    if (r._be && !r.approvedDate) r.approvedDate = r._be;
     delete r._l1;       // internal candidates — never reach a payload or cache
     delete r._tatEnd; delete r._bs; delete r._be;
   });
@@ -3098,7 +3107,7 @@ function vertRow(r) {
     id: r.id, name: r.name, category: r.category, vendorType: r.vendorType,
     status: r.status, currentStatus: r.currentStatus || '',
     gstin: r.gstin, hasGST: r.hasGST, state: r.state,
-    createdDate: fmtDate(r.createdDate), onbDate: fmtDate(r.onboardedDate),
+    createdDate: fmtDate(r.createdDate), onbDate: fmtDate(completionDate_(r)),
     reviewDate:  fmtDate(r.reviewDate),
     // The exact window this row's TAT was measured across (— when the record carries no
     // TAT), so the records table can show Start → Onboarded → TAT and the number stays
@@ -3139,13 +3148,29 @@ function _ymdIntUTC_(ms) {
 // A record date → its IST calendar day (shift the absolute instant into IST).
 function istDayNum_(d) { return _ymdIntUTC_(d.getTime() + IST_OFFSET_MS); }
 
+/* The date a case actually completed onboarding — one definition, so a month
+   bucket, a row's onbDate and a period filter cannot disagree about when a
+   vendor was onboarded.
+
+   Sellers carry a real onboarded_date. Buyers do not: AUDIENCE_CFG maps their
+   onbCol to onboarding_updated_date, which is a last-touched timestamp that
+   moves forward on any later edit. So a buyer resolves to its own final-approval
+   timestamp first (level2/level1_approved_at, kept as approvedDate), then to
+   whichever end date a TAT was actually measured to, and only falls back to the
+   drifting field when nothing better exists. Reading onboardedDate directly
+   collapsed every buyer without a measured TAT into the month their record was
+   last edited. */
+function completionDate_(r) {
+  return r.approvedDate || r.tatEndDate || r.dispEnd || r.onboardedDate || null;
+}
+
 function applyDateFilter(r, f) {
   if (!f || !f.period || f.period === 'All') return true;
   // Filter by the date the record reached its CURRENT stage, so period views
   // reflect day-wise activity: an onboarded record is matched on its onboarded
   // date (a case onboarded Today appears even if it was created earlier); records
   // still in the pipeline are matched on their created date.
-  var d = (r.status === 'COMPLETED' && r.onboardedDate) ? r.onboardedDate : r.createdDate;
+  var d = (r.status === 'COMPLETED' && completionDate_(r)) || r.createdDate;
   if (!d) return false;
   var recDay = istDayNum_(d);
 
@@ -5408,7 +5433,7 @@ function getOSVDashboardData() {
 // Returns monthly onboarding counts (calendar months, last 12) for sellers and buyers.
 // Used exclusively by the Central Onboarding Overview bar chart.
 function getOverviewStats() {
-  var CACHE_KEY = 'overview_v5';  // bumped: one vertical per case — cross-listed Others no longer double-counted
+  var CACHE_KEY = 'overview_v6';  // bumped: buyers bucket by their approval date, not a last-touched one
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
   if (hit) return hit;
@@ -5431,14 +5456,11 @@ function getOverviewStats() {
       buckets[m.key] = { sellers: 0, buyers: 0, verts: {}, vertsS: {}, vertsB: {} };
     });
 
-    // The month a case was onboarded in. tatEndDate is the date the TAT was measured
-    // to — _be (buyer final approval) or the detail tab's completion date — and is the
-    // only trustworthy completion date for buyers: their sheet has no onboarded_date,
-    // so onboardedDate falls back to onboarding_updated_date, a last-touched timestamp
-    // that drifts into the current month every time a record is edited. Preferring it
-    // keeps a vendor in the month they were actually approved. See _assignTat_.
+    // The month a case was onboarded in — completionDate_ is the single
+    // definition (see its comment), with createdDate as the last resort so a
+    // record still lands somewhere rather than dropping out of the chart.
     function onbMonthDate(r) {
-      return r.tatEndDate || r.onboardedDate || r.createdDate;
+      return completionDate_(r) || r.createdDate;
     }
 
     // Count only COMPLETED (onboarded) cases, bucketed by the date they were onboarded.
