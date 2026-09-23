@@ -1589,7 +1589,12 @@ function _assignTat_(rows, audience) {
       else if (t > TAT_MAX_DAYS)     { tally.tooLong++;       r.tatSkip = 'tooLong'; }
       // Keep the exact start/end the TAT was measured between, so the records table can
       // show In Review → Onboarded → TAT per row and the figure is auditable, not opaque.
-      else { r.onbTAT = t; r.tatBasis = basis; r.tatStartDate = start; r.tatEndDate = end; tally.ok++; }
+      // Floor at one day. dateDiffDays counts whole calendar days, so a vendor
+      // onboarded the day the application started measures 0 — and with enough
+      // same-day records the mean collapsed to "0 days", which reads as no
+      // turnaround at all rather than a fast one. Turnaround is reported in whole
+      // days and the smallest real one is a day.
+      else { r.onbTAT = Math.max(1, t); r.tatBasis = basis; r.tatStartDate = start; r.tatEndDate = end; tally.ok++; }
     }
   });
 
@@ -1628,7 +1633,7 @@ function _assignTat_(rows, audience) {
       if (!s || !inWin(r, s, b)) continue;
       var dt = dateDiffDays(s, dEnd);
       if (dt === null || dt < 0 || dt > TAT_MAX_DAYS) continue;
-      r.dispTAT = dt; r.dispBasis = b; r.dispStart = s; r.dispEnd = dEnd;
+      r.dispTAT = Math.max(1, dt); r.dispBasis = b; r.dispStart = s; r.dispEnd = dEnd;   // same floor as onbTAT
       tally.fallback++;
       return;
     }
@@ -2805,7 +2810,7 @@ function vStats(data, vertKey) {
       vendorTypes: vtArr,
       // Average In Review → Onboarded TAT for this category (null when no completed
       // record in the category carries a usable TAT).
-      avgTAT:   cat.tats.length ? Math.round(avg(cat.tats)) : null,
+      avgTAT:   cat.tats.length ? Math.round(avg(cat.tats) * 10) / 10 : null,
       tatCount: cat.tats.length,
       withinSla: cat.withinSla, delayed: cat.delayed,
     };
@@ -2873,7 +2878,7 @@ function vStats(data, vertKey) {
       pctTransacted: fyTransacted === null ? null : pct(fyTransacted, fyCompleted),
       totalTxnValue: fyHasTxnVal ? fyTxnSum : null,
       withGST:       fyWithGST,
-      avgTAT:        fyTats.length ? Math.round(avg(fyTats)) : null,
+      avgTAT:        fyTats.length ? Math.round(avg(fyTats) * 10) / 10 : null,
       // Sample size behind avgTAT, matching the vertical- and category-level
       // fields. The frontend rolls FYs up across verticals and must weight by
       // the records that actually carry a TAT, not by onboarded count.
@@ -2891,7 +2896,9 @@ function vStats(data, vertKey) {
     withGST: withGST,
     completionPct: pct(completed, total),
     completedThisWeek: completedThisWeek,
-    avgTAT: tats.length ? Math.round(avg(tats)) : null,
+    // One decimal, not whole days: with the 1-day floor most records sit at 1–2 days,
+    // and rounding to integers collapsed a 1.4-day average to "1" and hid the spread.
+    avgTAT: tats.length ? Math.round(avg(tats) * 10) / 10 : null,
     // Sample size behind avgTAT — the count of onboarded records in this vertical that
     // carry a valid In Review→Onboarded TAT. Exposed so the card can weight the combined
     // seller+buyer average precisely (by TAT-bearing count, not raw onboarded count) and

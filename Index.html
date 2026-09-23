@@ -6444,8 +6444,10 @@ function _bnBlendTAT(vs, vb) {
   if (sT == null && bT == null) return null;
   if (sT == null) return bT;
   if (bT == null) return sT;
+  // One decimal, matching vStats.avgTAT — whole days collapsed a 1.4-day blend to "1".
   var w = sN + bN;
-  return w > 0 ? Math.round((sT * sN + bT * bN) / w) : Math.round((sT + bT) / 2);
+  var r1 = function(v) { return Math.round(v * 10) / 10; };
+  return w > 0 ? r1((sT * sN + bT * bN) / w) : r1((sT + bT) / 2);
 }
 
 // Combined seller+buyer average TAT for the Successfully Onboarded card, weighted by
@@ -6460,7 +6462,7 @@ function _mfBlendTATc(vs, vb) {
   if (sT == null || sN === 0) return { v: bT, n: bN };
   if (bT == null || bN === 0) return { v: sT, n: sN };
   var w = sN + bN;
-  return { v: Math.round((sT * sN + bT * bN) / w), n: w };
+  return { v: Math.round((sT * sN + bT * bN) / w * 10) / 10, n: w };
 }
 // Format a whole-day TAT for display, honouring the dashboard's day-level convention
 // (Code.gs floors TAT to whole days, so hours/minutes are not carried and are not
@@ -14093,6 +14095,8 @@ var TAT_BASIS_LBL = {
   created: 'Created → Onboarded',
   fixed:   'Created → Approved',
 };
+// TAT_SKIP_LBL (the per-row "Why no TAT" reasons) is declared once, above — it is
+// reused for the Average TAT coverage tooltip rather than redeclared here.
 function tatChip(t, r) {
   // 0 is a valid TAT (same-day onboarding) — only null/undefined/'—' mean "no TAT".
   if (t === null || t === undefined || t === '' || t === '—') return '<span class="text-muted">—</span>';
@@ -17465,7 +17469,7 @@ function _ovScopeKeys(scope) {
 
 function _ovKpis(scope) {
   var keys = _ovScopeKeys(scope);
-  var total = 0, comp = 0, tatSum = 0, tatN = 0;
+  var total = 0, comp = 0, tatSum = 0, tatN = 0, tatOnb = 0, tatSkip = {};
   // Sellers and buyers can be measured from different start dates. That is recorded
   // and surfaced in the tooltip, but it no longer withholds the figure: one Average
   // TAT is what this card is for, and a blank taught the reader nothing. The blend is
@@ -17482,6 +17486,16 @@ function _ovKpis(scope) {
         tatN   += vd.tatCount;
         if (vd.tatBasis) bases[vd.tatBasis] = 1;
       }
+      // Coverage of the onboarded cohort, with the reason for every record that
+      // could not be measured. The average is only honest next to the size of the
+      // base it came from, and the reasons say what would have to change in the
+      // feed for the rest to be measurable.
+      var tc = vd.tatCoverage;
+      if (tc) {
+        tatOnb += tc.onboarded || 0;
+        var sk = tc.skipped || {};
+        Object.keys(sk).forEach(function(rk) { tatSkip[rk] = (tatSkip[rk] || 0) + (sk[rk] || 0); });
+      }
     });
   });
   var mixed = Object.keys(bases).length > 1;
@@ -17496,6 +17510,9 @@ function _ovKpis(scope) {
     tatMixed: mixed,
     tatBases: Object.keys(bases),
     tatCount: tatN,
+    // The onboarded base the average is drawn from, and why the rest are absent.
+    tatOnboarded: tatOnb,
+    tatSkipped:   tatSkip,
   };
 }
 
@@ -17710,9 +17727,30 @@ function _buildOvKpiCards(scope) {
     var _tatTip = 'Sellers and buyers combined, weighted by how many records carry a TAT'
       + (kpis.tatMixed ? '. Measured from different start dates — '
           + (kpis.tatBases || []).map(function(b) { return TAT_BASIS_LBL[b] || b; }).join(' and ') : '');
+    // The average is measured over the onboarded cohort, so the caption names that
+    // base rather than only the sample. Where part of the base carries no dates the
+    // tooltip attributes the shortfall instead of leaving "measured" to imply all.
+    var _onb = kpis.tatOnboarded || 0;
+    var _gap = Math.max(0, _onb - (kpis.tatCount || 0));
+    if (_gap > 0) {
+      var _sk = kpis.tatSkipped || {};
+      var _reasons = Object.keys(_sk)
+        .filter(function(k) { return _sk[k] > 0; })
+        .sort(function(a, b) { return _sk[b] - _sk[a]; })
+        .map(function(k) {
+          // TAT_SKIP_LBL is sentence-case for the per-row column; lowercase the first
+          // letter so it reads as a clause inside this sentence.
+          var lbl = String(TAT_SKIP_LBL[k] || k);
+          return fmt(_sk[k]) + ' with ' + lbl.charAt(0).toLowerCase() + lbl.slice(1);
+        });
+      _tatTip += '. ' + fmt(_gap) + ' of ' + fmt(_onb)
+        + ' onboarded vendors carry no measurable turnaround'
+        + (_reasons.length ? ' — ' + _reasons.join('; ') : '');
+    }
     tatVal = kpis.avgTAT + '<span style="font-size:.5em;font-weight:600;color:var(--txt2);margin-left:3px">days</span>'
       + (kpis.tatCount ? '<span class="ov-kpi-note" title="' + esc(_tatTip) + '">'
-          + 'across ' + fmt(kpis.tatCount) + ' measured</span>' : '');
+          + 'across ' + fmt(kpis.tatCount)
+          + (_onb ? ' of ' + fmt(_onb) + ' onboarded' : ' measured') + '</span>' : '');
   } else {
     tatVal = '<span title="No record in this scope carries a measurable turnaround.">&mdash;</span>'
       + '<span class="ov-kpi-note">nothing measurable yet</span>';
