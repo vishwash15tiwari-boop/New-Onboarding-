@@ -824,6 +824,48 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .vd-filters .vd-search:hover{background:rgba(120,120,128,.18)}
 .vd-filters .vd-search:focus{background:var(--card);box-shadow:var(--ring)}
 #top-custom{align-items:center;gap:var(--sp-2)}
+
+/* ── Onboarded → Transacted waterfall ─────────────────────────────────────
+   Chart and reading rail side by side, then the two score cards. Everything
+   collapses to one column on a narrow panel. */
+/* Flex-wrap, not a media query: this sits inside a panel whose width has
+   nothing to do with the viewport's, so a viewport breakpoint never fires at
+   the moment the panel actually runs out of room. The rail wraps under the
+   chart when the container cannot hold both, and its rows then spread out. */
+.twf-top{display:flex;flex-wrap:wrap;gap:var(--gutter);align-items:flex-start}
+.twf-chart{flex:4 1 440px;border:1px solid var(--border);border-radius:var(--card-radius);background:var(--card);padding:var(--card-pad-y) var(--card-pad-x);min-width:0}
+.twf-rail{flex:1 1 240px;min-width:0;display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px}
+.twf-rail-row{flex:1 1 214px;display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:var(--card-radius);background:var(--card);padding:10px 12px;min-width:0}
+.twf-rail-ic{width:var(--kpi-ico);height:var(--kpi-ico);border-radius:var(--kpi-ico-r);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.twf-rail-ic svg{width:var(--kpi-ico-svg);height:var(--kpi-ico-svg)}
+.twf-rail-b{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.twf-rail-l{font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.twf-rail-v{font-size:20px;font-weight:800;color:var(--txt);line-height:1.15;font-variant-numeric:tabular-nums}
+.twf-rail-p{font-size:13px;font-weight:800;flex:0 0 auto;font-variant-numeric:tabular-nums}
+.twf-row2{display:flex;flex-wrap:wrap;gap:var(--gutter);margin-top:var(--gutter)}
+.twf-card{flex:1 1 340px;border:1px solid var(--border);border-radius:var(--card-radius);background:var(--card);padding:var(--card-pad-y) var(--card-pad-x);min-width:0}
+.twf-card-t{font-size:var(--card-ttl-size);font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:var(--card-ttl-ls);margin-bottom:12px}
+/* score bands */
+.twf-band{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.twf-band-l{flex:0 0 42px;font-size:11px;color:var(--txt2);text-align:right;font-variant-numeric:tabular-nums}
+.twf-band-track{flex:1;min-width:0;height:13px;background:var(--border);border-radius:3px;overflow:hidden;display:block}
+.twf-band-track span{display:block;height:100%;border-radius:3px}
+.twf-band-v{flex:0 0 30px;text-align:right;font-size:12px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+.twf-band-p{flex:0 0 40px;text-align:right;font-size:11px;color:var(--txt3);font-variant-numeric:tabular-nums}
+/* improvement table */
+.twf-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.twf-tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt3);text-align:left;padding:5px 4px;border-bottom:1px solid var(--border);white-space:nowrap}
+.twf-tbl td{padding:7px 4px;border-bottom:1px solid var(--bg2);color:var(--txt);white-space:nowrap;font-variant-numeric:tabular-nums}
+.twf-tbl tbody tr:last-child td{border-bottom:0}
+.twf-tbl .twf-n{text-align:right;width:60px}
+/* Widths live on the header row: table-layout:fixed reads the first row, so a
+   th without one makes its column claim an equal share of whatever is left. */
+.twf-tbl .twf-i{width:26px;color:var(--txt3)}
+.twf-tbl th.twf-i{color:var(--txt3)}
+.twf-tbl .twf-nm{overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.twf-tbl .twf-gap{color:#049769;font-weight:800}
+.twf-none{color:var(--txt3);padding:14px 4px!important;white-space:normal!important}
+.twf-foot{font-size:10.5px;color:var(--txt3);margin-top:9px;line-height:1.45}
 /* Custom-range date pair. Every period surface (main header, Global Overview,
    Vertical Overview) mounts its own .cr-box; they are shown, read and synced
    together so the control reads the same wherever you opened it from. */
@@ -6813,37 +6855,127 @@ function _txnScoreStat() {
   return st;
 }
 
-// One waterfall row: a floating bar, so each step starts where the previous ended.
-function _wfRow(label, valTxt, startPct, widthPct, color, sub, bold) {
-  return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
-    + '<div style="flex:0 0 130px;font-size:11.5px;color:var(--txt2);text-align:right">' + esc(label) + '</div>'
-    + '<div style="flex:1;min-width:60px;height:16px;background:var(--border);border-radius:4px;position:relative;overflow:hidden">'
-    +   '<div style="position:absolute;left:' + startPct + '%;width:' + widthPct + '%;top:0;bottom:0;background:' + color + ';border-radius:4px"></div>'
-    + '</div>'
-    + '<div style="flex:0 0 72px;font-size:12.5px;font-variant-numeric:tabular-nums;text-align:right;color:var(--txt);font-weight:' + (bold ? '800' : '600') + '">' + valTxt + '</div>'
-    + '</div>'
-    + (sub ? '<div style="margin:-2px 0 8px 140px;font-size:10.5px;color:var(--txt3)">' + esc(sub) + '</div>' : '');
+// A round axis maximum at or above v — 328 gives 500, so the gridlines land on
+// readable numbers instead of the data's own awkward top.
+function _wfNiceMax(v) {
+  if (!(v > 0)) return 1;
+  var mag = Math.pow(10, Math.floor(Math.log(v) / Math.LN10));
+  var steps = [1, 2, 2.5, 5, 10];
+  for (var i = 0; i < steps.length; i++) { var m = steps[i] * mag; if (m >= v) return m; }
+  return 10 * mag;
 }
 
-// Onboarded → not transacted → transacted, as a waterfall: the drop is drawn where
-// it actually falls rather than as a second bar from zero, so the shortfall is the
-// thing you see. Sellers and buyers sit underneath as the composition of the result.
-function _txnWaterfallHtml(onb, nonTxn, txn, sTxn, bTxn) {
+/* Onboarded → Transacted as a column waterfall.
+   Each step is drawn where it actually falls, so the shortfall is the thing you
+   see rather than a second bar measured from zero, and the two audience columns
+   decompose the result: Sellers floats on top of Buyers and the pair closes back
+   onto the Transacted column exactly (the backend defines transacted as the sum
+   of the two, so they reconcile by construction).
+
+   Laid out in fixed viewBox units and scaled to the container. Everything —
+   bars, connectors, labels and callouts — is positioned in the same coordinate
+   space, so a layout that clears at the design size clears at every rendered
+   width; there is no reflow to collide under. */
+function _txnWaterfallSvg(onb, nonTxn, txn, sTxn, bTxn) {
   if (!onb || onb <= 0) return '';
-  var p = function(v) { return Math.max(0.6, (Math.abs(v) / onb) * 100); };
-  var h = '<div style="margin-top:4px">'
-    + _wfRow('Onboarded', fmt(onb), 0, p(onb), 'var(--txt3)',
-             'every vendor whose application completed', true)
-    + _wfRow('Not transacted', '−' + fmt(nonTxn), (txn / onb) * 100, p(nonTxn), '#B25000',
-             Math.round(nonTxn / onb * 100) + '% of the onboarded base never transacted')
-    + _wfRow('Transacted', fmt(txn), 0, p(txn), '#049769',
-             Math.round(txn / onb * 100) + '% converted', true);
-  if (sTxn != null || bTxn != null) {
-    h += '<div style="height:1px;background:var(--border);margin:10px 0 9px 140px"></div>'
-       + _wfRow('· Sellers', fmt(sTxn || 0), 0, p(sTxn || 0), '#1DC797', '')
-       + _wfRow('· Buyers',  fmt(bTxn || 0), ((sTxn || 0) / onb) * 100, p(bTxn || 0), '#8460D4', '');
+  var W = 980, H = 430, PL = 58, PR = 16, PT = 86, PB = 62;
+  var iW = W - PL - PR, iH = H - PT - PB;
+  var maxY = _wfNiceMax(onb);
+  var yOf = function(v) { return PT + iH - (v / maxY) * iH; };
+  var s = sTxn || 0, b = bTxn || 0;
+
+  // level = the running total this step leaves behind; from/to are the bar's span.
+  var cols = [
+    { lbl:'Onboarded',      sub:'(100%)',                                        from:0,   to:onb, col:'#0A4430', val:fmt(onb),        above:true  },
+    { lbl:'Not Transacted', sub:'(' + Math.round(nonTxn/onb*100) + '% drop-off)', from:txn, to:onb, col:'#B25000', val:'−' + fmt(nonTxn), above:false },
+    { lbl:'Transacted',     sub:'(' + Math.round(txn/onb*100) + '% conversion)',  from:0,   to:txn, col:'#049769', val:fmt(txn),        above:true  },
+    { lbl:'Sellers',        sub:'(' + (txn?Math.round(s/txn*100):0) + '% of transacted)', from:b, to:b+s, col:'#1DC797', val:'−' + fmt(s), above:false },
+    { lbl:'Buyers',         sub:'(' + (txn?Math.round(b/txn*100):0) + '% of transacted)', from:0, to:b,   col:'#8460D4', val:'−' + fmt(b), above:false }
+  ];
+  var n = cols.length, colW = iW / n, barW = Math.min(112, colW * 0.62);
+
+  var g = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block" role="img" aria-label="Onboarded to transacted waterfall">';
+
+  // gridlines + y axis
+  var ticks = 5;
+  for (var t = 0; t <= ticks; t++) {
+    var tv = maxY / ticks * t, ty = yOf(tv);
+    g += '<line x1="' + PL + '" y1="' + ty.toFixed(1) + '" x2="' + (W - PR) + '" y2="' + ty.toFixed(1) + '" stroke="var(--border)" stroke-width="1"' + (t ? ' stroke-dasharray="3,4"' : '') + '/>';
+    g += '<text x="' + (PL - 9) + '" y="' + (ty + 3.5).toFixed(1) + '" text-anchor="end" fill="var(--txt3)" font-size="11" font-family="inherit">' + fmt(Math.round(tv)) + '</text>';
   }
-  return h + '</div>';
+  g += '<text x="16" y="' + (PT + iH / 2) + '" text-anchor="middle" fill="var(--txt3)" font-size="11" font-family="inherit" transform="rotate(-90 16 ' + (PT + iH / 2) + ')">Vendors</text>';
+
+  // connectors first, so the bars sit over them
+  for (var c = 0; c < n - 1; c++) {
+    var x1 = PL + c * colW + colW / 2 + barW / 2;
+    var x2 = PL + (c + 1) * colW + colW / 2 - barW / 2;
+    // The level handed to the next step: the top of a bar that grew from zero,
+    // the bottom of one that dropped. That is exactly where the next bar begins,
+    // so the dashes always meet both bars' edges.
+    var ly = yOf(cols[c].above ? cols[c].to : cols[c].from);
+    g += '<line x1="' + x1.toFixed(1) + '" y1="' + ly.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + ly.toFixed(1) + '" stroke="var(--txt3)" stroke-width="1" stroke-dasharray="3,3" opacity=".55"/>';
+  }
+
+  // bars + value labels + x labels
+  cols.forEach(function(d, i) {
+    var cx = PL + i * colW + colW / 2;
+    var yTop = yOf(d.to), yBot = yOf(d.from);
+    var hh = Math.max(2, yBot - yTop);
+    g += '<rect x="' + (cx - barW / 2).toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + hh.toFixed(1) + '" rx="5" fill="' + d.col + '"/>';
+    // A drop that lands on the baseline has no room beneath it — its value would
+    // sit on the axis labels — so those label above regardless.
+    var vy = (d.above || d.from === 0) ? (yTop - 11) : (yBot + 20);
+    g += '<text x="' + cx.toFixed(1) + '" y="' + vy.toFixed(1) + '" text-anchor="middle" fill="var(--txt)" font-size="19" font-weight="800" font-family="inherit" style="font-variant-numeric:tabular-nums">' + d.val + '</text>';
+    g += '<text x="' + cx.toFixed(1) + '" y="' + (PT + iH + 26) + '" text-anchor="middle" fill="var(--txt)" font-size="12.5" font-weight="700" font-family="inherit">' + esc(d.lbl) + '</text>';
+    g += '<text x="' + cx.toFixed(1) + '" y="' + (PT + iH + 44) + '" text-anchor="middle" fill="var(--txt3)" font-size="11" font-family="inherit">' + esc(d.sub) + '</text>';
+  });
+
+  /* Callouts. Each sits directly over its own column and drops an arrow to that
+     bar's top edge, so it can never reach across into a neighbour's space. */
+  function callout(i, text, tint, ink) {
+    var d = cols[i], cx = PL + i * colW + colW / 2;
+    var bw = Math.min(colW - 10, 178), bh = 46;   // two lines at 16 apart need 46
+    var by = Math.max(6, yOf(d.to) - bh - 26);
+    var out = '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + by + '" width="' + bw.toFixed(1) + '" height="' + bh + '" rx="9" fill="' + tint + '"/>';
+    String(text).split('|').forEach(function(ln, k) {
+      out += '<text x="' + cx.toFixed(1) + '" y="' + (by + 18 + k * 16) + '" text-anchor="middle" fill="' + ink + '" font-size="11.5" font-weight="700" font-family="inherit">' + esc(ln) + '</text>';
+    });
+    var a0 = by + bh + 2, a1 = yOf(d.to) - 7;
+    if (a1 > a0 + 6) {
+      out += '<line x1="' + cx.toFixed(1) + '" y1="' + a0 + '" x2="' + cx.toFixed(1) + '" y2="' + (a1 - 5) + '" stroke="' + ink + '" stroke-width="1.6"/>'
+           + '<path d="M' + (cx - 4).toFixed(1) + ',' + (a1 - 6) + ' L' + cx.toFixed(1) + ',' + a1 + ' L' + (cx + 4).toFixed(1) + ',' + (a1 - 6) + ' Z" fill="' + ink + '"/>';
+    }
+    return out;
+  }
+  g += callout(1, Math.round(nonTxn/onb*100) + '% of onboarded|never transacted', 'rgba(178,80,0,.10)', '#B25000');
+  if (txn > 0) {
+    g += callout(3, Math.round(s/txn*100) + '% of transacted|are Sellers', 'rgba(29,199,151,.13)', '#0B7A5C');
+    g += callout(4, Math.round(b/txn*100) + '% of transacted|are Buyers', 'rgba(132,96,212,.13)', '#6B47C4');
+  }
+  return g + '</svg>';
+}
+
+/* The same five figures as a reading rail beside the chart — the chart shows the
+   shape of the drop-off, this gives the exact counts and shares without having to
+   read them off bars. */
+function _txnWfRailHtml(onb, nonTxn, txn, sTxn, bTxn) {
+  if (!onb || onb <= 0) return '';
+  var s = sTxn || 0, b = bTxn || 0;
+  var rows = [
+    { l:'Total Onboarded',       v:onb,    p:100,                                 col:'#0A4430', bg:'rgba(10,68,48,.09)',   ic:MM_IC.users || '' },
+    { l:'Not Transacted',        v:nonTxn, p:Math.round(nonTxn/onb*100),          col:'#B25000', bg:'rgba(178,80,0,.10)',   ic:MM_IC.x || '' },
+    { l:'Transacted',            v:txn,    p:Math.round(txn/onb*100),             col:'#049769', bg:'rgba(4,151,105,.11)',  ic:MM_IC.check || '' },
+    { l:'Sellers (of transacted)',v:s,     p:txn?Math.round(s/txn*100):0,         col:'#0B7A5C', bg:'rgba(29,199,151,.13)', ic:MM_IC.rupee || '' },
+    { l:'Buyers (of transacted)', v:b,     p:txn?Math.round(b/txn*100):0,         col:'#6B47C4', bg:'rgba(132,96,212,.13)', ic:MM_IC.rupee || '' }
+  ];
+  return '<div class="twf-rail">' + rows.map(function(r) {
+    return '<div class="twf-rail-row">'
+      + '<span class="twf-rail-ic" style="background:' + r.bg + ';color:' + r.col + '">' + (r.ic || '') + '</span>'
+      + '<span class="twf-rail-b"><span class="twf-rail-l">' + esc(r.l) + '</span>'
+      +   '<span class="twf-rail-v">' + fmt(r.v) + '</span></span>'
+      + '<span class="twf-rail-p" style="color:' + r.col + '">' + r.p + '%</span>'
+      + '</div>';
+  }).join('') + '</div>';
 }
 
 // Score profile of the transacted cohort — the question "are the vendors we actually
@@ -6855,12 +6987,13 @@ function _txnScoresHtml(sc) {
   var bars = '';
   for (var i = 4; i >= 0; i--) {
     var n = sc.dist[i] || 0;
-    bars += '<div style="display:flex;align-items:center;gap:9px;margin-bottom:5px">'
-      + '<div style="flex:0 0 46px;font-size:11px;color:var(--txt2);text-align:right;font-variant-numeric:tabular-nums">' + _vsBandLabel(i) + '</div>'
-      + '<div style="flex:1;min-width:40px;height:14px;background:var(--border);border-radius:3px;overflow:hidden">'
-      +   '<div style="height:100%;width:' + Math.round(n / mx * 100) + '%;background:' + _vsBandColor(i) + ';border-radius:3px"></div>'
-      + '</div>'
-      + '<div style="flex:0 0 34px;font-size:11.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--txt)">' + fmt(n) + '</div>'
+    // Bar length is share of the biggest band so the shape reads; the count and
+    // its share of all rated vendors both sit in fixed columns beside it.
+    bars += '<div class="twf-band">'
+      + '<span class="twf-band-l">' + _vsBandLabel(i) + '</span>'
+      + '<span class="twf-band-track"><span style="width:' + Math.round(n / mx * 100) + '%;background:' + _vsBandColor(i) + '"></span></span>'
+      + '<span class="twf-band-v">' + fmt(n) + '</span>'
+      + '<span class="twf-band-p">(' + (sc.rated ? Math.round(n / sc.rated * 100) : 0) + '%)</span>'
       + '</div>';
   }
   var top = sc.list.slice(0, 5).map(function(v) {
@@ -6873,11 +7006,35 @@ function _txnScoresHtml(sc) {
   var note = [];
   if (sc.unrated)   note.push(fmt(sc.unrated) + ' scored 0 (exception)');
   if (sc.unmatched) note.push(fmt(sc.unmatched) + ' with no score record');
-  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:4px">'
-    + '<div><div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">Score spread · ' + fmt(sc.rated) + ' rated</div>' + bars + '</div>'
-    + '<div><div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">Highest scoring</div>' + top + '</div>'
-    + '</div>'
-    + (note.length ? '<div style="margin-top:8px;font-size:10.5px;color:var(--txt3)">Of ' + fmt(sc.txn) + ' transacted · ' + esc(note.join(' · ')) + '</div>' : '');
+
+  /* Vendors with the most room to gain, which is the low end of the same list.
+     TARGET is a stated benchmark — the floor of the top 8–10 band the rest of
+     the dashboard already uses — not a prediction of what a vendor will score.
+     The column is labelled Target rather than "potential" for that reason: the
+     gap is measured distance to a published bar, nothing is forecast. */
+  var TARGET = 8;
+  var imp = sc.list.slice().sort(function(a, b) { return a.rating - b.rating; })
+    .filter(function(v) { return v.rating < TARGET; }).slice(0, 5);
+  var impRows = imp.length ? imp.map(function(v, i) {
+    var cur = Math.round(v.rating * 10) / 10, gap = Math.round((TARGET - cur) * 10) / 10;
+    return '<tr>'
+      + '<td class="twf-i">' + (i + 1) + '</td>'
+      + '<td class="twf-nm" title="' + esc(v.name) + (v.category ? ' · ' + esc(v.category) : '') + '">' + esc(v.name) + '</td>'
+      + '<td class="twf-n" style="color:' + _vsBandColor(_vsBand(v.rating)) + ';font-weight:700">' + cur.toFixed(1) + '</td>'
+      + '<td class="twf-n">' + TARGET.toFixed(1) + '</td>'
+      + '<td class="twf-n twf-gap">+' + gap.toFixed(1) + '</td>'
+      + '</tr>';
+  }).join('')
+    : '<tr><td colspan="5" class="twf-none">Every scored vendor that transacted is already at or above ' + TARGET.toFixed(1) + '.</td></tr>';
+
+  return '<div class="twf-row2">'
+    + '<div class="twf-card"><div class="twf-card-t">Score Spread &middot; ' + fmt(sc.rated) + ' rated vendors</div>' + bars + '</div>'
+    + '<div class="twf-card"><div class="twf-card-t">Top ' + imp.length + ' vendors for score improvement</div>'
+    +   '<table class="twf-tbl"><thead><tr><th class="twf-i">#</th><th>Vendor Name</th><th class="twf-n">Current</th>'
+    +     '<th class="twf-n">Target</th><th class="twf-n">Gap</th></tr></thead><tbody>' + impRows + '</tbody></table>'
+    +   '<div class="twf-foot">Target is the floor of the 8&ndash;10 band, not a forecast.</div>'
+    + '</div></div>'
+    + (note.length ? '<div class="twf-foot" style="margin-top:10px">Of ' + fmt(sc.txn) + ' transacted &middot; ' + esc(note.join(' · ')) + '</div>' : '');
 }
 
 function _mmVertModules(key) {
@@ -7248,7 +7405,11 @@ function _mmVertModules(key) {
           var _onbAll = (vs.completed || 0) + (vb.completed || 0);
           if (_onbAll > 0 && (sTxn != null || bTxn != null)) {
             out.push({ title: 'Onboarded → Transacted',
-                       html: _txnWaterfallHtml(_onbAll, combinedNonTxn, combinedTxn, sTxn, bTxn) });
+                       sub: 'Track the drop-off across the onboarding to transacted journey and understand where vendors are lost.',
+                       html: '<div class="twf-top">'
+                         + '<div class="twf-chart">' + _txnWaterfallSvg(_onbAll, combinedNonTxn, combinedTxn, sTxn, bTxn) + '</div>'
+                         + _txnWfRailHtml(_onbAll, combinedNonTxn, combinedTxn, sTxn, bTxn)
+                         + '</div>' });
           }
           var _sc = _txnScoreStat();
           if (_sc) out.push({ title: 'Scores of transacted vendors', html: _txnScoresHtml(_sc) });
@@ -9540,8 +9701,9 @@ function mmRenderModPanel() {
     P.extra.forEach(function(sec) {
       if (!sec || !sec.html) return;
       html += '<div class="mp-xsec" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">'
-        + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">'
+        + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:' + (sec.sub ? '4px' : '10px') + '">'
         + esc(sec.title || '') + '</div>'
+        + (sec.sub ? '<div style="font-size:11.5px;color:var(--txt3);margin-bottom:12px;line-height:1.45">' + esc(sec.sub) + '</div>' : '')
         + sec.html + '</div>';
     });
   }
