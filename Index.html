@@ -6748,6 +6748,108 @@ function _txnDocStat() {
   return st.matched ? st : null;
 }
 
+// Scores of the vendors that HAVE transacted. Joined by id then GSTIN, the same way
+// _txnDocStat joins documents, so the two read the same vendor as the same vendor.
+// Returns null when nothing joins, so the section is omitted rather than drawn empty.
+function _txnScoreStat() {
+  var ratings = (qualityData && qualityData.vendorRatings) || [];
+  if (!ratings.length) return null;
+  var byId = {}, byGst = {};
+  ratings.forEach(function(v) {
+    if (v.id)    byId[String(v.id)] = v;
+    if (v.gstin) byGst[String(v.gstin).toUpperCase()] = v;
+  });
+  var rows = (Array.isArray(vertRows) ? vertRows : [])
+    .concat((_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : []);
+  var txn = rows.filter(function(r) { return r.hasTransacted; });
+  if (!txn.length) return null;
+  var st = { txn: txn.length, rated: 0, unrated: 0, unmatched: 0, sum: 0,
+             dist: [0,0,0,0,0], list: [] };
+  txn.forEach(function(r) {
+    var v = (r.id && byId[String(r.id)])
+         || (r.gstin && byGst[String(r.gstin).toUpperCase()]) || null;
+    if (!v)              { st.unmatched++; return; }
+    // A 0 score is an exception, not a low score — counted separately, as the
+    // Vendor Ratings module does, rather than dragging the average down.
+    if (!(v.rating > 0)) { st.unrated++;   return; }
+    st.rated++; st.sum += v.rating;
+    st.dist[_vsBand(v.rating)]++;
+    st.list.push({ name: v.name || r.name || '—', rating: v.rating,
+                   category: v.category || r.category || '' });
+  });
+  if (!st.rated) return null;
+  st.avg = st.sum / st.rated;
+  st.list.sort(function(a, b) { return b.rating - a.rating; });
+  return st;
+}
+
+// One waterfall row: a floating bar, so each step starts where the previous ended.
+function _wfRow(label, valTxt, startPct, widthPct, color, sub, bold) {
+  return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
+    + '<div style="flex:0 0 130px;font-size:11.5px;color:var(--txt2);text-align:right">' + esc(label) + '</div>'
+    + '<div style="flex:1;min-width:60px;height:16px;background:var(--border);border-radius:4px;position:relative;overflow:hidden">'
+    +   '<div style="position:absolute;left:' + startPct + '%;width:' + widthPct + '%;top:0;bottom:0;background:' + color + ';border-radius:4px"></div>'
+    + '</div>'
+    + '<div style="flex:0 0 72px;font-size:12.5px;font-variant-numeric:tabular-nums;text-align:right;color:var(--txt);font-weight:' + (bold ? '800' : '600') + '">' + valTxt + '</div>'
+    + '</div>'
+    + (sub ? '<div style="margin:-2px 0 8px 140px;font-size:10.5px;color:var(--txt3)">' + esc(sub) + '</div>' : '');
+}
+
+// Onboarded → not transacted → transacted, as a waterfall: the drop is drawn where
+// it actually falls rather than as a second bar from zero, so the shortfall is the
+// thing you see. Sellers and buyers sit underneath as the composition of the result.
+function _txnWaterfallHtml(onb, nonTxn, txn, sTxn, bTxn) {
+  if (!onb || onb <= 0) return '';
+  var p = function(v) { return Math.max(0.6, (Math.abs(v) / onb) * 100); };
+  var h = '<div style="margin-top:4px">'
+    + _wfRow('Onboarded', fmt(onb), 0, p(onb), 'var(--txt3)',
+             'every vendor whose application completed', true)
+    + _wfRow('Not transacted', '−' + fmt(nonTxn), (txn / onb) * 100, p(nonTxn), '#B25000',
+             Math.round(nonTxn / onb * 100) + '% of the onboarded base never transacted')
+    + _wfRow('Transacted', fmt(txn), 0, p(txn), '#049769',
+             Math.round(txn / onb * 100) + '% converted', true);
+  if (sTxn != null || bTxn != null) {
+    h += '<div style="height:1px;background:var(--border);margin:10px 0 9px 140px"></div>'
+       + _wfRow('· Sellers', fmt(sTxn || 0), 0, p(sTxn || 0), '#1DC797', '')
+       + _wfRow('· Buyers',  fmt(bTxn || 0), ((sTxn || 0) / onb) * 100, p(bTxn || 0), '#8460D4', '');
+  }
+  return h + '</div>';
+}
+
+// Score profile of the transacted cohort — the question "are the vendors we actually
+// trade with any good?", which the rating module answers for the whole base but not
+// for this subset.
+function _txnScoresHtml(sc) {
+  if (!sc) return '';
+  var mx = Math.max.apply(null, sc.dist) || 1;
+  var bars = '';
+  for (var i = 4; i >= 0; i--) {
+    var n = sc.dist[i] || 0;
+    bars += '<div style="display:flex;align-items:center;gap:9px;margin-bottom:5px">'
+      + '<div style="flex:0 0 46px;font-size:11px;color:var(--txt2);text-align:right;font-variant-numeric:tabular-nums">' + _vsBandLabel(i) + '</div>'
+      + '<div style="flex:1;min-width:40px;height:14px;background:var(--border);border-radius:3px;overflow:hidden">'
+      +   '<div style="height:100%;width:' + Math.round(n / mx * 100) + '%;background:' + _vsBandColor(i) + ';border-radius:3px"></div>'
+      + '</div>'
+      + '<div style="flex:0 0 34px;font-size:11.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--txt)">' + fmt(n) + '</div>'
+      + '</div>';
+  }
+  var top = sc.list.slice(0, 5).map(function(v) {
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:11.5px">'
+      + '<div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--txt)" title="' + esc(v.name) + '">' + esc(v.name) + '</div>'
+      + (v.category ? '<div style="flex:0 0 auto;font-size:10px;color:var(--txt3)">' + esc(v.category) + '</div>' : '')
+      + '<div style="flex:0 0 34px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:' + _vsBandColor(_vsBand(v.rating)) + '">' + (Math.round(v.rating * 10) / 10) + '</div>'
+      + '</div>';
+  }).join('');
+  var note = [];
+  if (sc.unrated)   note.push(fmt(sc.unrated) + ' scored 0 (exception)');
+  if (sc.unmatched) note.push(fmt(sc.unmatched) + ' with no score record');
+  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:4px">'
+    + '<div><div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">Score spread · ' + fmt(sc.rated) + ' rated</div>' + bars + '</div>'
+    + '<div><div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px">Highest scoring</div>' + top + '</div>'
+    + '</div>'
+    + (note.length ? '<div style="margin-top:8px;font-size:10.5px;color:var(--txt3)">Of ' + fmt(sc.txn) + ' transacted · ' + esc(note.join(' · ')) + '</div>' : '');
+}
+
 function _mmVertModules(key) {
   var vs = (DS && DS.verticals || {})[key] || {};
   var vb = (DB && DB.verticals || {})[key] || {};
@@ -7107,7 +7209,21 @@ function _mmVertModules(key) {
           ? [ { label:'Transacted', v:combinedTxn, color:'#049769' },
               { label:'Non-Transacted', v:combinedNonTxn, color:'#B25000' } ]
           : null,
-        tiles: tTiles, records:'transacted'
+        tiles: tTiles, records:'transacted',
+        // Fills the space the tiles leave: the conversion as a waterfall, and the
+        // score profile of the vendors actually trading — the rating module answers
+        // that for the whole base but never for this subset.
+        extra: (function() {
+          var out = [];
+          var _onbAll = (vs.completed || 0) + (vb.completed || 0);
+          if (_onbAll > 0 && (sTxn != null || bTxn != null)) {
+            out.push({ title: 'Onboarded → Transacted',
+                       html: _txnWaterfallHtml(_onbAll, combinedNonTxn, combinedTxn, sTxn, bTxn) });
+          }
+          var _sc = _txnScoreStat();
+          if (_sc) out.push({ title: 'Scores of transacted vendors', html: _txnScoresHtml(_sc) });
+          return out.length ? out : null;
+        }())
       }
     });
   }
@@ -9385,6 +9501,19 @@ function mmRenderModPanel() {
   // Always create the element when the ext sub-tab is active so _snPopulateTatInline can find it.
   if (P.extra || snSubActive === 'ext') {
     html += '<div id="sn-sec-ext">' + (P.extra || '') + '</div>';
+  }
+
+  // Free-form sections a caller supplies as ready HTML, each with its own heading.
+  // Sits below the tiles and above the records CTA, which is where a panel with room
+  // left over has room to say more. Rendered as given — callers build it with esc().
+  if (P.extra && P.extra.length) {
+    P.extra.forEach(function(sec) {
+      if (!sec || !sec.html) return;
+      html += '<div class="mp-xsec" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">'
+        + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px">'
+        + esc(sec.title || '') + '</div>'
+        + sec.html + '</div>';
+    });
   }
 
   // records CTA — anchor: sn-sec-rec
@@ -21090,7 +21219,19 @@ document.addEventListener('DOMContentLoaded', function() {
   window.vr3GoPage=function(p){_vrPage=p;render();};
   window.vr3Search=function(q){_vrQ=q;_vrPage=1;render();};
   window.vr3SetCat=function(c,toggle){_vrCat=(toggle&&_vrCat===c)?'':c;_vrPage=1;vrHideTip();render();};
-  window.vr3SetStat=function(s,toggle){_vrStat=(toggle&&_vrStat===s)?'':s;_vrPage=1;vrHideTip();render();};
+  /* A KPI card filtered the records table but never revealed it, so clicking one
+     looked like it did nothing — the table it scoped was hidden behind the "Vendor
+     Records" button. Applying a filter now opens that section and scrolls to it,
+     which is the detail the card is promising. Clearing the filter leaves it open. */
+  window.vr3SetStat=function(s,toggle){
+    _vrStat=(toggle&&_vrStat===s)?'':s;_vrPage=1;vrHideTip();
+    if(_vrStat)window._vr3RecOpen=true;
+    render();
+    if(_vrStat){
+      var sec=document.getElementById('vr3-rec-section');
+      if(sec)sec.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }
+  };
   window.vr3TrendN=function(n){_vrTrendN=parseInt(n,10);render();};
   window.vr3Export=function(){
     var rows=filteredRows(),csv='Vendor Name,Category,Audience,Last Rated,Rating\n';
