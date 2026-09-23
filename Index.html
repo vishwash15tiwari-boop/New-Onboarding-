@@ -6018,15 +6018,21 @@ var MR_TXNDOC_COLS = [
 ];
 
 // TAT drill-down — the vendors behind a cell in the Average TAT matrix.
-// tatWindow and tatSkip make an unmeasured row self-explanatory: the dates the
-// figure was taken between when there is one, and the reason when there is not.
+// tatWindow keeps the figure auditable: the dates it was taken between.
+//
+// "Why no TAT" is deliberately not a column here. Code.gs only sends tatSkip
+// for a row that ends up with no TAT at all (`dispTAT == null && onbTAT ==
+// null`), and since TAT started resolving off any real start date that is now
+// almost no row — the column was a dash in every line. The per-row reason is
+// still carried and still rendered by the cell builder if the column is ever
+// put back, and the aggregate breakdown of skip reasons remains on the TAT
+// card itself, which is where a shortfall is worth explaining.
 var MR_TAT_COLS = [
   { key:'name',       label:'Name', always:true },
   { key:'vendorType', label:'Type' },
   { key:'category',   label:'Category' },
   { key:'tatWindow',  label:'Measured between' },
   { key:'tat',        label:'TAT (days)' },
-  { key:'tatSkip',    label:'Why no TAT' },
 ];
 
 // Per-row reasons, in the vendor's terms rather than the assigner's field names.
@@ -21535,7 +21541,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script id="osv3-js">
 (function(){
-  var _osvPage=1,_osvPS=5,_osvCat='',_osvStat='',_osvQ='',_osvSortK='updatedDate',_osvSortD=-1,_osvTrendN=6;
+  var _osvPage=1,_osvPS=5,_osvCat='',_osvStat='',_osvQ='',_osvSortK='name',_osvSortD=1,_osvTrendN=6;
   var C_OK='#1DC797',C_WARN='#FF9500',C_BLUE='#0F7A4F',C_PURPLE='#8460D4',C_GRAY='#8E8E93',C_RED='#D70015';
   var CAT_CLR={'Plastic':'#12A06B','Metal':'#D99A2B','E-Waste':C_PURPLE,'Battery':C_WARN,'Tyres':C_RED,'Paper':'#0A4430','Others':C_GRAY};
   function cc(cat){return CAT_CLR[cat]||C_GRAY;}
@@ -21783,15 +21789,13 @@ document.addEventListener('DOMContentLoaded', function() {
       +'<th onclick="osv3Sort(\'idx\')">#</th>'
       +'<th onclick="osv3Sort(\'name\')">Vendor Name'+sa('name')+'</th>'
       +'<th onclick="osv3Sort(\'category\')">Category'+sa('category')+'</th>'
-      +'<th onclick="osv3Sort(\'updatedDate\')">OSV Date'+sa('updatedDate')+'</th>'
       +'<th onclick="osv3Sort(\'score\')">Score'+sa('score')+'</th>'
       +'<th>Status</th>'
-      +'<th onclick="osv3Sort(\'updatedDate\')">Updated On'+sa('updatedDate')+'</th>'
       +'<th>Actions</th>'
       +'</tr></thead><tbody>';
     sl.forEach(function(r,i){
       var idx=(pg-1)*_osvPS+i+1;
-      var nm=r.name||r.sellerName||'—',cat=r.category||'—',date=r.updatedDate||'—';
+      var nm=r.name||r.sellerName||'—',cat=r.category||'—';
       var score=r.score!==null&&r.score!==undefined?r.score:'—';
       var st=r.osvStatus||'not_initiated';
       var chipLbl=st==='verified'?'Completed':st==='in_progress'||st==='consent_obtained'?'In Progress':'Not Initiated';
@@ -21800,10 +21804,8 @@ document.addEventListener('DOMContentLoaded', function() {
       h+='<tr><td style="color:var(--lc-text3);font-weight:500;font-size:11.5px">'+idx+'</td>'
         +'<td><span style="font-weight:600">'+esc(nm)+'</span></td>'
         +'<td>'+dot+esc(cat)+'</td>'
-        +'<td style="font-variant-numeric:tabular-nums;color:var(--lc-text3)">'+date+'</td>'
         +'<td style="font-weight:700;font-variant-numeric:tabular-nums">'+(score!=='—'?'<span style="color:var(--lc-ok)">'+score+'</span>':score)+'</td>'
         +'<td><span class="osv3-chip '+chipCls+'">'+chipLbl+'</span></td>'
-        +'<td style="font-variant-numeric:tabular-nums;color:var(--lc-text3)">'+date+'</td>'
         +'<td><button class="osv3-pager-btn" onclick="_osvDrill(\''+r.id+'\')" style="font-size:11px;padding:4px 10px">View</button></td>'
         +'</tr>';
     });
