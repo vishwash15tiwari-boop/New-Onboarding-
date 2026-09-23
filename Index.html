@@ -20126,7 +20126,10 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .vr3-fchip b{color:var(--lc-text)}
 .lc .vr3-fclear{margin-left:auto;background:none;border:0;color:var(--lc-accent);font-weight:700;font-size:11.5px;cursor:pointer;font-family:inherit}
 .lc .vr3-fclear:hover{text-decoration:underline}
-.lc .vr3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--card-radius);padding:var(--kpi-pad-y) var(--kpi-pad-x);display:flex;align-items:flex-start;gap:10px;box-shadow:var(--card-shadow);transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden}
+/* align-items and gap match .txm-kpi, the other icon+body KPI card. This one sat
+   at flex-start with a 10px gap, so its icon rode higher against the label and the
+   row read differently from every other module's. */
+.lc .vr3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--card-radius);padding:var(--kpi-pad-y) var(--kpi-pad-x);display:flex;align-items:center;gap:16px;box-shadow:var(--card-shadow);transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden}
 .lc .vr3-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .lc .vr3-kpis .vr3-kpi:nth-child(1)::before{background:linear-gradient(90deg,#0F7A4F,#3FB489)}
 .lc .vr3-kpis .vr3-kpi:nth-child(2)::before{background:linear-gradient(90deg,#049769,#1DC797)}
@@ -20276,7 +20279,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function buildCatAvgScore(rows){
     var cats={};
-    rows.forEach(function(v){if(v.rating&&v.category){if(!cats[v.category])cats[v.category]={sum:0,n:0};cats[v.category].sum+=v.rating;cats[v.category].n++;}});
+    // Blank categories fall into 'Others', matching buildCatPerf below. Skipping
+    // them here instead meant the bar chart listed Metal and Plastic while the
+    // table beside it listed Metal, Others and Plastic, and neither reconciled.
+    rows.forEach(function(v){var c=v.category||'Others';if(v.rating){if(!cats[c])cats[c]={sum:0,n:0};cats[c].sum+=v.rating;cats[c].n++;}});
     var entries=[];
     for(var k in cats){if(cats.hasOwnProperty(k))entries.push({cat:k,avg:cats[k].n?cats[k].sum/cats[k].n:0});}
     entries.sort(function(a,b){return b.avg-a.avg;});
@@ -20304,7 +20310,17 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildRatingStatus(rows){
     var rated=rows.filter(function(v){return v.rating>0&&v.rating!=null;}).length;
     var exc=rows.filter(function(v){return v.rating>0&&v.rating<=2;}).length;
-    var total=rows.length,notRated=total-rated;
+    /* _VR.vendorRatings only ever holds sellers that already carry a score, so
+       rows.length - rated was 0 by construction: this donut always read "Rated
+       100%, Not Rated 0" while the Coverage card beside it correctly reported 95%
+       of 220. The unrated slice has to come from the seller population, which is
+       the same denominator Coverage uses.
+
+       That population carries no category breakdown, so under a category filter
+       the slice is dropped rather than drawn against a base it does not describe —
+       the same reason the Coverage card labels itself "all categories" there. */
+    var sr=(_VR&&_VR.seller&&_VR.seller.rating)||{};
+    var notRated=(!_vrCat&&sr.total)?Math.max(0,sr.total-rated):0;
     var items=[{lbl:'Rated',key:'rated',val:rated-exc,col:'var(--lc-accent)'},
                {lbl:'Not Rated',key:'notrated',val:notRated,col:'#C7C7CC'},
                {lbl:'Exception',key:'exception',val:exc,col:'var(--lc-risk)'}];
@@ -20357,7 +20373,16 @@ document.addEventListener('DOMContentLoaded', function() {
       byMonth[key].sum+=v.rating;byMonth[key].cnt++;
     });
     var keys=Object.keys(byMonth).sort().slice(-n);
-    if(!keys.length)return '<div class="vr3-empty">No trend data</div>';
+    // The trend needs a per-vendor rating date. When the quality feed carries no
+    // lastRated the chart can never populate, so the empty state says which is
+    // the case rather than leaving a blank card that reads as a broken chart.
+    if(!keys.length){
+      var anyDated=rows.some(function(v){return v.lastRated&&parseDMY(v.lastRated);});
+      return '<div class="vr3-empty">'
+        + (anyDated ? 'No ratings dated in the last ' + n + ' months'
+                    : 'The rating feed carries no rating date, so a trend cannot be plotted')
+        + '</div>';
+    }
     var pts=keys.map(function(k){return{k:k,avg:byMonth[k].sum/byMonth[k].cnt,cnt:byMonth[k].cnt};});
     var W=260,H=110,PL=28,PR=10,PT=16,PB=24;
     function yx(v){return PT+H-Math.round(v/10*H);}
