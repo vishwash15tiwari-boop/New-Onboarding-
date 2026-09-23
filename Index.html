@@ -138,6 +138,23 @@
   --r-xs: 4px;
   --seg-track: rgba(55,53,47,.06);   /* warm segmented-control track */
   --pill: 999px;
+  /* Motion scale. Durations were spread across fourteen ad-hoc values (.12 .13 .15
+     .18 .2 .22 .25 .3 …), so the same gesture resolved at a different speed in each
+     module. Four steps cover everything: anything outside them is a one-off and
+     should say why. */
+  --dur-1: 120ms;   /* micro — colour, press, chip */
+  --dur-2: 180ms;   /* standard — hover, card lift */
+  --dur-3: 280ms;   /* entrance / exit */
+  --dur-4: 420ms;   /* panels and sheets */
+  /* One lift for every interactive card. Each module had written its own, and only
+     one of them used the easing tokens — the rest fell back to the browser default,
+     so a card lifted differently depending on which screen you were on. Shadow and
+     transform also has to share a duration: at .15s/.12s the shadow was still
+     settling after the card had stopped, which reads as a wobble. */
+  --t-lift: box-shadow var(--dur-2) var(--ease),
+            transform var(--dur-2) var(--ease-spring),
+            border-color var(--dur-1) var(--ease);
+
   --ease:        cubic-bezier(.25,.1,.25,1);
   --ease-out:    cubic-bezier(.16,1,.3,1);      /* expo decelerate — entrances */
   --ease-sheet:  cubic-bezier(.32,.72,0,1);     /* sheet spring */
@@ -2106,7 +2123,7 @@ body.view-gst #vert-tabs-bar{display:none}
 .osv-status-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-3)}
 @media(max-width:1100px){.osv-status-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:520px){.osv-status-grid{grid-template-columns:repeat(2,1fr)}}
-.osv-sc{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:3px;cursor:pointer;transition:box-shadow .15s,transform .12s}
+.osv-sc{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:3px;cursor:pointer;transition:var(--t-lift)}
 .osv-sc:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-1px)}
 .osv-sc-ic{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:6px;flex-shrink:0}
 .osv-sc-ic svg{width:14px;height:14px;display:block}
@@ -3592,7 +3609,7 @@ body.mm-sn-drill{overflow:hidden}
 .mf-sum-tile.ts-blue .mf-sum-v{color:#0F7A4F}
 .mf-sum-tile.ts-amber .mf-sum-v{color:#B25000}
 .mf-sum-tile.ts-red .mf-sum-v{color:#D70015}
-.mf-sum-tile.mf-sum-clickable{cursor:pointer;transition:box-shadow .15s,transform .15s}
+.mf-sum-tile.mf-sum-clickable{cursor:pointer;transition:var(--t-lift)}
 .mf-sum-tile.mf-sum-clickable:hover{box-shadow:0 4px 14px rgba(15,122,79,.15);transform:translateY(-2px)}
 .mf-sum-tile.mf-sum-clickable:active{transform:translateY(0);box-shadow:none}
 /* The four tiles inside the Onboarded (Details) panel. */
@@ -4350,7 +4367,7 @@ body.view-ov #ov-screen{display:block}
 
 /* Executive KPI cards */
 .ov-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gutter)}
-.ov-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:var(--kpi-pad-y) var(--kpi-pad-x);box-shadow:var(--shadow-card);display:flex;flex-direction:column;position:relative;overflow:hidden;transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring)}
+.ov-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:var(--kpi-pad-y) var(--kpi-pad-x);box-shadow:var(--shadow-card);display:flex;flex-direction:column;position:relative;overflow:hidden;transition:var(--t-lift)}
 .ov-kpi:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
 .ov-kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
 .ov-kpi-lbl{font-size:10.5px;font-weight:600;color:var(--txt2);letter-spacing:.02em}
@@ -4366,7 +4383,7 @@ body.view-ov #ov-screen{display:block}
 /* Analytics row */
 .ov-analytics-row{display:grid;grid-template-columns:1fr 260px;gap:var(--gutter);align-items:stretch}
 .ov-chart-card,.ov-donut-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:var(--card-pad-y) var(--card-pad-x);box-shadow:var(--shadow-card)}
-.ov-donut-card{cursor:pointer;transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring);display:flex;flex-direction:column;justify-content:center}
+.ov-donut-card{cursor:pointer;transition:var(--t-lift);display:flex;flex-direction:column;justify-content:center}
 .ov-donut-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
 .ov-card-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
 .ov-card-title{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:-.15px}
@@ -4566,8 +4583,12 @@ body.view-ov #ov-screen{display:block}
 .lc-ctile .cl{font-size:12px;color:var(--lc-text2);font-weight:500}.lc-ctile .cs{font-size:11px;color:var(--lc-text3)}
 .lc-foot{max-width:1360px;margin:0 auto;padding:6px 24px 34px;color:var(--lc-text3);font-size:11.5px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
 .lc-foot .lg{display:inline-flex;align-items:center;gap:6px}
-.lc-skb{background:linear-gradient(90deg,var(--lc-subtle) 25%,var(--lc-border) 37%,var(--lc-subtle) 63%);background-size:400% 100%;animation:lcsh 1.4s ease infinite;border-radius:8px}
-@keyframes lcsh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+/* Matched to .sk above — angle, duration and timing function. The two skeleton
+   systems ran at 1.4s ease / 90deg against 1.5s linear / 100deg, so a loading
+   screen shimmered at a visibly different speed and angle depending on which
+   module you had opened. Same sweep everywhere now. */
+.lc-skb{background:linear-gradient(100deg,var(--lc-subtle) 32%,var(--lc-border) 50%,var(--lc-subtle) 68%);background-size:200% 100%;animation:lcsh 1.5s linear infinite;border-radius:8px}
+@keyframes lcsh{from{background-position:200% 0}to{background-position:-200% 0}}
 @media(max-width:1080px){.lc-hero{grid-template-columns:1fr}.lc-kpis{grid-template-columns:repeat(2,1fr)}.lc-exc-row{grid-template-columns:repeat(2,1fr)}.lc-vgrid{grid-template-columns:repeat(2,1fr)}.lc-two{grid-template-columns:1fr}}
 @media(max-width:620px){.lc-top{padding:10px 14px}.lc-kpis,.lc-kpis-2,.lc-exc-row,.lc-vgrid{grid-template-columns:1fr}.lc-vstrip{grid-template-columns:repeat(2,1fr)}.lc-comp{grid-template-columns:1fr}.lc-ringwrap{width:200px;height:200px}.lc-fresh{display:none}}
 @media(prefers-reduced-motion:reduce){.lc *{animation-duration:.001ms!important;transition-duration:.001ms!important}}
@@ -20257,7 +20278,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .vr3-seg{cursor:pointer;transition:opacity .15s}
 .lc .vr3-seg:hover{opacity:.82}
 .lc .vr3-seg.on{stroke:var(--lc-accent);stroke-width:2}
-.lc .vr3-qual-card{cursor:pointer;transition:box-shadow .15s,transform .15s}
+.lc .vr3-qual-card{cursor:pointer;transition:var(--t-lift)}
 .lc .vr3-qual-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.1)}
 .lc .vr3-qual-card.on{box-shadow:0 0 0 2px var(--lc-accent) inset}
 .lc .vr3-qual-card:focus-visible{outline:2px solid var(--lc-accent);outline-offset:2px}
@@ -20280,7 +20301,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /* align-items and gap match .txm-kpi, the other icon+body KPI card. This one sat
    at flex-start with a 10px gap, so its icon rode higher against the label and the
    row read differently from every other module's. */
-.lc .vr3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--card-radius);padding:var(--kpi-pad-y) var(--kpi-pad-x);display:flex;align-items:center;gap:16px;box-shadow:var(--card-shadow);transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden}
+.lc .vr3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--card-radius);padding:var(--kpi-pad-y) var(--kpi-pad-x);display:flex;align-items:center;gap:16px;box-shadow:var(--card-shadow);transition:var(--t-lift);position:relative;overflow:hidden}
 .lc .vr3-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .lc .vr3-kpis .vr3-kpi:nth-child(1)::before{background:linear-gradient(90deg,#0F7A4F,#3FB489)}
 .lc .vr3-kpis .vr3-kpi:nth-child(2)::before{background:linear-gradient(90deg,#049769,#1DC797)}
@@ -20920,7 +20941,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .lc .osv3-period button.on{background:var(--lc-card);color:var(--lc-text);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .lc .osv3-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--lc-gutter)}
 .lc .osv3-row1{display:grid;grid-template-columns:1fr 1fr;gap:var(--lc-gutter)}
-.lc .osv3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--card-radius);padding:var(--kpi-pad-y) var(--kpi-pad-x);display:flex;flex-direction:column;gap:0;box-shadow:var(--card-shadow);transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden}
+.lc .osv3-kpi{background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--card-radius);padding:var(--kpi-pad-y) var(--kpi-pad-x);display:flex;flex-direction:column;gap:0;box-shadow:var(--card-shadow);transition:var(--t-lift);position:relative;overflow:hidden}
 .lc .osv3-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .lc .osv3-kpis .osv3-kpi:nth-child(1)::before{background:var(--lc-ok,#1DC797)}
 .lc .osv3-kpis .osv3-kpi:nth-child(2)::before{background:var(--lc-accent,#0F7A4F)}
@@ -21384,7 +21405,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /* ── KPI cards ── */
 .lc .evn-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--lc-gutter)}
-.lc .evn-kpi{position:relative;overflow:hidden;background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--card-radius);padding:var(--kpi-pad-y) var(--kpi-pad-x);display:flex;align-items:flex-start;gap:14px;box-shadow:var(--card-shadow);transition:box-shadow .2s,transform .2s,border-color .15s;cursor:pointer;user-select:none}
+.lc .evn-kpi{position:relative;overflow:hidden;background:var(--lc-card);border:1px solid var(--lc-border);border-radius:var(--card-radius);padding:var(--kpi-pad-y) var(--kpi-pad-x);display:flex;align-items:flex-start;gap:14px;box-shadow:var(--card-shadow);transition:var(--t-lift);cursor:pointer;user-select:none}
 .lc .evn-kpi:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);transform:translateY(-2px)}
 .lc .evn-kpi.evn-kpi-on{border-color:var(--lc-accent);box-shadow:0 0 0 3px rgba(15,122,79,.1),0 6px 20px rgba(15,122,79,.08);transform:translateY(-2px)}
 .lc .evn-kpi-stripe{position:absolute;top:0;left:0;right:0;height:4px}
