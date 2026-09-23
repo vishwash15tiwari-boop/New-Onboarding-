@@ -1256,40 +1256,49 @@ function lookupLevel1_(id, name, audience) {
 // final cycle, excluding every earlier rejected cycle); rejected with no post-rejection
 // review entry → flagged for exclusion. hasCols is false for a feed without these columns
 // (e.g. _mb_buyers), signalling the caller to fall back. Returns {start,exclude,hasCols}.
-function tatEffStartFromRow_(row, idx) {
-  // Include both space-normalised forms: "level1" (no separator) and "level_1" (underscore).
-  // readSheetObj_ normalises "Level 1" → "level_1" via replace(/\s+/g,'_'), so a sheet
-  // with space-separated headers would never match "level1" alone.
-  var revNames = ['review_submission_date', 'level1', 'level_1', 'level2', 'level_2', 'level3', 'level_3', 'level4', 'level_4'];
-  var rejNames = ['level1_rejected1', 'level1_rejected2', 'level2_rejected1', 'level2_rejected2',
-                  'level3_rejected1', 'level3_rejected2', 'level4_rejected1', 'level4_rejected2',
-                  'level_1_rejected1', 'level_1_rejected2', 'level_2_rejected1', 'level_2_rejected2',
-                  'level_3_rejected1', 'level_3_rejected2', 'level_4_rejected1', 'level_4_rejected2'];
-  var hasCols = false, i, dt, rejMax = null, revs = [];
-  for (i = 0; i < rejNames.length; i++) {
-    if (idx[rejNames[i]] === undefined) continue;
+// Every workflow timestamp the seller feed carries between created_date (col K) and
+// onboarded_date (col BV): the review submission, each approval level, each approval
+// timestamp, and each rejection. Both spellings are listed because readSheetObj_
+// normalises "Level 1" to "level_1", so a sheet with space-separated headers would
+// never match "level1" alone.
+var TAT_EVENT_COLS = (function() {
+  var out = ['review_submission_date'];
+  for (var L = 1; L <= 4; L++) {
+    out.push('level' + L, 'level_' + L);
+    out.push('level' + L + '_approved_at', 'level_' + L + '_approved_at');
+    for (var R = 1; R <= 2; R++) {
+      out.push('level' + L + '_rejected' + R, 'level_' + L + '_rejected' + R);
+      out.push('level' + L + '_rejected' + R + '_at', 'level_' + L + '_rejected' + R + '_at');
+    }
+  }
+  return out;
+}());
+
+// Effective TAT start: the LAST workflow event on the row that still precedes
+// completion — the nearest milestone to onboarded_date.
+//
+// This previously took the EARLIEST review entry, which measured from a vendor's very
+// first submission and so counted every rejection-and-resubmission cycle in between as
+// turnaround. Measuring from the most recent event instead reports the final,
+// uninterrupted run to completion, and needs no special case for a cancelled or
+// resubmitted application: the resubmission simply IS the latest event.
+//
+// endDate bounds the search. An event dated after completion cannot have started the
+// clock that ended there, and including one would produce a negative span.
+function tatEffStartFromRow_(row, idx, endDate) {
+  var hasCols = false, pick = null;
+  for (var i = 0; i < TAT_EVENT_COLS.length; i++) {
+    var c = idx[TAT_EVENT_COLS[i]];
+    if (c === undefined) continue;
     hasCols = true;
-    dt = parseDate(row[idx[rejNames[i]]]);
-    if (dt && (!rejMax || dt > rejMax)) rejMax = dt;
+    var dt = parseDate(row[c]);
+    if (!dt) continue;
+    if (endDate && dt > endDate) continue;
+    if (!pick || dt > pick) pick = dt;
   }
-  for (i = 0; i < revNames.length; i++) {
-    if (idx[revNames[i]] === undefined) continue;
-    hasCols = true;
-    dt = parseDate(row[idx[revNames[i]]]);
-    if (dt) revs.push(dt);
-  }
-  if (!hasCols)     return { start: null, exclude: false, hasCols: false };
-  if (!revs.length) return { start: null, exclude: false, hasCols: true };
-  var pick = null;
-  if (!rejMax) {
-    pick = revs[0];
-    for (i = 1; i < revs.length; i++) if (revs[i] < pick) pick = revs[i];   // earliest = initial In Review
-    return { start: pick, exclude: false, hasCols: true };
-  }
-  for (i = 0; i < revs.length; i++) {                                        // earliest AFTER last rejection
-    if (revs[i] > rejMax && (!pick || revs[i] < pick)) pick = revs[i];
-  }
-  return pick ? { start: pick, exclude: false, hasCols: true } : { start: null, exclude: true, hasCols: true };
+  // exclude stays false: with no usable event the row falls through to the feed-wide
+  // basis rather than being dropped outright.
+  return { start: pick, exclude: false, hasCols: hasCols };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1435,7 +1444,13 @@ function _assignTat_(rows, audience) {
     if (dn === null || on === null || dn > on) return false;
     if (basis === 'fixed') return true;
     var cn = _dayNum_(r.createdDate);
-    return cn === null || dn >= cn;
+    // The created-date floor exists to catch a stray column being used as the start.
+    // It can only do that while the created date is itself credible: where it POSTDATES
+    // completion — the signature of a feed whose created date holds the import time
+    // rather than the registration time — it would reject every genuine workflow
+    // timestamp on the row and take the record's TAT with it. Skipped in that case.
+    if (cn === null || cn > on) return true;
+    return dn >= cn;
   }
   // The 'fixed' basis is the buyer feed's columns G→H, addressed by position.
   function startOf(r, basis) {
@@ -2020,7 +2035,9 @@ function normalizeRows(raw, cfg) {
     // equals the onboarded population exactly (no _mb_detail join to drop or mismatch a
     // vendor). The _mb_detail join is kept only as a fallback for a feed that lacks the
     // workflow columns.
-    var _eff = tatEffStartFromRow_(row, idx);
+    // Bounded by this row's own completion date, so the nearest PRECEDING event is
+    // chosen rather than one stamped after the vendor was already onboarded.
+    var _eff = tatEffStartFromRow_(row, idx, onboarded);
     var _det = _eff.hasCols ? null : lookupTatDetail_(recId, recName, cfg.audience);
     if (_eff.hasCols) {
       if (_eff.start)        reviewDate = _eff.start;
