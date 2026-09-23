@@ -6867,14 +6867,15 @@ function _mmVertModules(key) {
         + '<div style="font-size:.6rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3);margin-top:2px">' + esc(lbl) + '</div>'
         + '</div>';
     };
-    // Overall is only meaningful when both audiences share a start date. With buyers
-    // on Created and sellers on In Review, a blend would average two different
-    // measurements into a number describing neither, so it is withheld instead.
+    // Overall always reports the blend. Where the two audiences were measured from
+    // different start dates the tooltip names both rather than the number being
+    // withheld — the Sellers and Buyers pills beside it carry the unblended figures.
     var mixedBasis = !!(sBasis && bBasis && sBasis !== bBasis);
+    var _ovTip = 'Seller and buyer average, weighted by onboarded count'
+      + (mixedBasis ? '. Measured from different start dates — sellers: '
+          + (_basisName(sBasis) || 'unknown') + ', buyers: ' + (_basisName(bBasis) || 'unknown') : '');
     var tatStrip = '<div style="display:flex;gap:var(--sp-2);margin-bottom:10px">'
-      + _tatPill('Overall', mixedBasis ? null : _bnBlendTAT(vs, vb),
-          mixedBasis ? 'Not shown: seller and buyer TAT are measured from different start dates, so a combined average would describe neither.'
-                     : 'Seller and buyer average, weighted by onboarded count')
+      + _tatPill('Overall', _bnBlendTAT(vs, vb), _ovTip)
       + _tatPill('Sellers', vs.avgTAT != null ? vs.avgTAT : null, _basisName(sBasis) || '')
       + _tatPill('Buyers',  vb.avgTAT != null ? vb.avgTAT : null, _basisName(bBasis) || '')
       + '</div>';
@@ -11479,10 +11480,16 @@ function renderBizRail(cfg, vs) {
       opCards.push(opCard('rating', 'Vendor Rating', '<div class="op-sync">Syncing…</div>', true));
     }
   }
-  if (vs.avgTAT != null) {
-    var tatSub = (vb.avgTAT != null) ? ('Sellers · Buyers ' + vb.avgTAT + ' days') : 'Seller onboarding';
+  // One combined figure, not the seller number with buyers relegated to the caption.
+  // Gating on vs.avgTAT also meant a vertical where only buyers carried a turnaround
+  // showed no card at all; the blend falls back to whichever side has one.
+  var _blendTat = _bnBlendTAT(vs, vb);
+  if (_blendTat != null) {
+    var tatSub = (vs.avgTAT != null && vb.avgTAT != null)
+      ? 'Sellers ' + vs.avgTAT + 'd · Buyers ' + vb.avgTAT + 'd'
+      : (vs.avgTAT != null ? 'Sellers only' : 'Buyers only');
     opCards.push(opCard(null, 'Avg Turnaround',
-      '<div class="op-big">' + vs.avgTAT + '<small> days</small></div><div class="op-sub">' + tatSub + '</div>', false));
+      '<div class="op-big">' + _blendTat + '<small> days</small></div><div class="op-sub">' + tatSub + '</div>', false));
   }
   if (isOMP) {
     var o = q && q.osv ? q.osv : null;
@@ -14080,13 +14087,13 @@ function tatChip(t, r) {
   var n = parseInt(t, 10);
   if (isNaN(n)) return '<span class="text-muted">' + esc(t) + '</span>';
   var cls = n <= 2 ? 'text-green' : n <= 5 ? 'text-amber' : 'text-red';
-  // A row the backend measured from an alternate start still has a real window behind
-  // it — its own TAT Start cell — but it is not in the Average TAT, which is single
-  // basis by design. Mark it rather than let the column read as if it sums to the card.
+  // A row the backend measured from an alternate start carries a real window of its own
+  // — its TAT Start cell — and now counts toward the Average TAT like any other. The
+  // mark names the start it used, so two rows with different spans can be told apart.
   // tatExact is undefined on rows from a pre-v25 cache, so only an explicit false marks.
   var mark = (r && r.tatExact === false)
-    ? '<sup class="text-muted" title="' + esc(TAT_BASIS_LBL[r.tatBasis] || 'Alternate start date')
-      + ' — not counted in Average TAT">*</sup>'
+    ? '<sup class="text-muted" title="' + esc('Measured from ' + (TAT_BASIS_LBL[r.tatBasis] || 'an alternate start date'))
+      + '">*</sup>'
     : '';
   return '<span class="' + cls + '">' + n + 'd' + mark + '</span>';
 }
@@ -17442,11 +17449,10 @@ function _ovScopeKeys(scope) {
 function _ovKpis(scope) {
   var keys = _ovScopeKeys(scope);
   var total = 0, comp = 0, tatSum = 0, tatN = 0;
-  // Seller and buyer TAT are only comparable when both were measured from the same
-  // kind of start date. The vertical module panel already withholds its combined
-  // figure when they are not (see mixedBasis there) — this card was blending them
-  // regardless, so an In Review → Onboarded span could be averaged together with a
-  // Created → Approved one into a number describing neither.
+  // Sellers and buyers can be measured from different start dates. That is recorded
+  // and surfaced in the tooltip, but it no longer withholds the figure: one Average
+  // TAT is what this card is for, and a blank taught the reader nothing. The blend is
+  // volume-weighted, so whichever audience carries more measured records dominates it.
   var bases = {};
   [DS, DB].forEach(function(src) {
     if (!src || !src.verticals) return;
@@ -17468,8 +17474,10 @@ function _ovKpis(scope) {
     compRate: total > 0 ? Math.round(comp / total * 100) : 0,
     // Volume-weighted across sellers AND buyers, by the count of records actually
     // carrying a TAT — not an average of two averages.
-    avgTAT:   (tatN > 0 && !mixed) ? Math.round(tatSum / tatN * 10) / 10 : null,
+    avgTAT:   tatN > 0 ? Math.round(tatSum / tatN * 10) / 10 : null,
+    // Kept to caption the figure, never to withhold it.
     tatMixed: mixed,
+    tatBases: Object.keys(bases),
     tatCount: tatN,
   };
 }
@@ -17679,17 +17687,18 @@ function _buildOvKpiCards(scope) {
   var totalVal = '<span data-count="' + kpis.comp + '" data-count-id="ov_total">' + fmt(kpis.comp) + '</span>'
     + '<span class="ov-kpi-note">applications completed</span>';
   var compVal  = kpis.compRate + '<span style="font-size:.55em;font-weight:700;color:var(--txt2);margin-left:1px">%</span>';
-  // A blank here has two very different causes, and they need telling apart: either
-  // nothing could be measured, or the two audiences were measured differently and a
-  // blend would be meaningless. The title carries the reason.
+  // One figure, always: the volume-weighted seller + buyer average. Where the two were
+  // measured from different start dates the tooltip names them — a blank said less than
+  // an approximate number did. A dash now means exactly one thing: nothing in scope
+  // carries a measurable turnaround.
   var tatVal;
   if (kpis.avgTAT !== null) {
+    var _tatTip = 'Sellers and buyers combined, weighted by how many records carry a TAT'
+      + (kpis.tatMixed ? '. Measured from different start dates — '
+          + (kpis.tatBases || []).map(function(b) { return TAT_BASIS_LBL[b] || b; }).join(' and ') : '');
     tatVal = kpis.avgTAT + '<span style="font-size:.5em;font-weight:600;color:var(--txt2);margin-left:3px">days</span>'
-      + (kpis.tatCount ? '<span class="ov-kpi-note" title="Sellers and buyers combined, weighted by how many records carry a TAT">'
+      + (kpis.tatCount ? '<span class="ov-kpi-note" title="' + esc(_tatTip) + '">'
           + 'across ' + fmt(kpis.tatCount) + ' measured</span>' : '');
-  } else if (kpis.tatMixed) {
-    tatVal = '<span title="Seller and buyer turnaround are measured from different start dates here, so a combined average would describe neither.">&mdash;</span>'
-      + '<span class="ov-kpi-note">seller and buyer measured differently</span>';
   } else {
     tatVal = '<span title="No record in this scope carries a measurable turnaround.">&mdash;</span>'
       + '<span class="ov-kpi-note">nothing measurable yet</span>';

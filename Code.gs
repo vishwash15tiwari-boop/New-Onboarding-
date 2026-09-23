@@ -1543,8 +1543,10 @@ function _assignTat_(rows, audience) {
   // This pass fills those rows in by trying the remaining starts in priority order and
   // recording the window it actually used. Nothing is invented: a row only gets a figure
   // when a real start date resolves inside the window, and that start is what the row's
-  // TAT Start cell shows, so the number stays auditable against its own dates. Display
-  // only — the averages keep reading onbTAT and can never drift onto a mixed basis.
+  // TAT Start cell shows, so the number stays auditable against its own dates. These
+  // rows count toward the averages too (see _tatOf_): one Average TAT covering every
+  // vendor that has a measurable turnaround is what the dashboard is asked for, and the
+  // start date each row used stays on the row and in the card's tooltip.
   // Buyers: the approval span first, then a workflow event, then the created date —
   // 'review' ahead of 'created' because a Level-N timestamp is a recorded event and
   // the created date is only a proxy for one.
@@ -2587,6 +2589,20 @@ function debugExistingVsNew() {
 // oldVendors are only meaningful there — every other vertical returns null
 // rather than a fabricated "100% new" split (see buildDashboard's
 // existingNames comment for why the match is OMP-scoped).
+// The TAT a record counts for. dispTAT is the per-row figure from the display pass in
+// _assignTat_: it equals onbTAT on the feed-wide basis and otherwise holds the span
+// measured from whichever real start date that row actually carries.
+//
+// Averages used to read onbTAT alone, so every vendor whose basis column happened to be
+// empty was absent from the figure even though the records table showed it a TAT. That
+// is why an "Average TAT" could describe a fraction of the cohort. One average over
+// every vendor that has a measurable turnaround is what is wanted; where the rows behind
+// it were measured from different start dates, the UI says so in the tooltip rather than
+// dropping them. onbTAT is the fallback for rows served from a cache predating dispTAT.
+function _tatOf_(r) {
+  return (r.dispTAT !== null && r.dispTAT !== undefined) ? r.dispTAT : r.onbTAT;
+}
+
 function vStats(data, vertKey) {
   var now = new Date(), weekAgo = new Date(now.getTime() - 7 * 86400000);
   var nowMs = now.getTime();
@@ -2632,12 +2648,13 @@ function vStats(data, vertKey) {
     if (isDone && isOld)                                           oldVendors++;
     if (isDone && r.onboardedDate && r.onboardedDate >= weekAgo)  completedThisWeek++;
 
-    // onbTAT is the Level1→Onboarded TAT (Level 1 from card 5292; Onboarded/Created
-    // from the main card — see normalizeRows), defined only for completed records.
-    // TAT_MAX_DAYS clamps outlier noise.
-    if (r.onbTAT !== null) {
-      tats.push(r.onbTAT);   // onboarded-only + range enforced at assignment
-      if (r.onbTAT <= 7) withinSla++; else delayed++;
+    // Every onboarded record that carries a measurable turnaround, whichever start date
+    // it was measured from (see _tatOf_). Only completed records ever carry one, and
+    // TAT_MAX_DAYS clamps outlier noise — both enforced at assignment in _assignTat_.
+    var _t = _tatOf_(r);
+    if (_t !== null && _t !== undefined) {
+      tats.push(_t);   // onboarded-only + range enforced at assignment
+      if (_t <= 7) withinSla++; else delayed++;
     }
     if (isDone) {
       if (r.dispTAT != null || r.onbTAT !== null) tatShown++;
@@ -2693,9 +2710,10 @@ function vStats(data, vertKey) {
     var cs = catMap[c];
     cs.total++;
     // Category TAT uses the same guard as the headline average so the numbers agree.
-    if (r.onbTAT !== null) {
-      cs.tats.push(r.onbTAT);
-      if (r.onbTAT <= 7) cs.withinSla++; else cs.delayed++;
+    var _ct = _tatOf_(r);
+    if (_ct !== null && _ct !== undefined) {
+      cs.tats.push(_ct);
+      if (_ct <= 7) cs.withinSla++; else cs.delayed++;
     }
     if (r.status === 'COMPLETED')  cs.onboarded++;
     if (r.status === 'DRAFT')      cs.draft++;
@@ -2784,8 +2802,8 @@ function vStats(data, vertKey) {
     });
     var fyWithGST = d.some(function(r) { return r.gstin; })
       ? countFn(d, function(r) { return r.status === 'COMPLETED' && r.hasGST; }) : null;
-    var fyTats = d.filter(function(r) { return r.onbTAT !== null; })
-                  .map(function(r) { return r.onbTAT; });
+    var fyTats = d.map(_tatOf_)
+                  .filter(function(t) { return t !== null && t !== undefined; });
     return {
       fy:            fk,
       fyStart:       fyMap[fk].fyStart,
@@ -2900,7 +2918,8 @@ function vertRow(r) {
     // The exact window this row's TAT was measured across (— when the record carries no
     // TAT), so the records table can show Start → Onboarded → TAT and the number stays
     // auditable against its own dates. tatBasis names the window used; tatExact marks the
-    // rows sitting on the feed-wide basis, which are the ones counted in the averages.
+    // rows sitting on the feed-wide basis. Every row carrying a TAT counts toward the
+    // averages now, so tatExact is a note on HOW a row was measured, not WHETHER it counts.
     tatStart: (tv == null ? '—' : fmtDate(ts)),
     tatEnd:   (tv == null ? '—' : fmtDate(te)),
     tat:      (tv == null ? '—' : tv),
