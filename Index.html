@@ -5924,7 +5924,7 @@ function openStageRecords(stageKey, preCat, preAud) {
   });
 }
 
-// Ageing drill-down — the sellers behind one ageing card. Business Vertical is
+// Drill-down for one "Vendors not Transacted" card. Business Vertical is
 // rendered from context rather than per row: getVerticalRows already scopes the
 // feed to a single vertical, so every row in this view shares it.
 var MR_AGING_COLS = [
@@ -6525,8 +6525,12 @@ function _mmParseDate(s) {
 }
 // Non-transacted onboarded rows bucketed by days-since-onboarding — only
 // computable for the active vertical whose rows are loaded; else null.
-// Ageing bucket for one row: 'a' (0–30), 'c' (31–60), 'd' (60+), or null when the
-// row is out of scope — not onboarded, already transacted, or undated.
+// Which "Vendors not Transacted" bucket a row falls in, by time since onboarding:
+// 'a' (0–30), 'c' (31–60), 'd' (60+), or null when the row is out of scope — not
+// onboarded, already transacted, or undated. Despite the function name this is NOT
+// pipeline ageing: transacted vendors are excluded outright, so what it measures is
+// how long an onboarded vendor has gone without transacting. vStats.aging/.overdue
+// is the separate, genuine ageing of cases still open in the pipeline.
 // SINGLE source of truth: both the tile counts and the drill-down filter call this,
 // so the number on a card and the rows behind it cannot disagree.
 function _mmAgingBucket(r, now) {
@@ -6727,10 +6731,16 @@ function _txnDocStat() {
     var d = (r.id && byId[String(r.id)])
          || (r.gstin && byGst[String(r.gstin).toUpperCase()])
          || null;
-    if (!d || !d.total) { st.unknown++; return; }
-    if      (d.submitted >= d.total) st.complete++;
-    else if (d.submitted > 0)        st.partial++;
-    else                             st.none++;
+    // Judged on the mandatory six, not on every column the feed carries. mandTotal is
+    // absent on payloads cached before the mandatory set existed, so those fall back
+    // to the full-checklist counts rather than reading as unknown.
+    if (!d) { st.unknown++; return; }
+    var _mt = (d.mandTotal != null) ? d.mandTotal : d.total;
+    var _mm = (d.mandTotal != null) ? (d.mandMet || 0) : d.submitted;
+    if (!_mt) { st.unknown++; return; }
+    if      (_mm >= _mt) st.complete++;
+    else if (_mm > 0)    st.partial++;
+    else                 st.none++;
   });
   st.matched = st.complete + st.partial + st.none;
   return st.matched ? st : null;
@@ -6935,11 +6945,11 @@ function _mmVertModules(key) {
       };
       onbSummary += '<div class="onb-sum onb-sum-3">'
         + _onbTile('green', MM_IC.check, fmt(_dq.complete || 0),
-            'Process Followed &middot; ' + _dPc(_dq.complete) + '% &middot; all documents on file')
+            'Process Followed &middot; ' + _dPc(_dq.complete) + '% &middot; all 6 mandatory documents on file')
         + _onbTile('amber', MM_IC.draft, fmt(_dq.partial || 0),
-            'Exception Taken &middot; ' + _dPc(_dq.partial) + '% &middot; onboarded with documents outstanding')
+            'Exception Taken &middot; ' + _dPc(_dq.partial) + '% &middot; onboarded with mandatory documents outstanding')
         + _onbTile('red',   MM_IC.x,     fmt(_dq.incomplete || 0),
-            'Not Followed &middot; ' + _dPc(_dq.incomplete) + '% &middot; no documents on file')
+            'Not Followed &middot; ' + _dPc(_dq.incomplete) + '% &middot; no mandatory documents on file')
         + '</div>';
     }
   }
@@ -7038,13 +7048,14 @@ function _mmVertModules(key) {
       // word "Non-transacted", which said the same thing three times and told
       // you nothing about the split.
       agTot = (ag.a || 0) + (ag.c || 0) + (ag.d || 0);
-      var agSub = function(v) { return agTot ? Math.round((v || 0) / agTot * 100) + '% of aged' : 'No aged cases'; };
-      tTiles.push({ label:'Ageing · 0–30 days',  v:ag.a, tone:'good', sub:agSub(ag.a),
-                    click:"openAgingRecords('a')", tip:'View the 0–30 day sellers' },
-                  { label:'Ageing · 31–60 days', v:ag.c, tone:'warn', sub:agSub(ag.c),
-                    click:"openAgingRecords('c')", tip:'View the 31–60 day sellers' },
-                  { label:'Ageing · 60+ days',   v:ag.d, tone:'crit', sub:agSub(ag.d),
-                    click:"openAgingRecords('d')", tip:'View the 60+ day sellers' });
+      var agSub = function(v) { return agTot ? Math.round((v || 0) / agTot * 100) + '% of not transacted' : 'None'; };
+      var agTip = function(w) { return 'View the onboarded vendors that have not transacted, ' + w + ' since onboarding'; };
+      tTiles.push({ label:'Not Transacted · 0–30 days',  v:ag.a, tone:'good', sub:agSub(ag.a),
+                    click:"openAgingRecords('a')", tip:agTip('0–30 days') },
+                  { label:'Not Transacted · 31–60 days', v:ag.c, tone:'warn', sub:agSub(ag.c),
+                    click:"openAgingRecords('c')", tip:agTip('31–60 days') },
+                  { label:'Not Transacted · 60+ days',   v:ag.d, tone:'crit', sub:agSub(ag.d),
+                    click:"openAgingRecords('d')", tip:agTip('over 60 days') });
     }
     if (gmv != null) {
       // GMV is seller-side only — buyer-side transaction value is excluded by design.
@@ -7079,12 +7090,13 @@ function _mmVertModules(key) {
     mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transaction activity',
       panel:{
         eye:'Transaction activity', badge:'Sellers & Buyers',
-        // Ageing can only count cases that carry an onboarded date, so the three
-        // buckets routinely add up to less than the non-transacted total sitting
-        // right above them. Saying so beats leaving the gap unexplained.
+        // The three buckets are split by time since onboarding, so they can only
+        // count cases that carry an onboarded date and routinely add up to less
+        // than the non-transacted total above them. Saying so beats leaving the
+        // gap unexplained.
         note: (ag && agTot < combinedNonTxn)
-          ? 'Ageing covers ' + fmt(agTot) + ' of the ' + fmt(combinedNonTxn)
-            + ' non-transacted cases — only cases with an onboarded date can be aged. GMV is seller-side.'
+          ? 'The day-split covers ' + fmt(agTot) + ' of the ' + fmt(combinedNonTxn)
+            + ' vendors not transacted — only those with an onboarded date can be split by time. GMV is seller-side.'
           : null,
         headline: (sTxn != null || bTxn != null)
           ? { v:combinedTxn, label:'Transacted (Unique · Sellers & Buyers)', tone:'accent' }
@@ -14530,9 +14542,9 @@ function openAgingRecords(bucket) {
   var vertName = (vcfg && vcfg.name) || key || '';
   _mrCtx = {
     module: 'aging', aging: true, agingBucket: bucket, vertName: vertName,
-    label: 'Ageing · ' + AGING_LABELS[bucket] + ' · Non-transacted',
+    label: 'Vendors not Transacted · ' + AGING_LABELS[bucket],
     vertLabel: vertName, preStatus: 'COMPLETED', forceSeller: true,
-    cfg: { label: 'Ageing · ' + AGING_LABELS[bucket] }
+    cfg: { label: 'Vendors not Transacted · ' + AGING_LABELS[bucket] }
   };
   _mrRows = Array.isArray(vertRows) ? vertRows.slice() : [];
   _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
@@ -14565,12 +14577,17 @@ function openTxnDocRecords() {
     var d = (r.id && byId[String(r.id)])
          || (r.gstin && byGst[String(r.gstin).toUpperCase()])
          || null;
-    if (!d || !d.total || d.submitted >= d.total) return;   // complete, or no record to judge
+    if (!d) return;
+    // Outstanding against the mandatory six. A vendor holding all six is complete even
+    // with optional paperwork missing, so it no longer appears in this list.
+    var _mt = (d.mandTotal != null) ? d.mandTotal : d.total;
+    var _mm = (d.mandTotal != null) ? (d.mandMet || 0) : d.submitted;
+    if (!_mt || _mm >= _mt) return;   // complete, or no record to judge
     var c = {};
     for (var k in r) if (r.hasOwnProperty(k)) c[k] = r[k];
-    c.docsSubmitted = d.submitted;
-    c.docsTotal     = d.total;
-    c.docsMissing   = (d.missingDocs || []).join(', ');
+    c.docsSubmitted = _mm;
+    c.docsTotal     = _mt;
+    c.docsMissing   = ((d.mandTotal != null ? d.mandMissing : d.missingDocs) || []).join(', ');
     out.push(c);
   });
   var key  = activeVertKey || selectedVert;
@@ -15037,8 +15054,8 @@ function _mrCellHtml(r, key) {
       case 'category': return esc(r.category || '—');
       case 'gstin':    return r.gstin ? '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>'
                                       : '<span class="td-dim">—</span>';
-      // Submitted against required, so "3 / 11" reads as a shortfall on its own
-      // without the reader having to remember how many documents are expected.
+      // Submitted against required, so "3 / 6" reads as a shortfall on its own without
+      // the reader having to remember how many documents are mandatory.
       case 'docsSubmitted': {
         var _s = r.docsSubmitted, _t = r.docsTotal;
         if (_s == null || !_t) return '<span class="td-dim">—</span>';
@@ -16750,9 +16767,9 @@ function _txnBuildStatusCards(d) {
   return '<div class="txn3-status-grid">'
     + statCard(txned,  'Transacted',        '#049769', 'rgba(4,151,105,.12)')
     + statCard(nonTxn, 'Non-Transacted',    '#FF9500', 'rgba(255,149,0,.12)')
-    + statCard(agLt30, 'Aging 0&#8211;30 days', '#0F7A4F', 'rgba(15,122,79,.12)')
-    + statCard(ag3060, 'Aging 31&#8211;60 days', '#FF9500', 'rgba(255,149,0,.12)')
-    + statCard(agGt60, 'Aging &gt;60 days', '#D70015', 'rgba(215,0,21,.12)')
+    + statCard(agLt30, 'Not Transacted &middot; 0&#8211;30 days', '#0F7A4F', 'rgba(15,122,79,.12)')
+    + statCard(ag3060, 'Not Transacted &middot; 31&#8211;60 days', '#FF9500', 'rgba(255,149,0,.12)')
+    + statCard(agGt60, 'Not Transacted &middot; 60+ days', '#D70015', 'rgba(215,0,21,.12)')
     + '</div>';
 }
 
@@ -17679,11 +17696,8 @@ function _buildOvKpiCards(scope) {
   var icPulse  = '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>';
 
   // "Onboarded" counts how many applications completed — it does not say how many of
-  // those vendors are still trading. Where the feed reports a lifecycle, the live
-  // count gets a card of its own beside this one rather than a caption underneath:
-  // on this data most completed vendors have since churned, so a bare 328 reads as a
-  // live vendor base and tells the opposite of the true story.
-  var lc = _ovLifecycle(scope);
+  // those vendors are still trading. The lifecycle split that said so has been removed
+  // from this row for now; _ovLifecycle(scope) still computes it if it returns.
   var totalVal = '<span data-count="' + kpis.comp + '" data-count-id="ov_total">' + fmt(kpis.comp) + '</span>'
     + '<span class="ov-kpi-note">applications completed</span>';
   var compVal  = kpis.compRate + '<span style="font-size:.55em;font-weight:700;color:var(--txt2);margin-left:1px">%</span>';
@@ -17704,25 +17718,11 @@ function _buildOvKpiCards(scope) {
       + '<span class="ov-kpi-note">nothing measurable yet</span>';
   }
 
-  // Retention sits beside acquisition. Tone follows the rate: a base that has mostly
-  // churned should not be rendered in the same confident green as the headline count.
-  var retCard = '';
-  if (lc && lc.known) {
-    var retPct = Math.round(lc.active / lc.known * 100);
-    var retHex = retPct >= 60 ? '#0F7A4F' : retPct >= 30 ? '#B25000' : '#D70015';
-    var retBg  = retPct >= 60 ? 'rgba(15,122,79,.08)' : retPct >= 30 ? 'rgba(255,149,0,.10)' : 'rgba(215,0,21,.08)';
-    var gone   = lc.churned + lc.deactivated;
-    var retVal = '<span data-count="' + lc.active + '" data-count-id="ov_active">' + fmt(lc.active) + '</span>'
-      + '<span style="font-size:.5em;font-weight:700;color:' + retHex + ';margin-left:5px">' + retPct + '%</span>'
-      + '<span class="ov-kpi-note" title="' + esc(fmt(lc.churned) + ' churned, ' + fmt(lc.deactivated)
-          + ' deactivated, of ' + fmt(lc.known) + ' with a recorded lifecycle state') + '">'
-      + (gone ? fmt(gone) + ' churned or deactivated' : 'all onboarded vendors still active')
-      + '</span>';
-    retCard = card(retHex, retBg, icPulse, 'Still Active', retVal, null);
-  }
+  // The "Still Active" retention card was removed at the user's request. The data
+  // behind it is untouched — vStats still emits `lifecycle` and `_ovLifecycle(scope)`
+  // still aggregates it — so restoring the card is a render-only change.
 
   return card('#0F7A4F', 'rgba(15,122,79,.08)',   icUsers, 'Total Onboarded', totalVal, dTotal)
-       + retCard
        + card('#1DC797', 'rgba(29,199,151,.08)', icCheck, 'Completion Rate',   compVal,  dComp)
        + card('#8460D4', 'rgba(132,96,212,.08)', icClock, 'Average TAT',       tatVal,   dTAT);
 }

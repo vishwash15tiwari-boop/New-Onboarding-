@@ -237,6 +237,65 @@ var DOC_LABELS = [
   'MSME Certificate','Aadhaar','Owner PAN','Entity PAN','GST Certificate',
   'PWM Certificate'
 ];
+// ── The mandatory six ────────────────────────────────────────────────────────
+// Onboarding counts as compliant on these six only. Everything else in DOC_NAMES
+// stays in the checklist as optional and never blocks completeness, so a vendor
+// holding all six is "Process Followed" whatever else is absent.
+//
+// Two requirements are satisfied by EITHER of two columns, which is how the rule is
+// actually stated: premises may be evidenced by a rental agreement OR an electricity
+// bill, and PAN by the owner's OR the entity's. Neither is "both".
+//
+// Scope is sellers / Open Marketplace. Buyer document compliance stays suppressed.
+var DOC_MANDATORY = [
+  { label: 'GST Certificate',                     keys: ['gst_certificate'] },
+  { label: 'Rental Agreement / Electricity Bill', keys: ['proof_of_premises', 'electricity_bill'] },
+  { label: 'PAN',                                 keys: ['owner_pan', 'entity_pan'] },
+  { label: 'Aadhaar',                             keys: ['aadhaar'] },
+  { label: 'Cancelled Cheque',                    keys: ['cancelled_cheque'] },
+  { label: 'MSME Certificate',                    keys: ['msme_certificate'] }
+];
+// Position of each document key within DOC_NAMES, so a requirement can find the
+// column index the callers already resolved.
+var DOC_KEY_POS = (function() {
+  var m = {};
+  for (var i = 0; i < DOC_NAMES.length; i++) m[DOC_NAMES[i]] = i;
+  return m;
+}());
+// Mandatory-set status for one row. docIdx is the per-DOC_NAMES column-index array
+// the caller already built; isSub decides whether a cell counts as submitted (the
+// three readers disagree on that, so it is passed in).
+//
+// A requirement whose columns are ALL absent from the feed is not counted against the
+// vendor — it is reported in `unknown` instead, because a column the source never
+// carried says nothing about whether the vendor supplied the document. `applicable`
+// is therefore the real denominator, and it is 6 whenever the feed is complete.
+function docMandatoryStatus_(row, docIdx, isSub) {
+  var met = 0, applicable = 0, missing = [], unknown = [];
+  DOC_MANDATORY.forEach(function(req) {
+    var judged = false, present = false;
+    for (var k = 0; k < req.keys.length; k++) {
+      var pos = DOC_KEY_POS[req.keys[k]];
+      if (pos === undefined) continue;
+      var ci = docIdx[pos];
+      if (ci === undefined || ci < 0 || ci >= row.length) continue;
+      judged = true;
+      if (isSub(row[ci])) { present = true; break; }   // either column satisfies it
+    }
+    if (!judged) { unknown.push(req.label); return; }
+    applicable++;
+    if (present) met++; else missing.push(req.label);
+  });
+  return { met: met, applicable: applicable, missing: missing, unknown: unknown };
+}
+// True when a document key is part of the mandatory set — used to mark checklist rows.
+function docIsMandatory_(key) {
+  for (var i = 0; i < DOC_MANDATORY.length; i++) {
+    if (DOC_MANDATORY[i].keys.indexOf(key) !== -1) return true;
+  }
+  return false;
+}
+
 // Alternate column spellings for documents whose header isn't the canonical key.
 var DOC_ALIASES = {
   gst_certificate: ['gst_certificate','gst_cert','gstin_certificate','gst_registration_certificate',
@@ -3471,7 +3530,9 @@ function getQualityData() {
   // vendors primarily by NORMALISED NAME (OMP sellers carry no GSTIN in the feed and use
   // a different id space than the score sheet), which is what makes the numbers appear.
   // Bumped so no stale v10-v13 payload (old source / all-unrated) survives the deploy.
-  var CACHE_KEY = 'quality_data_v19';
+  // v20: document completeness is judged on the mandatory six (DOC_MANDATORY) rather
+  // than on every column in the feed, and rows now carry mandMet/mandTotal/mandMissing.
+  var CACHE_KEY = 'quality_data_v20';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -3881,16 +3942,23 @@ function getQualityData() {
             key:        DOC_NAMES[di],
             label:      DOC_LABELS[di],
             submitted:  isSub,
+            mandatory:  docIsMandatory_(DOC_NAMES[di]),
             verified:   vCol >= 0 ? String(row[vCol] || '').trim() : null,
             uploadDate: dCol >= 0 ? String(row[dCol] || '').trim() : null,
             url:        uCol >= 0 ? String(row[uCol] || '').trim() : null
           });
         });
+        // Completeness is judged on the mandatory six, not on every column in the
+        // feed. Requiring all twelve made "Process Followed" almost unreachable and
+        // counted optional paperwork against the vendor.
+        var _mand = docMandatoryStatus_(row, docIdx, function(c) {
+          var n = parseInt(c, 10); return !isNaN(n) && n > 0;
+        });
         ts.forEach(function(t) {
           acc[t].d.total += 1;
-          if      (totalDocs > 0 && submitted === totalDocs) acc[t].d.complete   += 1;
-          else if (submitted > 0)                            acc[t].d.partial    += 1;
-          else                                               acc[t].d.incomplete += 1;
+          if      (_mand.applicable > 0 && _mand.met === _mand.applicable) acc[t].d.complete   += 1;
+          else if (_mand.met > 0)                                          acc[t].d.partial    += 1;
+          else                                                             acc[t].d.incomplete += 1;
         });
         // Enrich with OMP entity info (GSTIN / category / onboarding status) so
         // the repository can show it without a second lookup. Matched by id, then GSTIN.
@@ -3913,6 +3981,11 @@ function getQualityData() {
           submitted:        submitted,
           total:            totalDocs,
           missingDocs:      missingDocNames,
+          // The mandatory six — what compliance is judged on. submitted/total above
+          // stay the full-checklist counts so the document list still shows everything.
+          mandMet:          _mand.met,
+          mandTotal:        _mand.applicable,
+          mandMissing:      _mand.missing,
           docs:             docList,
           aud:              docAud
         });
@@ -4500,10 +4573,14 @@ function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, selle
       var uC = fc([DOC_NAMES[i] + '_url', DOC_NAMES[i] + '_link', DOC_NAMES[i] + '_document_url']);
       docList.push({
         key: DOC_NAMES[i], label: DOC_LABELS[i], submitted: isSub,
+        mandatory:  docIsMandatory_(DOC_NAMES[i]),
         verified:   vC >= 0 ? String(row[vC] || '').trim() : null,
         uploadDate: dC >= 0 ? String(row[dC] || '').trim() : null,
         url:        uC >= 0 ? String(row[uC] || '').trim() : null
       });
+    });
+    var _mand2 = docMandatoryStatus_(row, docIdx, function(c) {
+      var n = parseInt(c, 10); return !isNaN(n) && n > 0;
     });
 
     vendorDocs.push({
@@ -4516,6 +4593,9 @@ function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, selle
       submitted:        submitted,
       total:            totalDocs,
       missingDocs:      missing,
+      mandMet:          _mand2.met,
+      mandTotal:        _mand2.applicable,
+      mandMissing:      _mand2.missing,
       docs:             docList,
       aud:              aud
     });
@@ -4564,8 +4644,10 @@ function buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap) {
       var isSub = isDocSubmitted_(cell);
       if (isSub) submitted++; else missing.push(DOC_LABELS[i]);
       var url = (typeof cell === 'string' && /^https?:\/\//i.test(cell.trim())) ? cell.trim() : null;
-      docList.push({ key: DOC_NAMES[i], label: DOC_LABELS[i], submitted: isSub, verified: null, uploadDate: null, url: url });
+      docList.push({ key: DOC_NAMES[i], label: DOC_LABELS[i], submitted: isSub,
+                     mandatory: docIsMandatory_(DOC_NAMES[i]), verified: null, uploadDate: null, url: url });
     });
+    var _mand3 = docMandatoryStatus_(row, docIdx, isDocSubmitted_);
 
     var ompD = ompMap[id] || (gst ? ompGstinMap[gst] : null);
     out.push({
@@ -4578,6 +4660,9 @@ function buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap) {
       submitted:        submitted,
       total:            totalDocs,
       missingDocs:      missing,
+      mandMet:          _mand3.met,
+      mandTotal:        _mand3.applicable,
+      mandMissing:      _mand3.missing,
       docs:             docList,
       aud:              'buyer'
     });
@@ -4598,11 +4683,22 @@ function debugDocs() {
       Logger.log('   headers: ' + s.headers.join(', '));
       var found = DOC_NAMES.filter(function(n) { return s.headers.indexOf(n) !== -1; });
       Logger.log('   doc columns present (by name): ' + (found.length ? found.join(', ') : '(none)'));
-      // Show how the three buyer-mandatory docs resolve (alias + fuzzy).
-      ['gst_certificate', 'entity_pan', 'pwm_certificate'].forEach(function(k) {
-        var ix = docColFuzzy_(s.headers, k);
-        Logger.log('   mandatory "' + k + '" → ' + (ix >= 0 ? 'col "' + s.headers[ix] + '"' : '(not found)'));
+      // How each of the mandatory six resolves. A requirement with NO column in the
+      // feed is excluded from the denominator rather than counted against vendors,
+      // so "complete" would quietly mean 5-of-5 instead of 6-of-6. This is the only
+      // place that shortfall is visible — check it after any change to the source.
+      var _resolved = 0;
+      DOC_MANDATORY.forEach(function(req) {
+        var hits = req.keys.map(function(k) {
+          var ix = docColFuzzy_(s.headers, k);
+          return ix >= 0 ? k + '→"' + s.headers[ix] + '"' : k + '→(none)';
+        });
+        var any = req.keys.some(function(k) { return docColFuzzy_(s.headers, k) >= 0; });
+        if (any) _resolved++;
+        Logger.log('   mandatory [' + (any ? 'OK ' : 'MISS') + '] ' + req.label + ': ' + hits.join(' | '));
       });
+      Logger.log('   → mandatory denominator: ' + _resolved + ' of ' + DOC_MANDATORY.length
+        + (_resolved < DOC_MANDATORY.length ? '  ** completeness is being judged on fewer than 6 **' : ''));
       Logger.log('   id cols → seller_id:' + (s.headers.indexOf('seller_id') !== -1)
         + ' buyer_id:' + (s.headers.indexOf('buyer_id') !== -1)
         + ' audience/type:' + (s.headers.indexOf('audience') !== -1 || s.headers.indexOf('type') !== -1));
