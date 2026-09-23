@@ -4886,6 +4886,36 @@ var D  = null;   // full combined dashboard response
 var DS = null;   // seller verticals (D.seller)
 var DB = null;   // buyer  verticals (D.buyer)
 
+// Turnaround is reported in whole days and the smallest real one is a day: a span
+// that measures 0 means "same day", not "no time at all".
+//
+// _assignTat_ floors each record at assignment, but that only helps once the backend
+// is redeployed and its 5-minute payload cache has turned over. Flooring again the
+// moment a payload arrives means a 0 can never reach the screen from any source —
+// a stale cache, a localStorage seed written by an older build, or a backend running
+// behind the frontend. One place, rather than at each of the ~15 sites that render a
+// TAT, which is what "take 0 as 1 day, use it across" needs to mean to stay true.
+function tatFloor(v) {
+  if (v === null || v === undefined || v === '') return null;
+  var n = Number(v);
+  return isNaN(n) ? null : Math.max(1, n);
+}
+// Floors every TAT an audience payload carries: the vertical headline, its category
+// splits and its per-FY rows. Everything downstream — the overview card, the module
+// pills, the blends, the FY tables, the portfolio roll-up — reads these, so flooring
+// here reaches all of them without touching their render code.
+function tatFloorPayload(aud) {
+  if (!aud || !aud.verticals) return aud;
+  Object.keys(aud.verticals).forEach(function(k) {
+    var v = aud.verticals[k];
+    if (!v) return;
+    if (v.avgTAT != null) v.avgTAT = tatFloor(v.avgTAT);
+    (v.categories  || []).forEach(function(c) { if (c.avgTAT != null) c.avgTAT = tatFloor(c.avgTAT); });
+    (v.fyBreakdown || []).forEach(function(f) { if (f.avgTAT != null) f.avgTAT = tatFloor(f.avgTAT); });
+  });
+  return aud;
+}
+
 // Sellers / Buyers are two independent datasets. The active one is requested
 // from the backend (google.script.run) with an `audience` filter; the backend
 // reads the matching sheet server-side and returns the computed dashboard.
@@ -5026,8 +5056,8 @@ document.addEventListener('DOMContentLoaded', function() {
       var sVerts = (parsed && parsed.seller && parsed.seller.verticals) || {};
       var staleHasData = Object.keys(sVerts).some(function(k) { return (sVerts[k].total || 0) > 0; });
       if (parsed && parsed.success && parsed.seller && parsed.buyer && staleHasData) {
-        DS = parsed.seller;
-        DB = parsed.buyer;
+        DS = tatFloorPayload(parsed.seller);
+        DB = tatFloorPayload(parsed.buyer);
         D  = parsed;
         D.verticals      = DS.verticals || {};
         D.verticalConfig = parsed.verticalConfig || [];
@@ -5172,7 +5202,7 @@ function loadData(silent) {
   var buyerF  = JSON.stringify({ audience: 'buyer',  period: baseF.period, startDate: baseF.startDate, endDate: baseF.endDate });
 
   function applyAndRender(newDS, newDB, meta) {
-    DS = newDS; DB = newDB; D = meta;
+    DS = tatFloorPayload(newDS); DB = tatFloorPayload(newDB); D = meta;
     D.verticals      = DS.verticals;
     D.verticalConfig = meta.verticalConfig || [];
     D.fiscalYears    = (meta.seller && meta.seller.fiscalYears) || meta.fiscalYears || [];
@@ -14282,6 +14312,7 @@ function tatChip(t, r) {
   if (t === null || t === undefined || t === '' || t === '—') return '<span class="text-muted">—</span>';
   var n = parseInt(t, 10);
   if (isNaN(n)) return '<span class="text-muted">' + esc(t) + '</span>';
+  n = Math.max(1, n);   // 0 days = onboarded the same day = 1 day, as everywhere else
   var cls = n <= 2 ? 'text-green' : n <= 5 ? 'text-amber' : 'text-red';
   // A row the backend measured from an alternate start carries a real window of its own
   // — its TAT Start cell — and now counts toward the Average TAT like any other. The
