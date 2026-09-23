@@ -20230,7 +20230,14 @@ document.addEventListener('DOMContentLoaded', function() {
   function vrTipEl() {
     var el = document.getElementById('tab-vendorratings'); if (!el) return null;
     var t = el.querySelector('.vr3-tip');
-    if (!t) { t = document.createElement('div'); t.className = 'vr3-tip'; el.appendChild(t); }
+    // Mounted INSIDE .lc. Every .vr3-tip rule is scoped `.lc .vr3-tip`, so a tooltip
+    // appended to the tab container is a sibling of .lc and matches none of them —
+    // including the flex row that separates each label from its value, which is why
+    // the rows read "Vendors192" with the two run together.
+    if (!t) {
+      var mount = el.querySelector('.lc') || el;
+      t = document.createElement('div'); t.className = 'vr3-tip'; mount.appendChild(t);
+    }
     return t;
   }
   function vrHideTip() { var t = vrTipEl(); if (t) t.style.display = 'none'; }
@@ -20324,12 +20331,20 @@ document.addEventListener('DOMContentLoaded', function() {
     var items=[{lbl:'Rated',key:'rated',val:rated-exc,col:'var(--lc-accent)'},
                {lbl:'Not Rated',key:'notrated',val:notRated,col:'#C7C7CC'},
                {lbl:'Exception',key:'exception',val:exc,col:'var(--lc-risk)'}];
+    // The centre figure is the population the ring describes, so it stays equal to
+    // the slices around it rather than to rows.length, which counts only the scored.
+    var total=rated+notRated;
     var cx=60,cy=60,R=44,r=28;
     var svg='<svg viewBox="0 0 200 128" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">';
     var tot=items.reduce(function(a,b){return a+b.val;},0)||1;
     var angle=-Math.PI/2;
     items.forEach(function(it){
-      var sweep=it.val/tot*2*Math.PI;
+      // A sweep of exactly 2π puts the arc's start and end on the same point, and
+      // SVG renders a degenerate arc as nothing — a single-slice ring came out
+      // blank, which is why this card read as an empty box with a legend beside
+      // it. Shaving a hair off keeps the path drawable; at R=44 the gap is about
+      // four thousandths of a pixel.
+      var sweep=Math.min(it.val/tot*2*Math.PI, 2*Math.PI-1e-4);
       if(sweep<0.001){angle+=sweep;return;}
       var x1=cx+R*Math.cos(angle),y1=cy+R*Math.sin(angle),x2=cx+R*Math.cos(angle+sweep),y2=cy+R*Math.sin(angle+sweep);
       var ix1=cx+r*Math.cos(angle),iy1=cy+r*Math.sin(angle),ix2=cx+r*Math.cos(angle+sweep),iy2=cy+r*Math.sin(angle+sweep);
@@ -21318,7 +21333,13 @@ document.addEventListener('DOMContentLoaded', function() {
   function evnTipEl(){
     var el=document.getElementById('tab-existingnew'); if(!el)return null;
     var t=el.querySelector('.evn-tip');
-    if(!t){t=document.createElement('div');t.className='evn-tip';el.appendChild(t);}
+    // Mounted INSIDE .lc — see the note on vrTipEl. Scoped `.lc .evn-tip` rules do
+    // not reach a tooltip appended to the tab container, so its label/value rows
+    // lose their flex layout and print as "Vendors192".
+    if(!t){
+      var mount=el.querySelector('.lc')||el;
+      t=document.createElement('div');t.className='evn-tip';mount.appendChild(t);
+    }
     return t;
   }
   function evnHideTip(){var t=evnTipEl();if(t)t.style.display='none';}

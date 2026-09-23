@@ -3430,13 +3430,20 @@ function getQualityData() {
       var vsBv  = qualityFindCol_(vsh, ['business_vertical','vertical','biz_vertical']);
       var vsAsg = qualityFindCol_(vsh, ['assigned_user','assigned_to','assignee','owner','sales_poc','poc',
                                         'account_manager','relationship_manager','rm','kam','executive','agent']);
-      // 'system_updated' / 'system_rating_updated' / 'osv_completion_date' are what this
-      // workbook actually calls its recency columns; none of the generic names appear in
-      // it, so Last Updated rendered blank on every row.
+      // Date columns ONLY. This workbook's "System Updated" / "System Rating Updated"
+      // columns look like recency fields but hold the word "Done", so matching them
+      // here returned a value that parseDate rejects and Last Updated stayed blank —
+      // worse than not matching at all, because they outrank the real dates below.
       var vsUpd = qualityFindCol_(vsh, ['last_updated','last_updated_date','last_updated_at','updated_at',
                                         'updated_date','modified_at','last_modified','last_modified_date',
                                         'osv_date','osv_updated_date','consent_date','status_date',
-                                        'system_updated','system_rating_updated','osv_completion_date']);
+                                        'osv_completion_date','sent_for_osv_date']);
+      // When the score came back, which is what the rating trend plots and the LAST
+      // RATED column shows. Distinct from vsUpd: that one tracks the OSV milestone,
+      // and using an OSV date as the rating date would plot the wrong event.
+      var vsRated = qualityFindCol_(vsh, ['scoring_received','scoring_recieved','rating_date',
+                                          'scored_on','scoring_date','rated_on','score_date',
+                                          'scoring_sent_date']);
 
       // The join keys (gstin / id) are resolved by header NAME, but the score and OSV
       // were read by fixed POSITION (col H / col N). If the Vendor Score sheet's columns
@@ -3531,8 +3538,12 @@ function getQualityData() {
             // data" and the column always showed a dash. Same column the OSV producer
             // uses, formatted the same way.
             lastRated:        (function() {
-                                if (vsUpd < 0) return '';
-                                var _d = parseDate(row[vsUpd]);
+                                // Scoring-received first, then the generic recency
+                                // column. Reading vsUpd alone plotted an OSV milestone
+                                // as though it were the rating date.
+                                var _c = vsRated >= 0 ? vsRated : vsUpd;
+                                if (_c < 0) return '';
+                                var _d = parseDate(row[_c]);
                                 return _d ? fmtDate(_d) : '';
                               }()),
             hasTransacted:    omp.hasTransacted || false
