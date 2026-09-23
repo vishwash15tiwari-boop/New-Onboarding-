@@ -10904,8 +10904,11 @@ function _patchQualityKpiCards() {
   var dEl = document.getElementById('qkpi-docs');
   if (dEl) {
     var d    = qc.docs || {}, dCmp = d.complete || 0;
-    var dpct = selOnb > 0 ? Math.round(dCmp / selOnb * 100) + '%' : '—';
-    var dsb  = fmt(dCmp) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' complete';
+    // A feed with nothing submitted anywhere is an absent feed, not 0% compliance.
+    var dNone = !dCmp && !(d.partial || 0);
+    var dpct = dNone ? '—' : (selOnb > 0 ? Math.round(dCmp / selOnb * 100) + '%' : '—');
+    var dsb  = dNone ? 'no document data in this feed'
+                     : fmt(dCmp) + (selOnb > 0 ? ' of ' + fmt(selOnb) : '') + ' complete';
     var dv  = dEl.querySelector('.vkpi-val'); if (dv) dv.textContent = dpct;
     var ds  = dEl.querySelector('.vkpi-sub'); if (ds) ds.textContent = dsb;
   }
@@ -11301,7 +11304,14 @@ function buildQualitySect(qd, aud) {
   // Header: label | N% complete
   // Progress bar
   // Rows: [●col] [label] [count] [pct%]
-  if (q.docs && q.docs.total > 0) {
+  // Buyers are excluded where the feed carries no document data at all. Every buyer
+  // document column in _mb_buyers is zero on every row, so the section rendered as
+  // 100% incomplete — which reads as a compliance failure rather than an absent
+  // feed. A vertical whose buyers genuinely do have documents still shows them: the
+  // test is "nothing submitted anywhere", not "audience is buyer".
+  var _docsEmpty = aud === 'buyer' && q.docs
+    && !(q.docs.complete || 0) && !(q.docs.partial || 0);
+  if (q.docs && q.docs.total > 0 && !_docsEmpty) {
     var d  = q.docs, dT = d.total || 1;
     var dr = [
       { key: 'complete',   col: '#1DC797', v: d.complete,   lbl: 'Complete'   },
