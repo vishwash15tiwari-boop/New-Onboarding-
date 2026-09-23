@@ -20545,7 +20545,7 @@ document.addEventListener('DOMContentLoaded', function() {
         + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();window.vr3SetCat(\''+ec+'\',true)}"'
         + ' onmouseenter="window.vr3TipCat(\''+ec+'\',event,true)" onmousemove="window.vr3TipCat(\''+ec+'\',event,true)"'
         + ' onmouseleave="window.vr3TipCat(\''+ec+'\',event,false)">'
-        + '<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cc(c)+';margin-right:6px;vertical-align:middle"></span>'+c+'</td>'
+        + '<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cc(c)+';margin-right:6px;vertical-align:middle"></span>'+esc(c)+'</td>'
         + '<td><b>'+fmt1(avg)+'</b></td><td>'+d.rated+'</td>'
         + '<td style="color:'+(d.exc?'var(--lc-risk)':'var(--lc-ok)')+'"><b>'+d.exc+'</b></td></tr>';
     });
@@ -20598,7 +20598,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var allVr=(_VR&&_VR.vendorRatings)||[];
     var cats=dedup(allVr.map(function(v){return v.category||'';}).filter(Boolean)).sort();
     var catOpts='<option value="">All Categories</option>';
-    cats.forEach(function(c){catOpts+='<option value="'+c+'"'+(c===_vrCat?' selected':'')+'>'+c+'</option>';});
+    // Escaped in BOTH positions: a category carrying a quote would otherwise close
+    // the value attribute early and break the select.
+    cats.forEach(function(c){catOpts+='<option value="'+esc(c)+'"'+(c===_vrCat?' selected':'')+'>'+esc(c)+'</option>';});
     var statOpts=[['','All Statuses'],['excellent','Excellent'],['good','Good'],['ni','Needs Improvement'],['exception','Exception'],['notrated','Not Rated']].map(function(o){return '<option value="'+o[0]+'"'+(o[0]===_vrStat?' selected':'')+'>'+o[1]+'</option>';}).join('');
     var h='<div class="vr3-rec"><div class="vr3-rec-hd"><span class="vr3-rec-ttl">Vendor Records <span style="font-weight:500;color:var(--lc-text3);font-size:12px">('+total+')</span></span>';
     h+='<div class="vr3-rec-acts"><input class="vr3-search" placeholder="Search vendors..." value="'+(_vrQ||'')+'" oninput="window.vr3Search(this.value)">';
@@ -20659,7 +20661,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if(_vrStat)chips.push('Status: <b>'+(LBL[_vrStat]||_vrStat)+'</b>');
     if(_vrScore!=='')chips.push('Score: <b>'+VR_BAND_LBL[parseInt(_vrScore,10)]+'</b>');
     if(_vrMonth){var p=_vrMonth.split('-');chips.push('Month: <b>'+MON[parseInt(p[1],10)-1]+" '"+p[0].slice(2)+'</b>');}
-    if(_vrQ)chips.push('Search: <b>'+_vrQ+'</b>');
+    // esc: this is the user's own typed text going straight back into markup.
+    if(_vrQ)chips.push('Search: <b>'+esc(_vrQ)+'</b>');
     return '<div class="vr3-fbar"><span class="vr3-fbar-l">Filtered by</span>'
       + chips.map(function(c){return '<span class="vr3-fchip">'+c+'</span>';}).join('')
       + '<button class="vr3-fclear" onclick="window.vr3ClearFilters()">Clear all</button></div>';
@@ -20756,7 +20759,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var rated=rows.filter(function(v){return v.rating>0;});
     var avg=rated.length?rated.reduce(function(s,v){return s+v.rating;},0)/rated.length:null;
     var exc=rated.filter(function(v){return v.rating<=2;}).length;
-    vrShowTip('<b class="t">'+c+'</b>'
+    vrShowTip('<b class="t">'+esc(c)+'</b>'
       +vrRow('Average Score',avg===null?'—':fmt1(avg))
       +vrRow('Rated Vendors',fmt(rated.length))
       +vrRow('Exceptions',fmt(exc))
@@ -21113,7 +21116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     leg+='</div>';
     return '<div class="osv3-card"><div class="osv3-card-hdr"><span class="osv3-card-ttl">Verification Status</span>'
       +'<select class="osv3-card-sel" onchange="osv3SetCat(this.value)"><option value="">All Vendors</option>'
-      +(window._osvCats||[]).map(function(c){return '<option value="'+c+'"'+((_osvCat===c)?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'
+      +(window._osvCats||[]).map(function(c){return '<option value="'+esc(c)+'"'+((_osvCat===c)?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select></div>'
       +'<div class="osv3-don-wrap">'+svg+leg+'</div></div>';
   }
 
@@ -21167,7 +21170,7 @@ document.addEventListener('DOMContentLoaded', function() {
       +'<div class="osv3-rec-acts">'
       +'<input class="osv3-search" type="text" placeholder="Search vendors…" value="'+(_osvQ||'')+'" oninput="osv3Search(this.value)">'
       +'<select class="osv3-flt" onchange="osv3SetCat(this.value)"><option value="">All Categories</option>'
-      +(window._osvCats||[]).map(function(c){return '<option value="'+c+'"'+((_osvCat===c)?' selected':'')+'>'+c+'</option>';}).join('')+'</select>'
+      +(window._osvCats||[]).map(function(c){return '<option value="'+esc(c)+'"'+((_osvCat===c)?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select>'
       +'<select class="osv3-flt" onchange="osv3SetStat(this.value)">'
       +'<option value="">All Status</option>'
       +'<option value="verified"'+(_osvStat==='verified'?' selected':'')+'>Completed</option>'
@@ -21197,8 +21200,8 @@ document.addEventListener('DOMContentLoaded', function() {
       var chipCls=st==='verified'?'verified':st==='in_progress'||st==='consent_obtained'?'in_progress':'not_initiated';
       var dot='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cc(cat)+';margin-right:6px;vertical-align:middle"></span>';
       h+='<tr><td style="color:var(--lc-text3);font-weight:500;font-size:11.5px">'+idx+'</td>'
-        +'<td><span style="font-weight:600">'+nm+'</span></td>'
-        +'<td>'+dot+cat+'</td>'
+        +'<td><span style="font-weight:600">'+esc(nm)+'</span></td>'
+        +'<td>'+dot+esc(cat)+'</td>'
         +'<td style="font-variant-numeric:tabular-nums;color:var(--lc-text3)">'+date+'</td>'
         +'<td style="font-weight:700;font-variant-numeric:tabular-nums">'+(score!=='—'?'<span style="color:var(--lc-ok)">'+score+'</span>':score)+'</td>'
         +'<td><span class="osv3-chip '+chipCls+'">'+chipLbl+'</span></td>'
