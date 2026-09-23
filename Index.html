@@ -10969,7 +10969,9 @@ var MANDATORY_DOC_GROUPS = {
     { label: 'PAN',                                 keys: ['owner_pan', 'entity_pan'] },
     { label: 'Aadhaar',                             keys: ['aadhaar'] },
     { label: 'Cancelled Cheque',                    keys: ['cancelled_cheque'] },
-    { label: 'MSME Certificate',                    keys: ['msme_certificate'] }
+    // Required only of vendors that are actually MSME-registered — most on this feed
+    // are "Not Registered", and demanding it of them made them permanent exceptions.
+    { label: 'MSME Certificate',                    keys: ['msme_certificate'], onlyIfMsme: true }
   ],
   // Buyer compliance stays as it was — it is suppressed in the UI regardless.
   buyer: [
@@ -11035,6 +11037,10 @@ function docCompleteness(entity) {
   docList.forEach(function(d) { byKey[d.key] = d; });
   var submitted = 0, total = 0, pending = [];
   mandatoryDocGroups(entity.aud).forEach(function(g) {
+    // Conditional requirement — skipped unless the vendor is MSME-registered. The
+    // backend stamps msmeReg on the record; null (no status in the feed) counts as
+    // not registered, so a missing column never manufactures an exception.
+    if (g.onlyIfMsme && entity.msmeReg !== true) return;
     var judged = false, met = false;
     g.keys.forEach(function(k) {
       var d = byKey[k];

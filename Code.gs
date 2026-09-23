@@ -253,8 +253,27 @@ var DOC_MANDATORY = [
   { label: 'PAN',                                 keys: ['owner_pan', 'entity_pan'] },
   { label: 'Aadhaar',                             keys: ['aadhaar'] },
   { label: 'Cancelled Cheque',                    keys: ['cancelled_cheque'] },
-  { label: 'MSME Certificate',                    keys: ['msme_certificate'] }
+  // Required ONLY of vendors that are actually MSME-registered. Most vendors on this
+  // feed are "Not Registered", and demanding the certificate of them made them
+  // permanent exceptions — they could never reach Process Followed no matter what
+  // they supplied, which is what pinned the exception rate at ~81%.
+  { label: 'MSME Certificate',                    keys: ['msme_certificate'], onlyIfMsme: true }
 ];
+// Column names that might carry MSME registration status on a document feed.
+var MSME_STATUS_COLS = ['msme_status','msme','msme_type','msme_category',
+                        'msme_classification','msme_registration','msme_registered'];
+// Is this vendor MSME-registered? null when the feed says nothing, which is treated
+// as "not registered" for the purpose of the conditional requirement — we only demand
+// the certificate where registration is positively established.
+function msmeRegistered_(v) {
+  if (v === '' || v === null || v === undefined) return null;
+  var s = String(v).trim().toLowerCase();
+  if (!s) return null;
+  if (s === 'not registered' || s === 'not_registered' || s === 'unregistered'
+      || s === 'not applicable' || s === 'not_applicable' || s === 'na' || s === 'n/a'
+      || s === 'no' || s === 'none' || s === '-' || s === '0' || s === 'false') return false;
+  return true;   // micro / small / medium / registered / yes / a registration number
+}
 // Position of each document key within DOC_NAMES, so a requirement can find the
 // column index the callers already resolved.
 var DOC_KEY_POS = (function() {
@@ -270,9 +289,13 @@ var DOC_KEY_POS = (function() {
 // vendor — it is reported in `unknown` instead, because a column the source never
 // carried says nothing about whether the vendor supplied the document. `applicable`
 // is therefore the real denominator, and it is 6 whenever the feed is complete.
-function docMandatoryStatus_(row, docIdx, isSub) {
+function docMandatoryStatus_(row, docIdx, isSub, msmeReg) {
   var met = 0, applicable = 0, missing = [], unknown = [];
   DOC_MANDATORY.forEach(function(req) {
+    // Conditional requirement: skipped entirely unless the vendor is MSME-registered.
+    // msmeReg === null (feed carries no status) counts as not registered, so a missing
+    // status column never manufactures an exception.
+    if (req.onlyIfMsme && msmeReg !== true) return;
     var judged = false, present = false;
     for (var k = 0; k < req.keys.length; k++) {
       var pos = DOC_KEY_POS[req.keys[k]];
@@ -3539,7 +3562,8 @@ function getQualityData() {
   // Bumped so no stale v10-v13 payload (old source / all-unrated) survives the deploy.
   // v20: document completeness is judged on the mandatory six (DOC_MANDATORY) rather
   // than on every column in the feed, and rows now carry mandMet/mandTotal/mandMissing.
-  var CACHE_KEY = 'quality_data_v20';
+  // v21: MSME Certificate is conditional on MSME registration, and rows carry msmeReg.
+  var CACHE_KEY = 'quality_data_v21';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -3904,6 +3928,9 @@ function getQualityData() {
 
       // GSTIN column, used to enrich document rows with OMP entity info
       var vrGstC = qualityFindCol_(vrh, ['gstin','gst_number','gst_no','gstin_number','gst']);
+      // MSME registration status, for the conditional MSME-certificate requirement.
+      // -1 when the feed carries none, in which case nobody is treated as registered.
+      var vrMsmeC = qualityFindCol_(vrh, MSME_STATUS_COLS);
 
       // Doc columns: individual document flags (the fixed 11 sit at cols 32-42;
       // PWM is detected by name via docColIndex_ aliases).
@@ -3958,9 +3985,10 @@ function getQualityData() {
         // Completeness is judged on the mandatory six, not on every column in the
         // feed. Requiring all twelve made "Process Followed" almost unreachable and
         // counted optional paperwork against the vendor.
+        var _msmeReg = vrMsmeC >= 0 ? msmeRegistered_(row[vrMsmeC]) : null;
         var _mand = docMandatoryStatus_(row, docIdx, function(c) {
           var n = parseInt(c, 10); return !isNaN(n) && n > 0;
-        });
+        }, _msmeReg);
         ts.forEach(function(t) {
           acc[t].d.total += 1;
           if      (_mand.applicable > 0 && _mand.met === _mand.applicable) acc[t].d.complete   += 1;
@@ -3993,6 +4021,7 @@ function getQualityData() {
           mandMet:          _mand.met,
           mandTotal:        _mand.applicable,
           mandMissing:      _mand.missing,
+          msmeReg:          _msmeReg,
           docs:             docList,
           aud:              docAud
         });
@@ -4586,9 +4615,11 @@ function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, selle
         url:        uC >= 0 ? String(row[uC] || '').trim() : null
       });
     });
+    var _msmeC2  = fc(MSME_STATUS_COLS);
+    var _msmeReg2 = _msmeC2 >= 0 ? msmeRegistered_(row[_msmeC2]) : null;
     var _mand2 = docMandatoryStatus_(row, docIdx, function(c) {
       var n = parseInt(c, 10); return !isNaN(n) && n > 0;
-    });
+    }, _msmeReg2);
 
     vendorDocs.push({
       id:               vid.slice(0, 30),
@@ -4603,6 +4634,7 @@ function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, selle
       mandMet:          _mand2.met,
       mandTotal:        _mand2.applicable,
       mandMissing:      _mand2.missing,
+      msmeReg:          _msmeReg2,
       docs:             docList,
       aud:              aud
     });
@@ -4654,7 +4686,9 @@ function buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap) {
       docList.push({ key: DOC_NAMES[i], label: DOC_LABELS[i], submitted: isSub,
                      mandatory: docIsMandatory_(DOC_NAMES[i]), verified: null, uploadDate: null, url: url });
     });
-    var _mand3 = docMandatoryStatus_(row, docIdx, isDocSubmitted_);
+    var _msmeC3   = fc(MSME_STATUS_COLS);
+    var _msmeReg3 = _msmeC3 >= 0 ? msmeRegistered_(row[_msmeC3]) : null;
+    var _mand3 = docMandatoryStatus_(row, docIdx, isDocSubmitted_, _msmeReg3);
 
     var ompD = ompMap[id] || (gst ? ompGstinMap[gst] : null);
     out.push({
@@ -4670,6 +4704,7 @@ function buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap) {
       mandMet:          _mand3.met,
       mandTotal:        _mand3.applicable,
       mandMissing:      _mand3.missing,
+      msmeReg:          _msmeReg3,
       docs:             docList,
       aud:              'buyer'
     });
@@ -4704,6 +4739,9 @@ function debugDocs() {
         if (any) _resolved++;
         Logger.log('   mandatory [' + (any ? 'OK ' : 'MISS') + '] ' + req.label + ': ' + hits.join(' | '));
       });
+      var _msc = qualityFindCol_(s.headers, MSME_STATUS_COLS);
+      Logger.log('   MSME status column: ' + (_msc >= 0 ? '"' + s.headers[_msc] + '"'
+        : '(none — MSME Certificate is skipped for every vendor, so compliance is judged on 5)'));
       Logger.log('   → mandatory denominator: ' + _resolved + ' of ' + DOC_MANDATORY.length
         + (_resolved < DOC_MANDATORY.length ? '  ** completeness is being judged on fewer than 6 **' : ''));
       Logger.log('   id cols → seller_id:' + (s.headers.indexOf('seller_id') !== -1)
