@@ -3135,9 +3135,15 @@ var GST_FIELDS = {
   gst:       ['gst_balance', 'gst_component', 'tax_balance', 'tax_component', 'gst_amount', 'gst_value', 'gst_outstanding', 'gst_payable', 'tax_amount', 'tax_value'],
   fy:        ['financial_year', 'fy', 'year', 'invoice_fy', 'ageing_year', 'aging_year', 'fin_year', 'fy_year', 'financial_yr', 'invoice_year'],
   sda:       ['sda_signed', 'sda', 'sda_status'],
-  ledger:    ['ledger_reconciled', 'ledger_reconciliation', 'ledger', 'reconciled', 'reconciliation', 'ledger_status'],
+  // 'ledger_reco' is what the live sheet actually calls this column. Without it the
+  // alias list matched nothing, gpBool_('') returned false for every vendor, and the
+  // "Ledger Reconciled" KPI read 0 while the sheet carried "Done" on ~15 of them.
+  ledger:    ['ledger_reconciled', 'ledger_reconciliation', 'ledger_reco', 'ledger', 'reconciled', 'reconciliation', 'ledger_status'],
   osv:       ['osv_positive', 'osv', 'osv_status'],
-  itcClosed: ['itc_closed', 'itc_status', 'itc', 'itc_closure', 'itc_reversal'],
+  // 'itc_check' last: an explicit itc_closed column still wins where one exists. The
+  // live sheet has only itc_check, whose values ("Closed"/"Open") gpBool_ reads
+  // correctly — before this the "ITC Closed" KPI was pinned at 0.
+  itcClosed: ['itc_closed', 'itc_status', 'itc', 'itc_closure', 'itc_reversal', 'itc_check'],
   itcCheck:  ['itc_check', 'itc_eligible', 'itc_eligibility', 'itc_available', 'itc_flag'],
   state:     ['state', 'gst_state', 'location', 'region'],
 };
@@ -5235,11 +5241,32 @@ function getCompliantOnboardingData() {
     var scoringColIdx = 6;
     var nameColIdx    = -1;
     var idColIdx      = -1;
+    // Exact names first, loose match only as a fallback, and first-match-wins on both.
+    // The previous single loose pass had no first-match guard, so the LAST header
+    // containing "score"/"scoring" won: on the live sheet that is "Scoring_Received"
+    // (a date) at index 8, not "Score" at index 6 — the column this is documented to
+    // read. The two happen to blank together today, which is exactly why it went
+    // unnoticed; they diverge the moment a vendor is scored before the date is filled.
+    // 'id'/'name' are anchored too: bare /id/ matched any header merely containing it.
+    var scoreExact = /^(score|total_score|final_score|kra_score)$/;
+    var scoreLoose = /score|scoring/;
+    var nameExact  = /^(seller_name|vendor_name|business_name|name)$/;
+    var nameLoose  = /(^|_)name($|_)/;
+    var idExact    = /^(seller_id|vendor_id|entity_id|id)$/;
+    var idLoose    = /(^|_)id($|_)/;
+    var scoringLoose = -1, nameLooseIdx = -1, idLooseIdx = -1, scoringExactIdx = -1;
     hdrs.forEach(function(h, i) {
-      if (/score|scoring|kra_score|total_score|final_score/.test(h)) scoringColIdx = i;
-      if (/seller_name|vendor_name|name|business_name/.test(h) && nameColIdx < 0) nameColIdx = i;
-      if (/seller_id|vendor_id|id|entity_id/.test(h) && idColIdx < 0) idColIdx = i;
+      if (scoreExact.test(h) && scoringExactIdx < 0) scoringExactIdx = i;
+      if (scoreLoose.test(h) && scoringLoose    < 0) scoringLoose    = i;
+      if (nameExact.test(h)  && nameColIdx      < 0) nameColIdx      = i;
+      if (nameLoose.test(h)  && nameLooseIdx    < 0) nameLooseIdx    = i;
+      if (idExact.test(h)    && idColIdx        < 0) idColIdx        = i;
+      if (idLoose.test(h)    && idLooseIdx      < 0) idLooseIdx      = i;
     });
+    if      (scoringExactIdx >= 0) scoringColIdx = scoringExactIdx;
+    else if (scoringLoose    >= 0) scoringColIdx = scoringLoose;
+    if (nameColIdx < 0) nameColIdx = nameLooseIdx;
+    if (idColIdx   < 0) idColIdx   = idLooseIdx;
 
     var total = 0, compliant = 0, exceptions = 0;
     var exceptionRows = [];
