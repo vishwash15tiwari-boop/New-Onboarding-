@@ -878,6 +878,10 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .twf-co-c{display:flex;align-items:center;justify-content:center;height:28px;border-radius:5px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--bg2);color:var(--txt)}
 .twf-co-c.twf-co-z{color:var(--txt3);font-weight:400;background:transparent}
 .twf-co-c.twf-co-na{background:transparent}
+.twf-co-ch{cursor:pointer;transition:transform 120ms ease,box-shadow 120ms ease}
+.twf-co-ch:hover{transform:scale(1.06);box-shadow:0 2px 8px rgba(0,0,0,.16);z-index:1}
+.twf-co-ch:focus-visible{outline:2px solid var(--blue);outline-offset:2px;z-index:1}
+.twf-co-l.twf-co-ch:hover{transform:none;box-shadow:none;text-decoration:underline}
 .twf-co-p{display:flex;align-items:center;justify-content:flex-end;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
 @media(max-width:700px){.twf-co{grid-template-columns:72px repeat(6,minmax(0,1fr)) 48px;gap:3px}.twf-co-h{font-size:8.5px}}
 .twf-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
@@ -7099,11 +7103,20 @@ function _txnCohortHtml(co) {
     months.forEach(function(k) { if ((c.by[k] || 0) > mx) mx = c.by[k]; });
     if (c.never > mx) mx = c.never;
   });
-  var cell = function(v, isNever) {
+  /* A zero cell stays inert: there is nothing behind it, and a control that opens
+     an empty table is a worse answer than no control. */
+  var cell = function(v, isNever, act, tip) {
     if (!v) return '<span class="twf-co-c twf-co-z">\u00b7</span>';
     var a = 0.10 + 0.55 * (v / mx);
     var bg = isNever ? 'rgba(178,80,0,' + a.toFixed(2) + ')' : 'rgba(4,151,105,' + a.toFixed(2) + ')';
-    return '<span class="twf-co-c" style="background:' + bg + ';color:' + (a > 0.42 ? '#fff' : 'var(--txt)') + '">' + fmt(v) + '</span>';
+    return '<span class="twf-co-c twf-co-ch" role="button" tabindex="0"'
+      + ' title="' + esc(tip || '') + '"'
+      + ' onclick="' + act + '"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + act + '}"'
+      + ' style="background:' + bg + ';color:' + (a > 0.42 ? '#fff' : 'var(--txt)') + '">' + fmt(v) + '</span>';
+  };
+  var ORD = function(ck, kind, mk) {
+    return 'openTxnCohortRecords(' + ck + ",'" + kind + "'," + (mk == null ? 'null' : mk) + ',' + cut + ')';
   };
   var nCols = months.length + (hasLater ? 1 : 0) + 1;      // months + later + never
   var grid  = '92px repeat(' + nCols + ',minmax(0,1fr)) 62px';
@@ -7118,15 +7131,29 @@ function _txnCohortHtml(co) {
     Object.keys(c.by).forEach(function(k) { acted += c.by[k]; });
     acted += c.unknown;
     var pc = c.total ? Math.round(acted / c.total * 100) : 0;
-    h += '<span class="twf-co-l">' + esc(lbl(c.k)) + '<i>' + fmt(c.total) + '</i></span>';
+    var rowAct = ORD(c.k, 'all', null);
+    h += '<span class="twf-co-l twf-co-ch" role="button" tabindex="0"'
+       + ' title="' + esc('All ' + fmt(c.total) + ' vendors onboarded in ' + lbl(c.k)) + '"'
+       + ' onclick="' + rowAct + '"'
+       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + rowAct + '}">'
+       + esc(lbl(c.k)) + '<i>' + fmt(c.total) + '</i></span>';
     months.forEach(function(k) {
       // Before this cohort existed: not zero, impossible. Left blank so the eye
-      // reads the staircase rather than a wall of dots.
-      h += (k < c.k) ? '<span class="twf-co-c twf-co-na"></span>' : cell(c.by[k] || 0, false);
+      // reads the staircase rather than a wall of dots - and nothing to open.
+      if (k < c.k) { h += '<span class="twf-co-c twf-co-na"></span>'; return; }
+      h += cell(c.by[k] || 0, false, ORD(c.k, 'month', k),
+                'Onboarded ' + lbl(c.k) + ' \u00b7 first transacted ' + lbl(k));
     });
-    if (hasLater) h += cell(laterOf(c), false);
-    h += cell(c.never, true);
-    h += '<span class="twf-co-p" style="color:' + (pc >= 50 ? '#049769' : pc >= 25 ? '#B25000' : 'var(--txt3)') + '">' + pc + '%</span>';
+    if (hasLater) h += cell(laterOf(c), false, ORD(c.k, 'later', null),
+                            'Onboarded ' + lbl(c.k) + ' \u00b7 first transacted after ' + lbl(cut));
+    h += cell(c.never, true, ORD(c.k, 'never', null),
+              'Onboarded ' + lbl(c.k) + ' \u00b7 never transacted');
+    var actAct = ORD(c.k, 'acted', null);
+    h += '<span class="twf-co-p twf-co-ch" role="button" tabindex="0"'
+       + ' title="' + esc('The ' + fmt(acted) + ' of ' + fmt(c.total) + ' from ' + lbl(c.k) + ' that have transacted') + '"'
+       + ' onclick="' + actAct + '"'
+       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + actAct + '}"'
+       + ' style="color:' + (pc >= 50 ? '#049769' : pc >= 25 ? '#B25000' : 'var(--txt3)') + '">' + pc + '%</span>';
   });
   h += '</div>';
   var notes = ['Each row is one month\u2019s onboarding intake, read across to the month those vendors first transacted.'];
@@ -15155,6 +15182,76 @@ function openTxnRailRecords(which) {
   // true means HIDDEN. A single-audience view has a constant Type column, so it
   // carries no information and is dropped rather than repeating "Seller" 67 times.
   _mrColVis = def.aud ? { audType: true } : {};
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+}
+
+/* The vendors behind one cohort cell. The filter mirrors _txnCohortStat exactly -
+   same COMPLETED basis, same "a transaction month before the onboarding month is a
+   recording artefact" clamp - so the table length always equals the number that was
+   clicked. A drill that disagrees with its own cell is worse than no drill. */
+function openTxnCohortRecords(ck, kind, mk, cut) {
+  ck = +ck;
+  mk  = (mk  === null || mk  === undefined || mk  === '') ? null : +mk;
+  cut = (cut === null || cut === undefined || cut === '') ? null : +cut;
+  var MONC = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var mkOf  = function(d) { return d.getFullYear() * 100 + d.getMonth(); };
+  var lblOf = function(k) { return MONC[k % 100] + ' \u2019' + String(Math.floor(k / 100)).slice(2); };
+
+  var _qd = (typeof qualityData !== 'undefined') ? qualityData : null;
+  var ratingLkp = {}, osvLkp = {};
+  if (_qd && _qd.vendorRatings) (_qd.vendorRatings || []).forEach(function(v) { if (v.id) ratingLkp[v.id] = v.rating; });
+  if (_qd && _qd.vendorOSV)     (_qd.vendorOSV     || []).forEach(function(v) { if (v.id) osvLkp[v.id]    = v.status; });
+
+  function take(src, audLabel) {
+    if (!Array.isArray(src)) return [];
+    return src.filter(function(r) {
+      if (String(r.status || '').toUpperCase() !== 'COMPLETED') return false;
+      var od = _mmParseDate(r.onbDate);
+      if (!od || mkOf(od) !== ck) return false;
+      if (kind === 'all')   return true;
+      if (kind === 'never') return !r.hasTransacted;
+      if (kind === 'acted') return !!r.hasTransacted;
+      if (!r.hasTransacted) return false;
+      var td = _mmParseDate(r.txnDate);
+      if (!td) return false;               // transacted but undated - in no month column
+      var tk = Math.max(mkOf(td), ck);
+      return kind === 'later' ? (cut !== null && tk > cut) : (tk === mk);
+    }).map(function(r) {
+      var c = {};
+      for (var k in r) if (r.hasOwnProperty(k)) c[k] = r[k];
+      c.audType   = audLabel;
+      c.rating    = ratingLkp[r.id] !== undefined ? ratingLkp[r.id] : null;
+      c.osvStatus = osvLkp[r.id] || 'not_initiated';
+      return c;
+    });
+  }
+  var rows = take(vertRows, 'Seller')
+    .concat(take((_ovnRows && _ovnRows.buyer) || [], 'Buyer'));
+
+  var base  = 'Onboarded ' + lblOf(ck);
+  var label = kind === 'all'   ? base
+            : kind === 'never' ? base + ' \u00b7 never transacted'
+            : kind === 'acted' ? base + ' \u00b7 activated'
+            : kind === 'later' ? base + ' \u00b7 first transacted after ' + (cut !== null ? lblOf(cut) : 'the shown months')
+            :                    base + ' \u00b7 first transacted ' + (mk !== null ? lblOf(mk) : '');
+
+  var key  = activeVertKey || selectedVert;
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var vertName = (vcfg && vcfg.name) || key || '';
+  _mrCtx = {
+    module: 'txncohort', vertName: vertName, label: label,
+    vertLabel: vertName, preStatus: 'COMPLETED', forceSeller: false,
+    cfg: { label: label }
+  };
+  _mrRows = rows;
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  _mrColVis = {};
   var ovl = document.getElementById('mr-ovl');
   if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
   _mrRender();
