@@ -23599,13 +23599,31 @@ function _vovEsc(s) {
 }
 
 // ── Window-level callbacks (referenced from inline onclick) ────────────────
+/* Both selectors repaint the whole vertical overview, which is where the monthly
+   chart, the health donut and the activation funnel all read _vovAud / _vovNMonths.
+
+   They used to gate on `currentView === 'vertoverview'`. That flag is not a reliable
+   statement about what is on screen: mind-map navigation resets it to 'onboarding'
+   (two places in mmClickNode do exactly that, so a panel module can paint into a
+   visible #tab-overview) while this screen is still displayed. From then on both
+   dropdowns changed their own value and nothing else - the control moved, the chart
+   did not, and nothing failed loudly. Asking the DOM whether the screen is actually
+   visible cannot go stale that way. */
+function _vovRepaint() {
+  if (!_vovKey) return;
+  var el = document.getElementById('tab-vertoverview');
+  // getClientRects() is empty for display:none and for a detached node, and unlike
+  // offsetParent it stays correct for position:fixed containers.
+  if (!el || !el.getClientRects().length) return;
+  renderVertOverview(_vovKey);
+}
 window.vovSetAud = function(a) {
   _vovAud = a;
-  if (_vovKey && currentView === 'vertoverview') renderVertOverview(_vovKey);
+  _vovRepaint();
 };
 window.vovSetMonths = function(n) {
   _vovNMonths = parseInt(n, 10) || 6;
-  if (_vovKey && currentView === 'vertoverview') renderVertOverview(_vovKey);
+  _vovRepaint();
 };
 </script>
 </body>
