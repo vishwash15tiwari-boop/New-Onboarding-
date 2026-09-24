@@ -869,6 +869,16 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .twf-band-v{flex:0 0 34px;text-align:right;font-size:13.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
 .twf-band-p{flex:0 0 46px;text-align:right;font-size:12px;color:var(--txt3);font-variant-numeric:tabular-nums}
 /* improvement table */
+/* cohort grid — one row per onboarding month, one column per months-elapsed */
+.twf-co{display:grid;grid-template-columns:96px repeat(6,minmax(0,1fr)) 62px;gap:4px;align-items:stretch}
+.twf-co-h{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt3);text-align:center;padding:0 0 4px;align-self:end;line-height:1.25}
+.twf-co-h.twf-co-hl{text-align:left}
+.twf-co-l{font-size:11.5px;font-weight:600;color:var(--txt2);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.twf-co-l i{font-style:normal;font-size:10.5px;font-weight:700;color:var(--txt3);background:var(--bg2);border-radius:4px;padding:1px 5px}
+.twf-co-c{display:flex;align-items:center;justify-content:center;height:28px;border-radius:5px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--bg2);color:var(--txt)}
+.twf-co-c.twf-co-z{color:var(--txt3);font-weight:400;background:transparent}
+.twf-co-p{display:flex;align-items:center;justify-content:flex-end;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+@media(max-width:700px){.twf-co{grid-template-columns:72px repeat(6,minmax(0,1fr)) 48px;gap:3px}.twf-co-h{font-size:8.5px}}
 .twf-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
 .twf-tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--txt3);text-align:left;padding:5px 4px;border-bottom:1px solid var(--border);white-space:nowrap}
 .twf-tbl td{padding:7px 4px;border-bottom:1px solid var(--bg2);color:var(--txt);white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -7021,6 +7031,77 @@ function _txnWfRailHtml(onb, nonTxn, txn, sTxn, bTxn) {
   }).join('') + '</div>';
 }
 
+/* Onboarding cohort → first transaction, by month.
+   A waterfall runs one total along one axis, so it cannot carry "onboarded in May,
+   transacted in June" — that is two dimensions, the cohort and the lag. This is the
+   shape that does: one row per onboarding month, one column per months-elapsed, so
+   the May row shows how many of May's intake transacted in May, in June, later, or
+   never. Reading down a column tells you whether activation is getting faster. */
+function _txnCohortStat() {
+  var rows = (Array.isArray(vertRows) ? vertRows : [])
+    .concat((_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : []);
+  var done = rows.filter(function(r) { return String(r.status || '').toUpperCase() === 'COMPLETED'; });
+  if (!done.length) return null;
+  var MAXLAG = 4;                 // 0,1,2,3 then 4+
+  var map = {}, keys = [], undated = 0;
+  done.forEach(function(r) {
+    var od = _mmParseDate(r.onbDate);
+    if (!od) return;              // no onboarding month — cannot place it in a cohort
+    var k = od.getFullYear() * 100 + od.getMonth();
+    if (!map[k]) { map[k] = { k:k, y:od.getFullYear(), m:od.getMonth(), total:0,
+                              lag:[0,0,0,0,0], never:0, unknown:0 }; keys.push(k); }
+    var c = map[k];
+    c.total++;
+    if (!r.hasTransacted) { c.never++; return; }
+    var td = _mmParseDate(r.txnDate);
+    // Transacted, but the feed carries no transaction date: counting it as "never"
+    // would understate activation, so it is held separately and footnoted.
+    if (!td) { c.unknown++; undated++; return; }
+    var lag = (td.getFullYear() - od.getFullYear()) * 12 + (td.getMonth() - od.getMonth());
+    if (lag < 0) lag = 0;         // transacted before completion landed — same month
+    c.lag[Math.min(lag, MAXLAG)]++;
+  });
+  if (!keys.length) return null;
+  keys.sort(function(a, b) { return a - b; });
+  return { cohorts: keys.map(function(k) { return map[k]; }), undated: undated };
+}
+
+function _txnCohortHtml(co) {
+  if (!co) return '';
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var cohorts = co.cohorts.slice(-9);          // recent months; older ones add rows, not insight
+  var HDR = ['Same month','+1 month','+2 months','+3 months','4+ months','Never'];
+  var mx = 1;
+  cohorts.forEach(function(c) {
+    c.lag.forEach(function(v) { if (v > mx) mx = v; });
+    if (c.never > mx) mx = c.never;
+  });
+  var cell = function(v, isNever) {
+    if (!v) return '<span class="twf-co-c twf-co-z">·</span>';
+    var a = 0.10 + 0.55 * (v / mx);
+    var bg = isNever ? 'rgba(178,80,0,' + a.toFixed(2) + ')' : 'rgba(4,151,105,' + a.toFixed(2) + ')';
+    var fg = a > 0.42 ? '#fff' : 'var(--txt)';
+    return '<span class="twf-co-c" style="background:' + bg + ';color:' + fg + '">' + fmt(v) + '</span>';
+  };
+  var h = '<div class="twf-co">'
+    + '<span class="twf-co-h twf-co-hl">Onboarded in</span>'
+    + HDR.map(function(x) { return '<span class="twf-co-h">' + esc(x) + '</span>'; }).join('')
+    + '<span class="twf-co-h">Activated</span>';
+  cohorts.forEach(function(c) {
+    var acted = c.lag.reduce(function(a, b) { return a + b; }, 0) + c.unknown;
+    var pc = c.total ? Math.round(acted / c.total * 100) : 0;
+    h += '<span class="twf-co-l">' + MON[c.m] + " '" + String(c.y).slice(2)
+       + '<i>' + fmt(c.total) + '</i></span>';
+    for (var i = 0; i < 5; i++) h += cell(c.lag[i], false);
+    h += cell(c.never, true);
+    h += '<span class="twf-co-p" style="color:' + (pc >= 50 ? '#049769' : pc >= 25 ? '#B25000' : 'var(--txt3)') + '">' + pc + '%</span>';
+  });
+  h += '</div>';
+  var notes = ['Each row is one month\u2019s onboarding intake; the columns are how long it took them to transact.'];
+  if (co.undated) notes.push(fmt(co.undated) + ' transacted but carry no transaction date, so they count toward Activated but sit in no month column.');
+  return h + '<div class="twf-foot" style="margin-top:10px">' + esc(notes.join(' ')) + '</div>';
+}
+
 // Score profile of the transacted cohort — the question "are the vendors we actually
 // trade with any good?", which the rating module answers for the whole base but not
 // for this subset.
@@ -7455,6 +7536,10 @@ function _mmVertModules(key) {
                          + _txnWfRailHtml(_onbAll, combinedNonTxn, combinedTxn, sTxn, bTxn)
                          + '</div>' });
           }
+          var _co = _txnCohortStat();
+          if (_co) out.push({ title: 'Onboarding cohort \u2192 first transaction',
+                              sub: 'How long each month\u2019s intake took to start transacting \u2014 read a row across for one cohort, a column down to see whether activation is speeding up.',
+                              html: _txnCohortHtml(_co) });
           var _sc = _txnScoreStat();
           if (_sc) out.push({ title: 'Scores of transacted vendors', html: _txnScoresHtml(_sc) });
           return out.length ? out : null;
