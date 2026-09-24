@@ -7429,11 +7429,14 @@ function _mmVertModules(key) {
       };
       onbSummary += '<div class="onb-sum onb-sum-3">'
         + _onbTile('green', MM_IC.check, fmt(_dq.complete || 0),
-            'Process Followed &middot; ' + _dPc(_dq.complete) + '% &middot; all 6 mandatory documents on file')
+            'Process Followed &middot; ' + _dPc(_dq.complete) + '% &middot; all 6 mandatory documents on file',
+            "openComplianceRecords('complete')")
         + _onbTile('amber', MM_IC.draft, fmt(_dq.partial || 0),
-            'Exception Taken &middot; ' + _dPc(_dq.partial) + '% &middot; onboarded with mandatory documents outstanding')
+            'Exception Taken &middot; ' + _dPc(_dq.partial) + '% &middot; onboarded with mandatory documents outstanding',
+            "openComplianceRecords('partial')")
         + _onbTile('red',   MM_IC.x,     fmt(_dq.incomplete || 0),
-            'Not Followed &middot; ' + _dPc(_dq.incomplete) + '% &middot; no mandatory documents on file')
+            'Not Followed &middot; ' + _dPc(_dq.incomplete) + '% &middot; no mandatory documents on file',
+            "openComplianceRecords('incomplete')")
         + '</div>';
     }
   }
@@ -15301,6 +15304,69 @@ function openAgingRecords(bucket) {
 // Transacted vendors whose documents are still outstanding — the actionable half
 // of the Docs-complete tile. Rows carry the doc counts joined on from the quality
 // feed so the table can show what is missing without a second lookup per cell.
+/* The three Compliant Onboarding tiles, each opening the vendors behind it.
+   Bucketed with docCompleteness, which is the same function the tiles' own counts
+   come from - the mandatory six, with MSME required only of MSME-registered
+   vendors - so the list length matches the tile that opened it. Judging the rows
+   here with a second, hand-written rule is how a drill quietly stops agreeing with
+   its card.
+
+   Seller / Open Marketplace only, matching the strip: buyer document compliance is
+   suppressed everywhere else and should not reappear through a drill. */
+function openComplianceRecords(kind) {
+  var LBL = { complete: 'Process Followed', partial: 'Exception Taken', incomplete: 'Not Followed' };
+  if (!LBL[kind]) return;
+  var docs = (qualityData && qualityData.vendorDocs) || [];
+  if (!docs.length) return;
+  var rows = [];
+  docs.forEach(function(d) {
+    if (d.aud === 'buyer') return;
+    var c = docCompleteness(d);
+    if (!c.total) return;                    // nothing judgeable on this record
+    var bucket = (c.submitted >= c.total) ? 'complete'
+               : (c.submitted > 0)        ? 'partial'
+               :                            'incomplete';
+    if (bucket !== kind) return;
+    rows.push({
+      name:          d.name || '',
+      id:            d.id || '',
+      gstin:         d.gstin || '',
+      category:      d.category || '',
+      status:        d.onboardingStatus || '',
+      docsSubmitted: c.submitted,
+      docsTotal:     c.total,
+      // What is actually outstanding, named. "3 / 6" says how far off, this says
+      // which three, which is the difference between a count and an action.
+      docsMissing:   c.pending.map(function(p) { return p.label; }).join(', ')
+    });
+  });
+  rows.sort(function(a, b) { return (a.docsSubmitted - b.docsSubmitted) || String(a.name).localeCompare(String(b.name)); });
+
+  var key  = activeVertKey || selectedVert;
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var vertName = (vcfg && vcfg.name) || key || '';
+  var label = LBL[kind] + ' \u00b7 Mandatory documents';
+  // txnDoc reuses the document column set and its cell renderer, which already
+  // formats the Docs and Missing columns.
+  _mrCtx = {
+    module: 'compliance', txnDoc: true, vertName: vertName, label: label,
+    vertLabel: vertName, preStatus: null, forceSeller: true,
+    cfg: { label: label }
+  };
+  _mrRows = rows;
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  // true means hidden. The document feed carries no vendor type, so that column
+  // would be an empty rule down the page.
+  _mrColVis = { vendorType: true };
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+}
+
 function openTxnDocRecords() {
   var docs = (qualityData && qualityData.vendorDocs) || [];
   if (!docs.length) return;
