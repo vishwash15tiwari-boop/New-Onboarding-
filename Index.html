@@ -2268,7 +2268,12 @@ body.view-gst #vert-tabs-bar{display:none}
 .osv-drill-title{font-size:14px;font-weight:750;color:var(--txt)}
 .osv-drill-sub{font-size:11px;color:var(--txt3);margin-top:2px}
 .osv-drill-x{font-family:inherit;background:var(--bg2);border:1px solid var(--border);border-radius:999px;width:28px;height:28px;cursor:pointer;font-size:14px;color:var(--txt3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.osv-drill-body{overflow-y:auto;flex:1;padding:14px 22px 22px}
+/* min-height:0 is load-bearing: the parent sheet is a flex column with
+   max-height:75vh and overflow:hidden, and a flex item defaults to min-height:auto,
+   which refuses to shrink below its content. Without it this body grows past the
+   sheet and the sheet clips the tail instead of this scrolling to it. Same guard
+   .mr-body and .rec-sheet-body already carry. */
+.osv-drill-body{overflow:auto;flex:1;min-height:0;padding:14px 22px 22px}
 .osv-drill-tbl{width:100%;border-collapse:collapse}
 .osv-drill-tbl th,.osv-drill-tbl td{padding:9px 10px;text-align:left;font-size:12px;border-bottom:1px solid var(--border)}
 .osv-drill-tbl th{font-weight:700;color:var(--txt2);background:var(--bg2);position:sticky;top:0}
@@ -3945,7 +3950,9 @@ body.mm-sn-drill{overflow:hidden}
 #mg-state-fixed{display:flex;flex-direction:column;overflow:hidden}
 .mgsd-half+.mgsd-half{border-top:1px solid var(--border)}
 .mgsd-fix-hd{flex:0 0 auto;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);padding:8px 12px 6px;background:var(--sidebar);position:sticky;top:0;border-bottom:1px solid var(--border)}
-.mgsd-rgn-wrap{flex:1 1 0;overflow-y:auto;overflow-x:auto}
+/* flex-basis:0 does not override min-height:auto, so this needs the same guard
+   to scroll rather than push its container open. */
+.mgsd-rgn-wrap{flex:1 1 0;min-height:0;overflow-y:auto;overflow-x:auto}
 .mgsd-rgn-tbl{width:100%;border-collapse:collapse;table-layout:fixed}
 /* Category overview: size columns to their (small) numbers so 2–5 category
    columns stay balanced and the label keeps the room it needs. */
