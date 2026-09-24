@@ -9057,7 +9057,7 @@ function mmGeoStatePopup(id, anchor) {
    ========================================================================== */
 var GS_SELLER = 'var(--aud-seller)', GS_BUYER = 'var(--aud-buyer)';
 var GS_NORTH  = 'var(--brand-deep)', GS_SOUTH = 'var(--gold)';   // warm/cool pair, distinct from the seller/buyer colours beside them
-var _gsQ = '', _gsPage = 1, _gsSort = 'total', _gsDir = -1, _gsZoom = 1;
+var _gsQ = '', _gsPage = 1, _gsSort = 'txn', _gsDir = -1, _gsZoom = 1;
 var GS_PSIZE = 12;
 
 /* Roll the per-state buckets up to North / South. IN_STATES carries the region. */
@@ -9082,7 +9082,15 @@ function _gsRows(by) {
   return Object.keys(by || {}).map(function(id) {
     var st = IN_STATES[id], b = by[id];
     return { id:id, name:st ? st.name : id, region:st ? st.region : '',
-             seller:b.seller || 0, buyer:b.buyer || 0, total:(b.seller || 0) + (b.buyer || 0) };
+             seller:b.seller || 0, buyer:b.buyer || 0,
+             // Unique vendors in this state that have transacted. _geoAgg counts each
+             // vendor once per audience, so a seller and a buyer in the same state are
+             // two, and a vendor with twenty orders is still one.
+             txn:(b.sellerTxn || 0) + (b.buyerTxn || 0),
+             // total stays on the row: it is what decides whether a state appears at
+             // all, and dropping it would hide every state that has vendors but no
+             // transactions yet - exactly the states worth looking at.
+             total:(b.seller || 0) + (b.buyer || 0) };
   }).filter(function(r) {
     if (!r.total) return false;
     if (reg && reg !== 'All' && r.region !== reg) return false;
@@ -9237,7 +9245,7 @@ function _gsTable(by) {
       +   '<i class="gs-rdot" style="background:' + (r.region === 'South' ? GS_SOUTH : GS_NORTH) + '"></i>'
       +   '<span>' + esc(r.name) + '</span></td>'
       + '<td class="num">' + fmt(r.seller) + '</td><td class="num">' + fmt(r.buyer) + '</td>'
-      + '<td class="num"><b>' + fmt(r.total) + '</b></td></tr>';
+      + '<td class="num"><b>' + fmt(r.txn) + '</b></td></tr>';
   }).join('') : '<tr><td colspan="5"><div class="gs-none">No states match this filter.</div></td></tr>';
 
   var btns = '';
@@ -9258,7 +9266,7 @@ function _gsTable(by) {
     + '<th onclick="gsSort(\'name\')" title="Sort by state — the dot shows the region (gold North, green South)">State' + caret('name') + '</th>'
     + '<th class="num" onclick="gsSort(\'seller\')">Sellers' + caret('seller') + '</th>'
     + '<th class="num" onclick="gsSort(\'buyer\')">Buyers' + caret('buyer') + '</th>'
-    + '<th class="num" onclick="gsSort(\'total\')">Total' + caret('total') + '</th>'
+    + '<th class="num" onclick="gsSort(\'txn\')" title="Unique vendors in this state that have transacted - sellers and buyers, each counted once however many orders they placed">Transacted' + caret('txn') + '</th>'
     + '</tr></thead><tbody>' + body + '</tbody></table></div>'
     + '<div class="gs-pg"><span>Showing ' + from + '–' + Math.min(_gsPage * GS_PSIZE, rows.length) + ' of ' + rows.length + ' states</span>'
     + '<div class="gs-pgb"><button onclick="gsPage(' + (_gsPage - 1) + ')"' + (_gsPage <= 1 ? ' disabled' : '') + '>‹</button>'
@@ -9422,15 +9430,18 @@ function gsReset() {
   // Also clears the audience drill applied by a Sellers vs Buyers bar, so Reset
   // restores the whole module rather than leaving a half-applied filter behind.
   _gsZoom = 1; _geo.state = null; _geo.region = 'All'; _geo.aud = 'seller';
-  _gsQ = ''; _gsPage = 1; _gsSort = 'total'; _gsDir = -1;
+  _gsQ = ''; _gsPage = 1; _gsSort = 'txn'; _gsDir = -1;
   gsHideTip();
   mmRenderGeo();
 }
 function gsExport() {
   var rows = _gsRows(_geoAgg(_geo.cat ? [] : _geoCats()));
-  var csv = 'State,Sellers,Buyers,Total,Region\n';
+  // The export keeps Vendors as well as Transacted: the table dropped the vendor
+  // total to make room, but a spreadsheet has no such constraint and the two
+  // together are what makes a state's conversion readable.
+  var csv = 'State,Sellers,Buyers,Vendors,Transacted,Region\n';
   rows.forEach(function (r) {
-    csv += '"' + String(r.name).replace(/"/g, '""') + '",' + r.seller + ',' + r.buyer + ',' + r.total + ',' + r.region + '\n';
+    csv += '"' + String(r.name).replace(/"/g, '""') + '",' + r.seller + ',' + r.buyer + ',' + r.total + ',' + r.txn + ',' + r.region + '\n';
   });
   try {
     var a = document.createElement('a');
