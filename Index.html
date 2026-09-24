@@ -878,6 +878,7 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .twf-co-c{display:flex;align-items:center;justify-content:center;height:28px;border-radius:5px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--bg2);color:var(--txt)}
 .twf-co-c.twf-co-z{color:var(--txt3);font-weight:400;background:transparent}
 .twf-co-c.twf-co-na{background:transparent}
+.twf-co-c.twf-co-st{box-shadow:inset 0 0 0 2px rgba(4,151,105,.95)}
 .twf-co-ch{cursor:pointer;transition:transform 120ms ease,box-shadow 120ms ease}
 .twf-co-ch:hover{transform:scale(1.06);box-shadow:0 2px 8px rgba(0,0,0,.16);z-index:1}
 .twf-co-ch:focus-visible{outline:2px solid var(--blue);outline-offset:2px;z-index:1}
@@ -7036,41 +7037,50 @@ function _txnWfRailHtml(onb, nonTxn, txn, sTxn, bTxn) {
   }).join('') + '</div>';
 }
 
-/* Onboarding cohort → first transaction, by calendar month.
-   One row per onboarding month, one column per MONTH, so the May row shows how many
-   of May's intake first transacted in May, in June, in July, or not at all. Cells
-   left of a cohort's own month are blank — a vendor cannot transact before it is
-   onboarded — which is what gives the grid its staircase.
+/* Onboarding cohort x trading month.
+   One row per onboarding month, one column per calendar month, and a vendor appears
+   in EVERY month it was trading in - so a vendor onboarded in May that traded June
+   through August shows in June, July and August, not only in the month it started.
 
-   Not a waterfall: a waterfall runs one total along one axis, and "onboarded in May,
-   transacted in June" is two dimensions. Forcing it into a waterfall would drop the
-   half that carries the answer. */
+   What the feed actually records is first_order_date, last_order_date and a count -
+   never a month-by-month history. So "trading in a month" means that month falls
+   inside the vendor's first-to-last window. A vendor that ordered in June and August
+   but not July still shows July. That is an assumption, it is stated under the grid,
+   and it is the closest the available columns come to the question. Real per-month
+   activity needs a Metabase card of transactions by vendor by month.
+
+   Not a waterfall: a waterfall runs one total along one axis, and this is two - the
+   cohort and the month. */
 function _txnCohortStat() {
   var rows = (Array.isArray(vertRows) ? vertRows : [])
     .concat((_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : []);
   var done = rows.filter(function(r) { return String(r.status || '').toUpperCase() === 'COMPLETED'; });
   if (!done.length) return null;
   var mk = function(d) { return d.getFullYear() * 100 + d.getMonth(); };
+  // Month keys are y*100+m, so stepping one month is not arithmetic on the key.
+  var nextM = function(k) { var m = k % 100, y = (k - m) / 100; return m === 11 ? (y + 1) * 100 : k + 1; };
   var coh = {}, seen = {}, undated = 0;
   done.forEach(function(r) {
     var od = _mmParseDate(r.onbDate);
-    if (!od) return;                       // no onboarding month — cannot place in a cohort
+    if (!od) return;                        // no onboarding month - cannot place in a cohort
     var ck = mk(od);
-    if (!coh[ck]) coh[ck] = { k:ck, total:0, by:{}, never:0, unknown:0 };
+    if (!coh[ck]) coh[ck] = { k:ck, total:0, act:{}, start:{}, never:0, unknown:0 };
     seen[ck] = 1;
     var c = coh[ck];
     c.total++;
     if (!r.hasTransacted) { c.never++; return; }
-    var td = _mmParseDate(r.txnDate);
-    // Transacted, but the feed carries no date: counting it as "never" would
-    // understate activation, so it is held aside and footnoted.
-    if (!td) { c.unknown++; undated++; return; }
-    var tk = mk(td);
-    // A transaction month before the onboarding month is a recording artefact — the
-    // two dates come from different columns — not a vendor trading before it existed.
-    if (tk < ck) tk = ck;
-    c.by[tk] = (c.by[tk] || 0) + 1;
-    seen[tk] = 1;
+    var fd = _mmParseDate(r.txnDate);
+    // Transacted but undated: counts toward Activated, sits in no month column.
+    if (!fd) { c.unknown++; undated++; return; }
+    var fk = Math.max(mk(fd), ck);          // a first order before onboarding is a recording artefact
+    var ld = _mmParseDate(r.lastTxnDate);
+    var lk = ld ? Math.max(mk(ld), fk) : fk;
+    c.start[fk] = (c.start[fk] || 0) + 1;
+    for (var k = fk; k <= lk; k = nextM(k)) {
+      c.act[k] = (c.act[k] || 0) + 1;
+      seen[k] = 1;
+      if (k === lk) break;
+    }
   });
   var cKeys = Object.keys(coh).map(Number).sort(function(a, b) { return a - b; });
   if (!cKeys.length) return null;
@@ -7087,29 +7097,24 @@ function _txnCohortHtml(co) {
   var cohorts = co.cohorts.slice(-MAXC);
   var firstK  = cohorts[0].k;
   var reach   = co.months.filter(function(k) { return k >= firstK; });
-  var months  = reach.slice(0, MAXM);
-  var cut     = months.length ? months[months.length - 1] : firstK;
-  var hasLater = reach.length > months.length;
+  var months  = reach.slice(-MAXM);                 // the most recent months, not the oldest
+  var cut     = months.length ? months[0] : firstK;
 
-  // Anything past the last shown column is folded into "Later" rather than dropped,
-  // so every row still adds up to its cohort size.
-  var laterOf = function(c) {
-    var n = 0;
-    Object.keys(c.by).forEach(function(k) { if (+k > cut) n += c.by[k]; });
-    return n;
-  };
   var mx = 1;
   cohorts.forEach(function(c) {
-    months.forEach(function(k) { if ((c.by[k] || 0) > mx) mx = c.by[k]; });
+    months.forEach(function(k) { if ((c.act[k] || 0) > mx) mx = c.act[k]; });
     if (c.never > mx) mx = c.never;
   });
-  /* A zero cell stays inert: there is nothing behind it, and a control that opens
-     an empty table is a worse answer than no control. */
-  var cell = function(v, isNever, act, tip) {
+
+  /* A zero cell stays inert: there is nothing behind it, and a control that opens an
+     empty table is a worse answer than no control. A cell where the cohort started
+     trading that month is ringed, so "began here" stays readable inside a band that
+     otherwise just means "still trading". */
+  var cell = function(v, isNever, act, tip, started) {
     if (!v) return '<span class="twf-co-c twf-co-z">\u00b7</span>';
     var a = 0.10 + 0.55 * (v / mx);
     var bg = isNever ? 'rgba(178,80,0,' + a.toFixed(2) + ')' : 'rgba(4,151,105,' + a.toFixed(2) + ')';
-    return '<span class="twf-co-c twf-co-ch" role="button" tabindex="0"'
+    return '<span class="twf-co-c twf-co-ch' + (started ? ' twf-co-st' : '') + '" role="button" tabindex="0"'
       + ' title="' + esc(tip || '') + '"'
       + ' onclick="' + act + '"'
       + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + act + '}"'
@@ -7118,17 +7123,17 @@ function _txnCohortHtml(co) {
   var ORD = function(ck, kind, mk) {
     return 'openTxnCohortRecords(' + ck + ",'" + kind + "'," + (mk == null ? 'null' : mk) + ',' + cut + ')';
   };
-  var nCols = months.length + (hasLater ? 1 : 0) + 1;      // months + later + never
+
+  var nCols = months.length + 1;                    // months + never
   var grid  = '92px repeat(' + nCols + ',minmax(0,1fr)) 62px';
   var h = '<div class="twf-co" style="grid-template-columns:' + grid + '">'
     + '<span class="twf-co-h twf-co-hl">Onboarded in</span>'
     + months.map(function(k) { return '<span class="twf-co-h">' + esc(lbl(k)) + '</span>'; }).join('')
-    + (hasLater ? '<span class="twf-co-h">Later</span>' : '')
     + '<span class="twf-co-h">Never</span>'
     + '<span class="twf-co-h">Activated</span>';
   cohorts.forEach(function(c) {
     var acted = 0;
-    Object.keys(c.by).forEach(function(k) { acted += c.by[k]; });
+    Object.keys(c.start).forEach(function(k) { acted += c.start[k]; });
     acted += c.unknown;
     var pc = c.total ? Math.round(acted / c.total * 100) : 0;
     var rowAct = ORD(c.k, 'all', null);
@@ -7138,26 +7143,30 @@ function _txnCohortHtml(co) {
        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + rowAct + '}">'
        + esc(lbl(c.k)) + '<i>' + fmt(c.total) + '</i></span>';
     months.forEach(function(k) {
-      // Before this cohort existed: not zero, impossible. Left blank so the eye
-      // reads the staircase rather than a wall of dots - and nothing to open.
+      // Before this cohort existed: not zero, impossible. Left blank so the eye reads
+      // the staircase rather than a wall of dots - and nothing to open.
       if (k < c.k) { h += '<span class="twf-co-c twf-co-na"></span>'; return; }
-      h += cell(c.by[k] || 0, false, ORD(c.k, 'month', k),
-                'Onboarded ' + lbl(c.k) + ' \u00b7 first transacted ' + lbl(k));
+      var v  = c.act[k] || 0;
+      var st = c.start[k] || 0;
+      var tip = v
+        ? fmt(v) + ' of ' + lbl(c.k) + '\u2019s intake were trading in ' + lbl(k)
+          + (st ? ' \u00b7 ' + fmt(st) + ' started that month' : ' \u00b7 all started earlier')
+        : '';
+      h += cell(v, false, ORD(c.k, 'active', k), tip, st > 0);
     });
-    if (hasLater) h += cell(laterOf(c), false, ORD(c.k, 'later', null),
-                            'Onboarded ' + lbl(c.k) + ' \u00b7 first transacted after ' + lbl(cut));
     h += cell(c.never, true, ORD(c.k, 'never', null),
-              'Onboarded ' + lbl(c.k) + ' \u00b7 never transacted');
+              fmt(c.never) + ' onboarded in ' + lbl(c.k) + ' have never transacted');
     var actAct = ORD(c.k, 'acted', null);
     h += '<span class="twf-co-p twf-co-ch" role="button" tabindex="0"'
-       + ' title="' + esc('The ' + fmt(acted) + ' of ' + fmt(c.total) + ' from ' + lbl(c.k) + ' that have transacted') + '"'
+       + ' title="' + esc('The ' + fmt(acted) + ' of ' + fmt(c.total) + ' from ' + lbl(c.k) + ' that have ever transacted') + '"'
        + ' onclick="' + actAct + '"'
        + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + actAct + '}"'
        + ' style="color:' + (pc >= 50 ? '#049769' : pc >= 25 ? '#B25000' : 'var(--txt3)') + '">' + pc + '%</span>';
   });
   h += '</div>';
-  var notes = ['Each row is one month\u2019s onboarding intake, read across to the month those vendors first transacted.'];
-  if (co.undated) notes.push(fmt(co.undated) + ' transacted but carry no transaction date, so they count toward Activated without sitting in a month column.');
+  var notes = ['A vendor is counted in every month between its first and last order, so a row shows how long that intake kept trading. A ring marks the month a cohort started.',
+               'The feed records first and last order dates and a total count, never a month-by-month history \u2014 a vendor that ordered in June and August but not July is still counted in July.'];
+  if (co.undated) notes.push(fmt(co.undated) + ' transacted but carry no order date, so they count toward Activated without sitting in a month column.');
   return h + '<div class="twf-foot" style="margin-top:10px">' + esc(notes.join(' ')) + '</div>';
 }
 
@@ -15217,6 +15226,14 @@ function openTxnCohortRecords(ck, kind, mk, cut) {
       var td = _mmParseDate(r.txnDate);
       if (!td) return false;               // transacted but undated - in no month column
       var tk = Math.max(mkOf(td), ck);
+      // 'active' mirrors the grid cell: the month falls inside this vendor's
+      // first-to-last order window, which is what the cell counted.
+      if (kind === 'active') {
+        if (mk === null) return false;
+        var ld = _mmParseDate(r.lastTxnDate);
+        var lk = ld ? Math.max(mkOf(ld), tk) : tk;
+        return mk >= tk && mk <= lk;
+      }
       return kind === 'later' ? (cut !== null && tk > cut) : (tk === mk);
     }).map(function(r) {
       var c = {};
@@ -15234,6 +15251,7 @@ function openTxnCohortRecords(ck, kind, mk, cut) {
   var label = kind === 'all'   ? base
             : kind === 'never' ? base + ' \u00b7 never transacted'
             : kind === 'acted' ? base + ' \u00b7 activated'
+            : kind === 'active' ? base + ' \u00b7 trading in ' + (mk !== null ? lblOf(mk) : '')
             : kind === 'later' ? base + ' \u00b7 first transacted after ' + (cut !== null ? lblOf(cut) : 'the shown months')
             :                    base + ' \u00b7 first transacted ' + (mk !== null ? lblOf(mk) : '');
 

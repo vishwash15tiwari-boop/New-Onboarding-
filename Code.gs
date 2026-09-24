@@ -2124,7 +2124,11 @@ function sellerActivityLookup_() {
           firstListing:  firstVal_(row, hi, ['first_listing_date', 'first_listing']),
           listStatus:    firstVal_(row, hi, ['listing_activation_status', 'listing_status']),
           totalOrders:   firstVal_(row, hi, ['total_orders', 'orders']),
-          firstOrder:    firstVal_(row, hi, ['first_order_date', 'first_order'])
+          firstOrder:    firstVal_(row, hi, ['first_order_date', 'first_order']),
+          // The other end of the trading window. With only a first date a vendor reads
+          // as a single event; with both, the cohort grid can show how long it kept
+          // trading, which is the question "are they still active" actually asks.
+          lastOrder:     firstVal_(row, hi, ['last_order_date', 'last_order', 'last_transaction_date'])
         };
         var id  = String(firstVal_(row, hi, ['seller_id', 'id', 'vendor_id']) || '').trim();
         var gst = String(firstVal_(row, hi, ['gstin', 'gstin_number', 'gst_no']) || '').trim().toUpperCase();
@@ -2356,6 +2360,12 @@ function normalizeRows(raw, cfg) {
     // GMV present & positive ⇒ a transaction has happened, regardless of what the
     // status column says (or if it's missing). This is the authoritative signal.
     var gmvTransacted = txnVal !== null && txnVal > 0;
+    // Last transaction, where the feed carries one. Sellers get it from the activity
+    // tab (joined above); a feed without the column leaves it null and the vendor is
+    // treated as a single-month event rather than a span.
+    var lastTxnDate = parseDate((_act && _act.lastOrder) ? _act.lastOrder
+      : firstVal_(row, idx, ['last_order_date', 'last_transaction_date', 'last_txn_date',
+                             'lastshipmentdate', 'last_shipment_date']));
     var txnDate = parseDate(
       gv(row, idx, 'first_transaction_date') ||
       gv(row, idx, 'transaction_date')       ||
@@ -2525,6 +2535,7 @@ function normalizeRows(raw, cfg) {
                   || txnDate !== null,
       txnValue:      txnVal,
       txnDate:       txnDate,
+      lastTxnDate:   lastTxnDate,
       totalOrders:   totalOrders,
       onbTAT:        null,          // assigned uniformly by _assignTat_ below
       tatBasis:      null,
@@ -3142,6 +3153,7 @@ function vertRow(r) {
     txnCount:     r.txnCount || 1,
     txnValue:     r.txnValue !== null && r.txnValue !== undefined ? r.txnValue : null,
     txnDate:      fmtDate(r.txnDate),
+    lastTxnDate:  fmtDate(r.lastTxnDate),
     isOldVendor:  !!r.isOldVendor,
   };
 }
