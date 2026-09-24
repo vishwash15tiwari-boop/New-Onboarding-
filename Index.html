@@ -19005,8 +19005,16 @@ document.addEventListener('DOMContentLoaded', function() {
   function esc2(s){ if(typeof esc==='function') return esc(s); return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function nfmt(n){ return (typeof fmt==='function') ? fmt(Math.round(n||0)) : Math.round(n||0).toLocaleString('en-IN'); }
   function lcColor(key){ try{ return (VERT_COLORS[key]||VERT_COLORS.Others).c; }catch(e){ return '#8E8E93'; } }
-  function lcThemeInit(){ if(lcTheme) return lcTheme; try{ lcTheme = localStorage.getItem('rk-lc-theme')||'light'; }catch(e){ lcTheme='light'; } return lcTheme; }
-  window.lcToggleTheme = function(){ lcTheme = (lcThemeInit()==='dark')?'light':'dark'; try{ localStorage.setItem('rk-lc-theme',lcTheme); }catch(e){} renderOvScreen(); };
+  /* Re-read every call rather than caching the first answer. The live toggle is the
+     shared window.lcToggleTheme defined further down this file, which writes
+     localStorage and re-syncs every .lc island - it cannot reach this closure, so a
+     cached value left this module rendering in whatever theme the page loaded with
+     until a reload. */
+  function lcThemeInit(){ try{ lcTheme = localStorage.getItem('rk-lc-theme')||'light'; }catch(e){ lcTheme='light'; } return lcTheme; }
+  /* window.lcToggleTheme is deliberately NOT defined here. A second definition later
+     in the file overwrites this one at load, so this version never ran: toggling from
+     anywhere went through the shared handler, which is what keeps every island in
+     step. Re-adding it here would silently take over depending on script order. */
   window.lcSetAud = function(a){ lcAud=a; renderOvScreen(); };
   window.lcSetTrend = function(m){ lcTrend=m; renderOvScreen(); };
   window.lcDrill = function(key){ if(typeof enterDashboard==='function') enterDashboard(key); };
