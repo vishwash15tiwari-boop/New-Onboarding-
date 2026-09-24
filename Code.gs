@@ -5507,8 +5507,18 @@ function getOSVDashboardData() {
 // ═══════════════════════════════════════════════════════════════
 // Returns monthly onboarding counts (calendar months, last 12) for sellers and buyers.
 // Used exclusively by the Central Onboarding Overview bar chart.
-function getOverviewStats() {
-  var CACHE_KEY = 'overview_v6';  // bumped: buyers bucket by their approval date, not a last-touched one
+/* The Monthly Onboarding chart. Takes the same filters every other surface takes:
+   without them the chart was the one card on the page that ignored the period
+   control, so "Today" could read 2 onboarded in the KPIs while the bars still showed
+   712 for May. The 12-month axis is kept whatever the period, so a narrow period
+   reads as one populated month among empty ones rather than silently rescaling. */
+function getOverviewStats(filtersJson) {
+  var f = {};
+  try { f = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { f = {}; }
+  // The cache key carries the period, or every period would serve the first one's
+  // answer for the next five minutes.
+  var CACHE_KEY = 'overview_v7_' + (f.period || 'All')
+                + '_' + (f.startDate || '') + '_' + (f.endDate || '');
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
   if (hit) return hit;
@@ -5516,8 +5526,9 @@ function getOverviewStats() {
   try {
     var sCfg = AUDIENCE_CFG['seller'];
     var bCfg = AUDIENCE_CFG['buyer'];
-    var sRows = normalizeRows(readData('seller'), sCfg);
-    var bRows = normalizeRows(readData('buyer'),  bCfg);
+    var _dateOk = function(r) { return applyDateFilter(r, f); };
+    var sRows = normalizeRows(readData('seller'), sCfg).filter(_dateOk);
+    var bRows = normalizeRows(readData('buyer'),  bCfg).filter(_dateOk);
 
     // Build the ordered list of the last 12 calendar months (YYYY-M strings).
     var now     = new Date();

@@ -5656,6 +5656,12 @@ function renderPeriodControl() {
 // OSV in particular kept its own period buttons and never moved with the
 // dashboard at all; it now reads currentPeriod and repaints from here.
 function _repaintPeriodViews() {
+  /* The Monthly Onboarding chart is served by its own call, so loadData() does not
+     refresh it. It was fetched once on DOMContentLoaded and never again, which is
+     why every other card followed the period control and this one kept showing the
+     figures the page happened to load with. Both overviews read the same
+     window._ovMonthlyData, so one refetch covers them. */
+  loadOverviewMonthly();
   if (currentView === 'txndist') renderTxnDist();
   if (currentView === 'transactions') { renderTransactionSkeleton(); loadTransactionData(); }
   if (currentView === 'osv' && typeof window.osv3Repaint === 'function') window.osv3Repaint();
@@ -18967,11 +18973,18 @@ function loadOverviewMonthly() {
         if (d && d.success && d.monthly) {
           window._ovMonthlyData = d.monthly;
           renderOvBarChart(d.monthly);
+          // The vertical Overview derives its own series from this same data, so it
+          // has to repaint too - otherwise changing the period fixed the global
+          // chart and left the per-vertical one showing the previous period.
+          // _vovRepaint is visibility-guarded, so this is a no-op elsewhere.
+          if (typeof _vovRepaint === 'function') _vovRepaint();
         }
       } catch(e) { console.warn('getOverviewStats parse error', e); }
     })
     .withFailureHandler(function(err) { console.warn('getOverviewStats failed', err); })
-    .getOverviewStats();
+    // Same filters every other surface sends. Without them this chart was the one
+    // card on the page that ignored the period control.
+    .getOverviewStats(JSON.stringify(getFilters()));
 }
 
 // Start in overview mode; fetch monthly chart data once the page is ready.
