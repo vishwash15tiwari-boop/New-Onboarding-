@@ -23309,7 +23309,7 @@ function renderVertOverview(key) {
   try { (getVertCfg() || []).forEach(function(v){ if (v.key === key) vcfg = v; }); } catch(e){}
   var vertName = vcfg ? (vcfg.name || key) : key;
 
-  el.innerHTML = _vovShell(vertName);
+  el.innerHTML = _vovShell(vertName, key);
 
   var prow = document.getElementById('vov-period-row');
   if (prow) prow.innerHTML = _ovPeriodRowHtml('vov');
@@ -23350,7 +23350,7 @@ function renderVertOverview(key) {
 }
 
 // ── Shell: same composition as the Global Overview (#ov-screen) ────────────
-function _vovShell(vertName) {
+function _vovShell(vertName, vertKey) {
   var nm  = _vovEsc(vertName);
   var aud = _vovAud || 'all';
   var nM  = _vovNMonths || 6;
@@ -23393,15 +23393,22 @@ function _vovShell(vertName) {
     +     '<div id="vov-donut"><div class="sk" style="height:140px;border-radius:var(--r2)"></div></div>'
     +   '</div>'
     + '</div>'
-    + '<div class="ov-chart-card" style="margin-top:var(--sp-3)">'
-    +   '<div class="ov-card-hdr">'
-    +     '<div>'
-    +       '<div class="ov-card-title">Post-Onboarding Activation</div>'
-    +       '<div class="ov-card-sub">Did onboarded vendors go on to trade? Sellers list, buyers raise requisitions &mdash; follows the audience selector above.</div>'
-    +     '</div>'
-    +   '</div>'
-    +   '<div id="vov-activation"><div class="sk" style="height:120px;border-radius:var(--r2)"></div></div>'
-    + '</div>'
+    /* Post-Onboarding Activation is Marketplace-only. Listings and requisitions are
+       Open Marketplace concepts; every other vertical carries no data for the middle
+       stage, so the card could only ever report "not tracked" against a full
+       Onboarded bar — an empty funnel that reads as a broken one. renderVertOverview
+       fills #vov-activation only when it exists, so omitting it here is enough. */
+    + (vertKey === 'OMP'
+        ? '<div class="ov-chart-card" style="margin-top:var(--sp-3)">'
+          +   '<div class="ov-card-hdr">'
+          +     '<div>'
+          +       '<div class="ov-card-title">Post-Onboarding Activation</div>'
+          +       '<div class="ov-card-sub">Did onboarded vendors go on to trade? Sellers list, buyers raise requisitions &mdash; follows the audience selector above.</div>'
+          +     '</div>'
+          +   '</div>'
+          +   '<div id="vov-activation"><div class="sk" style="height:120px;border-radius:var(--r2)"></div></div>'
+          + '</div>'
+        : '')
     + '</div>';
 }
 
