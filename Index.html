@@ -877,6 +877,7 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .twf-co-l i{font-style:normal;font-size:10.5px;font-weight:700;color:var(--txt3);background:var(--bg2);border-radius:4px;padding:1px 5px}
 .twf-co-c{display:flex;align-items:center;justify-content:center;height:28px;border-radius:5px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--bg2);color:var(--txt)}
 .twf-co-c.twf-co-z{color:var(--txt3);font-weight:400;background:transparent}
+.twf-co-c.twf-co-na{background:transparent}
 .twf-co-p{display:flex;align-items:center;justify-content:flex-end;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
 @media(max-width:700px){.twf-co{grid-template-columns:72px repeat(6,minmax(0,1fr)) 48px;gap:3px}.twf-co-h{font-size:8.5px}}
 .twf-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
@@ -7031,74 +7032,105 @@ function _txnWfRailHtml(onb, nonTxn, txn, sTxn, bTxn) {
   }).join('') + '</div>';
 }
 
-/* Onboarding cohort → first transaction, by month.
-   A waterfall runs one total along one axis, so it cannot carry "onboarded in May,
-   transacted in June" — that is two dimensions, the cohort and the lag. This is the
-   shape that does: one row per onboarding month, one column per months-elapsed, so
-   the May row shows how many of May's intake transacted in May, in June, later, or
-   never. Reading down a column tells you whether activation is getting faster. */
+/* Onboarding cohort → first transaction, by calendar month.
+   One row per onboarding month, one column per MONTH, so the May row shows how many
+   of May's intake first transacted in May, in June, in July, or not at all. Cells
+   left of a cohort's own month are blank — a vendor cannot transact before it is
+   onboarded — which is what gives the grid its staircase.
+
+   Not a waterfall: a waterfall runs one total along one axis, and "onboarded in May,
+   transacted in June" is two dimensions. Forcing it into a waterfall would drop the
+   half that carries the answer. */
 function _txnCohortStat() {
   var rows = (Array.isArray(vertRows) ? vertRows : [])
     .concat((_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : []);
   var done = rows.filter(function(r) { return String(r.status || '').toUpperCase() === 'COMPLETED'; });
   if (!done.length) return null;
-  var MAXLAG = 4;                 // 0,1,2,3 then 4+
-  var map = {}, keys = [], undated = 0;
+  var mk = function(d) { return d.getFullYear() * 100 + d.getMonth(); };
+  var coh = {}, seen = {}, undated = 0;
   done.forEach(function(r) {
     var od = _mmParseDate(r.onbDate);
-    if (!od) return;              // no onboarding month — cannot place it in a cohort
-    var k = od.getFullYear() * 100 + od.getMonth();
-    if (!map[k]) { map[k] = { k:k, y:od.getFullYear(), m:od.getMonth(), total:0,
-                              lag:[0,0,0,0,0], never:0, unknown:0 }; keys.push(k); }
-    var c = map[k];
+    if (!od) return;                       // no onboarding month — cannot place in a cohort
+    var ck = mk(od);
+    if (!coh[ck]) coh[ck] = { k:ck, total:0, by:{}, never:0, unknown:0 };
+    seen[ck] = 1;
+    var c = coh[ck];
     c.total++;
     if (!r.hasTransacted) { c.never++; return; }
     var td = _mmParseDate(r.txnDate);
-    // Transacted, but the feed carries no transaction date: counting it as "never"
-    // would understate activation, so it is held separately and footnoted.
+    // Transacted, but the feed carries no date: counting it as "never" would
+    // understate activation, so it is held aside and footnoted.
     if (!td) { c.unknown++; undated++; return; }
-    var lag = (td.getFullYear() - od.getFullYear()) * 12 + (td.getMonth() - od.getMonth());
-    if (lag < 0) lag = 0;         // transacted before completion landed — same month
-    c.lag[Math.min(lag, MAXLAG)]++;
+    var tk = mk(td);
+    // A transaction month before the onboarding month is a recording artefact — the
+    // two dates come from different columns — not a vendor trading before it existed.
+    if (tk < ck) tk = ck;
+    c.by[tk] = (c.by[tk] || 0) + 1;
+    seen[tk] = 1;
   });
-  if (!keys.length) return null;
-  keys.sort(function(a, b) { return a - b; });
-  return { cohorts: keys.map(function(k) { return map[k]; }), undated: undated };
+  var cKeys = Object.keys(coh).map(Number).sort(function(a, b) { return a - b; });
+  if (!cKeys.length) return null;
+  return { cohorts: cKeys.map(function(k) { return coh[k]; }),
+           months:  Object.keys(seen).map(Number).sort(function(a, b) { return a - b; }),
+           undated: undated };
 }
 
 function _txnCohortHtml(co) {
   if (!co) return '';
   var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var cohorts = co.cohorts.slice(-9);          // recent months; older ones add rows, not insight
-  var HDR = ['Same month','+1 month','+2 months','+3 months','4+ months','Never'];
+  var lbl = function(k) { return MON[k % 100] + ' \u2019' + String(Math.floor(k / 100)).slice(2); };
+  var MAXC = 8, MAXM = 8;
+  var cohorts = co.cohorts.slice(-MAXC);
+  var firstK  = cohorts[0].k;
+  var reach   = co.months.filter(function(k) { return k >= firstK; });
+  var months  = reach.slice(0, MAXM);
+  var cut     = months.length ? months[months.length - 1] : firstK;
+  var hasLater = reach.length > months.length;
+
+  // Anything past the last shown column is folded into "Later" rather than dropped,
+  // so every row still adds up to its cohort size.
+  var laterOf = function(c) {
+    var n = 0;
+    Object.keys(c.by).forEach(function(k) { if (+k > cut) n += c.by[k]; });
+    return n;
+  };
   var mx = 1;
   cohorts.forEach(function(c) {
-    c.lag.forEach(function(v) { if (v > mx) mx = v; });
+    months.forEach(function(k) { if ((c.by[k] || 0) > mx) mx = c.by[k]; });
     if (c.never > mx) mx = c.never;
   });
   var cell = function(v, isNever) {
-    if (!v) return '<span class="twf-co-c twf-co-z">·</span>';
+    if (!v) return '<span class="twf-co-c twf-co-z">\u00b7</span>';
     var a = 0.10 + 0.55 * (v / mx);
     var bg = isNever ? 'rgba(178,80,0,' + a.toFixed(2) + ')' : 'rgba(4,151,105,' + a.toFixed(2) + ')';
-    var fg = a > 0.42 ? '#fff' : 'var(--txt)';
-    return '<span class="twf-co-c" style="background:' + bg + ';color:' + fg + '">' + fmt(v) + '</span>';
+    return '<span class="twf-co-c" style="background:' + bg + ';color:' + (a > 0.42 ? '#fff' : 'var(--txt)') + '">' + fmt(v) + '</span>';
   };
-  var h = '<div class="twf-co">'
+  var nCols = months.length + (hasLater ? 1 : 0) + 1;      // months + later + never
+  var grid  = '92px repeat(' + nCols + ',minmax(0,1fr)) 62px';
+  var h = '<div class="twf-co" style="grid-template-columns:' + grid + '">'
     + '<span class="twf-co-h twf-co-hl">Onboarded in</span>'
-    + HDR.map(function(x) { return '<span class="twf-co-h">' + esc(x) + '</span>'; }).join('')
+    + months.map(function(k) { return '<span class="twf-co-h">' + esc(lbl(k)) + '</span>'; }).join('')
+    + (hasLater ? '<span class="twf-co-h">Later</span>' : '')
+    + '<span class="twf-co-h">Never</span>'
     + '<span class="twf-co-h">Activated</span>';
   cohorts.forEach(function(c) {
-    var acted = c.lag.reduce(function(a, b) { return a + b; }, 0) + c.unknown;
+    var acted = 0;
+    Object.keys(c.by).forEach(function(k) { acted += c.by[k]; });
+    acted += c.unknown;
     var pc = c.total ? Math.round(acted / c.total * 100) : 0;
-    h += '<span class="twf-co-l">' + MON[c.m] + " '" + String(c.y).slice(2)
-       + '<i>' + fmt(c.total) + '</i></span>';
-    for (var i = 0; i < 5; i++) h += cell(c.lag[i], false);
+    h += '<span class="twf-co-l">' + esc(lbl(c.k)) + '<i>' + fmt(c.total) + '</i></span>';
+    months.forEach(function(k) {
+      // Before this cohort existed: not zero, impossible. Left blank so the eye
+      // reads the staircase rather than a wall of dots.
+      h += (k < c.k) ? '<span class="twf-co-c twf-co-na"></span>' : cell(c.by[k] || 0, false);
+    });
+    if (hasLater) h += cell(laterOf(c), false);
     h += cell(c.never, true);
     h += '<span class="twf-co-p" style="color:' + (pc >= 50 ? '#049769' : pc >= 25 ? '#B25000' : 'var(--txt3)') + '">' + pc + '%</span>';
   });
   h += '</div>';
-  var notes = ['Each row is one month\u2019s onboarding intake; the columns are how long it took them to transact.'];
-  if (co.undated) notes.push(fmt(co.undated) + ' transacted but carry no transaction date, so they count toward Activated but sit in no month column.');
+  var notes = ['Each row is one month\u2019s onboarding intake, read across to the month those vendors first transacted.'];
+  if (co.undated) notes.push(fmt(co.undated) + ' transacted but carry no transaction date, so they count toward Activated without sitting in a month column.');
   return h + '<div class="twf-foot" style="margin-top:10px">' + esc(notes.join(' ')) + '</div>';
 }
 
@@ -7538,7 +7570,7 @@ function _mmVertModules(key) {
           }
           var _co = _txnCohortStat();
           if (_co) out.push({ title: 'Onboarding cohort \u2192 first transaction',
-                              sub: 'How long each month\u2019s intake took to start transacting \u2014 read a row across for one cohort, a column down to see whether activation is speeding up.',
+                              sub: 'Follow a row across to see which months that intake first transacted in. The staircase is the wait before revenue starts \u2014 a row that fills early activated fast, one that stays in Never never did.',
                               html: _txnCohortHtml(_co) });
           var _sc = _txnScoreStat();
           if (_sc) out.push({ title: 'Scores of transacted vendors', html: _txnScoresHtml(_sc) });
