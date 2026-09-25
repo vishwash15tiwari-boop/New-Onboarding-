@@ -9098,6 +9098,10 @@ function _gsRows(by) {
     return true;
   }).sort(function(a, b) {
     var k = _gsSort;
+    // The last column is txn on most verticals and total on EPR. Sorting on the one
+    // that is hidden would order the table by a column nobody can see, so both keys
+    // resolve to whichever is actually on screen.
+    if (k === 'txn' || k === 'total') k = _gsMetric().key;
     if (k === 'name' || k === 'region') return _gsDir * String(a[k]).localeCompare(String(b[k]));
     return _gsDir * (a[k] - b[k]);
   });
@@ -9228,9 +9232,23 @@ function _gsInsights(by, aud, audLabel) {
     + '<div class="gs-ins">' + out.map(function (t) { return '<div>' + pin + '<span>' + t + '</span></div>'; }).join('') + '</div></div>';
 }
 
+/* EPR carries no transaction data at all - the vertical exposes no Transactions
+   node - so a Transacted column there is a full page of zeros, which reads as a
+   failure rather than as an absence. EPR shows the vendor total in that slot
+   instead; every other vertical keeps Transacted. */
+function _gsMetric() {
+  var k = _geo.key || activeVertKey || _mmVert;
+  return (k === 'EPR')
+    ? { key:'total', label:'Total',
+        title:'Sellers plus buyers mapped to this state' }
+    : { key:'txn',   label:'Transacted',
+        title:'Unique vendors in this state that have transacted - sellers and buyers, each counted once however many orders they placed' };
+}
+
 /* State-wise distribution — search, sort, export, pagination. */
 function _gsTable(by) {
   var rows = _gsRows(by);
+  var M = _gsMetric();
   var pages = Math.max(1, Math.ceil(rows.length / GS_PSIZE));
   if (_gsPage > pages) _gsPage = pages;
   var slice = rows.slice((_gsPage - 1) * GS_PSIZE, _gsPage * GS_PSIZE);
@@ -9245,7 +9263,7 @@ function _gsTable(by) {
       +   '<i class="gs-rdot" style="background:' + (r.region === 'South' ? GS_SOUTH : GS_NORTH) + '"></i>'
       +   '<span>' + esc(r.name) + '</span></td>'
       + '<td class="num">' + fmt(r.seller) + '</td><td class="num">' + fmt(r.buyer) + '</td>'
-      + '<td class="num"><b>' + fmt(r.txn) + '</b></td></tr>';
+      + '<td class="num"><b>' + fmt(r[M.key]) + '</b></td></tr>';
   }).join('') : '<tr><td colspan="5"><div class="gs-none">No states match this filter.</div></td></tr>';
 
   var btns = '';
@@ -9266,7 +9284,7 @@ function _gsTable(by) {
     + '<th onclick="gsSort(\'name\')" title="Sort by state — the dot shows the region (gold North, green South)">State' + caret('name') + '</th>'
     + '<th class="num" onclick="gsSort(\'seller\')">Sellers' + caret('seller') + '</th>'
     + '<th class="num" onclick="gsSort(\'buyer\')">Buyers' + caret('buyer') + '</th>'
-    + '<th class="num" onclick="gsSort(\'txn\')" title="Unique vendors in this state that have transacted - sellers and buyers, each counted once however many orders they placed">Transacted' + caret('txn') + '</th>'
+    + '<th class="num" onclick="gsSort(\'' + M.key + '\')" title="' + esc(M.title) + '">' + esc(M.label) + caret(M.key) + '</th>'
     + '</tr></thead><tbody>' + body + '</tbody></table></div>'
     + '<div class="gs-pg"><span>Showing ' + from + '–' + Math.min(_gsPage * GS_PSIZE, rows.length) + ' of ' + rows.length + ' states</span>'
     + '<div class="gs-pgb"><button onclick="gsPage(' + (_gsPage - 1) + ')"' + (_gsPage <= 1 ? ' disabled' : '') + '>‹</button>'
