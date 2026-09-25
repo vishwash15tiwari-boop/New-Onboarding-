@@ -14381,7 +14381,7 @@ function buildSideNav() {
     html += '<button class="sn-sub' + (isExpanded ? ' sn-active' : '') + '"'
       + ' data-key="' + esc(cfg.key) + '"'
       + ' style="' + vStyle + '"'
-      + ' onclick="snSelectVert(\'' + cfg.key + '\')"'
+      + ' onclick="snSelectVert(\'' + cfg.key + '\', true)"'
       + (isExpanded ? ' aria-current="true" aria-expanded="true"' : ' aria-expanded="false"')
       + '>'
       + '<span class="sn-sub-dot" aria-hidden="true"></span>'
@@ -14532,7 +14532,29 @@ function snGoOverview() {
 }
 
 // Level 1 → Level 2: click a vertical → hide columns, enter vertical overview.
-function snSelectVert(key) {
+function snSelectVert(key, toggle) {
+  /* `toggle` is passed only by the sidebar row. Drill-in callers (a vertical card
+     opening its modules) must always OPEN, and one of them can fire on the vertical
+     that is already open - without this flag that click would have closed the tree
+     it was trying to enter.
+
+     Clicking the vertical that is already open closes it, matching how everything
+     else in this tree behaves.
+
+     Collapsing is a navigation-tree action, not a navigation: it leaves the screen
+     showing whatever it was showing. switchVertOverview is deliberately NOT called
+     on this path because it sets snVertModKey itself, which would reopen the group
+     in the same tick and make the click look dead.
+
+     snActiveKey is left alone so the dot still marks which vertical the content
+     belongs to while its module list is folded away. */
+  if (toggle && snVertModKey === key) {
+    snVertModKey = null;
+    snModActive  = null;
+    snSubActive  = null;
+    buildSideNav();
+    return;
+  }
   snActiveKey   = key;
   snVertModKey  = key;
   snModActive   = null;
