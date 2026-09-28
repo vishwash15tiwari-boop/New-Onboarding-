@@ -6061,7 +6061,7 @@ var MR_AGING_COLS = [
 ];
 
 // Transacted vendors with documents still outstanding. Submitted/total and the
-// missing list are joined on from the quality feed by openTxnDocRecords.
+// missing list are joined on from the quality feed by openComplianceRecords.
 var MR_TXNDOC_COLS = [
   { key:'name',        label:'Name', always:true },
   { key:'vendorType',  label:'Type' },
@@ -6836,52 +6836,8 @@ function _mmRegRows(vs, vb) {
     .sort(function(a, b){ return (b.s + b.b) - (a.s + a.b); });
 }
 
-// Module list for one vertical, wired to live DS/DB/quality data.
-// Document completeness of the vendors who have actually transacted — a vendor
-// trading on incomplete paperwork is the combination worth surfacing, and neither
-// figure on its own shows it.
-//
-// The doc feed and the onboarding feed are separate sources, so rows are joined by
-// id and then GSTIN, the same order the quality build uses. Vendors with no match
-// are counted as 'unknown' rather than folded into "incomplete" — an absent record
-// is not evidence of a missing document.
-//
-// Returns null when there is nothing to say: no doc feed (it is OMP-scoped), no
-// rows loaded yet, or nothing transacted.
-function _txnDocStat() {
-  var docs = (qualityData && qualityData.vendorDocs) || [];
-  if (!docs.length) return null;
-  var byId = {}, byGst = {};
-  docs.forEach(function(d) {
-    if (d.id)    byId[String(d.id)] = d;
-    if (d.gstin) byGst[String(d.gstin).toUpperCase()] = d;
-  });
-  var rows = (Array.isArray(vertRows) ? vertRows : [])
-    .concat((_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : []);
-  var txn = rows.filter(function(r) { return r.hasTransacted; });
-  if (!txn.length) return null;
-  var st = { txn: txn.length, complete: 0, partial: 0, none: 0, unknown: 0 };
-  txn.forEach(function(r) {
-    var d = (r.id && byId[String(r.id)])
-         || (r.gstin && byGst[String(r.gstin).toUpperCase()])
-         || null;
-    // Judged on the mandatory six, not on every column the feed carries. mandTotal is
-    // absent on payloads cached before the mandatory set existed, so those fall back
-    // to the full-checklist counts rather than reading as unknown.
-    if (!d) { st.unknown++; return; }
-    var _mt = (d.mandTotal != null) ? d.mandTotal : d.total;
-    var _mm = (d.mandTotal != null) ? (d.mandMet || 0) : d.submitted;
-    if (!_mt) { st.unknown++; return; }
-    if      (_mm >= _mt) st.complete++;
-    else if (_mm > 0)    st.partial++;
-    else                 st.none++;
-  });
-  st.matched = st.complete + st.partial + st.none;
-  return st.matched ? st : null;
-}
-
-// Scores of the vendors that HAVE transacted. Joined by id then GSTIN, the same way
-// _txnDocStat joins documents, so the two read the same vendor as the same vendor.
+// Scores of the vendors that HAVE transacted. Joined by id then GSTIN - the same
+// ladder the quality joins use - so a vendor resolves identically across panels.
 // Returns null when nothing joins, so the section is omitted rather than drawn empty.
 function _txnScoreStat() {
   var ratings = (qualityData && qualityData.vendorRatings) || [];
@@ -7570,26 +7526,6 @@ function _mmVertModules(key) {
       // was printed twice on the same row — the total tile listed Metal and
       // Plastic, and then Metal and Plastic each got a tile repeating it.
       tTiles.push({ label:'GMV · total', v:fmtINR(gmv), raw:true, sub:'Seller-side', breakdown: _gmvBd });
-    }
-    // Paperwork behind the trade. Tone follows the shortfall, not the headline:
-    // a transacting vendor with documents outstanding is the exception to chase.
-    var _docSt = _txnDocStat();
-    if (_docSt) {
-      var _shortfall = _docSt.partial + _docSt.none;
-      var _bd = [];
-      if (_docSt.partial) _bd.push({ l:'Partial',  v:_docSt.partial });
-      if (_docSt.none)    _bd.push({ l:'None',     v:_docSt.none });
-      if (_docSt.unknown) _bd.push({ l:'No record', v:_docSt.unknown });
-      tTiles.push({
-        label: 'Docs complete',
-        v: _docSt.complete,
-        tone: _shortfall === 0 ? 'good' : (_docSt.none ? 'crit' : 'warn'),
-        sub: Math.round(_docSt.complete / _docSt.matched * 100) + '% of ' + fmt(_docSt.matched) + ' transacted'
-             + (_docSt.unknown ? ' · ' + fmt(_docSt.unknown) + ' unmatched' : ''),
-        breakdown: _bd,
-        click: _shortfall ? "openTxnDocRecords()" : null,
-        tip: _shortfall ? 'View transacted vendors with documents outstanding' : null
-      });
     }
     mods.push({ t:'Transactions', ic:MM_IC.bolt, tone:'t-blue', kind:'module', expand:'inline-panel', eye:'Transaction activity',
       panel:{
@@ -15435,56 +15371,6 @@ function openComplianceRecords(kind) {
   _mrRender();
 }
 
-function openTxnDocRecords() {
-  var docs = (qualityData && qualityData.vendorDocs) || [];
-  if (!docs.length) return;
-  var byId = {}, byGst = {};
-  docs.forEach(function(d) {
-    if (d.id)    byId[String(d.id)] = d;
-    if (d.gstin) byGst[String(d.gstin).toUpperCase()] = d;
-  });
-  var rows = (Array.isArray(vertRows) ? vertRows : [])
-    .concat((_ovnRows && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : []);
-  var out = [];
-  rows.forEach(function(r) {
-    if (!r.hasTransacted) return;
-    var d = (r.id && byId[String(r.id)])
-         || (r.gstin && byGst[String(r.gstin).toUpperCase()])
-         || null;
-    if (!d) return;
-    // Outstanding against the mandatory six. A vendor holding all six is complete even
-    // with optional paperwork missing, so it no longer appears in this list.
-    var _mt = (d.mandTotal != null) ? d.mandTotal : d.total;
-    var _mm = (d.mandTotal != null) ? (d.mandMet || 0) : d.submitted;
-    if (!_mt || _mm >= _mt) return;   // complete, or no record to judge
-    var c = {};
-    for (var k in r) if (r.hasOwnProperty(k)) c[k] = r[k];
-    c.docsSubmitted = _mm;
-    c.docsTotal     = _mt;
-    c.docsMissing   = ((d.mandTotal != null ? d.mandMissing : d.missingDocs) || []).join(', ');
-    out.push(c);
-  });
-  var key  = activeVertKey || selectedVert;
-  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
-  var vertName = (vcfg && vcfg.name) || key || '';
-  _mrCtx = {
-    module: 'txndoc', txnDoc: true, vertName: vertName,
-    label: 'Transacted · Documents Outstanding',
-    vertLabel: vertName, preStatus: null, forceSeller: false,
-    cfg: { label: 'Transacted · Documents Outstanding' }
-  };
-  _mrRows = out;
-  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
-           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
-           osvStatus:'All', vertical:'All', assigned:'All' };
-  _mrSort = { key:'', dir:1 };
-  _mrPg = { size:25, page:0 };
-  _mrColVis = {};
-  var ovl = document.getElementById('mr-ovl');
-  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
-  _mrRender();
-}
-
 function openModRecords(module) {
   if (module === 'osv') return openOsvRecords(null);
   var cfg = MR_MOD_CFG[module];
@@ -15739,8 +15625,8 @@ function _mrRenderFilters() {
 
 function _mrPreFilter(r) {
   if (!_mrCtx) return true;
-  // openTxnDocRecords already selected the rows (transacted, documents outstanding)
-  // and joined the doc counts onto them, so there is nothing further to gate on.
+  // The caller (openComplianceRecords) already selected the rows and joined the doc
+  // counts onto them, so there is nothing further to gate on here.
   if (_mrCtx.txnDoc) return true;
   if (_mrCtx.stage) {
     // Stage cards count every record at that status across both audiences, so the
