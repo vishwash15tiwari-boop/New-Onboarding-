@@ -418,9 +418,11 @@ function isTransportOrSupport_(cat, bv) {
       || cat.indexOf('support')   !== -1 || bv.indexOf('support')   !== -1;
 }
 
-// Marketplace infra rows (Metal/Plastic/Institutional/Reverse) split at FY 26-27:
-//   created < April 1 2026  → 'Marketplace' card (historical)
-//   created >= April 1 2026 → 'InfraBusiness' card (current)
+// Every business_vertical = Marketplace row splits at FY 26-27, not just the infra
+// categories:
+//   created < April 1 2026  → 'Marketplace' card (Managed Marketplace, historical)
+//   created >= April 1 2026 → 'InfraBusiness' card (Metal, IB, Plastic, Reverse)
+// Applied in normalizeRows, which is where the created date is available.
 var MKT_SPLIT_DATE = new Date(2026, 3, 1); // April 1, 2026
 
 // Map a sheet row to one of the eight verticals (date-unaware for Marketplace infra —
@@ -456,8 +458,10 @@ function mapToVertical(businessVertical, category, audience) {
     // business_category is a transporter/support type. Substring match tolerates
     // source spellings ("Transporter", "Transport Partner", "Support", …).
     if (isTransportOrSupport_(cat, bv)) return 'Others';
-    // Non-infra Marketplace categories (Paper, M3, M4, Tyre Oil, etc.) belong
-    // directly in Managed Marketplace — no indirection through Others.
+    // Non-infra Marketplace categories (Paper, M3, M4, Tyre Oil, etc.). Returned as
+    // 'Marketplace' here and then date-split in normalizeRows exactly like the infra
+    // categories, so a recent Paper case lands in Infra Business rather than sitting
+    // in the historical card for good.
     return 'Marketplace';
   }
   return 'Others';
@@ -2484,11 +2488,24 @@ function normalizeRows(raw, cfg) {
     }
 
     var vertical = mapToVertical(bizVert, category, cfg.audience);
-    // Marketplace infra rows: before April 1 2026 → 'Marketplace' card (historical);
-    // from April 1 2026 → 'InfraBusiness' (default from mapToVertical).
-    if (vertical === 'InfraBusiness' && String(bizVert || '').trim().toLowerCase() === 'marketplace'
-        && created && created < MKT_SPLIT_DATE) {
-      vertical = 'Marketplace';
+    /* The FY 26-27 cut for business_vertical = Marketplace:
+         created <  1 Apr 2026 → 'Marketplace'    (Managed Marketplace, historical)
+         created >= 1 Apr 2026 → 'InfraBusiness'  (Metal, IB, Plastic, Reverse)
+
+       This used to apply ONLY to rows mapToVertical had already sent to
+       InfraBusiness — the four infra categories. Every other Marketplace category
+       was pinned to Managed Marketplace for good, so Paper (and M3, M4, Tyre Oil)
+       stayed there however recently the case was created, and Managed Marketplace
+       kept accruing post-April cases while being described as the historical card.
+       The cut now governs both directions for the whole vertical.
+
+       AFR, DRS, Re-Commerce/E-Waste and Transport/Support are deliberately NOT
+       caught here: mapToVertical sends them to verticals of their own, and they
+       are not Infra Business whatever their date. An undated row is treated as
+       current, which is what the original rule did too. */
+    if (String(bizVert || '').trim().toLowerCase() === 'marketplace'
+        && (vertical === 'InfraBusiness' || vertical === 'Marketplace')) {
+      vertical = (created && created < MKT_SPLIT_DATE) ? 'Marketplace' : 'InfraBusiness';
     }
     return {
       id:            recId,
