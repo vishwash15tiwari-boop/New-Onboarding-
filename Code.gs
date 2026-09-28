@@ -5385,13 +5385,29 @@ function getOSVDashboardData() {
   // Build complete seller list: start from ALL onboarded sellers, merge OSV record data
   var osvById = {};
   osvRecords.forEach(function(r) { osvById[r.id] = r; });
+  /* Every vendor the Verification Journey counts, each carrying the stages it
+     belongs to.
+
+     The journey figures are tallied over osvRecords — the score sheet — and
+     eligibility deliberately includes pipeline vendors that are NOT in the
+     onboarded base. This list used to be onboardedSellers alone, so a drill over it
+     could never reproduce those counts: it would come up short by exactly the
+     vendors the backend counts extra. Rather than have the frontend re-derive the
+     rule and disagree, membership is decided once here and the counts below are
+     read back off these flags.
+
+     stOnboarded separates the two populations, so Onboarded stays the onboarded
+     base even though the list is now the union. */
+  var _slSeen = {};
   var fullSellerList = onboardedSellers.map(function(s) {
     var r = osvById[s.id];
+    _slSeen[s.id] = true;
+    var st = r ? r.osvStatus : 'not_initiated';
     return {
       name:           s.name,
       id:             s.id,
       gstin:          s.gstin || '',
-      osvStatus:      r ? r.osvStatus       : 'not_initiated',
+      osvStatus:      st,
       score:          r ? r.score           : null,
       preScore:       r ? (r.preScore !== undefined ? r.preScore : null) : null,
       category:       r ? r.category        : s.category,
@@ -5402,8 +5418,36 @@ function getOSVDashboardData() {
       kycStatus:      r ? (r.kycStatus  || '') : '',
       osvSent:        r ? (r.osvSent    || false) : false,
       thirdParty:     r ? (r.thirdParty || false) : false,
-      params:         r ? (r.params     || null)  : null
+      params:         r ? (r.params     || null)  : null,
+      stOnboarded:    true,
+      stEligible:     !!(s.hasTransaction || inPipeline[s.id]),
+      stInitiated:    (st === 'verified' || st === 'in_progress' || st === 'stopped'),
+      stCompleted:    st === 'verified',
+      stScored:       st === 'verified' && r && r.score !== null
     };
+  });
+  // Pipeline vendors with no row in the onboarded base. They are counted in
+  // eligible / initiated / completed above, so without them a drill on those stages
+  // would list fewer vendors than the card it opened.
+  osvRecords.forEach(function(r) {
+    if (_slSeen[r.id]) return;
+    _slSeen[r.id] = true;
+    var st = r.osvStatus;
+    fullSellerList.push({
+      name: r.name || '', id: r.id, gstin: r.gstin || '',
+      osvStatus: st, score: r.score,
+      preScore: (r.preScore !== undefined ? r.preScore : null),
+      category: r.category || '', assignedTo: r.assignedTo || '',
+      updatedDate: r.updatedDate || '', osvSentDate: r.osvSentDate || '',
+      hasTransaction: !!r.hasTransaction,
+      kycStatus: r.kycStatus || '', osvSent: r.osvSent || false,
+      thirdParty: r.thirdParty || false, params: r.params || null,
+      stOnboarded: false,
+      stEligible:  !!inPipeline[r.id],
+      stInitiated: (st === 'verified' || st === 'in_progress' || st === 'stopped'),
+      stCompleted: st === 'verified',
+      stScored:    st === 'verified' && r.score !== null
+    });
   });
 
   // KYC + OSV Sent + Third Party summary metrics
@@ -5479,6 +5523,9 @@ function getOSVDashboardData() {
     total: 0, withOsv: 0, verified: 0, inProgress: 0, stopped: 0, notInitiated: 0
   };
   fullSellerList.forEach(function(s) {
+    // sellerList now also carries pipeline vendors that are not in the onboarded
+    // base, so this stays on the onboarded ones and keeps the figure it always had.
+    if (s.stOnboarded === false) return;
     if (!s.hasTransaction) return;
     txnAndInitiated.total++;
     if (s.osvStatus === 'verified')         txnAndInitiated.verified++;
@@ -5500,6 +5547,9 @@ function getOSVDashboardData() {
   var trendMap = {};
   trendMonths.forEach(function(m) { trendMap[m.key] = m; });
   fullSellerList.forEach(function(s) {
+    // sellerList now also carries pipeline vendors that are not in the onboarded
+    // base, so this stays on the onboarded ones and keeps the figure it always had.
+    if (s.stOnboarded === false) return;
     if (s.osvStatus !== 'verified') return;
     // Fall back to the OSV-sent date: sheets that never populate an updated-date
     // column otherwise produce a trend of all zeros, which rendered as a row of
@@ -5526,6 +5576,9 @@ function getOSVDashboardData() {
   // Category performance
   var catMapP = {};
   fullSellerList.forEach(function(s) {
+    // sellerList now also carries pipeline vendors that are not in the onboarded
+    // base, so this stays on the onboarded ones and keeps the figure it always had.
+    if (s.stOnboarded === false) return;
     if (!s.hasTransaction) return;
     var cat = (s.category || '').trim() || 'Others';
     if (!catMapP[cat]) catMapP[cat] = { category: cat, eligible: 0, completed: 0, scored: 0, scoreSum: 0 };

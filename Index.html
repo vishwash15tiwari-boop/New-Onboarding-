@@ -22038,6 +22038,12 @@ document.addEventListener('DOMContentLoaded', function() {
 /* Journey funnel */
 .lc .osv3-journey{display:flex;align-items:stretch;gap:var(--sp-1,4px)}
 .lc .osv3-jstage{flex:1;border:1px solid var(--lc-border);background:var(--lc-card);padding:10px 12px 9px;position:relative;min-width:0}
+/* Journey stages and KPI cards that open their vendors. Same lift the rest of the
+   dashboard uses for a clickable card, plus a focus ring so keyboard users can see
+   where they are. */
+.lc .osv3-ch{cursor:pointer;user-select:none}
+.lc .osv3-ch:hover{border-color:var(--lc-text3);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px)}
+.lc .osv3-ch:focus-visible{outline:2px solid var(--lc-accent);outline-offset:2px}
 .lc .osv3-jstage:first-child{border-radius:10px 0 0 10px}
 .lc .osv3-jstage:last-child{border-radius:0 10px 10px 0}
 .lc .osv3-jarr{display:flex;align-items:center;flex-shrink:0;color:var(--lc-border);margin:0 -1px;z-index:1;pointer-events:none}
@@ -22169,32 +22175,41 @@ document.addEventListener('DOMContentLoaded', function() {
       +'<div class="osv3-period">'+btns+'</div></div>';
   }
 
+  /* Opening tag for a clickable KPI card. Score Coverage opens the SHORTFALL - the
+     verified vendors still awaiting a score - because "100%" is answered by the
+     exceptions, and an empty list is itself the answer when there are none. */
+  function osv3KpiOpen(stage){
+    var a="window.osv3Stage('"+stage+"')";
+    return '<div class="osv3-kpi osv3-ch" role="button" tabindex="0" title="See the vendors behind this figure"'
+      + ' onclick="'+a+'"'
+      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+a+'}">';
+  }
   function buildKPIs(jn,po){
     var vEl=jn.eligible||0,vCo=jn.completed||0,upd=jn.scoreUpdated||0;
     var vRate=vEl>0?pct(vCo,vEl):null,updRate=vEl>0?pct(upd,vEl):null;
     var avgScore=po.avgScore,coverage=po.coverage,imp=po.scoreImprovement;
     var h='<div class="osv3-kpis">';
     // KPI 1: Verification Rate
-    h+='<div class="osv3-kpi"><div class="osv3-kpi-top"><div class="osv3-kpi-lbl">Verification Rate</div>'
+    h+=osv3KpiOpen('completed')+'<div class="osv3-kpi-top"><div class="osv3-kpi-lbl">Verification Rate</div>'
       +'<div class="osv3-kpi-ico" style="background:rgba(29,199,151,.12);color:'+C_OK+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div></div>'
       +'<div class="osv3-kpi-val">'+(vRate!==null?vRate:'—')+(vRate!==null?'<span style="font-size:18px;font-weight:500;color:var(--lc-text3)">%</span>':'')+'</div>'
       +'<div class="osv3-kpi-sub">'+vCo+' of '+vEl+' eligible vendors verified</div>'
       +'<div class="osv3-kpi-bar-wrap"><div class="osv3-kpi-bar" style="width:'+(vRate||0)+'%;background:'+C_OK+'"></div></div></div>';
     // KPI 2: Post-OSV Records Updated
-    h+='<div class="osv3-kpi"><div class="osv3-kpi-top"><div class="osv3-kpi-lbl">Post-OSV Records Updated</div>'
+    h+=osv3KpiOpen('updated')+'<div class="osv3-kpi-top"><div class="osv3-kpi-lbl">Post-OSV Records Updated</div>'
       +'<div class="osv3-kpi-ico" style="background:rgba(15,122,79,.1);color:'+C_BLUE+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg></div></div>'
       +'<div class="osv3-kpi-val">'+(updRate!==null?updRate:'—')+(updRate!==null?'<span style="font-size:18px;font-weight:500;color:var(--lc-text3)">%</span>':'')+'</div>'
       +'<div class="osv3-kpi-sub">'+upd+' of '+vEl+' eligible records updated</div>'
       +'<div class="osv3-kpi-bar-wrap"><div class="osv3-kpi-bar" style="width:'+(updRate||0)+'%;background:'+C_BLUE+'"></div></div></div>';
     // KPI 3: Average Post-OSV Score
     var scoreTag=imp!==null&&imp!==undefined?'<span class="'+(imp>=0?'osv3-tag-up':'osv3-tag-dn')+'">'+(imp>=0?'+':'')+imp+'</span>':'';
-    h+='<div class="osv3-kpi"><div class="osv3-kpi-top"><div class="osv3-kpi-lbl">Avg Post-OSV Score</div>'
+    h+=osv3KpiOpen('updated')+'<div class="osv3-kpi-top"><div class="osv3-kpi-lbl">Avg Post-OSV Score</div>'
       +'<div class="osv3-kpi-ico" style="background:rgba(255,149,0,.1);color:'+C_WARN+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div></div>'
       +'<div class="osv3-kpi-val">'+(avgScore!==null&&avgScore!==undefined?avgScore:'—')+'</div>'
       +'<div class="osv3-kpi-sub" style="margin-bottom:0">'+(po.scoredSellers||0)+' scored sellers&nbsp;'+scoreTag+'</div>'
       +'</div>';
     // KPI 4: Score Coverage
-    h+='<div class="osv3-kpi"><div class="osv3-kpi-top"><div class="osv3-kpi-lbl">Score Coverage</div>'
+    h+=osv3KpiOpen('unscored')+'<div class="osv3-kpi-top"><div class="osv3-kpi-lbl">Score Coverage</div>'
       +'<div class="osv3-kpi-ico" style="background:rgba(132,96,212,.12);color:'+C_PURPLE+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div></div>'
       +'<div class="osv3-kpi-val">'+(coverage!==null&&coverage!==undefined?coverage:'—')+(coverage!==null&&coverage!==undefined?'<span style="font-size:18px;font-weight:500;color:var(--lc-text3)">%</span>':'')+'</div>'
       +'<div class="osv3-kpi-sub">'+(po.scoredSellers||0)+' scored of '+(jn.completed||0)+' verified</div>'
@@ -22204,11 +22219,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function buildJourney(jn){
     var stages=[
-      {lbl:'Onboarded',val:jn.onboarded||0,base:null,col:C_BLUE},
-      {lbl:'Eligible for OSV',val:jn.eligible||0,base:jn.onboarded||0,col:C_OK},
-      {lbl:'OSV Initiated',val:jn.initiated||0,base:jn.eligible||0,col:C_WARN},
-      {lbl:'OSV Completed',val:jn.completed||0,base:jn.initiated||0,col:C_OK},
-      {lbl:'Post-OSV Updated',val:jn.scoreUpdated||0,base:jn.completed||0,col:C_PURPLE}
+      {lbl:'Onboarded',val:jn.onboarded||0,base:null,col:C_BLUE,k:'onboarded'},
+      {lbl:'Eligible for OSV',val:jn.eligible||0,base:jn.onboarded||0,col:C_OK,k:'eligible'},
+      {lbl:'OSV Initiated',val:jn.initiated||0,base:jn.eligible||0,col:C_WARN,k:'initiated'},
+      {lbl:'OSV Completed',val:jn.completed||0,base:jn.initiated||0,col:C_OK,k:'completed'},
+      {lbl:'Post-OSV Updated',val:jn.scoreUpdated||0,base:jn.completed||0,col:C_PURPLE,k:'updated'}
     ];
     // base is the previous stage's real count. It used to fall back to 1 to dodge a
     // divide-by-zero, which turned "53 initiated out of 0 eligible" into 5300%.
@@ -22218,7 +22233,12 @@ document.addEventListener('DOMContentLoaded', function() {
       if(i>0)h+='<div class="osv3-jarr"><svg viewBox="0 0 12 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="24"><polyline points="2,6 10,12 2,18"/></svg></div>';
       var p=(st.base===null||st.base<=0)?null:pct(st.val,st.base);
       var barW=st.base===null?100:(p===null?0:Math.min(100,p));
-      h+='<div class="osv3-jstage"><div class="osv3-jlbl">'+st.lbl+'</div><div class="osv3-jnum">'+st.val+'</div>'
+      var _sa=st.k?"window.osv3Stage('"+st.k+"')":'';
+      h+='<div class="osv3-jstage'+(st.k?' osv3-ch':'')+'"'
+        +(st.k?' role="button" tabindex="0" title="See the vendors at this stage"'
+              +' onclick="'+_sa+'"'
+              +' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+_sa+'}"':'')
+        +'><div class="osv3-jlbl">'+st.lbl+'</div><div class="osv3-jnum">'+st.val+'</div>'
         +(st.base!==null?'<div class="osv3-jpct">'+(p===null?'&mdash;':p+'% from prev')+'</div>':'')
         +'<div class="osv3-jbar"><div class="osv3-jbar-f" style="width:'+barW+'%;background:'+st.col+'"></div></div></div>';
     });
@@ -22427,6 +22447,38 @@ document.addEventListener('DOMContentLoaded', function() {
      Passing the row as a one-item list gives the overlay what it is built for:
      the checks behind the score — pre-OSV score, KYC, OSV sent, third-party
      verification — none of which the table itself shows. */
+  /* Every Verification Journey stage and KPI opens the vendors behind it.
+
+     The predicate is a flag the BACKEND stamped on each seller (stEligible,
+     stInitiated, …), not a rule re-derived here. The journey counts are tallied
+     over the score sheet and deliberately include pipeline vendors outside the
+     onboarded base, so any locally invented filter would list fewer vendors than
+     the card it opened — which is precisely the defect the Compliant Onboarding
+     strip had. One rule, stamped once, read here. */
+  var OSV3_STAGE = {
+    onboarded: { lbl:'Onboarded',            fn:function(s){ return s.stOnboarded !== false; },
+                 why:'Sellers whose onboarding completed. The base every stage below narrows.' },
+    eligible:  { lbl:'Eligible for OSV',     fn:function(s){ return !!s.stEligible; },
+                 why:'Has transacted, or has already reached an OSV stage — either is evidence the vendor qualified.' },
+    initiated: { lbl:'OSV Initiated',        fn:function(s){ return !!s.stInitiated; },
+                 why:'Verification was started: completed, in progress, or halted after starting.' },
+    completed: { lbl:'OSV Completed',        fn:function(s){ return !!s.stCompleted; },
+                 why:'Verification finished and came back verified.' },
+    updated:   { lbl:'Post-OSV Updated',     fn:function(s){ return !!s.stScored; },
+                 why:'Verified and carrying a post-OSV score, so the record was updated after the visit.' },
+    notinit:   { lbl:'Eligible, not initiated',
+                 fn:function(s){ return !!s.stEligible && !s.stInitiated; },
+                 why:'Qualified for verification but nothing has been started yet — the actionable gap.' },
+    unscored:  { lbl:'Verified, awaiting score',
+                 fn:function(s){ return !!s.stCompleted && !s.stScored; },
+                 why:'Verification is done but no score has been recorded, so the coverage figure is short by these.' }
+  };
+  window.osv3Stage=function(k){
+    var def=OSV3_STAGE[k]; if(!def)return;
+    var list=(_OSV&&_OSV.sellerList)||[];
+    var rows=list.filter(def.fn);
+    _osvDrill(def.lbl+' \u00b7 '+rows.length,def.why,rows);
+  };
   window.osv3Row=function(id){
     var list=(_OSV&&_OSV.sellerList)||[],s=null;
     for(var i=0;i<list.length;i++){ if(String(list[i].id)===String(id)){ s=list[i]; break; } }
