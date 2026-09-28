@@ -3747,7 +3747,7 @@ function getQualityData() {
   // v20: document completeness is judged on the mandatory six (DOC_MANDATORY) rather
   // than on every column in the feed, and rows now carry mandMet/mandTotal/mandMissing.
   // v21: MSME Certificate is conditional on MSME registration, and rows carry msmeReg.
-  var CACHE_KEY = 'quality_data_v22';
+  var CACHE_KEY = 'quality_data_v23';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -4128,6 +4128,10 @@ function getQualityData() {
 
       // GSTIN column, used to enrich document rows with OMP entity info
       var vrGstC = qualityFindCol_(vrh, ['gstin','gst_number','gst_no','gstin_number','gst']);
+      // The document feed carries its own business_category. Without it a row whose
+      // OMP join misses has no category at all, which is why the Exception Taken
+      // list showed a dash for most vendors while a few read "Plastic".
+      var vrCatC = qualityFindCol_(vrh, ['business_category','category','vertical_category','cat']);
       // MSME registration status, for the conditional MSME-certificate requirement.
       // -1 when the feed carries none, in which case nobody is treated as registered.
       var vrMsmeC = qualityFindCol_(vrh, MSME_STATUS_COLS);
@@ -4204,13 +4208,21 @@ function getQualityData() {
         var docVid    = buyerIdV || sellerIdV;
         // Audience: buyer_id populated → buyer; else the row's resolved audience.
         var docAud    = buyerIdV ? 'buyer' : (sellerIdV ? (rowAud === 'buyer' ? 'buyer' : 'seller') : rowAud);
-        var ompD      = ompMap[docVid] || (docGst ? ompGstinMap[docGst] : null);
+        var docNm     = nameC >= 0 ? String(row[nameC] || '').trim() : '';
+        /* id → GSTIN → normalised name, matching the rating join. Name is not a
+           nicety here: OMP sellers carry no GSTIN in the feed and use a different id
+           space from this sheet, so without it the join misses for most of them and
+           every field it supplies - category, onboarding status - comes back empty. */
+        var ompD      = ompMap[docVid]
+                     || (docGst ? ompGstinMap[docGst] : null)
+                     || (docNm ? ompNameMap[_qNormName_(docNm)] : null);
         if (ompD && ompD.aud) docAud = ompD.aud;
         vendorDocs.push({
           id:               docVid.slice(0, 30),
           name:             (ompD && ompD.name) || String(row[nameC] || '').trim().slice(0, 60),
           gstin:            (ompD && ompD.gstin) || docGst.slice(0, 20),
-          category:         ompD ? (ompD.category || '') : '',
+          category:         (ompD && ompD.category)
+                            || (vrCatC >= 0 ? String(row[vrCatC] || '').trim().slice(0, 60) : ''),
           onboardingStatus: ompD ? (ompD.onboardingStatus || '') : '',
           omp:              !!ompD,
           submitted:        submitted,
