@@ -2622,7 +2622,15 @@ function normalizeRows(raw, cfg) {
   deduped.forEach(function(r) {
     if (r.vertical !== 'Others') { result.push(r); return; }
     var isTS = isTransportOrSupport_((r.category || '').toLowerCase(), (r.bizVertical || '').toLowerCase());
-    if (!isTS) r.vertical = 'Marketplace';
+    /* These rows follow the same FY 26-27 cut as the Marketplace vertical itself.
+       They used to land in Managed Marketplace whatever their date, which left that
+       card accruing post-April cases while being described — and now filtered — as
+       the pre-April history. A case created in August belongs on the current card
+       whichever feed failed to label it. */
+    if (!isTS) {
+      r.vertical = (r.createdDate && r.createdDate < MKT_SPLIT_DATE)
+        ? 'Marketplace' : 'InfraBusiness';
+    }
     result.push(r);
   });
 
@@ -5547,9 +5555,12 @@ function getOSVDashboardData() {
   var trendMap = {};
   trendMonths.forEach(function(m) { trendMap[m.key] = m; });
   fullSellerList.forEach(function(s) {
-    // sellerList now also carries pipeline vendors that are not in the onboarded
-    // base, so this stays on the onboarded ones and keeps the figure it always had.
-    if (s.stOnboarded === false) return;
+    /* Every verified vendor, including the pipeline ones outside the onboarded
+       base. This deliberately has NO stOnboarded guard, unlike the two tallies
+       below it: the journey's "OSV Completed" counts every verified record, so
+       restricting the trend to onboarded sellers made a chart that was supposed to
+       show that figure over time disagree with it by exactly the pipeline vendors.
+       Two numbers describing the same thing on the same screen. */
     if (s.osvStatus !== 'verified') return;
     // Fall back to the OSV-sent date: sheets that never populate an updated-date
     // column otherwise produce a trend of all zeros, which rendered as a row of

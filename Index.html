@@ -425,13 +425,11 @@ body:not(.view-ov) .ov-back-btn{display:flex}
 #dash-content .evn-pg{max-width:none;padding-left:0;padding-right:0}
 
 /* ===== Section Titles — Apple large title style ===== */
-.section-title{
-  font-size:22px;font-weight:700;
-  letter-spacing:-.5px;
-  color:var(--txt);
-  margin:4px 0 20px;
-  display:flex;align-items:center;gap:var(--sp-4);
-}
+/* .section-title is declared once, further down. A base rule here was mostly
+   overridden by that later one — but not entirely: its display:flex, align-items
+   and gap were never restated, so they were still in force while the rule they sat
+   in looked dead. Those three are merged into the surviving rule, so what applies
+   is what you read. */
 .section-title::before{display:none}
 .section-title .badge{
   font-size:11px;font-weight:600;
@@ -474,7 +472,9 @@ body:not(.view-ov) .ov-back-btn{display:flex}
 .chart-card-title .muted-total{font-size:11px;font-weight:500;color:var(--txt2);text-transform:none;letter-spacing:0}
 
 /* ===== Vertical Comparison Cards — Apple card system ===== */
-.compare-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px}
+/* .compare-grid is declared once, further down. A base rule here set a fixed
+   two-column grid and was overridden property-for-property by that later one, so it
+   had no effect at all — removed rather than left to read as the active layout. */
 .compare-card{
   position:relative;overflow:hidden;
   background:var(--card);
@@ -1160,7 +1160,9 @@ body.view-gst .live-pill b{color:var(--gp-orange)}
 .gp-orange .gp-kpi-tag{background:var(--gp-orange-bg);color:var(--gp-orange-ink)}
 .gp-green .gp-kpi-tag{background:var(--gp-green-bg);color:var(--gp-green)}
 .gp-gold .gp-kpi-tag{background:var(--gp-gold-bg);color:var(--gp-gold)}
-.gp-kpi-barrow{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--gp-ink3);margin-top:16px;margin-bottom:6px;text-transform:none;letter-spacing:.2px}
+/* Declared once. There were two base rules for this selector and the later one
+   won every property they shared, so the first survived only through
+   text-transform — merged here so what you read is what applies. */
 
 /* ── Generic GST card ── */
 
@@ -1310,7 +1312,7 @@ body.view-gst #main{background:transparent}
 /* Sub */
 .gp-kpi-sub{font-size:11px;color:var(--gp-ink2);font-weight:400;margin-top:5px;line-height:1.4}
 /* Progress bar */
-.gp-kpi-barrow{display:flex;justify-content:space-between;font-size:10px;font-weight:500;color:var(--gp-ink2);margin-top:12px;margin-bottom:4px;letter-spacing:0}
+.gp-kpi-barrow{display:flex;justify-content:space-between;font-size:10px;font-weight:500;color:var(--gp-ink2);margin-top:12px;margin-bottom:4px;letter-spacing:0;text-transform:none}
 .gp-kpi-track{height:5px;border-radius:5px;background:var(--seg-track);overflow:hidden}
 .gp-kpi-fill{height:100%;border-radius:5px;transition:width 1s cubic-bezier(.4,0,.2,1)}
 .gp-orange .gp-kpi-fill{background:var(--gp-orange)}
@@ -1453,6 +1455,8 @@ body.view-gst #main{background:transparent}
   font-size:11px;font-weight:600;letter-spacing:0;color:var(--txt2);
   padding:14px 0 4px;margin:0 0 14px;
   border-bottom:none;background:none;border-radius:0;
+  /* carried over from the earlier duplicate rule, which was never overriding these */
+  display:flex;align-items:center;gap:var(--sp-4);
 }
 /* The page's only .section-title is the period toolbar. Outside GST the heading
    inside it (#view-title) is hidden — see the rule below — so that 14px top
@@ -2809,6 +2813,10 @@ body.view-gst #vert-tabs-bar{display:none}
   position:sticky;top:56px;
   height:calc(100vh - 56px);
   overflow-y:auto;
+  /* Stop the wheel carrying on into the page once the rail reaches its end. This
+     is the rail that is actually rendered — #vnav below is display:none, so the
+     same guard placed there did nothing for this. */
+  overscroll-behavior:contain;
   /* No border — blends with the page wash background */
   background:transparent;
   display:flex;flex-direction:column;
@@ -3127,10 +3135,10 @@ body.view-gst #vert-tabs-bar{display:none}
    MIND-MAP NAV + GUIDED JOURNEY  (redesign)
    ══════════════════════════════════════════════════ */
 /* Left navigation tree — one expandable node per business vertical. */
-/* overscroll-behavior:contain stops scroll CHAINING. The rail is a bounded
-   scroller (height:100vh-56px) beside a main column that grows the page instead,
-   so once the rail hit its end the wheel carried straight on into the page and the
-   two appeared to move together. Contain ends the gesture at the rail's edge. */
+/* NOTE: this rail is hidden — see the display:none!important rule further down,
+   where the mind map's own Verticals lane supersedes it. The live sidebar is
+   #side-nav. The overscroll-behavior here is kept only so the rule stays correct
+   if the rail is ever brought back; it has no effect while the rail is hidden. */
 #vnav{flex:0 0 262px;position:sticky;top:56px;align-self:flex-start;height:calc(100vh - 56px);overflow-y:auto;overscroll-behavior:contain;padding:22px 16px 40px;border-right:1px solid var(--border);scrollbar-width:thin}
 #vnav::-webkit-scrollbar{width:3px}
 #vnav::-webkit-scrollbar-thumb{background:var(--border2,rgba(0,0,0,.15));border-radius:4px}
@@ -9792,6 +9800,14 @@ function mmRenderModPanel() {
       + '<div class="mp-h-l">' + esc(h.label || '') + '</div></div>';
   }
 
+  /* Both the composition bar and the Type x Category matrix are the "bar" sub-tab's
+     anchor, and both used to hardcode id="sn-sec-bar". They never collided only
+     because the one panel carrying a matrix sets bar:null — a convention, not a
+     guarantee. Whichever renders first claims the id; if a panel ever supplies both,
+     the second is left without it instead of producing a duplicate id that
+     getElementById would silently resolve to the first. */
+  var _secBarUsed = false;
+
   // stacked composition bar — anchor: sn-sec-bar
   if (P.bar && P.bar.length) {
     var tot = P.bar.reduce(function(s, x){ return s + (+x.v || 0); }, 0) || 1;
@@ -9803,6 +9819,7 @@ function mmRenderModPanel() {
             + ' onkeydown="if(event.key===\'Enter\'){mmChainToGeo(\'' + x.seg + '\')}" title="View ' + esc(x.label) + ' on the map"' : '')
         + '><span class="mp-seg-in">' + esc(x.label) + ' · ' + fmt(x.v) + '</span></div>';
     }).join('');
+    _secBarUsed = true;
     html += '<div id="sn-sec-bar" class="mp-bar" aria-hidden="false">' + segs + '</div>'
       + '<div class="mp-legend">' + P.bar.map(function(x) {
           return '<span class="mp-leg"><i style="background:' + x.color + '"></i>' + esc(x.label) + '</span>';
@@ -9873,7 +9890,7 @@ function mmRenderModPanel() {
             + '><span class="mp-mx-n" data-count="' + v + '">0</span>' + (ch ? '<span class="mp-mx-go">↦</span>' : '') + '</div>';
         }).join('')
       + '<div class="mp-mx-cell tot grand"><span class="mp-mx-n" data-count="' + grand + '">0</span></div>';
-    html += '<div id="sn-sec-bar" class="mp-matrix" style="grid-template-columns:auto repeat(' + (nc + 1) + ',minmax(0,1fr))">' + mx + '</div>';
+    html += '<div' + (_secBarUsed ? '' : ' id="sn-sec-bar"') + ' class="mp-matrix" style="grid-template-columns:auto repeat(' + (nc + 1) + ',minmax(0,1fr))">' + mx + '</div>';
   }
 
   // extra section — anchor: sn-sec-ext
