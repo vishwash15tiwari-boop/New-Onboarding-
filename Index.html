@@ -5905,6 +5905,7 @@ var _mrMenuOpen = false;
 var MR_COLS = [
   { key:'name',        label:'Business',     always:true },
   { key:'id',          label:'ID' },
+  { key:'vertical',    label:'Business Vertical' },
   { key:'category',    label:'Category' },
   { key:'vendorType',  label:'Vendor Type' },
   { key:'audType',     label:'Type' },
@@ -15581,7 +15582,26 @@ function _mrColSet() {
   return (_mrCtx && _mrCtx.osv) ? MR_OSV_COLS : MR_COLS;
 }
 function _mrVisibleCols() {
-  return _mrColSet().filter(function(c) { return !_mrColVis[c.key]; });
+  /* Business Vertical only earns a column when the rows actually span more than one.
+     A single-vertical drill would print the same word down the whole page, and the
+     heading above the table already names the vertical. Decided from the rows rather
+     than asked of each opener, so a drill that becomes multi-vertical later picks the
+     column up on its own. */
+  var multiVert = null;
+  return _mrColSet().filter(function(c) {
+    if (_mrColVis[c.key]) return false;
+    if (c.key !== 'vertical') return true;
+    if (multiVert === null) {
+      var seen = {}, n = 0;
+      (_mrRows || []).forEach(function(r) {
+        var v = r && r.vertical;
+        if (!v || seen[v]) return;
+        seen[v] = 1; n++;
+      });
+      multiVert = n > 1;
+    }
+    return multiVert;
+  });
 }
 
 function _mrRenderHeader() {
@@ -16010,6 +16030,15 @@ function _mrCellHtml(r, key) {
       return r.txnValue > 0 ? '<span class="mr-txn-chip">⚡ ' + fmtINR(r.txnValue) + '</span>' : '<span class="td-dim">—</span>';
     case 'txnDate':
       return '<span class="td-dim td-num">' + esc(r.txnDate && r.txnDate !== '—' ? r.txnDate : '—') + '</span>';
+    case 'vertical': {
+      // r.vertical is the internal key ('InfraBusiness'); show what the rest of the
+      // dashboard calls it ('Infra Business'). Unknown keys print as-is rather than
+      // as a dash, so a new vertical is visible instead of silently blank.
+      var _vk = r.vertical;
+      if (!_vk) return '<span class="td-dim">—</span>';
+      var _vn = (getVertCfg().filter(function(c) { return c.key === _vk; })[0] || {}).name || _vk;
+      return '<span class="td-dim">' + esc(_vn) + '</span>';
+    }
     case 'audType': {
       var isB = r.audType === 'Buyer';
       return '<span class="km-vbadge" style="background:' + (isB ? 'rgba(15,122,79,.10);color:#0A4430' : 'rgba(132,96,212,.12);color:#5B3FA8') + ';font-weight:600">' + esc(r.audType || '—') + '</span>';

@@ -3163,6 +3163,10 @@ function vertRow(r) {
   var te = r.dispTAT != null ? r.dispEnd   : r.tatEndDate;
   return {
     id: r.id, name: r.name, category: r.category, vendorType: r.vendorType,
+    // Which vertical this case belongs to. A drill can now span verticals (the
+    // Monthly Onboarding bars cover the whole portfolio), so the row has to say
+    // where it came from rather than relying on a single-vertical context.
+    vertical: r.vertical,
     status: r.status, currentStatus: r.currentStatus || '',
     gstin: r.gstin, hasGST: r.hasGST, state: r.state,
     createdDate: fmtDate(r.createdDate), onbDate: fmtDate(completionDate_(r)),
