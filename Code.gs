@@ -3755,7 +3755,7 @@ function getQualityData() {
   // v20: document completeness is judged on the mandatory six (DOC_MANDATORY) rather
   // than on every column in the feed, and rows now carry mandMet/mandTotal/mandMissing.
   // v21: MSME Certificate is conditional on MSME registration, and rows carry msmeReg.
-  var CACHE_KEY = 'quality_data_v25';
+  var CACHE_KEY = 'quality_data_v26';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -4268,6 +4268,19 @@ function getQualityData() {
   try {
     appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds, ompNameMap);
   } catch (e) { Logger.log('getQualityData doc-completeness: ' + e.message); }
+
+  /* Drop records that identify nobody: no business name AND no GSTIN, just an
+     internal id. They surfaced in the Exception Taken list as a dash with "0 / 5
+     missing everything", which is unactionable — there is no vendor to chase — and
+     they dragged the Not Followed count up with them.
+
+     Filtered here, before the recount below, so the tiles and their drill agree:
+     a row nobody can act on is counted by neither. The id alone is not enough to
+     keep one; every reader already falls back through name and GSTIN, so a row
+     reaching this point with neither has nothing behind it. */
+  vendorDocs = vendorDocs.filter(function(d) {
+    return (d && ((d.name && String(d.name).trim()) || (d.gstin && String(d.gstin).trim())));
+  });
 
   /* Recount document completeness from the FULL vendorDocs set.
 
