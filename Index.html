@@ -5687,7 +5687,13 @@ function _repaintPeriodViews() {
   loadOverviewMonthly();
   if (currentView === 'txndist') renderTxnDist();
   if (currentView === 'transactions') { renderTransactionSkeleton(); loadTransactionData(); }
-  if (currentView === 'osv' && typeof window.osv3Repaint === 'function') window.osv3Repaint();
+  /* Asked of the DOM, not of currentView: mind-map navigation resets that flag to
+     'onboarding' while a special view is still on screen, which would leave this
+     module showing the period it was opened with. */
+  var _osvEl = document.getElementById('tab-osv');
+  if (_osvEl && _osvEl.getClientRects().length && typeof window.osv3Repaint === 'function') {
+    window.osv3Repaint();
+  }
   if (currentView === 'vendorratings' && typeof renderVendorRatingsDash === 'function') {
     try { renderVendorRatingsDash(); } catch (e) {}
   }
@@ -17009,7 +17015,9 @@ function loadOSVData(force) {
       if (seeded || hadData) return;
       _osvShowError((err && err.message) ? err.message : 'Server error.');
     })
-    .getOSVDashboardData();
+    // Same filters every other surface sends; without them this module reported
+    // all-time figures beside cards that were honouring the period control.
+    .getOSVDashboardData(JSON.stringify(getFilters()));
 }
 
 function _osvShowError(msg) {
@@ -22522,7 +22530,14 @@ document.addEventListener('DOMContentLoaded', function() {
   window.osv3SetPeriod=function(p){var M={all:'All',alltime:'All',today:'Today',month:'MTD',ytd:'YTD'};onPeriodSelect(M[p]||p);};
   // Called from onPeriodSelect so OSV repaints against the new window. The data
   // is already in memory and the filtering is client-side, so this costs no fetch.
-  window.osv3Repaint=function(){_osvPage=1;try{render();}catch(e){}};
+  /* Repaint on a period change has to REFETCH. This used to call render() against
+     the cached _OSV, so even once the backend became period-aware the screen kept
+     painting the previous period's payload. force=true skips the cache-first path. */
+  window.osv3Repaint=function(){
+    _osvPage=1;
+    try{ if(typeof loadOSVData==='function'){ loadOSVData(true); } else { render(); } }
+    catch(e){ try{ render(); }catch(e2){} }
+  };
   window.osv3Refresh=function(){_OSV=null;loadOSVData();};
   /* The row's View button. It used to call _osvDrill(r.id) directly, but that
      function's signature is (title, sub, sellers, opts) — so the seller id landed

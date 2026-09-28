@@ -5072,9 +5072,17 @@ function debugDocs() {
 // workbook (OSV status + post-OSV scores) to assemble the full
 // 7-stage OSV journey, status distribution and score analysis.
 // ═══════════════════════════════════════════════════════════════
-function getOSVDashboardData() {
+/* Takes the same filters every other surface takes. Without them this whole
+   module — the Verification Journey, Verification Status, the completion trend and
+   all four KPIs — ignored the global period control and reported all-time figures
+   beside cards that were respecting it. */
+function getOSVDashboardData(filtersJson) {
   try {
-  var CACHE_KEY = 'osv_dash_v8';  // bumped: eligibility now unions the OSV pipeline
+  var _f = {};
+  try { _f = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { _f = {}; }
+  // The period belongs in the key, or the first period answered for all of them.
+  var CACHE_KEY = 'osv_dash_v9_' + (_f.period || 'All')
+                + '_' + (_f.startDate || '') + '_' + (_f.endDate || '');
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -5103,6 +5111,9 @@ function getOSVDashboardData() {
       var stC  = fc_(['onboarding_status','status','onboard_status']);
       var gstC = fc_(['gstin','gst_number','gst_no','gstin_number','gstin_no','gst',
                       'vendor_gstin','seller_gstin','gst_identification_number']);
+      // The date the period filter is applied on. These rows are read straight from
+      // the sheet rather than through normalizeRows, so they carried no date at all.
+      var odC  = fc_(['onboarded_date','onboarding_date','completed_date','created_date']);
       var txC  = fc_(['transaction_activation_status','transacted','is_transacted',
                       'transaction_status','txn_status']);
       var gmvC = fc_(['transaction_value','txn_value','gmv','total_transaction_value',
@@ -5123,6 +5134,7 @@ function getOSVDashboardData() {
             name:           nmC  >= 0 ? String(row[nmC]  || '').trim().slice(0, 60) : '',
             gstin:          gstC >= 0 ? String(row[gstC] || '').trim().toUpperCase().slice(0, 20) : '',
             category:       catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
+            onbDate:        odC >= 0 ? parseDate(row[odC]) : null,
             hasTransaction: hasTxn
           });
         });
@@ -5323,6 +5335,28 @@ function getOSVDashboardData() {
   } catch (e) { Logger.log('getOSVDashboardData vendor-score: ' + e.message); }
 
   // ── 3. Journey stage counts ──────────────────────────────────
+  /* Apply the period to the onboarded base, then restrict the score-sheet rows to
+     the vendors that survived.
+
+     Both halves are needed. The journey stages are tallied over osvRecords, so
+     filtering only the base would leave Initiated and Completed counting vendors
+     from outside the period and the funnel would stop reconciling — the same class
+     of mismatch as a card whose drill lists different rows. Pipeline vendors with
+     no row in the base carry no date of their own, so under an explicit period they
+     are excluded rather than guessed at; with no period ('All') nothing is dropped
+     and the previous behaviour is unchanged.
+
+     A row whose sheet carries no onboarded date is dropped under an explicit period,
+     which is how applyDateFilter treats an undated record everywhere else. */
+  if (_f.period && _f.period !== 'All') {
+    onboardedSellers = onboardedSellers.filter(function(s) {
+      return applyDateFilter({ createdDate: s.onbDate }, _f);
+    });
+    var _inPeriod = {};
+    onboardedSellers.forEach(function(s) { _inPeriod[s.id] = true; });
+    osvRecords = osvRecords.filter(function(r) { return _inPeriod[r.id]; });
+  }
+
   var onbCount  = onboardedSellers.length;
   var txnCount  = onboardedSellers.filter(function(s) { return s.hasTransaction; }).length;
 
