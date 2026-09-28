@@ -3747,7 +3747,7 @@ function getQualityData() {
   // v20: document completeness is judged on the mandatory six (DOC_MANDATORY) rather
   // than on every column in the feed, and rows now carry mandMet/mandTotal/mandMissing.
   // v21: MSME Certificate is conditional on MSME registration, and rows carry msmeReg.
-  var CACHE_KEY = 'quality_data_v23';
+  var CACHE_KEY = 'quality_data_v24';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -4249,7 +4249,7 @@ function getQualityData() {
   // seller-centric); if it yields none, existing buyer rows are kept (no
   // regression).
   try {
-    var buyerDocs = buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap);
+    var buyerDocs = buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap, ompNameMap);
     if (buyerDocs.length) {
       vendorDocs = vendorDocs.filter(function(v) { return v.aud !== 'buyer'; }).concat(buyerDocs);
     }
@@ -4258,7 +4258,7 @@ function getQualityData() {
   // Supplement any remaining gaps from the dedicated "Doc Completeness" sheet
   // (card 5674). Entities already present (matched by GSTIN, else id) are kept.
   try {
-    appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds);
+    appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds, ompNameMap);
   } catch (e) { Logger.log('getQualityData doc-completeness: ' + e.message); }
 
   // Seller rating total/rated/dist are now set by the sheet-recount block inside the
@@ -4796,7 +4796,7 @@ function debugVendorScoreSheet() {
 // lacks. Skips entities already present (matched by GSTIN, else id). Handles the
 // per-document-flag layout (one 0/1 column per document); if that layout isn't
 // present, adds nothing (safe) and debugDocs() will reveal the real schema.
-function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds) {
+function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds, ompNameMap) {
   var d = qualityReadSheet_('Doc Completeness');
   if (!d.rows.length) return;
   var h = d.headers;
@@ -4837,7 +4837,14 @@ function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, selle
     }
     if (!aud) aud = bId ? 'buyer' : (sId ? 'seller' : '');
     if (!aud && vid) aud = buyerIds[vid] ? 'buyer' : (sellerIds[vid] ? 'seller' : '');
-    var ompD = ompMap[vid] || (gst ? ompGstinMap[gst] : null);
+    /* id → GSTIN → normalised name. Name is not optional: OMP sellers carry no
+       GSTIN in these feeds and use a different id space from the score sheet, so an
+       id+GSTIN join misses most of them and every field it supplies — category,
+       onboarding status, the audience below — comes back empty. */
+    var _nm2 = nmC >= 0 ? String(row[nmC] || '').trim() : '';
+    var ompD = ompMap[vid]
+            || (gst ? ompGstinMap[gst] : null)
+            || (_nm2 && ompNameMap ? ompNameMap[_qNormName_(_nm2)] : null);
     if (!aud && ompD) aud = ompD.aud;
     if (!aud) aud = 'combined';
 
@@ -4893,7 +4900,7 @@ function appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, selle
 // the three buyer-mandatory docs) and marks a document submitted when its cell
 // holds a flag / URL / date. Returns [] when no document columns are present so
 // the caller can safely keep whatever it already had.
-function buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap) {
+function buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap, ompNameMap) {
   var out   = [];
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('_mb_buyers');
   if (!sheet || sheet.getLastRow() < 2) return out;
@@ -4934,7 +4941,11 @@ function buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap) {
     var _msmeReg3 = _msmeC3 >= 0 ? msmeRegistered_(row[_msmeC3]) : null;
     var _mand3 = docMandatoryStatus_(row, docIdx, isDocSubmitted_, _msmeReg3);
 
-    var ompD = ompMap[id] || (gst ? ompGstinMap[gst] : null);
+    // Same three-step ladder as the other document readers.
+    var _nm3 = nmC >= 0 ? String(row[nmC] || '').trim() : '';
+    var ompD = ompMap[id]
+            || (gst ? ompGstinMap[gst] : null)
+            || (_nm3 && ompNameMap ? ompNameMap[_qNormName_(_nm3)] : null);
     out.push({
       id:               id.slice(0, 30),
       name:             (nmC >= 0 ? String(row[nmC] || '').trim().slice(0, 60) : '') || (ompD && ompD.name) || '',
