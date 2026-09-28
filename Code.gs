@@ -3747,7 +3747,7 @@ function getQualityData() {
   // v20: document completeness is judged on the mandatory six (DOC_MANDATORY) rather
   // than on every column in the feed, and rows now carry mandMet/mandTotal/mandMissing.
   // v21: MSME Certificate is conditional on MSME registration, and rows carry msmeReg.
-  var CACHE_KEY = 'quality_data_v24';
+  var CACHE_KEY = 'quality_data_v25';
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -4260,6 +4260,33 @@ function getQualityData() {
   try {
     appendDocsFromCompletenessSheet_(vendorDocs, ompMap, ompGstinMap, sellerIds, buyerIds, ompNameMap);
   } catch (e) { Logger.log('getQualityData doc-completeness: ' + e.message); }
+
+  /* Recount document completeness from the FULL vendorDocs set.
+
+     acc[].d used to be incremented inside the first reader only, while three
+     readers contribute rows — the Vendor Rating sheet, the buyer sheet and the Doc
+     Completeness sheet. So the Compliant Onboarding strip counted one reader's rows
+     and its drill listed all three: a tile could read "Not Followed 0" and open a
+     list of 7. Counting here, after every reader has run, means the tile and the
+     list are the same set by construction rather than by coincidence.
+
+     Buckets come from mandMet / mandTotal, which each reader already stamped on its
+     own rows using the shared docMandatoryStatus_ — so the mandatory rule, including
+     the either/or pairs and the MSME condition, is applied once and read here. */
+  ['seller', 'buyer', 'combined'].forEach(function(t) { acc[t].d = mkD(); });
+  vendorDocs.forEach(function(d) {
+    var mt = (d.mandTotal != null) ? d.mandTotal : 0;
+    var mm = (d.mandMet   != null) ? d.mandMet   : 0;
+    var tgt = (d.aud === 'buyer') ? ['buyer', 'combined']
+            : (d.aud === 'seller') ? ['seller', 'combined']
+            : ['combined'];
+    tgt.forEach(function(t) {
+      acc[t].d.total += 1;
+      if      (mt > 0 && mm >= mt) acc[t].d.complete   += 1;
+      else if (mm > 0)             acc[t].d.partial    += 1;
+      else                         acc[t].d.incomplete += 1;
+    });
+  });
 
   // Seller rating total/rated/dist are now set by the sheet-recount block inside the
   // vendor score try-catch above (which reads all named rows directly, avoiding join

@@ -15416,7 +15416,14 @@ function openComplianceRecords(kind) {
   var rows = [];
   docs.forEach(function(d) {
     if (d.aud === 'buyer') return;
-    var c = docCompleteness(d);
+    /* Bucket on the counts the BACKEND stamped (mandMet / mandTotal), which is what
+       the strip above now counts too. Re-judging here with docCompleteness was a
+       second implementation of the same rule, and the two could disagree. Older
+       payloads carry no mandTotal, so those fall back to the local computation. */
+    var c = (d.mandTotal != null)
+      ? { total: d.mandTotal, submitted: d.mandMet || 0,
+          pending: (d.mandMissing || []).map(function(l) { return { label: l }; }) }
+      : docCompleteness(d);
     if (!c.total) return;                    // nothing judgeable on this record
     var bucket = (c.submitted >= c.total) ? 'complete'
                : (c.submitted > 0)        ? 'partial'
