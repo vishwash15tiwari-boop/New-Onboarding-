@@ -727,6 +727,10 @@ tbody td strong{font-weight:600;letter-spacing:-.1px}
 .chip-rejected{background:var(--st-rejected-bg);color:var(--st-rejected-tx)}
 .gst-ok{color:var(--st-onboarded-tx);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
 .gst-bad{color:var(--st-rejected-tx);font-size:11.5px;font-weight:600}
+/* GSTIN on file, but the feed's status column says it is not currently active
+   (cancelled, suspended, inactive). Shown, not hidden — "Missing" is reserved for
+   having no number at all. */
+.gst-inact{color:var(--st-draft-tx,#B25000);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
 /* ===== Detail KPI Mini-Cards ===== */
 .vd-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:var(--sp-3);margin-bottom:22px}
 .vd-kpi{
@@ -13383,7 +13387,9 @@ function renderVdTable() {
           + '<td>' + esc(r.category || '—') + '</td>'
           + '<td class="td-dim">' + esc(r.vendorType || '—') + '</td>'
           + '<td>' + statusChip(r.status) + '</td>'
-          + '<td>' + (r.hasGST ? '<span class="gst-ok">' + esc(r.gstin) + '</span>' : '<span class="gst-bad">Missing</span>') + '</td>'
+          + '<td>' + (r.gstin
+              ? '<span class="' + (r.hasGST ? 'gst-ok' : 'gst-inact') + '">' + esc(r.gstin) + '</span>'
+              : '<span class="gst-bad">Missing</span>') + '</td>'
           + '<td class="td-dim">' + esc(r.state || '—') + '</td>'
           + '<td class="td-dim td-num">' + esc(r.createdDate) + '</td>'
           + '<td class="td-dim td-num">' + esc(r.onbDate) + '</td>'
@@ -16035,7 +16041,18 @@ function _mrCellHtml(r, key) {
     case 'vendorType':  return '<span class="td-dim">' + esc(r.vendorType || '—') + '</span>';
     case 'status':      return statusChip(r.status);
     case 'state':       return '<span class="td-dim">' + esc(r.state || '—') + '</span>';
-    case 'gstin':       return r.hasGST ? '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>' : '<span class="gst-bad" style="font-size:10.5px">Missing</span>';
+    /* "Missing" means we hold no GSTIN. It used to mean hasGST was false — and
+       hasGST is derived from the feed's STATUS column whenever that column exists,
+       so a vendor with a perfectly good GSTIN whose status read "Cancelled
+       suo-moto" or "Suspended" was reported as having none. Two different facts.
+       The number shows whenever we have it; an inactive status changes its colour
+       and its tooltip, not its existence. */
+    case 'gstin': {
+      if (!r.gstin) return '<span class="gst-bad" style="font-size:10.5px">Missing</span>';
+      if (r.hasGST) return '<span class="gst-ok" style="font-size:10.5px">' + esc(r.gstin) + '</span>';
+      return '<span class="gst-inact" style="font-size:10.5px" title="On file, but the feed reports this GSTIN as not currently active">'
+        + esc(r.gstin) + '</span>';
+    }
     // Churned and deactivated read as warnings; still-live states stay quiet, so the
     // eye lands on the vendors that have gone away.
     case 'currentStatus': {
@@ -16353,7 +16370,7 @@ function mrExportCSV() {
         case 'vendorType':  v = r.vendorType || ''; break;
         case 'status':      v = STATUS_LABELS[r.status] || r.status || ''; break;
         case 'state':       v = r.state || ''; break;
-        case 'gstin':       v = r.hasGST ? (r.gstin || '') : 'Missing'; break;
+        case 'gstin':       v = r.gstin || 'Missing'; break;
         case 'createdDate': v = r.createdDate || ''; break;
         case 'onbDate':     v = r.onbDate || ''; break;
         case 'tat':         v = r.tat != null ? String(r.tat) : ''; break;
