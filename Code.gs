@@ -631,8 +631,13 @@ function getVerticalRows(vertKey, filtersJson) {
       });
     }
 
+    // vertKey 'All' (or empty) returns every vertical. The Monthly Onboarding chart
+    // on the Global Overview spans the whole portfolio, so a month drill there needs
+    // one call rather than one per vertical. The cache key already carries vertKey,
+    // so 'All' gets its own entry and cannot be served a single vertical's rows.
+    var _allVerts = !vertKey || vertKey === 'All';
     var vrows = all.filter(function(r) {
-      return r.vertical === vertKey && applyDateFilter(r, f);
+      return (_allVerts || r.vertical === vertKey) && applyDateFilter(r, f);
     }).sort(function(a, b) {
       return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
     });

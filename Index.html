@@ -15282,6 +15282,95 @@ function openTxnCohortRecords(ck, kind, mk, cut) {
   _mrRender();
 }
 
+/* The vendors behind one Monthly Onboarding bar.
+
+   Matched on exactly what the bar counts - status COMPLETED, bucketed by the
+   onboarded date falling back to created (getOverviewStats.onbMonthDate) - so the
+   table length equals the number printed above the bar.
+
+   Scope follows the chart: the vertical Overview charts one vertical, the Global
+   Overview spans the portfolio, and 'All' makes getVerticalRows return every
+   vertical in a single call rather than one per vertical. Visibility of the
+   vertical screen is read from the DOM rather than from currentView, which other
+   modules reset while that screen is still on show. */
+var _monthRecStore = {};      // pKey -> { seller:[], buyer:[] }
+
+function openMonthRecords(monthKey) {
+  if (!monthKey) return;
+  var vEl   = document.getElementById('tab-vertoverview');
+  var onVert = !!(vEl && vEl.getClientRects().length && _vovKey);
+  var scope  = onVert ? _vovKey : 'All';
+  var pKey   = JSON.stringify([scope, currentPeriod, customStart || '', customEnd || '']);
+
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var mp  = String(monthKey).split('-');
+  var mLbl = (MON[(+mp[1]) - 1] || monthKey) + ' \u2019' + String(mp[0]).slice(2);
+  var sLbl = onVert
+    ? ((getVertCfg().filter(function(c){ return c.key === scope; })[0] || {}).name || scope)
+    : 'All verticals';
+  var label = 'Onboarded in ' + mLbl + ' \u00b7 ' + sLbl;
+
+  _mrCtx = {
+    module: 'month', vertName: sLbl, label: label, vertLabel: sLbl,
+    preStatus: 'COMPLETED', forceSeller: false, loading: true,
+    cfg: { label: label }
+  };
+  _mrRows = [];
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  _mrColVis = {};
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+
+  function paint(store) {
+    var out = [];
+    ['seller', 'buyer'].forEach(function(aud) {
+      (store[aud] || []).forEach(function(r) {
+        if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
+        var d = _mmParseDate(r.onbDate) || _mmParseDate(r.createdDate);
+        if (!d) return;
+        if (d.getFullYear() + '-' + (d.getMonth() + 1) !== String(monthKey)) return;
+        var c = {};
+        for (var k in r) if (r.hasOwnProperty(k)) c[k] = r[k];
+        c.audType = (aud === 'buyer') ? 'Buyer' : 'Seller';
+        out.push(c);
+      });
+    });
+    if (!_mrCtx || _mrCtx.module !== 'month') return;   // user moved on while fetching
+    _mrCtx.loading = false;
+    _mrRows = out;
+    _mrRender();
+  }
+
+  if (_monthRecStore[pKey]) { paint(_monthRecStore[pKey]); return; }
+  if (typeof google === 'undefined' || !google.script || !google.script.run) {
+    _mrCtx.loading = false; _mrRender(); return;
+  }
+  var store = { seller: null, buyer: null };
+  var done = function() {
+    if (store.seller === null || store.buyer === null) return;   // still waiting
+    _monthRecStore[pKey] = store;
+    paint(store);
+  };
+  ['seller', 'buyer'].forEach(function(aud) {
+    var fl = { audience: aud, period: currentPeriod };
+    if (currentPeriod === 'Custom') { fl.startDate = customStart; fl.endDate = customEnd; }
+    google.script.run
+      .withSuccessHandler(function(raw) {
+        var d = null;
+        try { d = JSON.parse(raw); } catch (e) {}
+        store[aud] = (d && d.success && d.rows) ? d.rows : [];
+        done();
+      })
+      .withFailureHandler(function() { store[aud] = []; done(); })
+      .getVerticalRows(scope, JSON.stringify(fl));
+  });
+}
+
 function openAgingRecords(bucket) {
   if (!AGING_LABELS[bucket]) return;
   var key  = activeVertKey || selectedVert;
@@ -15962,7 +16051,9 @@ function _mrRenderTable() {
   if (tbody) {
     _rmD = {}; _rmI = 0;
     if (!page.length) {
-      var waiting = _mrCtx && _mrCtx.tat && _tatRows.loading[_mrCtx.tatAud];
+      // _mrCtx.loading is the general flag; the TAT drill keeps its own signal.
+      var waiting = _mrCtx && (_mrCtx.loading
+                    || (_mrCtx.tat && _tatRows.loading[_mrCtx.tatAud]));
       tbody.innerHTML = '<tr><td colspan="' + cols.length + '" class="mr-empty">'
         + (waiting ? 'Loading records…' : 'No records match the selected filters') + '</td></tr>';
     } else {
@@ -18816,7 +18907,7 @@ function renderOvBarChart(monthly, opts) {
         return h > 0 ? '<div style="height:' + h + 'px;background:' + c + ';transition:height .4s var(--ease-out)"></div>' : '';
       }).join('');
       var vertData = 'data-verts=\'' + JSON.stringify(verts).replace(/'/g,'&#39;') + '\'';
-      return '<div class="ov-bar-col" data-m="' + lbl.replace(/'/g,'&#39;') + '" data-t="' + tot + '" ' + vertData
+      return '<div class="ov-bar-col" data-m="' + lbl.replace(/'/g,'&#39;') + '" data-t="' + tot + '" role="button" tabindex="0" style="cursor:pointer" title="View the vendors onboarded this month" onclick="openMonthRecords(\'' + d.month + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openMonthRecords(\'' + d.month + '\')}" ' + vertData
         + ' onmouseenter="ovTipV(event)" onmouseleave="ovTipH()" onmousemove="ovTipM(event)">'
         + '<div class="ov-bar-tot">' + tot + '</div>'
         + '<div class="ov-bar-grp" style="border-radius:4px 4px 0 0;overflow:hidden">' + segs + '</div>'
@@ -18841,7 +18932,7 @@ function renderOvBarChart(monthly, opts) {
       var sH  = Math.round((d.sellers || 0) / yMax * CHART_H);
       var bH  = Math.round((d.buyers  || 0) / yMax * CHART_H);
       var lbl = _mkLabel(d.month);
-      return '<div class="ov-bar-col" data-m="' + lbl.replace(/'/g,'&#39;') + '" data-s="' + (d.sellers||0) + '" data-b="' + (d.buyers||0) + '" data-t="' + tot + '" onmouseenter="ovTip(event)" onmouseleave="ovTipH()" onmousemove="ovTipM(event)">'
+      return '<div class="ov-bar-col" data-m="' + lbl.replace(/'/g,'&#39;') + '" data-s="' + (d.sellers||0) + '" data-b="' + (d.buyers||0) + '" data-t="' + tot + '" role="button" tabindex="0" style="cursor:pointer" title="View the vendors onboarded this month" onclick="openMonthRecords(\'' + d.month + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openMonthRecords(\'' + d.month + '\')}" onmouseenter="ovTip(event)" onmouseleave="ovTipH()" onmousemove="ovTipM(event)">'
         + '<div class="ov-bar-tot">' + tot + '</div>'
         + '<div class="ov-bar-grp" style="border-radius:4px 4px 0 0;overflow:hidden">'
         + (bH > 0 ? '<div class="ov-bar-b" style="height:' + bH + 'px"></div>' : '')
