@@ -5576,7 +5576,7 @@ function getOverviewStats(filtersJson) {
   try { f = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { f = {}; }
   // The cache key carries the period, or every period would serve the first one's
   // answer for the next five minutes.
-  var CACHE_KEY = 'overview_v7_' + (f.period || 'All')
+  var CACHE_KEY = 'overview_v8_' + (f.period || 'All')
                 + '_' + (f.startDate || '') + '_' + (f.endDate || '');
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
@@ -5598,7 +5598,10 @@ function getOverviewStats(filtersJson) {
     }
     var buckets = {};
     months.forEach(function(m) {
-      buckets[m.key] = { sellers: 0, buyers: 0, verts: {}, vertsS: {}, vertsB: {} };
+      // catsS / catsB are nested vertical → category → count, so a vertical's chart
+      // can be filtered by category without a second round trip.
+      buckets[m.key] = { sellers: 0, buyers: 0, verts: {}, vertsS: {}, vertsB: {},
+                         catsS: {}, catsB: {} };
     });
 
     // The month a case was onboarded in — completionDate_ is the single
@@ -5611,7 +5614,7 @@ function getOverviewStats(filtersJson) {
     // Count only COMPLETED (onboarded) cases, bucketed by the date they were onboarded.
     // vertsS/vertsB carry the same counts split by audience so a single vertical can be
     // charted with the seller/buyer breakdown the portfolio chart shows.
-    function tally(rows, audKey, vertMap) {
+    function tally(rows, audKey, vertMap, catMap) {
       rows.forEach(function(r) {
         if (r.status !== 'COMPLETED') return;
         var dt = onbMonthDate(r);
@@ -5622,15 +5625,23 @@ function getOverviewStats(filtersJson) {
         var v = r.vertical || 'Others';
         buckets[k].verts[v]   = (buckets[k].verts[v]   || 0) + 1;
         buckets[k][vertMap][v] = (buckets[k][vertMap][v] || 0) + 1;
+        // Same row, also counted under its category. 'Others' matches the fallback
+        // normCategory already applies, so the chart's category list and the
+        // vertical's own category tables name the same buckets.
+        var c  = r.category || 'Others';
+        var cm = buckets[k][catMap];
+        if (!cm[v]) cm[v] = {};
+        cm[v][c] = (cm[v][c] || 0) + 1;
       });
     }
-    tally(sRows, 'sellers', 'vertsS');
-    tally(bRows, 'buyers',  'vertsB');
+    tally(sRows, 'sellers', 'vertsS', 'catsS');
+    tally(bRows, 'buyers',  'vertsB', 'catsB');
 
     var monthly = months.map(function(m) {
       var b = buckets[m.key];
       return { month: m.key, sellers: b.sellers, buyers: b.buyers,
-               verts: b.verts, vertsS: b.vertsS, vertsB: b.vertsB };
+               verts: b.verts, vertsS: b.vertsS, vertsB: b.vertsB,
+               catsS: b.catsS, catsB: b.catsB };
     });
 
     var out = JSON.stringify({ success: true, monthly: monthly });

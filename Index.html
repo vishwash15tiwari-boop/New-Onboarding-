@@ -5893,6 +5893,7 @@ var vdView = 'board';      // records view in the detail panel: 'board' | 'table
 var _vovKey     = null;    // which vertical is shown in the Vertical Overview
 var _vovAud     = 'all';   // 'all' | 'seller' | 'buyer'
 var _vovNMonths = 6;       // number of months for the monthly bar chart
+var _vovCat     = '';      // '' = all categories, else one business_category
 
 // ── Module Records overlay state ──────────────────────────────────────────
 var _mrCtx      = null;   // { module, label, vertLabel, preStatus, forceSeller, cfg }
@@ -23433,6 +23434,7 @@ try{ if(typeof renderTxnDistSkeleton==='function'){ renderTxnDistSkeleton=functi
 function switchVertOverview(key) {
   _vovKey      = key || activeVertKey || snActiveKey;
   _vovAud      = 'all';
+  _vovCat      = '';        // a category from the previous vertical means nothing here
   if (!_vovKey) return;
   currentView  = 'vertoverview';
   snActiveKey  = _vovKey;
@@ -23511,6 +23513,14 @@ function _vovShell(vertName, vertKey) {
   var nM  = _vovNMonths || 6;
   var audOpts = [['all','Sellers / Buyers'],['seller','Sellers only'],['buyer','Buyers only']]
     .map(function(o){ return '<option value="' + o[0] + '"' + (aud === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
+  /* Only offered when the vertical has more than one category — a single-category
+     vertical would show a dropdown with one entry and nothing to choose. */
+  var _vcats = (typeof _vovCats === 'function' && vertKey) ? _vovCats(vertKey) : [];
+  var catOpts = _vcats.length > 1
+    ? '<option value="">All Categories</option>' + _vcats.map(function(c) {
+        return '<option value="' + _vovEsc(c) + '"' + (_vovCat === c ? ' selected' : '') + '>' + _vovEsc(c) + '</option>';
+      }).join('')
+    : '';
   var monOpts = [6,9,12]
     .map(function(n){ return '<option value="' + n + '"' + (nM === n ? ' selected' : '') + '>Last ' + n + ' Months</option>'; }).join('');
 
@@ -23537,6 +23547,7 @@ function _vovShell(vertName, vertKey) {
     +       '</div>'
     +       '<div style="display:flex;gap:var(--sp-2);align-items:center">'
     +         '<select class="ov-chart-sel" id="vov-chart-mode" onchange="vovSetAud(this.value)">' + audOpts + '</select>'
+    +         (catOpts ? '<select class="ov-chart-sel" id="vov-cat-sel" onchange="vovSetCat(this.value)">' + catOpts + '</select>' : '')
     +         '<select class="ov-chart-sel" id="vov-months-sel" onchange="vovSetMonths(this.value)">' + monOpts + '</select>'
     +       '</div>'
     +     '</div>'
@@ -23575,11 +23586,38 @@ function _vovShell(vertName, vertKey) {
 // which for buyers is a last-touched timestamp that piles earlier onboardings into
 // the current month. Sharing the producer's series keeps a vertical's bars equal to
 // its slice of the Global Overview's bars.
+/* Categories this vertical actually onboarded into, across the loaded months.
+   Built from the data rather than from a fixed list, so a vertical only ever offers
+   the categories it has and a new one appears without a code change. */
+function _vovCats(key) {
+  var seen = {}, out = [];
+  (window._ovMonthlyData || []).forEach(function(d) {
+    ['catsS', 'catsB'].forEach(function(m) {
+      var byCat = (d[m] || {})[key] || {};
+      Object.keys(byCat).forEach(function(c) {
+        if (!c || seen[c] || !byCat[c]) return;
+        seen[c] = 1; out.push(c);
+      });
+    });
+  });
+  return out.sort();
+}
+
 function _vovMonthlySeries(key) {
   var aud = _vovAud || 'all';
+  var cat = _vovCat || '';
   return (window._ovMonthlyData || []).map(function(d) {
-    var s = (d.vertsS || {})[key] || 0;
-    var b = (d.vertsB || {})[key] || 0;
+    // With a category chosen, read the per-category counts instead of the
+    // vertical totals. A payload from before catsS/catsB existed has neither, so
+    // the chart falls back to the vertical total rather than flatlining at zero.
+    var s, b;
+    if (cat && (d.catsS || d.catsB)) {
+      s = (((d.catsS || {})[key]) || {})[cat] || 0;
+      b = (((d.catsB || {})[key]) || {})[cat] || 0;
+    } else {
+      s = (d.vertsS || {})[key] || 0;
+      b = (d.vertsB || {})[key] || 0;
+    }
     return {
       month:   d.month,
       sellers: aud === 'buyer'  ? 0 : s,
@@ -23700,6 +23738,10 @@ function _vovRepaint() {
 }
 window.vovSetAud = function(a) {
   _vovAud = a;
+  _vovRepaint();
+};
+window.vovSetCat = function(c) {
+  _vovCat = c || '';
   _vovRepaint();
 };
 window.vovSetMonths = function(n) {
