@@ -2921,7 +2921,17 @@ function vStats(data, vertKey) {
     }
 
     if (r.hasTxn)        hasTxnData = true;
-    if (r.hasTransacted) { transactedCount++; txnCountSum += (r.txnCount || 1); }
+    /* Transacted is counted over the ONBOARDED cohort, like every figure it is shown
+       against. It used to count any row with hasTransacted whatever its status, so the
+       activation funnel mixed two bases: Onboarded and Listed were COMPLETED-only
+       while Transacted was not, and pctTransacted divided a non-subset by `completed`.
+       The transaction rail has carried a Math.max(0, onboarded - transacted) guard for
+       the same reason - that subtraction could go negative.
+
+       A vendor that transacted before its onboarding completed is a data anomaly, not
+       a member of the cohort these panels describe. On the current feed the two counts
+       agree, so this changes no number today; it stops them diverging silently. */
+    if (isDone && r.hasTransacted) { transactedCount++; txnCountSum += (r.txnCount || 1); }
     if (r.txnValue !== null && r.txnValue !== undefined && r.txnValue > 0) {
       hasTxnValData = true; txnValSum += r.txnValue;
     }
