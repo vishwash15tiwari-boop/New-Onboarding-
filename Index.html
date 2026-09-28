@@ -17025,8 +17025,38 @@ function _osvBadgeCls(s) {
 }
 
 // Open drill-down overlay for a given seller subset
-function _osvDrill(title, sub, sellers, opts) {
+/* The overlay is markup emitted by the ORIGINAL OSV screen. renderOSVDash is
+   reassigned further down by the osv3 module, which wins, and osv3 never emits it —
+   so on the OSV page people actually see, this function found no overlay and
+   returned silently. Every drill wired to it did nothing: the row View button and
+   all nine Verification Journey and KPI cards.
+
+   Creating it on demand fixes every caller at once and keeps working whichever
+   module rendered the page. Built once and reused; the markup mirrors what the
+   original screen emits, because the code below queries these exact classes. */
+function _osvEnsureDrillOvl() {
   var ovl = document.getElementById('osv-drill-ovl');
+  if (ovl) return ovl;
+  ovl = document.createElement('div');
+  ovl.className = 'osv-drill-ovl';
+  ovl.id = 'osv-drill-ovl';
+  ovl.addEventListener('click', function(e) {
+    if (e.target === ovl && typeof _osvCloseDrill === 'function') _osvCloseDrill();
+  });
+  ovl.innerHTML =
+      '<div class="osv-drill-sheet">'
+    +   '<div class="osv-drill-hd">'
+    +     '<div><div class="osv-drill-title"></div><div class="osv-drill-sub"></div></div>'
+    +     '<button class="osv-drill-x" onclick="_osvCloseDrill()">&#10005;</button>'
+    +   '</div>'
+    +   '<div class="osv-drill-body"></div>'
+    + '</div>';
+  document.body.appendChild(ovl);
+  return ovl;
+}
+
+function _osvDrill(title, sub, sellers, opts) {
+  var ovl = _osvEnsureDrillOvl();
   if (!ovl) return;
   opts = opts || {};
   ovl.querySelector('.osv-drill-title').textContent = title;
