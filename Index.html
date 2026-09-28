@@ -22042,6 +22042,9 @@ document.addEventListener('DOMContentLoaded', function() {
    dashboard uses for a clickable card, plus a focus ring so keyboard users can see
    where they are. */
 .lc .osv3-ch{cursor:pointer;user-select:none}
+.lc .osv3-rowch{cursor:pointer}
+.lc .osv3-rowch:hover{background:var(--lc-subtle)}
+.lc .osv3-rowch:focus-visible{outline:2px solid var(--lc-accent);outline-offset:-2px}
 .lc .osv3-ch:hover{border-color:var(--lc-text3);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px)}
 .lc .osv3-ch:focus-visible{outline:2px solid var(--lc-accent);outline-offset:2px}
 .lc .osv3-jstage:first-child{border-radius:10px 0 0 10px}
@@ -22347,7 +22350,6 @@ document.addEventListener('DOMContentLoaded', function() {
       +'<th onclick="osv3Sort(\'category\')">Category'+sa('category')+'</th>'
       +'<th onclick="osv3Sort(\'score\')">Score'+sa('score')+'</th>'
       +'<th>Status</th>'
-      +'<th>Actions</th>'
       +'</tr></thead><tbody>';
     sl.forEach(function(r,i){
       var idx=(pg-1)*_osvPS+i+1;
@@ -22357,12 +22359,20 @@ document.addEventListener('DOMContentLoaded', function() {
       var chipLbl=st==='verified'?'Completed':st==='in_progress'||st==='consent_obtained'?'In Progress':'Not Initiated';
       var chipCls=st==='verified'?'verified':st==='in_progress'||st==='consent_obtained'?'in_progress':'not_initiated';
       var dot='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cc(cat)+';margin-right:6px;vertical-align:middle"></span>';
-      h+='<tr><td style="color:var(--lc-text3);font-weight:500;font-size:11.5px">'+idx+'</td>'
+      /* The whole row opens the vendor, rather than a column of identical View
+         buttons. The Actions column existed only to hold that one trigger, in a
+         table already wide enough to want the room; the row is a far bigger hit
+         target and matches how the document table already behaves. Kept keyboard
+         reachable, which the button gave for free and a bare <tr> does not. */
+      var _ra="window.osv3Row('"+esc(String(r.id||'').replace(/'/g,"\'"))+"')";
+      h+='<tr class="osv3-rowch" role="button" tabindex="0" title="See the checks behind this score"'
+        +' onclick="'+_ra+'"'
+        +' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+_ra+'}">'
+        +'<td style="color:var(--lc-text3);font-weight:500;font-size:11.5px">'+idx+'</td>'
         +'<td><span style="font-weight:600">'+esc(nm)+'</span></td>'
         +'<td>'+dot+esc(cat)+'</td>'
         +'<td style="font-weight:700;font-variant-numeric:tabular-nums">'+(score!=='—'?'<span style="color:var(--lc-ok)">'+score+'</span>':score)+'</td>'
         +'<td><span class="osv3-chip '+chipCls+'">'+chipLbl+'</span></td>'
-        +'<td><button class="osv3-pager-btn" onclick="window.osv3Row(\''+esc(String(r.id||'').replace(/'/g,"\\'"))+'\')" style="font-size:11px;padding:4px 10px">View</button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';
