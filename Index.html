@@ -7479,8 +7479,12 @@ function _mmVertModules(key) {
     var sOnb = vs.completed || 0, bOnb = vb.completed || 0;
     var combinedTxn    = (sTxn || 0) + (bTxn || 0);
     var combinedNonTxn = Math.max(0, (sOnb + bOnb) - combinedTxn);
-    var sMtxn = vs.metalTransacted || 0, sPtxn = vs.plasticTransacted || 0;
-    var bMtxn = vb.metalTransacted || 0, bPtxn = vb.plasticTransacted || 0;
+    /* vs.metalTransacted / plasticTransacted were read here as a fallback breakdown,
+       but vStats has never emitted them — they resolved to 0 on every render, so the
+       fallback produced an empty breakdown rather than the one it promised. The real
+       per-category transacted counts are in vs.categories, which catTxn already reads
+       and which is populated whenever the vertical has rows. The fallback is gone
+       rather than propped up with a backend field nothing else would use. */
     // Trigger background load of buyer rows so ageing includes both audiences.
     if (key === activeVertKey) _ovnEnsureAud('buyer');
     var ag = _mmAging(key);   // seller + buyer ageing (buyer rows included when loaded)
@@ -7489,16 +7493,16 @@ function _mmVertModules(key) {
       if (key === activeVertKey) {
         window._mmTxnAud = {
           key: key,
-          seller: { total: sTxn || 0, metal: sMtxn, plastic: sPtxn, cats: catTxn },
-          buyer:  { total: bTxn || 0, metal: bMtxn, plastic: bPtxn, cats: catTxn }
+          seller: { total: sTxn || 0, cats: catTxn },
+          buyer:  { total: bTxn || 0, cats: catTxn }
         };
       }
       var sBd = (catTxn && catTxn.length)
         ? catTxn.filter(function(x){return (x.s||0)>0;}).map(function(x){return {l:CAT_SHORT[x.cat.toLowerCase()]||x.cat,v:x.s};})
-        : [{l:'Plastic',v:sPtxn},{l:'Metal',v:sMtxn}].filter(function(x){return x.v>0;});
+        : [];
       var bBd = (catTxn && catTxn.length)
         ? catTxn.filter(function(x){return (x.b||0)>0;}).map(function(x){return {l:CAT_SHORT[x.cat.toLowerCase()]||x.cat,v:x.b};})
-        : [{l:'Plastic',v:bPtxn},{l:'Metal',v:bMtxn}].filter(function(x){return x.v>0;});
+        : [];
       tTiles.push(
         { label:'Sellers', v:sTxn || 0, click:"openTxnAudModal('seller')", tip:'View seller transaction breakdown', breakdown:sBd },
         { label:'Buyers',  v:bTxn || 0, click:"openTxnAudModal('buyer')",  tip:'View buyer transaction breakdown', breakdown:bBd }
@@ -15033,8 +15037,9 @@ function openTxnAudModal(aud) {
       if (n > 0) catItems.push({ l: x.cat, v: fmt(n), c: color });
     });
   } else {
-    if (ad.metal)   catItems.push({ l:'Metal',   v:fmt(ad.metal),   c:color });
-    if (ad.plastic) catItems.push({ l:'Plastic', v:fmt(ad.plastic), c:color });
+    // No hardcoded Metal/Plastic fallback: it read _mmTxnAud.metal/.plastic, which
+    // came from vStats fields that were never emitted, so it only ever added zeros.
+    // With no categories the section is omitted, which is the honest outcome.
   }
   var catSection = catItems.length ? sec('Category Breakdown', srow(catItems)) : '';
 
@@ -21803,7 +21808,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // module rather than only the records table.
     var rows=scopeRows();
     var sr=(_VR.seller&&_VR.seller.rating)||{};
-    var prevAvg=sr.prevAvg||0;
+    /* sr.prevAvg has never been emitted: getQualityData is not period-aware, so
+       there is no previous period for it to compare against. The badge below
+       therefore printed "No prior data" on every render — a caveat that is always
+       true says nothing and reads as a fault. Both the badge and the change arrow
+       are dropped until a period-aware rating payload exists to feed them. */
+    var prevAvg=0;
     var ratedRows=rows.filter(function(v){return v.rating>0&&v.rating!=null;});
     var avg=ratedRows.length?ratedRows.reduce(function(s,v){return s+v.rating;},0)/ratedRows.length:0;
     var rated=ratedRows.length,total=rows.length;
@@ -21825,7 +21835,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var trendSel='<select class="vr3-card-sel" onchange="window.vr3TrendN(this.value)"><option value="6"'+(_vrTrendN===6?' selected':'')+'>Last 6 Months</option><option value="9"'+(_vrTrendN===9?' selected':'')+'>Last 9 Months</option><option value="12"'+(_vrTrendN===12?' selected':'')+'>Last 12 Months</option></select>';
 
     var kpiH='<div class="vr3-kpis">';
-    kpiH+=vrKpiOpen("avg","rated")+icoWrap(IcoStar,'var(--lc-accent-weak)','var(--lc-accent)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Average Seller Score</div><div class="vr3-kpi-val">'+fmt1(avg)+' <span style="font-size:14px;font-weight:500;color:var(--lc-text3)">/ 10</span></div><div class="vr3-kpi-sub">'+(pctUp!==null&&pctUp!==0?(pctUp>0?'<span class="vr3-tag-up">&#9650; '+Math.abs(pctUp)+'%</span>':'<span class="vr3-tag-dn">&#9660; '+Math.abs(pctUp)+'%</span>'):'')+''+(prevAvg?'<span>vs '+fmt1(prevAvg)+' prev</span>':'<span>No prior data</span>')+'</div></div></div>';
+    kpiH+=vrKpiOpen("avg","rated")+icoWrap(IcoStar,'var(--lc-accent-weak)','var(--lc-accent)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Average Seller Score</div><div class="vr3-kpi-val">'+fmt1(avg)+' <span style="font-size:14px;font-weight:500;color:var(--lc-text3)">/ 10</span></div><div class="vr3-kpi-sub">'+(pctUp!==null&&pctUp!==0?(pctUp>0?'<span class="vr3-tag-up">&#9650; '+Math.abs(pctUp)+'%</span>':'<span class="vr3-tag-dn">&#9660; '+Math.abs(pctUp)+'%</span>'):'')+''+(prevAvg?'<span>vs '+fmt1(prevAvg)+' prev</span>':'')+'</div></div></div>';
     kpiH+=vrKpiOpen("rated","rated")+icoWrap(IcoUsers,'var(--lc-ok-weak)','var(--lc-ok)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Sellers Rated</div><div class="vr3-kpi-val">'+rated+'</div><div class="vr3-kpi-sub"><span>'+(_vrCat?('scored in '+esc(_vrCat)):'sellers carrying a score')+'</span></div></div></div>';
     kpiH+=vrKpiOpen("exc","exception")+icoWrap(IcoAlert,'var(--lc-risk-weak)','var(--lc-risk)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Exceptions</div><div class="vr3-kpi-val">'+exc+'</div><div class="vr3-kpi-sub"><span>'+pct(exc,rated)+'% of rated vendors</span></div></div></div>';
     kpiH+=vrKpiOpen("cov","notrated")+icoWrap(IcoPie,'var(--lc-purple-bg)','var(--lc-purple)')+'<div class="vr3-kpi-body"><div class="vr3-kpi-lbl">Rating Coverage</div><div class="vr3-kpi-val">'+covPct+'<span style="font-size:14px;font-weight:500;color:var(--lc-text3)">%</span></div><div class="vr3-kpi-sub"><span>'+fmt(covAll)+' rated of '+fmt(covPop)+' sellers'+(_vrCat?' &middot; all categories':'')+'</span></div></div></div>';
