@@ -3804,7 +3804,8 @@ function getQualityData(filtersJson) {
      A vendor whose feed carries no onboarded date is dropped under an explicit
      period, matching how applyDateFilter treats an undated record everywhere else.
      Under 'All' nothing is pruned and the behaviour is exactly as before. */
-  if (_qf.period && _qf.period !== 'All') {
+  var _qScoped = !!(_qf.period && _qf.period !== 'All');
+  if (_qScoped) {
     var _inQ = function(o) { return o && applyDateFilter({ createdDate: o.onbDate }, _qf); };
     [ompMap, ompGstinMap, ompNameMap, ompGstinSellers, ompGstinBuyers,
      ompNameSellers, ompNameBuyers].forEach(function(m) {
@@ -4083,9 +4084,28 @@ function getQualityData(filtersJson) {
       // Index of names already captured by the join loop above.
       var _joinedNmIdx = {};
       vendorRatings.forEach(function(v) { _joinedNmIdx[_qNormName_(v.name)] = true; });
+      /* This recount OVERRIDES acc['seller'].r and the OSV completed/pending counts
+         below, so pruning the OMP maps above does nothing for the seller rating or
+         the OSV bands unless the same scope is applied here. Without this the
+         Seller Rating Trend and the OSV totals stayed all-time while every figure
+         around them followed the period.
+
+         Scope is membership in the already-pruned maps, by GSTIN then normalised
+         name — the ladder the join loop above uses. A row that resolves to no
+         onboarded vendor is out of scope under an explicit period, the same rule
+         applied to every other undated or unlocatable record. Under "All" nothing
+         is tested, so the join misses this recount exists to recover are kept. */
+      function _srInScope(nm, gst) {
+        if (!_qScoped) return true;
+        return !!((gst && ompGstinMap[gst.toUpperCase()])
+               || (gst && ompGstinMap[gst])
+               || (nm  && ompNameMap[_qNormName_(nm)]));
+      }
       vsd.rows.forEach(function(row) {
         var nm = vsNm >= 0 ? String(row[vsNm] || '').trim() : '';
         if (!nm) return;
+        var _gstRow = vsGst >= 0 ? String(row[vsGst] || '').trim() : '';
+        if (!_srInScope(nm, _gstRow)) return;
         _sr.total++;
         // Score
         var rawD2 = vsDenom >= 0 ? parseFloat(row[vsDenom]) : NaN;
@@ -4104,7 +4124,7 @@ function getQualityData(filtersJson) {
           // category so the Metal / Plastic breakdown is complete.
           if (!_joinedNmIdx[_qNormName_(nm)]) {
             var _cat2 = vsCat >= 0 ? String(row[vsCat] || '').trim() : '';
-            var _gst2 = vsGst >= 0 ? String(row[vsGst] || '').trim() : '';
+            var _gst2 = _gstRow;
             vendorRatings.push({
               id:               '',
               name:             nm.slice(0, 60),
@@ -4308,6 +4328,29 @@ function getQualityData(filtersJson) {
     return (d && ((d.name && String(d.name).trim()) || (d.gstin && String(d.gstin).trim())));
   });
 
+  /* Period scope for the document strip.
+
+     Every reader pushes its row whether or not the OMP join matched, so pruning
+     the OMP maps above does not reach these rows — the document tiles stayed
+     all-time while the cards beside them followed the period. One reader also
+     stamps omp:true unconditionally, so d.omp is not a safe test; the row is
+     re-resolved here against the pruned maps instead, by the same id → GSTIN →
+     normalised name ladder the readers use.
+
+     Placed with the identity filter and before the recount below, so the tiles and
+     their drill remain the same set by construction. Under "All" nothing is
+     dropped. */
+  if (_qScoped) {
+    vendorDocs = vendorDocs.filter(function(d) {
+      if (!d) return false;
+      var g = d.gstin ? String(d.gstin).trim() : '';
+      var nm = d.name ? String(d.name).trim() : '';
+      return !!((d.id && ompMap[d.id])
+             || (g && (ompGstinMap[g] || ompGstinMap[g.toUpperCase()]))
+             || (nm && ompNameMap[_qNormName_(nm)]));
+    });
+  }
+
   /* Recount document completeness from the FULL vendorDocs set.
 
      acc[].d used to be incremented inside the first reader only, while three
@@ -4382,6 +4425,10 @@ function getQualityData(filtersJson) {
   // three bands always sum to the total.
   // Use the sheet row count (_vsSheetTotal) when available — it's more accurate than
   // ompTotal (which comes from _mb_sellers and may miss some vendors due to join misses).
+  /* _vsSheetTotal is now the in-scope row count (the recount skips out-of-period
+     rows), so it stays the right denominator under a period as well: completed,
+     pending and stopped all come from the same scoped pass, and the three bands
+     still sum to it. */
   var _osvDenomSeller = _vsSheetTotal > 0 ? _vsSheetTotal : ompTotal;
   ['seller', 'combined'].forEach(function(t) {
     acc[t].o.total        = _osvDenomSeller;
