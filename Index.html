@@ -9324,7 +9324,8 @@ function _gsTable(by) {
   var slice = rows.slice((_gsPage - 1) * GS_PSIZE, _gsPage * GS_PSIZE);
   var caret = function (k) { return _gsSort === k ? (_gsDir < 0 ? ' ▾' : ' ▴') : ''; };
   var body = slice.length ? slice.map(function (r, i) {
-    return '<tr class="' + (_geo.state === r.id ? 'sel' : '') + '" onclick="mmGeoStateClick(\'' + r.id + '\',event)">'
+    return '<tr class="' + (_geo.state === r.id ? 'sel' : '') + '" role="button" tabindex="0"'
+         + ' onclick="mmGeoStateClick(\'' + r.id + '\',event)">'
       + '<td style="color:var(--txt3)">' + ((_gsPage - 1) * GS_PSIZE + i + 1) + '</td>'
       // The dot already carries the region (gold North, green South), so the
       // separate Region column repeated it while being the widest thing in the
@@ -11807,7 +11808,7 @@ function renderDocsRows() {
     var clr = docPctColor(c.pct);
     var catCls = (d.category || '').toLowerCase() === 'plastic' ? ' plastic'
                : (d.category || '').toLowerCase() === 'metal'   ? ' metal' : '';
-    return '<tr onclick="openDocModal(' + key + ')" title="View documents">'
+    return '<tr role="button" tabindex="0" onclick="openDocModal(' + key + ')" title="View documents">'
       + '<td><span class="docs-nm">' + esc(d.name || '—') + '</span>'
       +   '<span class="docs-nm-sub">' + esc(d.gstin || '—') + '</span></td>'
       + '<td>' + (d.category ? '<span class="docs-cat' + catCls + '">' + esc(d.category) + '</span>' : '<span class="docs-nm-sub" style="font-family:inherit">—</span>') + '</td>'
@@ -13506,7 +13507,7 @@ function renderVdTable() {
         } else {
           txnCell = '<span class="text-muted">—</span>';
         }
-        return '<tr class="vd-tr" onclick="openRecModal(' + key + ')" title="View details">'
+        return '<tr class="vd-tr" role="button" tabindex="0" onclick="openRecModal(' + key + ')" title="View details">'
           + '<td><strong>' + esc(r.name || '—') + '</strong>'
           +   '<span class="td-sub">' + esc(r.id) + '</span></td>'
           + '<td>' + esc(r.category || '—') + '</td>'
@@ -16241,7 +16242,7 @@ function _mrRenderTable() {
       var clickable = !(_mrCtx && (_mrCtx.osv || _mrCtx.aging || _mrCtx.tat || _mrCtx.stage || _mrCtx.rating));
       tbody.innerHTML = page.map(function(r) {
         var k = ++_rmI; _rmD[k] = r;
-        return '<tr' + (clickable ? ' onclick="mrOpenRec(' + k + ')"' : ' style="cursor:default"') + '>'
+        return '<tr' + (clickable ? ' role="button" tabindex="0" onclick="mrOpenRec(' + k + ')"' : ' style="cursor:default"') + '>'
           + cols.map(function(c) { return '<td>' + _mrCellHtml(r, c.key) + '</td>'; }).join('')
           + '</tr>';
       }).join('');
@@ -17239,13 +17240,18 @@ function _osvDrill(title, sub, sellers, opts) {
     }).join('');
     body.innerHTML = '<table class="osv-drill-tbl"><thead><tr><th>Seller Name</th><th>GSTIN</th><th>Category</th><th>OSV Status</th><th>Post-OSV Score</th>' + thExtra + '<th>Assigned To</th><th>Last Updated</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
-  ovl.classList.add('open');
+  /* Through the shared helpers, like every other modal on the page. Opened by
+     hand, this overlay was the only one with no Escape key and no body-scroll
+     lock — so the page behind it scrolled under the pointer and the only way out
+     was the × or a backdrop click. */
+  _modalOpenClass(ovl, 'open', _osvDrillEsc);
 }
 
 function _osvCloseDrill() {
   var ovl = document.getElementById('osv-drill-ovl');
-  if (ovl) ovl.classList.remove('open');
+  if (ovl) _modalCloseClass(ovl, 'open', _osvDrillEsc);
 }
+function _osvDrillEsc(e) { if (e.key === 'Escape') _osvCloseDrill(); }
 
 // Main render function
 function renderOSVDash() {
@@ -17918,7 +17924,6 @@ function _txnBuildRecordsHTML(allRows) {
       + '<td><span style="font-size:11.5px;font-weight:600;color:' + statusColor + '">' + statusHtml + '</span></td>'
       + '<td style="color:var(--txt2);font-variant-numeric:tabular-nums">' + esc(txnDateStr) + '</td>'
       + '<td style="font-weight:700;font-variant-numeric:tabular-nums">' + gmvHtml + '</td>'
-      + '<td style="text-align:center"><span style="color:var(--txt3);font-size:18px;cursor:pointer;letter-spacing:2px">&#8943;</span></td>'
       + '</tr>';
   }).join('');
   var pgHtml = '';
@@ -17953,9 +17958,13 @@ function _txnBuildRecordsHTML(allRows) {
     + '<div class="txn3-tbl-wrap">'
     + '<table class="txn3-tbl"><thead><tr>'
     + '<th>#</th><th>ENTITY NAME</th><th>TYPE</th><th>CATEGORY</th>'
-    + '<th>TRANSACTION STATUS</th><th>TRANSACTION DATE</th><th>GMV (&#8377;)</th><th>ACTIONS</th>'
+    /* The ACTIONS column held one ellipsis glyph per row, styled cursor:pointer
+       and wired to nothing — it invited a click that could never do anything.
+       Dropped rather than given a handler, the same call already made on the OSV
+       table when the same question was asked of its Actions column. */
+    + '<th>TRANSACTION STATUS</th><th>TRANSACTION DATE</th><th>GMV (&#8377;)</th>'
     + '</tr></thead><tbody>'
-    + (trs || '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--txt3)">No records found</td></tr>')
+    + (trs || '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--txt3)">No records found</td></tr>')
     + '</tbody></table></div>'
     + '<div class="txn3-tbl-foot">'
     + '<span style="font-size:12px;color:var(--txt3)">' + showing + '</span>'
@@ -18347,7 +18356,7 @@ function renderVendorRatingsDash() {
     : '';
 
   host.innerHTML = '<div class="vr2-wrap">'
-    + '<div class="vr2-bc"><a onclick="switchView(\'onboarding\')" style="cursor:pointer">Central Onboarding</a> &rsaquo; <a>Marketplace</a> &rsaquo; Vendor Ratings</div>'
+    + '<div class="vr2-bc"><a role="button" tabindex="0" onclick="switchView(\'onboarding\')" style="cursor:pointer">Central Onboarding</a> &rsaquo; <a>Marketplace</a> &rsaquo; Vendor Ratings</div>'
     + '<div class="vr2-hdr-row">'
     + '<div>'
     + '<div class="vr2-title">Vendor Score &#8211; Average Seller Score <span class="vr2-spill">SELLERS ONLY</span></div>'
@@ -21296,7 +21305,7 @@ document.addEventListener('DOMContentLoaded', function() {
       : '<tr><td colspan="' + cols.length + '"><div class="txm-empty">No vendors to show.</div></td></tr>';
     return '<div class="txm-card">'
       + '<div class="txm-card-hd"><div class="txm-card-ttl">' + esc2(title) + '</div>'
-      +   '<a class="txm-link" onclick="' + viewAllFn + '">View all &rarr;</a></div>'
+      +   '<a class="txm-link" role="button" tabindex="0" onclick="' + viewAllFn + '">View all &rarr;</a></div>'
       + '<div class="txm-tblwrap"><table class="txm-tbl"><thead><tr>' + head + '</tr></thead>'
       + '<tbody>' + body + '</tbody></table></div></div>';
   }
@@ -21457,7 +21466,7 @@ document.addEventListener('DOMContentLoaded', function() {
     box.className = 'txm-card';
     box.innerHTML = '<div class="txm-card-hd"><div class="txm-card-ttl">'
       + (which === 'transacted' ? 'All Transacted Vendors' : 'All Non-Transacted Vendors')
-      + ' (' + list.length + ')</div><a class="txm-link" onclick="this.closest(\'.txm-card\').remove()">Close</a></div>'
+      + ' (' + list.length + ')</div><a class="txm-link" role="button" tabindex="0" onclick="this.closest(\'.txm-card\').remove()">Close</a></div>'
       + '<div class="txm-tblwrap"><table class="txm-tbl"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
     pg.appendChild(box);
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -22011,11 +22020,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // module rather than only the records table.
     var rows=scopeRows();
     var sr=(_VR.seller&&_VR.seller.rating)||{};
-    /* sr.prevAvg has never been emitted: getQualityData is not period-aware, so
-       there is no previous period for it to compare against. The badge below
-       therefore printed "No prior data" on every render — a caveat that is always
-       true says nothing and reads as a fault. Both the badge and the change arrow
-       are dropped until a period-aware rating payload exists to feed them. */
+    /* sr.prevAvg is still never emitted, so the badge below printed "No prior data"
+       on every render — a caveat that is always true says nothing and reads as a
+       fault. Both it and the change arrow stay dropped.
+
+       The original reason given here was that getQualityData took no period. It is
+       period-aware now, but that alone does not bring the badge back: the feed
+       computes ONE period per call and has no notion of the preceding one. Reviving
+       this needs the backend to emit a prior-period average, not just a scoped one. */
     var prevAvg=0;
     var ratedRows=rows.filter(function(v){return v.rating>0&&v.rating!=null;});
     var avg=ratedRows.length?ratedRows.reduce(function(s,v){return s+v.rating;},0)/ratedRows.length:0;
@@ -22080,8 +22092,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.lcVrSort=function(k){if(_vrSortK===k)_vrSortD*=-1;else{_vrSortK=k;_vrSortD=1;}_vrPage=1;render();};
   /* ── Filter setters. `toggle` lets a card clear its own active selection. ── */
-  window.vr3SetScore=function(i){_vrScore=(String(_vrScore)===String(i))?'':i;_vrPage=1;vrHideTip();render();};
-  window.vr3SetMonth=function(k){_vrMonth=(_vrMonth===k)?'':k;_vrPage=1;vrHideTip();render();};
+  window.vr3SetScore=function(i){_vrScore=(String(_vrScore)===String(i))?'':i;_vrApply(_vrScore!=='');};
+  window.vr3SetMonth=function(k){_vrMonth=(_vrMonth===k)?'':k;_vrApply(_vrMonth);};
   window.vr3ClearFilters=function(){_vrCat='';_vrStat='';_vrScore='';_vrMonth='';_vrQ='';_vrPage=1;vrHideTip();render();};
 
   /* ── Hover tooltips. Counts come from the same scope the cards render. ── */
@@ -22167,21 +22179,31 @@ document.addEventListener('DOMContentLoaded', function() {
   window.vr3GoPage=function(p){_vrPage=p;render();};
   // render() rebuilds the whole page, including this input, so the rebuild goes
   // through _searchRerender to keep focus and the caret on the new node.
-  window.vr3Search=function(q){_vrQ=q;_vrPage=1;_searchRerender('vr3',render);};
-  window.vr3SetCat=function(c,toggle){_vrCat=(toggle&&_vrCat===c)?'':c;_vrPage=1;vrHideTip();render();};
-  /* A KPI card filtered the records table but never revealed it, so clicking one
-     looked like it did nothing — the table it scoped was hidden behind the "Vendor
-     Records" button. Applying a filter now opens that section and scrolls to it,
-     which is the detail the card is promising. Clearing the filter leaves it open. */
-  window.vr3SetStat=function(s,toggle){
-    _vrStat=(toggle&&_vrStat===s)?'':s;_vrPage=1;vrHideTip();
-    if(_vrStat)window._vr3RecOpen=true;
+  window.vr3Search=function(q){
+    _vrQ=q;_vrPage=1;
+    if(_vrQ)window._vr3RecOpen=true;      // typing is a filter; show what it filtered
+    _searchRerender('vr3',render);
+  };
+  /* The records table is CLOSED by default, behind the "Vendor Records" button, and
+     every filter control on this page scopes that table. Applying a filter without
+     opening it looks like the click did nothing. That was fixed for the status
+     cards and left off the category chips, the score bands and the month bars —
+     three quarters of the filters on the page still behaving that way.
+
+     _vrApply is the single path now: set the filter, re-render, and when a filter
+     is active reveal the table and scroll to it. Clearing a filter leaves the table
+     open, because closing it under the user would be its own surprise. */
+  function _vrApply(active){
+    _vrPage=1; vrHideTip();
+    if(active) window._vr3RecOpen=true;
     render();
-    if(_vrStat){
+    if(active){
       var sec=document.getElementById('vr3-rec-section');
       if(sec)sec.scrollIntoView({behavior:'smooth',block:'nearest'});
     }
-  };
+  }
+  window.vr3SetCat=function(c,toggle){_vrCat=(toggle&&_vrCat===c)?'':c;_vrApply(_vrCat);};
+  window.vr3SetStat=function(s,toggle){_vrStat=(toggle&&_vrStat===s)?'':s;_vrApply(_vrStat);};
   window.vr3TrendN=function(n){_vrTrendN=parseInt(n,10);render();};
   window.vr3Export=function(){
     var rows=filteredRows(),csv='Vendor Name,Category,Audience,Last Rated,Rating\n';
@@ -23678,12 +23700,26 @@ try{
   var _lcmo=new MutationObserver(function(){ _lcSync(); });
   ['ov-screen','tab-gst','tab-osv','tab-txndist','tab-transactions','tab-vendorratings','tab-existingnew','tab-vertoverview'].forEach(function(id){ var el=document.getElementById(id); if(el) _lcmo.observe(el,{childList:true}); });
 }catch(e){}
-/* Keyboard activation for LC role=button cards (Enter/Space) — one handler covers every view. */
+/* Keyboard activation for role=button elements (Enter/Space) — one handler for
+   the whole dashboard. It used to match only `.lc [role="button"]`, which left the
+   clickable table rows outside the Living Circularity views reachable by mouse
+   alone: the geography state list, the Documents table, the Vendor Detail table
+   and the main records table. Those rows now carry role="button" tabindex="0" and
+   this selector covers them. Elements that handle their own keys are skipped, so
+   nothing double-fires. */
 document.addEventListener('keydown', function(e){
   if(e.key!=='Enter' && e.key!==' ') return;
   var tg=e.target; if(!tg || !tg.closest) return;
-  var el=tg.closest('.lc [role="button"]');
-  if(!el || el.tagName==='BUTTON' || el.tagName==='A' || el.tagName==='INPUT' || el.tagName==='SELECT' || el.tagName==='TEXTAREA') return;
+  /* Never swallow a key the user is typing. Widening the selector below to the
+     whole dashboard made this necessary: a text field nested inside a role=button
+     container would otherwise lose every space bar to preventDefault(). */
+  var tn=(tg.tagName||'').toUpperCase();
+  if(tn==='INPUT'||tn==='TEXTAREA'||tn==='SELECT'||tg.isContentEditable) return;
+  var el=tg.closest('[role="button"]');
+  // A real link already activates on Enter; an <a> with no href does not, so it
+  // is treated as the button it is being used as.
+  if(!el || el.tagName==='BUTTON' || el.tagName==='INPUT' || el.tagName==='SELECT'
+        || el.tagName==='TEXTAREA' || (el.tagName==='A' && el.getAttribute('href'))) return;
   if(el.getAttribute('onkeydown')) return; // element handles its own keys — don't double-fire
   if(typeof el.onclick==='function' || el.getAttribute('onclick')){ e.preventDefault(); el.click(); }
 });
