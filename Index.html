@@ -15672,26 +15672,13 @@ function _mrColSet() {
   return (_mrCtx && _mrCtx.osv) ? MR_OSV_COLS : MR_COLS;
 }
 function _mrVisibleCols() {
-  /* Business Vertical only earns a column when the rows actually span more than one.
-     A single-vertical drill would print the same word down the whole page, and the
-     heading above the table already names the vertical. Decided from the rows rather
-     than asked of each opener, so a drill that becomes multi-vertical later picks the
-     column up on its own. */
-  var multiVert = null;
-  return _mrColSet().filter(function(c) {
-    if (_mrColVis[c.key]) return false;
-    if (c.key !== 'vertical') return true;
-    if (multiVert === null) {
-      var seen = {}, n = 0;
-      (_mrRows || []).forEach(function(r) {
-        var v = r && r.vertical;
-        if (!v || seen[v]) return;
-        seen[v] = 1; n++;
-      });
-      multiVert = n > 1;
-    }
-    return multiVert;
-  });
+  /* Business Vertical is always shown. It used to be hidden on a single-vertical
+     drill, on the reasoning that the heading already names the vertical and the
+     column would repeat one word down the page — but the column was asked for so
+     that every detail view says which vertical its rows come from, and a column
+     that disappears on most drills does not do that. The hide-when-uniform rule
+     was my inference, not the request. */
+  return _mrColSet().filter(function(c) { return !_mrColVis[c.key]; });
 }
 
 function _mrRenderHeader() {
@@ -16135,8 +16122,14 @@ function _mrCellHtml(r, key) {
       // r.vertical is the internal key ('InfraBusiness'); show what the rest of the
       // dashboard calls it ('Infra Business'). Unknown keys print as-is rather than
       // as a dash, so a new vertical is visible instead of silently blank.
+      /* A row that carries no vertical of its own still belongs to the drill that
+         opened it, so fall back to that rather than printing a dash. Only a drill
+         with no vertical context of its own can reach the dash now. */
       var _vk = r.vertical;
-      if (!_vk) return '<span class="td-dim">—</span>';
+      if (!_vk) {
+        var _cn = _mrCtx && _mrCtx.vertName;
+        return '<span class="td-dim">' + esc(_cn || '—') + '</span>';
+      }
       var _vn = (getVertCfg().filter(function(c) { return c.key === _vk; })[0] || {}).name || _vk;
       return '<span class="td-dim">' + esc(_vn) + '</span>';
     }
@@ -21149,7 +21142,7 @@ document.addEventListener('DOMContentLoaded', function() {
       + '</div>' + donut(total, parts) + '</div></div>';
   }
 
-  /* ── Ageing (non-transacted) ───────────────────────────────────────────── */
+  /* ── Vendors not Transacted (days since onboarding) ────────────────────── */
   function ageCard(ag) {
     var bars = [
       { lbl: '0 - 30<br>days',  v: ag.lt30 || 0 },
@@ -21168,7 +21161,7 @@ document.addEventListener('DOMContentLoaded', function() {
         + '<div class="txm-age-l">' + b.lbl + '</div></div>';
     }).join('');
     return '<div class="txm-card">'
-      + '<div class="txm-card-hd"><div class="txm-card-ttl">Ageing (Non-Transacted)'
+      + '<div class="txm-card-hd"><div class="txm-card-ttl">Vendors not Transacted'
       +   '<span title="Days since onboarding for vendors that have not transacted">' + IC.info + '</span></div>'
       +   '<div class="txm-age-tot"><div class="t">Total Non-Transacted</div><div class="v">' + nf(tot) + '</div></div></div>'
       + '<div class="txm-age">' + cols + '</div></div>';
@@ -21287,7 +21280,7 @@ document.addEventListener('DOMContentLoaded', function() {
       + '<div class="txm-bc">Central Onboarding &rsaquo; <b>Marketplace</b> &rsaquo; Transactions</div>'
       + '<div class="txm-ttlrow"><div class="txm-ttl">Transactions</div>'
       +   '<select class="txm-aud" onchange="window.txmSetAud(this.value)">' + audOpts + '</select></div>'
-      + '<div class="txm-sub">Track transacted and non-transacted vendors, ageing and GMV across categories.</div>'
+      + '<div class="txm-sub">Track transacted and non-transacted vendors, how long they have gone without transacting, and GMV across categories.</div>'
       + '</div><div class="txm-hdr-r">'
       + '<div class="txm-seg">' + perBtns + '</div>'
       + '<button class="txm-exp" onclick="window.txmExport()">' + IC.down + ' Export</button>'
@@ -21324,7 +21317,7 @@ document.addEventListener('DOMContentLoaded', function() {
       + '<span><i class="txm-dot" style="background:var(--lc-warn)"></i>Non-Transacted</span>'
       + '</div></div>';
 
-    /* sellers | buyers | ageing */
+    /* sellers | buyers | not transacted */
     var s = v.seller, b = v.buyer;
     // The producer only breaks out metal and plastic (cntCat), but seller.total counts
     // every transacted vendor. Anything in a third category was dropped from the legend
@@ -21369,7 +21362,7 @@ document.addEventListener('DOMContentLoaded', function() {
           { lbl: 'Vendor Name',   get: function (r) { return '<div class="txm-nm">' + esc2(r.name || '—') + '</div>'; } },
           { lbl: 'Type',          get: function (r) { return esc2(r.type || ''); } },
           { lbl: 'Category',      get: catCell },
-          { lbl: 'Ageing',       num: true, get: function (r) { return r.ageDays == null ? '—' : nf(r.ageDays); } }
+          { lbl: 'Days Not Transacted', num: true, get: function (r) { return r.ageDays == null ? '—' : nf(r.ageDays); } }
         ], 'window.txmViewAll(\'nontransacted\')');
     h += '</div>';
 
@@ -21400,7 +21393,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }).join('');
     var head = which === 'transacted'
       ? '<th>#</th><th>Vendor Name</th><th>Type</th><th>Category</th><th class="num">GMV</th><th class="num">Txns</th>'
-      : '<th>#</th><th>Vendor Name</th><th>Type</th><th>Category</th><th class="num">Ageing</th>';
+      : '<th>#</th><th>Vendor Name</th><th>Type</th><th>Category</th><th class="num">Days Not Transacted</th>';
     var host = document.getElementById('tab-transactions');
     var pg = host && host.querySelector('.txm-pg');
     if (!pg) return;
@@ -21422,9 +21415,9 @@ document.addEventListener('DOMContentLoaded', function() {
     lines.push('KPI,Transacted (Unique),' + v.txn);
     lines.push('KPI,Non-Transacted (Unique),' + v.non);
     lines.push('KPI,Total Vendors,' + v.total);
-    lines.push('Ageing,0-30 days,' + (v.ag.lt30 || 0));
-    lines.push('Ageing,31-60 days,' + (v.ag.d30_60 || 0));
-    lines.push('Ageing,60+ days,' + (v.ag.gt60 || 0));
+    lines.push('Vendors not Transacted,0-30 days,' + (v.ag.lt30 || 0));
+    lines.push('Vendors not Transacted,31-60 days,' + (v.ag.d30_60 || 0));
+    lines.push('Vendors not Transacted,60+ days,' + (v.ag.gt60 || 0));
     lines.push('GMV,Total,' + v.gmv.total);
     lines.push('GMV,Metal,' + v.gmv.metal);
     lines.push('GMV,Plastic,' + v.gmv.plastic);
@@ -21436,7 +21429,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     lines.push('');
     lines.push('Top Non-Transacted Vendors');
-    lines.push('#,Vendor Name,Type,Category,Ageing (Days),Status');
+    lines.push('#,Vendor Name,Type,Category,Days Not Transacted,Status');
     v.topN.forEach(function (r, i) {
       lines.push([i + 1, '"' + String(r.name).replace(/"/g, '""') + '"', r.type, r.category, (r.ageDays == null ? '' : r.ageDays), 'Non-Transacted'].join(','));
     });
