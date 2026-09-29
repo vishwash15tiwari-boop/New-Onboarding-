@@ -5640,6 +5640,69 @@ var currentPeriod = 'All';
 var customStart   = '';
 var customEnd     = '';
 
+/* ── Search boxes that rebuild themselves ──────────────────────────────────
+   Five search inputs live inside the markup their own oninput re-renders:
+   Vendor Ratings, OSV, Existing vs New, the Marketplace Transactions records
+   table and the inline TAT list all replace a container that CONTAINS the input,
+   so innerHTML destroys the very node being typed into. Focus and the caret go
+   with it, which means only the first character can ever be typed — the box was
+   not filtering badly, it was unusable after one keystroke. The other six search
+   boxes on the page rebuild only a tbody and were never affected.
+
+   _searchRerender captures which search input has focus and where the caret sits,
+   runs the re-render, then restores both on the new node. It debounces too, so a
+   full-page rebuild no longer runs on every keystroke.
+
+   An input is recognised by "search" appearing in its id or class, which every
+   search box on this page already satisfies, so nothing has to be given an id.
+   Nothing is restored unless a search input actually had focus when the timer
+   fired, so clicking away mid-type does not yank focus back. */
+var _srTimers = {};
+function _searchFocusSave() {
+  var a = document.activeElement;
+  if (!a || a.tagName !== 'INPUT') return null;
+  var id = a.id || '', cls = (typeof a.className === 'string') ? a.className : '';
+  if (!/search/i.test(id) && !/search/i.test(cls)) return null;
+  return { id: id, cls: cls, start: a.selectionStart, end: a.selectionEnd };
+}
+function _searchFocusRestore(s) {
+  if (!s) return;
+  var el = s.id ? document.getElementById(s.id) : null;
+  if (!el && s.cls) {
+    try { el = document.querySelector('input.' + s.cls.trim().split(/\s+/).join('.')); }
+    catch (e) { el = null; }
+  }
+  if (!el) return;
+  try { el.focus({ preventScroll: true }); } catch (e) { try { el.focus(); } catch (e2) { return; } }
+  try {
+    var n  = String(el.value || '').length;
+    var st = (s.start == null) ? n : Math.min(s.start, n);
+    var en = (s.end   == null) ? n : Math.min(s.end,   n);
+    el.setSelectionRange(st, en);
+  } catch (e) {}
+}
+function _searchRerender(tag, fn, wait) {
+  clearTimeout(_srTimers[tag]);
+  _srTimers[tag] = setTimeout(function() {
+    var s = _searchFocusSave();
+    try { fn(); } finally { _searchFocusRestore(s); }
+  }, (wait == null) ? 200 : wait);
+}
+/* One matcher for every vendor list, so a term that works in one table works in
+   the next. Searching only the name meant a pasted GSTIN — the identifier these
+   tables actually print — returned nothing and read as a broken filter. Fields
+   absent from a row are simply skipped, so this is safe across row shapes. */
+function _srMatch(r, q) {
+  if (!q) return true;
+  if (!r) return false;
+  var hay = [r.name, r.sellerName, r.vendorName, r.gstin, r.id,
+             r.category, r.state, r.vendorType, r.assignedTo];
+  for (var i = 0; i < hay.length; i++) {
+    if (hay[i] && String(hay[i]).toLowerCase().indexOf(q) > -1) return true;
+  }
+  return false;
+}
+
 function getFilters() {
   return { audience: currentAudience, period: currentPeriod, startDate: customStart, endDate: customEnd };
 }
@@ -10136,7 +10199,7 @@ function _snTatShell(tableHtml, shown, sourceTotal, cats, types) {
     var typeOpts = '<option value="All">All Types</option>'
       + types.map(function(t){ return '<option' + (_snTatInlineType === t ? ' selected' : '') + ' value="' + esc(t) + '">' + esc(t) + '</option>'; }).join('');
     filterBar = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">'
-      + '<input type="text" class="mr-search" placeholder="Search name or type…" value="' + esc(_snTatInlineSearch) + '"'
+      + '<input type="text" class="mr-search" placeholder="Search name, type or category…" value="' + esc(_snTatInlineSearch) + '"'
       + ' oninput="_snTatInlineSearch=this.value;_snPopulateTatInline(_snTatInlineAud)">'
       + '<select style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--txt);font-size:12px;cursor:pointer" onchange="_snTatInlineCat=this.value;_snPopulateTatInline(_snTatInlineAud)">' + catOpts + '</select>'
       + '<select style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--txt);font-size:12px;cursor:pointer" onchange="_snTatInlineType=this.value;_snPopulateTatInline(_snTatInlineAud)">' + typeOpts + '</select>'
@@ -10164,7 +10227,14 @@ function _snPopulateTatInline(aud) {
   if (!sec) return;
   var key = activeVertKey || selectedVert;
   if (!key) return;
+  /* _snTatShell emits the search input, and both paints below replace the
+     section that holds it — the skeleton first, then the table once the rows
+     arrive. Typing therefore destroyed the input twice per keystroke, the second
+     time asynchronously. Focus and caret are captured here and restored after
+     each paint; the restore is a no-op when no search input had focus. */
+  var _sf = _searchFocusSave();
   sec.innerHTML = _snTatShell(null, null, null, null, null);
+  _searchFocusRestore(_sf);
   _ensureAudRows(key, _snTatInlineAud, function(rows) {
     if (snSubActive !== 'ext') return;
     var s = document.getElementById('sn-sec-ext');
@@ -10185,7 +10255,7 @@ function _snPopulateTatInline(aud) {
     // and there was no way to see which ones were unmeasured.
     var filtered = rows.filter(function(r) {
       if (r.status !== 'COMPLETED') return false;
-      if (q && (r.name || '').toLowerCase().indexOf(q) < 0 && (r.vendorType || '').toLowerCase().indexOf(q) < 0) return false;
+      if (!_srMatch(r, q)) return false;
       if (_snTatInlineCat  !== 'All' && r.category   !== _snTatInlineCat)  return false;
       if (_snTatInlineType !== 'All' && r.vendorType  !== _snTatInlineType) return false;
       return true;
@@ -10228,6 +10298,7 @@ function _snPopulateTatInline(aud) {
       + '<thead><tr><th>Name</th><th>Type</th><th>Category</th><th>TAT (Days) ↓</th><th>Measured between / why not</th></tr></thead>'
       + '<tbody>' + trs + '</tbody></table>';
     s.innerHTML = _snTatShell(table, filtered.length, sourceTotal, cats, types);
+    _searchFocusRestore(_sf);
   });
 }
 
@@ -15842,46 +15913,38 @@ function _mrPreFilter(r) {
 }
 
 function _mrUserFilter(r) {
+  /* Each context below used to spell out its own search fields — six near-copies
+     that quietly disagreed: the TAT drill searched vendor type but not GSTIN, the
+     rating drill searched GSTIN but not id, and none of them searched category or
+     state although every one of these tables prints those columns. They all go
+     through _srMatch now, the same matcher the module search boxes use, so a term
+     that finds a vendor in one table finds it in the next. */
   var f = _mrF;
   if (_mrCtx && _mrCtx.rating) {
     if (f.category !== 'All' && r.category !== f.category) return false;
-    var rq = (f.search || '').toLowerCase();
-    if (rq && (r.name  || '').toLowerCase().indexOf(rq) === -1
-           && (r.gstin || '').toLowerCase().indexOf(rq) === -1) return false;
+    if (!_srMatch(r, (f.search || '').toLowerCase())) return false;
     return true;
   }
   if (_mrCtx && _mrCtx.stage) {
     if (f.category !== 'All' && r.category !== f.category) return false;
     if (f.userType !== 'All' && (r._aud === 'buyer' ? 'Buyer' : 'Seller') !== f.userType) return false;
     if (f.status   !== 'All' && r.status !== f.status) return false;
-    var sq = (f.search || '').toLowerCase();
-    if (sq && (r.name  || '').toLowerCase().indexOf(sq) === -1
-           && (r.gstin || '').toLowerCase().indexOf(sq) === -1
-           && String(r.id || '').toLowerCase().indexOf(sq) === -1) return false;
+    if (!_srMatch(r, (f.search || '').toLowerCase())) return false;
     return true;
   }
   if (_mrCtx && _mrCtx.aging) {
     if (f.category !== 'All' && r.category !== f.category) return false;
-    var aq = (f.search || '').toLowerCase();
-    if (aq && (r.name  || '').toLowerCase().indexOf(aq) === -1
-           && (r.gstin || '').toLowerCase().indexOf(aq) === -1
-           && String(r.id || '').toLowerCase().indexOf(aq) === -1) return false;
+    if (!_srMatch(r, (f.search || '').toLowerCase())) return false;
     return true;
   }
   if (_mrCtx && _mrCtx.tat) {
     if (f.category !== 'All' && r.category   !== f.category) return false;
     if (f.vendor   !== 'All' && r.vendorType !== f.vendor)   return false;
-    var tq = (f.search || '').toLowerCase();
-    if (tq && (r.name || '').toLowerCase().indexOf(tq) === -1
-           && (r.vendorType || '').toLowerCase().indexOf(tq) === -1
-           && String(r.id || '').toLowerCase().indexOf(tq) === -1) return false;
+    if (!_srMatch(r, (f.search || '').toLowerCase())) return false;
     return true;
   }
   if (_mrCtx && (_mrCtx.geoState || _mrCtx.audRec)) {
-    var gq = (f.search || '').toLowerCase();
-    if (gq && (r.name  || '').toLowerCase().indexOf(gq) === -1
-           && (r.gstin || '').toLowerCase().indexOf(gq) === -1
-           && String(r.id || '').toLowerCase().indexOf(gq) === -1) return false;
+    if (!_srMatch(r, (f.search || '').toLowerCase())) return false;
     return true;
   }
   if (_mrCtx && _mrCtx.osv) {
@@ -15895,11 +15958,7 @@ function _mrUserFilter(r) {
       if (f.dateStart && od < new Date(f.dateStart)) return false;
       if (f.dateEnd   && od > new Date(f.dateEnd))   return false;
     }
-    var oq = (f.search || '').toLowerCase();
-    if (oq && (r.name       || '').toLowerCase().indexOf(oq) === -1
-           && (r.gstin      || '').toLowerCase().indexOf(oq) === -1
-           && (r.assignedTo || '').toLowerCase().indexOf(oq) === -1
-           && String(r.id   || '').toLowerCase().indexOf(oq) === -1) return false;
+    if (!_srMatch(r, (f.search || '').toLowerCase())) return false;
     return true;
   }
   if (f.category !== 'All' && r.category !== f.category) return false;
@@ -15925,10 +15984,7 @@ function _mrUserFilter(r) {
     if (f.dateStart && d < new Date(f.dateStart)) return false;
     if (f.dateEnd   && d > new Date(f.dateEnd))   return false;
   }
-  var q = (f.search || '').toLowerCase();
-  if (q && (r.name  || '').toLowerCase().indexOf(q) === -1
-        && (r.gstin || '').toLowerCase().indexOf(q) === -1
-        && String(r.id || '').toLowerCase().indexOf(q) === -1) return false;
+  if (!_srMatch(r, (f.search || '').toLowerCase())) return false;
   return true;
 }
 
@@ -17648,7 +17704,6 @@ var _txnView = 'both';
 var _txnDetailSearch = '';
 var _txnDetailCat = 'All';
 var _txnDetailPage = 0;
-var _txnSearchTimer = null;
 
 function _txnGetCombinedRows() {
   var selRows = Array.isArray(vertRows) ? vertRows.map(function(r) {
@@ -17929,8 +17984,9 @@ function _txnPage(p) {
 }
 function _txnSearch(q) {
   _txnDetailSearch = q; _txnDetailPage = 0;
-  clearTimeout(_txnSearchTimer);
-  _txnSearchTimer = setTimeout(function() {
+  // _txnBuildRecordsHTML emits this very input, and the line below replaces the
+  // section that holds it, so the rebuild has to restore focus and the caret.
+  _searchRerender('txn3', function() {
     var recEl = document.getElementById('txn3-records-section');
     if (recEl) recEl.innerHTML = _txnBuildRecordsHTML(_txnGetCombinedRows());
   }, 250);
@@ -21863,7 +21919,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var mm=d.getMonth()+1;
       return (d.getFullYear()+'-'+(mm<10?'0':'')+mm)===_vrMonth;
     });
-    if(_vrQ)rows=rows.filter(function(v){return(v.name||'').toLowerCase().indexOf(_vrQ.toLowerCase())>-1;});
+    if(_vrQ){var _vq=_vrQ.toLowerCase();rows=rows.filter(function(v){return _srMatch(v,_vq);});}
     return rows.slice().sort(function(a,b){
       var av=a[_vrSortK]||'',bv=b[_vrSortK]||'';
       if(_vrSortK==='rating'){av=a.rating||0;bv=b.rating||0;}
@@ -21883,7 +21939,7 @@ document.addEventListener('DOMContentLoaded', function() {
     cats.forEach(function(c){catOpts+='<option value="'+esc(c)+'"'+(c===_vrCat?' selected':'')+'>'+esc(c)+'</option>';});
     var statOpts=[['','All Statuses'],['excellent','Excellent'],['good','Good'],['ni','Needs Improvement'],['exception','Exception'],['notrated','Not Rated']].map(function(o){return '<option value="'+o[0]+'"'+(o[0]===_vrStat?' selected':'')+'>'+o[1]+'</option>';}).join('');
     var h='<div class="vr3-rec"><div class="vr3-rec-hd"><span class="vr3-rec-ttl">Vendor Records <span style="font-weight:500;color:var(--lc-text3);font-size:12px">('+total+')</span></span>';
-    h+='<div class="vr3-rec-acts"><input class="vr3-search" placeholder="Search vendors..." value="'+(_vrQ||'')+'" oninput="window.vr3Search(this.value)">';
+    h+='<div class="vr3-rec-acts"><input class="vr3-search" placeholder="Search name, GSTIN or category..." value="'+(_vrQ||'')+'" oninput="window.vr3Search(this.value)">';
     h+='<select class="vr3-flt" onchange="window.vr3SetCat(this.value)">'+catOpts+'</select>';
     h+='<select class="vr3-flt" onchange="window.vr3SetStat(this.value)">'+statOpts+'</select>';
     h+='<button class="vr3-export" onclick="window.vr3Export()">&#8595; Export</button></div></div>';
@@ -22109,7 +22165,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if(T)vrShowTip('<b class="t">'+T[0]+'</b>'+T[1]+vrHint(T[2]),evt);
   };
   window.vr3GoPage=function(p){_vrPage=p;render();};
-  window.vr3Search=function(q){_vrQ=q;_vrPage=1;render();};
+  // render() rebuilds the whole page, including this input, so the rebuild goes
+  // through _searchRerender to keep focus and the caret on the new node.
+  window.vr3Search=function(q){_vrQ=q;_vrPage=1;_searchRerender('vr3',render);};
   window.vr3SetCat=function(c,toggle){_vrCat=(toggle&&_vrCat===c)?'':c;_vrPage=1;vrHideTip();render();};
   /* A KPI card filtered the records table but never revealed it, so clicking one
      looked like it did nothing — the table it scoped was hidden behind the "Vendor
@@ -22488,7 +22546,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildRecords(rows){
     var h='<div class="osv3-rec"><div class="osv3-rec-hd"><div class="osv3-rec-ttl">Recent OSV Verifications</div>'
       +'<div class="osv3-rec-acts">'
-      +'<input class="osv3-search" type="text" placeholder="Search vendors…" value="'+(_osvQ||'')+'" oninput="osv3Search(this.value)">'
+      +'<input class="osv3-search" type="text" placeholder="Search name, GSTIN or category…" value="'+(_osvQ||'')+'" oninput="osv3Search(this.value)">'
       +'<select class="osv3-flt" onchange="osv3SetCat(this.value)"><option value="">All Categories</option>'
       +(window._osvCats||[]).map(function(c){return '<option value="'+esc(c)+'"'+((_osvCat===c)?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select>'
       +'<select class="osv3-flt" onchange="osv3SetStat(this.value)">'
@@ -22563,7 +22621,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var fsl=psl.slice();
     if(_osvCat)fsl=fsl.filter(function(r){return r.category===_osvCat;});
     if(_osvStat)fsl=fsl.filter(function(r){if(_osvStat==='not_initiated')return r.osvStatus==='not_initiated'||!r.osvStatus;return r.osvStatus===_osvStat;});
-    if(_osvQ){var q=_osvQ.toLowerCase();fsl=fsl.filter(function(r){return((r.name||r.sellerName||'')).toLowerCase().indexOf(q)>-1;});}
+    if(_osvQ){var q=_osvQ.toLowerCase();fsl=fsl.filter(function(r){return _srMatch(r,q);});}
     fsl.sort(function(a,b){
       var va,vb;
       if(_osvSortK==='name'){va=(a.name||a.sellerName||'').toLowerCase();vb=(b.name||b.sellerName||'').toLowerCase();}
@@ -22662,7 +22720,8 @@ document.addEventListener('DOMContentLoaded', function() {
   };
   window.osv3Sort=function(k){if(_osvSortK===k)_osvSortD*=-1;else{_osvSortK=k;_osvSortD=1;}_osvPage=1;render();};
   window.osv3GoPage=function(p){_osvPage=p;render();};
-  window.osv3Search=function(q){_osvQ=q;_osvPage=1;render();};
+  // Same rebuild-your-own-input problem as Vendor Ratings.
+  window.osv3Search=function(q){_osvQ=q;_osvPage=1;_searchRerender('osv3',render);};
   window.osv3SetCat=function(c){_osvCat=c;_osvPage=1;render();};
   window.osv3SetStat=function(s){_osvStat=s;_osvPage=1;render();};
   window.osvTrendN3=function(n){_osvTrendN=parseInt(n,10);render();};
@@ -23352,7 +23411,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function buildRecords(allRows){
     var rows=allRows.slice();
     if(_evnCat)rows=rows.filter(function(r){return r.category===_evnCat;});
-    if(_evnQ){var q=_evnQ.toLowerCase();rows=rows.filter(function(r){return(r.name||'').toLowerCase().indexOf(q)>-1;});}
+    if(_evnQ){var q=_evnQ.toLowerCase();rows=rows.filter(function(r){return _srMatch(r,q);});}
     var isTat=_evnDrillType==='tat';
     var sortKey=_evnSortK,sortDir=_evnSortD;
     if(isTat&&_evnSortK==='name'){sortKey='tat';sortDir=-1;}
@@ -23375,7 +23434,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var h='<div class="evn-rec"><div class="evn-rec-hd"><span class="evn-rec-ttl">'+recTitle+' <span style="font-weight:500;color:var(--lc-text3);font-size:12px">('+total+')</span></span>';
     h+='<div class="evn-rec-acts">';
     if(_evnDrillType)h+='<button class="evn-drill-close" onclick="window.evnDrill(\''+_evnDrillType+'\')" title="Close">&#10005; Close</button>';
-    h+='<input class="evn-search" placeholder="Search vendors..." value="'+(_evnQ||'')+'" oninput="window.evnSearch(this.value)">';
+    h+='<input class="evn-search" placeholder="Search name, category or state..." value="'+(_evnQ||'')+'" oninput="window.evnSearch(this.value)">';
     if(!isTat)h+='<select class="evn-flt" onchange="window.evnSetCat(this.value)">'+catOpts+'</select>';
     h+='<button class="evn-export" onclick="window.evnExport()">&#8595; Export</button></div></div>';
     h+='<div class="evn-tbl-wrap"><table class="evn-tbl"><thead><tr>';
@@ -23589,7 +23648,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.evnScope=function(s){_evnScope=s;_evnPage=1;_evnDrillType=null;evnHideTip();render();};
   window.evnGoPage=function(p){_evnPage=p;render();};
-  window.evnSearch=function(q){_evnQ=q;_evnPage=1;render();};
+  // Same again — render() replaces the container this input sits in.
+  window.evnSearch=function(q){_evnQ=q;_evnPage=1;_searchRerender('evn',render);};
   window.evnDrill=function(type){_evnDrillType=(_evnDrillType===type)?null:type;_evnPage=1;_evnCat='';_evnState='';_evnSeg='';_evnMonth='';_evnQ='';evnHideTip();render();if(_evnDrillType){setTimeout(function(){var el=document.querySelector('.lc .evn-rec');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},60);}};
   window.evnExport=function(){
     var rows=_evnDrillType?(_evnDrillType==='existing'?getAllRows().filter(function(r){return (r.status||'').toUpperCase()==='COMPLETED'&&!rowIsNew(r);}):(_evnDrillType==='new'||_evnDrillType==='tat')?getAllRows().filter(function(r){return (r.status||'').toUpperCase()==='COMPLETED'&&rowIsNew(r);}):getAllRows().filter(function(r){return (r.status||'').toUpperCase()==='COMPLETED';})):getAllRows();
