@@ -3745,7 +3745,7 @@ function diagnoseGSTPayables() {
 // { seller, buyer, combined } so each pipeline card shows its own
 // quality metrics.  Falls back to combined if no split is possible.
 // ════════════════════════════════════════════════════════════════
-function getQualityData() {
+function getQualityData(filtersJson) {
   try {
   // v14: Vendor Rating / OSV sourced from "Open Marketplace Vendor Scores" — the 0-10
   // rating is the "Denominator" column, OSV is "OSV Status". Joined to onboarded OMP
@@ -3755,7 +3755,12 @@ function getQualityData() {
   // v20: document completeness is judged on the mandatory six (DOC_MANDATORY) rather
   // than on every column in the feed, and rows now carry mandMet/mandTotal/mandMissing.
   // v21: MSME Certificate is conditional on MSME registration, and rows carry msmeReg.
-  var CACHE_KEY = 'quality_data_v26';
+  // v27: honours the global period, on the same basis as every other surface —
+  // the cohort a vendor was onboarded in.
+  var _qf = {};
+  try { _qf = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { _qf = {}; }
+  var CACHE_KEY = 'quality_data_v27_' + (_qf.period || 'All')
+                + '_' + (_qf.startDate || '') + '_' + (_qf.endDate || '');
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -3787,6 +3792,27 @@ function getQualityData() {
   var ompNameMap = {};
   Object.keys(ompNameBuyers).forEach(function(n)  { ompNameMap[n] = ompNameBuyers[n]; });
   Object.keys(ompNameSellers).forEach(function(n) { ompNameMap[n] = ompNameSellers[n]; });
+
+  /* Apply the period by pruning the OMP maps, not by filtering each consumer.
+
+     Every rating, OSV and document row reaches its vendor through one of these
+     maps and is skipped when the join misses, so removing an out-of-period vendor
+     here drops it from the ratings, the OSV counts, the document strip and the
+     seller population behind Rating Coverage in one move. Filtering each of those
+     separately is how they would drift apart.
+
+     A vendor whose feed carries no onboarded date is dropped under an explicit
+     period, matching how applyDateFilter treats an undated record everywhere else.
+     Under 'All' nothing is pruned and the behaviour is exactly as before. */
+  if (_qf.period && _qf.period !== 'All') {
+    var _inQ = function(o) { return o && applyDateFilter({ createdDate: o.onbDate }, _qf); };
+    [ompMap, ompGstinMap, ompNameMap, ompGstinSellers, ompGstinBuyers,
+     ompNameSellers, ompNameBuyers].forEach(function(m) {
+      if (!m) return;
+      Object.keys(m).forEach(function(k) { if (!_inQ(m[k])) delete m[k]; });
+    });
+    ompTotal = Object.keys(ompMap).length;
+  }
 
   function mkR()  { return { ws: 0, rated: 0, total: 0, dist: [0,0,0,0,0], exceptions: 0 }; }
   function mkO()  { return { completed: 0, pending: 0, failed: 0, stopped: 0, notInitiated: 0, total: 0 }; }
@@ -4438,6 +4464,9 @@ function buildOmpOnboardedMap_() {
   var catC = fc(['business_category','category','vertical_category','cat']);
   var bvC  = fc(['business_vertical','vertical','biz_vertical']);
   var stC  = fc(['onboarding_status','status','onboard_status']);
+  // Onboarded date, so the quality feed can honour the global period the same
+  // way every other surface does: by the cohort a vendor was onboarded in.
+  var odC  = fc(['onboarded_date','onboarding_date','completed_date','created_date']);
   var txnC = fc(['transaction_activation_status','transacted','is_transacted','transaction_status','txn_status']);
   var gmvC = fc(['lifetimevalue','lifetime_value','gmv','transaction_value','txn_value','total_transaction_value','first_transaction_value','order_value']);
   var _txnPos = { 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 };
@@ -4458,6 +4487,7 @@ function buildOmpOnboardedMap_() {
       category:         catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
       bizVertical:      bvC  >= 0 ? String(row[bvC]  || '').trim().slice(0, 40) : '',
       onboardingStatus: st,
+      onbDate:          odC >= 0 ? parseDate(row[odC]) : null,
       hasTransacted:    hasTransacted
     };
   });
@@ -4487,6 +4517,9 @@ function buildOmpGstinMap_(sheetName, aud) {
   var catC = fc(['business_category','category','vertical_category','cat']);
   var bvC  = fc(['business_vertical','vertical','biz_vertical']);
   var stC  = fc(['onboarding_status','status','onboard_status']);
+  // Onboarded date, so the quality feed can honour the global period the same
+  // way every other surface does: by the cohort a vendor was onboarded in.
+  var odC  = fc(['onboarded_date','onboarding_date','completed_date','created_date']);
   var txnC = fc(['transaction_activation_status','transacted','is_transacted','transaction_status','txn_status']);
   var gmvC = fc(['lifetimevalue','lifetime_value','gmv','transaction_value','txn_value','total_transaction_value','first_transaction_value','order_value']);
   var _txnPos = { 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 };
@@ -4507,6 +4540,7 @@ function buildOmpGstinMap_(sheetName, aud) {
       category:         catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
       onboardingStatus: st,
       aud:              aud,
+      onbDate:          odC >= 0 ? parseDate(row[odC]) : null,
       hasTransacted:    hasTransacted
     };
   });
@@ -4548,6 +4582,9 @@ function buildOmpNameMap_(sheetName, aud) {
   var catC = fc(['business_category','category','vertical_category','cat']);
   var bvC  = fc(['business_vertical','vertical','biz_vertical']);
   var stC  = fc(['onboarding_status','status','onboard_status']);
+  // Onboarded date, so the quality feed can honour the global period the same
+  // way every other surface does: by the cohort a vendor was onboarded in.
+  var odC  = fc(['onboarded_date','onboarding_date','completed_date','created_date']);
   var txnC = fc(['transaction_activation_status','transacted','is_transacted','transaction_status','txn_status']);
   var gmvC = fc(['lifetimevalue','lifetime_value','gmv','transaction_value','txn_value','total_transaction_value','first_transaction_value','order_value']);
   var _txnPos = { 'TRANSACTED': 1, 'YES': 1, 'Y': 1, 'TRUE': 1, '1': 1, 'DONE': 1, 'ACTIVE': 1, 'TRANSACTED YES': 1 };
@@ -4570,6 +4607,7 @@ function buildOmpNameMap_(sheetName, aud) {
       category:         catC >= 0 ? String(row[catC] || '').trim().slice(0, 60) : '',
       onboardingStatus: st,
       aud:              aud,
+      onbDate:          odC >= 0 ? parseDate(row[odC]) : null,
       hasTransacted:    hasTransacted
     };
   });
@@ -5790,8 +5828,19 @@ function getOverviewStats(filtersJson) {
   }
 }
 
-function getCompliantOnboardingData() {
-  var CACHE_KEY = 'compliant_onb_v1';
+function getCompliantOnboardingData(filtersJson) {
+  /* v2: honours the global period. The tracker itself carries no usable date for
+     this count — its only date column is "Scoring_Received", which is blank on
+     exactly the rows that make up the exception count, so filtering on it would
+     zero the exceptions under every period. The vendor's onboarded date is used
+     instead, resolved through the same OMP join ladder (id → normalised name) the
+     rest of the quality feed uses, so this tile scopes on the same basis as every
+     other card on the page. */
+  var _cf = {};
+  try { _cf = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { _cf = {}; }
+  var _scoped  = !!(_cf.period && _cf.period !== 'All');
+  var CACHE_KEY = 'compliant_onb_v2_' + (_cf.period || 'All')
+                + '_' + (_cf.startDate || '') + '_' + (_cf.endDate || '');
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
   if (hit) return hit;
@@ -5840,19 +5889,40 @@ function getCompliantOnboardingData() {
     if (nameColIdx < 0) nameColIdx = nameLooseIdx;
     if (idColIdx   < 0) idColIdx   = idLooseIdx;
 
+    // Period scope, built once. Under "All" this is never consulted.
+    var _coById = null, _coByName = null;
+    if (_scoped) {
+      _coById   = buildOmpOnboardedMap_();
+      _coByName = {};
+      [buildOmpNameMap_('_mb_buyers', 'buyer'), buildOmpNameMap_('_mb_sellers', 'seller')]
+        .forEach(function(m) { Object.keys(m).forEach(function(k) { _coByName[k] = m[k]; }); });
+    }
+    /* A tracker row is in scope when the vendor it names was onboarded inside the
+       period. A row that resolves to no onboarded vendor is dropped under an
+       explicit period — the same treatment applyDateFilter gives an undated
+       record everywhere else — and kept under "All". */
+    function _coInPeriod(id, nm) {
+      if (!_scoped) return true;
+      var o = (id && _coById[id])
+           || (nm && _coByName[_qNormName_(nm)])
+           || null;
+      return !!(o && applyDateFilter({ createdDate: o.onbDate }, _cf));
+    }
+
     var total = 0, compliant = 0, exceptions = 0;
     var exceptionRows = [];
 
     vals.slice(1).forEach(function(row) {
       if (!row.some(function(c) { return c !== '' && c !== null && c !== undefined; })) return;
+      var _rowNm = nameColIdx >= 0 ? String(row[nameColIdx] || '').trim() : '';
+      var _rowId = idColIdx   >= 0 ? String(row[idColIdx]   || '').trim() : '';
+      if (!_coInPeriod(_rowId, _rowNm)) return;
       total++;
       var scoreVal  = scoringColIdx < row.length ? row[scoringColIdx] : '';
       var isException = (scoreVal === '' || scoreVal === null || scoreVal === undefined);
       if (isException) {
         exceptions++;
-        var nm = nameColIdx >= 0 ? String(row[nameColIdx] || '').trim() : '';
-        var id = idColIdx  >= 0 ? String(row[idColIdx]  || '').trim() : '';
-        exceptionRows.push({ id: id, name: nm || id || ('Row ' + (total + 1)) });
+        exceptionRows.push({ id: _rowId, name: _rowNm || _rowId || ('Row ' + (total + 1)) });
       } else {
         compliant++;
       }

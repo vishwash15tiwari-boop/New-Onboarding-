@@ -5326,9 +5326,10 @@ function loadData(silent) {
     var hash = (D.lastUpdated || '') + '|' + currentPeriod;
     if (_lastDashHash['combined'] !== hash) {
       _lastDashHash['combined'] = hash;
-      // Quality data is period-independent (getQualityData takes no filters), so it
-      // is deliberately NOT discarded here. Clearing it on every period change made
-      // the Vendor Ratings and OSV modules vanish and re-appear on each switch.
+      // Quality data IS period-scoped now, but it is still not discarded here:
+      // clearing it made the Vendor Ratings and OSV modules vanish and re-appear on
+      // every switch. _repaintPeriodViews() re-fetches it in place instead, so the
+      // panels stay on screen and update when the new payload lands.
       var newPKey = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
       if (selectedVert && _vertRowsPKey !== newPKey) {
         vertRows = []; vertRowsLoading = false; vertRowsError = null;
@@ -5685,17 +5686,41 @@ function _repaintPeriodViews() {
      figures the page happened to load with. Both overviews read the same
      window._ovMonthlyData, so one refetch covers them. */
   loadOverviewMonthly();
-  if (currentView === 'txndist') renderTxnDist();
-  if (currentView === 'transactions') { renderTransactionSkeleton(); loadTransactionData(); }
-  /* Asked of the DOM, not of currentView: mind-map navigation resets that flag to
-     'onboarding' while a special view is still on screen, which would leave this
-     module showing the period it was opened with. */
-  var _osvEl = document.getElementById('tab-osv');
-  if (_osvEl && _osvEl.getClientRects().length && typeof window.osv3Repaint === 'function') {
-    window.osv3Repaint();
+
+  /* Every module below is asked of the DOM rather than of currentView: mind-map
+     navigation resets that flag to 'onboarding' while a special view is still on
+     screen, so a currentView test fails in exactly the case where the repaint is
+     needed and the module keeps showing the period it was opened with. */
+  function _onScreen(id) {
+    var el = document.getElementById(id);
+    return !!(el && el.getClientRects().length);
   }
-  if (currentView === 'vendorratings' && typeof renderVendorRatingsDash === 'function') {
-    try { renderVendorRatingsDash(); } catch (e) {}
+  if (_onScreen('tab-txndist') && typeof renderTxnDist === 'function') {
+    try { renderTxnDist(); } catch (e) {}      // re-fetches through its own period key
+  }
+  if (_onScreen('tab-transactions') && typeof loadTransactionData === 'function') {
+    try { renderTransactionSkeleton(); loadTransactionData(); } catch (e) {}
+  }
+  if (_onScreen('tab-osv') && typeof window.osv3Repaint === 'function') {
+    try { window.osv3Repaint(); } catch (e) {}
+  }
+  /* Vendor Ratings is served by getQualityData, which is now period-scoped, so a
+     period change has to re-fetch it — re-rendering alone just repainted the same
+     numbers. */
+  if (_onScreen('tab-vendorratings') && typeof loadVendorRatingsData === 'function') {
+    try { loadVendorRatingsData(true); } catch (e) {}
+  }
+  /* GST Payables is driven by its own financial-year selector, not by the global
+     period, so it is deliberately left alone here. */
+  /* The same feed backs the rating / OSV / document strips inside every vertical
+     module, so refresh it whenever it has already been pulled. */
+  if (typeof qualityData !== 'undefined' && qualityData && typeof loadQualityData === 'function') {
+    try { loadQualityData(true); } catch (e) {}
+  }
+  /* Compliant Onboarding is its own call and is period-scoped as of v2. */
+  if (typeof loadCompliantOnboarding === 'function'
+      && document.getElementById('compliant-onb-wrap')) {
+    try { loadCompliantOnboarding(true); } catch (e) {}
   }
 }
 
@@ -11416,7 +11441,10 @@ function loadQualityData(force) {
       if (!hadData) qualityData = { success: false };
       _patchQualitySects();
     })
-    .getQualityData();
+    // The quality feed is period-scoped on the server (v27): it prunes its OMP
+    // vendor maps to the selected period, so every rating, OSV and document
+    // figure derived from it follows the period control like the rest of the page.
+    .getQualityData(JSON.stringify(getFilters()));
 }
 
 function _patchQualitySects() {
@@ -12667,13 +12695,15 @@ function renderInlineDetail(key) {
 
 // ── Compliant Onboarding ──────────────────────────────────────
 var _coData = null, _coLoading = false;
-function loadCompliantOnboarding() {
+function loadCompliantOnboarding(force) {
   var wrap = document.getElementById('compliant-onb-wrap');
   if (!wrap) return;
-  if (_coData) { renderCompliantOnboarding(wrap, _coData); return; }
-  if (_coLoading) { wrap.innerHTML = '<div class="co-loading">Loading compliance data…</div>'; return; }
+  // The payload is period-scoped (v2), so a period change has to re-fetch it.
+  // Repainting from _coData kept the all-time tile under every period setting.
+  if (_coData && !force) { renderCompliantOnboarding(wrap, _coData); return; }
+  if (_coLoading) { return; }
   _coLoading = true;
-  wrap.innerHTML = '<div class="co-loading">Loading compliance data…</div>';
+  if (!_coData) wrap.innerHTML = '<div class="co-loading">Loading compliance data…</div>';
   google.script.run
     .withSuccessHandler(function(res) {
       _coLoading = false;
@@ -12686,7 +12716,7 @@ function loadCompliantOnboarding() {
       var w2 = document.getElementById('compliant-onb-wrap');
       if (w2) w2.innerHTML = '';
     })
-    .getCompliantOnboardingData();
+    .getCompliantOnboardingData(JSON.stringify(getFilters()));
 }
 function renderCompliantOnboarding(wrap, d) {
   if (!d || !d.success || !d.total) { wrap.innerHTML = ''; return; }
@@ -18072,9 +18102,20 @@ function brandMarkHtml(cls) {
 
    A failed refresh leaves the seeded data on screen rather than replacing a
    working view with an error. */
+/* 'vr' and 'osv' hold period-scoped payloads (getQualityData and
+   getOSVDashboardData both take the global filters), so their stored copy is keyed
+   by the period as well. Sharing one key meant a page opened on a non-All period
+   painted the previous period's numbers until the fetch returned. Only one entry
+   per feed is kept, so switching periods does not accumulate copies. */
+var _SWR_PERIODIC = { vr: 1, osv: 1 };
+function _swrKey(key) {
+  if (!_SWR_PERIODIC[key]) return STORE_PFX + key;
+  return STORE_PFX + key + '|' + currentPeriod
+       + '|' + (customStart || '') + '|' + (customEnd || '');
+}
 function _swrSeed(key, isValid) {
   try {
-    var raw = localStorage.getItem(STORE_PFX + key);
+    var raw = localStorage.getItem(_swrKey(key));
     if (!raw) return null;
     var parsed = JSON.parse(raw);
     return (parsed && isValid(parsed)) ? parsed : null;
@@ -18082,10 +18123,21 @@ function _swrSeed(key, isValid) {
 }
 // Cheap existence check so a view with cached data never flashes a skeleton.
 function _swrCached(key) {
-  try { return !!localStorage.getItem(STORE_PFX + key); } catch (e) { return false; }
+  try { return !!localStorage.getItem(_swrKey(key)); } catch (e) { return false; }
 }
 function _swrStore(key, raw) {
-  try { localStorage.setItem(STORE_PFX + key, raw); } catch (e) {}
+  try {
+    var k = _swrKey(key);
+    if (_SWR_PERIODIC[key]) {                    // keep one entry per feed
+      var pfx = STORE_PFX + key + '|', stale = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var kk = localStorage.key(i);
+        if (kk && kk.indexOf(pfx) === 0 && kk !== k) stale.push(kk);
+      }
+      stale.forEach(function(s) { localStorage.removeItem(s); });
+    }
+    localStorage.setItem(k, raw);
+  } catch (e) {}
 }
 
 // force=true re-fetches even when a payload is already in memory — the auto-refresh
@@ -18118,7 +18170,9 @@ function loadVendorRatingsData(force) {
       var host = document.getElementById('tab-vendorratings');
       if (host) host.innerHTML = '<div style="padding:32px;color:var(--txt3);font-size:13px">Failed to load: ' + esc(String(err)) + '</div>';
     })
-    .getQualityData();
+    // Seller Rating Trend and the coverage cards read this payload; without the
+    // filters they reported all-time figures under every period setting.
+    .getQualityData(JSON.stringify(getFilters()));
 }
 
 function _vrSetDistFilter(f) {
@@ -19380,11 +19434,21 @@ document.addEventListener('DOMContentLoaded', function() {
       try{ var d=JSON.parse(raw); if(d&&d.success&&d.monthly){ window._ovMonthlyData=d.monthly; renderOvScreen();
         // The Vertical Overview charts the same series, so refresh it too when the
         // data lands while a vertical is open — otherwise its chart stays a skeleton.
-        if(currentView==='vertoverview'&&_vovKey&&typeof renderVertOverview==='function'){
+        // Asked of the DOM via _vovRepaint: mind-map navigation resets currentView
+        // to 'onboarding' while the vertical overview is still on screen, so the
+        // currentView test used to fail exactly when the repaint was needed.
+        if(typeof _vovRepaint==='function'){ try{ _vovRepaint(); }catch(e){} }
+        else if(currentView==='vertoverview'&&_vovKey&&typeof renderVertOverview==='function'){
           try{ renderVertOverview(_vovKey); }catch(e){}
         } } }
       catch(e){ console.warn('getOverviewStats parse error',e); }
-    }).withFailureHandler(function(err){ console.warn('getOverviewStats failed',err); }).getOverviewStats();
+    }).withFailureHandler(function(err){ console.warn('getOverviewStats failed',err); })
+      /* This override replaces the loader defined earlier in the page, so it is the
+         one that actually runs — and it was calling getOverviewStats with no
+         arguments. The whole Living Circularity overview (hero, KPI tiles and the
+         monthly trend) therefore reported all-time figures under every period
+         setting, which is why fixing the earlier definition changed nothing. */
+      .getOverviewStats(JSON.stringify(getFilters()));
   };
 })();
 </script>
