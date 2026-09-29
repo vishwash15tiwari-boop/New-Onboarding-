@@ -2491,6 +2491,12 @@ function normalizeRows(raw, cfg) {
     if (daysToOrder === null) {
       daysToOrder = _feedDays(['days_to_first_order', 'days_to_first_transaction']);
     }
+    // Same-day activation counts as one day, matching the onboarding TAT floor, so
+    // the funnel's median / average / range never read "0 days". Applied after both
+    // the derived and the fallback path, and only to a real zero — a negative has
+    // already been discarded above as a wrongly-measured value.
+    if (daysToList  === 0) daysToList  = 1;
+    if (daysToOrder === 0) daysToOrder = 1;
 
     var vertical = mapToVertical(bizVert, category, cfg.audience);
     /* The FY 26-27 cut for business_vertical = Marketplace:
@@ -5315,7 +5321,11 @@ function getOSVDashboardData(filtersJson) {
         var m = /^(\d+(?:\.\d+)?)/.exec(s);
         if (!m) return null;                       // "Pending" and friends
         var n = parseFloat(m[1]);
-        return (isNaN(n) || n < 0 || n > 365) ? null : n;
+        if (isNaN(n) || n < 0 || n > 365) return null;
+        // Same-day turnaround is reported as one day, not zero — the floor
+        // _assignTat_ applies to onboarding TAT, applied to these two columns as
+        // well so no duration on the page ever reads "0 days".
+        return Math.max(1, n);
       };
 
       vsd.rows.forEach(function(row) {
