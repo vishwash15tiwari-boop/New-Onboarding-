@@ -3711,6 +3711,7 @@ body.mm-sn-drill{overflow:hidden}
 /* auto-fit rather than a fixed count, so the strip lays out correctly whether it
    carries four rate tiles or the three compliance ones, and reflows instead of
    cramping as the panel narrows. */
+.onb-sum-base{font-size:11px;color:var(--txt3);margin:-2px 0 10px;padding:0 2px;cursor:help}
 .onb-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--sp-3);margin-top:18px;padding-top:var(--sp-3);border-top:1px solid var(--border)}
 .mf-sum-more{font-size:9px;color:var(--blue);margin-top:6px;text-align:right;font-weight:600;letter-spacing:.02em;opacity:.85}
 
@@ -7456,6 +7457,23 @@ function _mmVertModules(key) {
             'Not Followed &middot; ' + _dPc(_dq.incomplete) + '% &middot; no mandatory documents on file',
             "openComplianceRecords('incomplete')")
         + '</div>';
+
+      /* Name the base. These three percentages are shares of the sellers who have a
+         document record at all, not of everyone onboarded, and without the line a
+         reader takes "Process Followed 67%" to mean 67% of the onboarded book. The
+         figures stay exactly as they are — the basis is stated beside them rather
+         than the number being withheld. Printed only when the two differ. */
+      var _dqOnb = vs.completed || 0;
+      if (_dqOnb > _dq.total) {
+        onbSummary += '<div class="onb-sum-base" title="'
+          + 'Only vendors with at least one document record can be judged against the '
+          + 'mandatory six. The remaining ' + fmt(_dqOnb - _dq.total) + ' onboarded '
+          + 'sellers have no document record in the feed, so they are neither followed '
+          + 'nor an exception — they are unassessed.">'
+          + 'Measured across ' + fmt(_dq.total) + ' of ' + fmt(_dqOnb)
+          + ' onboarded sellers with a document record'
+          + '</div>';
+      }
     }
   }
 
