@@ -15855,6 +15855,33 @@ function _mrSel(id, label, opts, val, onchg) {
   return html;
 }
 
+/* r.vertical holds the internal key ('InfraBusiness'); the column beside it prints
+   what the rest of the dashboard calls that vertical ('Infra Business'). A filter
+   offering the raw keys would name the same thing differently one column apart, so
+   the option's value stays the key and only its text is translated. An unknown key
+   shows as itself rather than being dropped — a new vertical stays selectable. */
+function _mrVertName(key) {
+  if (!key) return '';
+  var c = getVertCfg().filter(function(v) { return v.key === key; })[0];
+  return (c && c.name) || key;
+}
+function _mrSelVert(val, onchg) {
+  /* Offered only where it can do something: on a drill whose rows are all one
+     vertical the control could never change the result, and a select that cannot
+     change anything is the kind of dead affordance this dashboard has been
+     clearing out. The options come from _mrRows, not the filtered set, so picking
+     one does not remove the others. */
+  var keys = _mrUniq('vertical');
+  if (keys.length < 2) return '';
+  return '<select class="filter-select" id="mr-f-vert" title="Business Vertical" onchange="' + onchg + '">'
+    + '<option value="All">All Business Verticals</option>'
+    + keys.map(function(k) {
+        return '<option value="' + esc(k) + '"' + (val === k ? ' selected' : '') + '>'
+             + esc(_mrVertName(k)) + '</option>';
+      }).join('')
+    + '</select>';
+}
+
 function _mrRenderFilters() {
   var el = document.getElementById('mr-filters');
   if (!el || !_mrCtx) return;
@@ -15913,7 +15940,8 @@ function _mrRenderFilters() {
         '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search vendor, ID or GSTIN…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
       + _mrSel('mr-f-osv',  'OSV Statuses',  osvOpts,               (OSV_LABELS[_mrF.osvStatus] || 'All'), 'mrFChange()')
       + _mrSel('mr-f-cat',  'Categories',    _mrUniq('category'),   _mrF.category, 'mrFChange()')
-      + _mrSel('mr-f-vert', 'Verticals',     _mrUniq('vertical'),   _mrF.vertical, 'mrFChange()')
+      // Was listing the raw keys; now the same names the column prints.
+      + _mrSelVert(_mrF.vertical, 'mrFChange()')
       + (_mrRows.some(function(r){ return r.assignedTo; })
           ? _mrSel('mr-f-asg', 'Users', _mrUniq('assignedTo'), _mrF.assigned, 'mrFChange()') : '')
       + '<input type="date" class="filter-select" id="mr-f-d1" title="Last updated from" value="' + esc(_mrF.dateStart) + '" onchange="mrFChange()" style="font-size:11px">'
@@ -15923,6 +15951,10 @@ function _mrRenderFilters() {
   }
 
   var html = '<input type="text" class="filter-input mr-search-inp" id="mr-search" placeholder="Search name, GSTIN or ID…" value="' + esc(_mrF.search) + '" oninput="mrSearchDeb()">'
+    // Sits beside the Business Vertical column it filters, and first, because a
+    // portfolio-wide drill (the Monthly Onboarding bars) is usually narrowed by
+    // vertical before anything else.
+    + _mrSelVert(_mrF.vertical, 'mrFChange()')
     + _mrSel('mr-f-cat',   'Categories',  _mrUniq('category'),  _mrF.category,  'mrFChange()')
     + _mrSel('mr-f-ven',   'Vendor Types', _mrUniq('vendorType'), _mrF.vendor,  'mrFChange()')
     + (noStatus ? '' : _mrSel('mr-f-sta', 'Statuses', ['DRAFT','IN_REVIEW','COMPLETED','REJECTED'], _mrF.status, 'mrFChange()'))
@@ -16017,6 +16049,9 @@ function _mrUserFilter(r) {
     return true;
   }
   if (f.category !== 'All' && r.category !== f.category) return false;
+  // Matched on the key the row stores, which is what the select's option values
+  // carry — only the option text is the display name.
+  if (f.vertical !== 'All' && r.vertical !== f.vertical) return false;
   if (f.vendor   !== 'All' && r.vendorType !== f.vendor) return false;
   if (f.status   !== 'All' && r.status !== f.status) return false;
   if (f.gst === 'Active'   && !r.hasGST) return false;
@@ -16234,15 +16269,17 @@ function _mrCellHtml(r, key) {
       // dashboard calls it ('Infra Business'). Unknown keys print as-is rather than
       // as a dash, so a new vertical is visible instead of silently blank.
       /* A row that carries no vertical of its own still belongs to the drill that
-         opened it, so fall back to that rather than printing a dash. Only a drill
-         with no vertical context of its own can reach the dash now. */
+         opened it, so fall back to that rather than printing a dash — but only
+         when the drill IS one vertical. A portfolio-wide drill names itself "All
+         verticals", which is not a vertical, and printing that in this column
+         would answer the question the column exists to answer with a non-answer. */
       var _vk = r.vertical;
       if (!_vk) {
         var _cn = _mrCtx && _mrCtx.vertName;
-        return '<span class="td-dim">' + esc(_cn || '—') + '</span>';
+        var _real = _cn && getVertCfg().some(function(c) { return c.name === _cn; });
+        return '<span class="td-dim">' + esc(_real ? _cn : '—') + '</span>';
       }
-      var _vn = (getVertCfg().filter(function(c) { return c.key === _vk; })[0] || {}).name || _vk;
-      return '<span class="td-dim">' + esc(_vn) + '</span>';
+      return '<span class="td-dim">' + esc(_mrVertName(_vk)) + '</span>';
     }
     case 'audType': {
       var isB = r.audType === 'Buyer';
@@ -16429,6 +16466,9 @@ function mrFChange() {
     return;
   }
   _mrF.category  = v('mr-f-cat');
+  // v() returns 'All' when the select is absent, so a single-vertical drill that
+  // renders no vertical filter clears it rather than carrying one over.
+  _mrF.vertical  = v('mr-f-vert');
   _mrF.vendor    = v('mr-f-ven');
   _mrF.status    = v('mr-f-sta');
   _mrF.state     = v('mr-f-state');
