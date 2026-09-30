@@ -606,8 +606,8 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v25_' + audience + '_' + vertKey + '_'
-      + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
+    var cacheKey = 'vrows_v26_' + audience + '_' + vertKey + '_'
+      + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '', f.month || '']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -636,8 +636,31 @@ function getVerticalRows(vertKey, filtersJson) {
     // one call rather than one per vertical. The cache key already carries vertKey,
     // so 'All' gets its own entry and cannot be served a single vertical's rows.
     var _allVerts = !vertKey || vertKey === 'All';
+
+    /* f.month ("YYYY-M") narrows the result to one onboarding cohort.
+
+       The Monthly Onboarding drill used to ask for the WHOLE portfolio — every
+       vertical, both audiences, no month — and keep one month of it in the
+       browser. That payload is far past the 100KB CacheService limit, so the
+       cache.put below silently failed and every click re-read and re-normalised
+       both feeds from scratch, for two calls in parallel, to show a few dozen
+       rows. Narrowing here makes the response small enough to cache and small
+       enough to marshal.
+
+       Same month definition as the chart's own buckets in getOverviewStats:
+       completionDate_ with createdDate as the last resort, so a bar and the list
+       behind it are built from one rule rather than two that agree by luck. */
+    var _mKey = String(f.month || '').trim();
+    var _monthOk = function(r) {
+      if (!_mKey) return true;
+      if (r.status !== 'COMPLETED') return false;
+      var dt = completionDate_(r) || r.createdDate;
+      if (!(dt instanceof Date) || isNaN(dt)) return false;
+      return (dt.getFullYear() + '-' + (dt.getMonth() + 1)) === _mKey;
+    };
+
     var vrows = all.filter(function(r) {
-      return (_allVerts || r.vertical === vertKey) && applyDateFilter(r, f);
+      return (_allVerts || r.vertical === vertKey) && _monthOk(r) && applyDateFilter(r, f);
     }).sort(function(a, b) {
       return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
     });

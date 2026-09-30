@@ -15456,7 +15456,9 @@ function openMonthRecords(monthKey) {
   var vEl   = document.getElementById('tab-vertoverview');
   var onVert = !!(vEl && vEl.getClientRects().length && _vovKey);
   var scope  = onVert ? _vovKey : 'All';
-  var pKey   = JSON.stringify([scope, currentPeriod, customStart || '', customEnd || '']);
+  // The month is part of the key: the fetch is now scoped to one month, so a
+  // store keyed only by scope+period would serve May's rows for a June click.
+  var pKey   = JSON.stringify([scope, monthKey, currentPeriod, customStart || '', customEnd || '']);
 
   var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var mp  = String(monthKey).split('-');
@@ -15483,9 +15485,10 @@ function openMonthRecords(monthKey) {
   _mrRender();
 
   function paint(store) {
-    var out = [];
+    var out = [], received = 0;
     ['seller', 'buyer'].forEach(function(aud) {
       (store[aud] || []).forEach(function(r) {
+        received++;
         if (String(r.status || '').toUpperCase() !== 'COMPLETED') return;
         var d = _mmParseDate(r.onbDate) || _mmParseDate(r.createdDate);
         if (!d) return;
@@ -15499,6 +15502,28 @@ function openMonthRecords(monthKey) {
     if (!_mrCtx || _mrCtx.module !== 'month') return;   // user moved on while fetching
     _mrCtx.loading = false;
     _mrRows = out;
+
+    /* Three different situations used to render the same blank table, so an empty
+       month, a backend that returned nothing, and a fetch that failed were
+       indistinguishable — the reason this drill was reported as simply "not
+       working" with no way to say what had gone wrong.
+
+       Receiving rows but none in this cohort is the only one that is genuinely an
+       empty month. Receiving nothing at all, with both calls reporting success,
+       means the server had nothing to give for this scope: on this dashboard that
+       is almost always Code.gs running behind Index.html, because the portfolio-wide
+       'All' scope this drill asks for arrived in the same change as the drill
+       itself and an older deployment matches it against no vertical. */
+    if (store.failed) {
+      _mrCtx.loadError = 'Could not reach the server for this month. Close this and '
+                       + 'click the bar again.';
+    } else if (!received) {
+      _mrCtx.loadError = 'The server returned no records for this scope. If the chart '
+                       + 'shows a figure for this month, Code.gs is likely a version '
+                       + 'behind Index.html — redeploy it and try again.';
+    } else {
+      _mrCtx.loadError = null;
+    }
     _mrRender();
   }
 
@@ -15507,13 +15532,42 @@ function openMonthRecords(monthKey) {
     _mrCtx.loading = false; _mrRender(); return;
   }
   var store = { seller: null, buyer: null };
+  var settled = false;
   var done = function() {
+    if (settled) return;
     if (store.seller === null || store.buyer === null) return;   // still waiting
-    _monthRecStore[pKey] = store;
+    settled = true;
+    clearTimeout(watchdog);
+    // A failed fetch is not an answer worth keeping: caching it would serve the
+    // same error on every retry without ever calling the server again.
+    if (!store.failed) _monthRecStore[pKey] = store;
     paint(store);
   };
+
+  /* Nothing here used to be able to end the wait except the two calls coming
+     back. A request that never calls either handler — which is what a response
+     too large to marshal, or a server run past its execution limit, looks like
+     from the browser — left the overlay reading "Loading records…" with no
+     record count and no way to tell a slow fetch from a dead one.
+
+     The watchdog resolves the state instead of leaving it open, and says the
+     fetch failed rather than claiming the month is empty. Whichever finishes
+     first wins; `settled` keeps a late reply from painting over the message. */
+  var watchdog = setTimeout(function() {
+    if (settled) return;
+    settled = true;
+    if (!_mrCtx || _mrCtx.module !== 'month') return;
+    _mrCtx.loading = false;
+    _mrCtx.loadError = 'The records for this month did not load. The connection may '
+                     + 'have timed out — close this and click the bar again.';
+    _mrRender();
+  }, 30000);
+
   ['seller', 'buyer'].forEach(function(aud) {
-    var fl = { audience: aud, period: currentPeriod };
+    // month scopes the fetch server-side, so the response is this cohort rather
+    // than the entire portfolio. paint() still applies the same month test, so an
+    // older deployment that ignores the parameter is filtered the same way.
+    var fl = { audience: aud, period: currentPeriod, month: monthKey };
     if (currentPeriod === 'Custom') { fl.startDate = customStart; fl.endDate = customEnd; }
     google.script.run
       .withSuccessHandler(function(raw) {
@@ -15522,7 +15576,7 @@ function openMonthRecords(monthKey) {
         store[aud] = (d && d.success && d.rows) ? d.rows : [];
         done();
       })
-      .withFailureHandler(function() { store[aud] = []; done(); })
+      .withFailureHandler(function() { store[aud] = []; store.failed = true; done(); })
       .getVerticalRows(scope, JSON.stringify(fl));
   });
 }
@@ -16234,8 +16288,14 @@ function _mrRenderTable() {
       // _mrCtx.loading is the general flag; the TAT drill keeps its own signal.
       var waiting = _mrCtx && (_mrCtx.loading
                     || (_mrCtx.tat && _tatRows.loading[_mrCtx.tatAud]));
+      /* A fetch that failed is not an empty month. Saying "no records match"
+         when nothing was ever received reports absence of data where the truth
+         is absence of an answer, and that is the more misleading of the two. */
+      var msg = (_mrCtx && _mrCtx.loadError) ? esc(_mrCtx.loadError)
+              : waiting ? 'Loading records…'
+              : 'No records match the selected filters';
       tbody.innerHTML = '<tr><td colspan="' + cols.length + '" class="mr-empty">'
-        + (waiting ? 'Loading records…' : 'No records match the selected filters') + '</td></tr>';
+        + msg + '</td></tr>';
     } else {
       // OSV rows come from the quality feed and carry none of the onboarding
       // fields openRecModal expects, so they are not click-through.
