@@ -15545,7 +15545,31 @@ function openMonthRecords(monthKey) {
   if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
   _mrRender();
 
-  function paint(store) {
+  /* Rows already in the browser, when they cover this scope and period.
+
+     On a vertical overview the drill was re-fetching rows the page had already
+     loaded for itself: vertRows holds this vertical's sellers and _ovnRows.buyer
+     its buyers, both pulled for the overview under the current period. Two Apps
+     Script round trips to re-derive a subset of what was in memory is the whole
+     of the wait the user sees.
+
+     Both caches are period-scoped — vertRows by _vertRowsPKey, _ovnRows by being
+     cleared outright on a period change — so a hit is current by construction.
+     The portfolio-wide 'All' scope has no equivalent in memory (these caches hold
+     one vertical) and still fetches. */
+  function memRows() {
+    if (!scope || scope === 'All') return { seller: null, buyer: null };
+    var pk   = JSON.stringify([currentPeriod, customStart || '', customEnd || '']);
+    var vKey = activeVertKey || selectedVert;
+    return {
+      seller: (vKey === scope && _vertRowsPKey === pk
+               && Array.isArray(vertRows) && !vertRowsLoading) ? vertRows : null,
+      buyer:  (_ovnRows && _ovnRows._key === scope
+               && Array.isArray(_ovnRows.buyer)) ? _ovnRows.buyer : null
+    };
+  }
+
+  function paint(store, partial) {
     var out = [], received = 0;
     ['seller', 'buyer'].forEach(function(aud) {
       (store[aud] || []).forEach(function(r) {
@@ -15561,8 +15585,14 @@ function openMonthRecords(monthKey) {
       });
     });
     if (!_mrCtx || _mrCtx.module !== 'month') return;   // user moved on while fetching
-    _mrCtx.loading = false;
+    // A partial paint is one audience served from memory while the other is still
+    // in flight: the rows on screen are real, so they are shown, but the count is
+    // not final yet and the header has to say so rather than settle on it.
+    _mrCtx.loading    = !!partial;
+    _mrCtx.partialAud = partial || null;
+    _mrCtx.headNote   = null;
     _mrRows = out;
+    if (partial) { _mrCtx.loadError = null; _mrRender(); return; }
 
     /* Three different situations used to render the same blank table, so an empty
        month, a backend that returned nothing, and a fetch that failed were
@@ -15575,7 +15605,14 @@ function openMonthRecords(monthKey) {
        is almost always Code.gs running behind Index.html, because the portfolio-wide
        'All' scope this drill asks for arrived in the same change as the drill
        itself and an older deployment matches it against no vertical. */
-    if (store.failed) {
+    if (store.failed && out.length) {
+      /* Half the drill came from memory and the fetch for the other half failed.
+         The rows on screen are real, so they stay — but loadError only renders
+         on an empty table, so without this the header would present a half set
+         as the final count with nothing saying so. */
+      _mrCtx.headNote  = 'could not load ' + (mem.seller ? 'buyers' : 'sellers');
+      _mrCtx.loadError = null;
+    } else if (store.failed) {
       _mrCtx.loadError = 'Could not reach the server for this month. Close this and '
                        + 'click the bar again.';
     } else if (!received) {
@@ -15589,10 +15626,29 @@ function openMonthRecords(monthKey) {
   }
 
   if (_monthRecStore[pKey]) { paint(_monthRecStore[pKey]); return; }
-  if (typeof google === 'undefined' || !google.script || !google.script.run) {
-    _mrCtx.loading = false; _mrRender(); return;
+
+  /* Serve from memory before reaching for the network. When both audiences are
+     already loaded for this vertical and period the drill needs no round trip at
+     all and opens instantly; when only one is, its rows go up immediately and
+     only the missing audience is fetched — one call instead of two, against a
+     table that is already showing data. */
+  var mem = memRows();
+  if (mem.seller && mem.buyer) {
+    var whole = { seller: mem.seller, buyer: mem.buyer };
+    _monthRecStore[pKey] = whole;
+    paint(whole);
+    return;
   }
-  var store = { seller: null, buyer: null };
+  if (typeof google === 'undefined' || !google.script || !google.script.run) {
+    paint({ seller: mem.seller || [], buyer: mem.buyer || [] });
+    return;
+  }
+  if (mem.seller || mem.buyer) {
+    paint({ seller: mem.seller || [], buyer: mem.buyer || [] },
+          mem.seller ? 'buyer' : 'seller');
+  }
+
+  var store = { seller: mem.seller || null, buyer: mem.buyer || null };
   var settled = false;
   var done = function() {
     if (settled) return;
@@ -15619,12 +15675,20 @@ function openMonthRecords(monthKey) {
     settled = true;
     if (!_mrCtx || _mrCtx.module !== 'month') return;
     _mrCtx.loading = false;
-    _mrCtx.loadError = 'The records for this month did not load. The connection may '
-                     + 'have timed out — close this and click the bar again.';
+    _mrCtx.partialAud = null;
+    if (_mrRows.length) {
+      // Rows from memory are already up; only the other audience timed out.
+      _mrCtx.headNote = (mem.seller ? 'buyers' : 'sellers') + ' timed out';
+    } else {
+      _mrCtx.loadError = 'The records for this month did not load. The connection may '
+                       + 'have timed out — close this and click the bar again.';
+    }
     _mrRender();
   }, 30000);
 
-  ['seller', 'buyer'].forEach(function(aud) {
+  // Only what memory could not supply. When one audience came from memory its
+  // slot is already filled, so done() is waiting on a single reply.
+  ['seller', 'buyer'].filter(function(a) { return store[a] === null; }).forEach(function(aud) {
     // month scopes the fetch server-side, so the response is this cohort rather
     // than the entire portfolio. paint() still applies the same month test, so an
     // older deployment that ignores the parameter is filtered the same way.
@@ -15898,7 +15962,14 @@ function _mrRenderHeader() {
   } else if (_mrCtx.rating) {
     if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(_mrRows.length) + ' vendor' + (_mrRows.length === 1 ? '' : 's') + ')';
   } else {
-    if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(_mrRows.length) + ' source rows)';
+    /* A partial paint puts real rows on screen from memory while the other
+       audience is still in flight. The count is true of what is shown but not
+       final, so it says which half is still coming rather than presenting an
+       interim number as the answer. */
+    var _part = _mrCtx.partialAud
+      ? ' · loading ' + (_mrCtx.partialAud === 'buyer' ? 'buyers' : 'sellers') + '…'
+      : (_mrCtx.headNote ? ' · ' + _mrCtx.headNote : '');
+    if (tt) tt.textContent = _mrCtx.label + '  (' + fmt(_mrRows.length) + ' source rows' + _part + ')';
   }
 }
 
