@@ -5134,7 +5134,11 @@ function _modalCloseClass(modal, cls, escFn) {
 
 // localStorage key prefix — bump the version suffix when the data shape changes
 // so stale entries from an old schema are silently ignored.
-var STORE_PFX = 'ebt_v13_';   // bumped: Managed Marketplace consolidated into single vertical
+// v14: rows gained hasListing / daysToList / daysToOrder. A v13 entry has none
+// of them, so every onboarded vendor read as dormant — which is exactly what the
+// buyer side of the activation drill hit. The row shape changed and this was not
+// bumped with it; that is the failure this comment exists to prevent.
+var STORE_PFX = 'ebt_v14_';
 
 // Stale-while-revalidate: if we have a previous response in localStorage, paint
 // it immediately so the user sees real data with zero wait, then fetch fresh data
@@ -11368,7 +11372,16 @@ function _ovnEnsureAud(aud) {
       });
       _mrRender();
     }
-    if (a === 'buyer' && _mrCtx && _mrCtx.audRec && _mrCtx.geoAud === 'buyer') {
+    /* The activation drill sets audRec too, so it would fall into the branch
+       below and have its dormant list replaced by the whole onboarded book —
+       the wrong rows under the right heading. It re-applies its own predicate
+       instead, the same !hasListing the funnel counts with. */
+    if (a === 'buyer' && _mrCtx && _mrCtx.activation && _mrCtx.geoAud === 'buyer') {
+      _mrRows = (_ovnRows.buyer || [])
+        .filter(function(r) { return r.status === 'COMPLETED' && !r.hasListing; });
+      _mrCtx.loadError = null;
+      _mrRender();
+    } else if (a === 'buyer' && _mrCtx && _mrCtx.audRec && _mrCtx.geoAud === 'buyer') {
       _mrRows = (_ovnRows.buyer || []).filter(function(r) { return r.status === 'COMPLETED'; });
       _mrRender();
     }
@@ -15181,7 +15194,7 @@ function openActivationRecords(aud) {
   var dormant = onb.filter(function(r) { return !r.hasListing; });
 
   _mrCtx = {
-    module: 'activation', audRec: true, geoAud: aud,
+    module: 'activation', activation: true, audRec: true, geoAud: aud,
     label: label, vertLabel: vertName,
     preStatus: 'COMPLETED', forceSeller: isS,
     cfg: { label: label }
@@ -15198,17 +15211,36 @@ function openActivationRecords(aud) {
     if (!col.always && !showKeys[col.key]) _mrColVis[col.key] = true;
   });
 
-  /* An older backend sends no hasListing at all, in which case every onboarded
-     row looks dormant. The funnel's own gap is the check: if the list is the
-     whole cohort while the funnel says otherwise, say so instead of showing a
-     list that is simply the onboarded book. */
+  /* Rows without hasListing all look dormant, and the funnel's own gap is the
+     check: a list that is the whole cohort while the funnel says otherwise is
+     not a dormant list.
+
+     The first version of this told the reader to redeploy Code.gs, which was the
+     wrong diagnosis. The flag was deployed — these rows came from a localStorage
+     seed written by an older build, and the seed key carried the period but not
+     the payload shape, so a stale copy was served as current. Telling someone to
+     redeploy something already deployed is worse than saying nothing.
+
+     So it repairs itself instead: drop the stale copy, re-request from the
+     server, and let the arrival hook re-apply the predicate. Only if the rows
+     come back still lacking the flag is it actually a backend that predates it,
+     and only then does the message say so. */
   var agg = _vovActAgg(key, isS ? 'seller' : 'buyer');
   var expect = (agg && agg.listed !== null && agg.listed !== undefined)
     ? Math.max(0, agg.onboarded - agg.listed) : null;
-  if (expect !== null && onb.length && dormant.length === onb.length && expect < onb.length) {
-    _mrCtx.loadError = 'These rows do not yet carry the first-' + stepL + ' flag, so the '
-                     + 'dormant list cannot be separated from the onboarded book. Redeploy '
-                     + 'Code.gs and open this again — the funnel counts ' + fmt(expect) + '.';
+  var looksStale = (expect !== null && onb.length
+                    && dormant.length === onb.length && expect < onb.length);
+
+  if (looksStale && !_actRefetched[aud]) {
+    _actRefetched[aud] = true;            // one repair attempt, so this cannot loop
+    _mrCtx.loading = true;
+    _mrRows = [];
+    _actDiscardRows(key, aud);
+  } else if (looksStale) {
+    _mrCtx.loadError = 'These rows carry no first-' + stepL + ' flag even after a refresh, '
+                     + 'so the dormant list cannot be separated from the onboarded book. '
+                     + 'Code.gs is behind Index.html — redeploy it. The funnel counts '
+                     + fmt(expect) + '.';
     _mrRows = [];
   }
 
@@ -15216,6 +15248,24 @@ function openActivationRecords(aud) {
   if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
   _mrRender();
   if (!isS && (!_ovnRows || !_ovnRows.buyer)) _ovnEnsureAud('buyer');
+}
+
+/* One repair attempt per audience per session. Without the latch a backend that
+   genuinely predates the flag would discard and re-request on every open. */
+var _actRefetched = {};
+
+/* Throw away a cached row set — in memory and in localStorage — and ask for it
+   again. Both layers have to go: clearing only the variable would have the seed
+   served straight back in its place. */
+function _actDiscardRows(key, aud) {
+  try { localStorage.removeItem(STORE_PFX + 'vr_' + aud + '_' + key); } catch (e) {}
+  if (aud === 'buyer') {
+    if (_ovnRows) _ovnRows[aud] = undefined;   // undefined, not null: null means in-flight
+    _ovnEnsureAud('buyer');
+  } else {
+    vertRows = []; _vertRowsPKey = null; ++_vertRowsGen;
+    if (typeof loadVertRows === 'function') loadVertRows(key);
+  }
 }
 
 // Transacted Sellers or Buyers breakdown — opens the KPI modal showing total
@@ -15882,6 +15932,29 @@ function _mrRefreshFromVertRows() {
   var ovl = document.getElementById('mr-ovl');
   if (!ovl || !ovl.classList.contains('mr-open') || !_mrCtx) return;
   if (_mrCtx.osv || _mrCtx.tat) return;
+
+  /* Two drills hold a narrowed set that is not derivable from vertRows alone,
+     and handing them the whole vertical would leave the right heading over the
+     wrong rows.
+
+     The activation drill re-applies its own predicate — the same !hasListing the
+     funnel counts with — so a refresh completes the repair rather than undoing
+     it. The month drill is governed by its own fetch and store, keyed by a month
+     this function knows nothing about, so it is left alone. Drills whose
+     narrowing lives in _mrPreFilter, such as ageing, need neither: the filter
+     re-applies itself on the new rows. */
+  if (_mrCtx.activation) {
+    if (_mrCtx.geoAud === 'buyer') return;            // buyer rows arrive via _ovnAfter
+    _mrRows = (Array.isArray(vertRows) ? vertRows : [])
+      .filter(function(r) { return r.status === 'COMPLETED' && !r.hasListing; });
+    _mrCtx.loading = false;
+    _mrCtx.loadError = null;
+    _mrPg.page = 0;
+    _mrRender();
+    return;
+  }
+  if (_mrCtx.module === 'month') return;
+
   _mrRows = Array.isArray(vertRows) ? vertRows.slice() : [];
   _mrPg.page = 0;          // the row set changed; page 2 of the old set is meaningless
   _mrRender();
@@ -15937,7 +16010,13 @@ function _mrRenderHeader() {
   var tt = document.getElementById('mr-title');
   if (!_mrCtx) return;
   // Stage drill-downs merge both audiences, so naming one of them would be wrong.
+  /* geoAud is the audience the drill was opened for, and it wins: the buyer
+     activation and audience drills were reading the breadcrumb off selectedAud,
+     which is the page's own seller/buyer toggle, so a list of buyers sat under
+     "Sellers". Only drills that carry no audience of their own fall back to it. */
   var audLbl = _mrCtx.stage ? 'Breakup'
+             : _mrCtx.geoAud === 'buyer'  ? 'Buyers'
+             : _mrCtx.geoAud === 'seller' ? 'Sellers'
              : (_mrCtx.forceSeller || selectedAud !== 'buyer') ? 'Sellers' : 'Buyers';
   if (bc) bc.textContent = _mrCtx.vertLabel + ' › ' + audLbl;
   if (_mrCtx.cfg && _mrCtx.cfg.isTxnView) {
