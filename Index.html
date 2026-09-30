@@ -24065,12 +24065,19 @@ try{ if(typeof renderTxnDistSkeleton==='function'){ renderTxnDistSkeleton=functi
 .vact-ins-hd{font-size:12.5px;font-weight:700;color:var(--txt);margin-bottom:10px}
 .vact-ins-hd span{display:block;font-size:11px;font-weight:400;color:var(--txt3);margin-top:1px}
 .vact-ins-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px}
-.vact-in{border:1px solid var(--border);border-radius:10px;padding:12px 13px;background:var(--bg2);min-width:0}
+/* Flex column so the chip can be pinned to the bottom. The cards are equal
+   height already, but the chip sat directly under body text whose length
+   differs between them, so it landed at a different line in each one. */
+.vact-in{border:1px solid var(--border);border-radius:10px;padding:12px 13px;background:var(--bg2);min-width:0;display:flex;flex-direction:column}
 .vact-in-h{font-size:11.5px;font-weight:700;color:var(--txt);line-height:1.3}
 .vact-in-b{font-size:25px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.15;margin-top:6px}
 .vact-in-b span{font-size:12.5px;font-weight:600;color:var(--txt3);margin-left:5px}
-.vact-in-t{font-size:11.5px;color:var(--txt2);line-height:1.45;margin-top:4px}
-.vact-in-c2{margin-top:9px}
+/* The gap below the text belongs to the text, not to the chip: the chip's own
+   margin-top is auto so it can reach the bottom, and an auto margin collapses to
+   nothing once the slack runs out — which on the tallest card would have left
+   the chip touching the paragraph above it. */
+.vact-in-t{font-size:11.5px;color:var(--txt2);line-height:1.45;margin-top:4px;margin-bottom:9px}
+.vact-in-c2{margin-top:auto}
 .vact-chip{display:inline-block;font-size:10px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--card);border:1px solid var(--border2);color:var(--txt2);white-space:nowrap}
 .vact-in.s .vact-in-b{color:#D70015}
 .vact-in.b .vact-in-b{color:var(--brand)}
