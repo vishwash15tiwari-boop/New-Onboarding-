@@ -127,7 +127,7 @@ function _getGstinLookup_() {
         if (!isValidGSTIN(gst)) {
           for (var _gsi = 0; _gsi < row.length; _gsi++) {
             var _gsc = String(row[_gsi] || '').trim().toUpperCase();
-            if (isValidGSTIN(_gsc)) { gst = _gsc; break; }
+            if (isStrictGSTIN_(_gsc)) { gst = _gsc; break; }   // a guess: must look like a GSTIN
           }
         }
         if (!isValidGSTIN(gst)) return;
@@ -167,7 +167,7 @@ function _getGstinLookup_() {
           if (!isValidGSTIN(gst)) {
             for (var _vi = 0; _vi < row.length; _vi++) {
               var _vc = String(row[_vi] || '').trim().toUpperCase();
-              if (isValidGSTIN(_vc)) { gst = _vc; break; }
+              if (isStrictGSTIN_(_vc)) { gst = _vc; break; }     // a guess: must look like a GSTIN
             }
           }
           if (!isValidGSTIN(gst)) return;
@@ -463,10 +463,12 @@ function _splitBasisDate_(r) {
 
    v27: the FY 26-27 split now runs on the onboarded date, so entries written by
    the previous version hold the old vertical for the same key.
+   v29: the name join that resolves a GSTIN for Open Marketplace sellers was
+   fixed, so v28 entries hold "Missing" where a GSTIN is now found.
    v28: rows carry hasListing / daysToList / daysToOrder; a v27 entry has none of
    them and the activation drill would read every vendor as dormant. */
 function _vrowsCacheKey_(audience, vertKey, f) {
-  return 'vrows_v28_' + audience + '_' + vertKey + '_'
+  return 'vrows_v29_' + audience + '_' + vertKey + '_'
     + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '', f.month || '']);
 }
 
@@ -555,7 +557,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v43_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v44_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -613,14 +615,14 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v43_cmb_' + periodKey;
+    var cacheKey  = 'dash_v44_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v43_seller_' + periodKey;
-    var bIndKey = 'dash_v43_buyer_'  + periodKey;
+    var sIndKey = 'dash_v44_seller_' + periodKey;
+    var bIndKey = 'dash_v44_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -761,7 +763,7 @@ function getVerticalRows(vertKey, filtersJson) {
 function getGeoTransactionData(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
-    var cacheKey = 'geo_txn_v6_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
+    var cacheKey = 'geo_txn_v7_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
                                                      f.audience||'all', f.category||'all', f.vertical||'all']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -929,7 +931,7 @@ function getTransactionModuleData(filtersJson) {
     // it showed were the whole portfolio. 'all' keeps the old portfolio-wide
     // behaviour available for any caller that wants it.
     var vertF = String(f.vertical || 'OMP');
-    var cKey = 'txn_mod_v6_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, vertF]);
+    var cKey = 'txn_mod_v7_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, vertF]);
     var cache = CacheService.getScriptCache();
     var hit   = cache.get(cKey);
     if (hit) return hit;
@@ -2422,7 +2424,9 @@ function normalizeRows(raw, cfg) {
       gstin = '';
       for (var _gs = 0; _gs < row.length; _gs++) {
         var _gv2 = String(row[_gs] || '').trim().toUpperCase();
-        if (isValidGSTIN(_gv2)) { gstin = _gv2; break; }
+        // Strict here: this is a guess across unnamed columns, so it must look
+        // like a GSTIN and not merely be fifteen characters long.
+        if (isStrictGSTIN_(_gv2)) { gstin = _gv2; break; }
       }
     }
     var gstStatus = String(firstVal_(row, idx, [
@@ -2733,17 +2737,22 @@ function normalizeRows(raw, cfg) {
     var _gLkp    = _getGstinLookup_();
     var _audLkp  = cfg.audience === 'buyer' ? _gLkp.buyer         : _gLkp.seller;
     var _nameLkp = cfg.audience === 'buyer' ? _gLkp.buyerByName   : _gLkp.sellerByName;
+    // 3c falls back to the other audience's lookup. A GSTIN belongs to a company,
+    // not to the side of the marketplace it happens to be on, and the same entity
+    // often appears in both tabs with the column populated in only one of them.
+    // Nothing about the value changes by which tab it was read from.
+    var _xIdLkp   = cfg.audience === 'buyer' ? _gLkp.seller       : _gLkp.buyer;
+    var _xNameLkp = cfg.audience === 'buyer' ? _gLkp.sellerByName : _gLkp.buyerByName;
     result.forEach(function(r) {
       if (r.gstin) return; // already populated
+      var _nk = r.name ? _qNormName_(r.name) : '';
       // 3a. ID-based lookup
-      if (r.id && _audLkp[r.id]) {
-        r.gstin = _audLkp[r.id]; r.hasGST = true; return;
-      }
+      if (r.id && _audLkp[r.id])            { r.gstin = _audLkp[r.id];   r.hasGST = true; return; }
       // 3b. Name-based lookup (OMP sellers: ID spaces differ; name is the shared key)
-      if (r.name) {
-        var _nk = _qNormName_(r.name);
-        if (_nk && _nameLkp[_nk]) { r.gstin = _nameLkp[_nk]; r.hasGST = true; }
-      }
+      if (_nk && _nameLkp[_nk])             { r.gstin = _nameLkp[_nk];   r.hasGST = true; return; }
+      // 3c. The other audience, by id then name.
+      if (r.id && _xIdLkp[r.id])            { r.gstin = _xIdLkp[r.id];   r.hasGST = true; return; }
+      if (_nk && _xNameLkp[_nk])            { r.gstin = _xNameLkp[_nk];  r.hasGST = true; }
     });
   } catch (e) { /* non-fatal — rows without GSTIN stay as-is */ }
 
@@ -3438,6 +3447,20 @@ function _numStats_(vals) {
 
 function isValidGSTIN(g) { return /^[0-9A-Z]{15}$/.test(String(g || '').trim().toUpperCase()); }
 
+/* The canonical GSTIN shape: 2-digit state, 5-letter PAN prefix, 4 digits, PAN
+   check letter, entity code, a literal Z, then the checksum character.
+
+   isValidGSTIN above accepts any 15 alphanumerics, which is right for a value
+   that came out of a column actually named "gstin" — it is whatever the feed
+   holds. It is far too loose for the format-scans, which go looking through
+   every column for something that might be a GSTIN: there, any 15-character
+   token would be seized on and then shown to a reader as this vendor's GSTIN.
+   A wrong number presented as fact is worse than a blank, so the scans use this
+   instead and only accept something actually shaped like a GSTIN. */
+function isStrictGSTIN_(g) {
+  return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z]$/.test(String(g || '').trim().toUpperCase());
+}
+
 function normStatus(v) {
   var s = String(v || '').toUpperCase().trim().replace(/\s+/g, '_');
   if (!s) return 'UNKNOWN';
@@ -3857,7 +3880,7 @@ function getQualityData(filtersJson) {
   // the cohort a vendor was onboarded in.
   var _qf = {};
   try { _qf = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { _qf = {}; }
-  var CACHE_KEY = 'quality_data_v28_' + (_qf.period || 'All')
+  var CACHE_KEY = 'quality_data_v29_' + (_qf.period || 'All')
                 + '_' + (_qf.startDate || '') + '_' + (_qf.endDate || '');
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
@@ -4697,9 +4720,26 @@ function buildOmpGstinMap_(sheetName, aud) {
 // key that reliably joins the Vendor Score sheet to OMP-onboarded sellers, because
 // OMP sellers carry no GSTIN in the feed and the two sheets use different id spaces
 // (Vendor Ref "OMP_0001" vs feed id "71750"). Kept identical on both sides of the join.
+/* The join key for matching one source's spelling of a company to another's.
+
+   It stripped PRIVATE, LIMITED, LTD and LLP — but not PVT, and it stripped them
+   before removing punctuation, with no word boundaries. So "NIKON INDIA
+   PVT.LTD." keyed as NIKONINDIAPVT while "Nikon India Private Limited" keyed as
+   NIKONINDIA, and the two never met. Every vendor whose two sources spell the
+   legal form differently missed, which is why onboarded sellers were showing
+   "Missing" against a GSTIN the feed actually holds: this name join is the only
+   path to a GSTIN for Open Marketplace sellers, whose own feed carries none.
+
+   Punctuation now collapses to spaces FIRST, so "PVT.LTD." splits into two
+   tokens, and the legal forms are removed on word boundaries. Only legal forms
+   go: trade words like Enterprises, Industries and Traders are what actually
+   distinguishes one vendor from another and are kept, so "Daksh Enterprises"
+   and "Daksh Industries" stay apart. */
 function _qNormName_(s) {
   return String(s || '').toUpperCase()
-    .replace(/PRIVATE|LIMITED|LTD|LLP/g, '')
+    .replace(/&/g, ' AND ')
+    .replace(/[^A-Z0-9]+/g, ' ')
+    .replace(/\b(?:M S|PVT|PRIVATE|LTD|LIMITED|LLP|LLC|INC|OPC|CORP|CORPORATION|COMPANY|CO)\b/g, ' ')
     .replace(/[^A-Z0-9]/g, '');
 }
 
@@ -5202,6 +5242,42 @@ function buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap, ompNameMap) {
 // data lives and how it splits by audience. Logs the headers + counts of the
 // Vendor Rating, Doc Completeness and _mb_buyers sheets and the final
 // per-audience vendorDocs breakdown, so buyer-document sourcing can be verified.
+/* Run from the Apps Script editor. Reports GSTIN coverage for ONBOARDED vendors
+   and names every one still missing, so "no GSTIN should be missing" can be
+   checked against the data rather than taken on trust.
+
+   For each miss it prints the normalised name the join used. That key is the
+   thing to compare against the lookup sheet: if the vendor is in _mb_sellers
+   under a spelling that normalises differently, the key shows why they did not
+   meet, and the fix is either the name in the sheet or one more legal-form
+   token in _qNormName_. */
+function debugGstin() {
+  var lk = _getGstinLookup_();
+  Logger.log('GSTIN lookup sizes: seller byId=' + Object.keys(lk.seller).length
+    + ' byName=' + Object.keys(lk.sellerByName).length
+    + ' | buyer byId=' + Object.keys(lk.buyer).length
+    + ' byName=' + Object.keys(lk.buyerByName).length);
+
+  ['seller', 'buyer'].forEach(function(aud) {
+    var cfg  = AUDIENCE_CFG[aud];
+    var rows = normalizeRows(readData(aud), cfg)
+                 .filter(function(r) { return r.status === 'COMPLETED'; });
+    var miss = rows.filter(function(r) { return !r.gstin; });
+    Logger.log('\n' + aud.toUpperCase() + ': ' + (rows.length - miss.length) + ' of '
+      + rows.length + ' onboarded carry a GSTIN  (' + miss.length + ' missing)');
+
+    var byVert = {};
+    miss.forEach(function(r) { byVert[r.vertical] = (byVert[r.vertical] || 0) + 1; });
+    Object.keys(byVert).forEach(function(v) { Logger.log('   missing in ' + v + ': ' + byVert[v]); });
+
+    miss.slice(0, 40).forEach(function(r) {
+      Logger.log('   - ' + (r.name || '(no name)') + '  [id ' + (r.id || '—')
+        + ' · ' + r.vertical + ']  join key: "' + _qNormName_(r.name) + '"');
+    });
+    if (miss.length > 40) Logger.log('   … and ' + (miss.length - 40) + ' more');
+  });
+}
+
 function debugDocs() {
   Logger.log('════ DOC DEBUG ════');
   ['Vendor Rating', 'Doc Completeness', '_mb_buyers'].forEach(function(nm) {
@@ -5264,7 +5340,7 @@ function getOSVDashboardData(filtersJson) {
   var _f = {};
   try { _f = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { _f = {}; }
   // The period belongs in the key, or the first period answered for all of them.
-  var CACHE_KEY = 'osv_dash_v10_' + (_f.period || 'All')
+  var CACHE_KEY = 'osv_dash_v11_' + (_f.period || 'All')
                 + '_' + (_f.startDate || '') + '_' + (_f.endDate || '');
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
