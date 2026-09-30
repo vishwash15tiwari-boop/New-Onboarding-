@@ -23996,7 +23996,12 @@ try{ if(typeof renderTxnDistSkeleton==='function'){ renderTxnDistSkeleton=functi
    Every value is a var() so light and dark both come from the same tokens. */
 .vact-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-3)}
 .vact-cols.one{grid-template-columns:minmax(0,1fr)}
-.vact-card{border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px 14px;background:var(--card);min-width:0}
+/* A flex column so the bottleneck strip can be pushed to the bottom. The two
+   cards are already equal in height (grid stretch), but their inner rows were
+   not lining up: the buyer side's longer labels wrap where the seller side's do
+   not, which pushed everything below them out of step. Three rules keep the rows
+   parallel — this one plus the reserved label line and the strip's floor. */
+.vact-card{border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px 14px;background:var(--card);min-width:0;display:flex;flex-direction:column}
 .vact-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .vact-ttl{font-size:15px;font-weight:700;color:var(--txt);line-height:1.2}
 .vact-sub{font-size:11.5px;color:var(--txt3);margin-top:2px}
@@ -24004,7 +24009,11 @@ try{ if(typeof renderTxnDistSkeleton==='function'){ renderTxnDistSkeleton=functi
 .vact-tot span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3)}
 .vact-tot b{font-size:19px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.15}
 
-.vact-body{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px;align-items:start}
+/* The gap above the bottleneck strip lives here, not on the strip. The strip
+   uses margin-top:auto to reach the bottom of the card, and an auto margin
+   collapses to nothing once the slack runs out — which would leave it flush
+   against the funnel on whichever card happens to be the taller one. */
+.vact-body{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px;align-items:start;margin-bottom:13px}
 .vact-fun{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:start}
 .vact-chev{align-self:center;color:var(--txt3);font-size:17px;line-height:1;opacity:.55;padding-top:14px}
 .vact-st{min-width:0}
@@ -24020,13 +24029,24 @@ try{ if(typeof renderTxnDistSkeleton==='function'){ renderTxnDistSkeleton=functi
 
 .vact-tats{display:grid;gap:8px}
 .vact-tat{background:var(--bg2);border-radius:10px;padding:10px 12px;min-width:0}
-.vact-tat-l{font-size:9.5px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;color:var(--txt3)}
+/* Two lines are reserved whether the label needs them or not. "Onboarded → First
+   Requisition" wraps where "Onboarded → First Listing" does not, so without this
+   the buyer card's first tile is a line taller than the seller card's and every
+   row beneath it sits lower. line-height is stated so the reservation is exact
+   rather than inherited. */
+.vact-tat-l{font-size:9.5px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;color:var(--txt3);line-height:1.35;min-height:2.7em}
 .vact-tat-v{font-size:22px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.2;margin-top:1px}
 .vact-tat-v span{font-size:11.5px;font-weight:600;color:var(--txt3);margin-left:4px}
 .vact-tat-v.dim{color:var(--txt3)}
 .vact-tat-s{font-size:10.5px;color:var(--txt3);margin-top:1px;line-height:1.35}
 
-.vact-bot{display:flex;align-items:center;gap:11px;margin-top:13px;padding:11px 13px;border-radius:10px;border:1px solid transparent}
+/* margin-top:auto pins the strip to the bottom of an equal-height card, so both
+   sit on the same line however much the funnel above them varies. min-height
+   then squares off the strips themselves: one side's headline wraps to two lines
+   and the other's does not, which would leave their tops a line apart even when
+   bottom-aligned. Below the stacking breakpoint the cards are one above the
+   other and neither rule has anything to align against. */
+.vact-bot{display:flex;align-items:center;gap:11px;margin-top:auto;padding:11px 13px;border-radius:10px;border:1px solid transparent;min-height:64px;box-sizing:border-box}
 .vact-bot.s{background:rgba(255,59,48,.07);border-color:rgba(255,59,48,.22)}
 .vact-bot.b{background:rgba(0,93,255,.06);border-color:rgba(0,93,255,.20)}
 .vact-bot.ok{background:rgba(29,199,151,.08);border-color:rgba(29,199,151,.24)}
