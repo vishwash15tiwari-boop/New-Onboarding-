@@ -437,6 +437,75 @@ var MKT_SPLIT_DATE = new Date(2026, 3, 1); // April 1, 2026
 //        anything else                                → Others
 //  · everything else (Sustainability Services, blank, …) → Others
 // audience = 'seller'|'buyer'. E-Waste under Marketplace maps to Recommerce for both.
+/* Which date decides the FY 26-27 split for a case.
+
+   The vertical a case belongs to is settled when it is ONBOARDED, not when the
+   application was opened. Judging it on the created date filed a case created in
+   2024 and onboarded in June 2026 under Managed Marketplace — the card the
+   dashboard describes as pre-April history — while the row's own Onboarded column
+   read June 2026. A case still in the pipeline has no onboarding date to be judged
+   on, so it keeps the created date; it is not onboarded anywhere yet.
+
+   completionDate_ is the same definition of "when was this onboarded" that
+   applyDateFilter and the Monthly Onboarding buckets use, so a case cannot be
+   filed under one vertical and counted in a different month. */
+function _splitBasisDate_(r) {
+  return (r.status === 'COMPLETED' && completionDate_(r)) || r.createdDate || null;
+}
+
+/* The vertical-rows cache key, built in ONE place.
+
+   getTransactedVendors reads the entry getVerticalRows writes, to avoid a second
+   full feed read. Each spelled its own key, so the moment getVerticalRows gained
+   a month parameter and a version bump the two stopped matching: the read never
+   hit and every call silently fell back to re-reading and re-normalising the
+   whole feed. It still returned correct rows, which is why nothing looked wrong.
+
+   v27: the FY 26-27 split now runs on the onboarded date, so entries written by
+   the previous version hold the old vertical for the same key. */
+function _vrowsCacheKey_(audience, vertKey, f) {
+  return 'vrows_v27_' + audience + '_' + vertKey + '_'
+    + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '', f.month || '']);
+}
+
+/* The FY 26-27 split, applied once for every row that is subject to it.
+
+   Runs AFTER _assignTat_, because completionDate_ reads approvedDate / tatEndDate /
+   dispEnd, none of which exist until that pass has run.
+
+   Runs BEFORE the dedupe, and that ordering is load-bearing. The dedupe key is
+   id + vertical. The Others catch-all used to re-home rows AFTER the dedupe, so a
+   vendor holding an Others row and a Marketplace row under one id survived as two
+   rows — keys id+Others and id+Marketplace — and the Others one was then relabelled
+   Marketplace, leaving two rows with the same id in the same vertical. That pair
+   escaped the dedupe entirely and was counted twice everywhere. Settling the
+   vertical first means the key is the final one and the pair collapses.
+
+   Cross-vertical rows are still kept deliberately: one vendor with a case in Open
+   Marketplace and another in Managed Marketplace is two onboarding events, and each
+   is now attributed to the vertical and the date of its own onboarding. */
+function _applyVerticalSplit_(rows) {
+  rows.forEach(function(r) {
+    var bv  = String(r.bizVertical || '').trim().toLowerCase();
+    var cat = String(r.category || '').trim().toLowerCase();
+
+    // business_vertical = Marketplace, already narrowed by mapToVertical to the
+    // two verticals the cut chooses between. AFR, DRS, Re-Commerce/E-Waste and
+    // Transport/Support have verticals of their own and are not touched.
+    var isMkt = (bv === 'marketplace')
+             && (r.vertical === 'InfraBusiness' || r.vertical === 'Marketplace');
+
+    // Miscellaneous Others — everything except Transport & Support, which are
+    // tracked logistics/service records and stay in Others in full.
+    var isMisc = (r.vertical === 'Others') && !isTransportOrSupport_(cat, bv);
+
+    if (!isMkt && !isMisc) return;
+    var d = _splitBasisDate_(r);
+    // An undated row is treated as current, which is what the original rule did.
+    r.vertical = (d && d < MKT_SPLIT_DATE) ? 'Marketplace' : 'InfraBusiness';
+  });
+}
+
 function mapToVertical(businessVertical, category, audience) {
   var bv  = String(businessVertical || '').trim().toLowerCase();
   var cat = String(category || '').trim().toLowerCase();
@@ -484,7 +553,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v42_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v43_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -516,7 +585,9 @@ function getDashboardData(filtersJson) {
           return (b.createdDate ? b.createdDate.getTime() : 0) - (a.createdDate ? a.createdDate.getTime() : 0);
         });
       var v = JSON.stringify({ success: true, vertKey: vc.key, rows: vrows.map(vertRow) });
-      if (v.length <= 100000) batchCache['vrows_v25_' + audience + '_' + vc.key + '_' + periodKey] = v;
+      // Third writer of this cache, and the third spelling of its key before
+      // _vrowsCacheKey_ existed. These are whole-vertical entries, so no month.
+      if (v.length <= 100000) batchCache[_vrowsCacheKey_(audience, vc.key, f)] = v;
     });
 
     var out = JSON.stringify(dash);
@@ -540,14 +611,14 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v42_cmb_' + periodKey;
+    var cacheKey  = 'dash_v43_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v42_seller_' + periodKey;
-    var bIndKey = 'dash_v42_buyer_'  + periodKey;
+    var sIndKey = 'dash_v43_seller_' + periodKey;
+    var bIndKey = 'dash_v43_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -606,8 +677,7 @@ function getVerticalRows(vertKey, filtersJson) {
     var audience = (f.audience === 'buyer') ? 'buyer' : 'seller';
     var cfg = AUDIENCE_CFG[audience];
 
-    var cacheKey = 'vrows_v26_' + audience + '_' + vertKey + '_'
-      + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '', f.month || '']);
+    var cacheKey = _vrowsCacheKey_(audience, vertKey, f);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -689,7 +759,7 @@ function getVerticalRows(vertKey, filtersJson) {
 function getGeoTransactionData(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
-    var cacheKey = 'geo_txn_v5_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
+    var cacheKey = 'geo_txn_v6_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
                                                      f.audience||'all', f.category||'all', f.vertical||'all']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -817,7 +887,8 @@ function getTransactedVendors(filtersJson) {
     var cache = CacheService.getScriptCache();
 
     function fetchOmpTxn(aud) {
-      var cacheKey = 'vrows_v25_' + aud + '_OMP_' + periodKey;
+      // Same builder getVerticalRows writes with — the two cannot drift apart now.
+      var cacheKey = _vrowsCacheKey_(aud, 'OMP', f);
       var hit = cache.get(cacheKey);
       if (hit) {
         try {
@@ -856,7 +927,7 @@ function getTransactionModuleData(filtersJson) {
     // it showed were the whole portfolio. 'all' keeps the old portfolio-wide
     // behaviour available for any caller that wants it.
     var vertF = String(f.vertical || 'OMP');
-    var cKey = 'txn_mod_v5_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, vertF]);
+    var cKey = 'txn_mod_v6_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, vertF]);
     var cache = CacheService.getScriptCache();
     var hit   = cache.get(cKey);
     if (hit) return hit;
@@ -2535,12 +2606,16 @@ function normalizeRows(raw, cfg) {
 
        AFR, DRS, Re-Commerce/E-Waste and Transport/Support are deliberately NOT
        caught here: mapToVertical sends them to verticals of their own, and they
-       are not Infra Business whatever their date. An undated row is treated as
-       current, which is what the original rule did too. */
-    if (String(bizVert || '').trim().toLowerCase() === 'marketplace'
-        && (vertical === 'InfraBusiness' || vertical === 'Marketplace')) {
-      vertical = (created && created < MKT_SPLIT_DATE) ? 'Marketplace' : 'InfraBusiness';
-    }
+       are not Infra Business whatever their date.
+
+       The split no longer happens at this point. It ran on the CREATED date,
+       which is not when a case joins a vertical: a case created in 2024 and
+       onboarded in June 2026 was filed under the historical card while its own
+       Onboarded column read June 2026. It also ran before _assignTat_, so the
+       completion date it should have judged on did not exist yet. Both this cut
+       and the Others catch-all now happen in one pass after _assignTat_ and
+       before dedupe — see _applyVerticalSplit_. mapToVertical's answer stands
+       until then. */
     return {
       id:            recId,
       name:          recName,
@@ -2598,6 +2673,7 @@ function normalizeRows(raw, cfg) {
     };
   }).filter(function(r) { return r.id || r.name; });
   _assignTat_(normalized, cfg.audience);
+  _applyVerticalSplit_(normalized);
   // Count pre-dedup rows per (id+vertical) as per-vendor transaction count.
   // Metabase emits one row per transaction via joins; this count captures that.
   var txnCounts = {};
@@ -2633,35 +2709,17 @@ function normalizeRows(raw, cfg) {
     return true;
   });
 
-  // Managed Marketplace owns the miscellaneous Others rows that are NOT Transport
-  // or Support cases (those are logistics/service records that stay in Others).
-  //
-  // Each case gets exactly ONE vertical. This block used to emit the Managed
-  // Marketplace copy AND keep the Others original whenever the case was created
-  // on or after 1 Apr 2026, so the same onboarding case existed under two
-  // verticals: every portfolio-wide figure — Total Onboarded, GMV, the
-  // geographic splits — counted it twice, and the vertical breakdown summed to
-  // more than the portfolio total it sat under. Routing every one of them to
-  // Managed Marketplace regardless of date also removes the cliff that made a
-  // case created on 31 March behave differently from one created on 1 April.
-  //
-  // Transport & Support are a deliberate, tracked category and stay in Others in
-  // full, so no transporter or support record goes missing.
-  var result = [];
-  deduped.forEach(function(r) {
-    if (r.vertical !== 'Others') { result.push(r); return; }
-    var isTS = isTransportOrSupport_((r.category || '').toLowerCase(), (r.bizVertical || '').toLowerCase());
-    /* These rows follow the same FY 26-27 cut as the Marketplace vertical itself.
-       They used to land in Managed Marketplace whatever their date, which left that
-       card accruing post-April cases while being described — and now filtered — as
-       the pre-April history. A case created in August belongs on the current card
-       whichever feed failed to label it. */
-    if (!isTS) {
-      r.vertical = (r.createdDate && r.createdDate < MKT_SPLIT_DATE)
-        ? 'Marketplace' : 'InfraBusiness';
-    }
-    result.push(r);
-  });
+  /* The miscellaneous-Others re-homing used to live here, after the dedupe, and
+     that was the bug: the dedupe key is id + vertical, so a vendor holding an
+     Others row and a Marketplace row under one id passed through as two rows
+     (id+Others, id+Marketplace) and this block then relabelled the Others one
+     Marketplace — leaving two rows, same id, same vertical, counted twice in
+     every portfolio figure. _applyVerticalSplit_ now settles the vertical before
+     the dedupe, so the key is the final one and the pair collapses.
+
+     Transport & Support are still exempt and stay in Others in full, so no
+     transporter or support record goes missing. */
+  var result = deduped;
 
   // Layer 3: enrich GSTIN from META_SHEET_ID for any row where format-scan
   // still found nothing.  This covers the case where the main data source
@@ -3788,7 +3846,7 @@ function getQualityData(filtersJson) {
   // the cohort a vendor was onboarded in.
   var _qf = {};
   try { _qf = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { _qf = {}; }
-  var CACHE_KEY = 'quality_data_v27_' + (_qf.period || 'All')
+  var CACHE_KEY = 'quality_data_v28_' + (_qf.period || 'All')
                 + '_' + (_qf.startDate || '') + '_' + (_qf.endDate || '');
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
@@ -5195,7 +5253,7 @@ function getOSVDashboardData(filtersJson) {
   var _f = {};
   try { _f = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { _f = {}; }
   // The period belongs in the key, or the first period answered for all of them.
-  var CACHE_KEY = 'osv_dash_v9_' + (_f.period || 'All')
+  var CACHE_KEY = 'osv_dash_v10_' + (_f.period || 'All')
                 + '_' + (_f.startDate || '') + '_' + (_f.endDate || '');
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
@@ -5832,7 +5890,7 @@ function getOverviewStats(filtersJson) {
   try { f = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { f = {}; }
   // The cache key carries the period, or every period would serve the first one's
   // answer for the next five minutes.
-  var CACHE_KEY = 'overview_v8_' + (f.period || 'All')
+  var CACHE_KEY = 'overview_v9_' + (f.period || 'All')
                 + '_' + (f.startDate || '') + '_' + (f.endDate || '');
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
@@ -5919,7 +5977,7 @@ function getCompliantOnboardingData(filtersJson) {
   var _cf = {};
   try { _cf = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { _cf = {}; }
   var _scoped  = !!(_cf.period && _cf.period !== 'All');
-  var CACHE_KEY = 'compliant_onb_v2_' + (_cf.period || 'All')
+  var CACHE_KEY = 'compliant_onb_v3_' + (_cf.period || 'All')
                 + '_' + (_cf.startDate || '') + '_' + (_cf.endDate || '');
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
