@@ -15157,6 +15157,67 @@ function openOnbAudRecords(aud) {
   if (!isS && (!_ovnRows || !_ovnRows.buyer)) _ovnEnsureAud('buyer');
 }
 
+/* The dormant cohort behind the Post-Onboarding Activation bottleneck: vendors
+   who completed onboarding and never took the first commercial step — a listing
+   for a seller, a requisition for a buyer.
+
+   Same predicate the funnel counts with (hasListing), so the number on the
+   callout and the rows behind it cannot disagree. hasListing arrives on the row
+   payload as of vrows v28; against an older Code.gs every row reads dormant, so
+   the count is checked against the aggregate and the drill says so rather than
+   presenting a list it cannot stand behind. */
+function openActivationRecords(aud) {
+  var isS = aud !== 'buyer';
+  var key = _vovKey || activeVertKey || selectedVert;
+  var vcfg = getVertCfg().filter(function(c) { return c.key === key; })[0];
+  var vertName = (vcfg && vcfg.name) || key || '';
+  var who   = isS ? 'Sellers' : 'Buyers';
+  var stepL = isS ? 'listing' : 'requisition';
+  var label = who + ' with no first ' + stepL + ' · ' + vertName;
+
+  var srcRows = isS ? vertRows : (_ovnRows && _ovnRows.buyer);
+  var onb = Array.isArray(srcRows)
+    ? srcRows.filter(function(r) { return r.status === 'COMPLETED'; }) : [];
+  var dormant = onb.filter(function(r) { return !r.hasListing; });
+
+  _mrCtx = {
+    module: 'activation', audRec: true, geoAud: aud,
+    label: label, vertLabel: vertName,
+    preStatus: 'COMPLETED', forceSeller: isS,
+    cfg: { label: label }
+  };
+  _mrRows = dormant;
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
+  _mrSort = { key:'', dir:1 };
+  _mrPg = { size:25, page:0 };
+  _mrColVis = {};
+  var showKeys = { name:1, vendorType:1, category:1, gstin:1, state:1, onbDate:1 };
+  MR_COLS.forEach(function(col) {
+    if (!col.always && !showKeys[col.key]) _mrColVis[col.key] = true;
+  });
+
+  /* An older backend sends no hasListing at all, in which case every onboarded
+     row looks dormant. The funnel's own gap is the check: if the list is the
+     whole cohort while the funnel says otherwise, say so instead of showing a
+     list that is simply the onboarded book. */
+  var agg = _vovActAgg(key, isS ? 'seller' : 'buyer');
+  var expect = (agg && agg.listed !== null && agg.listed !== undefined)
+    ? Math.max(0, agg.onboarded - agg.listed) : null;
+  if (expect !== null && onb.length && dormant.length === onb.length && expect < onb.length) {
+    _mrCtx.loadError = 'These rows do not yet carry the first-' + stepL + ' flag, so the '
+                     + 'dormant list cannot be separated from the onboarded book. Redeploy '
+                     + 'Code.gs and open this again — the funnel counts ' + fmt(expect) + '.';
+    _mrRows = [];
+  }
+
+  var ovl = document.getElementById('mr-ovl');
+  if (ovl) { ovl.classList.add('mr-open'); lockBodyScroll(); }
+  _mrRender();
+  if (!isS && (!_ovnRows || !_ovnRows.buyer)) _ovnEnsureAud('buyer');
+}
+
 // Transacted Sellers or Buyers breakdown — opens the KPI modal showing total
 // count and Metal/Plastic (or data-driven category) split for one audience.
 function openTxnAudModal(aud) {
@@ -23857,6 +23918,90 @@ try{ if(typeof renderTxnDistSkeleton==='function'){ renderTxnDistSkeleton=functi
 .vov-act-note{margin-top:13px;padding-top:11px;border-top:1px solid var(--border);font-size:11.5px;color:var(--txt3)}
 .vov-act-note b{color:var(--txt2);font-weight:700}
 @media(max-width:860px){.vov-act{grid-template-columns:1fr}}
+
+/* ── Activation control panel ──────────────────────────────────────────────
+   Funnel → bottleneck → insight → action. Colour is semantic only: green for a
+   completed stage, amber for the middle step, red for a gap that needs work.
+   Every value is a var() so light and dark both come from the same tokens. */
+.vact-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-3)}
+.vact-cols.one{grid-template-columns:minmax(0,1fr)}
+.vact-card{border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px 14px;background:var(--card);min-width:0}
+.vact-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.vact-ttl{font-size:15px;font-weight:700;color:var(--txt);line-height:1.2}
+.vact-sub{font-size:11.5px;color:var(--txt3);margin-top:2px}
+.vact-tot{text-align:right;background:var(--bg2);border-radius:10px;padding:7px 12px;flex-shrink:0}
+.vact-tot span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3)}
+.vact-tot b{font-size:19px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.15}
+
+.vact-body{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px;align-items:start}
+.vact-fun{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:start}
+.vact-chev{align-self:center;color:var(--txt3);font-size:17px;line-height:1;opacity:.55;padding-top:14px}
+.vact-st{min-width:0}
+.vact-st-l{font-size:10.5px;font-weight:600;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vact-st-n{font-size:21px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.2;margin-top:2px}
+.vact-st-p{font-size:11.5px;font-weight:600;color:var(--txt2);font-variant-numeric:tabular-nums}
+.vact-st-n.dim,.vact-st-p.dim{color:var(--txt3);font-weight:600}
+.vact-bar{height:6px;border-radius:4px;background:var(--bg2);overflow:hidden;margin-top:7px}
+.vact-bar i{display:block;height:100%;border-radius:4px;background:var(--txt3)}
+.vact-bar.s-a i{background:#0F7A4F}
+.vact-bar.s-b i{background:#FF9500}
+.vact-bar.s-c i{background:#1DC797}
+
+.vact-tats{display:grid;gap:8px}
+.vact-tat{background:var(--bg2);border-radius:10px;padding:10px 12px;min-width:0}
+.vact-tat-l{font-size:9.5px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;color:var(--txt3)}
+.vact-tat-v{font-size:22px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.2;margin-top:1px}
+.vact-tat-v span{font-size:11.5px;font-weight:600;color:var(--txt3);margin-left:4px}
+.vact-tat-v.dim{color:var(--txt3)}
+.vact-tat-s{font-size:10.5px;color:var(--txt3);margin-top:1px;line-height:1.35}
+
+.vact-bot{display:flex;align-items:center;gap:11px;margin-top:13px;padding:11px 13px;border-radius:10px;border:1px solid transparent}
+.vact-bot.s{background:rgba(255,59,48,.07);border-color:rgba(255,59,48,.22)}
+.vact-bot.b{background:rgba(0,93,255,.06);border-color:rgba(0,93,255,.20)}
+.vact-bot.ok{background:rgba(29,199,151,.08);border-color:rgba(29,199,151,.24)}
+.vact-bot-ic{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
+.vact-bot.s .vact-bot-ic{background:rgba(255,59,48,.16);color:#D70015}
+.vact-bot.b .vact-bot-ic{background:rgba(0,93,255,.12)}
+.vact-bot.ok .vact-bot-ic{background:rgba(29,199,151,.18);color:#0F7A4F}
+.vact-bot-tx{flex:1;min-width:0}
+.vact-bot-h{font-size:12.5px;color:var(--txt);line-height:1.35}
+.vact-bot-h b{font-weight:700}
+.vact-bot-s{font-size:11px;color:var(--txt3);margin-top:1px}
+.vact-bot-b{flex-shrink:0;border:1px solid var(--border2);background:var(--card);color:var(--txt);font-family:inherit;font-size:11.5px;font-weight:600;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.vact-bot-b:hover{background:var(--bg2)}
+
+.vact-ins{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+.vact-ins-hd{font-size:12.5px;font-weight:700;color:var(--txt);margin-bottom:10px}
+.vact-ins-hd span{display:block;font-size:11px;font-weight:400;color:var(--txt3);margin-top:1px}
+.vact-ins-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px}
+.vact-in{border:1px solid var(--border);border-radius:10px;padding:12px 13px;background:var(--bg2);min-width:0}
+.vact-in-h{font-size:11.5px;font-weight:700;color:var(--txt);line-height:1.3}
+.vact-in-b{font-size:25px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;line-height:1.15;margin-top:6px}
+.vact-in-b span{font-size:12.5px;font-weight:600;color:var(--txt3);margin-left:5px}
+.vact-in-t{font-size:11.5px;color:var(--txt2);line-height:1.45;margin-top:4px}
+.vact-in-c2{margin-top:9px}
+.vact-chip{display:inline-block;font-size:10px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--card);border:1px solid var(--border2);color:var(--txt2);white-space:nowrap}
+.vact-in.s .vact-in-b{color:#D70015}
+.vact-in.b .vact-in-b{color:var(--brand)}
+.vact-in-cmp{display:flex;align-items:center;gap:10px;margin-top:8px}
+.vact-in-cmp>div{flex:1;min-width:0}
+.vact-in-cmp b{display:block;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15;color:var(--txt)}
+.vact-in-cmp span{display:block;font-size:10.5px;color:var(--txt3);line-height:1.35;margin-top:1px}
+.vact-in-cmp .sep{flex:0 0 1px;align-self:stretch;background:var(--border);min-height:34px}
+.vact-in-note{font-size:11px;color:var(--txt2);line-height:1.45;margin-top:9px;padding-top:8px;border-top:1px solid var(--border)}
+.vact-in-ol{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.vact-in-ol li{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;color:var(--txt2);line-height:1.4}
+.vact-in-ol li span{flex-shrink:0;width:16px;height:16px;border-radius:50%;background:var(--card);border:1px solid var(--border2);color:var(--txt3);font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.vact-in-ol li b{color:var(--txt);font-weight:700}
+
+@media(max-width:1040px){.vact-cols{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){
+  .vact-body{grid-template-columns:minmax(0,1fr)}
+  .vact-fun{grid-template-columns:1fr}
+  .vact-chev{display:none}
+  .vact-bot{flex-wrap:wrap}
+  .vact-bot-b{width:100%}
+}
 </style>
 <script id="vov-js">
 // ── VOV entry point ────────────────────────────────────────────────────────
@@ -23920,16 +24065,9 @@ function renderVertOverview(key) {
       // Follows the chart's audience selector. On "all" both funnels are shown
       // rather than blended: the middle stage is a listing on one side and a
       // requisition on the other, so a combined bar would total two different things.
-      var _aud = _vovAud || 'all';
-      var _sub = function(t, h) {
-        return '<div class="vov-act-grp"><div class="vov-act-grp-t">' + t + '</div>' + h + '</div>';
-      };
-      actEl.innerHTML = _aud === 'seller' ? _vovActivationHtml(key, 'seller')
-                      : _aud === 'buyer'  ? _vovActivationHtml(key, 'buyer')
-                      : _sub('Sellers', _vovActivationHtml(key, 'seller'))
-                        + _sub('Buyers', _vovActivationHtml(key, 'buyer'));
+      actEl.innerHTML = _vovActivationPanel(key);
     }
-    catch (e) { console.error('_vovActivationHtml', e); actEl.innerHTML = ''; }
+    catch (e) { console.error('_vovActivationPanel', e); actEl.innerHTML = ''; }
   }
 
   if (typeof _lcSync === 'function') _lcSync();
@@ -24064,82 +24202,250 @@ function _vovMonthlySeries(key) {
 // Seller-side only. Listings do not exist on the buyer feed, so vStats returns
 // listed=null there and drawing a buyer funnel would invent a stage with no
 // source behind it.
-function _vovActivationHtml(key, aud) {
-  aud = aud === 'buyer' ? 'buyer' : 'seller';
+/* Post-Onboarding Activation, as a control panel rather than a funnel report.
+
+   Structure: funnel → bottleneck → insight → action. The funnel already carries
+   the quantitative picture, so the space below it answers "so what" instead of
+   restating the same numbers in another shape.
+
+   Every figure here is derived from the activation aggregate that already exists
+   — nothing new is measured and nothing is asserted that the data does not say.
+   That matters most for the comparison card: which side converts better after
+   the first action is READ from the two rates, not written into the copy. On
+   this data sellers convert worse post-listing than buyers do post-requisition,
+   but the wording follows whichever way round the numbers actually fall. */
+function _vovActAgg(key, aud) {
   var src = aud === 'buyer' ? DB : DS;
-  var a = (src && src.verticals && src.verticals[key] && src.verticals[key].activation) || null;
-  var who = aud === 'buyer' ? 'buyers' : 'sellers';
-  if (!a || !a.onboarded) return '<div class="ov-card-sub">No onboarded ' + who + ' in this period.</div>';
-  if (a.listed === null && a.transacted === null) {
-    return '<div class="ov-card-sub">This feed carries no activity or transaction signal.</div>';
+  return (src && src.verticals && src.verticals[key] && src.verticals[key].activation) || null;
+}
+function _vovActUsable(a) {
+  return !!(a && a.onboarded && !(a.listed === null && a.transacted === null));
+}
+
+function _vovActivationPanel(key) {
+  var aud = _vovAud || 'all';
+  var wantS = aud !== 'buyer', wantB = aud !== 'seller';
+  var aS = wantS ? _vovActAgg(key, 'seller') : null;
+  var aB = wantB ? _vovActAgg(key, 'buyer')  : null;
+  var okS = wantS && _vovActUsable(aS);
+  var okB = wantB && _vovActUsable(aB);
+
+  if (!okS && !okB) {
+    return '<div class="ov-card-sub">'
+      + (aud === 'buyer' ? 'No onboarded buyers in this period.'
+       : aud === 'seller' ? 'No onboarded sellers in this period.'
+       : 'No onboarded vendors in this period.')
+      + '</div>';
+  }
+
+  var cols = [];
+  if (wantS) cols.push(_vovActCard(key, 'seller', aS));
+  if (wantB) cols.push(_vovActCard(key, 'buyer',  aB));
+
+  return '<div class="vact">'
+    + '<div class="vact-cols' + (cols.length === 1 ? ' one' : '') + '">' + cols.join('') + '</div>'
+    + _vovActInsights(aS, aB, okS, okB)
+    + '</div>';
+}
+
+/* One audience: the three-stage funnel, the two turnaround tiles, and the
+   bottleneck beneath them with the control that opens it. */
+function _vovActCard(key, aud, a) {
+  var isB  = aud === 'buyer';
+  var who  = isB ? 'buyers' : 'sellers';
+  var mid  = isB ? 'Requisitioned' : 'Listed';
+  var midL = isB ? 'requisition' : 'listing';
+  var ttl  = isB ? 'Buyers' : 'Sellers';
+
+  if (!_vovActUsable(a)) {
+    return '<section class="vact-card"><div class="vact-hd"><div class="vact-ttl">' + ttl + '</div></div>'
+      + '<div class="ov-card-sub">No onboarded ' + who + ' in this period.</div></section>';
   }
 
   var base = a.onboarded || 1;
+  var pc   = function(n) { return Math.round((n || 0) / base * 100); };
   var stages = [
-    { lbl: 'Onboarded', n: a.onboarded, c: 'var(--brand)' },
-    // Sellers put up a listing; buyers raise a requisition. Same step, and the
-    // feed names it differently on each side.
-    { lbl: aud === 'buyer' ? 'Requisitioned' : 'Listed', n: a.listed, c: '#FF9500' },
-    { lbl: 'Transacted', n: a.transacted, c: '#049769' }
+    { lbl: 'Onboarded', n: a.onboarded, cls: 'a' },
+    { lbl: mid,         n: a.listed,    cls: 'b' },
+    { lbl: 'Transacted', n: a.transacted, cls: 'c' }
   ];
-  var fn = stages.map(function(s) {
+
+  var fun = stages.map(function(s, i) {
+    var chev = i ? '<div class="vact-chev" aria-hidden="true">›</div>' : '';
     if (s.n === null || s.n === undefined) {
-      return '<div class="vov-act-row"><div class="vov-act-lbl">' + s.lbl + '</div>'
-        + '<div class="vov-act-track"></div>'
-        + '<div class="vov-act-n" style="color:var(--txt3)">not tracked</div></div>';
+      return chev + '<div class="vact-st"><div class="vact-st-l">' + s.lbl + '</div>'
+        + '<div class="vact-st-n dim">&mdash;</div>'
+        + '<div class="vact-st-p dim">not tracked</div>'
+        + '<div class="vact-bar"><i style="width:0"></i></div></div>';
     }
-    var p = Math.round(s.n / base * 100);
-    // A non-zero stage keeps a 2% sliver so it stays visible as a bar rather than
-    // vanishing and reading like "not tracked".
-    var w = s.n > 0 ? Math.max(2, p) : 0;
-    return '<div class="vov-act-row">'
-      + '<div class="vov-act-lbl">' + s.lbl + '</div>'
-      + '<div class="vov-act-track"><div class="vov-act-fill" style="width:' + w + '%;background:' + s.c + '"></div></div>'
-      + '<div class="vov-act-n">' + fmt(s.n) + ' <span style="color:var(--txt3);font-weight:600">' + p + '%</span></div>'
+    var p = pc(s.n);
+    return chev + '<div class="vact-st"><div class="vact-st-l">' + s.lbl + '</div>'
+      + '<div class="vact-st-n">' + fmt(s.n) + '</div>'
+      + '<div class="vact-st-p">' + p + '%</div>'
+      // A non-zero stage keeps a sliver so it reads as a small bar, not as nothing.
+      + '<div class="vact-bar s-' + s.cls + '"><i style="width:' + (s.n > 0 ? Math.max(3, p) : 0) + '%"></i></div>'
       + '</div>';
   }).join('');
 
-  // `reached` is how many records got to the step this interval measures. Non-zero
-  // there with a zero interval count means the step happened but the feed carries
-  // no date for it — a missing column, not an absence of activity. Naming which is
-  // the difference between a blank that reads as a bug and one that informs;
-  // debugFeedColumns() then reports the column against the live feed.
-  function stat(st, lbl, reached) {
+  /* `reached` is how many records got to the step the interval measures. Non-zero
+     there with no measured interval means the step happened but the feed carries
+     no date for it — a missing column, not an absence of activity. */
+  function tile(st, lbl, reached) {
     if (!st || !st.count) {
-      var why = (reached > 0)
-        ? 'Reached by ' + fmt(reached) + ', but the feed carries no date for this step'
-        : 'No records have reached this step yet';
-      return '<div class="vov-act-stat"><div class="vov-act-sl">' + lbl + '</div>'
-        + '<div class="vov-act-sv" style="color:var(--txt3)">&mdash;</div>'
-        + '<div class="vov-act-sc">' + why + '</div></div>';
+      return '<div class="vact-tat"><div class="vact-tat-l">' + lbl + '</div>'
+        + '<div class="vact-tat-v dim">&mdash;</div>'
+        + '<div class="vact-tat-s">' + (reached > 0
+            ? 'Reached by ' + fmt(reached) + ', but the feed carries no date for this step'
+            : 'No records have reached this step yet') + '</div></div>';
     }
     var rng = st.min === st.max ? st.min + 'd' : st.min + '&ndash;' + st.max + 'd';
-    return '<div class="vov-act-stat"><div class="vov-act-sl">' + lbl + '</div>'
-      + '<div class="vov-act-sv">' + st.median
-      + '<span style="font-size:12px;font-weight:600;color:var(--txt3)"> days</span></div>'
-      + '<div class="vov-act-sc">median &middot; avg ' + st.avg + 'd &middot; ' + rng
+    return '<div class="vact-tat"><div class="vact-tat-l">' + lbl + '</div>'
+      + '<div class="vact-tat-v">' + st.median + '<span>days</span></div>'
+      + '<div class="vact-tat-s">median &middot; avg ' + st.avg + 'd &middot; ' + rng
       + ' &middot; ' + fmt(st.count) + ' measured</div></div>';
   }
 
-  var note = '';
-  if (a.listed !== null) {
-    var dormant = Math.max(0, a.onboarded - a.listed);
-    var noun    = aud === 'buyer' ? 'buyer' : 'seller';
-    var act     = aud === 'buyer' ? 'raised a requisition' : 'listed anything';
-    note = dormant > 0
-      ? '<div class="vov-act-note"><b>' + fmt(dormant) + '</b> onboarded ' + noun
-        + (dormant === 1 ? ' has' : 's have') + ' not ' + act + ' yet.</div>'
-      : '<div class="vov-act-note">Every onboarded ' + noun + ' has reached this stage.</div>';
+  // The bottleneck. Only a real gap earns the callout; a fully activated cohort
+  // gets the plain confirmation rather than an alarm with a zero in it.
+  var gap = (a.listed === null) ? null : Math.max(0, a.onboarded - a.listed);
+  var bott;
+  if (gap === null) {
+    bott = '';
+  } else if (gap > 0) {
+    var act = isB ? 'raised a requisition' : 'created a listing';
+    bott = '<div class="vact-bot ' + (isB ? 'b' : 's') + '">'
+      + '<div class="vact-bot-ic" aria-hidden="true">' + (isB ? '&#128101;' : '!') + '</div>'
+      + '<div class="vact-bot-tx">'
+      +   '<div class="vact-bot-h"><b>' + fmt(gap) + '</b> ' + who + ' (' + pc(gap) + '%) have not '
+      +     act + ' yet.</div>'
+      +   '<div class="vact-bot-s">' + (isB
+            ? 'The activation gap is getting onboarded buyers to their first requisition.'
+            : 'This is the biggest drop-off in the seller activation journey.') + '</div>'
+      + '</div>'
+      + '<button type="button" class="vact-bot-b" onclick="openActivationRecords(\'' + aud + '\')">'
+      +   'View ' + ttl + ' &rarr;</button>'
+      + '</div>';
+  } else {
+    bott = '<div class="vact-bot ok"><div class="vact-bot-ic" aria-hidden="true">&#10003;</div>'
+      + '<div class="vact-bot-tx"><div class="vact-bot-h">Every onboarded '
+      + (isB ? 'buyer' : 'seller') + ' has reached their first ' + midL + '.</div></div></div>';
   }
 
-  return '<div class="vov-act">'
-    + '<div class="vov-act-fn">' + fn + '</div>'
-    + '<div class="vov-act-side">'
-    +   stat(a.daysToList,  'Onboarded &rarr; first ' + (aud === 'buyer' ? 'requisition' : 'listing'), a.listed)
-    +   stat(a.daysToOrder, 'Onboarded &rarr; first order', a.transacted)
+  return '<section class="vact-card">'
+    + '<div class="vact-hd"><div><div class="vact-ttl">' + ttl + '</div>'
+    +   '<div class="vact-sub">Activation journey from onboarding to transaction</div></div>'
+    +   '<div class="vact-tot"><span>Total Onboarded</span><b>' + fmt(a.onboarded) + '</b></div></div>'
+    + '<div class="vact-body">'
+    +   '<div class="vact-fun">' + fun + '</div>'
+    +   '<div class="vact-tats">'
+    +     tile(a.daysToList,  'Onboarded &rarr; First ' + (isB ? 'Requisition' : 'Listing'), a.listed)
+    +     tile(a.daysToOrder, 'Onboarded &rarr; First Order', a.transacted)
+    +   '</div>'
     + '</div>'
-    + '</div>' + note;
+    + bott
+    + '</section>';
 }
+
+/* The "so what". Four readings of the numbers already on screen — never a fifth
+   measurement, and never a conclusion the data has not been asked for. Cards drop
+   out when the audience selector hides the side they describe. */
+function _vovActInsights(aS, aB, okS, okB) {
+  var cards = [];
+  var pct = function(n, d) { return d ? Math.round(n / d * 100) : null; };
+
+  /* Post-first-action conversion, the figure both the third and fourth card turn
+     on. transacted must be present as well as listed: a feed that tracks listings
+     but not transactions sends transacted=null, and null/137 rounds to 0 — which
+     would print "0% of listed sellers transacted" and read as a collapse rather
+     than as an untracked stage. */
+  var sPost = (okS && aS.listed && aS.transacted != null) ? pct(aS.transacted, aS.listed) : null;
+  var bPost = (okB && aB.listed && aB.transacted != null) ? pct(aB.transacted, aB.listed) : null;
+
+  // A gap of zero is not an insight — the bottleneck strip already says so with a
+  // tick, and "0 sellers have not listed" reads like a broken template.
+  if (okS && aS.listed !== null && aS.onboarded > aS.listed) {
+    var sGap = aS.onboarded - aS.listed;
+    cards.push(_vovActInsight('s', 'Seller activation gap',
+      fmt(sGap), '(' + pct(sGap, aS.onboarded) + '%)',
+      'have not created their first listing'
+        + (sPost === null ? '.' : ', while ' + sPost + '% of listed sellers have transacted.'),
+      'Onboarded → Listed'));
+  }
+
+  if (okB && aB.listed !== null && (aB.onboarded > aB.listed || bPost !== null)) {
+    var bGap = Math.max(0, aB.onboarded - aB.listed);
+    // Lead with whichever end of the buyer funnel is actually the weaker one.
+    var leadWithPost = (bPost !== null && bPost < 50);
+    cards.push(leadWithPost
+      ? _vovActInsight('b', 'Buyers stall after first intent',
+          bPost + '%', '',
+          'of buyers who raised a requisition went on to transact. The drop-off is after '
+            + 'the requisition, not before it.',
+          'Requisition → Transacted')
+      : _vovActInsight('b', 'Buyers convert after first intent',
+          (bPost === null ? '—' : bPost + '%'), '',
+          (bPost === null ? 'Requisition-to-transaction is not measurable here.'
+            : 'of buyers who raised a requisition have transacted. The gap is getting the '
+              + 'remaining ' + fmt(bGap) + ' to their first requisition.'),
+          'Onboarded → Requisition'));
+  }
+
+  // Only a comparison when there are two things to compare.
+  if (sPost !== null && bPost !== null) {
+    var sellerBetter = sPost > bPost;
+    var same = sPost === bPost;
+    cards.push('<div class="vact-in c"><div class="vact-in-h">Post-action conversion</div>'
+      + '<div class="vact-in-cmp">'
+      +   '<div><b>' + sPost + '%</b><span>of listed sellers transacted</span></div>'
+      +   '<div class="sep" aria-hidden="true"></div>'
+      +   '<div><b>' + bPost + '%</b><span>of requisitioned buyers transacted</span></div>'
+      + '</div>'
+      + '<div class="vact-in-note">' + (same
+          ? 'Both funnels convert at the same rate once the first action is taken.'
+          : (sellerBetter ? 'Seller' : 'Buyer') + ' funnel is healthier after the first action, '
+            + 'while ' + (sellerBetter ? 'buyer' : 'seller') + ' post-'
+            + (sellerBetter ? 'requisition' : 'listing') + ' conversion needs attention.')
+      + '</div></div>');
+  }
+
+  // The action list, built from whichever gaps exist rather than a fixed four.
+  var todo = [];
+  if (okS && aS.listed !== null) {
+    var g1 = Math.max(0, aS.onboarded - aS.listed);
+    if (g1 > 0) todo.push('Move <b>' + fmt(g1) + '</b> dormant sellers to their first listing');
+  }
+  if (okB && aB.listed !== null) {
+    var g2 = Math.max(0, aB.onboarded - aB.listed);
+    if (g2 > 0) todo.push('Move <b>' + fmt(g2) + '</b> dormant buyers to their first requisition');
+  }
+  if (sPost !== null && bPost !== null && sPost !== bPost) {
+    var weak = sPost < bPost ? 'seller post-listing' : 'buyer post-requisition';
+    // No bracketed figure: the bold number wrapped away from its own parenthesis.
+    todo.push('Lift ' + weak + ' conversion, today <b>' + Math.min(sPost, bPost) + '%</b>');
+  }
+  todo.push('Reduce time to first commercial action');
+  if (todo.length) {
+    cards.push('<div class="vact-in f"><div class="vact-in-h">Where to focus next</div>'
+      + '<ol class="vact-in-ol">' + todo.map(function(t, i) {
+          return '<li><span>' + (i + 1) + '</span>' + t + '</li>';
+        }).join('') + '</ol></div>');
+  }
+
+  if (!cards.length) return '';
+  return '<div class="vact-ins"><div class="vact-ins-hd">Key insights'
+    + '<span>What the numbers say, and where to look</span></div>'
+    + '<div class="vact-ins-g">' + cards.join('') + '</div></div>';
+}
+
+function _vovActInsight(tone, head, big, small, body, chip) {
+  return '<div class="vact-in ' + tone + '">'
+    + '<div class="vact-in-h">' + head + '</div>'
+    + '<div class="vact-in-b">' + big + (small ? '<span>' + small + '</span>' : '') + '</div>'
+    + '<div class="vact-in-t">' + body + '</div>'
+    + '<div class="vact-in-c2"><span class="vact-chip">' + chip + '</span></div>'
+    + '</div>';
+}
+
 
 // ── Escape helper ──────────────────────────────────────────────────────────
 function _vovEsc(s) {

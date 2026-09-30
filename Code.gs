@@ -462,9 +462,11 @@ function _splitBasisDate_(r) {
    whole feed. It still returned correct rows, which is why nothing looked wrong.
 
    v27: the FY 26-27 split now runs on the onboarded date, so entries written by
-   the previous version hold the old vertical for the same key. */
+   the previous version hold the old vertical for the same key.
+   v28: rows carry hasListing / daysToList / daysToOrder; a v27 entry has none of
+   them and the activation drill would read every vendor as dormant. */
 function _vrowsCacheKey_(audience, vertKey, f) {
-  return 'vrows_v27_' + audience + '_' + vertKey + '_'
+  return 'vrows_v28_' + audience + '_' + vertKey + '_'
     + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '', f.month || '']);
 }
 
@@ -3266,6 +3268,15 @@ function vertRow(r) {
     gstin: r.gstin, hasGST: r.hasGST, state: r.state,
     createdDate: fmtDate(r.createdDate), onbDate: fmtDate(completionDate_(r)),
     reviewDate:  fmtDate(r.reviewDate),
+    /* Post-onboarding activation, per row. The activation panel could count the
+       dormant cohort but not name it, because the funnel is served by an aggregate
+       and these three never reached the row payload. hasListing is the middle
+       stage for whichever audience the row belongs to — a listing for a seller, a
+       requisition for a buyer — so one field answers "did they take the first
+       step" on both sides. */
+    hasListing:  !!r.hasListing,
+    daysToList:  (r.daysToList  == null) ? null : r.daysToList,
+    daysToOrder: (r.daysToOrder == null) ? null : r.daysToOrder,
     // The exact window this row's TAT was measured across (— when the record carries no
     // TAT), so the records table can show Start → Onboarded → TAT and the number stays
     // auditable against its own dates. tatBasis names the window used; tatExact marks the
