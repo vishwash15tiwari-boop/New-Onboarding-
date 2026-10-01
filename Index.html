@@ -7506,9 +7506,16 @@ function _mmVertModules(key) {
     //   none present                     → not followed
     // The backend already buckets exactly this way (complete / partial / incomplete
     // in getQualityData), so this presents an existing aggregate rather than a new
-    // rule. Quality data is OMP-scoped, so the strip appears only where it exists.
+    // rule.
+    //
+    // Marketplace (OMP) only, and gated on isOMP rather than on the data. The
+    // comment here used to say the strip "appears only where it exists" because
+    // quality data is OMP-scoped — but qualityData.seller.docs is one portfolio-wide
+    // aggregate, not a per-vertical one, so it is truthy on every vertical's page
+    // and the strip rendered on all of them, showing Open Marketplace's document
+    // figures under EPR, Infra Business and the rest.
     var _dq = (qualityData && qualityData.seller && qualityData.seller.docs) || null;
-    if (_dq && _dq.total > 0) {
+    if (isOMP && _dq && _dq.total > 0) {
       var _dPc = function(n) {
         var p = (n || 0) / _dq.total * 100;
         return (p > 0 && p < 1) ? p.toFixed(1) : String(Math.round(p));
@@ -12775,7 +12782,12 @@ function renderInlineDetail(key) {
       + '<button class="vd-close" onclick="vdfClear()">Clear</button>'
       + '</div>';
     bodyContent = catSection
-      + '<div id="compliant-onb-wrap"></div>'
+      /* The second Compliant Onboarding surface, fed by getCompliantOnboardingData
+         off the Scoring & OSV Tracker. That tracker covers Open Marketplace sellers
+         only, so mounting it under every vertical showed OMP's compliance figures
+         on pages they do not describe. Same restriction as the strip in
+         _mmVertModules, for the same reason. */
+      + (key === 'OMP' ? '<div id="compliant-onb-wrap"></div>' : '')
       + '<div id="cat-detail-wrap" style="display:none"></div>'
       + filtersHtml
       + '<div class="kb-wrap mt-16" id="vd-board-view"><div class="kb-board" id="vd-board"></div></div>'
