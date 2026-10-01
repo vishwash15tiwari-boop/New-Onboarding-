@@ -468,7 +468,7 @@ function _splitBasisDate_(r) {
    v28: rows carry hasListing / daysToList / daysToOrder; a v27 entry has none of
    them and the activation drill would read every vendor as dormant. */
 function _vrowsCacheKey_(audience, vertKey, f) {
-  return 'vrows_v29_' + audience + '_' + vertKey + '_'
+  return 'vrows_v30_' + audience + '_' + vertKey + '_'
     + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '', f.month || '']);
 }
 
@@ -490,20 +490,29 @@ function _vrowsCacheKey_(audience, vertKey, f) {
    is now attributed to the vertical and the date of its own onboarding. */
 function _applyVerticalSplit_(rows) {
   rows.forEach(function(r) {
-    var bv  = String(r.bizVertical || '').trim().toLowerCase();
-    var cat = String(r.category || '').trim().toLowerCase();
+    var bv = String(r.bizVertical || '').trim().toLowerCase();
 
-    // business_vertical = Marketplace, already narrowed by mapToVertical to the
-    // two verticals the cut chooses between. AFR, DRS, Re-Commerce/E-Waste and
-    // Transport/Support have verticals of their own and are not touched.
-    var isMkt = (bv === 'marketplace')
-             && (r.vertical === 'InfraBusiness' || r.vertical === 'Marketplace');
+    /* Only business_vertical = Marketplace is subject to the cut, already narrowed
+       by mapToVertical to the two verticals it chooses between. AFR, DRS,
+       Re-Commerce/E-Waste and Transport/Support have verticals of their own.
 
-    // Miscellaneous Others — everything except Transport & Support, which are
-    // tracked logistics/service records and stay in Others in full.
-    var isMisc = (r.vertical === 'Others') && !isTransportOrSupport_(cat, bv);
+       An "Others" re-route used to sit here as well, pulling every Others row that
+       was not Transport or Support into this pair. It was written for Marketplace
+       rows with an unrecognised category — but those never reach Others:
+       mapToVertical returns 'Marketplace' for them, and the only ways to Others are
+       Transport/Support, which the re-route excluded, and a business_vertical the
+       dashboard does not recognise at all. So the rule caught exactly the rows it
+       was not meant for, and filed Sustainability Services — named in
+       mapToVertical's own routing comment as belonging in Others — under Infra
+       Business.
 
-    if (!isMkt && !isMisc) return;
+       An unrecognised business_vertical now stays in Others, which is what that
+       comment says and what Others is for. debugVerticals() lists what is in there
+       so a value that deserves a vertical of its own can be seen rather than
+       guessed at. */
+    if (!(bv === 'marketplace'
+          && (r.vertical === 'InfraBusiness' || r.vertical === 'Marketplace'))) return;
+
     var d = _splitBasisDate_(r);
     // An undated row is treated as current, which is what the original rule did.
     r.vertical = (d && d < MKT_SPLIT_DATE) ? 'Marketplace' : 'InfraBusiness';
@@ -557,7 +566,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v44_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v45_' + audience + '_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -615,14 +624,14 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v44_cmb_' + periodKey;
+    var cacheKey  = 'dash_v45_cmb_' + periodKey;
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v44_seller_' + periodKey;
-    var bIndKey = 'dash_v44_buyer_'  + periodKey;
+    var sIndKey = 'dash_v45_seller_' + periodKey;
+    var bIndKey = 'dash_v45_buyer_'  + periodKey;
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -763,7 +772,7 @@ function getVerticalRows(vertKey, filtersJson) {
 function getGeoTransactionData(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
-    var cacheKey = 'geo_txn_v7_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
+    var cacheKey = 'geo_txn_v8_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
                                                      f.audience||'all', f.category||'all', f.vertical||'all']);
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
@@ -931,7 +940,7 @@ function getTransactionModuleData(filtersJson) {
     // it showed were the whole portfolio. 'all' keeps the old portfolio-wide
     // behaviour available for any caller that wants it.
     var vertF = String(f.vertical || 'OMP');
-    var cKey = 'txn_mod_v7_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, vertF]);
+    var cKey = 'txn_mod_v8_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, vertF]);
     var cache = CacheService.getScriptCache();
     var hit   = cache.get(cKey);
     if (hit) return hit;
@@ -2715,16 +2724,24 @@ function normalizeRows(raw, cfg) {
     return true;
   });
 
-  /* The miscellaneous-Others re-homing used to live here, after the dedupe, and
-     that was the bug: the dedupe key is id + vertical, so a vendor holding an
+  /* A miscellaneous-Others re-homing used to live here, after the dedupe. It is
+     gone for two reasons, in the order they were found.
+
+     It ran after the dedupe, whose key is id + vertical: a vendor holding an
      Others row and a Marketplace row under one id passed through as two rows
      (id+Others, id+Marketplace) and this block then relabelled the Others one
-     Marketplace — leaving two rows, same id, same vertical, counted twice in
-     every portfolio figure. _applyVerticalSplit_ now settles the vertical before
-     the dedupe, so the key is the final one and the pair collapses.
+     Marketplace — two rows, same id, same vertical, counted twice in every
+     portfolio figure.
 
-     Transport & Support are still exempt and stay in Others in full, so no
-     transporter or support record goes missing. */
+     Then the rule itself turned out to be aimed at rows it never saw. It was
+     written for Marketplace rows with an unrecognised category, but mapToVertical
+     returns 'Marketplace' for those; the only rows reaching Others are
+     Transport/Support, which it excluded, and business_vertical values the
+     dashboard does not recognise — Sustainability Services among them, which
+     mapToVertical's own routing comment says belongs in Others.
+
+     So the vertical is settled once, before the dedupe, in
+     _applyVerticalSplit_, and an unrecognised business_vertical stays in Others. */
   var result = deduped;
 
   // Layer 3: enrich GSTIN from META_SHEET_ID for any row where format-scan
@@ -5251,6 +5268,37 @@ function buildBuyerDocsFromMainSheet_(ompMap, ompGstinMap, ompNameMap) {
    under a spelling that normalises differently, the key shows why they did not
    meet, and the fix is either the name in the sheet or one more legal-form
    token in _qNormName_. */
+/* Run from the Apps Script editor. Shows which raw business_vertical values land
+   in which dashboard vertical, and lists what is sitting in Others.
+
+   Others is a catch-all: any business_vertical the dashboard does not recognise
+   goes there with nothing on screen saying so. This prints the contents, so a
+   value that has grown big enough to deserve a vertical of its own — the way
+   Sustainability Services has — is visible rather than discovered by someone
+   noticing it in the wrong card. */
+function debugVerticals() {
+  ['seller', 'buyer'].forEach(function(aud) {
+    var rows = normalizeRows(readData(aud), AUDIENCE_CFG[aud]);
+    var pair = {}, others = {};
+    rows.forEach(function(r) {
+      var raw = String(r.bizVertical || '(blank)').trim() || '(blank)';
+      var k = raw + '  →  ' + r.vertical;
+      pair[k] = (pair[k] || 0) + 1;
+      if (r.vertical === 'Others') {
+        var ok = raw + '  /  ' + (r.category || '(no category)');
+        others[ok] = (others[ok] || 0) + 1;
+      }
+    });
+    Logger.log('\n' + aud.toUpperCase() + ' — ' + rows.length + ' rows');
+    Logger.log('  raw business_vertical → dashboard vertical:');
+    Object.keys(pair).sort().forEach(function(k) { Logger.log('    ' + pair[k] + '  ' + k); });
+    var oKeys = Object.keys(others).sort();
+    if (!oKeys.length) { Logger.log('  Others: empty'); return; }
+    Logger.log('  Others holds — business_vertical / business_category:');
+    oKeys.forEach(function(k) { Logger.log('    ' + others[k] + '  ' + k); });
+  });
+}
+
 function debugGstin() {
   var lk = _getGstinLookup_();
   Logger.log('GSTIN lookup sizes: seller byId=' + Object.keys(lk.seller).length
@@ -5977,7 +6025,7 @@ function getOverviewStats(filtersJson) {
   try { f = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { f = {}; }
   // The cache key carries the period, or every period would serve the first one's
   // answer for the next five minutes.
-  var CACHE_KEY = 'overview_v9_' + (f.period || 'All')
+  var CACHE_KEY = 'overview_v10_' + (f.period || 'All')
                 + '_' + (f.startDate || '') + '_' + (f.endDate || '');
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
