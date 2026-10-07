@@ -16335,6 +16335,32 @@ function _mrNormF() {
   if (_mrF.dateEnd == null)   _mrF.dateEnd = '';
 }
 
+/* "No records match the selected filters" was printed whenever the table came out
+   empty, whatever had emptied it. It is right for one of three causes and
+   misleading for the other two: it blamed the filter bar when nothing had been
+   loaded at all, and again when the drill's own status gate had removed every
+   row, which is what openModRecords did with an unseeded `vertical` filter. The
+   reader checks the filters, finds them all on "All", and has nowhere else to
+   look. Each cause now says which one it is. */
+function _mrEmptyMsg(waiting) {
+  if (_mrCtx && _mrCtx.loadError) return esc(_mrCtx.loadError);
+  if (waiting) return 'Loading records…';
+  var src = _mrRows ? _mrRows.length : 0;
+  if (!src) {
+    return 'No records were loaded for this view.';
+  }
+  var passedGate = _mrRows.filter(_mrPreFilter).length;
+  if (!passedGate) {
+    var gate = _mrCtx && _mrCtx.preStatus;
+    var lbl  = gate && STATUS_LABELS[gate] ? STATUS_LABELS[gate] : gate;
+    return gate
+      ? esc(fmt(src) + ' records loaded, but none of them are at status “' + lbl + '”.')
+      : esc(fmt(src) + ' records loaded, but none of them match this view.');
+  }
+  return 'No records match the selected filters — ' + fmt(passedGate)
+       + ' available. Use Clear to reset them.';
+}
+
 function _mrFilteredRows() {
   _mrNormF();
   return _mrRows.filter(function(r) { return _mrPreFilter(r) && _mrUserFilter(r); });
@@ -16579,9 +16605,7 @@ function _mrRenderTable() {
       /* A fetch that failed is not an empty month. Saying "no records match"
          when nothing was ever received reports absence of data where the truth
          is absence of an answer, and that is the more misleading of the two. */
-      var msg = (_mrCtx && _mrCtx.loadError) ? esc(_mrCtx.loadError)
-              : waiting ? 'Loading records…'
-              : 'No records match the selected filters';
+      var msg = _mrEmptyMsg(waiting);
       tbody.innerHTML = '<tr><td colspan="' + cols.length + '" class="mr-empty">'
         + msg + '</td></tr>';
     } else {
