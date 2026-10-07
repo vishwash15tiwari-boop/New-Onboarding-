@@ -15873,7 +15873,14 @@ function openModRecords(module) {
   var vertLabel = (vcfg && vcfg.name) || key || '';
   _mrCtx = { module: module, label: cfg.label, vertLabel: vertLabel, preStatus: cfg.preStatus, forceSeller: !!cfg.forceSeller, cfg: cfg };
   _mrRows = vertRows.slice();
-  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All', ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'' };
+  /* vertical, osvStatus and assigned are seeded here too. They were missing, and
+     because _mrUserFilter reads an absent key as "not All", the vertical test
+     below it rejected every row: the header still counted the source rows while
+     the table under it said no records matched. Every module drill — Onboarded,
+     Transacted, the Breakup statuses, Documents — was blank in every vertical. */
+  _mrF = { search:'', category:'All', vendor:'All', status:'All', gst:'All', state:'All',
+           ageBucket:'All', transacted:'All', dateStart:'', dateEnd:'',
+           osvStatus:'All', vertical:'All', assigned:'All' };
   _mrSort = { key:'', dir:1 };
   _mrPg = { size:25, page:0 };
   if (cfg.isTxnView) {
@@ -16308,7 +16315,28 @@ function _mrTxnAge(r) {
   return Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
 }
 
+/* Every select the table offers defaults to 'All', which means "do not filter".
+   A key an opener forgets to seed is undefined instead, and each test below reads
+   `f.x !== 'All'` as true and then matches rows against undefined — so the drill
+   empties completely while the header still reports its source rows. That is a
+   silent, total failure, and openModRecords hit it with `vertical`. Filling the
+   gaps here makes an omission mean "no filter", which is what the neutral value
+   already means everywhere else. _mrFilteredRows is the only route into
+   _mrUserFilter, so this covers the table and the CSV export alike. */
+var MR_F_KEYS = ['category','vendor','status','gst','state','ageBucket','transacted',
+                 'osvStatus','vertical','assigned','userType'];
+function _mrNormF() {
+  if (!_mrF) return;
+  for (var i = 0; i < MR_F_KEYS.length; i++) {
+    if (_mrF[MR_F_KEYS[i]] == null) _mrF[MR_F_KEYS[i]] = 'All';
+  }
+  if (_mrF.search == null)    _mrF.search = '';
+  if (_mrF.dateStart == null) _mrF.dateStart = '';
+  if (_mrF.dateEnd == null)   _mrF.dateEnd = '';
+}
+
 function _mrFilteredRows() {
+  _mrNormF();
   return _mrRows.filter(function(r) { return _mrPreFilter(r) && _mrUserFilter(r); });
 }
 
