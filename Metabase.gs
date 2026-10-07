@@ -238,70 +238,31 @@ function writeMBSheet_(data, sheetName) {
 // CACHE BUST — invalidate Code.gs dashboard cache so the next
 // frontend load picks up the freshly synced data immediately.
 // ════════════════════════════════════════════════════════════════
+/* Invalidation is a counter bump now, not an enumeration.
+
+   This function used to build ~3,000 cache keys from hand-written prefix lists
+   and version ranges ('dash_v30_'…'dash_v42_', 'vrows_v14_'…'vrows_v26_', and so
+   on) and remove them. Those literals had to track the key strings in Code.gs by
+   hand, and they stopped doing so: by the time this was audited the live keys
+   were dash_v45_, vrows_v30_, quality_data_v29_, osv_dash_v11_, overview_v10_ and
+   txn_mod_v8_, every one outside the range that was being cleared. Several of the
+   simple keys were also generated without their period/date suffix, so they could
+   not have matched even in range.
+
+   Two of the ten cached feeds were being invalidated. The other eight expired
+   only on CONFIG.CACHE_TTL, which is why a sync could land and the dashboard go
+   on serving the previous numbers for up to five more minutes. Nothing failed
+   loudly — the log reported thousands of keys cleared the whole time, because it
+   counted the keys it had generated rather than the ones that existed.
+
+   The ranges here were already widened once for exactly this reason. Widening
+   them again fixes it until the next version bump. Every cache key now ends in
+   the generation from _cgen_() in Code.gs, so incrementing it strands all of them
+   at once: the key and its invalidation read the same value and cannot drift
+   apart. Stranded entries are unreachable immediately and fall out on their TTL. */
 function bustDashboardCache_() {
-  var cache = CacheService.getScriptCache();
-  var keys  = [];
-  var periods = ['All', 'Today', 'ThisWeek', 'ThisMonth', 'MTD', 'YTD'];
-
-  // Add FY keys for the last 5 years
-  var nowYear = new Date().getFullYear();
-  for (var y = nowYear - 4; y <= nowYear; y++) {
-    periods.push('FY' + String(y).slice(2) + '-' + String(y + 1).slice(2));
-  }
-
-  var vertKeys = ['OMP', 'EPR', 'Marketplace', 'InfraBusiness', 'AFR', 'Recommerce', 'DRS', 'Others'];
-
-  // Version ranges must COVER the current keys used in Code.gs (dash_v36 / vrows_v17)
-  // plus a forward margin — the previous list only cleared v30-v32 / v14-v16, so the
-  // live keys were never invalidated and every sync left up-to-5-min-old data in cache
-  // (the root of "data not updating / not syncing"). Ranges auto-cover a version bump.
-  var dashPfx = [], vrowsPfx = [], cmbPfx = [];
-  for (var dv = 30; dv <= 42; dv++) { dashPfx.push('dash_v' + dv + '_'); cmbPfx.push('dash_v' + dv + '_cmb_'); }
-  for (var rv = 14; rv <= 26; rv++) { vrowsPfx.push('vrows_v' + rv + '_'); }
-
-  ['seller', 'buyer'].forEach(function(aud) {
-    periods.forEach(function(p) {
-      var pk = JSON.stringify([p, '', '']);
-      dashPfx.forEach(function(pfx) { keys.push(pfx + aud + '_' + pk); });
-      vrowsPfx.forEach(function(pfx) {
-        vertKeys.forEach(function(vk) { keys.push(pfx + aud + '_' + vk + '_' + pk); });
-      });
-    });
-  });
-
-  // Combined dashboard cache (getCombinedDashboard) — same version range.
-  periods.forEach(function(p) {
-    var pk = JSON.stringify([p, '', '']);
-    cmbPfx.forEach(function(pfx) { keys.push(pfx + pk); });
-  });
-
-  // Quality metrics cache — range covering the current key (quality_data_v14) + margin.
-  for (var qv = 2; qv <= 20; qv++) keys.push('quality_data_v' + qv);
-
-  // OSV dashboard + compliant onboarding + overview stats — simple version-ranged keys.
-  for (var ov = 1; ov <= 10; ov++) keys.push('osv_dash_v' + ov);
-  for (var cv2 = 1; cv2 <= 5; cv2++) keys.push('compliant_onb_v' + cv2);
-  keys.push('overview_v1');
-
-  // Transaction module + geo-txn — period-keyed; bust the no-custom-filter variants.
-  // (Custom-date keys are one-shot and expire naturally within CONFIG.CACHE_TTL seconds.)
-  periods.forEach(function(p) {
-    for (var tv = 1; tv <= 5; tv++) keys.push('txn_mod_v' + tv + '_' + JSON.stringify([p, '', '', '']));
-    for (var xv = 1; xv <= 8; xv++) keys.push('geo_txn_v' + xv + '_' + JSON.stringify([p, '', '', 'all', 'all', 'all']));
-  });
-
-  // GST-pay — keyed by fiscal year string (e.g. "FY24-25"), version-ranged.
-  for (var fy = nowYear - 4; fy <= nowYear; fy++) {
-    var fyStr = 'FY' + String(fy).slice(2) + '-' + String(fy + 1).slice(2);
-    for (var pv = 1; pv <= 15; pv++) keys.push('gstpay_v' + pv + '_' + JSON.stringify([fyStr]));
-  }
-
-  // Batch the removals (chunked removeAll) — this list is ~2k keys and per-key remove()
-  // would be one RPC each, slow enough to matter inside the 5-min sync run.
-  for (var ci = 0; ci < keys.length; ci += 200) {
-    try { cache.removeAll(keys.slice(ci, ci + 200)); } catch (e) {}
-  }
-  Logger.log('  Cache busted (' + keys.length + ' keys).');
+  var gen = bumpCacheGen_();
+  Logger.log('  Cache generation bumped to ' + gen + ' — all cached payloads stranded.');
 }
 
 

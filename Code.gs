@@ -56,6 +56,48 @@ var CONFIG = {
   VENDOR_SCORE_TAB:      '',   // blank → first tab in the workbook
 };
 
+/* ── Cache generation ────────────────────────────────────────────────────────
+   Every cache key below carries this suffix, and a sync bumps it. That is the
+   whole invalidation mechanism now.
+
+   bustDashboardCache_ used to invalidate by ENUMERATING the keys it thought were
+   live — prefix lists and version ranges hand-written in Metabase.gs, e.g.
+   'dash_v30_'…'dash_v42_'. Every version bump on this side silently moved the
+   real key out from under it, and nothing failed loudly: the sync logged the
+   count of keys it had cleared, which stayed in the thousands while clearing
+   nothing. An audit of the ten cached feeds found two still being hit. The other
+   eight — the dashboard, the combined payload, vertical rows, quality, OSV,
+   overview, compliant onboarding and the transaction module — were never
+   invalidated at all, and only expired on their own 5-minute TTL. The comment in
+   Metabase.gs records this being "fixed" once already by widening the ranges,
+   which is the same fix with a longer fuse.
+
+   Bumping one counter cannot drift, because the key and the invalidation read
+   the same value. Old entries are simply unreachable and fall out on their TTL.
+   Read once per execution: this is on the path of every cached call. */
+var _CGEN_MEMO = null;
+function _cgen_() {
+  if (_CGEN_MEMO === null) {
+    try {
+      _CGEN_MEMO = PropertiesService.getScriptProperties().getProperty('CACHE_GEN') || '1';
+    } catch (e) {
+      // A properties read must never take the request down; an unchanging suffix
+      // just means invalidation falls back to the TTL for this call.
+      _CGEN_MEMO = '1';
+    }
+  }
+  return _CGEN_MEMO;
+}
+
+// Called by the Metabase sync once the sheets have been rewritten.
+function bumpCacheGen_() {
+  var p = PropertiesService.getScriptProperties();
+  var next = String((parseInt(p.getProperty('CACHE_GEN') || '1', 10) || 1) + 1);
+  p.setProperty('CACHE_GEN', next);
+  _CGEN_MEMO = next;
+  return next;
+}
+
 // Fixed column positions in the Vendor Score workbook (0-based indices).
 var VS_COLS = {
   denominator: 7,    // Column H — Vendor Scores denominator
@@ -469,7 +511,8 @@ function _splitBasisDate_(r) {
    them and the activation drill would read every vendor as dormant. */
 function _vrowsCacheKey_(audience, vertKey, f) {
   return 'vrows_v30_' + audience + '_' + vertKey + '_'
-    + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '', f.month || '']);
+    + JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '', f.month || ''])
+    + '_g' + _cgen_();
 }
 
 /* The FY 26-27 split, applied once for every row that is subject to it.
@@ -566,7 +609,7 @@ function getDashboardData(filtersJson) {
     var cfg = AUDIENCE_CFG[audience];
 
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v45_' + audience + '_' + periodKey;
+    var cacheKey  = 'dash_v45_' + audience + '_' + periodKey + '_g' + _cgen_();
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -624,14 +667,14 @@ function getCombinedDashboard(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var periodKey = JSON.stringify([f.period || 'All', f.startDate || '', f.endDate || '']);
-    var cacheKey  = 'dash_v45_cmb_' + periodKey;
+    var cacheKey  = 'dash_v45_cmb_' + periodKey + '_g' + _cgen_();
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
 
     // Try to compose from pre-warmed individual caches (zero extra reads).
-    var sIndKey = 'dash_v45_seller_' + periodKey;
-    var bIndKey = 'dash_v45_buyer_'  + periodKey;
+    var sIndKey = 'dash_v45_seller_' + periodKey + '_g' + _cgen_();
+    var bIndKey = 'dash_v45_buyer_'  + periodKey + '_g' + _cgen_();
     var sInd = cache.get(sIndKey);
     var bInd = cache.get(bIndKey);
     if (sInd && bInd) {
@@ -773,7 +816,7 @@ function getGeoTransactionData(filtersJson) {
   try {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var cacheKey = 'geo_txn_v8_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'',
-                                                     f.audience||'all', f.category||'all', f.vertical||'all']);
+                                                     f.audience||'all', f.category||'all', f.vertical||'all']) + '_g' + _cgen_();
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -940,7 +983,7 @@ function getTransactionModuleData(filtersJson) {
     // it showed were the whole portfolio. 'all' keeps the old portfolio-wide
     // behaviour available for any caller that wants it.
     var vertF = String(f.vertical || 'OMP');
-    var cKey = 'txn_mod_v8_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, vertF]);
+    var cKey = 'txn_mod_v8_' + JSON.stringify([f.period||'All', f.startDate||'', f.endDate||'', catF, vertF]) + '_g' + _cgen_();
     var cache = CacheService.getScriptCache();
     var hit   = cache.get(cKey);
     if (hit) return hit;
@@ -3738,7 +3781,7 @@ function getGSTPayablesData(filtersJson) {
     var f = filtersJson ? JSON.parse(filtersJson) : {};
     var year = f.year || 'All';
 
-    var cacheKey = 'gstpay_v10_' + JSON.stringify([year]);
+    var cacheKey = 'gstpay_v10_' + JSON.stringify([year]) + '_g' + _cgen_();
     var cache = CacheService.getScriptCache();
     var hit = cache.get(cacheKey);
     if (hit) return hit;
@@ -3898,7 +3941,7 @@ function getQualityData(filtersJson) {
   var _qf = {};
   try { _qf = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { _qf = {}; }
   var CACHE_KEY = 'quality_data_v29_' + (_qf.period || 'All')
-                + '_' + (_qf.startDate || '') + '_' + (_qf.endDate || '');
+                + '_' + (_qf.startDate || '') + '_' + (_qf.endDate || '') + '_g' + _cgen_();
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -5389,7 +5432,7 @@ function getOSVDashboardData(filtersJson) {
   try { _f = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { _f = {}; }
   // The period belongs in the key, or the first period answered for all of them.
   var CACHE_KEY = 'osv_dash_v11_' + (_f.period || 'All')
-                + '_' + (_f.startDate || '') + '_' + (_f.endDate || '');
+                + '_' + (_f.startDate || '') + '_' + (_f.endDate || '') + '_g' + _cgen_();
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
   if (cached) return cached;
@@ -6026,7 +6069,7 @@ function getOverviewStats(filtersJson) {
   // The cache key carries the period, or every period would serve the first one's
   // answer for the next five minutes.
   var CACHE_KEY = 'overview_v10_' + (f.period || 'All')
-                + '_' + (f.startDate || '') + '_' + (f.endDate || '');
+                + '_' + (f.startDate || '') + '_' + (f.endDate || '') + '_g' + _cgen_();
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
   if (hit) return hit;
@@ -6113,7 +6156,7 @@ function getCompliantOnboardingData(filtersJson) {
   try { _cf = filtersJson ? JSON.parse(filtersJson) : {}; } catch (e) { _cf = {}; }
   var _scoped  = !!(_cf.period && _cf.period !== 'All');
   var CACHE_KEY = 'compliant_onb_v3_' + (_cf.period || 'All')
-                + '_' + (_cf.startDate || '') + '_' + (_cf.endDate || '');
+                + '_' + (_cf.startDate || '') + '_' + (_cf.endDate || '') + '_g' + _cgen_();
   var cache = CacheService.getScriptCache();
   var hit = cache.get(CACHE_KEY);
   if (hit) return hit;
